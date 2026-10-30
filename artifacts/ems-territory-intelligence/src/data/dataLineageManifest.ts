@@ -6,21 +6,20 @@
 import { Agency } from '../types';
 import { hasVerifiedProviderIdentity } from './providerIdentity';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
-
-const normalizeRecipientName = (value: string): string =>
-  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+import { findExactFemaAfgAward } from './femaAwardMatching';
 
 export interface DataRegistrySource {
   id: string;
   name: string;
   acronym: string;
+  sourceUrl: string;
+  dataAsOf: string;
   governingBody: string;
   updateCadence: string;
   legalAuthority: string;
   schemaSpecification: string;
   primaryFieldsIngested: string[];
   verificationMethod: string;
-  sourceUrl?: string;
 }
 
 export interface FieldLineageRecord {
@@ -34,92 +33,109 @@ export interface FieldLineageRecord {
   isFieldVerified: boolean;
   sourceUrlOrCitation?: string;
   reportingPeriod?: string;
+  sourceRetrievedAt?: string;
+  lineageReviewedOn?: string;
+  sourceRecordStatus?: string;
   evidenceBasis?: string;
   evidenceScope?: 'FIELD_VERIFIED' | 'ORGANIZATION_IDENTITY_ONLY' | 'REGIONAL_BENCHMARK' | 'MODELED_ESTIMATE' | 'UNVERIFIED';
 }
 
+export const LINEAGE_REVIEWED_ON = '2026-10-30';
+
 export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
   {
     id: 'cms_part_b',
-    name: 'CMS Medicare Part B Ground Ambulance Claims Public Use File (PUF)',
-    acronym: 'CMS PUF',
+    name: 'CMS Ambulance Fee Schedule Public Use Files (AFS PUF)',
+    acronym: 'CMS AFS PUF',
+    sourceUrl: 'https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files',
+    dataAsOf: 'CY2026 fee schedule; not provider claims or denials',
     governingBody: 'Centers for Medicare & Medicaid Services (U.S. Dept of Health & Human Services)',
-    updateCadence: 'Check the current CMS release and reporting period',
+    updateCadence: 'Annual fee schedule publication; check the current release and reporting period',
     legalAuthority: 'Social Security Act § 1834(l) & 42 CFR § 414.610',
-    schemaSpecification: 'HCPCS Ambulance Service Coding (A0425–A0434) & Remittance Advice Remark Codes (RARC)',
+    schemaSpecification: 'Published ambulance fee schedule rates and geographic adjustments',
     primaryFieldsIngested: [
-      'Public-use-file measures (availability varies by release)',
-      'Provider-level coverage and definitions vary by file',
-      'Do not infer agency-level denial rates without a matching CMS record'
+      'Published ambulance fee schedule payment rates by service and geography',
+      'No provider-specific billed amounts, claim counts, or denial rates'
     ],
-    verificationMethod: 'Potential reference only. Match the exact CMS file, provider identifier, metric definition, and reporting period before treating a profile value as sourced.'
+    verificationMethod: 'Public fee schedule reference only; it cannot verify an agency claim history or denial rate. Match the exact file, identifier, metric, and period for any separate claims record.'
   },
   {
     id: 'nemsis_v3',
     name: 'National Emergency Medical Services Information System (NEMSIS)',
     acronym: 'NEMSIS v3.5',
+    sourceUrl: 'https://nemsis.org/using-ems-data/request-research-data',
+    dataAsOf: '2025 public-release dataset; agency and state identifiers are removed',
     governingBody: 'NHTSA Office of EMS (U.S. Dept of Transportation) & Technical Assistance Center (TAC)',
     updateCadence: 'State reporting and national releases vary',
     legalAuthority: 'Highway Safety Act of 1966 (23 U.S.C. 403) & NHTSA Emergency Medical Services Mandate',
-    schemaSpecification: 'NEMSIS Data Standard v3.5.0 XML / XSD HL7 Interoperability Protocol',
+    schemaSpecification: 'NEMSIS v3.5 standard; research release is de-identified',
     primaryFieldsIngested: [
       'EMS data standard fields (availability varies by state)',
       'State-reported measures may not be available at agency level',
       'No live NEMSIS agency-level feed is implied by this listing'
     ],
-    verificationMethod: 'A schema defines possible data fields; it does not establish that a state or agency submitted a specific value.'
+    verificationMethod: 'The public research release is de-identified and cannot substantiate agency-specific totals; state submissions may be incomplete.'
   },
   {
     id: 'usfa_registry',
     name: 'U.S. Fire Administration National Fire Department Registry',
-    acronym: 'USFA NFIRS',
+    acronym: 'USFA NFDR',
+    sourceUrl: 'https://apps.usfa.fema.gov/registry/download',
+    dataAsOf: 'Registry last updated 2026-06-11',
     governingBody: 'Federal Emergency Management Agency (DHS)',
-    updateCadence: 'Check the current USFA registry record',
+    updateCadence: 'Registry updates; check current registry listing',
     legalAuthority: 'Federal Fire Prevention and Control Act of 1974 (Public Law 93-498)',
-    schemaSpecification: 'NFIRS 5.0 Complete Specification & USFA Department Master Record',
+    schemaSpecification: 'USFA department registry fields and department master record',
     primaryFieldsIngested: [
       'Department FDID (5-Digit State-Unique Identifier)',
-      'Department registry identifiers and fields published by USFA',
-      'Confirm staffing, apparatus, and station fields in the specific record',
-      'Registry presence alone does not verify current operations'
+      'Department ID, name, addresses, county, department and organization type',
+      'Number of stations and reported firefighter / non-firefighting personnel',
+      'No ambulance or fire-engine inventory in the public download'
     ],
-    verificationMethod: 'Use the department-specific USFA record for each claimed field; this app does not make every local profile value a live USFA result.'
+    verificationMethod: 'USFA registry listing; FDIDs are assigned by states and are not globally unique. Confirm each profile field against the department-specific record.'
   },
   {
     id: 'fema_afg',
-    name: 'OpenFEMA Non-Disaster and Assistance to Firefighter Grants dataset (v1)',
+    name: 'FEMA Assistance to Firefighters Grant (AFG) OpenFEMA Dataset',
     acronym: 'OpenFEMA AFG',
+    sourceUrl: 'https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1',
+    dataAsOf: 'OpenFEMA last refresh 2026-06-04',
     governingBody: 'U.S. Department of Homeland Security (DHS) / FEMA Grant Programs Directorate',
     updateCadence: 'Annual dataset refresh; check FEMA metadata',
-    legalAuthority: 'FEMA grant program records',
-    schemaSpecification: 'OpenFEMA v1 fields: awardNumber, fiscalYear, programName, vendorState, awardAmount, vendorName',
+    legalAuthority: 'Assistance to Firefighters Grants program records published by FEMA',
+    schemaSpecification: 'OpenFEMA AFG public record fields: awardNumber, fiscalYear, programName, stateCode, awardAmount, grantee',
     primaryFieldsIngested: [
       'AFG historical award number and program name',
       'Fiscal year, recipient name, vendor state, obligated award amount',
-      'No city, county, payment date, remaining balance, or SAFER fields'
+      'Award date as published in the dataset; no remaining-balance or SAFER fields',
+      'Award matching is required before asserting department-level grant status',
+      'No result from a search does not establish that an agency has no award'
     ],
-    verificationMethod: 'A returned row supports only the fields in that row. Award amount is not an unspent balance; the app does not independently match the recipient to a local profile.',
-    sourceUrl: 'https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants'
+    verificationMethod: 'Match recipient and award identifiers to the department and period. An award amount is not a remaining balance; no local match does not prove no award.'
   },
   {
     id: 'nppes_npi',
     name: 'CMS National Plan and Provider Enumeration System (NPPES)',
     acronym: 'NPPES NPI Registry',
+    sourceUrl: 'https://npiregistry.cms.hhs.gov/api-page',
+    dataAsOf: 'Read API reports daily NPPES data',
     governingBody: 'Centers for Medicare & Medicaid Services (HHS)',
     updateCadence: 'NPPES registry is updated; check the record timestamp',
     legalAuthority: 'HIPAA Administrative Simplification (45 CFR Part 162)',
-    schemaSpecification: 'CMS FOIA Provider De-Identified Registry / National Provider Identifier (NPI Type 2)',
+    schemaSpecification: 'Public NPPES Type 1 / Type 2 provider enumeration records',
     primaryFieldsIngested: [
       'NPI, organization name, listed addresses, and taxonomy when present',
       'NPI issuance does not prove licensure or operational affiliation',
       'An NPI does not by itself prove active Medicare billing'
     ],
-    verificationMethod: 'Confirms only matching registry identity fields. It does not establish fire/EMS operations, licensure, active enrollment, equipment, or outcomes.'
+    verificationMethod: 'A returned row supports only identity fields in that row. It does not prove licensure, active operations, equipment, outcomes, or Medicare billing.'
   },
   {
     id: 'gpo_procurement',
     name: 'National Cooperative Procurement Contracts (Sourcewell, NPPGov, HGACBuy)',
     acronym: 'GPO Contracts',
+    sourceUrl: 'https://www.sourcewell-mn.gov/cooperative-purchasing',
+    dataAsOf: 'Contract-specific; check current contract documents',
     governingBody: 'Public Safety Purchasing Cooperatives & National Joint Powers Alliance',
     updateCadence: 'Master Contract Term Schedules & Published GSA/Cooperative Price Catalogs',
     legalAuthority: 'Uniform Municipal Joint Powers Act & State Intergovernmental Cooperation Statutes',
@@ -131,7 +147,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
       'Statutory Legal Piggyback Clause Citations'
     ],
     verificationMethod: 'Publicly posted competitive bids, award letters, and legal council adoption resolutions.'
-  }
+  },
 ];
 
 export interface AgencyDataLineageAuditResult {
@@ -210,25 +226,27 @@ export function auditAgencyDataLineage(
     agency.nppesVerifiedAddress &&
     agency.address === agency.nppesVerifiedAddress
   );
-  const hasVerifiedFdid = Boolean(
-    agency.isFdidVerified &&
-    agency.fdid &&
+  const hasSpecificUsfaCitation = Boolean(
     agency.usfaRegistryUrl &&
-    agency.usfaRegistryUrl !== 'https://apps.usfa.fema.gov/registry/'
+    !/\/registry\/?$/i.test(agency.usfaRegistryUrl)
   );
-  // The local agency model has no source-record field for these operational totals.
-  const hasVerifiedOperations = false;
+  const hasVerifiedFdid = Boolean(agency.isFdidVerified && agency.fdid && hasSpecificUsfaCitation);
+  const hasVerifiedOperations = Boolean(agency.isOperationalDataVerified && agency.operationsSourceDoc);
   
   const hasVerifiedEquipment = Boolean(
     agency.installedFleet?.isVerifiedEquipment &&
     agency.installedFleet?.procurementResolutionId &&
     agency.installedFleet?.procurementSourceDoc
   );
-  const hasVerifiedFleetAge = false;
+  const hasVerifiedFleetAge = Boolean(
+    agency.installedFleet?.isVerifiedEquipment &&
+    agency.installedFleet?.capitalAssetLedgerId &&
+    agency.installedFleet?.capitalAssetLedgerDoc
+  );
   const hasVerifiedWarranty = Boolean(
     agency.installedFleet?.isVerifiedWarranty && agency.installedFleet?.warrantyContractDoc
   );
-  const hasVerifiedCPR = false;
+  const hasVerifiedCPR = Boolean(hasVerifiedEquipment && agency.installedFleet?.mechanicalCPR);
 
   const hasVerifiedContractVendor = Boolean(
     agency.competitorContract?.isVerifiedContract &&
@@ -240,25 +258,19 @@ export function auditAgencyDataLineage(
     agency.competitorContract?.contractEndDate &&
     agency.competitorContract?.contractSourceDoc
   );
+  const hasVerifiedStemiRatio = Boolean(agency.qualityMetrics?.isNemsqaVerified && agency.qualityMetrics?.nemsqaSourceDoc);
+  const hasVerifiedCmsBilled = Boolean(agency.cmsData?.isVerifiedCmsClaims && agency.cmsData?.claimsSourceDoc);
+  const hasVerifiedCmsDenials = false;
+  const matchedAfgAward = findExactFemaAfgAward(agency);
+  const hasVerifiedAfgGrant = Boolean(matchedAfgAward);
   const hasVerifiedMaintenanceBurden = Boolean(
     agency.competitorContract?.isVerifiedContract &&
     agency.competitorContract?.annualServiceCostPerUnit &&
     agency.competitorContract?.contractSourceDoc
   );
 
-  const hasVerifiedClinicalCalls = false;
+  const hasVerifiedClinicalCalls = Boolean(agency.qualityMetrics?.isCaresVerified && agency.qualityMetrics?.caresSourceDoc);
   const hasVerifiedUtsteinSurvival = false;
-  const hasVerifiedStemiRatio = false;
-
-  const hasVerifiedCmsBilled = false;
-  const hasVerifiedCmsDenials = false;
-
-  const matchedFemaAward = agency.liveFemaAwards?.find((award) =>
-    normalizeRecipientName(award.grantee) === normalizeRecipientName(agency.name) &&
-    award.stateCode?.toUpperCase() === agency.stateCode.toUpperCase() &&
-    Boolean(award.awardNumber)
-  );
-  const hasVerifiedAfgGrant = Boolean(matchedFemaAward);
 
   const isParentMunicipality = agency.operatingRelationship === 'PARENT_MUNICIPALITY' ||
     agency.operatingRelationship === 'POSSIBLE_RELATED_ENTITY' ||
@@ -286,7 +298,7 @@ export function auditAgencyDataLineage(
       sourceUrlOrCitation: agency.npiNumber && isNpiCheckDigitValid && !isUnrelatedOrIndividual
         ? `https://npiregistry.cms.hhs.gov/provider-view/${agency.npiNumber}`
         : undefined,
-      reportingPeriod: agency.nppesLastUpdated || 'NPPES Dissemination CY2026',
+      reportingPeriod: agency.nppesLastUpdated || 'Registry record date not available',
       documentationQuote: agency.npiNumber
         ? (isUnrelatedOrIndividual
             ? `NPI #${agency.npiNumber} is registered to an unrelated entity or individual clinician in NPPES; cannot substantiate agency identity.`
@@ -314,7 +326,7 @@ export function auditAgencyDataLineage(
       schemaIdentifier: 'NPI Legal Business Name (LBN)',
       verificationStatus: hasVerifiedLegalName ? 'Verified Official' : 'Unverified Baseline',
       sourceUrlOrCitation: agency.npiNumber ? `https://npiregistry.cms.hhs.gov/provider-view/${agency.npiNumber}` : undefined,
-      reportingPeriod: agency.nppesLastUpdated || 'NPPES Dissemination CY2026',
+      reportingPeriod: agency.nppesLastUpdated || 'Registry record date not available',
       documentationQuote: hasVerifiedLegalName
         ? `Legal entity name attested under federal Medicare enrollment: ${agency.nppesOfficialName || agency.name}.`
         : `Operating name (${agency.name}); statutory legal business name not yet matched in federal registry.`,
@@ -330,7 +342,7 @@ export function auditAgencyDataLineage(
       schemaIdentifier: 'Primary Practice Location Address',
       verificationStatus: hasVerifiedAddress ? 'Verified Official' : 'Sourcing Required',
       sourceUrlOrCitation: agency.npiNumber ? `https://npiregistry.cms.hhs.gov/provider-view/${agency.npiNumber}` : undefined,
-      reportingPeriod: agency.nppesLastUpdated || 'NPPES Dissemination CY2026',
+      reportingPeriod: agency.nppesLastUpdated || 'Registry record date not available',
       documentationQuote: hasVerifiedAddress
         ? `Headquarters physical address confirmed via NPPES provider registry: ${agency.nppesVerifiedAddress}.`
         : 'Physical practice location unverified; postal address confirmation required.',
@@ -342,11 +354,11 @@ export function auditAgencyDataLineage(
       category: 'Operational Telemetry',
       fieldName: 'Department Identifier (FDID)',
       fieldValue: agency.fdid || 'Not Recorded / Sourcing Required',
-      sourceRegistry: 'USFA National Fire Department Registry',
+      sourceRegistry: 'USFA National Fire Department Registry (ID only)',
       schemaIdentifier: 'NFIRS 5.0 State Agency Code',
       verificationStatus: hasVerifiedFdid ? 'Verified Official' : agency.fdid ? 'Cross-Referenced' : 'Sourcing Required',
-      sourceUrlOrCitation: agency.usfaRegistryUrl || 'https://apps.usfa.fema.gov/registry/',
-      reportingPeriod: 'USFA National Census 2026',
+      sourceUrlOrCitation: agency.usfaRegistryUrl,
+      reportingPeriod: 'USFA registry update 2026-06-11; department record date unavailable',
       documentationQuote: agency.fdid
         ? (hasVerifiedFdid
             ? `USFA certified fire department / EMS agency identifier: ${agency.fdid}.`
@@ -360,14 +372,14 @@ export function auditAgencyDataLineage(
       category: 'Operational Telemetry',
       fieldName: 'Annual 911 Call Volume',
       fieldValue: `${agency.annualCallVolume.toLocaleString()} calls`,
-      sourceRegistry: hasVerifiedOperations ? 'Municipal CAFR Budget & Dispatch Audits' : 'Demographic Call Volume Estimation Model',
+      sourceRegistry: hasVerifiedOperations ? 'Agency operational report (record required)' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'RunLog.01 Annual Dispatch Volume',
       verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedOperations ? 'FY2025 Municipal Operating Audit' : 'Modeled Baseline',
+      reportingPeriod: hasVerifiedOperations ? 'Attached record period not parsed' : 'Not reported / not available',
       documentationQuote: hasVerifiedOperations
-        ? 'Derived from annual municipal operating budgets and state EMS annual performance audits.'
+        ? 'Source document attached; value has not been independently reconciled to another public dataset.'
         : 'Estimated annual 911 dispatch volume modeled from regional population density.',
-      evidenceBasis: hasVerifiedOperations ? 'Observed municipal run-log census.' : 'Demographic run-rate model projection.',
+      evidenceBasis: hasVerifiedOperations ? 'Agency operational source document attached.' : 'Demographic run-rate model projection.',
       evidenceScope: hasVerifiedOperations ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
       isFieldVerified: hasVerifiedOperations
     },
@@ -375,14 +387,14 @@ export function auditAgencyDataLineage(
       category: 'Operational Telemetry',
       fieldName: 'Annual 911 Emergency Transports',
       fieldValue: `${agency.annual911Transports.toLocaleString()} transports`,
-      sourceRegistry: hasVerifiedOperations ? 'State EMS Office Annual Transport Census' : 'Emergency Transport Estimation Model',
+      sourceRegistry: hasVerifiedOperations ? 'Agency EMS transport report (record required)' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'eResponse.07 Unit Dispatched / Transported',
       verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedOperations ? 'CY2024 State EMS Census' : 'Modeled Baseline',
+      reportingPeriod: hasVerifiedOperations ? 'Attached record period not parsed' : 'Not reported / not available',
       documentationQuote: hasVerifiedOperations
-        ? 'Cross-audited against CMS fee-for-service ground ambulance claims and state dispatch totals.'
+        ? 'Source document attached; value has not been independently reconciled to another public dataset.'
         : 'Estimated emergency transport volume; verified ePCR run-log audit required.',
-      evidenceBasis: hasVerifiedOperations ? 'State health department ePCR registry census.' : 'Regional transport ratio projection.',
+      evidenceBasis: hasVerifiedOperations ? 'Agency operational source document attached.' : 'Regional transport ratio projection.',
       evidenceScope: hasVerifiedOperations ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
       isFieldVerified: hasVerifiedOperations
     },
@@ -390,10 +402,10 @@ export function auditAgencyDataLineage(
       category: 'Operational Telemetry',
       fieldName: 'Apparatus Fleet Breakdown',
       fieldValue: `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Fire Engines`,
-      sourceRegistry: hasVerifiedOperations ? 'County Dispatch Apparatus Roster' : 'Municipal Station & Vehicle Density Model',
+      sourceRegistry: hasVerifiedOperations ? 'Agency apparatus roster (record required)' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'NFIRS Apparatus Inventory Record',
       verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedOperations ? 'CY2025 Active Dispatch Fleet' : 'Modeled Baseline',
+      reportingPeriod: hasVerifiedOperations ? 'Attached record period not parsed' : 'Not reported / not available',
       documentationQuote: hasVerifiedOperations
         ? 'Audited apparatus and active vehicle count registered with county dispatch.'
         : 'Modeled apparatus allocation; frontline fleet inventory inspection required.',
@@ -407,7 +419,7 @@ export function auditAgencyDataLineage(
       category: 'Installed Fleet',
       fieldName: 'Incumbent Defibrillator Monitor Brand',
       fieldValue: agency.installedFleet?.defibBrand || 'Unknown Monitor Fleet',
-      sourceRegistry: hasVerifiedEquipment ? 'Municipal Council RFP & Award Ledger' : 'Regional Competitive Equipment Model',
+      sourceRegistry: hasVerifiedEquipment ? 'Municipal procurement record' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Equipment Procurement Contract Schedule',
       verificationStatus: hasVerifiedEquipment ? 'Legal Public Record' : 'Model / Estimate',
       sourceUrlOrCitation: agency.installedFleet?.procurementSourceDoc,
@@ -423,7 +435,7 @@ export function auditAgencyDataLineage(
       category: 'Installed Fleet',
       fieldName: 'Defibrillator Fleet Age',
       fieldValue: `${agency.installedFleet?.defibAgeYears ?? '—'} years old`,
-      sourceRegistry: hasVerifiedFleetAge ? 'Municipal Capital Asset Depreciation Ledger' : 'Capital Asset Lifecycle Estimate',
+      sourceRegistry: hasVerifiedFleetAge ? 'Municipal capital asset record' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Asset Management Tag / Capital Inception Year',
       verificationStatus: hasVerifiedFleetAge ? 'Legal Public Record' : 'Model / Estimate',
       reportingPeriod: hasVerifiedFleetAge ? 'Capital Asset Ledger Record' : 'Modeled 7-Year Replacement Cycle',
@@ -438,7 +450,7 @@ export function auditAgencyDataLineage(
       category: 'Installed Fleet',
       fieldName: 'Defibrillator Warranty / Service Status',
       fieldValue: agency.installedFleet?.defibWarrantyStatus || 'Unverified',
-      sourceRegistry: hasVerifiedWarranty ? 'Manufacturer Maintenance Agreement Registry' : 'Standard OEM Warranty Lifecycle Model',
+      sourceRegistry: hasVerifiedWarranty ? 'Manufacturer maintenance agreement' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Service SLA Status Code',
       verificationStatus: hasVerifiedWarranty ? 'Legal Public Record' : 'Model / Estimate',
       sourceUrlOrCitation: agency.installedFleet?.warrantyContractDoc,
@@ -454,7 +466,7 @@ export function auditAgencyDataLineage(
       category: 'Installed Fleet',
       fieldName: 'Mechanical CPR Deployment',
       fieldValue: agency.installedFleet?.mechanicalCPR || 'Not Reported',
-      sourceRegistry: hasVerifiedCPR ? 'State EMS Clinical Equipment Registry' : 'Clinical Equipment Adoption Model',
+      sourceRegistry: hasVerifiedCPR ? 'Agency procurement / equipment record' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'eEquipment.02 Mechanical Resuscitation',
       verificationStatus: hasVerifiedCPR ? 'Legal Public Record' : 'Model / Estimate',
       reportingPeriod: hasVerifiedCPR ? 'State Inspection CY2025' : 'Modeled Adoption Rate',
@@ -471,7 +483,7 @@ export function auditAgencyDataLineage(
       category: 'Competitor Contracts',
       fieldName: 'Current Service Contract Vendor',
       fieldValue: agency.competitorContract?.vendor || 'Unknown Vendor',
-      sourceRegistry: hasVerifiedContractVendor ? 'City Council Contract Register' : 'Incumbent Service Provider Projection',
+      sourceRegistry: hasVerifiedContractVendor ? 'Municipal executed contract' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Vendor Master Agreement',
       verificationStatus: hasVerifiedContractVendor ? 'Legal Public Record' : 'Model / Estimate',
       sourceUrlOrCitation: agency.competitorContract?.contractSourceDoc,
@@ -487,7 +499,7 @@ export function auditAgencyDataLineage(
       category: 'Competitor Contracts',
       fieldName: 'Service Contract Expiration Date',
       fieldValue: agency.competitorContract?.contractEndDate || 'Not Recorded',
-      sourceRegistry: hasVerifiedContractEndDate ? 'Public Procurement Contract Register' : 'Estimated Master Contract Cycle',
+      sourceRegistry: hasVerifiedContractEndDate ? 'Municipal executed contract' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Contract Schedule Expiration Date',
       verificationStatus: hasVerifiedContractEndDate ? 'Legal Public Record' : 'Model / Estimate',
       reportingPeriod: hasVerifiedContractEndDate ? 'Executed Contract Expiration' : 'Projected Renewal Window',
@@ -504,7 +516,7 @@ export function auditAgencyDataLineage(
       fieldValue: agency.competitorContract?.annualServiceCostPerUnit
         ? `$${agency.competitorContract.annualServiceCostPerUnit.toLocaleString()} / unit / year`
         : '—',
-      sourceRegistry: hasVerifiedMaintenanceBurden ? 'Municipal Operating Budget Purchase Orders' : 'Actuarial Service Maintenance Benchmark',
+      sourceRegistry: hasVerifiedMaintenanceBurden ? 'Municipal expenditure record' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Accounting Object Code 5320 - Maintenance',
       verificationStatus: hasVerifiedMaintenanceBurden ? 'Legal Public Record' : 'Model / Estimate',
       reportingPeriod: hasVerifiedMaintenanceBurden ? 'FY2025 Operating Budget Line' : 'Estimated Catalog Rate',
@@ -521,10 +533,10 @@ export function auditAgencyDataLineage(
       category: 'Clinical & NEMSIS',
       fieldName: 'Out-of-Hospital Cardiac Arrests (OHCA)',
       fieldValue: `${calls.toLocaleString()} calls/yr`,
-      sourceRegistry: hasVerifiedClinicalCalls ? 'NEMSIS v3.5 Registry & CARES Incident Records' : 'Regional Cardiac Arrest Incidence Model',
+      sourceRegistry: hasVerifiedClinicalCalls ? 'Agency CARES report (record required)' : 'NEMSIS public research dataset / modeled estimate',
       schemaIdentifier: 'eDefib.01 Cardiac Resuscitation Event',
       verificationStatus: hasVerifiedClinicalCalls ? 'HIPAA De-Identified' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedClinicalCalls ? 'CARES Registry CY2024' : 'AHA Demographic Incidence Model',
+      reportingPeriod: hasVerifiedClinicalCalls ? 'Attached CARES report period not parsed' : 'Not reported / not available',
       documentationQuote: hasVerifiedClinicalCalls
         ? 'Authoritative annual cardiac resuscitation event volume reported under NEMSIS/CARES registry protocols.'
         : 'Estimated cardiac arrest volume modeled from population demographics and AHA incidence rates.',
@@ -536,10 +548,10 @@ export function auditAgencyDataLineage(
       category: 'Clinical & NEMSIS',
       fieldName: 'Utstein ROSC Survival to Discharge',
       fieldValue: `${agency.utsteinSurvivalRate}%`,
-      sourceRegistry: hasVerifiedUtsteinSurvival ? 'CARES Registry Agency Submission' : 'State CARES Benchmark Summary',
+      sourceRegistry: hasVerifiedUtsteinSurvival ? 'Agency CARES report (record required)' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'CARES Outcome Variable CPC 1 & 2',
       verificationStatus: hasVerifiedUtsteinSurvival ? 'HIPAA De-Identified' : 'Geographic Benchmark',
-      reportingPeriod: hasVerifiedUtsteinSurvival ? 'CARES Standardized Utstein CY2024' : 'State Aggregate Summary',
+      reportingPeriod: hasVerifiedUtsteinSurvival ? 'Attached CARES report period not parsed' : 'Not reported / not available',
       documentationQuote: hasVerifiedUtsteinSurvival
         ? `Standardized Utstein formula survival rate verified via CARES agency submission (${agency.utsteinSurvivalRate}%).`
         : 'State-level CARES registry benchmark; individual agency registry reporting not confirmed.',
@@ -551,7 +563,7 @@ export function auditAgencyDataLineage(
       category: 'Clinical & NEMSIS',
       fieldName: 'STEMI 12-Lead Transmission Ratio',
       fieldValue: `${Math.round(calls * 0.165)} activations / yr`,
-      sourceRegistry: hasVerifiedStemiRatio ? 'NEMSQA Cardiac-01 Quality Measure' : 'NEMSQA Protocol Activation Model',
+      sourceRegistry: hasVerifiedStemiRatio ? 'Agency NEMSQA report (record required)' : 'Unverified profile baseline / estimate',
       schemaIdentifier: 'Cardiac-01 STEMI 12-Lead <= 10min',
       verificationStatus: hasVerifiedStemiRatio ? 'Verified Official' : 'Model / Estimate',
       reportingPeriod: hasVerifiedStemiRatio ? 'NEMSQA Quality Reporting CY2024' : 'Modeled Activation Ratio',
@@ -570,7 +582,7 @@ export function auditAgencyDataLineage(
       fieldValue: agency.cmsData?.medicareBilledAnnual
         ? `$${(agency.cmsData.medicareBilledAnnual / 1000).toFixed(0)}K billed`
         : '—',
-      sourceRegistry: hasVerifiedCmsBilled ? 'CMS Medicare Part B Ground Ambulance Claims PUF' : 'Fee-for-Service Ambulance Billing Model',
+      sourceRegistry: hasVerifiedCmsBilled ? 'Agency claims source record' : 'CMS fee schedule reference / profile estimate',
       schemaIdentifier: 'Form CMS-1500 Fee-for-Service Census',
       verificationStatus: hasVerifiedCmsBilled ? 'Verified Official' : 'Model / Estimate',
       reportingPeriod: hasVerifiedCmsBilled ? (agency.cmsData?.cmsClaimPufYear || 'CMS Part B PUF CY2024') : 'Modeled Baseline',
@@ -587,16 +599,16 @@ export function auditAgencyDataLineage(
       fieldValue: agency.cmsData?.claimDenialRate !== undefined && agency.cmsData?.claimDenialRate !== null
         ? `${agency.cmsData.claimDenialRate}%`
         : 'Not available',
-      sourceRegistry: hasVerifiedCmsDenials ? 'CMS Remittance Advice Remark Code (RARC) Feed' : 'Medicare Administrative Contractor (MAC) Summary',
+      sourceRegistry: 'No public agency-level CMS denial source; profile value is unverified',
       schemaIdentifier: 'Claim Status Reason Code (CARC/RARC)',
-      verificationStatus: hasVerifiedCmsDenials ? 'Verified Official' : 'Geographic Benchmark',
-      reportingPeriod: hasVerifiedCmsDenials ? (agency.cmsData?.cmsPufReportingPeriod || 'CY2024') : 'MAC Jurisdiction Baseline',
+      verificationStatus: 'Sourcing Required',
+      reportingPeriod: 'No agency reporting period available',
       documentationQuote: hasVerifiedCmsDenials
         ? `Documented claim denial rate based on ${agency.cmsData?.topDenialReason || 'prior authorization / medical necessity'} exceptions.`
-        : 'Individual agency or county Medicare Part B claims record not observed. Denial rates are adjudicated at MAC jurisdiction level.',
-      evidenceBasis: hasVerifiedCmsDenials ? 'Adjudicated CMS claims remittance ledger.' : 'Unobserved provider rate; MAC benchmark only.',
-      evidenceScope: hasVerifiedCmsDenials ? 'FIELD_VERIFIED' : 'REGIONAL_BENCHMARK',
-      isFieldVerified: hasVerifiedCmsDenials
+        : 'CMS ambulance fee schedule files publish payment rates, not agency-specific claim-denial rates. This profile value is not verified by CMS.',
+      evidenceBasis: 'No public agency-specific denial record is attached.',
+      evidenceScope: 'UNVERIFIED',
+      isFieldVerified: false
     },
     {
       category: 'CMS Claims & Reimbursement',
@@ -604,7 +616,7 @@ export function auditAgencyDataLineage(
       fieldValue: agency.cmsData?.estimatedRecoverableRevenue
         ? `$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K recoverable (Projected)`
         : '—',
-      sourceRegistry: 'Actuarial Billing Model Projection (ZOLL AR Boost)',
+      sourceRegistry: 'Internal actuarial scenario model (not a source record)',
       schemaIdentifier: 'Actuarial Billing Model Projection',
       verificationStatus: 'Model / Estimate',
       reportingPeriod: 'Financial Opportunity Model',
@@ -619,7 +631,7 @@ export function auditAgencyDataLineage(
       category: 'Demographics & GIS',
       fieldName: 'Cath Lab Transport Drive Time',
       fieldValue: `${agency.gisData?.avgTransportTimeMinutes ?? '—'} min (${agency.gisData?.distanceToNearestCathLabMiles ?? '—'} mi)`,
-      sourceRegistry: 'US DOT National Highway System & OpenStreetMap GIS',
+      sourceRegistry: 'Unverified GIS routing model; route-data version not recorded',
       schemaIdentifier: 'Isochrone Distance Calculation',
       verificationStatus: 'Model / Estimate',
       reportingPeriod: 'GIS Routing Engine Analysis',
@@ -634,29 +646,54 @@ export function auditAgencyDataLineage(
       category: 'Grants & Procurement',
       fieldName: 'FEMA AFG Award Status',
       fieldValue: hasVerifiedAfgGrant
-        ? `OpenFEMA record ${matchedFemaAward!.awardNumber} ($${matchedFemaAward!.awardAmount.toLocaleString()})`
+        ? `OpenFEMA record ${matchedAfgAward!.awardNumber} (award amount $${(matchedAfgAward!.federalShareAwarded ?? matchedAfgAward!.awardAmount).toLocaleString()})`
         : agency.grantStatus?.afgAwarded
-          ? `Unverified local claim ($${agency.grantStatus.afgAwardAmount.toLocaleString()})`
-          : 'No award record linked to this profile',
-      sourceRegistry: 'FEMA OpenFEMA Non-Disaster and Assistance to Firefighter Grants v1',
-      schemaIdentifier: 'awardNumber, fiscalYear, vendorName, vendorState, awardAmount',
+          ? `Unverified profile claim ($${agency.grantStatus.afgAwardAmount.toLocaleString()})`
+          : 'No matched award record linked to this profile',
+      sourceRegistry: 'FEMA OpenFEMA Assistance to Firefighters Grants dataset',
+      schemaIdentifier: 'awardNumber, fiscalYear, programName, grantee, stateCode, awardAmount',
       verificationStatus: hasVerifiedAfgGrant ? 'Legal Public Record' : 'Unverified Baseline',
-      sourceUrlOrCitation: 'https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants',
-      reportingPeriod: hasVerifiedAfgGrant
-        ? `FY${matchedFemaAward!.fiscalYear}`
-        : 'No exact-name and state match found',
+      sourceUrlOrCitation: 'https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1',
+      reportingPeriod: hasVerifiedAfgGrant && (matchedAfgAward?.programYear ?? matchedAfgAward?.fiscalYear)
+        ? `FY${matchedAfgAward.programYear ?? matchedAfgAward.fiscalYear}`
+        : 'No matched recipient and award record; reporting period unverified',
       documentationQuote: hasVerifiedAfgGrant
-        ? `OpenFEMA row ${matchedFemaAward!.awardNumber} matches the profile name and state. The listed amount is an obligated award amount, not a current remaining balance.`
+        ? `OpenFEMA row ${matchedAfgAward!.awardNumber} matches the recipient and award details. The listed award amount is not a current remaining balance.`
         : agency.grantStatus?.afgAwarded
-          ? 'The local profile claims an award, but no exact recipient-name and state match is linked here. Do not treat it as verified.'
-          : 'No OpenFEMA row is linked to this profile. This does not establish that the agency has never received an award.',
+          ? 'The local profile claims an award, but no exact OpenFEMA match is attached; treat the claim as unverified.'
+          : 'No exact OpenFEMA match is attached. This does not establish that the agency has never received an award.',
       evidenceBasis: hasVerifiedAfgGrant
-        ? 'Exact normalized recipient-name and state match to an OpenFEMA row.'
-        : 'No row-level agency match; absence is not evidence of no award.',
+        ? 'Unique exact match to a public OpenFEMA award record.'
+        : 'No exact row-level match; absence is not evidence of no award.',
       evidenceScope: hasVerifiedAfgGrant ? 'FIELD_VERIFIED' : 'UNVERIFIED',
       isFieldVerified: hasVerifiedAfgGrant
     }
   ];
+
+  const categorySourceLinks: Partial<Record<FieldLineageRecord['category'], string>> = {
+    'Clinical & NEMSIS': 'https://nemsis.org/using-ems-data/request-research-data',
+    'CMS Claims & Reimbursement': 'https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files',
+    'Grants & Procurement': 'https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1'
+  };
+  for (const record of records) {
+    if (!record.sourceUrlOrCitation && record.fieldName.includes('NPI')) {
+      record.sourceUrlOrCitation = 'https://npiregistry.cms.hhs.gov/api-page';
+    } else if (!record.sourceUrlOrCitation && record.fieldName.includes('FDID')) {
+      record.sourceUrlOrCitation = 'https://apps.usfa.fema.gov/registry/download';
+    } else {
+      record.sourceUrlOrCitation ||= categorySourceLinks[record.category];
+    }
+    record.lineageReviewedOn = LINEAGE_REVIEWED_ON;
+    record.sourceRetrievedAt ||= record.fieldName.includes('NPI') && hasVerifiedNpi
+      ? agency.lastVerifiedAt || 'Retrieval timestamp not recorded'
+      : record.isFieldVerified
+        ? 'Source retrieval date not recorded'
+        : 'Not retrieved for this agency';
+    record.sourceRecordStatus = record.isFieldVerified
+      ? 'Agency-specific evidence attached'
+      : 'Public reference only; agency-specific source record not attached';
+    record.reportingPeriod ||= 'Not reported / not available';
+  }
 
   const dimensionSummary: Record<string, { totalFields: number; verifiedFields: number }> = {};
   for (const rec of records) {

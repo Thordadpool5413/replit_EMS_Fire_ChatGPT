@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { NATIONAL_BENCHMARKS, STATE_SUMMARIES } from '../data/healthcareData';
+import { STATE_SUMMARIES } from '../data/healthcareData';
 import { Agency } from '../types';
 import { 
   Building2, 
@@ -58,7 +58,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                  Locked account CMS telemetry
+                  Profile metrics · unverified estimates
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">NPI: {activeAccount.npiNumber || 'Unassigned'}</span>
               </div>
@@ -70,19 +70,19 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">CMS Denial Rate</span>
-              <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">{activeAccount.cmsData.claimDenialRate}%</span>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Denial rate · estimate</span>
+              <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">{activeAccount.cmsData.claimDenialRate}% · not CMS verified</span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Annual 911 Runs</span>
-              <span className="text-slate-900 dark:text-white font-semibold tabular-nums text-sm">{activeAccount.annual911Transports.toLocaleString()}</span>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Annual transports · estimate</span>
+              <span className="text-slate-900 dark:text-white font-semibold tabular-nums text-sm">{activeAccount.annual911Transports.toLocaleString()} · unverified</span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Primary Insurer</span>
-              <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">{activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')}</span>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Primary insurer · estimate</span>
+              <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">{activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')} · unverified</span>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/80 px-3 py-1.5 rounded-lg">
-              <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Est. Deal Value</span>
+              <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Projected deal value · model</span>
               <span className="text-emerald-800 dark:text-emerald-400 font-semibold tabular-nums text-sm">${(activeAccount.zollOpportunity.estimatedDealValue ?? activeAccount.zollOpportunity.projectedPipelineValue).toLocaleString()}</span>
             </div>
           </div>
@@ -98,52 +98,52 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <span>Strategic consultant &amp; business analyst intelligence</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1 tracking-tight">
-              Public healthcare, CMS claims &amp; EMS outcomes engine
+              Public source references &amp; estimate limits
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-3xl leading-relaxed">
-              How territory managers leverage public datasets—CMS Medicare Part B ground ambulance claims, NEMSIS cardiac call volumes, USFA registries, CARES survival benchmarks, and FEMA AFG grant allocations—to prioritize accounts and consultative proposals.
+              Public registries can corroborate provider identity, fire-department records, published fee schedules and matched grant awards. They do not verify the modeled agency denial, transport, survival, equipment or reimbursement values shown elsewhere.
             </p>
           </div>
 
           <div className="bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 p-4 rounded-xl shrink-0 text-right">
-            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium">Total public addressable EMS market</div>
-            <div className="text-2xl font-[650] text-sky-950 dark:text-white tabular-nums mt-0.5">$5.8B Annual</div>
-            <div className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">CMS ground ambulance Medicare Part B</div>
+            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium">Provider-specific reimbursement totals</div>
+            <div className="text-lg font-[650] text-sky-950 dark:text-white mt-1">Not source verified</div>
+            <a className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5 underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS AFS PUF · CY2026 fee schedule only</a>
           </div>
         </div>
 
         {/* National Macro Benchmarks */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden mt-6">
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">National Medicare denial rate</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Agency Medicare denial rate</div>
             <div className="text-xl font-[650] text-rose-700 dark:text-rose-400 tabular-nums mt-1">
-              {NATIONAL_BENCHMARKS.averageMedicareDenialRate}%
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Top: Medical necessity &amp; missing signatures</div>
+            <a className="text-[11px] text-slate-400 mt-0.5 underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS AFS PUF · CY2026 fee rates, not denials</a>
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">CARES cardiac survival (Utstein)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Agency cardiac survival (Utstein)</div>
             <div className="text-xl font-[650] text-emerald-700 dark:text-emerald-400 tabular-nums mt-1">
-              {NATIONAL_BENCHMARKS.averageUtsteinSurvivalRate}%
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Agencies &lt;25% need AutoPulse + Real BVM</div>
+            <a className="text-[11px] text-slate-400 mt-0.5 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS 2025 release is de-identified · reviewed 2026-10-30</a>
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Annual 911 ambulance runs</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Agency annual transports</div>
             <div className="text-xl font-[650] text-slate-900 dark:text-white tabular-nums mt-1">
-              {(NATIONAL_BENCHMARKS.totalAmbulanceTransports / 1000000).toFixed(1)}M
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Across 21,450 registered agencies</div>
+            <a className="text-[11px] text-slate-400 mt-0.5 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS 2025 public release · does not identify agencies</a>
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Annual federal AFG allocations</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Agency FEMA AFG award</div>
             <div className="text-xl font-[650] text-sky-700 dark:text-sky-400 tabular-nums mt-1">
-              ${(NATIONAL_BENCHMARKS.totalAfgFundingAllocated / 1000000).toFixed(0)}M
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Direct capital grants for EMS &amp; Fire</div>
+            <a className="text-[11px] text-slate-400 mt-0.5 underline" href="https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1" target="_blank" rel="noreferrer">OpenFEMA refresh 2026-06-04 · no award matched here</a>
           </div>
         </div>
       </div>
@@ -152,9 +152,9 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">State-by-state healthcare &amp; reimbursement comparison</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">State source availability</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select any state to instantly filter and populate territory pipeline opportunities.
+              State-level denial, survival and grant totals are withheld until matched source records are available. Lineage reviewed 2026-10-30.
             </p>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
@@ -167,12 +167,11 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
                 <th className="py-2.5 px-3">State / Jurisdiction</th>
-                <th className="py-2.5 px-3 text-right">Registered Agencies</th>
-                <th className="py-2.5 px-3 text-right">Avg Medicare Denial Rate</th>
-                <th className="py-2.5 px-3 text-right">Cardiac Survival (Utstein)</th>
-                <th className="py-2.5 px-3 text-right">YTD AFG Grant Awards</th>
-                <th className="py-2.5 px-3 text-center">Medicaid Expansion</th>
-                <th className="py-2.5 px-3 text-right">High-Value Leads</th>
+                <th className="py-2.5 px-3 text-right">Agency count</th>
+                <th className="py-2.5 px-3 text-right">Medicare denials</th>
+                <th className="py-2.5 px-3 text-right">Cardiac survival</th>
+                <th className="py-2.5 px-3 text-right">AFG awards</th>
+                <th className="py-2.5 px-3 text-center">Lead estimates</th>
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
@@ -183,30 +182,19 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                     {summary.state} ({summary.code})
                   </td>
                   <td className="py-3 px-3 text-right text-slate-700 dark:text-slate-300 tabular-nums">
-                    {summary.totalAgencies.toLocaleString()}
+                    Unverified
                   </td>
-                  <td className={`py-3 px-3 text-right font-semibold tabular-nums ${
-                    summary.avgMedicareDenialRate > 18 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {summary.avgMedicareDenialRate}%
+                  <td className="py-3 px-3 text-right text-slate-500">
+                    No agency-level public rate
                   </td>
-                  <td className={`py-3 px-3 text-right tabular-nums ${
-                    summary.avgUtsteinSurvival < 28 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
-                  }`}>
-                    {summary.avgUtsteinSurvival}%
+                  <td className="py-3 px-3 text-right text-slate-500">
+                    No agency-specific public outcome
                   </td>
-                  <td className="py-3 px-3 text-right text-sky-800 dark:text-sky-400 font-semibold tabular-nums">
-                    ${(summary.totalAfgAwardsYtd / 1000000).toFixed(1)}M
-                  </td>
-                  <td className="py-3 px-3 text-center text-xs">
-                    {summary.medicaidExpansion ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">Expanded</span>
-                    ) : (
-                      <span className="text-slate-500 dark:text-slate-400">Non-Expanded</span>
-                    )}
+                  <td className="py-3 px-3 text-right text-slate-500">
+                    Requires matched OpenFEMA records
                   </td>
                   <td className="py-3 px-3 text-right font-semibold text-amber-800 dark:text-amber-400 tabular-nums">
-                    {summary.highPriorityLeadsCount} accounts
+                    Modeled · {summary.highPriorityLeadsCount} profiles
                   </td>
                   <td className="py-3 px-3 text-right">
                     <button
@@ -337,14 +325,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 1: The CMS Medicare Ground Ambulance Reimbursement Play
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CMS Medicare Part B ground ambulance claims show that departments with in-house or generic municipal clearinghouses suffer average denial rates of 18% to 25%. Under the mandatory Ground Ambulance Data Collection System (GADCS), agencies that fail to report or submit incomplete trip logs face a statutory 10% payment reduction penalty across all Medicare transports.
+                <strong>Source limit:</strong> CMS ambulance fee schedule files publish payment rates, not provider-specific billed amounts, claim counts, or denial rates. Use an agency’s adjudicated claims and billing records before estimating recovery.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Pitch <strong>ZOLL Billing and AR Boost</strong> directly to the City Finance Director, Town Auditor, and EMS Chief. Show them that AR Boost automated demographic matching and insurance discovery finds commercial insurance coverage on Medicare Advantage patients, immediately increasing collection rates by $85–$140 per transport.
+                <strong>Discussion:</strong> A billing workflow review may identify process changes. Any financial impact must be calculated from agency records and presented as a scenario, not a public-source finding.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Chief, your county is currently writing off $785,000 every year in denied ambulance claims because of documentation technicalities. ZOLL Billing scrubs those claims automatically before submission—recovering more than enough cash to replace your entire defibrillator fleet.&rdquo;
+                &ldquo;Chief, we have not verified your denial rate or recoverable amount. If you can share current billing records, we can build a clearly labeled estimate for discussion.&rdquo;
               </div>
             </>
           )}
@@ -355,14 +343,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 2: The Out-of-Hospital Cardiac Arrest (OHCA) Survival Play
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CARES and NEMSIS cardiac arrest registry data reveals counties where the Utstein survival rate falls below the 29.7% national benchmark (e.g., Cuyahoga 24.2%, Akron 23.5%, Harris 21.8%).
+                <strong>Source limit:</strong> The NEMSIS public research release removes agency identifiers. This dashboard does not establish county- or agency-specific survival rates; use a matched CARES or agency report before making comparisons.
               </p>
               <p>
                 <strong>The ZOLL Solution:</strong> Pitch the combined <strong>AutoPulse Resuscitation System</strong> and <strong>X Series Advanced Real BVM Help</strong> to the EMS Medical Director and Training Captain. Point out that manual chest compressions degrade significantly during stairwell extrications and high-speed transit. The AutoPulse circumferential band provides continuous cerebral and coronary perfusion. Real BVM Help prevents hyperventilation—the leading cause of decreased survival in resuscitation.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Dr. Chen, your medics are doing hero work, but physics is working against them down 3 flights of stairs. The AutoPulse delivers unbroken compressions from living room to cath lab. Combined with Real BVM Help ventilation rate feedback, we consistently see peer agencies boost survival by 10 to 14 percentage points.&rdquo;
+                &ldquo;Dr. Chen, we do not have a verified outcome record for your agency. We can review your own clinical reports and discuss whether equipment or workflow changes fit your protocols.&rdquo;
               </div>
             </>
           )}
@@ -373,14 +361,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 3: The Aging Competitor Fleet & Obsolescence Replacement
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> USFA equipment rosters indicate that over 40% of fire and EMS agencies still operate 8-to-11-year-old Stryker LIFEPAK 15 (v1/v2) and phased-out Philips HeartStart MRx monitors. Stryker has escalated annual maintenance fees by 20%+, and Philips no longer manufactures MRx replacement circuit boards.
+                <strong>Source limit:</strong> The USFA public registry lists department identifiers, addresses, stations and staffing; it does not report monitor brands, fleet ages, warranties or maintenance costs. Confirm equipment against agency inventory and asset records.
               </p>
               <p>
                 <strong>The ZOLL Solution:</strong> Offer the <strong>X Series Advanced Trade-In Program</strong>. Present the 11.7 lb weight advantage (reducing back strain on medics compared to 19+ lb LIFEPAK units) plus the integrated Traumatic Brain Injury (TBI) EPIC protocol dashboard.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Chief, your LP15 monitors are now out of factory warranty. When a battery or display board fails next week, Stryker&apos;s turnaround is 6 to 8 weeks. ZOLL will give you $3,500 per unit in trade-in credits, deliver an 11-pound modern monitor, and bundle 5-year on-site comprehensive warranty coverage.&rdquo;
+                &ldquo;Chief, we have not verified your monitor fleet, warranty status or contract terms. If you provide an inventory, we can compare options using current written quotations.&rdquo;
               </div>
             </>
           )}
@@ -391,14 +379,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 4: The FEMA Assistance to Firefighters Grant (AFG) Fast-Track
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> FEMA publishes public lists of fire and EMS departments awarded AFG and SAFER grants under the &ldquo;Operations and Safety - EMS Equipment&rdquo; category.
+                <strong>Source limit:</strong> OpenFEMA publishes AFG award records. Match the recipient and award identifier before stating that an agency received an award; a missing match does not prove no award exists.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Contact awarded departments within 48 hours of public listing. Provide ready-to-sign procurement packets utilizing national purchasing cooperatives (Sourcewell and HGACBuy), which allows the Chief to spend the federal grant immediately without holding a 6-month competitive RFP.
+                <strong>Discussion:</strong> Confirm award terms, procurement rules, and agency purchasing authority before discussing cooperative contracts or timelines.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Congratulations on the $485,000 AFG award! Because ZOLL is already awarded under Sourcewell Contract #041223-ZOL, you don&apos;t have to navigate a complex bid process. We can lock in your delivery schedule today and ensure compliance with all federal procurement guidelines.&rdquo;
+                &ldquo;We have not matched a public award record to your department. If you share an award notice, we can confirm its terms and review procurement options with your team.&rdquo;
               </div>
             </>
           )}
@@ -409,7 +397,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 5: NEMSQA Quality Measures & AHA Mission: Lifeline Recognition
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> NEMSIS v3 public eOutcomes show that agencies struggle with STEMI 12-lead acquisition speed (&le;10 min), chest compression fraction (CCF &lt;75%), and end-tidal CO2 (ETCO2) ventilation compliance during resuscitation. Many departments are stuck at Bronze or Silver AHA Mission: Lifeline recognition due to manual documentation delays.
+                <strong>Source limit:</strong> The de-identified NEMSIS public release does not establish these measures for a named agency. Use a source-linked agency quality report before discussing performance or recognition status.
               </p>
               <p>
                 <strong>The ZOLL Solution:</strong> Present the <strong>X Series Advanced with Real CPR Help and Real BVM Help</strong> alongside <strong>RescueNet ePCR</strong>. Real BVM Help automatically records rate and tidal volume directly into the ePCR, providing audit-proof compliance for AHA Mission: Lifeline Gold Plus recognition.
@@ -427,14 +415,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 6: CMS ET3, Hospital Handoff Reduction & Community Paramedicine
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CMS Emergency Triage, Treat, and Transport (ET3) models and Mobile Integrated Health (MIH) regulations permit reimbursement for treatment-in-place and transport to alternative destinations (urgent care, behavioral crisis centers). In urban areas, transfer-of-care (hospital wall time) averages 45+ minutes, depleting front-line 911 coverage.
+                <strong>Source limit:</strong> Reimbursement eligibility and handoff times depend on current program rules, payer contracts, and local records. This dashboard does not verify agency-specific reimbursement or hospital wall-time data.
               </p>
               <p>
                 <strong>The ZOLL Solution:</strong> Deploy <strong>ZOLL Respond CAD and RescueNet Telehealth</strong>. Paramedics can initiate secure video telemetry consults directly from the scene, receive emergency physician sign-off for treatment-in-place, and bill Medicare at standard transport rates without unnecessary hospital transfer delays.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Every minute your crews wait on hospital wall time costs your city $8.50 in unbilled labor while leaving districts uncovered. ZOLL Telehealth and ET3 billing integration allow your medics to treat and release low-acuity patients on scene while generating Medicare reimbursement.&rdquo;
+                &ldquo;We have not verified your handoff times or reimbursement eligibility. We can review local operational records and current payer guidance before estimating potential changes.&rdquo;
               </div>
             </>
           )}
@@ -446,47 +434,47 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">NEMSQA &amp; CARES national clinical quality standards</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Clinical public-source availability</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Comparative pre-hospital clinical quality metrics driving resuscitation hardware adoption.
+              Agency-level values are not shown without matched reports. The NEMSIS public research release is de-identified; lineage reviewed 2026-10-30.
             </p>
           </div>
           <span className="text-xs text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2.5 py-1 rounded-md font-semibold">
-            National registry benchmarks
+            Source links
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">STEMI 12-lead acquisition &le;10 min</div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">STEMI 12-lead acquisition</div>
             <div className="text-2xl font-[650] text-sky-800 dark:text-sky-400 tabular-nums mt-1">
-              {NATIONAL_BENCHMARKS.nemsqaStemi12LeadAcquisitionPct}%
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">NEMSQA Cardiac-01 Benchmark</div>
+            <a className="text-[11px] text-slate-400 mt-1 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS public data scope · 2025</a>
             <div className="text-xs text-slate-600 dark:text-slate-300 mt-2.5 leading-relaxed">
-              ZOLL cellular telemetry transmits ECG directly to cath lab interventionalists, reducing door-to-balloon times by up to 20 minutes.
+              No agency-specific measure is attached. The NEMSIS public research release is de-identified.
             </div>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
             <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">Chest compression fraction (CCF)</div>
             <div className="text-2xl font-[650] text-emerald-800 dark:text-emerald-400 tabular-nums mt-1">
-              {NATIONAL_BENCHMARKS.nemsqaChestCompressionFractionPct}%
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">Target &ge;80% for Favorable ROSC</div>
+            <a className="text-[11px] text-slate-400 mt-1 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS public data scope · 2025</a>
             <div className="text-xs text-slate-600 dark:text-slate-300 mt-2.5 leading-relaxed">
-              AutoPulse circumferential band eliminates compressions pauses down stairs and during ambulance transport, maintaining 95%+ CCF.
+              No agency-specific measure is attached. The NEMSIS public research release is de-identified.
             </div>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
             <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">Favorable cerebral survival (CPC 1/2)</div>
             <div className="text-2xl font-[650] text-slate-900 dark:text-white tabular-nums mt-1">
-              {NATIONAL_BENCHMARKS.caresGoodNeurologicalSurvivalPct}%
+              Not available
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">CARES Registry Discharge Benchmark</div>
+            <span className="text-[11px] text-slate-400 mt-1 block">Agency source record not attached</span>
             <div className="text-xs text-slate-600 dark:text-slate-300 mt-2.5 leading-relaxed">
-              Real CPR Help and Real BVM Help prevent hyperventilation and maintain optimal cerebral perfusion pressure throughout resuscitation.
+              No agency-specific measure is attached; use a matched quality report for clinical outcomes.
             </div>
           </div>
         </div>

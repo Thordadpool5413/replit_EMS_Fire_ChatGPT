@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
+import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
@@ -961,15 +962,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isHovered = hoveredMapStateCode === st.code;
-                    const isHighDenial = st.avgMedicareDenialRate >= 19.5;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
 
                     const fillColor = isHovered
                       ? '#1E3A8A'
-                      : !isInRegion
-                        ? '#F1F5F9'
-                        : isHighDenial
-                          ? '#DBEAFE'
+                        : !isInRegion
+                          ? '#F1F5F9'
                           : '#E2E8F0';
 
                     const strokeColor = isHovered
@@ -1132,9 +1130,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">{cCount} Counties</span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-slate-700 dark:text-slate-300">Medicare Denials: <strong className="text-rose-700 dark:text-rose-400 font-semibold tabular-nums">{hSt.avgMedicareDenialRate}%</strong> <span className="text-[10px] text-slate-400">(CMS PUF)</span></span>
+                        <span className="text-slate-700 dark:text-slate-300">Agency denial rate: <strong className="font-semibold">Not available from public CMS fee files</strong></span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-slate-700 dark:text-slate-300">FEMA Grants: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">${(hSt.totalAfgAwardsYtd / 1000000).toFixed(1)}M</strong></span>
+                        <span className="text-slate-700 dark:text-slate-300">AFG awards: <strong className="font-semibold">Match an OpenFEMA award record</strong></span>
                       </div>
                     );
                   })()
@@ -1145,8 +1143,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <span>Click any State boundary or East Coast callout badge to inspect its Counties</span>
                     </span>
                     <span className="flex items-center gap-1.5 tabular-nums">
-                      <span className="w-3 h-3 rounded-xs bg-[#DBEAFE] border border-[#60A5FA] inline-block" />
-                      <span>Elevated Claim Denial (&ge;19.5% · CMS PUF)</span>
+                      <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
+                      <span>County boundaries · reviewed 2026-10-30</span>
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
@@ -1550,20 +1548,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">MCR Denial</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">MCR denials</span>
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {c.medicareDenialRatePct !== undefined && c.medicareDenialRatePct !== null
-                              ? `${c.medicareDenialRatePct}%`
-                              : 'Not available'}
+                            Not publicly available
                           </span>
-                          {(c.medicareDenialRatePct === undefined || c.medicareDenialRatePct === null) && (
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              State denial benchmark unavailable
-                            </span>
-                          )}
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                            CMS fee files do not report county denial rates
+                          </span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Avg Transport</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Avg transport · estimate</span>
                           <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block">{c.averageTransportMinutes} min</span>
                         </div>
                       </div>
@@ -1882,11 +1876,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               <span>NPI {agency.npiNumber}</span>
                             </>
                           )}
-                          {agency.grantStatus.afgAwarded && (
+                          {agency.grantStatus.afgAwarded && findExactFemaAfgAward(agency) && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                                FEMA AFG ${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K
+                                FEMA AFG ${((findExactFemaAfgAward(agency)?.federalShareAwarded ?? findExactFemaAfgAward(agency)?.awardAmount) || 0) / 1000}K · matched
                               </span>
                             </>
                           )}

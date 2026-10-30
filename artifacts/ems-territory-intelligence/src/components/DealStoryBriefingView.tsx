@@ -63,15 +63,16 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   const recoverableK = Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000);
   const fiveYrSavingsK = Math.round(tco.fiveYearOperatingSavings / 1000);
   const tradeInK = Math.round(tco.totalTradeInCredit / 1000);
-  const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
-  const grantAmtK = Math.round((agency.grantStatus?.afgAwardAmount || 0) / 1000);
+  const matchedAfgAward = agency.femaGrantHistory?.[0];
+  const hasGrant = Boolean(matchedAfgAward);
+  const grantAmtK = Math.round((matchedAfgAward?.awardAmount || 0) / 1000);
 
   // Strategic Executive Elevator Pitch
   const elevatorPitch = useMemo(() => {
     const leaderTitle = isFire ? 'Chief' : 'Director';
     const leaderName = agency.keyContacts[0]?.name ? `${leaderTitle} ${agency.keyContacts[0].name.split(' ').pop()}` : leaderTitle;
     const grantSentence = hasGrant 
-      ? ` With $${grantAmtK}K in active FEMA AFG grant liquidity allocated to the department, this capital upgrade aligns directly with your federal grant cycle.`
+      ? ` A matched OpenFEMA record reports a $${grantAmtK}K AFG award for FY${matchedAfgAward?.fiscalYear}; confirm the spending period and eligible uses with the recipient.`
       : '';
 
     return `${leaderName} at ${agency.name}: Your current ${defibBrand} fleet of ${defibCount} frontline units is ${defibAge} years old and currently operating with ${warranty.toLowerCase()} warranty status. In our actuarial model, transitioning to ZOLL X Series Advanced provides up to $${tradeInK}K in estimated trade-in credits, an estimated $${fiveYrSavingsK}K in 5-year biomedical service contract savings, and protects an estimated +$${recoverableK}K/year in recoverable Medicare claims through automated 12-lead transmission.${grantSentence} Furthermore, this configuration can be procured through ${coopContract.contractName} (${coopContract.contractNumber}), satisfying competitive bidding requirements under applicable local thresholds.`;
@@ -97,7 +98,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     {
       role: 'Finance Officer / Municipal Purchasing Agent',
       question: hasGrant 
-        ? `What is your timeline for expending the $${grantAmtK}K FY${agency.grantStatus?.afgFiscalYear || 2024} FEMA AFG allocation before federal period-of-performance deadlines?`
+        ? `What is your timeline for the matched $${grantAmtK}K FY${matchedAfgAward?.fiscalYear} FEMA AFG award, and can the recipient confirm its spending period?`
         : `Does your municipality currently utilize cooperative purchasing contracts such as ${coopContract.contractName} (${coopContract.contractNumber}) to accelerate capital equipment procurement?`,
       objective: 'Identify procurement vehicles and ensure adherence to local competitive purchasing thresholds.'
     }
@@ -321,23 +322,23 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
-                    <strong className="text-[#14283F] dark:text-white">Federal Identifiers: </strong>
-                    Verified CMS NPI #{agency.npiNumber || 'Registered'} and USFA FDID {agency.fdid}.
+                    <strong className="text-[#14283F] dark:text-white">Directory identifiers: </strong>
+                    NPI #{agency.npiNumber || 'not recorded'} and FDID {agency.fdid}; identity and registry matches are unverified unless a source record is attached.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Call Volume &amp; Acuity: </strong>
-                    Responds to {agency.annual911Transports.toLocaleString()} annual transports and {agency.annualCardiacArrestCalls} cardiac arrest runs per year.
+                    Profile estimates: {agency.annual911Transports.toLocaleString()} annual transports and {agency.annualCardiacArrestCalls} cardiac arrest runs; source records are not attached.
                   </span>
                 </li>
                 {hasGrant && (
                   <li className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                     <span>
-                      <strong className="text-[#14283F] dark:text-white">Public Grant Liquidity: </strong>
-                      FEMA AFG Award FY{agency.grantStatus?.afgFiscalYear || 2024} of ${grantAmtK}K allocated.
+                      <strong className="text-[#14283F] dark:text-white">Matched OpenFEMA AFG award: </strong>
+                      Matched OpenFEMA AFG record: FY{matchedAfgAward?.fiscalYear}, ${grantAmtK}K; confirm recipient and spending details.
                     </span>
                   </li>
                 )}
@@ -549,7 +550,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
           <span aria-hidden="true">·</span>
           <span>USFA FDID: {agency.fdid || 'Not Recorded'}</span>
           <span aria-hidden="true">·</span>
-          <span>OpenFEMA AFG {hasGrant ? `Award #${agency.grantStatus?.afgAwardNumber || 'Active'}` : 'Registry'}</span>
+          <span>OpenFEMA AFG {hasGrant ? `Award #${matchedAfgAward?.applicationRound || 'number not provided'}` : 'Registry · no matching profile record'}</span>
         </div>
 
         <div className="text-[11px] text-[#53657B] dark:text-slate-400 italic">

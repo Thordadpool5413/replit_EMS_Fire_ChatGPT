@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Agency, LeadStage, ZollProductLine, PredictiveWeights } from '../types';
+import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import { 
   Search, 
   Filter, 
@@ -295,7 +296,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       }
 
       if (quickSegment === 'high_priority' && (agency.zollOpportunity.pulseIqScore || 0) < 80) return false;
-      if (quickSegment === 'afg' && !agency.grantStatus.afgAwarded) return false;
+      if (quickSegment === 'afg' && !findExactFemaAfgAward(agency)) return false;
       if (quickSegment === 'bookmarked' && !agency.isBookmarked) return false;
 
       return true;
@@ -359,7 +360,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
   return (
     <div className="workspace-section-grid">
-      
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <strong>Source status:</strong> provider operations, equipment, denial and reimbursement values are profile estimates unless an agency record is attached. FEMA awards are shown only for exact recipient and award matches. CMS ambulance fee schedules report rates, not agency claim or denial history. Lineage reviewed 2026-10-30.
+        {' '}<a className="underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS AFS source</a>
+        {' · '}<a className="underline" href="https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1" target="_blank" rel="noreferrer">OpenFEMA AFG source</a>
+      </div>
       {/* Streamlined Single-Row Filter Bar + Progressive "More Filters" Drawer */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-3 min-w-0">
         
@@ -776,13 +781,13 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             const p2Fleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
             const p3Cms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 26) * 100));
             const p4Demo = Math.min(100, Math.round(Math.log10(Math.max(1000, agency.populationServed || 25000)) * 18));
-            const p5Grant = agency.grantStatus.afgAwarded ? 95 : 62;
+            const p5Grant = findExactFemaAfgAward(agency) ? 95 : 62;
             const pillarBars = [
               { label: 'Clinical Acuity (NEMSIS v3.5)', val: p1Clinical, color: 'bg-[#1E3A8A] dark:bg-blue-500' },
               { label: 'Fleet Age (Modeled Cycle)', val: p2Fleet, color: 'bg-amber-500' },
-              { label: 'CMS Recovery (Part B PUF)', val: p3Cms, color: 'bg-blue-500 dark:bg-blue-400' },
+              { label: 'Modeled denial / recovery estimate · unverified', val: p3Cms, color: 'bg-blue-500 dark:bg-blue-400' },
               { label: 'Demographics (Census FIPS)', val: p4Demo, color: 'bg-slate-500 dark:bg-slate-400' },
-              { label: 'AFG Grant (FEMA Ledger)', val: p5Grant, color: 'bg-emerald-600 dark:bg-emerald-500' }
+              { label: 'AFG grant · OpenFEMA match or model', val: p5Grant, color: 'bg-emerald-600 dark:bg-emerald-500' }
             ];
 
             return (
@@ -829,11 +834,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               <span>NPI <span className="font-mono text-[11px]">{agency.npiNumber}</span></span>
                             </>
                           )}
-                          {agency.grantStatus.afgAwarded && (
+                          {findExactFemaAfgAward(agency) && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
-                                AFG {formatCurrency(agency.grantStatus.afgAwardAmount)}
+                                AFG {formatCurrency(findExactFemaAfgAward(agency)?.federalShareAwarded ?? findExactFemaAfgAward(agency)?.awardAmount ?? 0)} · matched
                               </span>
                             </>
                           )}
@@ -897,16 +902,16 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
                     <div
                       className="p-3 bg-slate-50/70 dark:bg-slate-900/90 space-y-0.5"
-                      title={`CMS Part B PUF & Actuarial Recovery Forecast`}
+                      title="Modeled recovery scenario; not provider-specific CMS data"
                     >
                       <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        Est. Medicare recovery
+                        Modeled recovery estimate · unverified
                       </div>
                       <div className="font-semibold text-sm text-[#1E3A8A] dark:text-blue-400 tabular-nums">
                         {formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
-                        {formatCurrency(agency.zollOpportunity.projectedPipelineValue)} CapEx · {formatPercent(agency.cmsData.claimDenialRate)} denial
+                        Modeled CapEx · {formatPercent(agency.cmsData.claimDenialRate)} profile denial estimate
                       </div>
                     </div>
                   </div>
@@ -1251,7 +1256,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   const pFleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
                   const pCms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
                   const pDemo = Math.min(100, Math.round(((agency.gisData?.seniorPopulationPct || 16) / 28) * 100));
-                  const pGrant = agency.grantStatus.afgAwarded ? 100 : 45;
+                  const pGrant = findExactFemaAfgAward(agency) ? 100 : 45;
 
                   return (
                     <tr 
@@ -1348,19 +1353,19 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           {formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {formatPercent(agency.cmsData.claimDenialRate)} denial · MCR {agency.cmsData.medicarePayerPct ?? 42}%
+                          {formatPercent(agency.cmsData.claimDenialRate)} estimated denial · modeled payer mix
                         </div>
                       </td>
 
                       {/* AFG Grant */}
                       <td className="py-2.5 px-3 text-right hidden lg:table-cell">
-                        {agency.grantStatus.afgAwarded ? (
+                        {findExactFemaAfgAward(agency) ? (
                           <>
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              {formatCurrency(agency.grantStatus.afgAwardAmount)}
+                              {formatCurrency(findExactFemaAfgAward(agency)?.federalShareAwarded ?? findExactFemaAfgAward(agency)?.awardAmount ?? 0)} · matched
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                              FY{agency.grantStatus.afgFiscalYear}
+                              FY{findExactFemaAfgAward(agency)?.programYear ?? findExactFemaAfgAward(agency)?.fiscalYear}
                             </div>
                           </>
                         ) : (

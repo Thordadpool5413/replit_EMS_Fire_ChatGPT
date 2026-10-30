@@ -165,12 +165,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <g>
                     {projectedState.projectedCounties.map((pc) => {
                       const isHovered = hoveredCountyFips === pc.countyFips;
-                      const isHighDenial = pc.medicareDenialRatePct !== null && pc.medicareDenialRatePct >= 19.5;
                       const fillColor = isHovered
                         ? '#1E3A8A'
-                        : isHighDenial
-                          ? '#DBEAFE'
-                          : '#F1F5F9';
+                        : '#F1F5F9';
                       const strokeColor = isHovered ? '#0F172A' : '#94A3B8';
 
                       return (
@@ -202,8 +199,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <span>Standard County Boundary</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
-                  <span>Elevated Claim Denial (&ge;19.5%)</span>
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
+                  <span>Public boundary · denial data unavailable</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#1E3A8A] inline-block" />
@@ -242,22 +239,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-sans text-slate-500 block">MCR Denials</span>
+                    <span className="text-[11px] font-sans text-slate-500 block">MCR denials</span>
                     <span className="text-sm font-bold text-rose-700 mt-0.5 block">
-                      {inspectedCounty.medicareDenialRatePct !== null
-                        ? `${inspectedCounty.medicareDenialRatePct}%`
-                        : 'Not available'}
+                      Not publicly available
                     </span>
-                    {inspectedCounty.medicareDenialRatePct === null && (
-                      <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        {inspectedCounty.stateBenchmarkDenialRatePct !== null && inspectedCounty.stateBenchmarkDenialRatePct !== undefined
-                          ? `State benchmark: ${inspectedCounty.stateBenchmarkDenialRatePct}%`
-                          : 'State denial benchmark unavailable'}
-                      </span>
-                    )}
+                    <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
+                      CMS fee files do not report county denial rates
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-sans text-slate-500 block">Avg Transport</span>
+                    <span className="text-[11px] font-sans text-slate-500 block">Avg transport · estimate</span>
                     <span className="text-sm font-bold text-[#1E3A8A] mt-0.5 block">
                       {inspectedCounty.averageTransportMinutes} min
                     </span>

@@ -20,7 +20,7 @@ export const ResuscitationSurvivalFunnel: React.FC<ResuscitationSurvivalFunnelPr
   const bystanderRate = agency.bystanderCPRRate || 39.4;
   const ccfRate = agency.qualityMetrics?.nemsqaChestCompressionFractionPct || 71.2;
   const currentSurvival = agency.utsteinSurvivalRate || 10.8;
-  const benchmarkSurvival = 29.7; // CARES National Utstein Benchmark
+  const benchmarkSurvival = 29.7; // illustrative scenario assumption, not a verified benchmark
   const goodNeuroRate = agency.qualityMetrics?.caresGoodNeurologicalSurvivalPct || Math.round(currentSurvival * 0.78);
 
   // Calculate estimated lives saved delta with ZOLL AutoPulse & Real CPR Help
@@ -95,7 +95,7 @@ export const ResuscitationSurvivalFunnel: React.FC<ResuscitationSurvivalFunnelPr
       count: `${currentSurvivors} survivors (${currentSurvival}%)`,
       pct: currentSurvival,
       benchmarkPct: benchmarkSurvival,
-      description: 'Discharged alive from receiving hospital (CARES national registry benchmark: 29.7%).',
+      description: 'Illustrative scenario reference only; no agency outcome record or validated national benchmark is attached.',
       color: 'bg-emerald-500',
       textColor: 'text-emerald-600'
     },
@@ -119,27 +119,27 @@ export const ResuscitationSurvivalFunnel: React.FC<ResuscitationSurvivalFunnelPr
         <div>
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
             <span className="font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
-              CARES &amp; NEMSIS RESUSCITATION LEDGER
+              ILLUSTRATIVE MODEL · NOT AGENCY DATA
             </span>
             <span aria-hidden="true">·</span>
-            <span>Utstein Protocol Specification</span>
+              <span>Profile baseline · reviewed 2026-10-30</span>
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
             <HeartPulse className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            <span>Pre-Hospital Cardiac Arrest Survival Chain &amp; Conversion Delta</span>
+            <span>Illustrative Cardiac Arrest Scenario</span>
           </h3>
         </div>
 
         {/* Flush Hairline Sparklines Header */}
         <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900 p-2.5">
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">5-year call trend</span>
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Modeled 5-year call trend</span>
             <div className="w-24">
               <InteractiveSparkline data={fiveYearCalls} color="rose" height={22} valueSuffix=" calls" />
             </div>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900 p-2.5">
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">5-year survival trend</span>
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Modeled 5-year survival trend</span>
             <div className="w-24">
               <InteractiveSparkline 
                 data={fiveYearSurvival} 
@@ -161,22 +161,22 @@ export const ResuscitationSurvivalFunnel: React.FC<ResuscitationSurvivalFunnelPr
           </div>
           <div>
             <h4 className="font-semibold text-xs text-slate-900 dark:text-white leading-tight">
-              Estimated Additional Neurological Survivors Annually in {agency.city}
+              Illustrative scenario difference · not observed survivors
             </h4>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-              Eliminating CPR transport interruptions with <strong>AutoPulse</strong> and continuous depth/rate feedback via <strong>Real CPR Help</strong> closes the gap between {agency.name}&apos;s {currentSurvival}% survival rate and the 29.7% national benchmark.
+              Calculated from profile estimates and scenario assumptions, not agency source records or a predicted product effect. NEMSIS public research data is de-identified; reviewed 2026-10-30.
             </p>
           </div>
         </div>
 
         <div className="bg-slate-50/70 dark:bg-slate-900 p-4 flex items-center gap-3 shrink-0 text-xs">
           <div className="text-right">
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Baseline</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Modeled baseline</span>
             <span className="font-semibold text-slate-900 dark:text-white text-sm tabular-nums">{currentSurvivors} / yr</span>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-400" />
           <div className="text-right pl-2 border-l border-slate-200 dark:border-slate-800">
-            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 block">ZOLL Projected</span>
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 block">Illustrative scenario</span>
             <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm tabular-nums">{potentialSurvivors} / yr</span>
           </div>
         </div>
@@ -189,11 +189,11 @@ export const ResuscitationSurvivalFunnel: React.FC<ResuscitationSurvivalFunnelPr
           <div className="flex items-center gap-4 text-[11px] font-mono">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2 bg-rose-500"></span>
-              <span>{agency.name} Actual</span>
+              <span>Profile estimate</span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-0.5 h-3 bg-slate-900 dark:bg-white"></span>
-              <span>CARES 90th %ile Benchmark Tick</span>
+              <span>Scenario reference assumption</span>
             </span>
           </div>
         </div>

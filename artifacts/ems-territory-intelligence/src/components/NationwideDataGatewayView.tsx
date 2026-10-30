@@ -164,24 +164,24 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                LOCAL PROFILES &amp; LIVE PUBLIC-RECORD LOOKUPS
+                LOCAL PROFILES · PUBLIC-SOURCE WORKSPACE
               </span>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                CMS NPPES v2.1 · OpenFEMA AFG v1 · other sources listed for reference
+                NPPES identity and OpenFEMA AFG lookups · other sources listed for reference
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">
-              National Profile &amp; Data-Source Workspace
+              Territory Profile Estimates &amp; Public Source Limits
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-              Local agency profiles and derived metrics may contain modeled or sample values. Cloud storage does not validate them. Only sections explicitly marked as live lookups query public endpoints; each result still needs field-specific review before operational use.
+              Local profiles and derived metrics may contain modeled or sample values; cloud storage does not validate them. This view does not query live federal claims or equipment endpoints. Only sections marked as live lookups query public endpoints. Profile metrics remain estimates unless a field-specific source record is attached. Source review: 2026-10-30; retrieval dates for unverified fields are not recorded.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{agencies.length.toLocaleString()} Local Profiles</span>
+              <span>{agencies.length.toLocaleString()} local profiles · field status varies</span>
             </div>
           </div>
         </div>
@@ -198,10 +198,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           >
             <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white mb-1">
               <Server className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
-              <span>1. State Claims &amp; GADCS Aggregation</span>
+              <span>1. Medicare fee schedule reference</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {stateAggregations.length} States represented in local profiles
+              {stateAggregations.length} jurisdictions · modeled summaries
             </div>
           </button>
 
@@ -356,13 +356,13 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="py-2.5 px-4">State &amp; Region</th>
-                    <th className="py-2.5 px-4 text-right">Loaded Agencies</th>
-                    <th className="py-2.5 px-4 text-right">Cloud Synced</th>
-                    <th className="py-2.5 px-4 text-right">Est. Medicare Claims</th>
-                    <th className="py-2.5 px-4 text-right">Billed Volume</th>
-                    <th className="py-2.5 px-4 text-right">Avg Denial %</th>
-                    <th className="py-2.5 px-4 text-right">Recoverable Rev</th>
-                    <th className="py-2.5 px-4">Data Provenance</th>
+                    <th className="py-2.5 px-4 text-right">Profile records</th>
+                    <th className="py-2.5 px-4 text-right">App sync flag</th>
+                    <th className="py-2.5 px-4 text-right">Medicare claims · estimate</th>
+                    <th className="py-2.5 px-4 text-right">Billed volume · estimate</th>
+                    <th className="py-2.5 px-4 text-right">Denial rate · estimate</th>
+                    <th className="py-2.5 px-4 text-right">Recovery scenario</th>
+                    <th className="py-2.5 px-4">Source status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
@@ -372,15 +372,15 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                         <span className="font-bold text-slate-900 dark:text-white">{s.stateName}</span>
                         <span className="ml-1.5 text-slate-400">({s.stateCode} · {s.region})</span>
                       </td>
-                      <td className="py-3 px-4 text-right text-slate-800 dark:text-slate-200">{s.totalAgencies.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-emerald-700 dark:text-emerald-400 font-bold">{s.cloudSyncedAgencies.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">{s.totalMedicareClaims.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M</td>
-                      <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-400">{s.avgClaimDenialRatePct}%</td>
-                      <td className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">+${(s.totalRecoverableDollars / 1000).toFixed(0)}K</td>
+                      <td className="py-3 px-4 text-right text-slate-800 dark:text-slate-200">{s.totalAgencies.toLocaleString()} profiles</td>
+                      <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-300">{s.cloudSyncedAgencies.toLocaleString()} flagged</td>
+                      <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">{s.totalMedicareClaims.toLocaleString()} modeled</td>
+                      <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M modeled</td>
+                      <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-400">{s.avgClaimDenialRatePct}% modeled</td>
+                      <td className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">+${(s.totalRecoverableDollars / 1000).toFixed(0)}K scenario</td>
                       <td className="py-3 px-4 font-sans">
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          {s.provenanceLabel}
+                          Profile estimate · source not attached
                         </span>
                       </td>
                     </tr>
@@ -701,10 +701,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                Agency Fleet Lifecycle &amp; 5-Year TCO Telemetry ({filteredFleet.length.toLocaleString()} Agencies)
+                Fleet profile baselines &amp; modeled TCO estimates ({filteredFleet.length.toLocaleString()} profiles)
               </h4>
               <p className="text-xs text-slate-500">
-                Derived directly from your synchronized agency records—zero fabricated device serial numbers.
+                Asset ledgers and contract records are not attached to these profiles. Values are estimates; lineage reviewed 2026-10-30.
               </p>
             </div>
             <div className="relative">
@@ -724,12 +724,12 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="py-2.5 px-4">Agency &amp; Jurisdiction</th>
-                  <th className="py-2.5 px-4">Incumbent Monitor Fleet</th>
-                  <th className="py-2.5 px-4 text-right">Fleet Age</th>
-                  <th className="py-2.5 px-4">Warranty Status</th>
-                  <th className="py-2.5 px-4">Contract End</th>
-                  <th className="py-2.5 px-4 text-right">5-Yr Net TCO Savings</th>
-                  <th className="py-2.5 px-4">Provenance</th>
+                  <th className="py-2.5 px-4">Profile fleet · unverified</th>
+                  <th className="py-2.5 px-4 text-right">Age estimate</th>
+                  <th className="py-2.5 px-4">Warranty · unverified</th>
+                  <th className="py-2.5 px-4">Contract end · unverified</th>
+                  <th className="py-2.5 px-4 text-right">5-year TCO scenario</th>
+                  <th className="py-2.5 px-4">Source status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

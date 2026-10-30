@@ -252,7 +252,7 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
           <span>Recommended Next Action to Advance this Deal</span>
         </div>
         <p className="text-slate-700 dark:text-slate-300">
-          Because <strong>Fleet Age (+{explanation.factors[0]?.pointsContributed} pts)</strong> and <strong>Claim Denials (+{explanation.factors[1]?.pointsContributed} pts)</strong> drive the majority of this agency's score, lead with the <strong>Sourcewell Cooperative Contract</strong> to eliminate the RFP cycle, and present the <strong>Real BVM Help & 12-Lead ePCR Billing integration</strong> to address their {agency.cmsData?.claimDenialRate}% Medicare denial rate.
+          The model weights fleet age and denial estimates in this score. Treat those inputs as unverified profile estimates unless source records are attached; CMS ambulance fee files do not report agency denial rates. Lineage reviewed 2026-10-30.
         </p>
       </div>
     </div>

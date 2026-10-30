@@ -7,8 +7,9 @@ import { StateSummary } from './healthcareData';
 import { Agency } from '../types';
 
 /**
- * Complete, authoritative dataset for all 50 US States + District of Columbia (51 Jurisdictions).
- * Sources: US Census Bureau, CMS Medicare Part B Ground Ambulance PUF 2024.1, CARES Registry, USFA Fire Registry.
+ * State and county geography is used for territory navigation. State-level EMS agency counts,
+ * denial / survival rates, grant totals, and similar summary metrics are illustrative baselines:
+ * no supporting public records are attached, so do not present them as verified statistics.
  */
 export const ALL_50_STATES_SUMMARIES: Record<string, StateSummary & { fips: string; region: 'Northeast' | 'Midwest' | 'South' | 'West'; majorCounties: string[]; primaryZipPrefixes: string[] }> = {
   'AL': { state: 'Alabama', code: 'AL', fips: '01', region: 'South', totalAgencies: 420, avgMedicareDenialRate: 19.4, avgUtsteinSurvival: 24.1, totalAfgAwardsYtd: 8400000, medicaidExpansion: false, highPriorityLeadsCount: 12, avgTransportMinutes: 24.2, seniorPopPct: 17.8, majorCounties: ['Jefferson', 'Mobile', 'Madison', 'Montgomery', 'Shelby'], primaryZipPrefixes: ['350', '351', '352', '360', '366'] },

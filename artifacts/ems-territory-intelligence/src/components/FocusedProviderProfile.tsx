@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Agency, LeadStage, FieldNote, KeyContact } from '../types';
-import { matchesExactLegalGeography } from '../data/providerIdentity';
+import { hasVerifiedProviderIdentity, matchesExactLegalGeography } from '../data/providerIdentity';
+import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import {
   ArrowLeft,
   MapPin,
@@ -118,7 +119,6 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
   const googleMapsUri =
     raw.googleMapsUri ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${raw.name}, ${raw.address}`)}`;
-
   const defaultOfficialTitle = isFire ? 'Authorized Municipal Fire Command' : 'Authorized EMS Command Official';
   const nppesOfficialName = raw.nppesOfficialName || '';
   const nppesOfficialTitle = raw.nppesOfficialTitle || '';
@@ -213,28 +213,18 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     avgEdOffloadLatencyMinutes
   };
 
-  // OpenFEMA award rows are historical records; local profile flags remain unverified.
-  const femaGrantHistory = raw.femaGrantHistory || (raw.liveFemaAwards && raw.liveFemaAwards.length > 0
-    ? raw.liveFemaAwards.map((a, idx) => ({
-        fiscalYear: a.fiscalYear || 0,
-        programName: a.programName || 'Assistance to Firefighters Grants (AFG)',
-        purpose: 'Purpose and equipment scope are not provided by this OpenFEMA dataset.',
-        awardAmount: a.awardAmount || 0,
-        status: 'Award record only' as const,
-        applicationRound: a.awardNumber || `Round ${idx + 1}`
-      }))
-    : (raw.grantStatus?.afgAwarded
-        ? [
-            {
-              fiscalYear: raw.grantStatus.afgFiscalYear || 2024,
-              programName: 'FEMA Assistance to Firefighters Grant (AFG)',
-              purpose: raw.grantStatus.afgPurpose || 'Operations & Safety — Defibrillator Upgrade',
-              awardAmount: raw.grantStatus.afgAwardAmount || 0,
-              status: 'Unverified profile claim' as const,
-              applicationRound: raw.grantStatus.afgAwardNumber || 'Active Obligation'
-            }
-          ]
-        : []));
+  // Only expose an award in history when recipient and award data match a public record.
+  const matchedAfgAward = findExactFemaAfgAward(raw);
+  const femaGrantHistory = matchedAfgAward ? [{
+    fiscalYear: matchedAfgAward.programYear ?? matchedAfgAward.fiscalYear,
+    programName: matchedAfgAward.programActivity ?? matchedAfgAward.programName,
+    purpose: 'Purpose not included in the available award record fields.',
+    awardAmount: matchedAfgAward.federalShareAwarded ?? matchedAfgAward.awardAmount,
+    awardDate: matchedAfgAward.awardDate,
+    status: 'Awarded (OpenFEMA record)' as const,
+    applicationRound: matchedAfgAward.awardNumber
+  }] : [];
+
 
   const denialCode = raw.cmsData?.topDenialReasonCode || 'CO-16';
   const denialReasonLookup: Record<string, string> = {
@@ -287,7 +277,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     },
     installedFleet: {
       ...(raw.installedFleet || {}),
-      defibBrand: raw.installedFleet?.defibBrand || 'Stryker LIFEPAK 15',
+      defibBrand: raw.installedFleet?.defibBrand || 'Unverified equipment',
       defibAgeYears: raw.installedFleet?.defibAgeYears ?? 7.5,
       defibUnitsCount: raw.installedFleet?.defibUnitsCount ?? Math.max(4, totalAmbulances),
       defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Expired - T&M Service',
@@ -307,8 +297,8 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
       salesStage: raw.zollOpportunity?.salesStage || 'Target Lead',
       probabilityPct: raw.zollOpportunity?.probabilityPct ?? 65,
       clinicalBenefitNarrative: raw.zollOpportunity?.clinicalBenefitNarrative || 'Real BVM Help® + See-Thru CPR® targets AHA CCF >80% and peri-shock pause <10s.',
-      financialRoiNarrative: raw.zollOpportunity?.financialRoiNarrative || 'Sourcewell #041823-ZOL 5-year TCO cap + automated NEMSIS v3.5.0 claim scrubbing.',
-      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Deterministic 5-factor PulseIQ index derived from fleet age, CMS denials, OHCA acuity, and AFG liquidity.',
+      financialRoiNarrative: 'Modeled ROI narrative only; no agency-specific denial, recovery, or realized savings record is attached. Review source billing and contract records before use.',
+      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Modeled priority index using unverified profile baselines; no source records attached.',
       scoreBreakdown: {
         clinicalAcuityPts: raw.zollOpportunity?.scoreBreakdown?.clinicalAcuityPts ?? 18,
         fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts ?? 21,
@@ -694,51 +684,52 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       whyItMatters: `Frontline monitor fleet exceeds optimal capital replacement age; renewal window opens ${agency.competitorContract.renewalWindowDays} days prior to expiration.`,
       nextActionLabel: 'Inspect equipment',
       targetTopic: 'equipment' as ProfileSection,
-      sourceBadge: 'USFA service record'
+      sourceBadge: 'Unverified equipment estimate'
     },
     {
       id: 'intel-purchasing',
       category: 'Purchasing & grant liquidity',
-      primaryFact: agency.grantStatus.afgAwarded
-        ? `${formatCurrency(agency.grantStatus.afgAwardAmount)} FEMA AFG award (FY${agency.grantStatus.afgFiscalYear})`
-        : 'Sourcewell #041823-ZOL & HGACBuy #EE08-24 eligible',
+      primaryFact: agency.femaGrantHistory?.[0]
+        ? `${formatCurrency(agency.femaGrantHistory[0].awardAmount)} matched OpenFEMA AFG award (FY${agency.femaGrantHistory[0].fiscalYear})`
+        : 'No exact OpenFEMA award match; profile award status is unverified',
       secondaryFact: `${formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })} projected 5-year TCO savings`,
       whyItMatters: `Pre-competed cooperative contracts and trade-in credits (${formatCurrency(customTradeInCredit)}/unit) bypass typical municipal RFP cycles.`,
       nextActionLabel: 'Review purchasing',
       targetTopic: 'purchasing' as ProfileSection,
-      sourceBadge: 'OpenFEMA AFG & TCO model'
+      sourceBadge: agency.femaGrantHistory?.[0] ? 'Recipient and award matched · OpenFEMA' : 'Unverified · no matched OpenFEMA record'
     },
     {
       id: 'intel-clinical-cms',
       category: 'Medicare & resuscitation impact',
-      primaryFact: `${formatPercent(agency.cmsData.claimDenialRate)} CMS claim denials (${agency.cmsData.topDenialReasonCode})`,
+      primaryFact: `${formatPercent(agency.cmsData.claimDenialRate)} estimated denial rate (${agency.cmsData.topDenialReasonCode || 'reason unverified'})`,
       secondaryFact: `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} estimated recovery scenario`,
       whyItMatters: `Automated NEMSIS v3.5.0 waveform documentation recaptures denied Medicare revenue while Real BVM Help® targets AHA CCF >80%.`,
       nextActionLabel: 'Inspect Medicare',
       targetTopic: 'medicare' as ProfileSection,
-      sourceBadge: 'CMS Part B PUF & NEMSIS'
+      sourceBadge: 'Unverified profile estimate · CMS has no agency denial file'
     }
   ];
 
   // Comprehensive Evidence-Backed Account Assessment
   const accountAssessment = useMemo(() => {
     const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
-    const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
-    const grantAmt = agency.grantStatus?.afgAwardAmount ?? 0;
-    const defibBrand = agency.installedFleet?.defibBrand || 'Frontline Monitor';
+    const matchedGrant = agency.femaGrantHistory?.[0];
+    const hasGrant = Boolean(matchedGrant);
+    const grantAmt = matchedGrant?.awardAmount ?? 0;
+    const defibBrand = agency.installedFleet?.defibBrand || 'Unverified equipment';
     const defibAge = agency.installedFleet?.defibAgeYears ?? 7;
     const defibCount = agency.installedFleet?.defibUnitsCount ?? Math.max(2, agency.totalAmbulances);
-    const contractEnd = agency.competitorContract?.contractEndDate || '2026-09-30';
+    const contractEnd = agency.competitorContract?.contractEndDate || 'Not recorded';
     const denialRate = agency.cmsData?.claimDenialRate ?? 14;
     const hasNotes = Array.isArray(agency.fieldNotes) && agency.fieldNotes.length > 0;
     const topNote = hasNotes ? agency.fieldNotes[0] : null;
 
     // 1. What Is Known About the Organization
     const whatIsKnown = [
-      `Operates ${agency.totalAmbulances} frontline ambulances${agency.totalFireEngines > 0 ? ` and ${agency.totalFireEngines} fire engines` : ''} across ${agency.stationsCount} stations, serving ${agency.populationServed.toLocaleString()} residents.`,
-      `Installed monitor-defibrillator fleet: ${defibCount}× ${defibBrand} units (average age ${defibAge} years, ${agency.installedFleet?.defibWarrantyStatus || 'Expired Warranty'}).`,
-      `Federal registry identity: Verified CMS NPI #${agency.npiNumber || 'Registered'} and USFA FDID ${agency.fdid}. Primary CMS taxonomy ${agency.taxonomyCode || '341600000X'}.`,
-      `Documented operational volume: ${agency.annual911Transports.toLocaleString()} transports and ${agency.annualCardiacArrestCalls} cardiac arrest calls per year.`
+      `Unverified profile estimate: ${agency.totalAmbulances} ambulances${agency.totalFireEngines > 0 ? ` and ${agency.totalFireEngines} fire engines` : ''} across ${agency.stationsCount} stations, serving ${agency.populationServed.toLocaleString()} residents.`,
+      `Unverified equipment profile: ${defibCount}× ${defibBrand} units (estimated age ${defibAge} years; warranty not source-confirmed).`,
+      `NPI / FDID values are directory candidates only unless matched to a linked, agency-specific registry record. NPI presence does not verify operations or equipment.`,
+      `Unverified operational profile: ${agency.annual911Transports.toLocaleString()} estimated transports and ${agency.annualCardiacArrestCalls} estimated cardiac arrest calls per year.`
     ];
 
     // 2. Developments That Matter
@@ -747,13 +738,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       developmentsThatMatter.push(`Active field relationship: Logged ${topNote.meetingType} on ${topNote.date}. Next action committed: "${topNote.nextAction || 'Follow up with leadership'}".`);
     }
     if (hasGrant && grantAmt > 0) {
-      developmentsThatMatter.push(`Active capital grant liquidity: FEMA AFG Award FY${agency.grantStatus?.afgFiscalYear || 2024} of $${Math.round(grantAmt / 1000)}K allocated for operational equipment upgrades.`);
+      developmentsThatMatter.push(`Matched OpenFEMA AFG award: $${Math.round(grantAmt / 1000)}K for FY${matchedGrant?.fiscalYear}; the award record purpose is ${matchedGrant?.purpose || 'not reported'}.`);
     }
     if (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon') {
       developmentsThatMatter.push(`Incumbent service contract renewal window: Contract ends ${contractEnd}. Opportunity to avoid multi-year maintenance cost locks via cooperative purchasing.`);
     }
     if (denialRate >= 18) {
-      developmentsThatMatter.push(`Elevated Medicare Part B claim denial exposure: ${denialRate}% denials (${agency.cmsData?.topDenialReasonCode || 'CO-16'}), representing an estimated +$${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000)}K/yr unrecovered claim pool.`);
+      developmentsThatMatter.push(`Modeled denial exposure: ${denialRate}% is a profile estimate, not a CMS agency-level denial record. Any recovery amount requires verified billing records.`);
     }
     if (developmentsThatMatter.length === 0) {
       developmentsThatMatter.push(`Standard lifecycle replacement window: Defibrillator fleet approaching normal municipal replacement schedule. Department eligible for Sourcewell and HGACBuy cooperative purchasing.`);
@@ -779,9 +770,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveEvidence = `My Work Field Visit Note (${topNote.date})`;
       primaryMoveNextStep = 'Log Station Note';
     } else if (hasGrant && grantAmt > 0) {
-      primaryMoveAction = `Align ZOLL Solution Package to $${Math.round(grantAmt / 1000)}K FEMA AFG Grant`;
+      primaryMoveAction = `Review matched $${Math.round(grantAmt / 1000)}K FEMA AFG award`;
       primaryMoveWhy = `Provide compliant equipment specifications and quote before the federal award expenditure period closes.`;
-      primaryMoveEvidence = `OpenFEMA AFG Award #${agency.grantStatus?.afgAwardNumber || 'Active'} · FY${agency.grantStatus?.afgFiscalYear || 2024}`;
+      primaryMoveEvidence = `OpenFEMA record #${matchedGrant?.applicationRound || 'number not provided'} · FY${matchedGrant?.fiscalYear}`;
       primaryMoveNextStep = 'Generate Co-Op RFP';
     } else if (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon') {
       primaryMoveAction = `Review Service Contract Notice Ahead of ${contractEnd} Renewal`;
@@ -790,8 +781,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveNextStep = 'Review Purchasing';
     } else if (denialRate >= 18) {
       primaryMoveAction = `Present Medicare Denial Recovery & NEMSIS Documentation Strategy`;
-      primaryMoveWhy = `Show how automated 12-lead ePCR transmission reduces ${agency.cmsData?.topDenialReasonCode || 'CO-16'} denials by an estimated +$${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000)}K/yr.`;
-      primaryMoveEvidence = `CMS Part B Ground Ambulance PUF (Calendar Year Census)`;
+      primaryMoveWhy = 'Review the agency’s own claims and billing records before discussing a modeled recovery scenario.';
+      primaryMoveEvidence = 'CMS AFS PUF publishes fee rates, not provider-specific claims or denial rates.';
       primaryMoveNextStep = 'Inspect Medicare';
     }
 
@@ -941,6 +932,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
         {/* Main Account 360 Workspace Content */}
         <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3.5">
+            <div className="text-xs leading-relaxed text-amber-950 dark:text-amber-200">
+              <strong>Source status:</strong> Operational, equipment, contract, clinical and financial profile values are unverified estimates unless a field-specific agency record is attached. Lineage reviewed 2026-10-30; retrieval dates are shown as unavailable when not recorded.
+            </div>
+            {onOpenDataLineage && (
+              <button type="button" onClick={() => onOpenDataLineage(agency)} className="shrink-0 text-xs font-semibold text-amber-900 dark:text-amber-100 underline underline-offset-2">
+                View field sources and dates
+              </button>
+            )}
+          </div>
           {/* ----------------------------------------------------------------
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ---------------------------------------------------------------- */}
@@ -1057,7 +1058,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
                     <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Frontline apparatus &amp; stations
+                      Frontline apparatus &amp; stations · estimate
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
                       {agency.totalAmbulances} {agency.totalAmbulances === 1 ? 'ambulance' : 'ambulances'}{agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} ${agency.totalFireEngines === 1 ? 'engine' : 'engines'}` : ''}
@@ -1073,7 +1074,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
                     <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Annual emergency volume
+                      Annual emergency volume · estimate
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
                       {formatInteger(agency.annual911Transports)} transports / yr
@@ -1158,7 +1159,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>Account Assessment</span>
                   </h2>
                   <p className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                    Mixed-source profile assessment. Many operational, financial, and equipment fields are estimates or unverified; review field-level evidence before relying on them.
+                    Public registry links provide context, not proof of agency operations. Operational, financial, clinical, equipment and contract values are estimates unless their field lineage shows an attached agency record.
                   </p>
                 </div>
 
@@ -1178,7 +1179,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#14283F] dark:text-white">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>1. What is known</span>
+                    <span>1. Profile values · unverified</span>
                   </div>
                   <ul className="space-y-1.5 text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
                     {accountAssessment.whatIsKnown.map((item, idx) => (
@@ -1351,7 +1352,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Actuarial sensitivity model ({actuarialForecast.units} frontline units)
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      PulseIQ ({agency.zollOpportunity.pulseIqScore}/100) = Fleet ({agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts}/25) + CMS denials ({agency.zollOpportunity.scoreBreakdown.cmsFinancialPts}/20) + Acuity ({agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts}/20) + Grants ({agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts}/20) + Software ({agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts}/15)
+                  PulseIQ model ({agency.zollOpportunity.pulseIqScore}/100) = Fleet estimate ({agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts}/25) + Denial estimate ({agency.zollOpportunity.scoreBreakdown.cmsFinancialPts}/20) + Acuity estimate ({agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts}/20) + Grant profile ({agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts}/20) + Software estimate ({agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts}/15)
                     </div>
                   </div>
                 </div>
@@ -1505,9 +1506,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <span className="font-mono text-[10px] uppercase tracking-wider text-[#285EE8] dark:text-blue-400 font-semibold">
                         {contact.role}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>Verified Official</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                        <span>Profile contact · not source-verified</span>
                       </span>
                     </div>
                     <div className="text-base font-bold text-[#14283F] dark:text-white">
@@ -1552,11 +1552,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>Agency Profile Values &amp; Operational Baseline</span>
                   </div>
                   <h3 className="text-lg font-bold text-[#111827] mt-0.5">
-                    Hardware, operational volume &amp; contract profile fields
+                    Profile baselines · hardware, operations and contract fields need agency source records
                   </h3>
                 </div>
                 <div className="text-xs font-mono font-semibold px-3 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
-                  Source status shown beside each value
+                  Unverified profile values · source status shown beside each value
                 </div>
               </div>
 
@@ -1600,23 +1600,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </div>
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Annual 911 calls</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Estimated annual 911 calls</span>
                       <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{(agency.annualCallVolume || agency.annual911Transports).toLocaleString()}<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCallVolume" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Annual cardiac arrests</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Estimated cardiac arrests</span>
                       <strong className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 tabular-nums">{agency.annualCardiacArrestCalls.toLocaleString()} runs<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCardiacArrestCalls" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Utstein survival rate</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Utstein survival · unverified</span>
                       <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{agency.utsteinSurvivalRate}%<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="utsteinSurvivalRate" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Active ambulances</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Ambulances · estimate</span>
                       <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{agency.totalAmbulances} units<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalAmbulances" /></strong>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-[#53657B] dark:text-slate-400">Fire suppression engines</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Fire engines · estimate</span>
                       <strong className="text-slate-900 dark:text-white tabular-nums">{agency.totalFireEngines} units</strong>
                     </div>
                   </div>
@@ -1629,30 +1629,35 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </div>
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Contract end date</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Contract end · unverified</span>
                       <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{agency.competitorContract.contractEndDate}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Contract status</span>
+                      <span className="text-[#53657B] dark:text-slate-400">Contract status · unverified</span>
                       <strong className="text-slate-900 dark:text-white">{agency.competitorContract.status}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Medicare claim denials</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{agency.cmsData.claimDenialRate}% denied</strong>
+                      <span className="text-[#53657B] dark:text-slate-400">Estimated denial rate · unverified</span>
+                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{agency.cmsData.claimDenialRate}% modeled</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Lost claim revenue</span>
-                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">+{formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true })}</strong>
+                      <span className="text-[#53657B] dark:text-slate-400">Projected claim recovery · model</span>
+                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">+{formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true })} modeled</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">FEMA AFG grants</span>
                       <strong className="text-slate-900 truncate max-w-[160px]">
-                        {agency.grantStatus.afgAwarded ? `$${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K (FY${agency.grantStatus.afgFiscalYear})` : 'Eligible Candidate'}
+                        {agency.grantStatus.afgAwarded
+                          ? `Profile-reported $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K · no matching OpenFEMA record`
+                          : 'No matched award record'}
                       </strong>
                     </div>
                   </div>
                 </div>
               </div>
+              <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+                Source records are not attached for these values. Public references explain what can be checked: <a className="text-blue-700 dark:text-blue-400 underline" href="https://apps.usfa.fema.gov/registry/download" target="_blank" rel="noreferrer">USFA department registry</a> (IDs, station counts and staffing; no apparatus inventory), <a className="text-blue-700 dark:text-blue-400 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS public data</a> (de-identified, not agency-specific), <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS ambulance fee schedules</a> (not actual claim denials), and <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1" target="_blank" rel="noreferrer">OpenFEMA AFG awards</a>. Lineage review date: 2026-10-30; agency record retrieval dates were not recorded.
+              </p>
             </section>
           )}
 
@@ -2038,14 +2043,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">01. Medicare</span>
-                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicarePayerPct}% of Runs <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicarePayerPct" /></span>
+                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicarePayerPct}% profile estimate <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicarePayerPct" /></span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-[#0F172A] h-full rounded-full" style={{ width: `${agency.cmsData.medicarePayerPct}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5 font-mono tabular-nums">
-                      <div>Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicareBilledAnnual.toLocaleString()}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareBilledAnnual" /></div>
-                      <div>Annual Allowed: <strong className="text-[#0F172A]">${agency.cmsData.medicareAllowedAnnual.toLocaleString()}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareAllowedAnnual" /></div>
+                      <div>Annual billed: <strong className="text-[#0F172A]">{agency.cmsData.isVerifiedCmsClaims && agency.cmsData.claimsSourceDoc ? formatCurrency(agency.cmsData.medicareBilledAnnual) : 'Not verified · hidden'}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareBilledAnnual" /></div>
+                      <div>Annual allowed: <strong className="text-[#0F172A]">{agency.cmsData.isVerifiedCmsClaims && agency.cmsData.claimsSourceDoc ? formatCurrency(agency.cmsData.medicareAllowedAnnual) : 'Not verified · hidden'}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareAllowedAnnual" /></div>
+                      <div className="pt-1 text-[10px] leading-4 text-slate-500">CMS AFS PUF reports CY2026 fee rates, not provider-specific claims or denials. Profile source retrieval date not recorded.</div>
                     </div>
                   </div>
 
@@ -2690,20 +2696,22 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     FEMA Assistance to Firefighters Grant (AFG)
                   </div>
                   <div className="text-base font-bold text-slate-900 dark:text-white">
-                    {agency.grantStatus.afgAwarded ? (
+                    {agency.femaGrantHistory?.[0] ? (
                       <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-mono tabular-nums">
                         <CheckCircle2 className="w-4 h-4" />
-                      <span>Profile claims an award: ${(agency.grantStatus.afgAwardAmount || 0).toLocaleString()} (FY {agency.grantStatus.afgFiscalYear})</span>
+                        <span>OpenFEMA award: ${agency.femaGrantHistory[0].awardAmount.toLocaleString()} (FY {agency.femaGrantHistory[0].fiscalYear})</span>
                       </span>
                     ) : (
-                      <span className="text-slate-900 dark:text-white">No award claim in local profile; eligibility not checked</span>
+                      <span className="text-slate-900 dark:text-white">Unverified — no matched OpenFEMA award record</span>
                     )}
                     <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgAwarded" />
                     <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgAwardAmount" />
                     <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgFiscalYear" />
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Profile-reported purpose (unverified): <strong className="text-slate-900 dark:text-white">{agency.grantStatus.afgPurpose || 'Not recorded'}</strong>
+                    {agency.femaGrantHistory?.[0]
+                      ? <>Public award purpose: <strong className="text-slate-900 dark:text-white">{agency.femaGrantHistory[0].purpose}</strong></>
+                      : <>Unverified profile purpose: <strong className="text-slate-900 dark:text-white">{agency.grantStatus.afgPurpose || 'Not recorded'}</strong></>}
                     <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgPurpose" />
                   </p>
                 </div>
@@ -2838,9 +2846,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                         <th className="py-2.5 px-4">Fiscal Year</th>
                         <th className="py-2.5 px-4">Federal Grant Program</th>
-                        <th className="py-2.5 px-4">Scope</th>
-                        <th className="py-2.5 px-4 text-right">Recorded amount</th>
-                        <th className="py-2.5 px-4 text-right">Local Match</th>
+                        <th className="py-2.5 px-4">Approved Equipment &amp; Operational Scope</th>
+                        <th className="py-2.5 px-4 text-right">Federal Award</th>
+                        <th className="py-2.5 px-4 text-right">Award date</th>
                         <th className="py-2.5 px-4 text-right">Status</th>
                       </tr>
                     </thead>
@@ -2851,10 +2859,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                           <td className="py-2.5 px-4 font-bold text-[#1E3A8A]">{g.programName}</td>
                           <td className="py-2.5 px-4 text-slate-700 max-w-md">{g.purpose}</td>
                           <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-700">${g.awardAmount.toLocaleString()}</td>
-                          <td className="py-2.5 px-4 text-right font-mono text-slate-600">{g.localMatchAmount === undefined ? 'Not in source' : `$${g.localMatchAmount.toLocaleString()} (${100 - (g.federalSharePct ?? 0)}%)`}</td>
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-600">{g.awardDate || 'Date not reported'}</td>
                           <td className="py-2.5 px-4 text-right font-semibold">
                             <span className={`px-2 py-0.5 rounded-md ${
-                              g.status === 'Award record only'
+                              g.status === 'Award record only' || g.status === 'Awarded (OpenFEMA record)'
                                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                 : g.status === 'Unverified profile claim'
                                   ? 'bg-amber-50 text-amber-800 border border-amber-200'
@@ -3023,11 +3031,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td className="font-semibold text-[#14283F] dark:text-white">Provider Identity &amp; NPI</td>
                     <td className="pi-metric-id">NPI {agency.npiNumber} · Taxonomy {agency.taxonomyCode}</td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        {agency.isVerifiedRecord && agency.npiNumber ? 'NPPES identity match only' : 'Unverified profile value'}
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        hasVerifiedProviderIdentity(agency)
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {hasVerifiedProviderIdentity(agency) ? 'NPPES identity matched' : 'Directory candidate · identity unverified'}
                       </span>
                     </td>
-                    <td>U.S. HHS CMS NPPES Provider Registry</td>
+                    <td>NPPES registry · refreshed daily; this profile retrieval date not recorded</td>
                     <td>
                       <a
                         href={agency.nppesRegistryUrl}
@@ -3044,11 +3056,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td className="font-semibold text-[#14283F] dark:text-white">Department FDID &amp; Stations</td>
                     <td className="pi-metric-id">FDID {agency.fdid} · <span className="pi-data-inline font-normal">{agency.stationsCount} Stations</span></td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        {agency.isFdidVerified ? 'FDID only; stations unverified' : 'Unverified profile values'}
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        agency.isOperationalDataVerified && agency.operationsSourceDoc
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {agency.isOperationalDataVerified && agency.operationsSourceDoc ? 'Agency record attached' : 'Profile entry · source not attached'}
                       </span>
                     </td>
-                    <td>U.S. Fire Administration (USFA) National Registry</td>
+                    <td>USFA registry · updated 2026-06-11; this profile retrieval date not recorded</td>
                     <td>
                       <a
                         href={agency.usfaRegistryUrl || 'https://apps.usfa.fema.gov/registry/'}
@@ -3062,18 +3078,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </td>
                   </tr>
                   <tr>
-                    <td className="font-semibold text-[#14283F] dark:text-white">FEMA AFG profile claim</td>
+                    <td className="font-semibold text-[#14283F] dark:text-white">FEMA AFG award status</td>
                     <td className="pi-data-table font-semibold">
-                      {agency.grantStatus.afgAwarded
-                        ? `${formatCurrency(agency.grantStatus.afgAwardAmount, { compact: false })} (FY${agency.grantStatus.afgFiscalYear})`
-                        : 'No award claim in profile'}
+                      {agency.femaGrantHistory?.[0]
+                        ? `${formatCurrency(agency.femaGrantHistory[0].awardAmount, { compact: false })} (FY${agency.femaGrantHistory[0].fiscalYear})`
+                        : 'Unverified · no matched award'}
                     </td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        Unverified; no row linked
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        agency.femaGrantHistory?.[0]
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {agency.femaGrantHistory?.[0] ? 'Recipient and award matched' : 'No record matched'}
                       </span>
                     </td>
-                    <td>OpenFEMA AFG dataset v1; does not include SAFER</td>
+                    <td>
+                      OpenFEMA AFG · award date {agency.femaGrantHistory?.[0]?.awardDate || 'not reported'} · profile retrieval date not recorded
+                    </td>
                     <td>
                       <a
                         href="https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants"
@@ -3088,16 +3110,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Medicare Part B Ambulance Volume</td>
-                    <td className="pi-data-table font-semibold text-emerald-700">{formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false })}</td>
+                    <td className="pi-data-table font-semibold text-emerald-700">
+                      {agency.cmsData?.isVerifiedCmsClaims && agency.cmsData?.claimsSourceDoc
+                        ? formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false })
+                        : 'Not verified · value hidden'}
+                    </td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        No provider-level CMS row linked
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        agency.cmsData?.isVerifiedCmsClaims && agency.cmsData?.claimsSourceDoc
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {agency.cmsData?.isVerifiedCmsClaims && agency.cmsData?.claimsSourceDoc ? 'Agency claims record attached' : 'No agency claims record'}
                       </span>
                     </td>
-                    <td>CMS Medicare Provider Utilization &amp; Payment PUF</td>
+                    <td>CMS AFS PUF · CY2026 fee rates only; profile record retrieval date not recorded</td>
                     <td>
                       <a
-                        href="https://data.cms.gov"
+                        href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#285EE8] hover:underline inline-flex items-center gap-1 font-semibold"
@@ -3315,7 +3345,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   3. Modeled vs. Empirical Disclosure
                 </div>
                 <p className="text-[#53657B] dark:text-slate-400 leading-relaxed">
-                  5-year TCO savings (+${(actuarialForecast.fiveYrTcoBase / 1000).toFixed(0)}K) and CO-16 claim recovery forecasts (+${(actuarialForecast.annualRecoveryBase / 1000).toFixed(0)}K/yr) are deterministic actuarial estimates based on Sourcewell #041823-ZOL pricing and CMS Part B denial benchmarks.
+                  5-year TCO and claim recovery are modeled scenarios, not source-verified savings. No agency quote, pricing schedule, or CMS agency denial record is attached. Lineage reviewed 2026-10-30.
                 </p>
               </div>
             </div>

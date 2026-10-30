@@ -105,13 +105,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return {
         count: 0,
         countiesCount,
-        avgPulseIq: 72,
-        totalAmbulances: 42,
-        totalFireEngines: 68,
-        medicareAllowed: activeStateSummary?.totalAgencies 
-          ? activeStateSummary.totalAgencies * 450000 
-          : 540000,
-        grantFunds: activeStateSummary?.totalAfgAwardsYtd || 1250000
+        avgPulseIq: 0,
+        totalAmbulances: 0,
+        totalFireEngines: 0,
+        medicareAllowed: 0,
+        verifiedMedicareRecords: 0,
+        grantFunds: 0
       };
     }
 
@@ -119,13 +118,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     let ambulances = 0;
     let fireEngines = 0;
     let medicare = 0;
+    let verifiedMedicareRecords = 0;
     let grants = 0;
 
     for (const a of stateAgencies) {
       sumPulseIq += a.zollOpportunity?.pulseIqScore || 0;
       ambulances += a.totalAmbulances || 0;
       fireEngines += a.totalFireEngines || 0;
-      medicare += a.cmsData?.medicareAllowedAnnual || 0;
+      if (a.cmsData?.isVerifiedCmsClaims && a.cmsData.claimsSourceDoc) {
+        medicare += a.cmsData.medicareAllowedAnnual || 0;
+        verifiedMedicareRecords += 1;
+      }
       if (a.grantStatus?.afgAwarded) {
         grants += a.grantStatus.afgAwardAmount || 0;
       }
@@ -138,6 +141,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       totalAmbulances: ambulances,
       totalFireEngines: fireEngines,
       medicareAllowed: medicare,
+      verifiedMedicareRecords,
       grantFunds: grants
     };
   }, [scopedAgencies, displayStateCode, activeStateSummary]);
@@ -166,7 +170,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               Your Territory. Your Next Move.
             </h1>
             <p className="pi-supporting">
-              Interactive 50-state map with public-record references and territory estimates. Confirm agency identity, equipment, contracts, and performance data with primary sources before acting.
+              Public-source references and territory estimates. Provider operations, equipment, denials, and reimbursement remain unverified unless a source record is attached.
             </p>
           </div>
 
@@ -290,7 +294,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <span>Interactive U.S. Territory Map</span>
             </h2>
             <p className="pi-supporting mt-0.5">
-              Choose a state or region to inspect county counts, equipment estimates, and candidate EMS &amp; Fire records. Verify agency status and operations with primary sources.
+              Choose a state or region to inspect county boundaries and directory profiles. Operational and financial profile values are estimates until verified against a cited agency record.
             </p>
           </div>
 
@@ -349,7 +353,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
                     const isHovered = hoveredStateCode === st.code;
-                    const isHighDenial = st.avgMedicareDenialRate >= 19.5;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
 
                     const fillColor = isSelected
@@ -358,9 +361,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         ? '#194BC8'
                         : !isInRegion
                           ? '#F1F5F9'
-                          : isHighDenial
-                            ? '#DBEAFE'
-                            : '#E2E8F0';
+                          : '#E2E8F0';
 
                     const strokeColor = isSelected
                       ? '#FFFFFF'
@@ -503,19 +504,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Modeled avg PulseIQ
+                    <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
+                      Modeled avg PulseIQ
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card">
                     {formatScore(stateStats.avgPulseIq)}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Reference denial estimate
+                    <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
+                      Agency denial rate
                   </span>
                   <span className="font-semibold text-amber-600 dark:text-amber-400 text-base pi-metric-card">
-                    {formatPercent(activeStateSummary.avgMedicareDenialRate)}
+                      Not publicly available
                   </span>
                 </div>
               </div>
@@ -523,25 +524,25 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               {/* Apparatus Fleet & Grant Funding Overview */}
               <div className="space-y-2 text-xs border-t border-[#DFE6EF] dark:border-[#1E2D42] pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated ambulances:</span>
+                  <span className="text-[#53657B] dark:text-slate-400">Profile ambulance estimate:</span>
                   <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {formatInteger(stateStats.totalAmbulances)} units
+                    {stateStats.count ? `${formatInteger(stateStats.totalAmbulances)} units` : '—'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated fire engines:</span>
+                  <span className="text-[#53657B] dark:text-slate-400">Profile engine estimate:</span>
                   <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {formatInteger(stateStats.totalFireEngines)} apparatus
+                    {stateStats.count ? `${formatInteger(stateStats.totalFireEngines)} apparatus` : '—'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated Medicare allowed:</span>
+                  <span className="text-[#53657B] dark:text-slate-400">Verified Medicare allowed:</span>
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400 pi-data-number">
-                    {formatCurrency(stateStats.medicareAllowed)}
+                    {stateStats.verifiedMedicareRecords ? formatCurrency(stateStats.medicareAllowed) : 'Not available'}
                   </span>
                 </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  Territory metrics are reference estimates unless a field is individually verified from a cited primary source.
+                  Ambulance / engine totals: profile estimates, source record not attached · reviewed 2026-10-30. Denial rates: no agency-level public source. Verified Medicare totals require an attached agency claims record.
                 </p>
               </div>
 
@@ -675,7 +676,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             {
               id: 'claims',
               title: 'Medicare Claims & Payer Mix',
-              desc: 'CMS Ground Ambulance Cost Data (GADCS), Medicare allowed PUF & denial recovery',
+              desc: 'CMS Ambulance Fee Schedule PUF · fee rates only, not provider claim or denial data',
               icon: DollarSign,
               badge: 'CMS Data'
             },

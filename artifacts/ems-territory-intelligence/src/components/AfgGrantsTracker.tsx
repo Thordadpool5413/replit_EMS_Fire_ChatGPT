@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useGetAfgGrants } from '@workspace/api-client-react';
 import { Agency } from '../types';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
+import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import { Award, ChevronRight, ExternalLink, Filter, RefreshCw, ShieldCheck } from 'lucide-react';
 import { formatCurrency, formatInteger, formatScore } from '../utils/numberFormatting';
 
@@ -18,6 +19,10 @@ interface LiveOpenFemaRecord {
   programName: string;
   awardAmount: number;
   fiscalYear: number;
+  programActivity?: string;
+  federalShareAwarded?: number;
+  awardDate?: string;
+  programYear?: number;
 }
 
 interface AfgGrantsTrackerProps {
@@ -54,6 +59,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
     const response = afgQuery.data as unknown as { awards?: unknown[]; grants?: unknown[] } | undefined;
     return response?.awards ?? response?.grants ?? [];
   }, [afgQuery.data]);
+  const femaFetchedAt = (afgQuery.data as unknown as { fetchedAt?: string } | undefined)?.fetchedAt;
   const liveFemaAwards = useMemo(() => rawAwardRows.map((item, index) => {
     const row = item as Record<string, unknown>;
     const getText = (...keys: string[]) => {
@@ -63,15 +69,20 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
       }
       return '';
     };
-    const amount = Number(row.awardAmount ?? 0);
+    const amount = Number(row.federalShareAwarded ?? row.awardAmount ?? 0);
+    const fiscalYear = Number(row.programYear ?? row.fiscalYear ?? 0);
     return {
       id: getText('id', 'awardNumber', 'award') || `award-${index}`,
       awardNumber: getText('awardNumber', 'award', 'grantNumber') || 'Award number not provided',
       grantee: getText('grantee') || 'Recipient name not provided',
       stateCode: getText('stateCode'),
-      programName: getText('programName') || 'Program name not provided',
+      programName: getText('programActivity', 'programName') || 'Program name not provided',
       awardAmount: Number.isFinite(amount) ? amount : 0,
-      fiscalYear: Number(row.fiscalYear ?? 0)
+      fiscalYear: Number.isFinite(fiscalYear) ? fiscalYear : 0,
+      programActivity: getText('programActivity') || undefined,
+      federalShareAwarded: Number.isFinite(amount) ? amount : undefined,
+      awardDate: getText('awardDate') || undefined,
+      programYear: Number.isFinite(fiscalYear) ? fiscalYear : undefined
     } satisfies LiveOpenFemaRecord;
   }), [rawAwardRows, femaQueryState]);
   const PAGE_SIZE = 50;
@@ -108,8 +119,8 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
   const isLoadingFema = afgQuery.isLoading || afgQuery.isFetching;
 
   const grantedAgencies = useMemo(() => {
-    return agencies.filter(a => {
-      if (!a.grantStatus.afgAwarded) return false;
+    const base = agencies.filter(a => {
+      if (!findExactFemaAfgAward(a)) return false;
       if (selectedState !== 'all' && a.stateCode !== selectedState) return false;
       if (selectedCounty !== 'all') {
         const cleanTarget = selectedCounty.replace(/\s+(County|Parish|Borough)$/i, '').toLowerCase();
@@ -121,10 +132,17 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
       if (selectedCategory === 'fire' && !a.agencyType.toLowerCase().includes('fire')) return false;
       return true;
     });
+    return base;
   }, [agencies, selectedState, selectedCounty, selectedCity, selectedCategory]);
 
   const totalAwarded = useMemo(() => {
-    return grantedAgencies.reduce((acc, a) => acc + a.grantStatus.afgAwardAmount, 0);
+    return grantedAgencies.reduce(
+      (acc, a) => {
+        const award = findExactFemaAfgAward(a);
+        return acc + (award?.federalShareAwarded ?? award?.awardAmount ?? 0);
+      },
+      0,
+    );
   }, [grantedAgencies]);
 
   const totalPages = Math.max(1, Math.ceil(grantedAgencies.length / PAGE_SIZE));
@@ -144,6 +162,9 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               <span>FEMA Assistance to Firefighters Grants (AFG) &middot; OpenFEMA API v1</span>
               <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                 Federal source records
+              </span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                Retrieved {femaFetchedAt ? new Date(femaFetchedAt).toISOString().replace('T', ' ').slice(0, 19) + ' UTC' : 'date not recorded'}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1.5 tracking-tight">
@@ -338,16 +359,16 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
 
                   <td className="py-3.5 px-3 text-right">
                     <div className="font-semibold text-emerald-700 dark:text-emerald-400 pi-metric-card">
-                      {formatCurrency(agency.grantStatus.afgAwardAmount, { compact: false })}
+                      {formatCurrency(findExactFemaAfgAward(agency)?.federalShareAwarded ?? findExactFemaAfgAward(agency)?.awardAmount ?? 0, { compact: false })}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 pi-data-inline">
-                      FY{agency.grantStatus.afgFiscalYear} · unverified
+                      FY{findExactFemaAfgAward(agency)?.programYear ?? findExactFemaAfgAward(agency)?.fiscalYear ?? '—'} · OpenFEMA match
                     </div>
                   </td>
 
                   <td className="py-3.5 px-4 max-w-xs hidden xl:table-cell">
                     <div className="text-slate-700 dark:text-slate-300 leading-snug">
-                      {agency.grantStatus.afgPurpose}
+                      {findExactFemaAfgAward(agency)?.programActivity || findExactFemaAfgAward(agency)?.programName || 'Program name unavailable'}
                     </div>
                   </td>
 

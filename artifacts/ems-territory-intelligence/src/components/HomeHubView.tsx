@@ -250,7 +250,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       </div>
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-1">
-                      {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode} · NPI {agency.npiNumber || 'Verified'}
+                      {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode} · NPI {agency.npiNumber || 'not recorded'}
                     </div>
                   </button>
 

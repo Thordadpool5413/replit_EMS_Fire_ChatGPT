@@ -154,7 +154,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (activeTab === 'home') return 'Home';
     if (activeTab === 'queue') return 'Accounts Discovery';
     if (activeTab === 'contracts') return 'Opportunities · Procurement & Contracts';
-    if (activeTab === 'grants') return 'Opportunities · FEMA AFG & SAFER Grants';
+    if (activeTab === 'grants') return 'Opportunities · FEMA AFG Records';
     if (activeTab === 'pulseiq') return 'Opportunities · PulseIQ Regional Scoring';
     if (activeTab === 'states_directory' || activeTab === 'geo') return 'Territory · Geographic Directory';
     if (activeTab === 'google_maps') return 'Territory · Google Maps Live';
@@ -314,7 +314,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
                     {[
                       { id: 'contracts', label: 'Contracts & Expirations' },
-                      { id: 'grants', label: 'FEMA AFG & SAFER Grants' },
+                      { id: 'grants', label: 'FEMA AFG Records' },
                       { id: 'pulseiq', label: 'PulseIQ Scoring Matrix' }
                     ].map((sub) => (
                       <button

@@ -540,7 +540,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                   Primary Public Records & Statutory Citations
                 </h4>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Every data attribute behind PulseIQ is verified against authoritative government databases and public state regulatory bodies:
+                  The score uses a mix of local profile fields and estimates. Listing a public registry here does not mean that every profile field was retrieved from it or independently verified:
                 </p>
               </div>
 

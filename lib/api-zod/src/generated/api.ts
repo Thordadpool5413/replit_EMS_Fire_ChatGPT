@@ -26,7 +26,6 @@ export const getAfgGrantsQueryLimitMax = 100;
 
 export const GetAfgGrantsQueryParams = zod.object({
   "stateCode": zod.coerce.string().optional(),
-  "city": zod.coerce.string().optional(),
   "limit": zod.coerce.number().int().min(1).max(getAfgGrantsQueryLimitMax).optional()
 })
 

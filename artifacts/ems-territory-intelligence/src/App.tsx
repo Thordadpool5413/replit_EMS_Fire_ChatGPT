@@ -493,6 +493,21 @@ export default function App() {
       {/* Main Workspace Body (Cohesive Responsive CSS Grid Layout with 280px Desktop Sidebar Offset) */}
       <div className="md:pl-[280px] flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
+        <aside
+          data-testid="data-provenance-notice"
+          className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          <p>
+            <strong>Data provenance:</strong> local agency profiles may contain modeled or sample values. Cloud storage does not verify them. Treat a value as sourced only when its field-level evidence is shown; live registry lookups confirm only the returned fields.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsDataLineageOpen(true)}
+            className="shrink-0 font-semibold underline underline-offset-2 cursor-pointer"
+          >
+            Review data sources
+          </button>
+        </aside>
         
         {/* Workspace Sub-Navigation Strip for Opportunities, Territory, My Work, and Advanced Intelligence */}
         {!currentActive && ['contracts', 'grants', 'pulseiq'].includes(activeTab) && (
@@ -503,7 +518,7 @@ export default function App() {
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
               {[
                 { id: 'contracts', label: 'Procurement & Contract Windows' },
-                { id: 'grants', label: 'FEMA AFG & SAFER Grants' },
+                { id: 'grants', label: 'FEMA AFG Records' },
                 { id: 'pulseiq', label: 'PulseIQ Regional Scoring' }
               ].map((item) => (
                 <button
@@ -1025,7 +1040,7 @@ export default function App() {
           </div>
         )}
 
-        {/* FEMA AFG & SAFER Grants Tracker (Opportunities Workspace) */}
+        {/* FEMA AFG Records Tracker (Opportunities Workspace) */}
         {activeTab === 'grants' && (
           <div className="workspace-view-container min-w-0 w-full">
             <AfgGrantsTracker
@@ -1156,7 +1171,7 @@ export default function App() {
             <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">·</span>
             <span>CMS NPPES &amp; Part B PUF</span>
             <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">·</span>
-            <span>OpenFEMA AFG v2</span>
+            <span>OpenFEMA AFG v1</span>
             <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">·</span>
             <span>NEMSIS v3.5.0</span>
           </div>

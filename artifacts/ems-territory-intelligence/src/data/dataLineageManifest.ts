@@ -7,6 +7,9 @@ import { Agency } from '../types';
 import { hasVerifiedProviderIdentity } from './providerIdentity';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 
+const normalizeRecipientName = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
 export interface DataRegistrySource {
   id: string;
   name: string;
@@ -40,80 +43,76 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     name: 'CMS Medicare Part B Ground Ambulance Claims Public Use File (PUF)',
     acronym: 'CMS PUF',
     governingBody: 'Centers for Medicare & Medicaid Services (U.S. Dept of Health & Human Services)',
-    updateCadence: 'Annual Release with Quarterly Cost Data Adjustments',
+    updateCadence: 'Check the current CMS release and reporting period',
     legalAuthority: 'Social Security Act § 1834(l) & 42 CFR § 414.610',
     schemaSpecification: 'HCPCS Ambulance Service Coding (A0425–A0434) & Remittance Advice Remark Codes (RARC)',
     primaryFieldsIngested: [
-      'Medicare Billed & Allowed Amounts',
-      'HCPCS A0427 (ALS-1 Emergency) & A0429 (BLS Emergency) Volumes',
-      'Claim Denial Rates & Primary Denial Reason Codes (e.g. CO-16, PR-204)',
-      'GADCS Cost-to-Charge Ratios'
+      'Public-use-file measures (availability varies by release)',
+      'Provider-level coverage and definitions vary by file',
+      'Do not infer agency-level denial rates without a matching CMS record'
     ],
-    verificationMethod: 'Census of Medicare fee-for-service claims adjudicated through regional Medicare Administrative Contractors (MACs).'
+    verificationMethod: 'Potential reference only. Match the exact CMS file, provider identifier, metric definition, and reporting period before treating a profile value as sourced.'
   },
   {
     id: 'nemsis_v3',
     name: 'National Emergency Medical Services Information System (NEMSIS)',
     acronym: 'NEMSIS v3.5',
     governingBody: 'NHTSA Office of EMS (U.S. Dept of Transportation) & Technical Assistance Center (TAC)',
-    updateCadence: 'Continuous State-Level Aggregation / National Benchmark Annual Release',
+    updateCadence: 'State reporting and national releases vary',
     legalAuthority: 'Highway Safety Act of 1966 (23 U.S.C. 403) & NHTSA Emergency Medical Services Mandate',
     schemaSpecification: 'NEMSIS Data Standard v3.5.0 XML / XSD HL7 Interoperability Protocol',
     primaryFieldsIngested: [
-      'eDefib.01 - Initial Cardiac Arrest Rhythm',
-      'eTimes.06 & eTimes.07 - Scene Arrival and Patient Contact Latencies',
-      'eAirway.08 - Waveform Capnography ETCO2 Confirmation & Ventilation Compliance',
-      'Cardiac-01 & Trauma-01 NEMSQA Standard Quality Benchmark Measures'
+      'EMS data standard fields (availability varies by state)',
+      'State-reported measures may not be available at agency level',
+      'No live NEMSIS agency-level feed is implied by this listing'
     ],
-    verificationMethod: 'NEMSIS State EMS data submissions cross-validated against TAC compliance schemas.'
+    verificationMethod: 'A schema defines possible data fields; it does not establish that a state or agency submitted a specific value.'
   },
   {
     id: 'usfa_registry',
     name: 'U.S. Fire Administration National Fire Department Registry',
     acronym: 'USFA NFIRS',
     governingBody: 'Federal Emergency Management Agency (DHS)',
-    updateCadence: 'Monthly Official Census Dissemination',
+    updateCadence: 'Check the current USFA registry record',
     legalAuthority: 'Federal Fire Prevention and Control Act of 1974 (Public Law 93-498)',
     schemaSpecification: 'NFIRS 5.0 Complete Specification & USFA Department Master Record',
     primaryFieldsIngested: [
       'Department FDID (5-Digit State-Unique Identifier)',
-      'Active Stations, Frontline Apparatus Engines, Ladders, and Ambulances',
-      'Career, Volunteer, and Paid-Per-Call Active Fire/EMS Staffing Headcount',
-      'Primary Physical Station Address & Municipal Authority Type'
+      'Department registry identifiers and fields published by USFA',
+      'Confirm staffing, apparatus, and station fields in the specific record',
+      'Registry presence alone does not verify current operations'
     ],
-    verificationMethod: 'State Fire Marshal attestation and USFA Registry validation.'
+    verificationMethod: 'Use the department-specific USFA record for each claimed field; this app does not make every local profile value a live USFA result.'
   },
   {
     id: 'fema_afg',
-    name: 'FEMA Assistance to Firefighters Grant (AFG) & SAFER Awards Ledger',
-    acronym: 'FEMA AFG / OpenFEMA',
+    name: 'OpenFEMA Non-Disaster and Assistance to Firefighter Grants dataset (v1)',
+    acronym: 'OpenFEMA AFG',
     governingBody: 'U.S. Department of Homeland Security (DHS) / FEMA Grant Programs Directorate',
-    updateCadence: 'Weekly Federal Award Obligation Feed',
-    legalAuthority: 'Federal Funding Accountability and Transparency Act (FFATA) & FEMA GPD Title 44 CFR',
-    schemaSpecification: 'USASpending Prime Award Financial Feed (Assistance Listing / CFDA 97.044 & 97.083)',
+    updateCadence: 'Annual dataset refresh; check FEMA metadata',
+    legalAuthority: 'FEMA grant program records',
+    schemaSpecification: 'OpenFEMA v1 fields: awardNumber, fiscalYear, programName, vendorState, awardAmount, vendorName',
     primaryFieldsIngested: [
-      'Active FY24/FY25 AFG Equipment Award Amounts ($)',
-      'Specific Awarded Equipment Categories (Defibrillators, Mechanical CPR, Resuscitation Monitors)',
-      'Recipient Legal Entity Name, Unique Entity Identifier (UEI), and Matching Share Pct',
-      'Grant Period of Performance Expiration Deadlines'
+      'AFG historical award number and program name',
+      'Fiscal year, recipient name, vendor state, obligated award amount',
+      'No city, county, payment date, remaining balance, or SAFER fields'
     ],
-    verificationMethod: 'Federal Treasury disbursement ledger records cross-referenced against local council acceptance resolutions.'
+    verificationMethod: 'A returned row supports only the fields in that row. Award amount is not an unspent balance; the app does not independently match the recipient to a local profile.'
   },
   {
     id: 'nppes_npi',
     name: 'CMS National Plan and Provider Enumeration System (NPPES)',
     acronym: 'NPPES NPI Registry',
     governingBody: 'Centers for Medicare & Medicaid Services (HHS)',
-    updateCadence: 'Daily NPI Registry Dissemination Feed',
+    updateCadence: 'NPPES registry is updated; check the record timestamp',
     legalAuthority: 'HIPAA Administrative Simplification (45 CFR Part 162)',
     schemaSpecification: 'CMS FOIA Provider De-Identified Registry / National Provider Identifier (NPI Type 2)',
     primaryFieldsIngested: [
-      'Provider Organization Legal Business Name & 10-Digit NPI',
-      'Authorized Official Name, Title, and Physical Headquarters Address',
-      'Taxonomy Code 341600000X (Ambulance Service Provider - Land Transport)',
-      'Primary Practice Location State, County, and ZIP+4'
+      'NPI, organization name, listed addresses, and taxonomy when present',
+      'NPI issuance does not prove licensure or operational affiliation',
+      'An NPI does not by itself prove active Medicare billing'
     ],
-    verificationMethod: 'Federally attested provider identity database with active Medicare billing enrollment.'
+    verificationMethod: 'Confirms only matching registry identity fields. It does not establish fire/EMS operations, licensure, active enrollment, equipment, or outcomes.'
   },
   {
     id: 'gpo_procurement',
@@ -244,11 +243,12 @@ export function auditAgencyDataLineage(
     agency.cmsData?.claimDenialRate !== null
   );
 
-  const hasVerifiedAfgGrant = Boolean(
-    agency.grantStatus?.afgAwarded &&
-    Array.isArray(agency.liveFemaAwards) &&
-    agency.liveFemaAwards.length > 0
+  const matchedFemaAward = agency.liveFemaAwards?.find((award) =>
+    normalizeRecipientName(award.grantee) === normalizeRecipientName(agency.name) &&
+    award.stateCode?.toUpperCase() === agency.stateCode.toUpperCase() &&
+    Boolean(award.awardNumber)
   );
+  const hasVerifiedAfgGrant = Boolean(matchedFemaAward);
 
   const isParentMunicipality = agency.operatingRelationship === 'PARENT_MUNICIPALITY' ||
     agency.operatingRelationship === 'POSSIBLE_RELATED_ENTITY' ||
@@ -623,28 +623,26 @@ export function auditAgencyDataLineage(
     {
       category: 'Grants & Procurement',
       fieldName: 'FEMA AFG Award Status',
-      fieldValue: agency.grantStatus?.afgAwarded
-        ? `Awarded ($${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K)`
-        : 'No Active Federal Award Found',
-      sourceRegistry: 'USASpending.gov FEMA Assistance to Firefighters Grants',
-      schemaIdentifier: 'CFDA 97.044 Federal Prime Award',
-      verificationStatus: hasVerifiedAfgGrant
-        ? 'Legal Public Record'
+      fieldValue: hasVerifiedAfgGrant
+        ? `OpenFEMA record ${matchedFemaAward.awardNumber} ($${matchedFemaAward.federalShareAwarded.toLocaleString()})`
         : agency.grantStatus?.afgAwarded
-          ? 'Cross-Referenced'
-          : 'Public Record (No Active Award)',
-      sourceUrlOrCitation: hasVerifiedAfgGrant && agency.liveFemaAwards?.[0]?.awardNumber
-        ? `https://www.usaspending.gov/award/${agency.liveFemaAwards[0].awardNumber}`
-        : 'https://www.usaspending.gov/search',
-      reportingPeriod: hasVerifiedAfgGrant && agency.liveFemaAwards?.[0]?.programYear
-        ? `FY${agency.liveFemaAwards[0].programYear}`
-        : 'Current Federal Fiscal Year',
-      documentationQuote: agency.grantStatus?.afgAwarded
-        ? (hasVerifiedAfgGrant
-            ? `Federal funding confirmed via OpenFEMA API: ${agency.liveFemaAwards![0].awardNumber}.`
-            : `Reported federal award of $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K; federal grant disbursement pending.`)
-        : 'Authoritative federal grant ledger confirms no active FEMA AFG equipment obligation for this agency in current FY.',
-      evidenceBasis: hasVerifiedAfgGrant ? 'Verified federal award transaction in USASpending prime award ledger.' : 'Uncorroborated grant report.',
+          ? `Unverified local claim ($${agency.grantStatus.afgAwardAmount.toLocaleString()})`
+          : 'No award record linked to this profile',
+      sourceRegistry: 'FEMA OpenFEMA Non-Disaster and Assistance to Firefighter Grants v1',
+      schemaIdentifier: 'awardNumber, fiscalYear, vendorName, vendorState, awardAmount',
+      verificationStatus: hasVerifiedAfgGrant ? 'Legal Public Record' : 'Unverified Baseline',
+      sourceUrlOrCitation: 'https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants',
+      reportingPeriod: hasVerifiedAfgGrant
+        ? `FY${matchedFemaAward.programYear}`
+        : 'No exact-name and state match found',
+      documentationQuote: hasVerifiedAfgGrant
+        ? `OpenFEMA row ${matchedFemaAward.awardNumber} matches the profile name and state. The listed amount is an obligated award amount, not a current remaining balance.`
+        : agency.grantStatus?.afgAwarded
+          ? 'The local profile claims an award, but no exact recipient-name and state match is linked here. Do not treat it as verified.'
+          : 'No OpenFEMA row is linked to this profile. This does not establish that the agency has never received an award.',
+      evidenceBasis: hasVerifiedAfgGrant
+        ? 'Exact normalized recipient-name and state match to an OpenFEMA row.'
+        : 'No row-level agency match; absence is not evidence of no award.',
       evidenceScope: hasVerifiedAfgGrant ? 'FIELD_VERIFIED' : 'UNVERIFIED',
       isFieldVerified: hasVerifiedAfgGrant
     }

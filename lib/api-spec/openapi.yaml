@@ -39,10 +39,6 @@ paths:
           schema:
             type: string
         - in: query
-          name: city
-          schema:
-            type: string
-        - in: query
           name: limit
           schema:
             type: integer

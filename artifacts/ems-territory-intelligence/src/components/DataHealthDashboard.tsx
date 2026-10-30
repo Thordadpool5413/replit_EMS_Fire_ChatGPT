@@ -246,8 +246,8 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>{' '}
               <span className="text-slate-600 dark:text-slate-400">
                 {strictCloudOnlyMode
-                  ? 'Strict Firestore Cloud-Only (Exclusively displaying records persisted in Google Cloud Firestore)'
-                  : 'Verified Cloud + Public Federal Registry (Displaying Firestore records alongside verified USFA/Census municipal baselines)'}
+                  ? 'Firestore-only display (stored records are not thereby verified)'
+                  : 'Cloud records + local/public-reference profiles (field verification varies)'}
               </span>
             </div>
           </div>
@@ -262,7 +262,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              All Verified Real Data ({agencies.length})
+              Local + Cloud Records ({agencies.length})
             </button>
             <button
               type="button"
@@ -314,7 +314,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Live Federal NPI &amp; Maps Verified</span>
+              <span>Provider identity lookups</span>
               <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -322,12 +322,12 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 {report.liveFederalNpiCount.toLocaleString()}
               </span>
               <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                CMS NPPES / Maps
+                NPPES / Maps sources
               </span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            10-digit Federal NPI &amp; verified municipal station coordinates
+            NPI or map result only; neither proves EMS/fire operating status
           </div>
         </div>
 
@@ -335,7 +335,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Public USFA / Census Baseline</span>
+              <span>Public-reference profiles</span>
               <Server className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -348,7 +348,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            Authentic USFA FDID &amp; U.S. Census county demographics
+                Local profile references; confirm each record at its source
           </div>
         </div>
 
@@ -369,7 +369,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            {report.pulseIqVerifiedTotal.toLocaleString()} PulseIQ scores mathematically verified
+            {report.pulseIqVerifiedTotal.toLocaleString()} deterministic scores; input accuracy is separate
           </div>
         </div>
       </section>

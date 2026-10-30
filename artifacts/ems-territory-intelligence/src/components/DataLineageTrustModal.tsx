@@ -127,8 +127,8 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
       `================================================`,
       `Department: ${activeAgency.name}`,
       `Jurisdiction: ${activeAgency.city}, ${activeAgency.stateCode} (${activeAgency.county})`,
-      `FDID: ${activeAgency.fdid || 'Verified Public Agency'}`,
-      `Integrity Score: ${auditReport.overallIntegrityScore}% (All 7 Dimensions Mapped)`,
+      `FDID: ${activeAgency.fdid || 'Not recorded'}`,
+      `Evidence coverage: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (not a quality or accuracy score)`,
       `Audit Date: ${new Date().toISOString().split('T')[0]}`,
       ``,
       `FIELD-BY-FIELD DATA CHAIN & CITATIONS:`,
@@ -169,15 +169,15 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-[#1E3A8A] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded">
-                  Verifiable data provenance &amp; sync ledger
+                  Field-level data provenance
                 </span>
                 <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Cross-walked by USFA FDID &middot; CMS NPI &middot; Census FIPS
+                  A registry link alone does not verify an agency or its operations
                 </span>
               </div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                Institutional data lineage &amp; federal registry sync verifier
+                Institutional data lineage &amp; source review
               </h2>
             </div>
           </div>
@@ -318,7 +318,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 {activeAgency && (
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
-                      <span className="text-[10px] text-slate-400 block font-semibold">Evidence Integrity</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold">Field evidence coverage</span>
                       <span className={`font-semibold text-sm tabular-nums ${
                         auditReport?.integrityStatus === 'VERIFIED_CORROBORATED'
                           ? 'text-emerald-600 dark:text-emerald-400'
@@ -353,7 +353,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white block">USFA National Fire Registry</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified Federal Record (FDID)</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">FDID value needs a department-specific citation</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
@@ -433,7 +433,18 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         </td>
                         <td className="py-2.5 px-3">
                           <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 block">{r.sourceRegistry}</span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">{r.documentationQuote}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2">{r.documentationQuote}</span>
+                          {r.reportingPeriod && <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Period: {r.reportingPeriod}</span>}
+                          {r.sourceUrlOrCitation?.startsWith('https://') && (
+                            <a
+                              href={r.sourceUrlOrCitation}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-blue-700 dark:text-blue-400 underline underline-offset-2 inline-flex items-center gap-1 mt-1"
+                            >
+                              Open cited source <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                           {r.schemaIdentifier}
@@ -485,6 +496,16 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <h4 className="font-bold text-slate-900 text-xs mt-1 leading-snug">
                           {repo.name}
                         </h4>
+                        {repo.sourceUrl && (
+                          <a
+                            href={repo.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-blue-700 underline underline-offset-2 inline-flex items-center gap-1 mt-1"
+                          >
+                            Open source <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        )}
                       </div>
                       <span className="text-[10px] font-mono text-slate-400 shrink-0">
                         {repo.updateCadence}

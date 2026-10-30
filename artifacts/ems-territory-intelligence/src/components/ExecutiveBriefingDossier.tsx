@@ -122,44 +122,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     avgEdOffloadLatencyMinutes: 21
   };
 
-  const femaGrants = agency.femaGrantHistory || [
-    {
-      fiscalYear: 2025,
-      programName: 'FEMA Assistance to Firefighters Grant (AFG)',
-      purpose: 'Operations & Safety — Advanced Monitor-Defibrillator & Mechanical CPR Upgrades',
-      awardAmount: 185000,
-      localMatchAmount: 18500,
-      federalSharePct: 90,
-      status: 'Awarded & Disbursed' as const
-    },
-    {
-      fiscalYear: 2024,
-      programName: 'FEMA Regional AFG Interoperability Award',
-      purpose: 'NEMSIS 3.5 12-Lead ECG Gateways & Hospital Telemetry Gateways',
-      awardAmount: 140000,
-      localMatchAmount: 21000,
-      federalSharePct: 85,
-      status: 'Awarded - Active Spending' as const
-    },
-    {
-      fiscalYear: 2023,
-      programName: 'Staffing for Adequate Fire & Emergency Response (SAFER)',
-      purpose: 'Frontline Paramedic Hiring & 24/7 Resuscitation Squad Coverage',
-      awardAmount: 390000,
-      localMatchAmount: 0,
-      federalSharePct: 100,
-      status: 'Awarded & Disbursed' as const
-    },
-    {
-      fiscalYear: 2026,
-      programName: 'FY2026 FEMA AFG Equipment Modernization Priority',
-      purpose: 'LifePak-15 Replacement & Next-Gen Real CPR Help Defibrillator Spec',
-      awardAmount: 220000,
-      localMatchAmount: 22000,
-      federalSharePct: 90,
-      status: 'Eligible' as const
-    }
-  ];
+  const femaGrants = agency.femaGrantHistory || [];
 
   // ACTION 1: Trigger Native Browser Print Dialog (Scoped CSS ensures only document prints)
   const handlePrint = () => {
@@ -1067,17 +1030,17 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {/* 4. Multi-Year FEMA AFG Grant Award History */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>FEMA AFG &amp; federal grant award history (5-year record)</span>
-                <span className="text-xs text-slate-500">Verified federal database records</span>
+                <span>Grant entries in the local profile</span>
+                <span className="text-xs text-amber-700">Unverified unless linked to a source record</span>
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
                       <th className="py-2 px-3">Fiscal year</th>
-                      <th className="py-2 px-3">Grant program</th>
-                      <th className="py-2 px-3">Funded scope</th>
-                      <th className="py-2 px-3 text-right">Award amount</th>
+                      <th className="py-2 px-3">Program listed</th>
+                      <th className="py-2 px-3">Purpose listed</th>
+                      <th className="py-2 px-3 text-right">Reported amount</th>
                       <th className="py-2 px-3 text-center">Status</th>
                     </tr>
                   </thead>
@@ -1091,18 +1054,19 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                           ${g.awardAmount.toLocaleString()}
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            g.status.includes('Disbursed')
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : g.status.includes('Active')
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {g.status}
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                            Unverified profile claim
                           </span>
                         </td>
                       </tr>
                     ))}
+                    {femaGrants.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-4 px-3 text-center text-slate-500">
+                          No grant history is recorded in this local profile.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

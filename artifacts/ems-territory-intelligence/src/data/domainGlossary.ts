@@ -45,7 +45,7 @@ export const DOMAIN_GLOSSARY: Record<string, DomainGlossaryEntry> = {
       'Federal funding awarded directly by FEMA to fire departments and non-affiliated EMS agencies to purchase cardiac monitors, mechanical CPR devices, and training equipment—covering 85% to 95% of the cost with federal dollars.',
     whyItMattersToRep:
       'When an agency wins an AFG Equipment grant (or is eligible to apply), they only have to pay a 5%–15% local match out of their municipal budget.',
-    officialSource: 'fema.gov/api/open/v2/AssistanceToFirefightersGrants'
+    officialSource: 'fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants'
   },
   nemsis_v35: {
     id: 'nemsis_v35',

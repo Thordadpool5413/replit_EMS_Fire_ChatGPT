@@ -36,8 +36,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
   globalState,
   globalCounty,
   globalCity,
-  globalCategory,
-  activeAccount: _activeAccount
+  globalCategory
 }) => {
   const [selectedState, setSelectedState] = useState<string>(globalState || 'all');
   const [selectedCounty, setSelectedCounty] = useState<string>(globalCounty || 'all');
@@ -195,7 +194,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
         </div>
       </div>
 
-      {/* Live OpenFEMA API v2 Federal Awards Verification Table */}
+      {/* Live OpenFEMA API v1 AFG historical award table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
         <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-emerald-50/40 dark:bg-emerald-950/20">
           <div className="flex items-center gap-2 flex-wrap">

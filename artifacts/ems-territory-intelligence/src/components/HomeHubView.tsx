@@ -647,7 +647,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             {
               id: 'grants',
               title: 'FEMA AFG & SAFER Grants',
-              desc: 'OpenFEMA API v2 awards tracker, equipment grant payouts & fiscal liquidity',
+              desc: 'OpenFEMA AFG v1 historical award records; local profile claims remain unverified',
               icon: Award,
               badge: 'Liquidity'
             },

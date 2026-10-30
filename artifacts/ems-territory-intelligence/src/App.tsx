@@ -732,6 +732,7 @@ export default function App() {
               cloudSyncCount={cloudSyncCount}
               globalCategory={globalCategory}
               setGlobalCategory={setGlobalCategory}
+              showToast={showToast}
               onSelectState={(st) => {
                 setGlobalState(st);
                 setGlobalCounty('all');

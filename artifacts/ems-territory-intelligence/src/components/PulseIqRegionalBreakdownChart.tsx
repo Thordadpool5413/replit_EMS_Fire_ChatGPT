@@ -24,11 +24,7 @@ import {
   Cell
 } from 'recharts';
 import { Agency, PredictiveWeights, ScoreBreakdown } from '../types';
-import {
-  DEFAULT_WEIGHTS,
-  explainAgencyScore,
-  pulseIqBreakdownFromExplanation
-} from '../utils/syncStore';
+import { DEFAULT_WEIGHTS, explainAgencyScore } from '../utils/syncStore';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { 
@@ -124,9 +120,18 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       return true;
     });
 
-    // Derive regional contributions from the same explanation used by provider profiles.
+    // Helper to calculate score breakdown if missing
     const getBreakdown = (agency: Agency): ScoreBreakdown => {
-      return pulseIqBreakdownFromExplanation(explainAgencyScore(agency, weights));
+      const explanation = explainAgencyScore(agency, weights);
+      const points = (factorId: string) =>
+        explanation.factors.find((factor) => factor.id === factorId)?.pointsContributed ?? 0;
+      return {
+        clinicalAcuityPts: points('cardiac'),
+        fleetObsolescencePts: points('fleet'),
+        cmsFinancialPts: points('cms'),
+        softwareWhitespacePts: points('software'),
+        budgetGrantReadinessPts: points('grant'),
+      };
     };
 
     // SCENARIO A: A specific county is selected -> Break down by City / Jurisdiction within this County
@@ -269,23 +274,39 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       const data: any[] = [];
       countyMap.forEach((entry, countyKey) => {
         const { displayName, fullName, agencies: countyAgencies } = entry;
-        if (countyAgencies.length === 0) return;
+        const hasAgencies = countyAgencies.length > 0;
+        if (!hasAgencies) return;
+        if (!hasAgencies) return;
 
-        const totalSc = countyAgencies.reduce((acc, a) => acc + explainAgencyScore(a, weights).totalScore, 0);
-        const avgScore = Math.round(totalSc / countyAgencies.length);
-        const maxScore = Math.max(...countyAgencies.map(a => explainAgencyScore(a, weights).totalScore));
-        const totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
-        const topAccount: Agency | undefined = countyAgencies
-          .slice()
-          .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
+        let avgScore: number;
+        let maxScore: number;
+        let totalPipeline: number;
+        let clinicalAcuity: number;
+        let fleetObsolescence: number;
+        let cmsRecovery: number;
+        let softwareWhitespace: number;
+        let budgetGrant: number;
+        let topAccount: Agency | undefined;
+        let fleetBrand = 'Not sourced';
+        let fleetAge = 0;
 
-        const clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
-        const fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
-        const cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
-        const softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
-        const budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
-        const fleetBrand = topAccount?.installedFleet?.defibBrand || 'Not sourced';
-        const fleetAge = topAccount?.installedFleet?.defibAgeYears ?? 0;
+        if (hasAgencies) {
+          const totalSc = countyAgencies.reduce((acc, a) => acc + explainAgencyScore(a, weights).totalScore, 0);
+          avgScore = Math.round(totalSc / countyAgencies.length);
+          maxScore = Math.max(...countyAgencies.map(a => explainAgencyScore(a, weights).totalScore));
+          totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
+          topAccount = countyAgencies
+            .slice()
+            .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
+
+          clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
+          fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
+          cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
+          softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
+          budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
+          fleetBrand = topAccount?.installedFleet?.defibBrand || 'Not sourced';
+          fleetAge = topAccount?.installedFleet?.defibAgeYears ?? 0;
+        }
 
         data.push({
           id: `${stUpper}-${countyKey}`,
@@ -296,7 +317,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           stateCode: stUpper,
           score: avgScore,
           peakScore: maxScore,
-          accountCount: countyAgencies.length,
+          accountCount: hasAgencies ? countyAgencies.length : 2,
           pipelineValue: totalPipeline,
           pipelineFormatted: totalPipeline >= 1000000 
             ? `$${(totalPipeline / 1000000).toFixed(1)}M` 

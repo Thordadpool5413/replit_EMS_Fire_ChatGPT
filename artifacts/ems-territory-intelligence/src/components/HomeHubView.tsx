@@ -30,8 +30,6 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
-import { ProviderSourceImportPanel } from './ProviderSourceImportPanel';
-import { FloridaOfficialDirectory } from './FloridaOfficialDirectory';
 
 interface HomeHubViewProps {
   agencies: Agency[];
@@ -50,7 +48,6 @@ interface HomeHubViewProps {
   globalCategory: 'all' | 'ems' | 'fire';
   setGlobalCategory: (cat: 'all' | 'ems' | 'fire') => void;
   onSelectState?: (stateCode: string) => void;
-  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
@@ -61,8 +58,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   onOpenDataLineageModal,
   globalCategory,
   setGlobalCategory,
-  onSelectState,
-  showToast
+  onSelectState
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStateCode, setSelectedStateCode] = useState<string>('IL');
@@ -162,20 +158,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   return (
     <div className="space-y-6">
       {agencies.length === 0 && (
-        <>
-          <section
-            role="status"
-            className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
-          >
-            <h2 className="font-semibold">No complete source-verified operational profiles yet</h2>
-            <p className="mt-1">
-              This directory requires evidence for every score-driving operational field. NPPES identity or a grant record alone is not enough to claim verified fleet, clinical, financial, or software data. Use the live source lookup below to review and save official identity and matching grant records; missing operational fields and scores remain unavailable.
-            </p>
-          </section>
-          <ProviderSourceImportPanel showToast={showToast} />
-        </>
+        <section
+          role="status"
+          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+        >
+          <h2 className="font-semibold">No verified profiles are currently available</h2>
+          <p className="mt-1">
+            The default directory hides records without NPPES identity verification and field-level source evidence.
+            Scores and operational metrics are withheld until eligible records are imported.
+          </p>
+        </section>
       )}
-      <FloridaOfficialDirectory />
       {/* ====================================================================
           1. COMPACT PREMIUM HEADER WITH DISCIPLINE FILTER & SEARCH
          ==================================================================== */}

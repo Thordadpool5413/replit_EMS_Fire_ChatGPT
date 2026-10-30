@@ -12,23 +12,6 @@ export interface ProviderIdentityRequest {
   npiNumber?: string;
 }
 
-export function hasValidNpiCheckDigit(npi: string): boolean {
-  if (!/^\d{10}$/.test(npi)) return false;
-  const digits = `80840${npi.slice(0, 9)}`;
-  let sum = 0;
-
-  for (let index = 0; index < digits.length; index += 1) {
-    let digit = Number(digits[index]);
-    if (index % 2 === 1) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-  }
-
-  return (10 - (sum % 10)) % 10 === Number(npi[9]);
-}
-
 function normalizeIdentityValue(value: string): string {
   return value
     .normalize("NFKD")

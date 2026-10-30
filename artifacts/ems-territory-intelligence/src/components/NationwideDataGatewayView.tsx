@@ -23,7 +23,6 @@ import {
 import { Agency } from '../types';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { SourceFreshnessIndicator } from './SourceFreshnessIndicator';
-import { ProviderSourceImportPanel } from './ProviderSourceImportPanel';
 import {
   computeNationwideStateAggregations,
   deriveProcurementOpportunitiesFromAgencies,
@@ -52,7 +51,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
   onSelectAgency,
   showToast
 }) => {
-  const [activeTab, setActiveTab] = useState<'claims_ingest' | 'procurement' | 'confidential_outcomes' | 'installed_base' | 'npi_import'>('npi_import');
+  const [activeTab, setActiveTab] = useState<'claims_ingest' | 'procurement' | 'confidential_outcomes' | 'installed_base'>('claims_ingest');
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [procurementFilter, setProcurementFilter] = useState<string>('All');
   const [procurementSearch, setProcurementSearch] = useState('');
@@ -189,7 +188,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
         </div>
 
         {/* 4 Gateway Navigation Tabs */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           <button
             onClick={() => setActiveTab('claims_ingest')}
             className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
@@ -257,29 +256,8 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               Derived from {agencies.length.toLocaleString()} local profiles; source status varies
             </div>
           </button>
-
-          <button
-            onClick={() => setActiveTab('npi_import')}
-            className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
-              activeTab === 'npi_import'
-                ? 'bg-blue-50/80 dark:bg-blue-950/50 border-[#1E3A8A] shadow-2xs'
-                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white mb-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>5. NPI &amp; Source Import</span>
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              CMS NPPES + exact-name OpenFEMA awards
-            </div>
-          </button>
         </div>
       </div>
-
-      {activeTab === 'npi_import' && (
-        <ProviderSourceImportPanel showToast={showToast} />
-      )}
 
       {/* TAB 1: Local Profile Claims & CMS GADCS Estimates */}
       {activeTab === 'claims_ingest' && (

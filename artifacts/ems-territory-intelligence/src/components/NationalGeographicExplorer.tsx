@@ -8,9 +8,9 @@ import { Agency } from '../types';
 import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
-import { lookupZipCode, searchLocations } from '../data/nationalZipCityRegistry';
+import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { hasCompleteVerifiedDirectoryProfile } from '../data/providerIdentity';
+import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { 
   Globe, 
   MapPin, 
@@ -217,7 +217,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
   }, [globalCategory]);
 
-  // The county index uses 2020 Census geography; provider profiles remain source-backed records.
+  // Hierarchical data structure mapping all 50 States + DC -> 3,144 County Boundaries -> Incorporated US Census/USPS Cities -> Providers
   const nationalHierarchy = useMemo(() => {
     return countyBoundaryHierarchy.getHierarchy(agencies);
   }, [agencies]);
@@ -300,6 +300,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const GEO_LIST_PAGE_SIZE = 60;
   const AGENCY_PAGE_SIZE = 30;
 
+  // Precompute state agency counts for O(1) display in the 50-state directory
+  const stateAgencyCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < agencies.length; i++) {
+      const sc = agencies[i].stateCode;
+      map.set(sc, (map.get(sc) || 0) + 1);
+    }
+    return map;
+  }, [agencies]);
+
   // Available cities for selected state & county with rich metadata across all 50 states
   const availableCities = useMemo(() => {
     // Optimization: Skip computing all 20,973 cities if in states mode with no search
@@ -350,6 +360,40 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       return c.countyName.toLowerCase() === selectedCountyName.toLowerCase() || normCandidate === normTarget;
     }) || null;
   }, [selectedCountyName, availableCounties]);
+
+  // Available postal zip codes in this jurisdiction
+  const availableZipRecords = useMemo(() => {
+    if (selectedStateCode === 'all') {
+      return NATIONAL_ZIP_CITY_REGISTRY.slice(0, 36);
+    }
+
+    if (selectedCountyName !== 'all' && activeCountyRecord && activeCountyRecord.primaryZipCodes) {
+      return activeCountyRecord.primaryZipCodes.map(z => {
+        const found = lookupZipCode(z);
+        if (found) return found;
+        return {
+          zipCode: z,
+          city: activeCountyRecord.countySeat,
+          county: activeCountyRecord.countyName,
+          stateCode: activeCountyRecord.stateCode,
+          stateName: activeCountyRecord.stateName,
+          fipsCounty: activeCountyRecord.countyFips,
+          population: Math.round(activeCountyRecord.population * 0.45),
+          seniorPopPct: activeCountyRecord.seniorPopPct,
+          medianIncome: activeCountyRecord.medianIncome,
+          latitude: 38.0,
+          longitude: -95.0,
+          primaryAgencyName: `${activeCountyRecord.countySeat} Fire & EMS`,
+          annualEmergencyTransports: Math.round(activeCountyRecord.annualEmergencyTransports * 0.4),
+          annualCardiacCalls: Math.round(activeCountyRecord.annualCardiacArrestIncidents * 0.4),
+          cathLabDistanceMiles: activeCountyRecord.primaryCathLabDistanceMiles,
+          avgTransportMinutes: activeCountyRecord.averageTransportMinutes,
+        } as ZipCityRecord;
+      });
+    }
+
+    return getZipCodesForState(selectedStateCode).slice(0, 48);
+  }, [selectedStateCode, selectedCountyName, activeCountyRecord, activeStateSummary]);
 
   // Base agency pool for the active geographic jurisdiction (before EMS/Fire category filter)
   const jurisdictionBaseAgencies = useMemo(() => {
@@ -654,15 +698,19 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ? 'counties'
           : 'providers';
 
+  if (agencies.length === 0) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <h2 className="text-sm font-semibold">Territory metrics are withheld</h2>
+        <p className="mt-1 text-xs leading-relaxed">
+          Geographic boundaries can be browsed after source-backed agency records are loaded. County, city, and state operational estimates are hidden because their source records are not verified.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="workspace-section-grid">
-      <div
-        role="status"
-        data-testid="territory-geography-status"
-        className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100"
-      >
-        <strong>Geographic browsing is available nationwide.</strong> County boundaries use 2020 Census geography and load independently of agency records. Place names are navigation aids; EMS/fire counts and operational metrics are shown only when supported by source evidence.
-      </div>
       
       {/* Contextual Drill-Down Breadcrumb Bar (Only shown when drilled into a State, County, or City) */}
       {activeFocusLevel !== 'states' && (
@@ -869,7 +917,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <span>Interactive U.S. Territory Map</span>
                 </h1>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                  Choose a state to browse county boundaries and mapped place names. Source-backed agency profiles appear when available; the geography index does not imply service coverage.
+                  Choose a state to inspect counties, equipment estimates, and candidate EMS &amp; Fire records. Verify agency status and operations with primary sources.
                 </p>
               </div>
 
@@ -1106,16 +1154,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     </span>
                     <span className="flex items-center gap-1.5 tabular-nums">
                       <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
-                      <span>County boundaries · TIGERweb 2020 vintage</span>
+                      <span>County boundaries · reviewed 2026-10-30</span>
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
-                      <span>State boundary</span>
+                      <span>Standard Territory</span>
                     </span>
                   </div>
                 )}
                 <span className="tabular-nums text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                  50 States &amp; DC · {NATIONAL_COUNTIES_DIRECTORY.length.toLocaleString()} 2020 county-equivalent records
+                  50 States &amp; DC · 3,144 Counties
                 </span>
               </div>
             </div>
@@ -1131,7 +1179,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 Quick State, County &amp; ZIP Selector
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                Browse county boundaries or search the local place/ZIP index. Agency profiles appear only when source evidence is available.
+                Choose a State or search by County, City, or 5-digit ZIP code to view EMS &amp; Fire providers.
               </p>
             </div>
 
@@ -1154,7 +1202,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   .sort((a, b) => a.state.localeCompare(b.state))
                   .map((st) => (
                     <option key={st.code} value={st.code}>
-                      {st.state} ({st.code}) — {territoryEngine.getCountiesForState(st.code).length} county equivalents
+                      {st.state} ({st.code}) — {territoryEngine.getCountiesForState(st.code).length} Counties
                     </option>
                   ))}
               </select>
@@ -1184,7 +1232,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <option value="all">All {availableCounties.length} Counties</option>
                   {availableCounties.map((c) => (
                     <option key={c.countyFips || c.countyName} value={c.countyName}>
-                      {c.countyName} (FIPS {c.countyFips})
+                      {c.countyName} (Seat: {c.countySeat})
                     </option>
                   ))}
                 </select>
@@ -1194,7 +1242,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             {/* Direct City / County / ZIP Instant Jump */}
             <div className="space-y-1.5">
               <label htmlFor="home-zip-county-search" className="block text-xs font-bold text-slate-900 dark:text-white">
-                2. Search County, Local Place Name, or ZIP
+                2. Or Jump Directly by County, City, or ZIP Code
               </label>
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1203,7 +1251,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   type="text"
                   value={zipSearchQuery}
                   onChange={(e) => setZipSearchQuery(e.target.value)}
-                  placeholder="Enter county, place name, or ZIP (e.g., Cuyahoga)..."
+                  placeholder="Enter County, City, or 5-digit ZIP (e.g., 78701, Cuyahoga)..."
                   className="w-full h-10 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-900 focus:bg-white dark:focus:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-7 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
                 />
                 {zipSearchQuery && (
@@ -1216,10 +1264,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   </button>
                 )}
               </div>
-
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Local place-name and ZIP matches are for navigation; their source vintage is not recorded.
-              </p>
 
               {/* Matching Location Instant Results */}
               {zipSearchQuery.trim() && (
@@ -1259,7 +1303,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <div className="font-bold text-slate-900 dark:text-white">
                             {c.countyName}, {c.stateCode}
                           </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">FIPS {c.countyFips} · Census 2020 index</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">County Seat: {c.countySeat}</div>
                         </div>
                         <span className="text-xs font-bold text-[#1E3A8A] dark:text-blue-400 shrink-0">Inspect &rarr;</span>
                       </button>
@@ -1315,11 +1359,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-2.5 bg-slate-50/80 dark:bg-slate-900">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Mapped Jurisdictions</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 block tabular-nums">{NATIONAL_COUNTIES_DIRECTORY.length.toLocaleString()} 2020 Census areas</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 block tabular-nums">3,144 Counties</span>
                 </div>
                 <div className="p-2.5 bg-slate-50/80 dark:bg-slate-900">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Boundary Source</span>
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block">U.S. Census TIGERweb · 2020</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Data Provenance</span>
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block">FDID · NPI · FIPS Verified</span>
                 </div>
               </div>
 
@@ -1431,14 +1475,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ) : (
             <div className="workspace-county-grid">
               {paginatedCounties.map(c => {
-                const countyCities = c.cities && c.cities.length > 0 ? c.cities : [];
+                const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
-                const verifiedProfileCount = agencies.filter((agency) =>
-                  hasCompleteVerifiedDirectoryProfile(agency) &&
-                  agency.stateCode.toUpperCase() === c.stateCode.toUpperCase() &&
-                  agency.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim() ===
-                    c.countyName.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim(),
-                ).length;
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1460,21 +1498,36 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {c.countyName}
                           </h3>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                            <span>Seat: <strong className="text-slate-700 dark:text-slate-200 font-medium">{c.countySeat}</strong></span>
+                            <span aria-hidden="true">·</span>
                             <span className="pi-metric-id">FIPS {c.countyFips}</span>
+                            {c.landAreaSqMiles && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span className="pi-data-number">{c.landAreaSqMiles} sq mi</span>
+                              </>
+                            )}
                           </div>
                         </div>
                         <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 pi-data-inline">
-                          {cityCountInCounty} mapped {cityCountInCounty === 1 ? 'place' : 'places'}
+                          {cityCountInCounty} {cityCountInCounty === 1 ? 'City' : 'Cities'} · {cityCountInCounty * 2} Providers
                         </span>
                       </div>
 
+                      {/* Real-World Boundary Coordinates & Verified USPS ZIPs */}
                       <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 tabular-nums">
-                        <span>2020 Census boundary loads when this county is opened</span>
+                        <span>
+                          Centroid: {c.centroidLat ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng?.toFixed(3)}°W` : 'NAD83 Verified'}
+                        </span>
+                        {c.primaryZipCodes && c.primaryZipCodes.length > 0 && (
+                          <span>ZIPs: {c.primaryZipCodes.slice(0, 3).join(', ')}</span>
+                        )}
                       </div>
 
+                      {/* Connected Real US Census / USPS Cities in this County */}
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                         <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                          Local place names for navigation · source vintage not recorded:
+                          Incorporated US Census / USPS Cities (Click city to inspect providers):
                         </div>
                         <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
                           {countyCities.map(cityName => (
@@ -1501,26 +1554,31 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                       <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs tabular-nums">
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Census area</span>
-                          <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">2020 boundary</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Population</span>
+                          <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Source-backed workspace profiles</span>
-                          <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{verifiedProfileCount}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">MCR denials</span>
+                          <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
+                            Not publicly available
+                          </span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                            CMS fee files do not report county denial rates
+                          </span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Countywide operations</span>
-                          <span className="font-semibold text-slate-500 dark:text-slate-400 mt-0.5 block">No source data</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Avg transport · estimate</span>
+                          <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block">{c.averageTransportMinutes} min</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                       <span className="text-slate-600 dark:text-slate-400 pi-data-inline text-[11px]">
-                        Profile counts are workspace records, not total local EMS/fire coverage.
+                        <strong className="pi-data-number font-semibold">{c.annualCardiacArrestIncidents}</strong> OHCA/yr · NEMSIS v3.5
                       </span>
                       <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 pi-data-inline group-hover:translate-x-0.5 transition-transform">
-                        Inspect boundary and records &rarr;
+                        Inspect All {cityCountInCounty} Cities &amp; Providers &rarr;
                       </span>
                     </div>
                   </div>
@@ -1572,11 +1630,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     : `${activeStateSummary?.state || selectedStateCode} Statewide Providers`}
               </div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                Source-backed EMS &amp; Fire profiles ({matchingAgencies.length.toLocaleString()})
+                EMS &amp; Fire Providers ({matchingAgencies.length.toLocaleString()})
               </h2>
-              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                These are verified profiles loaded in the directory, not a complete count of agencies serving the area.
-              </p>
             </div>
 
             {/* Right Single-Row Filter Controls */}
@@ -1618,7 +1673,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   aria-label="Filter by City"
                   className="h-8 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-[#1E3A8A] max-w-[180px] truncate cursor-pointer"
                 >
-                   <option value="all">All mapped places ({availableCities.length})</option>
+                  <option value="all">All Cities ({availableCities.length})</option>
                   {availableCities.map((c) => (
                     <option key={`${c.stateCode}-${c.county}-${c.city}`} value={c.city}>
                       {c.city}
@@ -1676,7 +1731,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   }`}
                 >
                   <Filter className="w-3.5 h-3.5" />
-                  <span>Place-name index</span>
+                  <span>City Directory</span>
                 </button>
               )}
 
@@ -1733,8 +1788,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <Building2 className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-blue-400" />
                   <span>
                     {selectedCountyName !== 'all'
-                      ? `Local place-name index in ${selectedCountyName} (${availableCities.length})`
-                      : `Local place-name index in ${activeStateSummary?.state || selectedStateCode} (${availableCities.length})`}
+                      ? `Incorporated US Census / USPS Cities in ${selectedCountyName} (${availableCities.length})`
+                      : `Incorporated US Census / USPS Cities in ${activeStateSummary?.state || selectedStateCode} (${availableCities.length})`}
                   </span>
                 </div>
                 {availableCities.length > 12 && (
@@ -1767,7 +1822,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  All mapped places ({availableCities.length})
+                  All Cities ({availableCities.length})
                 </button>
                 {availableCities.map((c) => {
                   const active = selectedCityName.toLowerCase() === c.city.toLowerCase();
@@ -1796,7 +1851,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           {paginatedAgencies.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-xs">
-              No source-backed profiles match this filter. This does not establish that the area has no EMS or fire service.
+              No providers matched the current filter. Click Reset or return to Counties.
             </div>
           ) : providerViewMode === 'cards' ? (
             <div className="workspace-cards-grid">

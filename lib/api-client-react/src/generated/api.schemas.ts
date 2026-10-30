@@ -14,110 +14,8 @@ export interface AfgGrant { [key: string]: unknown }
 export interface AfgGrantsResponse {
   awards?: AfgGrant[];
   source?: string;
-  sourceUrl?: string;
   fetchedAt?: string;
   count?: number;
-}
-
-/**
- * Supply an NPI, or an organization name together with city and state.
- */
-export interface NppesSearchInput {
-  /** @pattern ^\d{10}$ */
-  npiNumber?: string;
-  /** @maxLength 180 */
-  agencyName?: string;
-  /** @maxLength 100 */
-  city?: string;
-  /**
-     * @minLength 2
-     * @maxLength 2
-     */
-  stateCode?: string;
-  /**
-     * @minimum 1
-     * @maximum 20
-     */
-  limit?: number;
-}
-
-export interface NppesProviderRecord {
-  npiNumber: string;
-  organizationName: string;
-  address?: string;
-  city: string;
-  stateCode: string;
-  postalCode?: string;
-  taxonomyCode?: string;
-  taxonomyDescription?: string;
-  authorizedOfficialName?: string;
-  authorizedOfficialTitle?: string;
-  nppesLastUpdated?: string;
-  registryUrl: string;
-}
-
-export interface FloridaSourceMetadata {
-  sourceName: string;
-  sourceUrl: string;
-  /** @nullable */
-  sourceUpdatedAt: string | null;
-  /** @nullable */
-  retrievedAt: string | null;
-  recordCount: number;
-  completenessNote: string;
-  /** @nullable */
-  errorMessage: string | null;
-}
-
-export interface FloridaEmsLicenseRecord {
-  licenseNumber: string;
-  providerName: string;
-  /** @nullable */
-  city: string | null;
-  /** @nullable */
-  addressState: string | null;
-  /** @nullable */
-  county: string | null;
-  licenseType: string;
-  /** @nullable */
-  licenseIssuedDate: string | null;
-  /** @nullable */
-  licenseExpirationDate: string | null;
-}
-
-export interface FloridaFireRegistryRecord {
-  /** @nullable */
-  fdid: string | null;
-  departmentName: string;
-  /** @nullable */
-  city: string | null;
-  /** @nullable */
-  county: string | null;
-  /** @nullable */
-  departmentType: string | null;
-  /** @nullable */
-  organizationType: string | null;
-}
-
-export type FloridaOfficialAgenciesResponseEms = {
-  metadata: FloridaSourceMetadata;
-  records: FloridaEmsLicenseRecord[];
-};
-
-export type FloridaOfficialAgenciesResponseFire = {
-  metadata: FloridaSourceMetadata;
-  records: FloridaFireRegistryRecord[];
-};
-
-export interface FloridaOfficialAgenciesResponse {
-  ems: FloridaOfficialAgenciesResponseEms;
-  fire: FloridaOfficialAgenciesResponseFire;
-}
-
-export interface NppesSearchResponse {
-  sourceUrl: string;
-  retrievedAt: string;
-  results: NppesProviderRecord[];
 }
 
 export type ProviderVerificationInputCategory = typeof ProviderVerificationInputCategory[keyof typeof ProviderVerificationInputCategory];
@@ -231,18 +129,9 @@ export interface PlacesResearchResponse {
 export type GetAfgGrantsParams = {
 stateCode?: string;
 /**
- * Exact OpenFEMA grantee name filter
- * @maxLength 180
- */
-recipientName?: string;
-/**
  * @minimum 1
  * @maximum 100
  */
 limit?: number;
-};
-
-export type GetFloridaOfficialAgenciesParams = {
-refresh?: boolean;
 };
 

@@ -20,120 +20,20 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Search public FEMA AFG grant records
  */
-export const getAfgGrantsQueryRecipientNameMax = 180;
-
 export const getAfgGrantsQueryLimitMax = 100;
 
 
 
 export const GetAfgGrantsQueryParams = zod.object({
   "stateCode": zod.coerce.string().optional(),
-  "recipientName": zod.coerce.string().max(getAfgGrantsQueryRecipientNameMax).optional().describe('Exact OpenFEMA grantee name filter'),
   "limit": zod.coerce.number().int().min(1).max(getAfgGrantsQueryLimitMax).optional()
 })
 
 export const GetAfgGrantsResponse = zod.object({
   "awards": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "source": zod.string().optional(),
-  "sourceUrl": zod.string().url().optional(),
   "fetchedAt": zod.coerce.date().optional(),
   "count": zod.number().int().optional()
-})
-
-
-/**
- * Returns registry identity fields only; it does not verify an EMS or fire operating relationship.
- * @summary Search CMS NPPES organization records
- */
-export const searchNppesProvidersBodyNpiNumberRegExp = new RegExp('^\\d{10}$');
-export const searchNppesProvidersBodyAgencyNameMax = 180;
-
-export const searchNppesProvidersBodyCityMax = 100;
-
-export const searchNppesProvidersBodyStateCodeMin = 2;
-export const searchNppesProvidersBodyStateCodeMax = 2;
-
-export const searchNppesProvidersBodyLimitMax = 20;
-
-
-
-export const SearchNppesProvidersBody = zod.object({
-  "npiNumber": zod.string().regex(searchNppesProvidersBodyNpiNumberRegExp).optional(),
-  "agencyName": zod.string().max(searchNppesProvidersBodyAgencyNameMax).optional(),
-  "city": zod.string().max(searchNppesProvidersBodyCityMax).optional(),
-  "stateCode": zod.string().min(searchNppesProvidersBodyStateCodeMin).max(searchNppesProvidersBodyStateCodeMax).optional(),
-  "limit": zod.number().int().min(1).max(searchNppesProvidersBodyLimitMax).optional()
-}).describe('Supply an NPI, or an organization name together with city and state.')
-
-export const SearchNppesProvidersResponse = zod.object({
-  "sourceUrl": zod.string().url(),
-  "retrievedAt": zod.coerce.date(),
-  "results": zod.array(zod.object({
-  "npiNumber": zod.string(),
-  "organizationName": zod.string(),
-  "address": zod.string().optional(),
-  "city": zod.string(),
-  "stateCode": zod.string(),
-  "postalCode": zod.string().optional(),
-  "taxonomyCode": zod.string().optional(),
-  "taxonomyDescription": zod.string().optional(),
-  "authorizedOfficialName": zod.string().optional(),
-  "authorizedOfficialTitle": zod.string().optional(),
-  "nppesLastUpdated": zod.string().optional(),
-  "registryUrl": zod.string().url()
-}))
-})
-
-
-/**
- * Returns Florida DOH EMS license rows and USFA registered fire departments as separate public-source datasets. It does not create complete operational profiles.
- * @summary Get current Florida official provider listings
- */
-export const GetFloridaOfficialAgenciesQueryParams = zod.object({
-  "refresh": zod.coerce.boolean().optional()
-})
-
-export const GetFloridaOfficialAgenciesResponse = zod.object({
-  "ems": zod.object({
-  "metadata": zod.object({
-  "sourceName": zod.string(),
-  "sourceUrl": zod.string().url(),
-  "sourceUpdatedAt": zod.coerce.date().nullable(),
-  "retrievedAt": zod.coerce.date().nullable(),
-  "recordCount": zod.number().int(),
-  "completenessNote": zod.string(),
-  "errorMessage": zod.string().nullable()
-}),
-  "records": zod.array(zod.object({
-  "licenseNumber": zod.string(),
-  "providerName": zod.string(),
-  "city": zod.string().nullable(),
-  "addressState": zod.string().nullable(),
-  "county": zod.string().nullable(),
-  "licenseType": zod.string(),
-  "licenseIssuedDate": zod.coerce.date().nullable(),
-  "licenseExpirationDate": zod.coerce.date().nullable()
-}))
-}),
-  "fire": zod.object({
-  "metadata": zod.object({
-  "sourceName": zod.string(),
-  "sourceUrl": zod.string().url(),
-  "sourceUpdatedAt": zod.coerce.date().nullable(),
-  "retrievedAt": zod.coerce.date().nullable(),
-  "recordCount": zod.number().int(),
-  "completenessNote": zod.string(),
-  "errorMessage": zod.string().nullable()
-}),
-  "records": zod.array(zod.object({
-  "fdid": zod.string().nullable(),
-  "departmentName": zod.string(),
-  "city": zod.string().nullable(),
-  "county": zod.string().nullable(),
-  "departmentType": zod.string().nullable(),
-  "organizationType": zod.string().nullable()
-}))
-})
 })
 
 

@@ -7,7 +7,6 @@ import { gunzipSync, strFromU8 } from 'fflate';
 import { Agency } from '../types';
 import { ALL_NATIONWIDE_COUNTIES, ComprehensiveCountyRecord, CityBoundaryRecord } from '../data/allCountiesDatabase';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
-import { hasCompleteVerifiedDirectoryProfile } from '../data/providerIdentity';
 import { territoryEngine } from './territoryIntelligenceEngine';
 
 export interface GeoJsonGeometry {
@@ -36,13 +35,6 @@ export interface CountyBoundaryGeoJsonFeature {
   geometry: GeoJsonGeometry;
 }
 
-export interface BoundarySourceInfo {
-  source: string;
-  vintage: string;
-  retrievedAt: string;
-  isFallback: boolean;
-}
-
 export interface CityJurisdictionNode {
   cityName: string;
   countyFips: string;
@@ -51,9 +43,9 @@ export interface CityJurisdictionNode {
   stateName: string;
   stateFips: string;
   isCountySeat: boolean;
-  zipCode?: string;
-  latitude?: number;
-  longitude?: number;
+  zipCode: string;
+  latitude: number;
+  longitude: number;
   providers: Agency[];
 }
 
@@ -91,7 +83,6 @@ export interface StateHierarchyNode {
   countiesByName: Record<string, CountyBoundaryNode>;
   countiesList: CountyBoundaryNode[];
   totalCitiesCount: number;
-  boundarySourceInfo?: BoundarySourceInfo;
 }
 
 export interface NationalGeographicHierarchy {
@@ -110,6 +101,11 @@ export interface SvgProjectedCounty {
   stateCode: string;
   landAreaSqMiles: number;
   citiesCount: number;
+  population: number;
+  medicareDenialRatePct: number | null;
+  stateBenchmarkDenialRatePct?: number | null;
+  medicareDenialSource?: string;
+  averageTransportMinutes: number;
   svgPath: string;
   labelX: number;
   labelY: number;
@@ -135,9 +131,8 @@ class CountyBoundaryHierarchyService {
   /**
    * Build the complete 3-tier State -> County (with real Census FIPS, bbox, centroid, landArea) -> City hierarchy
    */
-  public getHierarchy(agencies?: Agency[]): NationalGeographicHierarchy {
+  public getHierarchy(agencies: Agency[] = []): NationalGeographicHierarchy {
     if (this.hierarchy) {
-      if (agencies !== undefined) this.mapProvidersToHierarchy(agencies);
       return this.hierarchy;
     }
 
@@ -173,7 +168,9 @@ class CountyBoundaryHierarchyService {
           ? c.cityRecords
           : (c.cities || [c.countySeat]).map((name, idx) => ({
               name,
-              zipCode: c.primaryZipCodes?.[idx],
+              zipCode: c.primaryZipCodes?.[idx % (c.primaryZipCodes.length || 1)] || '10001',
+              latitude: c.centroidLat || 38.5,
+              longitude: c.centroidLng || -96.5,
               isCountySeat: name.toLowerCase() === (c.countySeat || '').toLowerCase(),
             }));
 
@@ -186,7 +183,7 @@ class CountyBoundaryHierarchyService {
           stateName: c.stateName,
           stateFips: c.stateFips || stNode.stateFips,
           isCountySeat: cr.isCountySeat,
-          zipCode: cr.zipCode || undefined,
+          zipCode: cr.zipCode,
           latitude: cr.latitude,
           longitude: cr.longitude,
           providers: [],
@@ -217,7 +214,7 @@ class CountyBoundaryHierarchyService {
           lng: c.centroidLng || -96.5,
         },
         bbox: countyBbox,
-        landAreaSqMiles: Number.isFinite(c.landAreaSqMiles) ? c.landAreaSqMiles : 0,
+        landAreaSqMiles: c.landAreaSqMiles || 450.0,
         primaryZipCodes: c.primaryZipCodes || [],
         geometry: null,
         boundarySource: 'U.S. Census Bureau TIGER/Line NAD83 (GEOID ' + c.countyFips + ')',
@@ -253,7 +250,7 @@ class CountyBoundaryHierarchyService {
       totalCities,
     };
 
-    if (agencies !== undefined) {
+    if (agencies.length > 0) {
       this.mapProvidersToHierarchy(agencies);
     }
 
@@ -274,7 +271,6 @@ class CountyBoundaryHierarchyService {
     }
 
     for (const ag of agencies) {
-      if (!hasCompleteVerifiedDirectoryProfile(ag)) continue;
       const stNode = h.statesByCode[ag.stateCode.toUpperCase()];
       if (!stNode) continue;
       const cClean = ag.county.toLowerCase().trim();
@@ -308,122 +304,24 @@ class CountyBoundaryHierarchyService {
       return stNode.countiesList;
     }
 
+    // A bundled official-boundary GeoJSON is served as a normal public asset.
+    // No Google geocoding, proprietary map API, or remote backend lookup.
     const requestPromise = (async () => {
       try {
-        const query = new URLSearchParams({
-          where: `STATE='${stNode.stateFips.padStart(2, '0')}'`,
-          outFields: 'GEOID,NAME,STATE,COUNTY,AREALAND,AREAWATER,CENTLAT,CENTLON,INTPTLAT,INTPTLON',
-          returnGeometry: 'true',
-          outSR: '4326',
-          f: 'geojson',
-        });
-        const response = await fetch(
-          `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/55/query?${query.toString()}`,
-          { headers: { Accept: 'application/geo+json, application/json' } },
-        );
-        if (!response.ok) throw new Error(`Census TIGERweb returned HTTP ${response.status}`);
-        const collection = await response.json() as {
-          type?: string;
-          features?: Array<{
-            type?: string;
-            id?: string | number;
-            properties?: Record<string, unknown>;
-            geometry?: GeoJsonGeometry | null;
-          }>;
-          error?: { message?: string };
-        };
-        if (collection.error) throw new Error(collection.error.message || 'Census TIGERweb query failed');
-        if (collection.type !== 'FeatureCollection' || !Array.isArray(collection.features)) {
-          throw new Error('Census TIGERweb returned an invalid boundary collection');
-        }
-
-        const stateFeatures = collection.features.map((feature) => {
-          const props = feature.properties || {};
-          const geoid = String(props.GEOID || feature.id || '').padStart(5, '0');
-          const countyName = String(props.NAME || '').trim();
-          const bbox = this.getGeometryBounds(feature.geometry || null);
-          const landAreaSqMiles = Number(props.AREALAND) / 2_589_988.110336;
-          const centroidLat = Number(props.CENTLAT ?? props.INTPTLAT);
-          const centroidLng = Number(props.CENTLON ?? props.INTPTLON);
-          if (!/^\d{5}$/.test(geoid) || !countyName || !feature.geometry || !bbox) {
-            throw new Error('Census TIGERweb returned a county without required boundary fields');
-          }
-
-          return {
-            type: 'Feature' as const,
-            id: geoid,
-            properties: {
-              GEOID: geoid,
-              STATE: String(props.STATE || stNode.stateFips),
-              STATE_CODE: sc,
-              COUNTY: String(props.COUNTY || geoid.slice(2)),
-              NAME: countyName,
-              COUNTY_NAME: countyName,
-              COUNTY_SEAT: '',
-              LSAD: 'County equivalent',
-              CENSUSAREA: Number.isFinite(landAreaSqMiles) ? +landAreaSqMiles.toFixed(1) : 0,
-              CENTLAT: Number.isFinite(centroidLat) ? centroidLat : (bbox[1] + bbox[3]) / 2,
-              CENTLON: Number.isFinite(centroidLng) ? centroidLng : (bbox[0] + bbox[2]) / 2,
-              BBOX: bbox,
-              CITIES_COUNT: 0,
-            },
-            geometry: feature.geometry,
-          };
-        });
-
-        const expectedFips = new Set(stNode.countiesList.map((county) => county.countyFips));
-        const returnedFips = new Set(stateFeatures.map((feature) => feature.properties.GEOID));
-        const missingFips = [...expectedFips].filter((fips) => !returnedFips.has(fips));
-        const unexpectedFips = [...returnedFips].filter((fips) => !expectedFips.has(fips));
-        if (missingFips.length || unexpectedFips.length) {
-          throw new Error(
-            `Census boundary coverage mismatch for ${sc}: missing ${missingFips.length}, unexpected ${unexpectedFips.length}`,
-          );
-        }
-
+        const response = await fetch(`${import.meta.env.BASE_URL}data/us-counties-boundaries.json.gz.txt`);
+        if (!response.ok) throw new Error('Bundled Census boundary asset unavailable');
+        const encoded = (await response.text()).trim();
+        const binary = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
+        const collection = JSON.parse(strFromU8(gunzipSync(binary)));
+        const allFeatures: CountyBoundaryGeoJsonFeature[] = Array.isArray(collection.features)
+          ? collection.features : [];
+        const stateFeatures = allFeatures.filter(f => f.properties?.STATE_CODE === sc);
         this.attachFeaturesToStateNode(stNode, stateFeatures);
-        stNode.boundarySourceInfo = {
-          source: 'U.S. Census TIGERweb',
-          vintage: '2020 Census geography',
-          retrievedAt: new Date().toISOString(),
-          isFallback: false,
-        };
         this.stateFeaturesCache.set(sc, stateFeatures);
         return stateFeatures;
       } catch (err) {
-        console.warn('Live Census boundary query failed; trying the bundled boundary fallback.', err);
-        try {
-          const response = await fetch(`${import.meta.env.BASE_URL}data/us-counties-boundaries.json.gz.txt`);
-          if (!response.ok) throw new Error('Bundled boundary asset unavailable');
-          const encoded = (await response.text()).trim();
-          const binary = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
-          const collection = JSON.parse(strFromU8(gunzipSync(binary)));
-          const allFeatures: CountyBoundaryGeoJsonFeature[] = Array.isArray(collection.features)
-            ? collection.features : [];
-          const stateFeatures = allFeatures.filter(f => f.properties?.STATE_CODE === sc);
-          const normalizedNames = new Set(stateFeatures.map((feature) =>
-            this.normalizeCountyName(feature.properties?.COUNTY_NAME || feature.properties?.NAME || ''),
-          ));
-          const missingNames = stNode.countiesList.filter((county) =>
-            !normalizedNames.has(this.normalizeCountyName(county.countyName)),
-          );
-          if (!stateFeatures.length || missingNames.length) {
-            throw new Error(`Bundled boundary coverage is incomplete for ${sc}`);
-          }
-
-          this.attachFeaturesToStateNode(stNode, stateFeatures);
-          stNode.boundarySourceInfo = {
-            source: 'Bundled boundary fallback',
-            vintage: 'Source vintage not recorded',
-            retrievedAt: new Date().toISOString(),
-            isFallback: true,
-          };
-          this.stateFeaturesCache.set(sc, stateFeatures);
-          return stateFeatures;
-        } catch (fallbackErr) {
-          console.error('Neither live nor bundled Census boundaries could be loaded.', fallbackErr);
-          throw new Error(`County boundaries could not be loaded for ${sc}`);
-        }
+        console.error('Official county boundary asset could not be loaded', err);
+        return [];
       }
     })();
 
@@ -437,57 +335,17 @@ class CountyBoundaryHierarchyService {
     return stNode.countiesList;
   }
 
-  private normalizeCountyName(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/\([^)]*\)/g, '')
-      .replace(/\b(city and borough|census area|municipality|county|parish|borough|city)\b/g, '')
-      .replace(/[^a-z0-9]/g, '');
-  }
-
-  private getGeometryBounds(geometry: GeoJsonGeometry | null): [number, number, number, number] | null {
-    if (!geometry) return null;
-    let minLng = Infinity;
-    let minLat = Infinity;
-    let maxLng = -Infinity;
-    let maxLat = -Infinity;
-    const visit = (value: unknown) => {
-      if (!Array.isArray(value)) return;
-      if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
-        minLng = Math.min(minLng, value[0]);
-        minLat = Math.min(minLat, value[1]);
-        maxLng = Math.max(maxLng, value[0]);
-        maxLat = Math.max(maxLat, value[1]);
-        return;
-      }
-      for (const child of value) visit(child);
-    };
-    visit(geometry.coordinates);
-    return Number.isFinite(minLng) && Number.isFinite(minLat) && Number.isFinite(maxLng) && Number.isFinite(maxLat)
-      ? [minLng, minLat, maxLng, maxLat]
-      : null;
-  }
-
   private attachFeaturesToStateNode(stNode: StateHierarchyNode, features: CountyBoundaryGeoJsonFeature[]): void {
     for (const f of features) {
       const fips = String(f.id || f.properties?.GEOID || '').padStart(5, '0');
-      const featureName = f.properties?.COUNTY_NAME || f.properties?.NAME || '';
-      const byFips = stNode.countiesByFips[fips];
-      const normalizedFeatureName = this.normalizeCountyName(featureName);
-      const byName = stNode.countiesList.find((county) =>
-        this.normalizeCountyName(county.countyName) === normalizedFeatureName ||
-        this.normalizeCountyName(county.rawName) === normalizedFeatureName,
-      );
-      const fipsNameMatches = byFips && (
-        !normalizedFeatureName ||
-        this.normalizeCountyName(byFips.countyName) === normalizedFeatureName ||
-        this.normalizeCountyName(byFips.rawName) === normalizedFeatureName
-      );
-      const coNode = fipsNameMatches ? byFips : byName || byFips;
+      const coNode =
+        stNode.countiesByFips[fips] ||
+        stNode.countiesByName[(f.properties?.COUNTY_NAME || '').toLowerCase()] ||
+        stNode.countiesByName[(f.properties?.NAME || '').toLowerCase()];
 
       if (coNode && f.geometry) {
         coNode.geometry = f.geometry;
-        if (Number.isFinite(f.properties?.CENSUSAREA) && f.properties.CENSUSAREA > 0) {
+        if (f.properties?.CENSUSAREA) {
           coNode.landAreaSqMiles = +Number(f.properties.CENSUSAREA).toFixed(1);
         }
         if (f.properties?.BBOX && Array.isArray(f.properties.BBOX) && f.properties.BBOX.length === 4) {
@@ -501,9 +359,6 @@ class CountyBoundaryHierarchyService {
         }
       }
     }
-    stNode.totalLandAreaSqMiles = +stNode.countiesList
-      .reduce((sum, county) => sum + (county.landAreaSqMiles || 0), 0)
-      .toFixed(1);
   }
 
   /**
@@ -569,12 +424,26 @@ class CountyBoundaryHierarchyService {
       return [+x.toFixed(1), +y.toFixed(1)];
     };
 
+    const stSummary = ALL_50_STATES_SUMMARIES[sc];
+    // CMS Part B Ground Ambulance claims are adjudicated across regional MAC jurisdictions.
+    // Standard CMS PUF releases do not publish standalone state-by-state denial tables
+    // unless custom FOIA/claims data extraction is performed.
+    // If no authenticated state-level CMS PUF dataset meeting all 7 criteria is linked,
+    // state denial benchmark is explicitly marked unavailable.
+    const hasAuthenticBenchmark = false; // Set to false to prevent uncorroborated benchmarks from masquerading as official CMS PUF
+    const stateBenchmark = hasAuthenticBenchmark ? stSummary?.avgMedicareDenialRate : null;
+
     const projectedCounties: SvgProjectedCounty[] = [];
 
     for (const co of countiesWithGeom) {
       const svgPath = this.geometryToSvgPath(co.geometry!, projectPoint);
       if (!svgPath) continue;
       const [labelX, labelY] = projectPoint(co.centroid.lng, co.centroid.lat);
+      // Factual county rate: null if no measured county rate exists in authoritative CMS PUF record.
+      // Never substitute state-level averages into the county's measured rate field!
+      const denialRate = co.countyRecord.medicareDenialRatePct !== undefined && co.countyRecord.medicareDenialRatePct !== null
+        ? co.countyRecord.medicareDenialRatePct
+        : null;
 
       projectedCounties.push({
         countyFips: co.countyFips,
@@ -583,6 +452,11 @@ class CountyBoundaryHierarchyService {
         stateCode: sc,
         landAreaSqMiles: co.landAreaSqMiles,
         citiesCount: co.citiesList.length,
+        population: co.countyRecord.population,
+        medicareDenialRatePct: denialRate,
+        stateBenchmarkDenialRatePct: stateBenchmark,
+        medicareDenialSource: denialRate !== null ? (co.countyRecord.medicareDenialSource ?? 'CMS Measured County Rate') : undefined,
+        averageTransportMinutes: co.countyRecord.averageTransportMinutes,
         svgPath,
         labelX,
         labelY,
@@ -619,6 +493,18 @@ class CountyBoundaryHierarchyService {
     let maxLng = normalizeLng(countyNode.bbox[2]);
     let maxLat = countyNode.bbox[3];
 
+    // Also include city coordinates in bounding box if any lie near the boundary edge
+    for (const ct of countyNode.citiesList) {
+      const cLng = normalizeLng(ct.longitude);
+      const cLat = ct.latitude;
+      if (Math.abs(cLng - minLng) < 2.5 && Math.abs(cLat - minLat) < 2.5) {
+        if (cLng < minLng) minLng = cLng;
+        if (cLng > maxLng) maxLng = cLng;
+        if (cLat < minLat) minLat = cLat;
+        if (cLat > maxLat) maxLat = cLat;
+      }
+    }
+
     const lngSpan = Math.max(0.04, maxLng - minLng);
     const latSpan = Math.max(0.04, maxLat - minLat);
     const cosLat = Math.cos(((minLat + maxLat) / 2) * (Math.PI / 180));
@@ -643,9 +529,26 @@ class CountyBoundaryHierarchyService {
     const svgPath = countyNode.geometry ? this.geometryToSvgPath(countyNode.geometry, projectPoint) : '';
     const centroidSvg = projectPoint(countyNode.centroid.lng, countyNode.centroid.lat);
 
-    // The bundled city/ZIP coordinates have no field-level source evidence.
-    // Keep names available for navigation, but do not plot them as verified locations.
-    const cityPins: SvgProjectedCityPin[] = [];
+    const cityPins: SvgProjectedCityPin[] = countyNode.citiesList.map((ct) => {
+      const [svgX, svgY] = projectPoint(ct.longitude, ct.latitude);
+      const cityAgencies = territoryEngine.getAgenciesForJurisdiction(
+        countyNode.stateCode,
+        countyNode.countyName,
+        ct.cityName,
+        agencies,
+        'all'
+      );
+      return {
+        cityName: ct.cityName,
+        zipCode: ct.zipCode,
+        isCountySeat: ct.isCountySeat,
+        latitude: ct.latitude,
+        longitude: ct.longitude,
+        svgX,
+        svgY,
+        providersCount: cityAgencies.length,
+      };
+    });
 
     return {
       svgPath,

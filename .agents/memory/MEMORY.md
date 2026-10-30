@@ -1,2 +1,1 @@
 - [Source freshness](source-data-freshness.md) — distinguish retrieval time from source publication date; unknown timestamps must not imply freshness.
-- [Verified-only directory](verified-only-directory.md) — official listings stay separate from operational profiles; show only fully evidenced profiles by default.

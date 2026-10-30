@@ -90,12 +90,6 @@ const TIER_COLORS: Record<PriorityTier, { bg: string; border: string; glyph: str
     border: '#1E293B',
     glyph: '#FFFFFF',
     badge: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-  },
-  Unavailable: {
-    bg: '#94A3B8',
-    border: '#64748B',
-    glyph: '#FFFFFF',
-    badge: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
   }
 };
 

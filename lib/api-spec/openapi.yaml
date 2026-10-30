@@ -39,12 +39,6 @@ paths:
           schema:
             type: string
         - in: query
-          name: recipientName
-          description: Exact OpenFEMA grantee name filter
-          schema:
-            type: string
-            maxLength: 180
-        - in: query
           name: limit
           schema:
             type: integer
@@ -57,50 +51,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AfgGrantsResponse"
-  /providers/nppes/search:
-    post:
-      operationId: searchNppesProviders
-      tags: [territory]
-      summary: Search CMS NPPES organization records
-      description: Returns registry identity fields only; it does not verify an EMS or fire operating relationship.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NppesSearchInput"
-      responses:
-        "200":
-          description: NPPES organization candidates and retrieval metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NppesSearchResponse"
-        "400":
-          description: Invalid NPI or incomplete organization search
-        "502":
-          description: CMS NPPES is unavailable
-  /florida/official-agencies:
-    get:
-      operationId: getFloridaOfficialAgencies
-      tags: [territory]
-      summary: Get current Florida official provider listings
-      description: Returns Florida DOH EMS license rows and USFA registered fire departments as separate public-source datasets. It does not create complete operational profiles.
-      parameters:
-        - name: refresh
-          in: query
-          required: false
-          schema:
-            type: boolean
-      responses:
-        "200":
-          description: Official-source datasets with source dates and retrieval times
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FloridaOfficialAgenciesResponse"
-        "502":
-          description: One or more official sources are unavailable or invalid
   /providers/verify-live:
     post:
       operationId: verifyProviderLive
@@ -182,161 +132,11 @@ components:
             $ref: "#/components/schemas/AfgGrant"
         source:
           type: string
-        sourceUrl:
-          type: string
-          format: uri
         fetchedAt:
           type: string
           format: date-time
         count:
           type: integer
-    NppesSearchInput:
-      type: object
-      properties:
-        npiNumber:
-          type: string
-          pattern: '^\d{10}$'
-        agencyName:
-          type: string
-          maxLength: 180
-        city:
-          type: string
-          maxLength: 100
-        stateCode:
-          type: string
-          minLength: 2
-          maxLength: 2
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 20
-      description: Supply an NPI, or an organization name together with city and state.
-    NppesProviderRecord:
-      type: object
-      properties:
-        npiNumber:
-          type: string
-        organizationName:
-          type: string
-        address:
-          type: string
-        city:
-          type: string
-        stateCode:
-          type: string
-        postalCode:
-          type: string
-        taxonomyCode:
-          type: string
-        taxonomyDescription:
-          type: string
-        authorizedOfficialName:
-          type: string
-        authorizedOfficialTitle:
-          type: string
-        nppesLastUpdated:
-          type: string
-        registryUrl:
-          type: string
-          format: uri
-      required: [npiNumber, organizationName, city, stateCode, registryUrl]
-    FloridaSourceMetadata:
-      type: object
-      required: [sourceName, sourceUrl, sourceUpdatedAt, retrievedAt, recordCount, completenessNote, errorMessage]
-      properties:
-        sourceName:
-          type: string
-        sourceUrl:
-          type: string
-          format: uri
-        sourceUpdatedAt:
-          type: [string, "null"]
-          format: date
-        retrievedAt:
-          type: [string, "null"]
-          format: date-time
-        recordCount:
-          type: integer
-        completenessNote:
-          type: string
-        errorMessage:
-          type: [string, "null"]
-    FloridaEmsLicenseRecord:
-      type: object
-      required: [licenseNumber, providerName, city, addressState, county, licenseType, licenseIssuedDate, licenseExpirationDate]
-      properties:
-        licenseNumber:
-          type: string
-        providerName:
-          type: string
-        city:
-          type: [string, "null"]
-        addressState:
-          type: [string, "null"]
-        county:
-          type: [string, "null"]
-        licenseType:
-          type: string
-        licenseIssuedDate:
-          type: [string, "null"]
-          format: date
-        licenseExpirationDate:
-          type: [string, "null"]
-          format: date
-    FloridaFireRegistryRecord:
-      type: object
-      required: [fdid, departmentName, city, county, departmentType, organizationType]
-      properties:
-        fdid:
-          type: [string, "null"]
-        departmentName:
-          type: string
-        city:
-          type: [string, "null"]
-        county:
-          type: [string, "null"]
-        departmentType:
-          type: [string, "null"]
-        organizationType:
-          type: [string, "null"]
-    FloridaOfficialAgenciesResponse:
-      type: object
-      required: [ems, fire]
-      properties:
-        ems:
-          type: object
-          required: [metadata, records]
-          properties:
-            metadata:
-              $ref: "#/components/schemas/FloridaSourceMetadata"
-            records:
-              type: array
-              items:
-                $ref: "#/components/schemas/FloridaEmsLicenseRecord"
-        fire:
-          type: object
-          required: [metadata, records]
-          properties:
-            metadata:
-              $ref: "#/components/schemas/FloridaSourceMetadata"
-            records:
-              type: array
-              items:
-                $ref: "#/components/schemas/FloridaFireRegistryRecord"
-    NppesSearchResponse:
-      type: object
-      properties:
-        sourceUrl:
-          type: string
-          format: uri
-        retrievedAt:
-          type: string
-          format: date-time
-        results:
-          type: array
-          items:
-            $ref: "#/components/schemas/NppesProviderRecord"
-      required: [sourceUrl, retrievedAt, results]
     ProviderVerificationInput:
       type: object
       properties:

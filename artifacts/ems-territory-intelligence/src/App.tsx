@@ -20,8 +20,7 @@ import {
   loadStoredWeights, 
   saveStoredWeights, 
   createOutboxItem, 
-  explainAgencyScore,
-  pulseIqBreakdownFromExplanation
+  calculateScore 
 } from './utils/syncStore';
 import { 
   loadStoredNotifications, 
@@ -232,18 +231,13 @@ export default function App() {
   const handleSaveWeights = useCallback((newWeights: PredictiveWeights) => {
     setWeights(newWeights);
     saveStoredWeights(newWeights);
-    const recalculated = agencies.map(agency => {
-      const explanation = explainAgencyScore(agency, newWeights);
-      return {
-        ...agency,
-        zollOpportunity: {
-          ...agency.zollOpportunity,
-          pulseIqScore: explanation.totalScore,
-          priorityTier: explanation.priorityTier as Agency['zollOpportunity']['priorityTier'],
-          scoreBreakdown: pulseIqBreakdownFromExplanation(explanation)
-        }
-      };
-    });
+    const recalculated = agencies.map(agency => ({
+      ...agency,
+      zollOpportunity: {
+        ...agency.zollOpportunity,
+        pulseIqScore: calculateScore(agency, newWeights)
+      }
+    }));
     updateAgenciesState(recalculated);
     showToast('PulseIQ scoring weights calibrated. All territory accounts re-ranked.', 'success');
   }, [agencies, updateAgenciesState, showToast]);
@@ -504,7 +498,7 @@ export default function App() {
           className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
         >
           <p>
-            <strong>Data provenance:</strong> geographic browsing does not depend on agency records. Local place names and ZIP associations are navigation aids, not verified operational data. Some local profile fields may be modeled or sample values; cloud storage does not verify them. A field is sourced only when its evidence is attached, and live registry results verify only the fields returned.
+            <strong>Data provenance:</strong> local agency profiles may contain modeled or sample values. Cloud storage does not verify them. Treat a value as sourced only when its field-level evidence is shown; live registry lookups confirm only the returned fields.
           </p>
           <button
             type="button"
@@ -732,7 +726,6 @@ export default function App() {
               cloudSyncCount={cloudSyncCount}
               globalCategory={globalCategory}
               setGlobalCategory={setGlobalCategory}
-              showToast={showToast}
               onSelectState={(st) => {
                 setGlobalState(st);
                 setGlobalCounty('all');

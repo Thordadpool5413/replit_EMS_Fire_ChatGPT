@@ -15,6 +15,10 @@ export interface VerifiedFieldEvidence {
   retrievedAt: string;
 }
 
+// Required score inputs become unavailable after a year without a recorded source check.
+export const MAX_SCORE_EVIDENCE_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+const MAX_FUTURE_EVIDENCE_SKEW_MS = 5 * 60 * 1000;
+
 export const REQUIRED_DIRECTORY_EVIDENCE_FIELDS = [
   "annualCallVolume",
   "annual911Transports",
@@ -195,10 +199,14 @@ export function hasCompleteVerifiedDirectoryProfile(
 
   const sourceEvidenceComplete = REQUIRED_DIRECTORY_EVIDENCE_FIELDS.every((fieldPath) => {
     const evidence = agency.verifiedFieldEvidence?.[fieldPath];
+    const retrievedAt = evidence ? Date.parse(evidence.retrievedAt) : Number.NaN;
+    const ageMs = Date.now() - retrievedAt;
     return Boolean(
       evidence &&
         /^https?:\/\//i.test(evidence.sourceUrl) &&
-        Number.isFinite(Date.parse(evidence.retrievedAt)),
+        Number.isFinite(retrievedAt) &&
+        ageMs <= MAX_SCORE_EVIDENCE_AGE_MS &&
+        ageMs >= -MAX_FUTURE_EVIDENCE_SKEW_MS,
     );
   });
   if (!sourceEvidenceComplete) return false;

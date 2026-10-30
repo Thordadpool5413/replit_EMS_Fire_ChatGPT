@@ -4,7 +4,11 @@
  */
 
 import { Agency, FieldNote, KeyContact, PredictiveWeights } from '../types';
-import { DEFAULT_WEIGHTS, explainAgencyScore } from '../utils/syncStore';
+import {
+  DEFAULT_WEIGHTS,
+  explainAgencyScore,
+  pulseIqBreakdownFromExplanation
+} from '../utils/syncStore';
 import {
   hasCompleteVerifiedDirectoryProfile,
   hasVerifiedNppesEvidence,
@@ -465,20 +469,12 @@ class DataSanitizationService {
     weights: PredictiveWeights = DEFAULT_WEIGHTS
   ): Agency['zollOpportunity'] {
     const explanation = explainAgencyScore(agency, weights);
-    const factorPoints = (factorId: string) =>
-      explanation.factors.find((factor) => factor.id === factorId)?.pointsContributed ?? 0;
 
     return {
       ...agency.zollOpportunity,
       pulseIqScore: explanation.totalScore,
       priorityTier: explanation.priorityTier as Agency['zollOpportunity']['priorityTier'],
-      scoreBreakdown: {
-        clinicalAcuityPts: factorPoints('cardiac'),
-        fleetObsolescencePts: factorPoints('fleet'),
-        cmsFinancialPts: factorPoints('cms'),
-        softwareWhitespacePts: factorPoints('software'),
-        budgetGrantReadinessPts: factorPoints('grant')
-      }
+      scoreBreakdown: pulseIqBreakdownFromExplanation(explanation)
     };
   }
 

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  MAX_SCORE_EVIDENCE_AGE_MS,
+  REQUIRED_DIRECTORY_EVIDENCE_FIELDS,
   hasVerifiedNppesEvidence,
   hasCompleteVerifiedDirectoryProfile,
   hasVerifiedLegalGeography,
@@ -9,6 +11,183 @@ import {
   matchesExactLegalGeography,
 } from "./providerIdentity.ts";
 import { findExactFemaAfgAward } from "./femaAwardMatching.ts";
+import {
+  calculateScore,
+  DEFAULT_WEIGHTS,
+  explainAgencyScore,
+  pulseIqBreakdownFromExplanation,
+} from "./pulseIqScoring.ts";
+
+function createVerifiedScoreProfile(overrides = {}) {
+  const retrievedAt = new Date().toISOString();
+  const verifiedFieldEvidence = Object.fromEntries(
+    REQUIRED_DIRECTORY_EVIDENCE_FIELDS.map((field) => [
+      field,
+      {
+        sourceUrl: "https://example.gov/records/provider",
+        retrievedAt,
+      },
+    ]),
+  );
+
+  return {
+    id: "agency-score-fixture",
+    name: "Riverview Fire & Rescue",
+    city: "Riverview",
+    stateCode: "OR",
+    county: "Riverview County",
+    agencyType: "Fire Department",
+    npiNumber: "1234567893",
+    nppesOfficialName: "Riverview Fire & Rescue",
+    nppesVerifiedCity: "Riverview",
+    nppesVerifiedStateCode: "OR",
+    isVerifiedRecord: true,
+    verificationSource: "CMS NPPES NPI Registry",
+    lastVerifiedAt: retrievedAt,
+    annualCallVolume: 9000,
+    annual911Transports: 6500,
+    annualCardiacArrestCalls: 1800,
+    utsteinSurvivalRate: 28.5,
+    populationServed: 125000,
+    cmsData: {
+      claimDenialRate: 22,
+      medicareBilledAnnual: 2800000,
+      topDenialReasonCode: "CO-16",
+    },
+    installedFleet: {
+      defibAgeYears: 9,
+      defibBrand: "Stryker",
+      billingSoftware: "Billing Suite",
+      epcrCadSoftware: "ZOLL ePCR",
+      defibUnitsCount: 12,
+      defibWarrantyStatus: "Active",
+    },
+    grantStatus: {
+      afgAwardAmount: 125000,
+      afgAwarded: true,
+      saferGrantActive: false,
+      afgFiscalYear: 2025,
+    },
+    gisData: {
+      avgTransportTimeMinutes: 18.2,
+      publicAccessAedDeficitPct: 31,
+      seniorPopulationPct: 17.5,
+    },
+    verifiedFieldEvidence,
+    zollOpportunity: {
+      pulseIqScore: 0,
+      priorityTier: "Unavailable",
+      primaryTargetProduct: "X Series",
+      recommendedBundle: [],
+      projectedPipelineValue: 0,
+      clinicalBenefitNarrative: "",
+      financialRoiNarrative: "",
+      scoreRationale: "",
+      scoreBreakdown: {
+        clinicalAcuityPts: 0,
+        fleetObsolescencePts: 0,
+        cmsFinancialPts: 0,
+        softwareWhitespacePts: 0,
+        budgetGrantReadinessPts: 0,
+      },
+      salesStage: "New",
+      probabilityPct: 0,
+    },
+    ...overrides,
+  };
+}
+
+test("PulseIQ explains every factor using the calibrated default weights", () => {
+  const explanation = explainAgencyScore(createVerifiedScoreProfile());
+
+  assert.deepEqual(
+    explanation.factors.map(({ id, componentScore, weightPct, pointsContributed }) => ({
+      id,
+      componentScore,
+      weightPct,
+      pointsContributed,
+    })),
+    [
+      { id: "fleet", componentScore: 100, weightPct: 30, pointsContributed: 30 },
+      { id: "cms", componentScore: 100, weightPct: 25, pointsContributed: 25 },
+      { id: "cardiac", componentScore: 100, weightPct: 20, pointsContributed: 20 },
+      { id: "grants", componentScore: 100, weightPct: 15, pointsContributed: 15 },
+      { id: "software", componentScore: 35, weightPct: 10, pointsContributed: 3.5 },
+    ],
+  );
+  assert.equal(
+    Object.values(DEFAULT_WEIGHTS).reduce((sum, weight) => sum + weight, 0),
+    100,
+  );
+
+  const factorTotal = explanation.factors.reduce(
+    (sum, factor) => sum + factor.pointsContributed,
+    0,
+  );
+  assert.equal(explanation.totalScore, Math.min(99, Math.max(30, Math.round(factorTotal))));
+  assert.equal(calculateScore(createVerifiedScoreProfile()), explanation.totalScore);
+});
+
+test("custom PulseIQ weights calibrate contributions and preserve shared profile and chart mappings", async () => {
+  const profile = createVerifiedScoreProfile();
+  const weights = {
+    fleetAgeWeight: 10,
+    cmsDenialWeight: 20,
+    cardiacVolumeWeight: 30,
+    grantAwardWeight: 25,
+    softwareWhitespaceWeight: 15,
+  };
+  const explanation = explainAgencyScore(profile, weights);
+  const breakdown = pulseIqBreakdownFromExplanation(explanation);
+  const sanitizer = await readFile(
+    new URL("../services/dataSanitizationService.ts", import.meta.url),
+    "utf8",
+  );
+  const regionalChart = await readFile(
+    new URL("../components/PulseIqRegionalBreakdownChart.tsx", import.meta.url),
+    "utf8",
+  );
+  const app = await readFile(
+    new URL("../App.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.deepEqual(explanation.factors.map((factor) => factor.weightPct), [10, 20, 30, 25, 15]);
+  assert.deepEqual(breakdown, {
+    clinicalAcuityPts: 30,
+    fleetObsolescencePts: 10,
+    cmsFinancialPts: 20,
+    softwareWhitespacePts: 5.3,
+    budgetGrantReadinessPts: 25,
+  });
+  assert.match(sanitizer, /scoreBreakdown:\s*pulseIqBreakdownFromExplanation\(explanation\)/);
+  assert.match(regionalChart, /pulseIqBreakdownFromExplanation\(explainAgencyScore\(agency,\s*weights\)\)/);
+  assert.match(app, /pulseIqScore:\s*explanation\.totalScore[\s\S]*?scoreBreakdown:\s*pulseIqBreakdownFromExplanation\(explanation\)/);
+});
+
+test("incomplete or stale score evidence makes PulseIQ unavailable", () => {
+  const profile = createVerifiedScoreProfile();
+  const incompleteEvidence = { ...profile.verifiedFieldEvidence };
+  delete incompleteEvidence["cmsData.claimDenialRate"];
+  const staleEvidence = {
+    ...profile.verifiedFieldEvidence,
+    "cmsData.claimDenialRate": {
+      sourceUrl: "https://example.gov/records/provider",
+      retrievedAt: new Date(Date.now() - MAX_SCORE_EVIDENCE_AGE_MS - 1000).toISOString(),
+    },
+  };
+
+  for (const candidate of [
+    { ...profile, verifiedFieldEvidence: incompleteEvidence },
+    { ...profile, verifiedFieldEvidence: staleEvidence },
+  ]) {
+    const explanation = explainAgencyScore(candidate);
+    assert.equal(explanation.totalScore, 0);
+    assert.equal(explanation.priorityTier, "Unavailable");
+    assert.deepEqual(explanation.factors, []);
+    assert.equal(calculateScore(candidate), 0);
+  }
+});
 
 const agency = {
   name: "Riverview Fire & Rescue, Inc.",

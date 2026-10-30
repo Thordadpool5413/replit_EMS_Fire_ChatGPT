@@ -24,7 +24,11 @@ import {
   Cell
 } from 'recharts';
 import { Agency, PredictiveWeights, ScoreBreakdown } from '../types';
-import { DEFAULT_WEIGHTS, explainAgencyScore } from '../utils/syncStore';
+import {
+  DEFAULT_WEIGHTS,
+  explainAgencyScore,
+  pulseIqBreakdownFromExplanation
+} from '../utils/syncStore';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { 
@@ -120,18 +124,9 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       return true;
     });
 
-    // Helper to calculate score breakdown if missing
+    // Derive regional contributions from the same explanation used by provider profiles.
     const getBreakdown = (agency: Agency): ScoreBreakdown => {
-      const explanation = explainAgencyScore(agency, weights);
-      const points = (factorId: string) =>
-        explanation.factors.find((factor) => factor.id === factorId)?.pointsContributed ?? 0;
-      return {
-        clinicalAcuityPts: points('cardiac'),
-        fleetObsolescencePts: points('fleet'),
-        cmsFinancialPts: points('cms'),
-        softwareWhitespacePts: points('software'),
-        budgetGrantReadinessPts: points('grant'),
-      };
+      return pulseIqBreakdownFromExplanation(explainAgencyScore(agency, weights));
     };
 
     // SCENARIO A: A specific county is selected -> Break down by City / Jurisdiction within this County

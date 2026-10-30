@@ -20,7 +20,8 @@ import {
   loadStoredWeights, 
   saveStoredWeights, 
   createOutboxItem, 
-  calculateScore 
+  explainAgencyScore,
+  pulseIqBreakdownFromExplanation
 } from './utils/syncStore';
 import { 
   loadStoredNotifications, 
@@ -231,13 +232,18 @@ export default function App() {
   const handleSaveWeights = useCallback((newWeights: PredictiveWeights) => {
     setWeights(newWeights);
     saveStoredWeights(newWeights);
-    const recalculated = agencies.map(agency => ({
-      ...agency,
-      zollOpportunity: {
-        ...agency.zollOpportunity,
-        pulseIqScore: calculateScore(agency, newWeights)
-      }
-    }));
+    const recalculated = agencies.map(agency => {
+      const explanation = explainAgencyScore(agency, newWeights);
+      return {
+        ...agency,
+        zollOpportunity: {
+          ...agency.zollOpportunity,
+          pulseIqScore: explanation.totalScore,
+          priorityTier: explanation.priorityTier as Agency['zollOpportunity']['priorityTier'],
+          scoreBreakdown: pulseIqBreakdownFromExplanation(explanation)
+        }
+      };
+    });
     updateAgenciesState(recalculated);
     showToast('PulseIQ scoring weights calibrated. All territory accounts re-ranked.', 'success');
   }, [agencies, updateAgenciesState, showToast]);

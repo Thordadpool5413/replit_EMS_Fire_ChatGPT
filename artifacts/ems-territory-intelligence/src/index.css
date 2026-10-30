@@ -1,0 +1,500 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================================
+   PRECISION INTELLIGENCE — SEMANTIC DESIGN TOKENS (LIGHT & DARK THEMES)
+   Section 5 Specification:
+   - Primary navigation: #0B1728
+   - Secondary navy: #172D49
+   - Primary action: #285EE8
+   - Primary action hover: #194BC8
+   - Workspace canvas: #F5F7FA
+   - Content surface: #FFFFFF
+   - Primary typography: #14283F
+   - Secondary typography: #53657B
+   - Dividers: #DFE6EF
+   ============================================================================ */
+:root {
+  /* Typography Families: Display = Manrope Variable, Interface = Geist Variable, Numerical = Instrument Sans Variable */
+  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Core Surfaces */
+  --pi-nav-bg: #0B1728;
+  --pi-nav-secondary: #172D49;
+  --pi-canvas-bg: #F5F7FA;
+  --pi-surface-bg: #FFFFFF;
+  --pi-surface-subtle: #F8FAFC;
+  --pi-surface-elevated: #FFFFFF;
+
+  /* Typography */
+  --pi-text-primary: #14283F;
+  --pi-text-secondary: #53657B;
+  --pi-text-muted: #6E8096;
+
+  /* Borders & Dividers */
+  --pi-border: #DFE6EF;
+  --pi-border-strong: #C8D4E3;
+
+  /* Brand & Interactive */
+  --pi-action: #285EE8;
+  --pi-action-hover: #194BC8;
+  --pi-action-subtle: #EEF3FE;
+
+  /* Evidence & Status Classification */
+  --pi-verified-bg: #ECFDF5;
+  --pi-verified-text: #047857;
+  --pi-verified-border: #A7F3D0;
+
+  --pi-estimated-bg: #FFFBEB;
+  --pi-estimated-text: #B45309;
+  --pi-estimated-border: #FDE68A;
+
+  /* Legacy alias variables for compatibility across existing views */
+  --bg-canvas: #F5F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F8FAFC;
+  --text-primary: #14283F;
+  --text-secondary: #53657B;
+  --text-muted: #6E8096;
+  --border-crisp: #DFE6EF;
+  --border-strong: #C8D4E3;
+  --brand-primary: #285EE8;
+  --brand-primary-hover: #194BC8;
+
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --shadow-card: 0 1px 2px 0 rgba(20, 40, 63, 0.04);
+  --shadow-card-hover: 0 4px 12px -2px rgba(20, 40, 63, 0.08);
+}
+
+.dark {
+  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --pi-nav-bg: #070F1C;
+  --pi-nav-secondary: #112238;
+  --pi-canvas-bg: #0B1320;
+  --pi-surface-bg: #111C2D;
+  --pi-surface-subtle: #16243A;
+  --pi-surface-elevated: #17263C;
+
+  --pi-text-primary: #F1F5F9;
+  --pi-text-secondary: #94A3B8;
+  --pi-text-muted: #64748B;
+
+  --pi-border: #1E2D42;
+  --pi-border-strong: #2B3F5C;
+
+  --pi-action: #3B73F6;
+  --pi-action-hover: #285EE8;
+  --pi-action-subtle: rgba(40, 94, 232, 0.16);
+
+  --bg-canvas: #0B1320;
+  --bg-surface: #111C2D;
+  --bg-subtle: #16243A;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --border-crisp: #1E2D42;
+  --border-strong: #2B3F5C;
+  --brand-primary: #3B73F6;
+  --brand-primary-hover: #285EE8;
+
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+}
+
+@layer base {
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    background-color: var(--pi-canvas-bg);
+    color: var(--pi-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--pi-text-primary);
+  }
+
+  /* Reserved strictly for raw machine identifiers or code logs */
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-sans,
+  .font-interface {
+    font-family: var(--font-sans);
+  }
+
+  /* Professional lining tabular numerals using Instrument Sans Variable for all numerical presentations */
+  .tabular-nums,
+  .tnum,
+  [class*="tabular-nums"] {
+    font-family: var(--pi-font-data);
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pi-action);
+    outline-offset: 1px;
+  }
+}
+
+/* ============================================================================
+   PRECISION INTELLIGENCE TYPOGRAPHY SCALE (Section 2)
+   - Page title: 30–34px, weight 650 (Manrope Variable)
+   - Agency/profile title: 26–30px, weight 650 (Manrope Variable)
+   - Major section heading: 20–22px, weight 600 (Manrope Variable)
+   - Subsection heading: 16–18px, weight 600 (Manrope Variable)
+   - Standard body: 15px, weight 400 (Geist Variable)
+   - Supporting text: 14px, weight 400 (Geist Variable)
+   - Metadata: 12.5–13px, weight 450–500 (Geist Variable)
+   - Navigation: 14–15px, weight 500 (Geist Variable)
+   - Buttons: 14px, weight 550–600 (Geist Variable)
+   - Important numerical value: 24–28px, weight 600–650 (Geist Variable)
+   - Standard financial/table value: 14–16px, weight 500–600 (Geist Variable)
+   ============================================================================ */
+.pi-page-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 2.3vw, 2.125rem); /* 30px -> 34px */
+  line-height: 1.16;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--pi-text-primary);
+}
+
+.pi-profile-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.625rem, 2.0vw, 1.875rem); /* 26px -> 30px */
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--pi-text-primary);
+}
+
+.pi-section-heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 1.45vw, 1.375rem); /* 20px -> 22px */
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--pi-text-primary);
+}
+
+.pi-account-heading,
+.pi-subsection-heading {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.15vw, 1.125rem); /* 16px -> 18px */
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--pi-text-primary);
+}
+
+.pi-body {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.55;
+  font-weight: 400;
+  color: var(--pi-text-primary);
+}
+
+.pi-supporting {
+  font-family: var(--font-sans);
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--pi-text-secondary);
+}
+
+.pi-meta {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+  font-weight: 450;
+  color: var(--pi-text-secondary);
+}
+
+/* ============================================================================
+   PRECISION INTELLIGENCE GLOBAL NUMERICAL DATA TYPOGRAPHY SYSTEM
+   Using Instrument Sans Variable with OpenType tabular / proportional figures.
+   ============================================================================ */
+.pi-data-number {
+  font-family: var(--pi-font-data);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: -0.015em;
+}
+
+.pi-data-inline {
+  font-family: var(--pi-font-data);
+  font-variant-numeric: lining-nums proportional-nums;
+  font-feature-settings: 'pnum' 1, 'lnum' 1;
+}
+
+.pi-data-table {
+  font-family: var(--pi-font-data);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Disciplined Numerical Typography Scale */
+/* Primary executive metric: 28–32px, weight 600–650 */
+.pi-metric-hero,
+.pi-metric-executive {
+  font-family: var(--pi-font-data);
+  font-size: clamp(1.75rem, 2.2vw, 2rem); /* 28px - 32px */
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Important account value: 22–26px, weight 600 */
+.pi-metric-large,
+.pi-metric-lg,
+.pi-metric-account {
+  font-family: var(--pi-font-data);
+  font-size: clamp(1.375rem, 1.6vw, 1.625rem); /* 22px - 26px */
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Provider card primary value: 17–20px, weight 600 */
+.pi-metric-card,
+.pi-metric-primary {
+  font-family: var(--pi-font-data);
+  font-size: clamp(1.0625rem, 1.25vw, 1.25rem); /* 17px - 20px */
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Standard metric: 15–17px, weight 550–600 */
+.pi-metric-standard,
+.pi-metric-base {
+  font-family: var(--pi-font-data);
+  font-size: clamp(0.9375rem, 1.05vw, 1.0625rem); /* 15px - 17px */
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Table numerical value: 14–16px, weight 500–600 */
+.pi-metric-table {
+  font-family: var(--pi-font-data);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.35;
+  font-weight: 550;
+  letter-spacing: 0;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Supporting numerical value: 13–14px, weight 500 */
+.pi-metric-sm,
+.pi-metric-supporting {
+  font-family: var(--pi-font-data);
+  font-size: 0.84375rem; /* 13.5px */
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Technical identifier: 12–14px, weight 450–550 (Monospace preserved for FDID, NPI, FIPS, ZIP, Licenses) */
+.pi-metric-id,
+.pi-data-id {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   UNIFIED SURFACE & LAYOUT PRIMITIVES
+   ============================================================================ */
+.pi-surface {
+  background-color: var(--pi-surface-bg);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.pi-surface-interactive {
+  background-color: var(--pi-surface-bg);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.pi-surface-interactive:hover {
+  border-color: var(--pi-border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.pi-btn-primary {
+  background-color: var(--pi-action);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: var(--radius-control);
+  transition: background-color 140ms ease;
+}
+
+.pi-btn-primary:hover {
+  background-color: var(--pi-action-hover);
+}
+
+.workspace-grid-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1640px;
+  min-width: 0;
+}
+
+.workspace-view-container,
+.workspace-section-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-cards-grid,
+.agency-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.surface-card {
+  background-color: var(--pi-surface-bg);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.surface-card:hover {
+  border-color: var(--pi-border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.scannable-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--pi-surface-bg);
+  border: 1px solid var(--pi-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.scannable-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.scannable-table th {
+  background-color: var(--pi-surface-subtle);
+  color: var(--pi-text-secondary);
+  font-weight: 600;
+  font-size: 0.8125rem; /* 13px */
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--pi-border);
+  white-space: nowrap;
+}
+
+.scannable-table td {
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--pi-border);
+  vertical-align: middle;
+}
+
+.scannable-table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.scannable-table tbody tr:hover {
+  background-color: var(--pi-surface-subtle);
+}
+
+.scannable-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

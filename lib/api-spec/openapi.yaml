@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: territory
+    description: Public-data lookups for EMS and fire territories
+  - name: research
+    description: Gemini-backed territory research
 paths:
   /healthz:
     get:
@@ -24,6 +28,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /fema/afg-grants:
+    get:
+      operationId: getAfgGrants
+      tags: [territory]
+      summary: Search public FEMA AFG grant records
+      parameters:
+        - in: query
+          name: stateCode
+          schema:
+            type: string
+        - in: query
+          name: city
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: FEMA grant records and source metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AfgGrantsResponse"
+  /providers/verify-live:
+    post:
+      operationId: verifyProviderLive
+      tags: [territory]
+      summary: Verify provider identity against public registries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderVerificationInput"
+      responses:
+        "200":
+          description: Public registry match and verification status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderVerificationResponse"
+        "400":
+          description: Invalid verification request
+  /gemini/chat:
+    post:
+      operationId: sendTerritoryResearchMessage
+      tags: [research]
+      summary: Ask Gemini a territory research question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TerritoryResearchInput"
+      responses:
+        "200":
+          description: Research response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TerritoryResearchResponse"
+        "503":
+          description: AI research service is unavailable
+  /gemini/maps-grounding:
+    post:
+      operationId: searchGroundedPlaces
+      tags: [research]
+      summary: Search for places using grounded research
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlacesResearchInput"
+      responses:
+        "200":
+          description: Research answer with source links
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlacesResearchResponse"
+        "503":
+          description: Maps-grounded research is unavailable
 components:
   schemas:
     HealthStatus:
@@ -33,4 +124,146 @@ components:
           type: string
       required:
         - status
+    AfgGrant:
+      type: object
+      additionalProperties: true
+    AfgGrantsResponse:
+      type: object
+      properties:
+        awards:
+          type: array
+          items:
+            $ref: "#/components/schemas/AfgGrant"
+        source:
+          type: string
+        fetchedAt:
+          type: string
+          format: date-time
+        count:
+          type: integer
+    ProviderVerificationInput:
+      type: object
+      properties:
+        agencyName:
+          type: string
+        city:
+          type: string
+        county:
+          type: string
+        stateCode:
+          type: string
+        zipCode:
+          type: string
+        category:
+          type: string
+          enum: [all, ems, fire]
+        npiNumber:
+          type: string
+      required: [agencyName]
+    ProviderVerificationResponse:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum: [MATCHED, NOT_MATCHED]
+        verified:
+          type: boolean
+        matchConfidence:
+          type: number
+        matchReasons:
+          type: array
+          items:
+            type: string
+        verificationSource:
+          type: string
+        npiNumber:
+          type: string
+        address:
+          type: string
+        zipCode:
+          type: string
+        taxonomyCode:
+          type: string
+        taxonomyDescription:
+          type: string
+        nppesOfficialName:
+          type: string
+        nppesOfficialTitle:
+          type: string
+        nppesLastUpdated:
+          type: string
+        officialWebsite:
+          type: string
+        googleMapsUri:
+          type: string
+        details:
+          type: string
+        usfaRegistryUrl:
+          type: string
+        liveFemaAwards:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        authorizedOfficial:
+          type: [object, "null"]
+          additionalProperties: true
+        allCityNpiProviders:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    TerritoryResearchMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+      required: [role, content]
+    TerritoryResearchInput:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/TerritoryResearchMessage"
+        agencyContext:
+          type: object
+          additionalProperties: true
+        systemInstruction:
+          type: string
+      required: [messages]
+    TerritoryResearchResponse:
+      type: object
+      properties:
+        content:
+          type: string
+      required: [content]
+    PlacesResearchInput:
+      type: object
+      properties:
+        query:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+      required: [query]
+    PlacesResearchResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        mapsLinks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [text, mapsLinks]
 

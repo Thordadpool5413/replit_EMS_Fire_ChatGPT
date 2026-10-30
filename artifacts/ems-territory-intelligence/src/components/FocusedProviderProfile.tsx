@@ -90,6 +90,7 @@ import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { TermTooltip } from './TermTooltip';
 import { FieldProvenanceBadge } from './FieldProvenanceBadge';
+import { SourceFreshnessIndicator } from './SourceFreshnessIndicator';
 import { useVerifyProviderLive } from '@workspace/api-client-react';
 
 /**
@@ -1656,7 +1657,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </div>
               <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                Source records are not attached for these values. Public references explain what can be checked: <a className="text-blue-700 dark:text-blue-400 underline" href="https://apps.usfa.fema.gov/registry/download" target="_blank" rel="noreferrer">USFA department registry</a> (IDs, station counts and staffing; no apparatus inventory), <a className="text-blue-700 dark:text-blue-400 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS public data</a> (de-identified, not agency-specific), <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS ambulance fee schedules</a> (not actual claim denials), and <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1" target="_blank" rel="noreferrer">OpenFEMA AFG awards</a>. Lineage review date: 2026-10-30; agency record retrieval dates were not recorded.
+                Source records are not attached for these values. Public references explain what can be checked: <a className="text-blue-700 dark:text-blue-400 underline" href="https://apps.usfa.fema.gov/registry/download" target="_blank" rel="noreferrer">USFA department registry</a> (IDs, station counts and staffing; no apparatus inventory), <a className="text-blue-700 dark:text-blue-400 underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS public data</a> (de-identified, not agency-specific), <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS ambulance fee schedules</a> (not actual claim denials), and <a className="text-blue-700 dark:text-blue-400 underline" href="https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1" target="_blank" rel="noreferrer">OpenFEMA AFG awards</a>. Live check times are shown where recorded; retrieval times for profile-provided values remain unavailable.
               </p>
             </section>
           )}
@@ -3001,7 +3002,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   disabled={isVerifyingLive}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white cursor-pointer disabled:opacity-50"
                 >
-                  {isVerifyingLive ? 'Verifying Live Federal APIs...' : 'Re-Verify Live NPI & FEMA'}
+                  {isVerifyingLive ? 'Checking CMS NPPES...' : 'Re-check NPPES identity'}
                 </button>
                 {onOpenDataLineage && (
                   <button
@@ -3039,7 +3040,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         {hasVerifiedProviderIdentity(agency) ? 'NPPES identity matched' : 'Directory candidate · identity unverified'}
                       </span>
                     </td>
-                    <td>NPPES registry · refreshed daily; this profile retrieval date not recorded</td>
+                    <td>
+                      <SourceFreshnessIndicator
+                        sourceName="CMS NPPES"
+                        checkedAt={agency.verificationAttempt?.timestamp || agency.lastVerifiedAt}
+                        sourceUpdatedAt={agency.nppesLastUpdated}
+                        staleAfterMs={24 * 60 * 60 * 1000}
+                        requestFailed={agency.verificationAttempt?.outcome === 'SOURCE_UNAVAILABLE'}
+                        sourceUpdateNote={!agency.nppesLastUpdated ? 'NPPES record update time was not returned.' : undefined}
+                      />
+                    </td>
                     <td>
                       <a
                         href={agency.nppesRegistryUrl}
@@ -3064,7 +3074,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         {agency.isOperationalDataVerified && agency.operationsSourceDoc ? 'Agency record attached' : 'Profile entry · source not attached'}
                       </span>
                     </td>
-                    <td>USFA registry · updated 2026-06-11; this profile retrieval date not recorded</td>
+                    <td>
+                      <SourceFreshnessIndicator
+                        sourceName="USFA registry"
+                        staleAfterMs={24 * 60 * 60 * 1000}
+                        sourceUpdateNote="No live USFA lookup time is recorded for this profile."
+                      />
+                    </td>
                     <td>
                       <a
                         href={agency.usfaRegistryUrl || 'https://apps.usfa.fema.gov/registry/'}
@@ -3094,7 +3110,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       </span>
                     </td>
                     <td>
-                      OpenFEMA AFG · award date {agency.femaGrantHistory?.[0]?.awardDate || 'not reported'} · profile retrieval date not recorded
+                      <div>OpenFEMA AFG · award date {agency.femaGrantHistory?.[0]?.awardDate || 'not reported'}</div>
+                      <SourceFreshnessIndicator
+                        sourceName="OpenFEMA profile match"
+                        staleAfterMs={24 * 60 * 60 * 1000}
+                        sourceUpdateNote="This profile does not store the query time; the AFG tracker shows the latest live query time."
+                      />
                     </td>
                     <td>
                       <a
@@ -3124,7 +3145,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         {agency.cmsData?.isVerifiedCmsClaims && agency.cmsData?.claimsSourceDoc ? 'Agency claims record attached' : 'No agency claims record'}
                       </span>
                     </td>
-                    <td>CMS AFS PUF · CY2026 fee rates only; profile record retrieval date not recorded</td>
+                    <td>
+                      <div>CMS AFS PUF · CY2026 fee rates only; not provider-specific claims.</div>
+                      <SourceFreshnessIndicator
+                        sourceName="CMS claims source"
+                        staleAfterMs={30 * 24 * 60 * 60 * 1000}
+                        sourceUpdateNote="No retrieval timestamp or reporting period is stored with this profile value."
+                      />
+                    </td>
                     <td>
                       <a
                         href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files"

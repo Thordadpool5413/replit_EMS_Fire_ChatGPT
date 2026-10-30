@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Agency } from '../types';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
+import { SourceFreshnessIndicator } from './SourceFreshnessIndicator';
 import {
   computeNationwideStateAggregations,
   deriveProcurementOpportunitiesFromAgencies,
@@ -122,7 +123,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
     [stateAggregations]
   );
 
-  const femaFetchedAt = afgQuery.dataUpdatedAt ? new Date(afgQuery.dataUpdatedAt).toLocaleString() : '';
+  const femaFetchedAt = (afgQuery.data as unknown as { fetchedAt?: string } | undefined)?.fetchedAt;
 
   const filteredStates = useMemo(() => {
     return stateAggregations.filter(s => selectedRegion === 'All' || s.region === selectedRegion);
@@ -495,11 +496,13 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 {isLoadingFema ? 'Querying OpenFEMA AFG records…' : afgQuery.isError ? 'OpenFEMA request failed. Local profile values remain separate and unverified.' : 'No OpenFEMA records returned for this query.'}
               </div>
             )}
-            {femaFetchedAt && (
-              <div className="text-[11px] font-mono text-slate-400">
-                OpenFEMA query fetched at {femaFetchedAt} · newest records only; dataset refresh is annual
-              </div>
-            )}
+            <SourceFreshnessIndicator
+              sourceName="OpenFEMA AFG query"
+              checkedAt={femaFetchedAt}
+              staleAfterMs={24 * 60 * 60 * 1000}
+              requestFailed={afgQuery.isError}
+              sourceUpdateNote="The API response does not include the dataset publication date; its annual update cadence is separate from this query time."
+            />
             <p className="text-xs text-slate-600 dark:text-slate-300">
               This table is a limited record sample, not a complete award-history export. FEMA&apos;s dataset has no city or county field, so it cannot be filtered to a city or matched to a local profile here.
             </p>

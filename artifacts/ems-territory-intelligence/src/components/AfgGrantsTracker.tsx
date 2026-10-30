@@ -10,6 +10,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { findExactFemaAfgAward } from '../data/femaAwardMatching';
 import { Award, ChevronRight, ExternalLink, Filter, RefreshCw, ShieldCheck } from 'lucide-react';
 import { formatCurrency, formatInteger, formatScore } from '../utils/numberFormatting';
+import { SourceFreshnessIndicator } from './SourceFreshnessIndicator';
 
 interface LiveOpenFemaRecord {
   id: string;
@@ -163,10 +164,15 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                 Federal source records
               </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                Retrieved {femaFetchedAt ? new Date(femaFetchedAt).toISOString().replace('T', ' ').slice(0, 19) + ' UTC' : 'date not recorded'}
-              </span>
             </div>
+            <SourceFreshnessIndicator
+              className="mt-2"
+              sourceName="OpenFEMA AFG query"
+              checkedAt={femaFetchedAt}
+              staleAfterMs={24 * 60 * 60 * 1000}
+              requestFailed={afgQuery.isError}
+              sourceUpdateNote="The query response does not include the dataset publication date."
+            />
             <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1.5 tracking-tight">
               FEMA AFG award records
             </h1>

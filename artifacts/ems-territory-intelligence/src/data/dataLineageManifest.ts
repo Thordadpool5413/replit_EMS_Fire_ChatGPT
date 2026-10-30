@@ -81,7 +81,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     name: 'U.S. Fire Administration National Fire Department Registry',
     acronym: 'USFA NFDR',
     sourceUrl: 'https://apps.usfa.fema.gov/registry/download',
-    dataAsOf: 'Registry last updated 2026-06-11',
+    dataAsOf: 'Department-specific retrieval date not stored; see profile freshness status',
     governingBody: 'Federal Emergency Management Agency (DHS)',
     updateCadence: 'Registry updates; check current registry listing',
     legalAuthority: 'Federal Fire Prevention and Control Act of 1974 (Public Law 93-498)',
@@ -99,7 +99,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     name: 'FEMA Assistance to Firefighters Grant (AFG) OpenFEMA Dataset',
     acronym: 'OpenFEMA AFG',
     sourceUrl: 'https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1',
-    dataAsOf: 'OpenFEMA last refresh 2026-06-04',
+    dataAsOf: 'Dataset publication date is not returned by the live query; see query timestamp',
     governingBody: 'U.S. Department of Homeland Security (DHS) / FEMA Grant Programs Directorate',
     updateCadence: 'Annual dataset refresh; check FEMA metadata',
     legalAuthority: 'Assistance to Firefighters Grants program records published by FEMA',
@@ -118,7 +118,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     name: 'CMS National Plan and Provider Enumeration System (NPPES)',
     acronym: 'NPPES NPI Registry',
     sourceUrl: 'https://npiregistry.cms.hhs.gov/api-page',
-    dataAsOf: 'Read API reports daily NPPES data',
+    dataAsOf: 'Per-record last_updated is returned when available; profile check time is shown separately',
     governingBody: 'Centers for Medicare & Medicaid Services (HHS)',
     updateCadence: 'NPPES registry is updated; check the record timestamp',
     legalAuthority: 'HIPAA Administrative Simplification (45 CFR Part 162)',
@@ -358,7 +358,7 @@ export function auditAgencyDataLineage(
       schemaIdentifier: 'NFIRS 5.0 State Agency Code',
       verificationStatus: hasVerifiedFdid ? 'Verified Official' : agency.fdid ? 'Cross-Referenced' : 'Sourcing Required',
       sourceUrlOrCitation: agency.usfaRegistryUrl,
-      reportingPeriod: 'USFA registry update 2026-06-11; department record date unavailable',
+      reportingPeriod: 'Department-specific reporting date unavailable; no live USFA lookup time is stored',
       documentationQuote: agency.fdid
         ? (hasVerifiedFdid
             ? `USFA certified fire department / EMS agency identifier: ${agency.fdid}.`

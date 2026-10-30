@@ -38,6 +38,7 @@ import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/syncStore';
 import { FieldProvenanceBadge } from './FieldProvenanceBadge';
+import { SourceFreshnessIndicator } from './SourceFreshnessIndicator';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -399,6 +400,26 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
             <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">
               Public-source review: 2026-10-30. NPI enumeration and USFA registry entries do not verify licensure, fleet, operating volume, denials, outcomes, or revenue. Profile-based figures below are estimates; source reporting dates are unavailable unless a field-specific record is attached.
+            </div>
+            <div className="mb-4 grid grid-cols-1 gap-2">
+              <SourceFreshnessIndicator
+                sourceName="CMS NPPES identity check"
+                checkedAt={provenanceSource.verificationAttempt?.timestamp || provenanceSource.lastVerifiedAt}
+                sourceUpdatedAt={provenanceSource.nppesLastUpdated}
+                staleAfterMs={24 * 60 * 60 * 1000}
+                requestFailed={provenanceSource.verificationAttempt?.outcome === 'SOURCE_UNAVAILABLE'}
+                sourceUpdateNote={!provenanceSource.nppesLastUpdated ? 'NPPES record update time was not returned.' : undefined}
+              />
+              <SourceFreshnessIndicator
+                sourceName="USFA registry reference"
+                staleAfterMs={24 * 60 * 60 * 1000}
+                sourceUpdateNote="No live USFA lookup time is recorded for this profile."
+              />
+              <SourceFreshnessIndicator
+                sourceName="OpenFEMA profile match"
+                staleAfterMs={24 * 60 * 60 * 1000}
+                sourceUpdateNote="This profile does not store its match time; the grants tracker shows live query time."
+              />
             </div>
 
             {/* Official Leadership & Key Contacts Directory */}

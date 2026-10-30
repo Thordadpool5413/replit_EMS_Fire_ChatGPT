@@ -1054,7 +1054,7 @@ export default function App() {
               strictCloudOnlyMode={strictCloudOnlyMode}
               onToggleStrictCloudOnlyMode={toggleStrictCloudOnlyMode}
               onHydrateBatchToCloud={hydrateBatchToCloud}
-              onSyncSingleAgencyToCloud={(agency: Agency) => updateAgencyInCloud(agency)}
+              onSyncSingleAgencyToCloud={(agency: Agency, confirmed?: boolean) => updateAgencyInCloud(agency, confirmed)}
               onSelectAgency={(a: Agency) => {
                 setSelectedAgency(a);
                 setActiveAccount(a);

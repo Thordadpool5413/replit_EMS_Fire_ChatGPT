@@ -6,6 +6,7 @@
 import { Agency, FieldNote, KeyContact, PredictiveWeights } from '../types';
 import { calculateScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
 import { CMS_ENROLLMENT_DATABASE } from '../data/cmsEnrollmentData';
+import { hasVerifiedProviderIdentity } from '../data/providerIdentity';
 
 /**
  * Valid 50 US State + DC postal codes for jurisdiction verification
@@ -618,12 +619,7 @@ class DataSanitizationService {
       return 'firestore_cloud_synced';
     }
 
-    if (
-      agency.isVerifiedRecord ||
-      Boolean(agency.npiNumber) ||
-      agency.verificationSource === 'Federal CMS NPI Registry' ||
-      agency.verificationSource === 'Google Maps Verified'
-    ) {
+    if (hasVerifiedProviderIdentity(agency)) {
       return 'live_federal_registry';
     }
 
@@ -705,6 +701,7 @@ class DataSanitizationService {
       Boolean(agency._updatedAt) ||
       Boolean(agency.isCloudPersisted) ||
       this.cloudSyncedAgencyIds.has(agency.id);
+    const hasVerifiedIdentity = hasVerifiedProviderIdentity(agency);
 
     if (isCloud) {
       this.cloudSyncedAgencyIds.add(agency.id);
@@ -717,10 +714,10 @@ class DataSanitizationService {
       fieldNotes: cleanNotes,
       zollOpportunity: verifiedOpportunity,
       isCloudPersisted: isCloud,
-      isVerifiedRecord: Boolean(agency.isVerifiedRecord),
+      isVerifiedRecord: hasVerifiedIdentity,
       dataProvenanceTier: isCloud
         ? 'firestore_cloud_synced'
-        : agency.isVerifiedRecord || Boolean(agency.npiNumber)
+        : hasVerifiedIdentity
           ? 'live_federal_registry'
           : 'public_federal_baseline'
     };
@@ -838,10 +835,7 @@ class DataSanitizationService {
       }
 
       // Also count live NPI enrichment even if already synced to Firestore
-      if (
-        tier === 'firestore_cloud_synced' &&
-        (agency.isVerifiedRecord || Boolean(agency.npiNumber))
-      ) {
+      if (tier === 'firestore_cloud_synced' && hasVerifiedProviderIdentity(agency)) {
         liveFederalNpiCount++;
       }
     }

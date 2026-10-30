@@ -4,6 +4,7 @@
  */
 
 import { Agency } from '../types';
+import { hasVerifiedProviderIdentity } from './providerIdentity';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 
 export interface DataRegistrySource {
@@ -191,18 +192,23 @@ export function auditAgencyDataLineage(
     agency.operatingRelationship === 'POSSIBLE_RELATED_ENTITY' ||
     agency.operatingRelationship === 'DIRECT_OPERATING_AGENCY' ||
     agency.operatingRelationship === 'PARENT_MUNICIPALITY' ||
-    Boolean(agency.verificationSource?.includes('NPPES') && !isUnrelatedOrIndividual);
+    agency.operatingRelationship !== 'UNRELATED_ENTITY' &&
+    agency.operatingRelationship !== 'RELATIONSHIP_UNRESOLVED' &&
+    agency.operatingRelationship !== 'UNRESOLVED';
 
   const hasVerifiedNpi = Boolean(
-    isNpiCheckDigitValid &&
-    agency.npiNumber &&
-    agency.isVerifiedRecord &&
+    hasVerifiedProviderIdentity(agency) &&
     !isUnrelatedOrIndividual &&
     isCorroboratedRelationship
   );
 
   const hasVerifiedLegalName = Boolean(hasVerifiedNpi && (agency.nppesOfficialName || agency.name));
-  const hasVerifiedAddress = Boolean(hasVerifiedNpi && agency.address);
+  const hasVerifiedAddress = Boolean(
+    hasVerifiedNpi &&
+    agency.address &&
+    agency.nppesVerifiedAddress &&
+    agency.address === agency.nppesVerifiedAddress
+  );
   const hasVerifiedFdid = Boolean(agency.isFdidVerified && agency.fdid);
   const hasVerifiedOperations = Boolean(agency.isOperationalDataVerified);
   
@@ -316,7 +322,7 @@ export function auditAgencyDataLineage(
       sourceUrlOrCitation: agency.npiNumber ? `https://npiregistry.cms.hhs.gov/provider-view/${agency.npiNumber}` : undefined,
       reportingPeriod: agency.nppesLastUpdated || 'NPPES Dissemination CY2026',
       documentationQuote: hasVerifiedAddress
-        ? `Headquarters physical address confirmed via NPPES provider registry: ${agency.address}.`
+        ? `Headquarters physical address confirmed via NPPES provider registry: ${agency.nppesVerifiedAddress}.`
         : 'Physical practice location unverified; postal address confirmation required.',
       evidenceBasis: hasVerifiedAddress ? 'NPPES practice location corroborated with local municipal jurisdiction.' : 'Uncorroborated postal string.',
       evidenceScope: hasVerifiedAddress ? 'FIELD_VERIFIED' : 'UNVERIFIED',

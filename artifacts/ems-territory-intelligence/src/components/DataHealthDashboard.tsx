@@ -46,8 +46,8 @@ interface DataHealthDashboardProps {
   cloudSyncCount: number;
   strictCloudOnlyMode: boolean;
   onToggleStrictCloudOnlyMode: (enabled: boolean) => void;
-  onHydrateBatchToCloud: (maxRecords?: number) => Promise<number>;
-  onSyncSingleAgencyToCloud: (agency: Agency) => Promise<void>;
+  onHydrateBatchToCloud: (maxRecords?: number, confirmed?: boolean) => Promise<number>;
+  onSyncSingleAgencyToCloud: (agency: Agency, confirmed?: boolean) => Promise<void>;
   onSelectAgency?: (agency: Agency) => void;
 }
 
@@ -162,7 +162,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
     if (!approved) return;
     setSyncingRowId(agency.id);
     try {
-      await onSyncSingleAgencyToCloud(agency);
+      await onSyncSingleAgencyToCloud(agency, true);
       setRefreshTick((t) => t + 1);
     } finally {
       setSyncingRowId(null);
@@ -172,7 +172,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
   const handleHydrateBatch = async () => {
     const approved = window.confirm('Write up to 35 local agency records to the configured Firestore database? This is an external cloud write. No existing cloud records will be deleted.');
     if (!approved) return;
-    await onHydrateBatchToCloud(35);
+    await onHydrateBatchToCloud(35, true);
     setRefreshTick((t) => t + 1);
   };
 

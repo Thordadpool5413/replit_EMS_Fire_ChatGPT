@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Agency, LeadStage, FieldNote, KeyContact } from '../types';
+import { matchesExactLegalGeography } from '../data/providerIdentity';
 import {
   ArrowLeft,
   MapPin,
@@ -490,6 +491,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         outcome?: string; details?: string; address?: string; zipCode?: string;
         npiNumber?: string; taxonomyCode?: string; taxonomyDescription?: string;
         nppesOfficialName?: string; nppesOfficialTitle?: string; nppesLastUpdated?: string;
+        nppesVerifiedCity?: string; nppesVerifiedStateCode?: string;
+        nppesVerifiedAddress?: string;
         authorizedOfficial?: { name?: string; title?: string; phone?: string; verificationSource?: string };
         legalOrganizationName?: string; verificationSource?: string; isVerifiedRecord?: boolean;
         lastVerifiedAt?: string; allCityNpiProviders?: typeof cityNpiProviders;
@@ -500,15 +503,32 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         setCityNpiProviders(data.allCityNpiProviders);
       }
 
-      const isMatched = data.outcome === 'MATCHED' && data.verified === true;
+      const isMatched =
+        data.outcome === 'MATCHED' &&
+        data.verified === true &&
+        matchesExactLegalGeography(
+          {
+            name: rawAgency.name,
+            city: rawAgency.city,
+            stateCode: rawAgency.stateCode,
+          },
+          {
+            legalName: data.nppesOfficialName || '',
+            city: data.nppesVerifiedCity || '',
+            stateCode: data.nppesVerifiedStateCode || '',
+          },
+        );
       const patch: Partial<Agency> = {
-        address: data.address || rawAgency.address,
-        zipCode: data.zipCode || rawAgency.zipCode,
+        address: isMatched ? (data.address || rawAgency.address) : rawAgency.address,
+        zipCode: isMatched ? (data.zipCode || rawAgency.zipCode) : rawAgency.zipCode,
+        nppesVerifiedAddress: isMatched ? (data.address || rawAgency.nppesVerifiedAddress) : rawAgency.nppesVerifiedAddress,
         // P0 Protection: Never wipe existing NPI or identifiers on non-match/failure
         npiNumber: isMatched ? (data.npiNumber || rawAgency.npiNumber) : rawAgency.npiNumber,
         taxonomyCode: isMatched ? (data.taxonomyCode || rawAgency.taxonomyCode) : rawAgency.taxonomyCode,
         taxonomyDescription: isMatched ? (data.taxonomyDescription || rawAgency.taxonomyDescription) : rawAgency.taxonomyDescription,
-        nppesOfficialName: isMatched ? (data.nppesOfficialName || data.authorizedOfficial?.name || rawAgency.nppesOfficialName) : rawAgency.nppesOfficialName,
+        nppesOfficialName: isMatched ? (data.nppesOfficialName || rawAgency.nppesOfficialName) : rawAgency.nppesOfficialName,
+        nppesVerifiedCity: isMatched ? data.nppesVerifiedCity : rawAgency.nppesVerifiedCity,
+        nppesVerifiedStateCode: isMatched ? data.nppesVerifiedStateCode : rawAgency.nppesVerifiedStateCode,
         nppesOfficialTitle: isMatched ? (data.nppesOfficialTitle || data.authorizedOfficial?.title || rawAgency.nppesOfficialTitle) : rawAgency.nppesOfficialTitle,
         nppesLastUpdated: isMatched ? (data.nppesLastUpdated || rawAgency.nppesLastUpdated) : rawAgency.nppesLastUpdated,
         nppesRegistryUrl: isMatched && (data.npiNumber || rawAgency.npiNumber)
@@ -918,9 +938,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
         {/* Main Account 360 Workspace Content */}
         <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 min-w-0">
-          {/* ================================================================
+          {/* ----------------------------------------------------------------
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
-             ================================================================ */}
+             ---------------------------------------------------------------- */}
           <section
             aria-label="Account 360 Executive Decision Header"
             className="pi-surface p-5 sm:p-6 lg:p-7 space-y-6"
@@ -1102,9 +1122,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </div>
 
-            {/* ================================================================
+            {/* ----------------------------------------------------------------
                 BLOCK 2: ACCOUNT ASSESSMENT (4 EVIDENCE-GROUNDED PILLARS)
-               ================================================================ */}
+               ---------------------------------------------------------------- */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -1222,9 +1242,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </div>
 
-            {/* ================================================================
+            {/* ----------------------------------------------------------------
                 BLOCK 3: WHAT WE KNOW — 4 STRUCTURED INFORMATION CARDS
-               ================================================================ */}
+               ---------------------------------------------------------------- */}
             <div className="space-y-3">
               <h2 className="text-xs font-semibold text-[#53657B] dark:text-slate-400">
                 What we know &middot; Structured evidence
@@ -1379,9 +1399,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             )}
           </section>
 
-          {/* ================================================================
+          {/* ----------------------------------------------------------------
               7-TOPIC ACCOUNT 360 NAVIGATION (SECTION 9)
-             ================================================================ */}
+             ---------------------------------------------------------------- */}
           <nav
             aria-label="Account 360 Topic Navigation"
             className="pi-surface p-1.5 flex items-center justify-between gap-2 sticky top-16 z-30 overflow-hidden"

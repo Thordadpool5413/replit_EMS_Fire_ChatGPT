@@ -28,8 +28,8 @@ export interface UseFirestoreAgenciesResult {
   cloudSyncCount: number;
   strictCloudOnlyMode: boolean;
   toggleStrictCloudOnlyMode: (enabled: boolean) => void;
-  hydrateBatchToCloud: (maxRecords?: number) => Promise<number>;
-  updateAgencyInCloud: (agency: Agency) => Promise<void>;
+  hydrateBatchToCloud: (maxRecords?: number, confirmed?: boolean) => Promise<number>;
+  updateAgencyInCloud: (agency: Agency, confirmed?: boolean) => Promise<void>;
   updateStageInCloud: (agencyId: string, newStage: LeadStage) => Promise<void>;
   toggleRouteInCloud: (agencyId: string) => Promise<void>;
   toggleBookmarkInCloud: (agencyId: string) => Promise<void>;
@@ -197,7 +197,8 @@ export function useFirestoreAgencies({
   }, [onToast]);
 
   // Batch hydrate unsynced active agencies into Firestore
-  const hydrateBatchToCloud = useCallback(async (maxRecords: number = 35): Promise<number> => {
+  const hydrateBatchToCloud = useCallback(async (maxRecords: number = 35, confirmed = false): Promise<number> => {
+    if (confirmed !== true) return 0;
     const unsynced = allSanitizedAgencies.filter(
       a => !a.isCloudPersisted && !dataSanitizationService.isAgencyCloudSynced(a.id)
     );
@@ -259,7 +260,8 @@ export function useFirestoreAgencies({
   }, [allSanitizedAgencies, onToast]);
 
   // 4. Update single agency in Firestore + local optimistic update
-  const updateAgencyInCloud = useCallback(async (agency: Agency) => {
+  const updateAgencyInCloud = useCallback(async (agency: Agency, confirmed = false) => {
+    if (confirmed !== true) return;
     const cleanAgency = dataSanitizationService.sanitizeAgency({
       ...agency,
       _updatedAt: new Date().toISOString(),

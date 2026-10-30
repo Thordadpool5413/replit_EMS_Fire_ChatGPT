@@ -6,6 +6,7 @@ import {
   VerifyProviderLiveBody,
 } from "@workspace/api-zod";
 import { ai } from "@workspace/integrations-gemini-ai";
+import { matchesExactProviderIdentity } from "../lib/providerIdentity";
 
 const router: IRouter = Router();
 
@@ -36,16 +37,6 @@ type RegistryRecord = {
     primary?: boolean;
   }>;
 };
-
-function normalizeLegalName(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
 
 function hasValidNpiCheckDigit(npi: string): boolean {
   if (!/^\d{10}$/.test(npi)) return false;
@@ -225,11 +216,19 @@ router.post(
   async (req: Request, res: Response): Promise<void> => {
     const parsed = VerifyProviderLiveBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "A provider name is required." });
+      res.status(400).json({
+        error: "A provider name, city, and state are required.",
+      });
       return;
     }
 
     const input = parsed.data;
+    if (!input.city?.trim() || !input.stateCode?.trim()) {
+      res.status(400).json({
+        error: "A city and state are required for provider identity verification.",
+      });
+      return;
+    }
     const stateCode = input.stateCode?.toUpperCase();
     if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) {
       res.status(400).json({ error: "State code must contain two letters." });
@@ -257,10 +256,6 @@ router.post(
         ...input,
         stateCode,
       });
-      const targetName = normalizeLegalName(input.agencyName);
-      const targetCity = normalizeLegalName(input.city ?? "");
-      const targetState = stateCode ?? "";
-
       const mappedCandidates = candidates.map((candidate) => {
         const address = safeAddress(candidate);
         return {
@@ -281,18 +276,20 @@ router.post(
 
       const exactMatch = candidates.find((candidate) => {
         const address = safeAddress(candidate);
-        const nameMatch =
-          normalizeLegalName(candidate.basic?.organization_name ?? "") ===
-          targetName;
-        const cityMatch =
-          !targetCity ||
-          normalizeLegalName(address?.city ?? "") === targetCity;
-        const stateMatch =
-          !targetState ||
-          (address?.state ?? "").toUpperCase() === targetState;
-        const npiMatch =
-          !input.npiNumber || candidate.number === input.npiNumber;
-        return nameMatch && cityMatch && stateMatch && npiMatch;
+        return matchesExactProviderIdentity(
+          {
+            agencyName: input.agencyName,
+            city: input.city!,
+            stateCode: stateCode!,
+            npiNumber: input.npiNumber,
+          },
+          {
+            legalName: candidate.basic?.organization_name ?? "",
+            city: address?.city ?? "",
+            stateCode: address?.state ?? "",
+            npiNumber: candidate.number,
+          },
+        );
       });
 
       if (!exactMatch) {
@@ -350,6 +347,8 @@ router.post(
         taxonomyCode: primaryTaxonomy?.code ?? "",
         taxonomyDescription: primaryTaxonomy?.desc ?? "",
         nppesOfficialName: officialName,
+        nppesVerifiedCity: address?.city ?? "",
+        nppesVerifiedStateCode: address?.state ?? "",
         nppesOfficialTitle:
           exactMatch.basic?.authorized_official_title_or_position ?? "",
         nppesLastUpdated: exactMatch.basic?.last_updated ?? "",

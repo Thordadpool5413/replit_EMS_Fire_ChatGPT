@@ -29,9 +29,14 @@ export const ProviderVerificationInputCategory = {
 
 export interface ProviderVerificationInput {
   agencyName: string;
-  city?: string;
+  /** @minLength 1 */
+  city: string;
   county?: string;
-  stateCode?: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  stateCode: string;
   zipCode?: string;
   category?: ProviderVerificationInputCategory;
   npiNumber?: string;
@@ -62,10 +67,13 @@ export interface ProviderVerificationResponse {
   verificationSource?: string;
   npiNumber?: string;
   address?: string;
+  nppesVerifiedAddress?: string;
   zipCode?: string;
   taxonomyCode?: string;
   taxonomyDescription?: string;
   nppesOfficialName?: string;
+  nppesVerifiedCity?: string;
+  nppesVerifiedStateCode?: string;
   nppesOfficialTitle?: string;
   nppesLastUpdated?: string;
   officialWebsite?: string;

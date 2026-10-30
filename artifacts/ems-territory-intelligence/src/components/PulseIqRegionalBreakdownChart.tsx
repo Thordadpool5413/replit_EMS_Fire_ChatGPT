@@ -274,39 +274,23 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       const data: any[] = [];
       countyMap.forEach((entry, countyKey) => {
         const { displayName, fullName, agencies: countyAgencies } = entry;
-        const hasAgencies = countyAgencies.length > 0;
-        if (!hasAgencies) return;
-        if (!hasAgencies) return;
+        if (countyAgencies.length === 0) return;
 
-        let avgScore: number;
-        let maxScore: number;
-        let totalPipeline: number;
-        let clinicalAcuity: number;
-        let fleetObsolescence: number;
-        let cmsRecovery: number;
-        let softwareWhitespace: number;
-        let budgetGrant: number;
-        let topAccount: Agency | undefined;
-        let fleetBrand = 'Not sourced';
-        let fleetAge = 0;
+        const totalSc = countyAgencies.reduce((acc, a) => acc + explainAgencyScore(a, weights).totalScore, 0);
+        const avgScore = Math.round(totalSc / countyAgencies.length);
+        const maxScore = Math.max(...countyAgencies.map(a => explainAgencyScore(a, weights).totalScore));
+        const totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
+        const topAccount: Agency | undefined = countyAgencies
+          .slice()
+          .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
 
-        if (hasAgencies) {
-          const totalSc = countyAgencies.reduce((acc, a) => acc + explainAgencyScore(a, weights).totalScore, 0);
-          avgScore = Math.round(totalSc / countyAgencies.length);
-          maxScore = Math.max(...countyAgencies.map(a => explainAgencyScore(a, weights).totalScore));
-          totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
-          topAccount = countyAgencies
-            .slice()
-            .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
-
-          clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
-          fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
-          cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
-          softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
-          budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
-          fleetBrand = topAccount?.installedFleet?.defibBrand || 'Not sourced';
-          fleetAge = topAccount?.installedFleet?.defibAgeYears ?? 0;
-        }
+        const clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
+        const fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
+        const cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
+        const softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
+        const budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
+        const fleetBrand = topAccount?.installedFleet?.defibBrand || 'Not sourced';
+        const fleetAge = topAccount?.installedFleet?.defibAgeYears ?? 0;
 
         data.push({
           id: `${stUpper}-${countyKey}`,
@@ -317,7 +301,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           stateCode: stUpper,
           score: avgScore,
           peakScore: maxScore,
-          accountCount: hasAgencies ? countyAgencies.length : 2,
+          accountCount: countyAgencies.length,
           pipelineValue: totalPipeline,
           pipelineFormatted: totalPipeline >= 1000000 
             ? `$${(totalPipeline / 1000000).toFixed(1)}M` 

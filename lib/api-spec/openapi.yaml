@@ -39,6 +39,12 @@ paths:
           schema:
             type: string
         - in: query
+          name: recipientName
+          description: Exact OpenFEMA grantee name filter
+          schema:
+            type: string
+            maxLength: 180
+        - in: query
           name: limit
           schema:
             type: integer
@@ -51,6 +57,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AfgGrantsResponse"
+  /providers/nppes/search:
+    post:
+      operationId: searchNppesProviders
+      tags: [territory]
+      summary: Search CMS NPPES organization records
+      description: Returns registry identity fields only; it does not verify an EMS or fire operating relationship.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NppesSearchInput"
+      responses:
+        "200":
+          description: NPPES organization candidates and retrieval metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NppesSearchResponse"
+        "400":
+          description: Invalid NPI or incomplete organization search
+        "502":
+          description: CMS NPPES is unavailable
   /providers/verify-live:
     post:
       operationId: verifyProviderLive
@@ -132,11 +161,78 @@ components:
             $ref: "#/components/schemas/AfgGrant"
         source:
           type: string
+        sourceUrl:
+          type: string
+          format: uri
         fetchedAt:
           type: string
           format: date-time
         count:
           type: integer
+    NppesSearchInput:
+      type: object
+      properties:
+        npiNumber:
+          type: string
+          pattern: '^\d{10}$'
+        agencyName:
+          type: string
+          maxLength: 180
+        city:
+          type: string
+          maxLength: 100
+        stateCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 20
+      description: Supply an NPI, or an organization name together with city and state.
+    NppesProviderRecord:
+      type: object
+      properties:
+        npiNumber:
+          type: string
+        organizationName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        stateCode:
+          type: string
+        postalCode:
+          type: string
+        taxonomyCode:
+          type: string
+        taxonomyDescription:
+          type: string
+        authorizedOfficialName:
+          type: string
+        authorizedOfficialTitle:
+          type: string
+        nppesLastUpdated:
+          type: string
+        registryUrl:
+          type: string
+          format: uri
+      required: [npiNumber, organizationName, city, stateCode, registryUrl]
+    NppesSearchResponse:
+      type: object
+      properties:
+        sourceUrl:
+          type: string
+          format: uri
+        retrievedAt:
+          type: string
+          format: date-time
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/NppesProviderRecord"
+      required: [sourceUrl, retrievedAt, results]
     ProviderVerificationInput:
       type: object
       properties:

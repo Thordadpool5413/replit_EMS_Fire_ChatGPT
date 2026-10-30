@@ -1,6 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   GetAfgGrantsQueryParams,
+  SearchNppesProvidersBody,
+  SearchNppesProvidersResponse,
   SearchGroundedPlacesBody,
   SendTerritoryResearchMessageBody,
   VerifyProviderLiveBody,
@@ -120,9 +122,14 @@ router.get(
     }
 
     const limit = Math.min(parsed.data.limit ?? 30, 100);
+    const recipientName = parsed.data.recipientName?.trim();
     const makeUrl = () => {
       const filters = ["startswith(programName,'Assistance to Firefighters')"];
       if (stateCode) filters.push(`vendorState eq '${stateCode}'`);
+      if (recipientName) {
+        const escapedRecipient = recipientName.replace(/'/g, "''");
+        filters.push(`vendorName eq '${escapedRecipient}'`);
+      }
       const url = new URL(FEMA_URL);
       url.searchParams.set("$top", String(limit));
       url.searchParams.set("$orderby", "fiscalYear desc");
@@ -131,7 +138,8 @@ router.get(
     };
 
     try {
-      const response = await fetch(makeUrl(), {
+      const sourceUrl = makeUrl().toString();
+      const response = await fetch(sourceUrl, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
       });
@@ -162,6 +170,7 @@ router.get(
 
       res.json({
         source: FEMA_URL,
+        sourceUrl,
         fetchedAt: new Date().toISOString(),
         count: awards.length,
         awards,
@@ -170,6 +179,119 @@ router.get(
       req.log.error({ err: error }, "OpenFEMA grant lookup failed");
       res.status(502).json({
         error: "OpenFEMA is unavailable. Try again later.",
+      });
+    }
+  },
+);
+
+router.post(
+  "/providers/nppes/search",
+  async (req: Request, res: Response): Promise<void> => {
+    const parsed = SearchNppesProvidersBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Enter a valid 10-digit NPI or agency search." });
+      return;
+    }
+
+    const input = parsed.data;
+    const npiNumber = input.npiNumber?.trim();
+    const agencyName = input.agencyName?.trim();
+    const city = input.city?.trim();
+    const stateCode = input.stateCode?.trim().toUpperCase();
+
+    if (npiNumber && !hasValidNpiCheckDigit(npiNumber)) {
+      res.status(400).json({ error: "The NPI failed CMS check-digit validation." });
+      return;
+    }
+    if (!npiNumber && (!agencyName || !city || !stateCode)) {
+      res.status(400).json({
+        error: "Search by NPI, or provide organization name, city, and state.",
+      });
+      return;
+    }
+    if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) {
+      res.status(400).json({ error: "State code must contain two letters." });
+      return;
+    }
+
+    try {
+      const url = new URL(NPPES_URL);
+      url.searchParams.set("version", "2.1");
+      url.searchParams.set("limit", String(Math.min(input.limit ?? 20, 20)));
+      if (npiNumber) {
+        url.searchParams.set("number", npiNumber);
+      } else {
+        url.searchParams.set("organization_name", agencyName!);
+        url.searchParams.set("city", city!);
+        url.searchParams.set("state", stateCode!);
+      }
+
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) {
+        res.status(502).json({
+          error: `CMS NPPES returned HTTP ${response.status}.`,
+        });
+        return;
+      }
+
+      const payload = (await response.json()) as { results?: RegistryRecord[] };
+      const results = (Array.isArray(payload.results) ? payload.results : [])
+        .map((record) => {
+          const address = safeAddress(record);
+          const npi = record.number ?? "";
+          const organizationName = record.basic?.organization_name?.trim() ?? "";
+          const recordCity = address?.city?.trim() ?? "";
+          const recordState = address?.state?.trim().toUpperCase() ?? "";
+          const taxonomy =
+            record.taxonomies?.find((item) => item.primary) ??
+            record.taxonomies?.[0];
+          const officialFirstName =
+            record.basic?.authorized_official_first_name?.trim() ?? "";
+          const officialLastName =
+            record.basic?.authorized_official_last_name?.trim() ?? "";
+
+          return {
+            npiNumber: npi,
+            organizationName,
+            address: [address?.address_1, address?.address_2]
+              .filter(Boolean)
+              .join(", "),
+            city: recordCity,
+            stateCode: recordState,
+            postalCode: address?.postal_code ?? "",
+            taxonomyCode: taxonomy?.code ?? "",
+            taxonomyDescription: taxonomy?.desc ?? "",
+            authorizedOfficialName: [officialFirstName, officialLastName]
+              .filter(Boolean)
+              .join(" "),
+            authorizedOfficialTitle:
+              record.basic?.authorized_official_title_or_position ?? "",
+            nppesLastUpdated: record.basic?.last_updated ?? "",
+            registryUrl: `https://npiregistry.cms.hhs.gov/provider-view/${encodeURIComponent(npi)}`,
+          };
+        })
+        .filter(
+          (record) =>
+            hasValidNpiCheckDigit(record.npiNumber) &&
+            record.organizationName.length > 0 &&
+            record.city.length > 0 &&
+            /^[A-Z]{2}$/.test(record.stateCode),
+        );
+
+      res.json(
+        SearchNppesProvidersResponse.parse({
+          sourceUrl: url.toString(),
+          retrievedAt: new Date().toISOString(),
+          results,
+        }),
+      );
+    } catch (error) {
+      req.log.error({ err: error }, "CMS NPPES organization search failed");
+      res.status(502).json({
+        error: "CMS NPPES is unavailable. No source record was imported.",
       });
     }
   },

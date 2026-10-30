@@ -23,6 +23,8 @@ import type {
   AfgGrantsResponse,
   GetAfgGrantsParams,
   HealthStatus,
+  NppesSearchInput,
+  NppesSearchResponse,
   PlacesResearchInput,
   PlacesResearchResponse,
   ProviderVerificationInput,
@@ -219,6 +221,95 @@ export function useGetAfgGrants<TData = Awaited<ReturnType<typeof getAfgGrants>>
 
 
 
+
+export const getSearchNppesProvidersUrl = () => {
+
+
+
+
+  return `/api/providers/nppes/search`
+}
+
+/**
+ * Returns registry identity fields only; it does not verify an EMS or fire operating relationship.
+ * @summary Search CMS NPPES organization records
+ */
+export const searchNppesProviders = async (nppesSearchInput: NppesSearchInput, options?: Parameters<typeof customFetch>[1]): Promise<NppesSearchResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<NppesSearchResponse>(getSearchNppesProvidersUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(nppesSearchInput)
+  }
+);}
+
+
+
+
+
+export const getSearchNppesProvidersMutationKey = () => ['searchNppesProviders'] as const;
+
+export const getSearchNppesProvidersMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchNppesProviders>>, TError,SearchNppesProvidersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchNppesProviders>>, TError,SearchNppesProvidersMutationVariables, TContext> => {
+
+const mutationKey = getSearchNppesProvidersMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchNppesProviders>>, SearchNppesProvidersMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  searchNppesProviders(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SearchNppesProvidersMutationResult = NonNullable<Awaited<ReturnType<typeof searchNppesProviders>>>
+    export type SearchNppesProvidersMutationBody = BodyType<NppesSearchInput>
+    export type SearchNppesProvidersMutationError = ErrorType<void>
+    export type SearchNppesProvidersMutationVariables = {data: BodyType<NppesSearchInput>}
+
+    /**
+ * @summary Search CMS NPPES organization records
+ */
+export const useSearchNppesProviders = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchNppesProviders>>, TError,SearchNppesProvidersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof searchNppesProviders>>,
+        TError,
+        SearchNppesProvidersMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSearchNppesProvidersMutationOptions(options));
+    }
 
 export const getVerifyProviderLiveUrl = () => {
 

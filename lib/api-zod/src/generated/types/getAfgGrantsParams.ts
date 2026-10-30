@@ -9,6 +9,11 @@
 export type GetAfgGrantsParams = {
 stateCode?: string;
 /**
+ * Exact OpenFEMA grantee name filter
+ * @maxLength 180
+ */
+recipientName?: string;
+/**
  * @minimum 1
  * @maximum 100
  */

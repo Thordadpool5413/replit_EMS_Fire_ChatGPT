@@ -10,6 +10,7 @@ import type { AfgGrant } from './afgGrant';
 export interface AfgGrantsResponse {
   awards?: AfgGrant[];
   source?: string;
+  sourceUrl?: string;
   fetchedAt?: Date;
   count?: number;
 }

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchesExactProviderIdentity } from "./providerIdentity.ts";
+import {
+  hasValidNpiCheckDigit,
+  matchesExactProviderIdentity,
+} from "./providerIdentity.ts";
 
 const requested = {
   agencyName: "Riverview Fire & Rescue, Inc.",
@@ -15,6 +18,13 @@ const registry = {
   stateCode: "OR",
   npiNumber: "1234567893",
 };
+
+test("validates known NPI check digits", () => {
+  assert.equal(hasValidNpiCheckDigit("1881018208"), true);
+  assert.equal(hasValidNpiCheckDigit("1538568928"), true);
+  assert.equal(hasValidNpiCheckDigit("1881018200"), false);
+  assert.equal(hasValidNpiCheckDigit("188101820"), false);
+});
 
 test("matches an exact legal name, city, state, and supplied NPI", () => {
   assert.equal(matchesExactProviderIdentity(requested, registry), true);

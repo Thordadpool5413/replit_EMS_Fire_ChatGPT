@@ -8,7 +8,10 @@ import {
   VerifyProviderLiveBody,
 } from "@workspace/api-zod";
 import { ai } from "@workspace/integrations-gemini-ai";
-import { matchesExactProviderIdentity } from "../lib/providerIdentity";
+import {
+  hasValidNpiCheckDigit,
+  matchesExactProviderIdentity,
+} from "../lib/providerIdentity";
 
 const router: IRouter = Router();
 
@@ -39,24 +42,6 @@ type RegistryRecord = {
     primary?: boolean;
   }>;
 };
-
-function hasValidNpiCheckDigit(npi: string): boolean {
-  if (!/^\d{10}$/.test(npi)) return false;
-  const digits = `80840${npi.slice(0, 9)}`;
-  let sum = 0;
-  const parity = digits.length % 2;
-
-  for (let i = 0; i < digits.length; i += 1) {
-    let value = Number(digits[i]);
-    if (i % 2 === parity) {
-      value *= 2;
-      if (value > 9) value -= 9;
-    }
-    sum += value;
-  }
-
-  return (10 - (sum % 10)) % 10 === Number(npi[9]);
-}
 
 function safeAddress(record?: RegistryRecord): RegistryRecord["addresses"] extends
   | (infer T)[]

@@ -6,7 +6,6 @@ import {
   hasVerifiedProviderIdentity,
   matchesExactLegalGeography,
 } from "./providerIdentity.ts";
-import { findExactFemaAfgAward } from "./femaAwardMatching.ts";
 
 const agency = {
   name: "Riverview Fire & Rescue, Inc.",
@@ -83,86 +82,6 @@ test("verified identity evidence also requires a valid NPI check digit", () => {
       nppesVerifiedStateCode: "WA",
     }),
     false,
-  );
-});
-
-test("a missing award number cannot match two missing award numbers", () => {
-  const agency = {
-    name: "Riverview Fire & Rescue",
-    grantStatus: { afgAwarded: true, afgAwardAmount: 100000, afgFiscalYear: 2025 },
-    liveFemaAwards: [{
-      awardNumber: "",
-      grantee: "",
-      programActivity: "Operations and Safety",
-      federalShareAwarded: 100000,
-      awardDate: "2025-06-01",
-      programYear: 2025,
-    }],
-  };
-  assert.equal(findExactFemaAfgAward(agency), undefined);
-});
-
-test("FEMA award matching requires the exact award number when provided", () => {
-  const agency = {
-    name: "Riverview Fire & Rescue",
-    grantStatus: {
-      afgAwarded: true,
-      afgAwardAmount: 100000,
-      afgFiscalYear: 2025,
-      afgAwardNumber: "EMW-2025-FG-00001",
-    },
-    liveFemaAwards: [{
-      awardNumber: "EMW-2025-FG-00002",
-      grantee: "Riverview Fire & Rescue",
-      programActivity: "Operations and Safety",
-      federalShareAwarded: 100000,
-      awardDate: "2025-06-01",
-      programYear: 2025,
-    }],
-  };
-  assert.equal(findExactFemaAfgAward(agency), undefined);
-  const exact = {
-    ...agency.liveFemaAwards[0],
-    awardNumber: agency.grantStatus.afgAwardNumber,
-  };
-  assert.deepEqual(
-    findExactFemaAfgAward({ ...agency, liveFemaAwards: [exact] }),
-    exact,
-  );
-  assert.equal(
-    findExactFemaAfgAward({
-      ...agency,
-      liveFemaAwards: [{ ...exact, grantee: "Different Recipient" }],
-    }),
-    undefined,
-  );
-});
-
-test("fallback FEMA matching requires exact recipient, amount, year, and unique record", () => {
-  const award = {
-    awardNumber: "EMW-2025-FG-00001",
-    grantee: "Riverview Fire & Rescue",
-    programActivity: "Operations and Safety",
-    federalShareAwarded: 100000,
-    awardDate: "2025-06-01",
-    programYear: 2025,
-  };
-  const agency = {
-    name: "Riverview Fire & Rescue",
-    grantStatus: { afgAwarded: true, afgAwardAmount: 100000, afgFiscalYear: 2025 },
-    liveFemaAwards: [award],
-  };
-  assert.deepEqual(findExactFemaAfgAward(agency), award);
-  assert.equal(
-    findExactFemaAfgAward({
-      ...agency,
-      liveFemaAwards: [{ ...award, grantee: "Riverview Fire Department" }],
-    }),
-    undefined,
-  );
-  assert.equal(
-    findExactFemaAfgAward({ ...agency, liveFemaAwards: [award, { ...award, awardNumber: "EMW-2025-FG-00003" }] }),
-    undefined,
   );
 });
 

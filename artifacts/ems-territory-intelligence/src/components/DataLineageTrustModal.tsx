@@ -9,8 +9,7 @@ import { Agency } from '../types';
 import { 
   DATA_REGISTRY_SOURCES, 
   auditAgencyDataLineage, 
-  FieldLineageRecord,
-  LINEAGE_REVIEWED_ON
+  FieldLineageRecord 
 } from '../data/dataLineageManifest';
 import { 
   ShieldCheck, 
@@ -125,13 +124,12 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
     if (!activeAgency || !auditReport) return;
     const lines = [
       `INSTITUTIONAL DATA LINEAGE & TRUST AUDIT REPORT`,
-      `------------------------------------------------`,
+      `================================================`,
       `Department: ${activeAgency.name}`,
       `Jurisdiction: ${activeAgency.city}, ${activeAgency.stateCode} (${activeAgency.county})`,
       `FDID: ${activeAgency.fdid || 'Not recorded'}`,
       `Evidence coverage: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (not a quality or accuracy score)`,
-      `Audit generated: ${new Date().toISOString().split('T')[0]}`,
-      `Lineage review date: ${LINEAGE_REVIEWED_ON}`,
+      `Audit Date: ${new Date().toISOString().split('T')[0]}`,
       ``,
       `FIELD-BY-FIELD DATA CHAIN & CITATIONS:`,
       `------------------------------------------------`
@@ -140,9 +138,6 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
     auditReport.records.forEach(r => {
       lines.push(`• [${r.category}] ${r.fieldName}: ${r.fieldValue}`);
       lines.push(`  Source: ${r.sourceRegistry} | Schema: ${r.schemaIdentifier}`);
-      lines.push(`  Citation: ${r.sourceUrlOrCitation || 'No public citation available'}`);
-      lines.push(`  Reporting period: ${r.reportingPeriod || 'Not reported'} | Retrieved: ${r.sourceRetrievedAt || 'Not recorded'} | Review: ${r.lineageReviewedOn}`);
-      lines.push(`  Source record: ${r.sourceRecordStatus}`);
       lines.push(`  Status: ${r.verificationStatus}`);
       lines.push(`  Documentation: ${r.documentationQuote}`);
       lines.push(``);
@@ -178,7 +173,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 </span>
                 <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  A registry link alone does not verify an agency or its operations; field-specific evidence status is shown below.
+                  A registry link alone does not verify an agency or its operations
                 </span>
               </div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5 tracking-tight">
@@ -236,7 +231,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             }`}
           >
             <Database className="w-3.5 h-3.5" />
-  <span>Public source catalog</span>
+            <span>Federal Registry Sync Ledger</span>
           </button>
           <button
             onClick={() => setActiveTab('algorithm_proof')}
@@ -357,29 +352,29 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">USFA National Fire Department Registry</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Names, IDs, addresses, stations and staffing; not apparatus inventories. Match FDID to a department-specific record.</span>
+                    <span className="font-bold text-slate-900 dark:text-white block">USFA National Fire Registry</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">FDID value needs a department-specific citation</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">CMS Ambulance Fee Schedule PUF</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Published fee rates; no agency claim or denial history</span>
+                    <span className="font-bold text-slate-900 dark:text-white block">CMS Part B PUF FY2025</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified NPI Claims &amp; Denials</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">NEMSIS public release &amp; FEMA OpenFEMA</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">NEMSIS release is de-identified; grant claims need a matched award record</span>
+                    <span className="font-bold text-slate-900 dark:text-white block">NEMSIS v3.5 &amp; FEMA AFG</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified OHCA &amp; Grant Awards</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-amber-600 dark:text-amber-400 font-bold mt-0.5">◐</span>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">Agency-level operational and financial figures</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Estimates unless a specific agency source record is attached</span>
+                    <span className="font-bold text-slate-900 dark:text-white block">Fleet Replacement Cycle</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Council Filings &amp; Modeled Cycle</span>
                   </div>
                 </div>
               </div>
@@ -421,9 +416,9 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                     <tr>
                       <th className="py-2.5 px-3">Field &amp; Dimension</th>
                       <th className="py-2.5 px-3">Mapped Value</th>
-                      <th className="py-2.5 px-3">Source &amp; citation</th>
+                      <th className="py-2.5 px-3">Public Source Registry</th>
                       <th className="py-2.5 px-3">Schema / Citation Code</th>
-                      <th className="py-2.5 px-3">Status &amp; dates</th>
+                      <th className="py-2.5 px-3">Verification Tier</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -467,12 +462,6 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                             <CheckCircle2 className="w-3 h-3" />
                             <span>{r.verificationStatus}</span>
                           </span>
-                          <span className="block mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                            {r.sourceRecordStatus}<br />
-                            Reporting: {r.reportingPeriod}<br />
-                            Retrieved: {r.sourceRetrievedAt}<br />
-                            Lineage reviewed: {r.lineageReviewedOn}
-                          </span>
                         </td>
                       </tr>
                     ))}
@@ -489,7 +478,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
               <div className="p-4 bg-sky-50/60 rounded-xl border border-sky-200/80 text-sky-900 space-y-1">
                 <h3 className="font-bold text-sm flex items-center gap-1.5">
                   <Database className="w-4 h-4 text-sky-600" />
-                  <span>Public source catalog and data limits</span>
+                   <span>Public Data Source Catalog</span>
                 </h3>
                 <p className="text-xs text-sky-800/90 leading-relaxed">
                   These are possible source registries, not proof that every listed dataset is connected or supplies the value shown. Local profiles may include modeled or sample values. A field is source-backed only when its own evidence is linked and matches the agency and reporting period.
@@ -525,10 +514,6 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
 
                     <div className="space-y-1.5 text-[11px]">
                       <div>
-                        <span className="text-slate-400 font-semibold block">Source data date / scope:</span>
-                        <span className="text-slate-700">{repo.dataAsOf} · lineage reviewed {LINEAGE_REVIEWED_ON}</span>
-                      </div>
-                      <div>
                         <span className="text-slate-400 font-semibold block">Governing Authority:</span>
                         <span className="text-slate-700">{repo.governingBody}</span>
                       </div>
@@ -548,7 +533,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
 
                     <div className="pt-2 border-t border-slate-100">
                       <span className="text-[10px] uppercase font-mono font-semibold text-slate-400 block mb-1">
-                        Source coverage and limits:
+                         Potentially relevant fields:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {repo.primaryFieldsIngested.map((f, idx) => (
@@ -581,7 +566,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   ]
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  The formula is deterministic, but its inputs may be profile estimates rather than source-verified records. CMS ambulance fee schedule files do not publish agency-specific denial rates. Treat derived priority scores as modeled scenarios until their inputs are independently verified.
+                  The score is reproducible arithmetic over the values currently stored in a profile. Many inputs may be modeled, incomplete, or unverified; a deterministic score does not validate its inputs or establish predictive or clinical accuracy. Treat it as a prioritization heuristic, not an operational recommendation.
                 </p>
               </div>
 

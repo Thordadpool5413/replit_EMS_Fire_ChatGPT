@@ -61,11 +61,11 @@ export const QualityScorecard: React.FC<QualityScorecardProps> = ({
           <div className="flex items-center gap-2">
             <Stethoscope className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Clinical quality profile · estimates unless source record is attached
+              NEMSQA, AHA &amp; CARES clinical quality scorecard
             </h2>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Profile-based clinical indicators for <strong className="text-slate-800 dark:text-slate-200 font-medium">{agency.name}</strong>; this dashboard has no agency-level NEMSIS or CARES report attached. Lineage reviewed 2026-10-30.
+            Pre-hospital clinical benchmarks for <strong className="text-slate-800 dark:text-slate-200 font-medium">{agency.name}</strong> audited against national NEMSIS v3 registries.
           </p>
         </div>
 

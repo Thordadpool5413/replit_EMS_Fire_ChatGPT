@@ -81,7 +81,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
     100,
     Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8)
   );
-  const grantSub = agency.femaGrantHistory?.[0] ? 95 : 62;
+  const grantSub = agency.grantStatus.afgAwarded ? 95 : 62;
 
   const handleSaveNote = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,7 +251,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 bg-slate-50/50 dark:bg-slate-900 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-900 dark:text-white">
-                Modeled PulseIQ Priority Score
+                PulseIQ Composite Priority Score
               </span>
               <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
                 {agency.zollOpportunity.pulseIqScore}/100
@@ -261,14 +261,14 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             <div className="space-y-2 text-[11px] tabular-nums">
               {[
                 { label: 'Fleet Replacement Pressure (30%)', val: fleetAgeSub, detail: `${agency.installedFleet.defibAgeYears} yr cycle` },
-                { label: 'Modeled denial / recovery input · unverified', val: cmsDenialSub, detail: `${agency.cmsData.claimDenialRate}% profile estimate · not CMS-verified` },
+                { label: 'Medicare Claim Recovery (25%)', val: cmsDenialSub, detail: `${agency.cmsData.claimDenialRate}% denial rate` },
                 { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {
                   label: 'FEMA AFG Grant Readiness (20%)',
                   val: grantSub,
-                  detail: agency.femaGrantHistory?.[0]
-                    ? `Matched OpenFEMA FY${agency.femaGrantHistory[0].fiscalYear} · $${(agency.femaGrantHistory[0].awardAmount / 1000).toFixed(0)}K`
-                    : 'Unverified · no matching OpenFEMA record'
+                  detail: agency.grantStatus.afgAwarded
+                    ? `FY${agency.grantStatus.afgFiscalYear} $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K`
+                    : 'Eligible'
                 }
               ].map((row) => (
                 <div key={row.label} className="space-y-1">

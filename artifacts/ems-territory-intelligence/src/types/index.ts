@@ -194,8 +194,6 @@ export interface Agency {
     isCaresVerified?: boolean;
     isNemsqaVerified?: boolean;
     caresSubmissionId?: string;
-    caresSourceDoc?: string;
-    nemsqaSourceDoc?: string;
   };
 
   // Competitive Service Contract Expiration Timeline
@@ -220,7 +218,6 @@ export interface Agency {
     avgMedicarePaymentPerRun?: number;
     avgBlsPaymentPerRun?: number;
     isVerifiedCmsClaims?: boolean;
-    claimsSourceDoc?: string;
     cmsClaimPufYear?: string;
     cmsPufReportingPeriod?: string;
     payerMix?: {
@@ -251,7 +248,6 @@ export interface Agency {
     procurementResolutionId?: string;
     procurementSourceDoc?: string;
     capitalAssetLedgerId?: string;
-    capitalAssetLedgerDoc?: string;
     isVerifiedWarranty?: boolean;
     warrantyContractDoc?: string;
   };
@@ -293,7 +289,6 @@ export interface Agency {
   providerCategory?: 'FIRE' | 'EMS' | string;
   isFdidVerified?: boolean;
   isOperationalDataVerified?: boolean;
-  operationsSourceDoc?: string;
   npiNumber?: string;
   taxonomyCode?: string;
   taxonomyDescription?: string;
@@ -312,10 +307,6 @@ export interface Agency {
     programName: string;
     awardAmount: number;
     fiscalYear: number;
-    programActivity?: string;
-    federalShareAwarded?: number;
-    awardDate?: string;
-    programYear?: number;
   }>;
   headquartersPhone?: string;
   officialWebsite?: string;
@@ -373,8 +364,7 @@ export interface Agency {
     awardAmount: number;
     localMatchAmount?: number;
     federalSharePct?: number;
-    awardDate?: string;
-    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible' | 'Award record only' | 'Unverified profile claim' | 'Awarded (OpenFEMA record)';
+    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible' | 'Award record only' | 'Unverified profile claim';
     applicationRound?: string;
   }>;
 

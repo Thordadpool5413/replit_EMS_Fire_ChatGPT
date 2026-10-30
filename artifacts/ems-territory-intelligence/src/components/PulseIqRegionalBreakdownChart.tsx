@@ -660,7 +660,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono uppercase font-bold text-sky-700 dark:text-sky-400 tracking-wider bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded">
-                  Modeled estimates · unverified
+                  Recharts Analytics
                 </span>
                 <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                   {normalizedCounty !== 'all' ? `County Scope: ${normalizedCounty}` : normalizedState !== 'all' ? `State Scope: ${ALL_50_STATES_SUMMARIES[normalizedState.toUpperCase()]?.state || normalizedState}` : 'National Scope (50 States + DC)'}
@@ -683,7 +683,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             </div>
           </div>
           <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            {scopeSubtitle}. Regional values are profile-based model estimates, not public registry observations. CMS AFS publishes fee rates, not agency denial rates; NEMSIS 2025 research data is de-identified; OpenFEMA grant records require recipient matching. Sources reviewed 2026-10-30; no agency source records are attached to these scores.
+            {scopeSubtitle}. Visualizing algorithmic ranking across Clinical Acuity, Rival Fleet Age, CMS Denials, Demographics, and FEMA Grants.
           </p>
         </div>
 

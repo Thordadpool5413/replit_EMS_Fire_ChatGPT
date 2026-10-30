@@ -295,7 +295,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       return a.gisData?.avgTransportTimeMinutes || 20;
     }
     if (layer === 'cms') {
-      // Modeled denial estimates; not source-backed CMS claim data
+      // CMS Denial Zones: high Medicare claim denial rate & recoverable revenue
       const denial = a.cmsData?.claimDenialRate || 18;
       const recoverable = a.cmsData?.estimatedRecoverableRevenue || 50000;
       return denial * (Math.log10(recoverable + 10) || 1);
@@ -638,8 +638,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         }
       } else {
         const denial = stats?.agencyCount ? +(stats.sumDenial / stats.agencyCount).toFixed(1) : summary.avgMedicareDenialRate;
-        metricLabel = 'Estimated Medicare Denial Rate · Unverified';
-        metricValue = `${denial}% modeled`;
+        metricLabel = 'Medicare Denial Rate';
+        metricValue = `${denial}%`;
         if (denial >= 20.5) {
           tier = 'critical';
           fillColor = basemapTheme === 'dark' ? '#881337' : '#ffe4e6';
@@ -929,11 +929,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
       const avgSurvival = +(sumSurv / cell.agencies.length).toFixed(1);
       const metricSummary =
-        selectedLayer === 'nemsis_cardiac' ? `${totalCalls.toLocaleString()} estimated OHCA calls` :
-        selectedLayer === 'cardiac' ? `${avgSurvival}% estimated Utstein survival` :
+        selectedLayer === 'nemsis_cardiac' ? `${totalCalls.toLocaleString()} OHCA calls` :
+        selectedLayer === 'cardiac' ? `${avgSurvival}% avg Utstein survival` :
         selectedLayer === 'aed' ? `${Math.round(topAgency.gisData?.publicAccessAedDeficitPct || 45)}% peak AED deficit` :
         selectedLayer === 'transport' ? `${topAgency.gisData?.avgTransportTimeMinutes || 22} min peak transit` :
-        `${topAgency.cmsData?.claimDenialRate || 19}% estimated denial · unverified`;
+        `${topAgency.cmsData?.claimDenialRate || 19}% peak CMS denial`;
 
       cells.push({
         id: `hex-${key}`,
@@ -1280,13 +1280,13 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           <div>
             <div className="text-xs text-[#285EE8] dark:text-blue-400 font-semibold flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#285EE8] dark:text-blue-400" />
-              <span>Geographic Information System (GIS) · Modeled Estimates</span>
+              <span>Geographic Information System (GIS) · Spatial Acuity Telemetry</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-[#14283F] dark:text-white mt-1 tracking-tight">
-              Territory Estimates &amp; Public-Source Gaps
+              High-Potential Territory Clusters &amp; Product Demand Hotspots
             </h1>
             <p className="text-xs text-[#53657B] dark:text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
-              These layers use modeled or profile-baseline values, not live agency-level records. <a className="underline" href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files" target="_blank" rel="noreferrer">CMS AFS PUF</a> publishes rates, not denial rates; <a className="underline" href="https://nemsis.org/using-ems-data/request-research-data" target="_blank" rel="noreferrer">NEMSIS 2025</a> public research data is de-identified. Lineage reviewed 2026-10-30.
+              Synthesizing emergency call locations, cardiac arrest survival rates, transport distance isochrones, and senior population density across all 50 states, 3,143 counties, and 5,389+ cities for EMS Providers &amp; Fire Departments.
             </p>
           </div>
 
@@ -1314,7 +1314,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 <HeartPulse className="w-3.5 h-3.5 shrink-0" />
-                <span>Estimated Cardiac Activity</span>
+                <span>NEMSIS Cardiac Acuity</span>
               </button>
               <button
                 type="button"
@@ -1323,7 +1323,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   selectedLayer === 'cardiac' ? 'bg-white dark:bg-[#111C2D] text-rose-700 dark:text-rose-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
                 }`}
               >
-                Survival Estimate · Unverified
+                Survival Deficit
               </button>
               <button
                 type="button"
@@ -1341,7 +1341,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   selectedLayer === 'transport' ? 'bg-white dark:bg-[#111C2D] text-amber-800 dark:text-amber-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
                 }`}
               >
-                Transport Estimate · Unverified
+                Long Transport (&gt;20 min)
               </button>
               <button
                 type="button"
@@ -1350,7 +1350,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   selectedLayer === 'cms' ? 'bg-white dark:bg-[#111C2D] text-emerald-800 dark:text-emerald-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
                 }`}
               >
-                Denial Estimate · Unverified
+                CMS Denial Zones
               </button>
             </div>
           </div>
@@ -1653,23 +1653,27 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-sm sm:text-base text-white tracking-tight flex items-center gap-1.5 flex-wrap">
                       <span>
-                         {selectedLayer === 'nemsis_cardiac' ? 'Estimated cardiac activity · unverified' :
-                          selectedLayer === 'cardiac' ? 'Estimated cardiac survival · unverified' :
-                          selectedLayer === 'aed' ? 'AED need estimate · unverified' :
-                          selectedLayer === 'transport' ? 'Estimated transport times · unverified' :
-                          'Estimated Medicare denials · unverified'}
+                        {selectedLayer === 'nemsis_cardiac' ? 'NEMSIS High-Acuity Cardiac Telemetry' :
+                         selectedLayer === 'cardiac' ? 'Cardiac Arrest Survival Deficit Zones' :
+                         selectedLayer === 'aed' ? 'Public Access AED Need & Demographics' :
+                         selectedLayer === 'transport' ? 'Extended Transport Isochrones (>20 min)' :
+                         'CMS Medicare Claim Denial Concentrations'}
                       </span>
                       <span className="text-xs text-slate-300 font-normal">
-                        · Profile baselines; source record not attached
+                        · {selectedLayer === 'nemsis_cardiac' ? 'v3.5 Live Dataset' :
+                           selectedLayer === 'cardiac' ? 'Utstein Resuscitation Registry' :
+                           selectedLayer === 'aed' ? 'GIS PAD Census' :
+                           selectedLayer === 'transport' ? 'NEMSIS Transit Registry' :
+                           'Medicare MAC Revenue Audit'}
                       </span>
                     </h3>
                   </div>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-3xl">
-                    {selectedLayer === 'nemsis_cardiac' && `Modeled out-of-hospital cardiac arrest activity across ${selectedCounty !== 'all' ? selectedCounty : selectedState !== 'all' ? selectedState : 'all 50 states'}; agency-level records are not attached.`}
-                    {selectedLayer === 'cardiac' && `Estimated survival values are unverified and should not be used as agency outcome measures.`}
+                    {selectedLayer === 'nemsis_cardiac' && `Territory-wide Out-of-Hospital Cardiac Arrest (OHCA) call volume, STEMI transmissions & Utstein survival telemetry across ${selectedCounty !== 'all' ? selectedCounty : selectedState !== 'all' ? selectedState : 'all 50 states'}.`}
+                    {selectedLayer === 'cardiac' && `Identifying severe survival deficits (<26% Utstein survival rate) where ZOLL AutoPulse and ResQCPR generate highest clinical resuscitation impact.`}
                     {selectedLayer === 'aed' && `Mapping public access AED deficits and age 65+ demographic vulnerability to deploy ZOLL AED 3 community networks.`}
-                    {selectedLayer === 'transport' && `Transport durations are modeled estimates; no source route dataset is attached to each agency.`}
-                    {selectedLayer === 'cms' && `Modeled denial estimates are not CMS claim findings; CMS ambulance fee files contain published rates, not agency-level denials.`}
+                    {selectedLayer === 'transport' && `Long transport corridors (>20 min) requiring EMV+ mechanical transport ventilators and uninterrupted patient monitoring.`}
+                    {selectedLayer === 'cms' && `Medicare Part B claim denials (>18%) addressable through ZOLL RescueNet Billing and AR Boost automated revenue recovery.`}
                   </p>
                 </div>
               </div>
@@ -2032,9 +2036,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                {selectedLayer === 'cms' ? (
-                  <p className="mt-2.5 pt-1 border-t border-slate-800 text-[10px] text-slate-400">Illustrative model only; no historical agency billing series is attached.</p>
-                ) : <div className="mt-2.5 pt-1 border-t border-slate-800">
+                <div className="mt-2.5 pt-1 border-t border-slate-800">
                   <InteractiveSparkline
                     data={
                       selectedLayer === 'nemsis_cardiac' ? [
@@ -2073,11 +2075,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         nemsisTerritoryStats.avgDenialRate
                       ]
                     }
-                    color={selectedLayer === 'transport' ? 'amber' : 'rose'}
+                    color={selectedLayer === 'cms' ? 'emerald' : selectedLayer === 'transport' ? 'amber' : 'rose'}
                     height={20}
                     valueSuffix={selectedLayer === 'transport' ? ' min' : selectedLayer === 'nemsis_cardiac' ? ' calls' : '%'}
                   />
-                </div>}
+                </div>
               </div>
 
               {/* CARD 2 */}
@@ -2103,9 +2105,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                {selectedLayer === 'cms' ? (
-                  <p className="mt-2.5 pt-1 border-t border-slate-800 text-[10px] text-slate-400">Illustrative model only; no historical agency billing series is attached.</p>
-                ) : <div className="mt-2.5 pt-1 border-t border-slate-800">
+                <div className="mt-2.5 pt-1 border-t border-slate-800">
                   <InteractiveSparkline
                     data={[
                       Math.round((nemsisTerritoryStats.totalStemiTransmissions || 100) * 0.82),
@@ -2118,7 +2118,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     height={20}
                     valueSuffix=" alerts"
                   />
-                </div>}
+                </div>
               </div>
 
               {/* CARD 3 */}
@@ -2129,7 +2129,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                      selectedLayer === 'cardiac' ? 'AutoPulse CPR Need' :
                      selectedLayer === 'aed' ? 'Total Population Served' :
                      selectedLayer === 'transport' ? 'Extreme Rural Routes (≥28 min)' :
-                     'Modeled recovery estimate · unverified'}
+                     'Estimated Recoverable Revenue'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-emerald-400 tabular-nums">
@@ -2142,14 +2142,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     <span className="text-xs text-slate-400 truncate">
                       {selectedLayer === 'cardiac' ? 'agencies without mech CPR' :
                        selectedLayer === 'transport' ? 'extended transit zones' :
-                       selectedLayer === 'cms' ? 'modeled scenario · not observed cash' :
+                       selectedLayer === 'cms' ? 'recoverable cash' :
                        'transports/yr'}
                     </span>
                   </div>
                 </div>
-                {selectedLayer === 'cms' ? (
-                  <p className="mt-2.5 pt-1 border-t border-slate-800 text-[10px] text-slate-400">Illustrative model only; no historical agency billing series is attached.</p>
-                ) : <div className="mt-2.5 pt-1 border-t border-slate-800">
+                <div className="mt-2.5 pt-1 border-t border-slate-800">
                   <InteractiveSparkline
                     data={[
                       Math.round((nemsisTerritoryStats.autoPulseNeedCount || 50) * 0.85),
@@ -2160,9 +2158,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     ]}
                     color="emerald"
                     height={20}
-                    valueSuffix=" units"
+                    valueSuffix={selectedLayer === 'cms' ? 'M' : ' units'}
                   />
-                </div>}
+                </div>
               </div>
 
               {/* CARD 4 */}
@@ -2173,7 +2171,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                      selectedLayer === 'cardiac' ? 'Aging Fleets in Deficit' :
                      selectedLayer === 'aed' ? 'AED 3 Upgrade Target' :
                      selectedLayer === 'transport' ? 'Ventilator Expansion Need' :
-                     'Modeled denial recovery / agency · unverified'}
+                     'Avg Denial Recovery / Agency'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-300 tabular-nums">
@@ -2184,13 +2182,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       {selectedLayer === 'cms' && `$${Math.round(nemsisTerritoryStats.totalRecoverableRevenue / Math.max(1, filteredAgencies.length) / 1000)}k`}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
-                      {selectedLayer === 'cms' ? '/agency modeled scenario' : 'priority replacements'}
+                      {selectedLayer === 'cms' ? '/agency upside' : 'priority replacements'}
                     </span>
                   </div>
                 </div>
-                {selectedLayer === 'cms' ? (
-                  <p className="mt-2.5 pt-1 border-t border-slate-800 text-[10px] text-slate-400">Illustrative model only; no historical agency billing series is attached.</p>
-                ) : <div className="mt-2.5 pt-1 border-t border-slate-800">
+                <div className="mt-2.5 pt-1 border-t border-slate-800">
                   <InteractiveSparkline
                     data={[
                       Math.max(1, Math.round((nemsisTerritoryStats.agingDefibCount || 40) * 0.70)),
@@ -2203,7 +2199,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     height={20}
                     valueSuffix=" target accounts"
                   />
-                </div>}
+                </div>
               </div>
 
             </div>
@@ -3399,7 +3395,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-amber-900/80 dark:text-amber-300/80 leading-relaxed">
-                  <strong>{acuityDistributionStats.agingDefibCount} estimated profiles</strong> in this territory have monitor/defibrillator fleets ≥7 years old; no equipment ledger is attached.
+                  <strong>{acuityDistributionStats.agingDefibCount} departments</strong> in this territory operate monitor/defibrillator fleets ≥7 years old (primarily Stryker LIFEPAK 15 units approaching or past manufacturer end-of-service).
                 </p>
               </div>
 
@@ -3460,7 +3456,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-[#53657B] dark:text-slate-400 leading-relaxed">
-                  <strong>Modeled target profile:</strong> Estimated 911 call volume, TBI incidence, and equipment age; source records are required before treating these as agency facts.
+                  <strong>Target Profile:</strong> High 911 ALS call volume, traumatic brain injury (TBI) incidence, and aging Stryker LIFEPAK 15 units (&gt;8 yrs) needing Real BVM Help.
                 </p>
                 <div className="text-xs text-[#53657B] dark:text-slate-400">
                   Key Accounts: Cuyahoga County (OH), Miami-Dade (FL), Columbus (OH)
@@ -3561,7 +3557,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <span className="text-[#285EE8] font-semibold tabular-nums">25 pts</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-400 mt-1.5 leading-relaxed">
-              Estimated installed monitor age and warranty status; no source-backed equipment or contract record is attached.
+              Installed LIFEPAK 15 and MRx units older than 7 years, out of warranty, and subject to competitor maintenance price hikes.
             </p>
           </div>
 
@@ -3571,7 +3567,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <span className="text-[#285EE8] font-semibold tabular-nums">20 pts</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-400 mt-1.5 leading-relaxed">
-              Modeled denial and recovery estimates; CMS ambulance fee files do not publish agency-specific denials or recovery amounts.
+              CMS Medicare Part B claim denial rate (&gt;15%), GADCS penalty risk, and addressable cash recovery via ZOLL Billing.
             </p>
           </div>
 

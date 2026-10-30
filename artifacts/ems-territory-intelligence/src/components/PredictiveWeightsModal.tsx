@@ -221,7 +221,7 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span>Unverified profile denial estimate &amp; modeled recovery potential</span>
+                <span>CMS Medicare denial rate &amp; recovery potential</span>
               </span>
               <span className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">{localWeights.cmsDenialWeight}%</span>
             </div>

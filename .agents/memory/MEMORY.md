@@ -1,1 +1,0 @@
-- [Source freshness](source-data-freshness.md) — distinguish retrieval time from source publication date; unknown timestamps must not imply freshness.

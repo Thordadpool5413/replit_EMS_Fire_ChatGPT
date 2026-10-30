@@ -26,6 +26,7 @@ export const getAfgGrantsQueryLimitMax = 100;
 
 export const GetAfgGrantsQueryParams = zod.object({
   "stateCode": zod.coerce.string().optional(),
+  "city": zod.coerce.string().optional(),
   "limit": zod.coerce.number().int().min(1).max(getAfgGrantsQueryLimitMax).optional()
 })
 
@@ -40,17 +41,11 @@ export const GetAfgGrantsResponse = zod.object({
 /**
  * @summary Verify provider identity against public registries
  */
-
-export const verifyProviderLiveBodyStateCodeMin = 2;
-export const verifyProviderLiveBodyStateCodeMax = 2;
-
-
-
 export const VerifyProviderLiveBody = zod.object({
   "agencyName": zod.string(),
-  "city": zod.string().min(1),
+  "city": zod.string().optional(),
   "county": zod.string().optional(),
-  "stateCode": zod.string().min(verifyProviderLiveBodyStateCodeMin).max(verifyProviderLiveBodyStateCodeMax),
+  "stateCode": zod.string().optional(),
   "zipCode": zod.string().optional(),
   "category": zod.enum(['all', 'ems', 'fire']).optional(),
   "npiNumber": zod.string().optional()
@@ -64,13 +59,10 @@ export const VerifyProviderLiveResponse = zod.object({
   "verificationSource": zod.string().optional(),
   "npiNumber": zod.string().optional(),
   "address": zod.string().optional(),
-  "nppesVerifiedAddress": zod.string().optional(),
   "zipCode": zod.string().optional(),
   "taxonomyCode": zod.string().optional(),
   "taxonomyDescription": zod.string().optional(),
   "nppesOfficialName": zod.string().optional(),
-  "nppesVerifiedCity": zod.string().optional(),
-  "nppesVerifiedStateCode": zod.string().optional(),
   "nppesOfficialTitle": zod.string().optional(),
   "nppesLastUpdated": zod.string().optional(),
   "officialWebsite": zod.string().optional(),

@@ -9,14 +9,9 @@ import type { ProviderVerificationInputCategory } from './providerVerificationIn
 
 export interface ProviderVerificationInput {
   agencyName: string;
-  /** @minLength 1 */
-  city: string;
+  city?: string;
   county?: string;
-  /**
-     * @minLength 2
-     * @maxLength 2
-     */
-  stateCode: string;
+  stateCode?: string;
   zipCode?: string;
   category?: ProviderVerificationInputCategory;
   npiNumber?: string;

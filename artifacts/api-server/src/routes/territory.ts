@@ -6,7 +6,6 @@ import {
   VerifyProviderLiveBody,
 } from "@workspace/api-zod";
 import { ai } from "@workspace/integrations-gemini-ai";
-import { matchesExactProviderIdentity } from "../lib/providerIdentity";
 
 const router: IRouter = Router();
 
@@ -37,6 +36,16 @@ type RegistryRecord = {
     primary?: boolean;
   }>;
 };
+
+function normalizeLegalName(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 function hasValidNpiCheckDigit(npi: string): boolean {
   if (!/^\d{10}$/.test(npi)) return false;
@@ -120,9 +129,17 @@ router.get(
     }
 
     const limit = Math.min(parsed.data.limit ?? 30, 100);
-    const makeUrl = () => {
+    const cleanCity = (parsed.data.city ?? "")
+      .replace(/[^a-zA-Z\s]/g, "")
+      .trim()
+      .slice(0, 80)
+      .toUpperCase();
+    const makeUrl = (includeCity: boolean) => {
       const filters = ["startswith(programName,'Assistance to Firefighters')"];
       if (stateCode) filters.push(`vendorState eq '${stateCode}'`);
+      if (includeCity && cleanCity) {
+        filters.push(`contains(vendorName,'${cleanCity}')`);
+      }
       const url = new URL(FEMA_URL);
       url.searchParams.set("$top", String(limit));
       url.searchParams.set("$orderby", "fiscalYear desc");
@@ -131,7 +148,7 @@ router.get(
     };
 
     try {
-      const response = await fetch(makeUrl(), {
+      let response = await fetch(makeUrl(true), {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
       });
@@ -144,20 +161,48 @@ router.get(
       let payload = (await response.json()) as {
         NonDisasterAssistanceFirefighterGrants?: Array<Record<string, unknown>>;
       };
-      const sourceRecords = Array.isArray(
+      let sourceRecords = Array.isArray(
         payload.NonDisasterAssistanceFirefighterGrants,
       )
         ? payload.NonDisasterAssistanceFirefighterGrants
         : [];
+      if (sourceRecords.length === 0 && cleanCity) {
+        response = await fetch(makeUrl(false), {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) {
+          res.status(502).json({
+            error: `OpenFEMA returned HTTP ${response.status}.`,
+          });
+          return;
+        }
+        payload = (await response.json()) as {
+          NonDisasterAssistanceFirefighterGrants?: Array<
+            Record<string, unknown>
+          >;
+        };
+        sourceRecords = Array.isArray(
+          payload.NonDisasterAssistanceFirefighterGrants,
+        )
+          ? payload.NonDisasterAssistanceFirefighterGrants
+          : [];
+      }
 
       const awards = sourceRecords.map((record, index) => ({
         id: String(record.id ?? record.awardNumber ?? `fema-record-${index}`),
         awardNumber: record.awardNumber ?? "",
-        grantee: record.vendorName ?? "",
-        stateCode: record.vendorState ?? "",
-        programName: record.programName ?? "",
-        awardAmount: record.awardAmount ?? null,
-        fiscalYear: record.fiscalYear ?? null,
+        grantee: record.grantee ?? record.vendorName ?? "",
+        city: record.city ?? record.vendorCity ?? "",
+        stateCode: record.state ?? record.vendorState ?? "",
+        programActivity: record.programActivity ?? record.programName ?? "",
+        federalShareAwarded:
+          record.awardAmount ?? record.federalShareAwarded ?? null,
+        awardDate: record.awardDate ?? null,
+        programYear: record.fiscalYear ?? record.programYear ?? null,
+        organizationType: record.organizationType ?? "",
+        verificationUrl:
+          "https://www.fema.gov/openfema-data-page/non-disaster-assistance-firefighter-grants-v1",
       }));
 
       res.json({
@@ -180,19 +225,11 @@ router.post(
   async (req: Request, res: Response): Promise<void> => {
     const parsed = VerifyProviderLiveBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({
-        error: "A provider name, city, and state are required.",
-      });
+      res.status(400).json({ error: "A provider name is required." });
       return;
     }
 
     const input = parsed.data;
-    if (!input.city?.trim() || !input.stateCode?.trim()) {
-      res.status(400).json({
-        error: "A city and state are required for provider identity verification.",
-      });
-      return;
-    }
     const stateCode = input.stateCode?.toUpperCase();
     if (stateCode && !/^[A-Z]{2}$/.test(stateCode)) {
       res.status(400).json({ error: "State code must contain two letters." });
@@ -220,6 +257,10 @@ router.post(
         ...input,
         stateCode,
       });
+      const targetName = normalizeLegalName(input.agencyName);
+      const targetCity = normalizeLegalName(input.city ?? "");
+      const targetState = stateCode ?? "";
+
       const mappedCandidates = candidates.map((candidate) => {
         const address = safeAddress(candidate);
         return {
@@ -240,20 +281,18 @@ router.post(
 
       const exactMatch = candidates.find((candidate) => {
         const address = safeAddress(candidate);
-        return matchesExactProviderIdentity(
-          {
-            agencyName: input.agencyName,
-            city: input.city!,
-            stateCode: stateCode!,
-            npiNumber: input.npiNumber,
-          },
-          {
-            legalName: candidate.basic?.organization_name ?? "",
-            city: address?.city ?? "",
-            stateCode: address?.state ?? "",
-            npiNumber: candidate.number,
-          },
-        );
+        const nameMatch =
+          normalizeLegalName(candidate.basic?.organization_name ?? "") ===
+          targetName;
+        const cityMatch =
+          !targetCity ||
+          normalizeLegalName(address?.city ?? "") === targetCity;
+        const stateMatch =
+          !targetState ||
+          (address?.state ?? "").toUpperCase() === targetState;
+        const npiMatch =
+          !input.npiNumber || candidate.number === input.npiNumber;
+        return nameMatch && cityMatch && stateMatch && npiMatch;
       });
 
       if (!exactMatch) {
@@ -311,8 +350,6 @@ router.post(
         taxonomyCode: primaryTaxonomy?.code ?? "",
         taxonomyDescription: primaryTaxonomy?.desc ?? "",
         nppesOfficialName: officialName,
-        nppesVerifiedCity: address?.city ?? "",
-        nppesVerifiedStateCode: address?.state ?? "",
         nppesOfficialTitle:
           exactMatch.basic?.authorized_official_title_or_position ?? "",
         nppesLastUpdated: exactMatch.basic?.last_updated ?? "",

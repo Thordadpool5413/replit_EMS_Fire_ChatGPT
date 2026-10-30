@@ -8,6 +8,7 @@
 
 export type GetAfgGrantsParams = {
 stateCode?: string;
+city?: string;
 /**
  * @minimum 1
  * @maximum 100

@@ -293,9 +293,6 @@ export interface Agency {
   taxonomyCode?: string;
   taxonomyDescription?: string;
   nppesOfficialName?: string;
-  nppesVerifiedAddress?: string;
-  nppesVerifiedCity?: string;
-  nppesVerifiedStateCode?: string;
   nppesOfficialTitle?: string;
   nppesLastUpdated?: string;
   nppesRegistryUrl?: string;

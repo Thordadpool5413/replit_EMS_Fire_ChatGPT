@@ -29,14 +29,9 @@ export const ProviderVerificationInputCategory = {
 
 export interface ProviderVerificationInput {
   agencyName: string;
-  /** @minLength 1 */
-  city: string;
+  city?: string;
   county?: string;
-  /**
-     * @minLength 2
-     * @maxLength 2
-     */
-  stateCode: string;
+  stateCode?: string;
   zipCode?: string;
   category?: ProviderVerificationInputCategory;
   npiNumber?: string;
@@ -67,13 +62,10 @@ export interface ProviderVerificationResponse {
   verificationSource?: string;
   npiNumber?: string;
   address?: string;
-  nppesVerifiedAddress?: string;
   zipCode?: string;
   taxonomyCode?: string;
   taxonomyDescription?: string;
   nppesOfficialName?: string;
-  nppesVerifiedCity?: string;
-  nppesVerifiedStateCode?: string;
   nppesOfficialTitle?: string;
   nppesLastUpdated?: string;
   officialWebsite?: string;
@@ -128,6 +120,7 @@ export interface PlacesResearchResponse {
 
 export type GetAfgGrantsParams = {
 stateCode?: string;
+city?: string;
 /**
  * @minimum 1
  * @maximum 100

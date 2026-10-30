@@ -39,6 +39,10 @@ paths:
           schema:
             type: string
         - in: query
+          name: city
+          schema:
+            type: string
+        - in: query
           name: limit
           schema:
             type: integer
@@ -144,13 +148,10 @@ components:
           type: string
         city:
           type: string
-          minLength: 1
         county:
           type: string
         stateCode:
           type: string
-          minLength: 2
-          maxLength: 2
         zipCode:
           type: string
         category:
@@ -158,7 +159,7 @@ components:
           enum: [all, ems, fire]
         npiNumber:
           type: string
-      required: [agencyName, city, stateCode]
+      required: [agencyName]
     ProviderVerificationResponse:
       type: object
       properties:
@@ -179,8 +180,6 @@ components:
           type: string
         address:
           type: string
-        nppesVerifiedAddress:
-          type: string
         zipCode:
           type: string
         taxonomyCode:
@@ -188,10 +187,6 @@ components:
         taxonomyDescription:
           type: string
         nppesOfficialName:
-          type: string
-        nppesVerifiedCity:
-          type: string
-        nppesVerifiedStateCode:
           type: string
         nppesOfficialTitle:
           type: string

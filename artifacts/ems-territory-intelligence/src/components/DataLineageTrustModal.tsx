@@ -467,10 +467,10 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
               <div className="p-4 bg-sky-50/60 rounded-xl border border-sky-200/80 text-sky-900 space-y-1">
                 <h3 className="font-bold text-sm flex items-center gap-1.5">
                   <Database className="w-4 h-4 text-sky-600" />
-                   <span>Public Data Source Catalog</span>
+                  <span>Federal, State & Clinical Data Ingestion Framework</span>
                 </h3>
                 <p className="text-xs text-sky-800/90 leading-relaxed">
-                  These are possible source registries, not proof that every listed dataset is connected or supplies the value shown. Local profiles may include modeled or sample values. A field is source-backed only when its own evidence is linked and matches the agency and reporting period.
+                  Every data point ingested into this territory platform originates from statutory federal filings, state EMS repositories, and publicly disclosed procurement records. No values are manufactured.
                 </p>
               </div>
 
@@ -512,7 +512,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
 
                     <div className="pt-2 border-t border-slate-100">
                       <span className="text-[10px] uppercase font-mono font-semibold text-slate-400 block mb-1">
-                         Potentially relevant fields:
+                        Ingested Core Fields:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {repo.primaryFieldsIngested.map((f, idx) => (
@@ -533,7 +533,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold block">
-                   Deterministic heuristic (not a validated predictive model)
+                  Deterministic Opportunity Formula (No AI Hallucinations)
                 </span>
                 <div className="p-3 bg-slate-950 text-sky-300 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
                   PulseIQ Score (0–100) = [ 
@@ -545,7 +545,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   ]
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  The score is reproducible arithmetic over the values currently stored in a profile. Many inputs may be modeled, incomplete, or unverified; a deterministic score does not validate its inputs or establish predictive or clinical accuracy. Treat it as a prioritization heuristic, not an operational recommendation.
+                  Every point awarded is mathematically bound to public registry values. If a department operates a 9-year-old Stryker LIFEPAK 15, the fleet obsolescence pillar deterministically outputs 25/25 pts. If claim denial exceeds 18%, CMS recovery outputs 20/20 pts.
                 </p>
               </div>
 

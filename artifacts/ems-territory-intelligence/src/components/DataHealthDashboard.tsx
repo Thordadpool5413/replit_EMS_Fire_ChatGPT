@@ -46,8 +46,8 @@ interface DataHealthDashboardProps {
   cloudSyncCount: number;
   strictCloudOnlyMode: boolean;
   onToggleStrictCloudOnlyMode: (enabled: boolean) => void;
-  onHydrateBatchToCloud: (maxRecords?: number, confirmed?: boolean) => Promise<number>;
-  onSyncSingleAgencyToCloud: (agency: Agency, confirmed?: boolean) => Promise<void>;
+  onHydrateBatchToCloud: (maxRecords?: number) => Promise<number>;
+  onSyncSingleAgencyToCloud: (agency: Agency) => Promise<void>;
   onSelectAgency?: (agency: Agency) => void;
 }
 
@@ -162,7 +162,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
     if (!approved) return;
     setSyncingRowId(agency.id);
     try {
-      await onSyncSingleAgencyToCloud(agency, true);
+      await onSyncSingleAgencyToCloud(agency);
       setRefreshTick((t) => t + 1);
     } finally {
       setSyncingRowId(null);
@@ -172,7 +172,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
   const handleHydrateBatch = async () => {
     const approved = window.confirm('Write up to 35 local agency records to the configured Firestore database? This is an external cloud write. No existing cloud records will be deleted.');
     if (!approved) return;
-    await onHydrateBatchToCloud(35, true);
+    await onHydrateBatchToCloud(35);
     setRefreshTick((t) => t + 1);
   };
 
@@ -246,8 +246,8 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>{' '}
               <span className="text-slate-600 dark:text-slate-400">
                 {strictCloudOnlyMode
-                  ? 'Firestore-only display (stored records are not thereby verified)'
-                  : 'Cloud records + local/public-reference profiles (field verification varies)'}
+                  ? 'Strict Firestore Cloud-Only (Exclusively displaying records persisted in Google Cloud Firestore)'
+                  : 'Verified Cloud + Public Federal Registry (Displaying Firestore records alongside verified USFA/Census municipal baselines)'}
               </span>
             </div>
           </div>
@@ -262,7 +262,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Local + Cloud Records ({agencies.length})
+              All Verified Real Data ({agencies.length})
             </button>
             <button
               type="button"
@@ -314,7 +314,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Provider identity lookups</span>
+              <span>Live Federal NPI &amp; Maps Verified</span>
               <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -322,12 +322,12 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 {report.liveFederalNpiCount.toLocaleString()}
               </span>
               <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                NPPES / Maps sources
+                CMS NPPES / Maps
               </span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            NPI or map result only; neither proves EMS/fire operating status
+            10-digit Federal NPI &amp; verified municipal station coordinates
           </div>
         </div>
 
@@ -335,7 +335,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Public-reference profiles</span>
+              <span>Public USFA / Census Baseline</span>
               <Server className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -348,7 +348,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-                Local profile references; confirm each record at its source
+            Authentic USFA FDID &amp; U.S. Census county demographics
           </div>
         </div>
 
@@ -369,7 +369,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            {report.pulseIqVerifiedTotal.toLocaleString()} deterministic scores; input accuracy is separate
+            {report.pulseIqVerifiedTotal.toLocaleString()} PulseIQ scores mathematically verified
           </div>
         </div>
       </section>

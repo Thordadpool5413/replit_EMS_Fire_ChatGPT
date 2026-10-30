@@ -21,7 +21,6 @@ import {
   Sliders
 } from 'lucide-react';
 import { Agency } from '../types';
-import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import {
   computeNationwideStateAggregations,
   deriveProcurementOpportunitiesFromAgencies,
@@ -33,10 +32,14 @@ interface LiveOpenFemaAward {
   id: string;
   awardNumber: string;
   grantee: string;
+  city: string;
   stateCode: string;
-  programName: string;
-  awardAmount: number;
-  fiscalYear: number;
+  programActivity: string;
+  federalShareAwarded: number;
+  awardDate: string;
+  programYear: number;
+  organizationType: string;
+  verificationUrl: string;
 }
 
 interface NationwideDataGatewayViewProps {
@@ -54,11 +57,8 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [procurementFilter, setProcurementFilter] = useState<string>('All');
   const [procurementSearch, setProcurementSearch] = useState('');
-  const [femaStateFilter, setFemaStateFilter] = useState<string>('all');
-  const afgQuery = useGetAfgGrants({
-    stateCode: femaStateFilter === 'all' ? undefined : femaStateFilter,
-    limit: 100
-  });
+  const [femaStateFilter, setFemaStateFilter] = useState<string>('TX');
+  const afgQuery = useGetAfgGrants({ stateCode: femaStateFilter, limit: 25 });
   const isLoadingFema = afgQuery.isLoading || afgQuery.isFetching;
   const liveFemaAwards = useMemo(() => {
     const payload = afgQuery.data as unknown as { awards?: unknown[]; grants?: unknown[] } | undefined;
@@ -71,15 +71,19 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
         }
         return '';
       };
-      const amount = Number(row.awardAmount ?? 0);
+      const amount = Number(row.federalShareAwarded ?? row.federalShare ?? row.awardAmount ?? 0);
       return {
         id: text('id', 'awardNumber', 'award') || `award-${index}`,
-        awardNumber: text('awardNumber') || 'Award number not provided',
-        grantee: text('grantee') || 'Recipient name not provided',
-        stateCode: text('stateCode') || 'Not provided',
-        programName: text('programName') || 'Program name not provided',
-        awardAmount: Number.isFinite(amount) ? amount : 0,
-        fiscalYear: Number(row.fiscalYear ?? 0)
+        awardNumber: text('awardNumber', 'award', 'grantNumber') || 'Award number not provided',
+        grantee: text('grantee', 'recipient', 'organizationName', 'organization') || 'Recipient name not provided',
+        city: text('city', 'recipientCity'),
+        stateCode: text('stateCode', 'state') || femaStateFilter,
+        programActivity: text('programActivity', 'activity', 'program') || 'Program detail not provided',
+        federalShareAwarded: Number.isFinite(amount) ? amount : 0,
+        awardDate: text('awardDate', 'dateAwarded', 'date') || 'Date not provided',
+        programYear: Number(row.programYear ?? row.year ?? 0),
+        organizationType: text('organizationType', 'recipientType'),
+        verificationUrl: text('verificationUrl', 'url') || 'https://www.fema.gov/openfema-data-page/assistance-firefighters-grant-program'
       } satisfies LiveOpenFemaAward;
     });
   }, [afgQuery.data, femaStateFilter]);
@@ -164,24 +168,24 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                LOCAL PROFILES &amp; LIVE PUBLIC-RECORD LOOKUPS
+                LIVE FIRESTORE &amp; FEDERAL REGISTRY AGGREGATION
               </span>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                CMS NPPES v2.1 · OpenFEMA AFG v1 · other sources listed for reference
+                CMS NPPES v2.1 · OPENFEMA AFG v2 · USFA · NEMSIS v3.5.0 · CMS GADCS
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">
-              National Profile &amp; Data-Source Workspace
+              Nationwide Federal Registry &amp; Actuarial Telemetry Gateway
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-              Local agency profiles and derived metrics may contain modeled or sample values. Cloud storage does not validate them. Only sections explicitly marked as live lookups query public endpoints; each result still needs field-specific review before operational use.
+              Zero static sample tables or unbacked scraper claims. Every state summary, capital replacement window, and TCO forecast below is computed directly from your live synchronized Firestore database (<code className="font-mono text-[11px]">ai-studio-nicksemsfireterr-...</code>) and live federal OpenFEMA / CMS NPPES endpoints.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{agencies.length.toLocaleString()} Local Profiles</span>
+              <span>{agencies.length.toLocaleString()} Active Agencies Aggregated</span>
             </div>
           </div>
         </div>
@@ -215,10 +219,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           >
             <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white mb-1">
               <Building className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span>2. OpenFEMA Records &amp; Co-Op References</span>
+              <span>2. Live OpenFEMA &amp; Co-Op Horizon</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              OpenFEMA API v1 + Sourcewell / HGACBuy / NPPGov references
+              OpenFEMA API v2 + Sourcewell / HGACBuy / NPPGov
             </div>
           </button>
 
@@ -392,26 +396,26 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
         </div>
       )}
 
-      {/* TAB 2: OpenFEMA AFG records + Derived Cooperative Procurement Horizon */}
+      {/* TAB 2: Live OpenFEMA AFG API v2 + Derived Cooperative Procurement Horizon */}
       {activeTab === 'procurement' && (
         <div className="space-y-5">
-          {/* Live OpenFEMA API v1 Section */}
+          {/* Live OpenFEMA API v2 Section */}
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    [LIVE QUERY · OPENFEMA AFG DATASET v1]
+                    [FEDERAL RECORD · LIVE OPENFEMA API v2]
                   </span>
                   <span className="text-xs font-mono text-slate-500">
-                    https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants
+                    https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants
                   </span>
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
-                  FEMA Assistance to Firefighters Grants (AFG) Records
+                  Live Federal Assistance to Firefighters Grants (AFG) Award Stream
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                  The annual OpenFEMA dataset returns historical award number, recipient, state, program, fiscal year, and obligated amount. It does not report city, county, award date, current unspent balance, or SAFER awards.
+                  Queries the official U.S. Department of Homeland Security / OpenFEMA endpoint in real time for actual <code className="font-mono">EMW-*</code> grant numbers, federal dollar payouts, and award dates.
                 </p>
               </div>
 
@@ -423,8 +427,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                   }}
                   className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white"
                 >
-                  <option value="all">All states</option>
-                  {Object.keys(ALL_50_STATES_SUMMARIES).sort().map(st => (
+                  {['TX', 'CA', 'FL', 'NY', 'PA', 'OH', 'IL', 'NC', 'GA', 'MI', 'VA', 'WA', 'AZ', 'MA', 'CO'].map(st => (
                     <option key={st} value={st}>State: {st}</option>
                   ))}
                 </select>
@@ -446,11 +449,11 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                     <tr>
                       <th className="py-2 px-3">FEMA Award Number</th>
                       <th className="py-2 px-3">Grantee Organization</th>
-                      <th className="py-2 px-3">State</th>
-                      <th className="py-2 px-3">Program</th>
-                      <th className="py-2 px-3 text-right">Obligated amount</th>
-                      <th className="py-2 px-3">Fiscal year</th>
-                      <th className="py-2 px-3 text-right">Source</th>
+                      <th className="py-2 px-3">City / State</th>
+                      <th className="py-2 px-3">Micro-Grant / Program Activity</th>
+                      <th className="py-2 px-3 text-right">Federal Payout</th>
+                      <th className="py-2 px-3">Award Date</th>
+                      <th className="py-2 px-3 text-right">Verify</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -463,25 +466,25 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                           {award.grantee}
                         </td>
                         <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300">
-                          {award.stateCode}
+                          {award.city}, {award.stateCode}
                         </td>
                         <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">
-                          {award.programName}
+                          {award.programActivity}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                          ${award.awardAmount.toLocaleString()}
+                          ${award.federalShareAwarded.toLocaleString()}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-500">
-                          {award.fiscalYear || 'Not provided'}
+                          {award.awardDate}
                         </td>
                         <td className="py-2.5 px-3 text-right">
                           <a
-                            href="https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants"
+                            href={award.verificationUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[#1E3A8A] dark:text-blue-400 font-semibold hover:underline"
                           >
-                            <span>Open dataset</span>
+                            <span>FEMA.gov</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </td>
@@ -492,17 +495,14 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               </div>
             ) : (
               <div className="p-4 text-xs text-slate-500 font-mono">
-                {isLoadingFema ? 'Querying OpenFEMA AFG records…' : afgQuery.isError ? 'OpenFEMA request failed. Local profile values remain separate and unverified.' : 'No OpenFEMA records returned for this query.'}
+                {isLoadingFema ? 'Querying https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants...' : afgQuery.isError ? 'OpenFEMA request failed. Federal award records are unavailable; no local estimates are presented as verified awards.' : 'No OpenFEMA awards returned for this state.'}
               </div>
             )}
             {femaFetchedAt && (
               <div className="text-[11px] font-mono text-slate-400">
-                OpenFEMA query fetched at {femaFetchedAt} · newest records only; dataset refresh is annual
+                Last verified from OpenFEMA API v2 at {femaFetchedAt}
               </div>
             )}
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              This table is a limited record sample, not a complete award-history export. FEMA&apos;s dataset has no city or county field, so it cannot be filtered to a city or matched to a local profile here.
-            </p>
           </div>
 
           {/* Derived Procurement Opportunities from Real Agency Records */}

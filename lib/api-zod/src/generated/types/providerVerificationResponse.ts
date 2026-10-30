@@ -18,13 +18,10 @@ export interface ProviderVerificationResponse {
   verificationSource?: string;
   npiNumber?: string;
   address?: string;
-  nppesVerifiedAddress?: string;
   zipCode?: string;
   taxonomyCode?: string;
   taxonomyDescription?: string;
   nppesOfficialName?: string;
-  nppesVerifiedCity?: string;
-  nppesVerifiedStateCode?: string;
   nppesOfficialTitle?: string;
   nppesLastUpdated?: string;
   officialWebsite?: string;

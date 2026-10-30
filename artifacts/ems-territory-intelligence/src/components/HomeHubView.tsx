@@ -31,6 +31,7 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
 import { ProviderSourceImportPanel } from './ProviderSourceImportPanel';
+import { FloridaOfficialDirectory } from './FloridaOfficialDirectory';
 
 interface HomeHubViewProps {
   agencies: Agency[];
@@ -174,6 +175,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           <ProviderSourceImportPanel showToast={showToast} />
         </>
       )}
+      <FloridaOfficialDirectory />
       {/* ====================================================================
           1. COMPACT PREMIUM HEADER WITH DISCIPLINE FILTER & SEARCH
          ==================================================================== */}

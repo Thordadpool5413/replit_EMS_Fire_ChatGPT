@@ -86,6 +86,58 @@ export const SearchNppesProvidersResponse = zod.object({
 
 
 /**
+ * Returns Florida DOH EMS license rows and USFA registered fire departments as separate public-source datasets. It does not create complete operational profiles.
+ * @summary Get current Florida official provider listings
+ */
+export const GetFloridaOfficialAgenciesQueryParams = zod.object({
+  "refresh": zod.coerce.boolean().optional()
+})
+
+export const GetFloridaOfficialAgenciesResponse = zod.object({
+  "ems": zod.object({
+  "metadata": zod.object({
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "sourceUpdatedAt": zod.coerce.date().nullable(),
+  "retrievedAt": zod.coerce.date().nullable(),
+  "recordCount": zod.number().int(),
+  "completenessNote": zod.string(),
+  "errorMessage": zod.string().nullable()
+}),
+  "records": zod.array(zod.object({
+  "licenseNumber": zod.string(),
+  "providerName": zod.string(),
+  "city": zod.string().nullable(),
+  "addressState": zod.string().nullable(),
+  "county": zod.string().nullable(),
+  "licenseType": zod.string(),
+  "licenseIssuedDate": zod.coerce.date().nullable(),
+  "licenseExpirationDate": zod.coerce.date().nullable()
+}))
+}),
+  "fire": zod.object({
+  "metadata": zod.object({
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "sourceUpdatedAt": zod.coerce.date().nullable(),
+  "retrievedAt": zod.coerce.date().nullable(),
+  "recordCount": zod.number().int(),
+  "completenessNote": zod.string(),
+  "errorMessage": zod.string().nullable()
+}),
+  "records": zod.array(zod.object({
+  "fdid": zod.string().nullable(),
+  "departmentName": zod.string(),
+  "city": zod.string().nullable(),
+  "county": zod.string().nullable(),
+  "departmentType": zod.string().nullable(),
+  "organizationType": zod.string().nullable()
+}))
+})
+})
+
+
+/**
  * @summary Verify provider identity against public registries
  */
 

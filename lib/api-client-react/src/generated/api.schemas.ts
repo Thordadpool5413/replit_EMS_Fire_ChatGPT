@@ -56,6 +56,64 @@ export interface NppesProviderRecord {
   registryUrl: string;
 }
 
+export interface FloridaSourceMetadata {
+  sourceName: string;
+  sourceUrl: string;
+  /** @nullable */
+  sourceUpdatedAt: string | null;
+  /** @nullable */
+  retrievedAt: string | null;
+  recordCount: number;
+  completenessNote: string;
+  /** @nullable */
+  errorMessage: string | null;
+}
+
+export interface FloridaEmsLicenseRecord {
+  licenseNumber: string;
+  providerName: string;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  addressState: string | null;
+  /** @nullable */
+  county: string | null;
+  licenseType: string;
+  /** @nullable */
+  licenseIssuedDate: string | null;
+  /** @nullable */
+  licenseExpirationDate: string | null;
+}
+
+export interface FloridaFireRegistryRecord {
+  /** @nullable */
+  fdid: string | null;
+  departmentName: string;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  county: string | null;
+  /** @nullable */
+  departmentType: string | null;
+  /** @nullable */
+  organizationType: string | null;
+}
+
+export type FloridaOfficialAgenciesResponseEms = {
+  metadata: FloridaSourceMetadata;
+  records: FloridaEmsLicenseRecord[];
+};
+
+export type FloridaOfficialAgenciesResponseFire = {
+  metadata: FloridaSourceMetadata;
+  records: FloridaFireRegistryRecord[];
+};
+
+export interface FloridaOfficialAgenciesResponse {
+  ems: FloridaOfficialAgenciesResponseEms;
+  fire: FloridaOfficialAgenciesResponseFire;
+}
+
 export interface NppesSearchResponse {
   sourceUrl: string;
   retrievedAt: string;
@@ -182,5 +240,9 @@ recipientName?: string;
  * @maximum 100
  */
 limit?: number;
+};
+
+export type GetFloridaOfficialAgenciesParams = {
+refresh?: boolean;
 };
 

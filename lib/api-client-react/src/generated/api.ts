@@ -21,7 +21,9 @@ import type {
 
 import type {
   AfgGrantsResponse,
+  FloridaOfficialAgenciesResponse,
   GetAfgGrantsParams,
+  GetFloridaOfficialAgenciesParams,
   HealthStatus,
   NppesSearchInput,
   NppesSearchResponse,
@@ -310,6 +312,91 @@ export const useSearchNppesProviders = <TError = ErrorType<void>,
       > => {
       return useMutation(getSearchNppesProvidersMutationOptions(options));
     }
+
+export const getGetFloridaOfficialAgenciesUrl = (params?: GetFloridaOfficialAgenciesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/florida/official-agencies?${stringifiedParams}` : `/api/florida/official-agencies`
+}
+
+/**
+ * Returns Florida DOH EMS license rows and USFA registered fire departments as separate public-source datasets. It does not create complete operational profiles.
+ * @summary Get current Florida official provider listings
+ */
+export const getFloridaOfficialAgencies = async (params?: GetFloridaOfficialAgenciesParams, options?: Parameters<typeof customFetch>[1]): Promise<FloridaOfficialAgenciesResponse> => {
+
+  return customFetch<FloridaOfficialAgenciesResponse>(getGetFloridaOfficialAgenciesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFloridaOfficialAgenciesQueryKey = (params?: GetFloridaOfficialAgenciesParams,) => {
+    return [
+    `/api/florida/official-agencies`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFloridaOfficialAgenciesQueryOptions = <TData = Awaited<ReturnType<typeof getFloridaOfficialAgencies>>, TError = ErrorType<void>>(params?: GetFloridaOfficialAgenciesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFloridaOfficialAgencies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFloridaOfficialAgenciesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFloridaOfficialAgencies>>> = ({ signal }) => getFloridaOfficialAgencies(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFloridaOfficialAgencies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFloridaOfficialAgenciesQueryResult = NonNullable<Awaited<ReturnType<typeof getFloridaOfficialAgencies>>>
+export type GetFloridaOfficialAgenciesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get current Florida official provider listings
+ */
+
+export function useGetFloridaOfficialAgencies<TData = Awaited<ReturnType<typeof getFloridaOfficialAgencies>>, TError = ErrorType<void>>(
+ params?: GetFloridaOfficialAgenciesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFloridaOfficialAgencies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFloridaOfficialAgenciesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getVerifyProviderLiveUrl = () => {
 

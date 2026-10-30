@@ -278,34 +278,34 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     },
     installedFleet: {
       ...(raw.installedFleet || {}),
-      defibBrand: raw.installedFleet?.defibBrand || 'Unverified equipment',
-      defibAgeYears: raw.installedFleet?.defibAgeYears ?? 7.5,
-      defibUnitsCount: raw.installedFleet?.defibUnitsCount ?? Math.max(4, totalAmbulances),
-      defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Expired - T&M Service',
-      mechanicalCPR: raw.installedFleet?.mechanicalCPR || 'Stryker LUCAS 3',
-      transportVentilator: raw.installedFleet?.transportVentilator || 'Legacy Pneumatics',
-      epcrCadSoftware: raw.installedFleet?.epcrCadSoftware || 'ImageTrend Elite',
-      billingSoftware: raw.installedFleet?.billingSoftware || 'Digitech EMS',
-      dispatchCadVendor: raw.installedFleet?.dispatchCadVendor || 'CentralSquare Enterprise CAD'
+      defibBrand: raw.installedFleet?.defibBrand || 'Not sourced',
+      defibAgeYears: raw.installedFleet?.defibAgeYears ?? 0,
+      defibUnitsCount: raw.installedFleet?.defibUnitsCount ?? 0,
+      defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Not sourced',
+      mechanicalCPR: raw.installedFleet?.mechanicalCPR || 'Not sourced',
+      transportVentilator: raw.installedFleet?.transportVentilator || 'Not sourced',
+      epcrCadSoftware: raw.installedFleet?.epcrCadSoftware || 'Not sourced',
+      billingSoftware: raw.installedFleet?.billingSoftware || 'Not sourced',
+      dispatchCadVendor: raw.installedFleet?.dispatchCadVendor || 'Not sourced'
     },
     zollOpportunity: {
       ...(raw.zollOpportunity || {}),
-      pulseIqScore: raw.zollOpportunity?.pulseIqScore ?? 84,
-      priorityTier: raw.zollOpportunity?.priorityTier || 'High Value',
-      primaryTargetProduct: raw.zollOpportunity?.primaryTargetProduct || 'X Series Advanced',
-      recommendedBundle: raw.zollOpportunity?.recommendedBundle || ['X Series Advanced', 'Real BVM Help', 'RescueNet CaseReview'],
-      projectedPipelineValue: raw.zollOpportunity?.projectedPipelineValue ?? Math.max(4, totalAmbulances) * 38500,
+      pulseIqScore: raw.zollOpportunity?.pulseIqScore ?? 0,
+      priorityTier: raw.zollOpportunity?.priorityTier || 'Unavailable',
+      primaryTargetProduct: raw.zollOpportunity?.primaryTargetProduct || 'Not assessed',
+      recommendedBundle: raw.zollOpportunity?.recommendedBundle || [],
+      projectedPipelineValue: raw.zollOpportunity?.projectedPipelineValue ?? 0,
       salesStage: raw.zollOpportunity?.salesStage || 'Target Lead',
-      probabilityPct: raw.zollOpportunity?.probabilityPct ?? 65,
-      clinicalBenefitNarrative: raw.zollOpportunity?.clinicalBenefitNarrative || 'Real BVM Help® + See-Thru CPR® targets AHA CCF >80% and peri-shock pause <10s.',
-      financialRoiNarrative: 'Modeled ROI narrative only; no agency-specific denial, recovery, or realized savings record is attached. Review source billing and contract records before use.',
-      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Modeled priority index using unverified profile baselines; no source records attached.',
+      probabilityPct: raw.zollOpportunity?.probabilityPct ?? 0,
+      clinicalBenefitNarrative: raw.zollOpportunity?.clinicalBenefitNarrative || 'No agency-specific clinical outcome evidence is attached.',
+      financialRoiNarrative: raw.zollOpportunity?.financialRoiNarrative || 'Financial impact is modeled and requires validation against agency billing and contract records.',
+      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Modeled score from source-verified inputs; it is not an agency performance rating.',
       scoreBreakdown: {
-        clinicalAcuityPts: raw.zollOpportunity?.scoreBreakdown?.clinicalAcuityPts ?? 18,
-        fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts ?? 21,
-        cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts ?? 17,
-        demographicVulnerabilityPts: raw.zollOpportunity?.scoreBreakdown?.demographicVulnerabilityPts ?? 13,
-        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts ?? 15
+        clinicalAcuityPts: raw.zollOpportunity?.scoreBreakdown?.clinicalAcuityPts ?? 0,
+        fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts ?? 0,
+        cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts ?? 0,
+        softwareWhitespacePts: raw.zollOpportunity?.scoreBreakdown?.softwareWhitespacePts ?? 0,
+        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts ?? 0
       }
     },
     keyContacts: normalizedContacts,
@@ -1353,7 +1353,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Actuarial sensitivity model ({actuarialForecast.units} frontline units)
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                  PulseIQ model ({agency.zollOpportunity.pulseIqScore}/100) = Fleet estimate ({agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts}/25) + Denial estimate ({agency.zollOpportunity.scoreBreakdown.cmsFinancialPts}/20) + Acuity estimate ({agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts}/20) + Grant profile ({agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts}/20) + Software estimate ({agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts}/15)
+                  Modeled PulseIQ ({agency.zollOpportunity.pulseIqScore}/100) = Cardiac volume ({agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts} pts) + Fleet age ({agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts} pts) + CMS denials ({agency.zollOpportunity.scoreBreakdown.cmsFinancialPts} pts) + Grant status ({agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts} pts) + Software whitespace ({agency.zollOpportunity.scoreBreakdown.softwareWhitespacePts ?? 0} pts). These are weighted model contributions, not agency performance ratings.
                     </div>
                   </div>
                 </div>

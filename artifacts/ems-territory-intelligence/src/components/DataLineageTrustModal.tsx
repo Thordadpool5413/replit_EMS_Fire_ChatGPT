@@ -573,62 +573,62 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 </span>
                 <div className="p-3 bg-slate-950 text-sky-300 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
                   PulseIQ Score (0–100) = [ 
-                    (FleetAge_Pts × 0.25) + 
-                    (ClinicalAcuity_Pts × 0.25) + 
-                    (CMSDenial_Pts × 0.20) + 
-                    (DemographicNeed_Pts × 0.15) + 
-                    (GrantReadiness_Pts × 0.15) 
+                    (FleetAge_Pts × 0.30) + 
+                    (CMSDenial_Pts × 0.25) + 
+                    (CardiacVolume_Pts × 0.20) + 
+                    (GrantStatus_Pts × 0.15) + 
+                    (SoftwareWhitespace_Pts × 0.10) 
                   ]
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  The formula is deterministic, but its inputs may be profile estimates rather than source-verified records. CMS ambulance fee schedule files do not publish agency-specific denial rates. Treat derived priority scores as modeled scenarios until their inputs are independently verified.
+                  These are default weights and can change through calibration. Each input requires field-level source evidence. The result is a modeled prioritization score, not a clinical outcome, agency rating, or validated prediction.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs">
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">1. Fleet Age</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">25 pts</span>
+                    <span className="font-semibold text-slate-900">1. Fleet Age &amp; Brand</span>
+                    <span className="font-semibold text-sky-700 tabular-nums">30 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Graduated points for competitor hardware older than 7 years, expired OEM warranties, and announced manufacturer service sunsets.
+                    Uses source-reported defibrillator age and brand. Warranty or service life is not inferred by this factor.
                   </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">2. Clinical Acuity</span>
+                    <span className="font-semibold text-slate-900">2. CMS Denial Rate</span>
                     <span className="font-semibold text-sky-700 tabular-nums">25 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Cardiac arrest call density (NEMSIS OHCA), Utstein survival deficit vs. 29.7% benchmark, and drive time to cath labs.
+                    Uses the source-reported claim denial rate only. It does not infer denial causes or recoverable revenue.
                   </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">3. CMS Financials</span>
+                    <span className="font-semibold text-slate-900">3. Cardiac Call Volume</span>
                     <span className="font-semibold text-sky-700 tabular-nums">20 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Medicare Part B claim denial rate (&gt;15%), GADCS reporting compliance, and addressable cash recovery via ZOLL Billing.
+                    Uses source-reported annual cardiac arrest call volume; it does not measure survival or clinical quality.
                   </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">4. Demographics</span>
+                    <span className="font-semibold text-slate-900">4. Grant Status</span>
                     <span className="font-semibold text-sky-700 tabular-nums">15 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Senior 65+ population concentration, municipal poverty percentage, and public access AED coverage deficit in schools.
+                    Uses cited AFG award and SAFER status fields. It does not establish current eligibility or an open application period.
                   </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">5. Budget & Grants</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">15 pts</span>
+                    <span className="font-semibold text-slate-900">5. Software Vendors</span>
+                    <span className="font-semibold text-sky-700 tabular-nums">10 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Active FEMA Assistance to Firefighters Grant (AFG) obligation status and municipal fiscal year-end surplus spend timing.
+                    Uses source-reported ePCR and billing vendor fields; it does not confirm purchase need or product fit.
                   </p>
                 </div>
               </div>

@@ -777,7 +777,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             const hospitalTransports = agency.gisData.annualHospitalDestinationTransports ?? Math.round(agency.annual911Transports * 0.88);
 
             // Compute 5-pillar sub-scores for micro-bar visualization
-            const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8));
+            const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls ?? 0) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate ?? 0)) * 1.8));
             const p2Fleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
             const p3Cms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 26) * 100));
             const p4Demo = Math.min(100, Math.round(Math.log10(Math.max(1000, agency.populationServed || 25000)) * 18));
@@ -1252,7 +1252,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   const fireChiefContact = agency.keyContacts.find(c => c.role === 'Fire Chief' || c.title.toLowerCase().includes('fire')) || agency.keyContacts[0];
                   const emsDirectorContact = agency.keyContacts.find(c => c.role === 'EMS Chief' || c.title.toLowerCase().includes('ems')) || agency.keyContacts[1];
 
-                  const pClinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 200) / 8));
+                  const pClinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls ?? 0) / 8));
                   const pFleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
                   const pCms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
                   const pDemo = Math.min(100, Math.round(((agency.gisData?.seniorPopulationPct || 16) / 28) * 100));

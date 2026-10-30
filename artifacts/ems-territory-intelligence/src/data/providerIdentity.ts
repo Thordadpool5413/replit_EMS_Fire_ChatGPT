@@ -10,6 +10,35 @@ export interface RegistryLegalGeography {
   stateCode: string;
 }
 
+export interface VerifiedFieldEvidence {
+  sourceUrl: string;
+  retrievedAt: string;
+}
+
+export const REQUIRED_DIRECTORY_EVIDENCE_FIELDS = [
+  "annualCallVolume",
+  "annual911Transports",
+  "annualCardiacArrestCalls",
+  "utsteinSurvivalRate",
+  "populationServed",
+  "cmsData.claimDenialRate",
+  "cmsData.medicareBilledAnnual",
+  "installedFleet.defibAgeYears",
+  "installedFleet.defibBrand",
+  "installedFleet.billingSoftware",
+  "installedFleet.epcrCadSoftware",
+  "installedFleet.defibUnitsCount",
+  "installedFleet.defibWarrantyStatus",
+  "grantStatus.afgAwardAmount",
+  "grantStatus.afgAwarded",
+  "grantStatus.saferGrantActive",
+  "grantStatus.afgFiscalYear",
+  "gisData.avgTransportTimeMinutes",
+  "gisData.publicAccessAedDeficitPct",
+  "gisData.seniorPopulationPct",
+  "cmsData.topDenialReasonCode",
+] as const;
+
 function normalizeIdentityValue(value: string): string {
   return value
     .normalize("NFKD")
@@ -91,5 +120,133 @@ export function hasVerifiedProviderIdentity(
   return (
     (10 - (sum % 10)) % 10 === Number(npi[9]) &&
     hasVerifiedLegalGeography(agency)
+  );
+}
+
+export function hasVerifiedNppesEvidence(
+  agency: AgencyLegalGeography & {
+    isVerifiedRecord?: boolean;
+    npiNumber?: string;
+    nppesOfficialName?: string;
+    nppesVerifiedCity?: string;
+    nppesVerifiedStateCode?: string;
+    verificationSource?: string;
+    lastVerifiedAt?: string;
+  },
+): boolean {
+  const verifiedAt = agency.lastVerifiedAt
+    ? Date.parse(agency.lastVerifiedAt)
+    : Number.NaN;
+
+  return (
+    hasVerifiedProviderIdentity(agency) &&
+    /nppes/i.test(agency.verificationSource ?? "") &&
+    Number.isFinite(verifiedAt)
+  );
+}
+
+/**
+ * Profiles feed operational metrics and modeled scores throughout the app.
+ * Identity verification alone is not enough to publish those values.
+ */
+export function hasCompleteVerifiedDirectoryProfile(
+  agency: AgencyLegalGeography & {
+    isVerifiedRecord?: boolean;
+    npiNumber?: string;
+    nppesOfficialName?: string;
+    nppesVerifiedCity?: string;
+    nppesVerifiedStateCode?: string;
+    verificationSource?: string;
+    lastVerifiedAt?: string;
+    verifiedFieldEvidence?: Record<string, VerifiedFieldEvidence>;
+    annualCallVolume?: number;
+    annual911Transports?: number;
+    annualCardiacArrestCalls?: number;
+    utsteinSurvivalRate?: number;
+    populationServed?: number;
+    cmsData?: {
+      claimDenialRate?: number;
+      medicareBilledAnnual?: number;
+      estimatedRecoverableRevenue?: number;
+      topDenialReasonCode?: string;
+    };
+    installedFleet?: {
+      defibAgeYears?: number;
+      defibBrand?: string;
+      billingSoftware?: string;
+      epcrCadSoftware?: string;
+      defibUnitsCount?: number;
+      defibWarrantyStatus?: string;
+    };
+    grantStatus?: {
+      afgAwardAmount?: number;
+      afgAwarded?: boolean;
+      saferGrantActive?: boolean;
+      afgFiscalYear?: number;
+    };
+    gisData?: {
+      avgTransportTimeMinutes?: number;
+      publicAccessAedDeficitPct?: number;
+      seniorPopulationPct?: number;
+    };
+  },
+): boolean {
+  if (!hasVerifiedNppesEvidence(agency)) return false;
+
+  const sourceEvidenceComplete = REQUIRED_DIRECTORY_EVIDENCE_FIELDS.every((fieldPath) => {
+    const evidence = agency.verifiedFieldEvidence?.[fieldPath];
+    return Boolean(
+      evidence &&
+        /^https?:\/\//i.test(evidence.sourceUrl) &&
+        Number.isFinite(Date.parse(evidence.retrievedAt)),
+    );
+  });
+  if (!sourceEvidenceComplete) return false;
+
+  const profileValues: Record<string, unknown> = {
+    annualCallVolume: agency.annualCallVolume,
+    annual911Transports: agency.annual911Transports,
+    annualCardiacArrestCalls: agency.annualCardiacArrestCalls,
+    utsteinSurvivalRate: agency.utsteinSurvivalRate,
+    populationServed: agency.populationServed,
+    "cmsData.claimDenialRate": agency.cmsData?.claimDenialRate,
+    "cmsData.medicareBilledAnnual": agency.cmsData?.medicareBilledAnnual,
+    "installedFleet.defibAgeYears": agency.installedFleet?.defibAgeYears,
+    "installedFleet.defibBrand": agency.installedFleet?.defibBrand,
+    "installedFleet.billingSoftware": agency.installedFleet?.billingSoftware,
+    "installedFleet.epcrCadSoftware": agency.installedFleet?.epcrCadSoftware,
+    "installedFleet.defibUnitsCount": agency.installedFleet?.defibUnitsCount,
+    "installedFleet.defibWarrantyStatus": agency.installedFleet?.defibWarrantyStatus,
+    "grantStatus.afgAwardAmount": agency.grantStatus?.afgAwardAmount,
+    "grantStatus.afgAwarded": agency.grantStatus?.afgAwarded,
+    "grantStatus.saferGrantActive": agency.grantStatus?.saferGrantActive,
+    "grantStatus.afgFiscalYear": agency.grantStatus?.afgFiscalYear,
+    "gisData.avgTransportTimeMinutes": agency.gisData?.avgTransportTimeMinutes,
+    "gisData.publicAccessAedDeficitPct": agency.gisData?.publicAccessAedDeficitPct,
+    "gisData.seniorPopulationPct": agency.gisData?.seniorPopulationPct,
+    "cmsData.topDenialReasonCode": agency.cmsData?.topDenialReasonCode,
+  };
+
+  return REQUIRED_DIRECTORY_EVIDENCE_FIELDS.every((fieldPath) => {
+    const value = profileValues[fieldPath];
+    return typeof value === "number"
+      ? Number.isFinite(value)
+      : typeof value === "string"
+        ? value.trim().length > 0
+        : typeof value === "boolean";
+  });
+}
+
+export function hasVerifiedFieldEvidence(
+  agency: {
+    verifiedFieldEvidence?: Record<string, VerifiedFieldEvidence>;
+  },
+  fieldPath: string,
+): boolean {
+  const evidence = agency.verifiedFieldEvidence?.[fieldPath];
+  return Boolean(
+    evidence &&
+      /^https?:\/\//i.test(evidence.sourceUrl) &&
+      Number.isFinite(Date.parse(evidence.retrievedAt)),
   );
 }

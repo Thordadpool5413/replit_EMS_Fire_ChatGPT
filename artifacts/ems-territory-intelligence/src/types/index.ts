@@ -17,7 +17,8 @@ export type PriorityTier =
   | 'Critical Opportunity'
   | 'High Value'
   | 'Mid-Term Pipeline'
-  | 'Maintained Account';
+  | 'Maintained Account'
+  | 'Unavailable';
 
 export type LeadStage = 
   | 'Target Lead'
@@ -66,7 +67,8 @@ export interface ScoreBreakdown {
   clinicalAcuityPts: number; // 0 to 25 pts (Cardiac volume, survival deficit, transport times)
   fleetObsolescencePts: number; // 0 to 25 pts (LP15/MRx age, out of warranty, parts shortage)
   cmsFinancialPts: number; // 0 to 20 pts (Denial rate, GADCS audit risk, recoverable cash)
-  demographicVulnerabilityPts: number; // 0 to 15 pts (Senior 65+ pop, poverty rate, density)
+  softwareWhitespacePts?: number; // Weighted modeled points for verified software fields
+  demographicVulnerabilityPts?: number; // Legacy field; not part of the current PulseIQ formula
   budgetGrantReadinessPts: number; // 0 to 15 pts (Active AFG grant, FY end surplus)
 }
 
@@ -324,6 +326,10 @@ export interface Agency {
   verificationSource?: 'Federal CMS NPI Registry' | 'USFA & Municipal Registry' | 'Google Maps Verified' | 'Firestore Cloud Synced' | string;
   isVerifiedRecord?: boolean;
   lastVerifiedAt?: string;
+  verifiedFieldEvidence?: Record<string, {
+    sourceUrl: string;
+    retrievedAt: string;
+  }>;
   verificationAttempt?: {
     timestamp: string;
     outcome: string;

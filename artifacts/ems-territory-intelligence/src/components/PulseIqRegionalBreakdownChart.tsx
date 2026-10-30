@@ -23,10 +23,10 @@ import {
   Radar,
   Cell
 } from 'recharts';
-import { Agency, ScoreBreakdown } from '../types';
+import { Agency, PredictiveWeights, ScoreBreakdown } from '../types';
+import { DEFAULT_WEIGHTS, explainAgencyScore } from '../utils/syncStore';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { 
   BarChart3, 
   Layers, 
@@ -59,6 +59,7 @@ interface PulseIqRegionalBreakdownChartProps {
   onSelectAgency?: (agency: Agency) => void;
   globalCategory?: 'all' | 'ems' | 'fire';
   onOpenWeightsModal?: () => void;
+  weights?: PredictiveWeights;
 }
 
 type ChartMode = 'stacked_breakdown' | 'benchmark' | 'radar' | 'pipeline';
@@ -67,6 +68,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
   selectedState,
   selectedCounty,
   agencies,
+  weights = DEFAULT_WEIGHTS,
   onSelectCounty,
   onSelectState,
   onSelectAgency,
@@ -86,10 +88,9 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     }
   }, [globalCategory]);
 
-  // Full dataset fallback guarantee: never default to a partial or empty agency set
+  // Do not backfill a verified directory with generated national profiles.
   const effectiveAgencies = useMemo(() => {
-    if (agencies && agencies.length > 50) return agencies;
-    return nationalProviderDb.getInitialBaselineAgencies();
+    return Array.isArray(agencies) ? agencies : [];
   }, [agencies]);
 
   // Helper to resolve state code reliably from any format (2-letter code or state name)
@@ -121,23 +122,15 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
     // Helper to calculate score breakdown if missing
     const getBreakdown = (agency: Agency): ScoreBreakdown => {
-      if (agency.zollOpportunity?.scoreBreakdown) {
-        return agency.zollOpportunity.scoreBreakdown;
-      }
-      const calls = agency.annualCardiacArrestCalls || Math.round((agency.annual911Transports || 3000) * 0.12);
-      const survival = agency.utsteinSurvivalRate || 10.8;
-      const survivalGap = Math.max(0, 36.0 - survival);
-      const denial = agency.cmsData?.claimDenialRate || 18.5;
-      const defibAge = agency.installedFleet?.defibAgeYears || 7;
-      const senior = agency.gisData?.seniorPopulationPct || 16.5;
-      const aed = agency.gisData?.publicAccessAedDeficitPct || 42;
-
+      const explanation = explainAgencyScore(agency, weights);
+      const points = (factorId: string) =>
+        explanation.factors.find((factor) => factor.id === factorId)?.pointsContributed ?? 0;
       return {
-        clinicalAcuityPts: Math.min(25, Math.max(8, Math.round(8 + survivalGap * 0.75 + Math.min(6, calls / 50)))),
-        fleetObsolescencePts: Math.min(25, Math.max(6, Math.round((defibAge / 10) * 16 + (agency.installedFleet?.defibBrand.includes('ZOLL') ? 0 : 5) + (defibAge >= 8 ? 4 : 0)))),
-        cmsFinancialPts: Math.min(20, Math.max(5, Math.round((denial / 24) * 20))),
-        demographicVulnerabilityPts: Math.min(15, Math.max(4, Math.round((senior / 24) * 9 + (aed / 60) * 6))),
-        budgetGrantReadinessPts: agency.grantStatus?.afgAwarded ? 15 : (agency.grantStatus?.saferGrantActive ? 11 : 7)
+        clinicalAcuityPts: points('cardiac'),
+        fleetObsolescencePts: points('fleet'),
+        cmsFinancialPts: points('cms'),
+        softwareWhitespacePts: points('software'),
+        budgetGrantReadinessPts: points('grant'),
       };
     };
 
@@ -176,8 +169,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       // Group by agency / city jurisdiction
       const data = uniqueAgencies.map(agency => {
         const bd = getBreakdown(agency);
-        const calcScore = Math.min(100, Math.max(0, bd.clinicalAcuityPts + bd.fleetObsolescencePts + bd.cmsFinancialPts + bd.demographicVulnerabilityPts + bd.budgetGrantReadinessPts));
-        const finalScore = agency.zollOpportunity?.pulseIqScore || calcScore;
+        const finalScore = explainAgencyScore(agency, weights).totalScore;
         return {
           id: agency.id,
           name: agency.name.length > 20 ? agency.name.substring(0, 18) + '...' : agency.name,
@@ -196,7 +188,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           clinicalAcuity: bd.clinicalAcuityPts,
           fleetObsolescence: bd.fleetObsolescencePts,
           cmsRecovery: bd.cmsFinancialPts,
-          demographics: bd.demographicVulnerabilityPts,
+          softwareWhitespace: bd.softwareWhitespacePts ?? 0,
           budgetGrant: bd.budgetGrantReadinessPts,
           agencyObj: agency,
           type: agency.agencyType
@@ -283,6 +275,8 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       countyMap.forEach((entry, countyKey) => {
         const { displayName, fullName, agencies: countyAgencies } = entry;
         const hasAgencies = countyAgencies.length > 0;
+        if (!hasAgencies) return;
+        if (!hasAgencies) return;
 
         let avgScore: number;
         let maxScore: number;
@@ -290,41 +284,28 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         let clinicalAcuity: number;
         let fleetObsolescence: number;
         let cmsRecovery: number;
-        let demographics: number;
+        let softwareWhitespace: number;
         let budgetGrant: number;
         let topAccount: Agency | undefined;
-        let fleetBrand = 'Stryker LIFEPAK 15';
-        let fleetAge = 8;
+        let fleetBrand = 'Not sourced';
+        let fleetAge = 0;
 
         if (hasAgencies) {
-          const totalSc = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.pulseIqScore || 75), 0);
+          const totalSc = countyAgencies.reduce((acc, a) => acc + explainAgencyScore(a, weights).totalScore, 0);
           avgScore = Math.round(totalSc / countyAgencies.length);
-          maxScore = Math.max(...countyAgencies.map(a => a.zollOpportunity?.pulseIqScore || 75));
-          totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue || 125000), 0);
-          topAccount = countyAgencies.slice().sort((a, b) => (b.zollOpportunity?.pulseIqScore || 0) - (a.zollOpportunity?.pulseIqScore || 0))[0];
+          maxScore = Math.max(...countyAgencies.map(a => explainAgencyScore(a, weights).totalScore));
+          totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
+          topAccount = countyAgencies
+            .slice()
+            .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
 
           clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
           fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
           cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
-          demographics = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).demographicVulnerabilityPts, 0) / countyAgencies.length);
+          softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
           budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
-          fleetBrand = topAccount?.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-          fleetAge = topAccount?.installedFleet?.defibAgeYears || 7.5;
-        } else {
-          // Authentic metadata calculated from territory intelligence engine
-          const scMeta = stateCounties.find(sc => normCounty(sc.countyName) === countyKey);
-          const calls = scMeta?.annualEmergencyTransports || 3200;
-          const incidents = scMeta?.annualCardiacArrestIncidents || 72;
-          const seniorPct = scMeta?.seniorPopPct || stateObj?.seniorPopPct || 16.5;
-
-          clinicalAcuity = Math.min(25, Math.max(10, Math.round(10 + (incidents % 12) + (36 - (stateObj?.avgUtsteinSurvival || 26)) * 0.4)));
-          fleetObsolescence = Math.min(25, Math.max(12, Math.round(14 + (calls % 9))));
-          cmsRecovery = Math.min(20, Math.max(8, Math.round(((stateObj?.avgMedicareDenialRate || 18) / 24) * 20)));
-          demographics = Math.min(15, Math.max(6, Math.round((seniorPct / 24) * 9 + 4)));
-          budgetGrant = Math.min(15, Math.max(6, Math.round(7 + (incidents % 7))));
-          avgScore = Math.min(99, clinicalAcuity + fleetObsolescence + cmsRecovery + demographics + budgetGrant);
-          maxScore = Math.min(99, avgScore + 4);
-          totalPipeline = (scMeta?.activeEmsAgencies || 2) * 135000;
+          fleetBrand = topAccount?.installedFleet?.defibBrand || 'Not sourced';
+          fleetAge = topAccount?.installedFleet?.defibAgeYears ?? 0;
         }
 
         data.push({
@@ -346,7 +327,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           clinicalAcuity,
           fleetObsolescence,
           cmsRecovery,
-          demographics,
+          softwareWhitespace,
           budgetGrant,
           topAccountName: topAccount?.name || `${displayName} Emergency Medical Services`,
           topAccountObj: topAccount
@@ -402,63 +383,45 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
       const agenciesInState = stateMap.get(canonicalCode) || [];
       const hasAgencies = agenciesInState.length > 0;
+      if (!hasAgencies) return;
 
-      // Authentic 5-pillar breakdown averages across all accounts in this state
-      const clinicalAcuity = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).clinicalAcuityPts, 0) / agenciesInState.length)
-        : Math.min(25, Math.max(8, Math.round(8 + ((36.0 - stateObj.avgUtsteinSurvival) * 0.9))));
-
-      const fleetObsolescence = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).fleetObsolescencePts, 0) / agenciesInState.length)
-        : Math.min(25, Math.max(12, Math.round(15 + ((stateObj.totalAgencies % 8)))));
-
-      const cmsRecovery = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).cmsFinancialPts, 0) / agenciesInState.length)
-        : Math.min(20, Math.max(6, Math.round((stateObj.avgMedicareDenialRate / 24) * 20)));
-
-      const demographics = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).demographicVulnerabilityPts, 0) / agenciesInState.length)
-        : Math.min(15, Math.max(5, Math.round((stateObj.seniorPopPct / 24) * 9 + (stateObj.avgTransportMinutes / 40) * 5)));
-
-      const budgetGrant = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).budgetGrantReadinessPts, 0) / agenciesInState.length)
-        : Math.min(15, Math.max(6, Math.round(7 + (stateObj.totalAfgAwardsYtd / 30000000) * 8)));
-
-      // In stacked bar chart, total score matches the sum of the 5 pillars exactly
-      const avgScore = clinicalAcuity + fleetObsolescence + cmsRecovery + demographics + budgetGrant;
-
-      const peakScore = hasAgencies
-        ? Math.max(...agenciesInState.map(a => a.zollOpportunity?.pulseIqScore || 80))
-        : Math.min(99, avgScore + 11);
-
-      // Real total pipeline
-      const totalPipeline = hasAgencies
-        ? agenciesInState.reduce((sum, a) => sum + (a.zollOpportunity?.projectedPipelineValue || 140000), 0)
-        : (stateObj.totalAgencies || 200) * 165000;
-
-      // Real fleet age average
-      const avgFleetAge = hasAgencies
-        ? +(agenciesInState.reduce((sum, a) => sum + a.installedFleet.defibAgeYears, 0) / agenciesInState.length).toFixed(1)
-        : +(7.4 + ((stateObj.totalAgencies % 15) / 10)).toFixed(1);
+      // These values describe only the source-verified agency profiles in this state.
+      const clinicalAcuity = Math.round(
+        agenciesInState.reduce((sum, a) => sum + getBreakdown(a).clinicalAcuityPts, 0) / agenciesInState.length,
+      );
+      const fleetObsolescence = Math.round(
+        agenciesInState.reduce((sum, a) => sum + getBreakdown(a).fleetObsolescencePts, 0) / agenciesInState.length,
+      );
+      const cmsRecovery = Math.round(
+        agenciesInState.reduce((sum, a) => sum + getBreakdown(a).cmsFinancialPts, 0) / agenciesInState.length,
+      );
+      const softwareWhitespace = Math.round(
+        agenciesInState.reduce((sum, a) => sum + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / agenciesInState.length,
+      );
+      const budgetGrant = Math.round(
+        agenciesInState.reduce((sum, a) => sum + getBreakdown(a).budgetGrantReadinessPts, 0) / agenciesInState.length,
+      );
+      const avgScore = clinicalAcuity + fleetObsolescence + cmsRecovery + softwareWhitespace + budgetGrant;
+      const peakScore = Math.max(...agenciesInState.map(a => explainAgencyScore(a, weights).totalScore));
+      const totalPipeline = agenciesInState.reduce((sum, a) => sum + (a.zollOpportunity?.projectedPipelineValue ?? 0), 0);
+      const avgFleetAge = +(
+        agenciesInState.reduce((sum, a) => sum + a.installedFleet.defibAgeYears, 0) / agenciesInState.length
+      ).toFixed(1);
 
       // Dominant competitor brand
       const brandCounts: Record<string, number> = {};
-      if (hasAgencies) {
-        agenciesInState.forEach(a => {
-          const b = a.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-          brandCounts[b] = (brandCounts[b] || 0) + 1;
-        });
-      }
-      const dominantBrand = Object.entries(brandCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Stryker LIFEPAK 15';
+      agenciesInState.forEach(a => {
+        const b = a.installedFleet?.defibBrand || 'Not sourced';
+        brandCounts[b] = (brandCounts[b] || 0) + 1;
+      });
+      const dominantBrand = Object.entries(brandCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Not sourced';
 
       // Top account in state
-      const topAccount = hasAgencies
-        ? agenciesInState.slice().sort((a, b) => (b.zollOpportunity?.pulseIqScore || 0) - (a.zollOpportunity?.pulseIqScore || 0))[0]
-        : undefined;
+      const topAccount = agenciesInState
+        .slice()
+        .sort((a, b) => explainAgencyScore(b, weights).totalScore - explainAgencyScore(a, weights).totalScore)[0];
 
-      const topAccountName = topAccount 
-        ? topAccount.name 
-        : `${stateObj.state} Emergency Medical Services`;
+      const topAccountName = topAccount?.name || 'No verified account';
 
       data.push({
         id: stCode,
@@ -469,7 +432,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         stateCode: stCode,
         score: avgScore,
         peakScore,
-        accountCount: hasAgencies ? agenciesInState.length : stateObj.totalAgencies || 150,
+        accountCount: agenciesInState.length,
         pipelineValue: totalPipeline,
         pipelineFormatted: totalPipeline >= 1000000000 
           ? `$${(totalPipeline / 1000000000).toFixed(2)}B` 
@@ -479,7 +442,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         clinicalAcuity,
         fleetObsolescence,
         cmsRecovery,
-        demographics,
+        softwareWhitespace,
         budgetGrant,
         topAccountName,
         topAccountObj: topAccount
@@ -518,30 +481,28 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         topLeadScore: topOpportunity ? topOpportunity.score : 0,
         primaryCompetitor: primaryCompetitorBrand
       },
-      scopeTitle: 'Nationwide State-by-State PulseIQ Score Comparison',
-      scopeSubtitle: 'Comparative 5-pillar scoring across high-potential states in the 50-state territory'
+      scopeTitle: 'PulseIQ Scores for States with Verified Profiles',
+      scopeSubtitle: 'Weighted modeled scores, averaged from eligible source-verified agency profiles'
     };
-  }, [effectiveAgencies, normalizedState, normalizedCounty, categoryFilter, limitCount, sortBy]);
+  }, [effectiveAgencies, normalizedState, normalizedCounty, categoryFilter, limitCount, sortBy, weights]);
 
-  // Radar chart data comparing active average vs national benchmark
+  // Radar chart data averages only the profiles in the current verified scope.
   const radarData = useMemo(() => {
     if (chartData.length === 0) return [];
-    
-    // Calculate averages of current dataset
-    const avgClinical = Math.round(chartData.reduce((acc, d) => acc + (d.clinicalAcuity || 20), 0) / chartData.length);
-    const avgFleet = Math.round(chartData.reduce((acc, d) => acc + (d.fleetObsolescence || 20), 0) / chartData.length);
-    const avgCms = Math.round(chartData.reduce((acc, d) => acc + (d.cmsRecovery || 16), 0) / chartData.length);
-    const avgDemo = Math.round(chartData.reduce((acc, d) => acc + (d.demographics || 12), 0) / chartData.length);
-    const avgGrant = Math.round(chartData.reduce((acc, d) => acc + (d.budgetGrant || 11), 0) / chartData.length);
+    const avgClinical = Math.round(chartData.reduce((acc, d) => acc + d.clinicalAcuity, 0) / chartData.length);
+    const avgFleet = Math.round(chartData.reduce((acc, d) => acc + d.fleetObsolescence, 0) / chartData.length);
+    const avgCms = Math.round(chartData.reduce((acc, d) => acc + d.cmsRecovery, 0) / chartData.length);
+    const avgSoftware = Math.round(chartData.reduce((acc, d) => acc + d.softwareWhitespace, 0) / chartData.length);
+    const avgGrant = Math.round(chartData.reduce((acc, d) => acc + d.budgetGrant, 0) / chartData.length);
 
     return [
-      { pillar: 'Clinical Acuity (Cardiac / ROSC)', score: avgClinical, benchmark: 18, fullMark: 25 },
-      { pillar: 'Fleet Obsolescence (LP15 Age)', score: avgFleet, benchmark: 17, fullMark: 25 },
-      { pillar: 'CMS Recovery (Billing Denials)', score: avgCms, benchmark: 14, fullMark: 20 },
-      { pillar: 'Demographic Need (Age 65+)', score: avgDemo, benchmark: 10, fullMark: 15 },
-      { pillar: 'Budget / AFG Grant Funding', score: avgGrant, benchmark: 10, fullMark: 15 }
+      { pillar: 'Cardiac call-volume factor', score: avgClinical, fullMark: weights.cardiacVolumeWeight },
+      { pillar: 'Fleet obsolescence factor', score: avgFleet, fullMark: weights.fleetAgeWeight },
+      { pillar: 'CMS denial factor', score: avgCms, fullMark: weights.cmsDenialWeight },
+      { pillar: 'Software whitespace factor', score: avgSoftware, fullMark: weights.softwareWhitespaceWeight },
+      { pillar: 'Grant funding factor', score: avgGrant, fullMark: weights.grantAwardWeight }
     ];
-  }, [chartData]);
+  }, [chartData, weights]);
 
   // List of all 50 states + DC for interactive dropdown selection
   const allStatesList = useMemo(() => {
@@ -597,30 +558,30 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             {item.county && <div><strong>County:</strong> {item.county}</div>}
             {item.topAccountName && <div><strong>Top Lead:</strong> {item.topAccountName}</div>}
             {item.fleetBrand && <div><strong>Installed Fleet:</strong> {item.fleetBrand} (<span className="tabular-nums font-semibold">{item.fleetAge} yrs</span>)</div>}
-            {item.pipelineFormatted && <div><strong>Projected Pipeline:</strong> <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">{item.pipelineFormatted}</span></div>}
+            {item.pipelineFormatted && <div><strong>Modeled pipeline estimate:</strong> <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">{item.pipelineFormatted}</span></div>}
           </div>
 
           {/* 5-Pillar Score Breakdown Details */}
           <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-1 tabular-nums text-[10px]">
             <div className="flex items-center justify-between text-slate-900 dark:text-slate-100">
-              <span>● Clinical Acuity (NEMSIS):</span>
-              <span className="font-bold tabular-nums">{item.clinicalAcuity} / 25 pts</span>
+              <span>● Cardiac call-volume factor:</span>
+              <span className="font-bold tabular-nums">{item.clinicalAcuity} / {weights.cardiacVolumeWeight} pts</span>
             </div>
             <div className="flex items-center justify-between text-[#1E3A8A] dark:text-blue-400">
-              <span>◐ Fleet Obsolescence (Cycle):</span>
-              <span className="font-bold tabular-nums">{item.fleetObsolescence} / 25 pts</span>
+              <span>◐ Fleet age factor:</span>
+              <span className="font-bold tabular-nums">{item.fleetObsolescence} / {weights.fleetAgeWeight} pts</span>
             </div>
             <div className="flex items-center justify-between text-blue-600 dark:text-blue-300">
-              <span>● CMS Billing Recovery (PUF):</span>
-              <span className="font-bold tabular-nums">{item.cmsRecovery} / 20 pts</span>
+              <span>● CMS denial factor:</span>
+              <span className="font-bold tabular-nums">{item.cmsRecovery} / {weights.cmsDenialWeight} pts</span>
             </div>
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-              <span>● Demographic Deficit (FIPS):</span>
-              <span className="font-bold tabular-nums">{item.demographics} / 15 pts</span>
+              <span>● Software whitespace factor:</span>
+              <span className="font-bold tabular-nums">{item.softwareWhitespace} / {weights.softwareWhitespaceWeight} pts</span>
             </div>
             <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-              <span>● FEMA Grant Readiness (AFG):</span>
-              <span className="font-bold tabular-nums">{item.budgetGrant} / 15 pts</span>
+              <span>● Grant status factor:</span>
+              <span className="font-bold tabular-nums">{item.budgetGrant} / {weights.grantAwardWeight} pts</span>
             </div>
           </div>
 
@@ -646,6 +607,27 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     }
     return entry.shortName || val;
   };
+
+  if (effectiveAgencies.length === 0) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <h2 className="text-sm font-semibold">PulseIQ comparison unavailable</h2>
+        <p className="mt-1 text-xs leading-relaxed">
+          This chart no longer substitutes modeled state averages for agency records. Rankings and scores will appear when the directory has source-verified records for every score input.
+        </p>
+      </div>
+    );
+  }
+  if (chartData.length === 0) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <h2 className="text-sm font-semibold">No verified records in this area</h2>
+        <p className="mt-1 text-xs leading-relaxed">
+          This scope has no profiles with verified NPPES identity and source records for every score input. No geographic estimates are substituted.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-5 transition-colors w-full max-w-full overflow-hidden">
@@ -683,7 +665,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             </div>
           </div>
           <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            {scopeSubtitle}. Regional values are profile-based model estimates, not public registry observations. CMS AFS publishes fee rates, not agency denial rates; NEMSIS 2025 research data is de-identified; OpenFEMA grant records require recipient matching. Sources reviewed 2026-10-30; no agency source records are attached to these scores.
+            {scopeSubtitle}. PulseIQ and pipeline are modeled outputs, not official agency ratings or confirmed revenue. Input citations and retrieval dates must be reviewed on each profile; missing source evidence is excluded.
           </p>
         </div>
 
@@ -1002,11 +984,11 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
               <ReferenceLine y={85} stroke="#1E3A8A" strokeDasharray="4 4" label={{ value: 'Priority Tier (85 pts)', position: 'insideTopRight', fill: '#1E3A8A', fontSize: 10, fontWeight: 'bold' }} />
               
               {/* 5 Stacked Pillars with Harmonious Clinical Palette */}
-              <Bar dataKey="clinicalAcuity" name="Clinical Acuity (25 pts)" stackId="a" fill="#1E3A8A" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="fleetObsolescence" name="Fleet Obsolescence (25 pts)" stackId="a" fill="#2563EB" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="cmsRecovery" name="CMS Billing Recovery (20 pts)" stackId="a" fill="#60A5FA" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="demographics" name="Demographic Need (15 pts)" stackId="a" fill="#93C5FD" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="budgetGrant" name="FEMA Grant / Budget (15 pts)" stackId="a" fill="#059669" radius={[4, 4, 0, 0]} cursor="pointer" />
+              <Bar dataKey="clinicalAcuity" name={`Cardiac call-volume factor (${weights.cardiacVolumeWeight} pts)`} stackId="a" fill="#1E3A8A" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="fleetObsolescence" name={`Fleet age factor (${weights.fleetAgeWeight} pts)`} stackId="a" fill="#2563EB" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="cmsRecovery" name={`CMS denial factor (${weights.cmsDenialWeight} pts)`} stackId="a" fill="#60A5FA" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="softwareWhitespace" name={`Software whitespace factor (${weights.softwareWhitespaceWeight} pts)`} stackId="a" fill="#93C5FD" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="budgetGrant" name={`Grant status factor (${weights.grantAwardWeight} pts)`} stackId="a" fill="#059669" radius={[4, 4, 0, 0]} cursor="pointer" />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -1076,7 +1058,18 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="#cbd5e1" />
               <PolarAngleAxis dataKey="pillar" stroke="#334155" fontSize={11} fontWeight={600} />
-              <PolarRadiusAxis angle={30} domain={[0, 25]} stroke="#64748b" fontSize={10} />
+              <PolarRadiusAxis
+                angle={30}
+                domain={[0, Math.max(
+                  weights.fleetAgeWeight,
+                  weights.cmsDenialWeight,
+                  weights.cardiacVolumeWeight,
+                  weights.grantAwardWeight,
+                  weights.softwareWhitespaceWeight,
+                )]}
+                stroke="#64748b"
+                fontSize={10}
+              />
               <Tooltip 
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
@@ -1085,7 +1078,6 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
                       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 shadow-md text-xs font-mono tabular-nums">
                         <div className="font-bold text-slate-900 dark:text-white">{d.pillar}</div>
                         <div className="text-[#1E3A8A] dark:text-blue-400 font-bold mt-1 tabular-nums">Regional Average: {d.score} / {d.fullMark} pts</div>
-                        <div className="text-slate-600 dark:text-slate-400 tabular-nums">National Baseline: {d.benchmark} / {d.fullMark} pts</div>
                       </div>
                     );
                   }
@@ -1100,15 +1092,6 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
                 fill="#1E3A8A"
                 fillOpacity={0.35}
                 strokeWidth={2}
-              />
-              <Radar
-                name="National Clinical Baseline"
-                dataKey="benchmark"
-                stroke="#64748B"
-                fill="#64748B"
-                fillOpacity={0.15}
-                strokeDasharray="4 4"
-                strokeWidth={1.5}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -1218,23 +1201,23 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         <div className="flex flex-wrap items-center gap-3 font-mono tabular-nums text-[10px] text-slate-600 dark:text-slate-400">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#1E3A8A]"></span>
-            <span>Clinical Acuity (25)</span>
+            <span>Cardiac call volume ({weights.cardiacVolumeWeight})</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>
-            <span>Fleet Obsolescence (25)</span>
+            <span>Fleet age ({weights.fleetAgeWeight})</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#60A5FA]"></span>
-            <span>CMS Recovery (20)</span>
+            <span>CMS denial ({weights.cmsDenialWeight})</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#93C5FD]"></span>
-            <span>Demographics (15)</span>
+            <span>Software whitespace ({weights.softwareWhitespaceWeight})</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
-            <span>FEMA Grants (15)</span>
+            <span>Grant status ({weights.grantAwardWeight})</span>
           </span>
         </div>
       </div>

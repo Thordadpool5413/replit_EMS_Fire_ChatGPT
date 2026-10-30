@@ -303,10 +303,10 @@ export interface Agency {
   liveFemaAwards?: Array<{
     awardNumber: string;
     grantee: string;
-    stateCode: string;
-    programName: string;
-    awardAmount: number;
-    fiscalYear: number;
+    programActivity: string;
+    federalShareAwarded: number;
+    awardDate: string;
+    programYear: number;
   }>;
   headquartersPhone?: string;
   officialWebsite?: string;
@@ -362,9 +362,9 @@ export interface Agency {
     programName: string;
     purpose: string;
     awardAmount: number;
-    localMatchAmount?: number;
-    federalSharePct?: number;
-    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible' | 'Award record only' | 'Unverified profile claim';
+    localMatchAmount: number;
+    federalSharePct: number;
+    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible';
     applicationRound?: string;
   }>;
 

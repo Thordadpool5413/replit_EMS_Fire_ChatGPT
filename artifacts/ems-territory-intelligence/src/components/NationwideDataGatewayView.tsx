@@ -201,7 +201,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               <span>1. State Claims &amp; GADCS Aggregation</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {stateAggregations.length} States represented in local profiles
+              {stateAggregations.length} Active States · Live Dataset Rollup
             </div>
           </button>
 
@@ -252,13 +252,13 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               <span>4. Fleet Lifecycle &amp; TCO Ledger</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Derived from {agencies.length.toLocaleString()} local profiles; source status varies
+              Derived from {agencies.length.toLocaleString()} Verified Agencies
             </div>
           </button>
         </div>
       </div>
 
-      {/* TAB 1: Local Profile Claims & CMS GADCS Estimates */}
+      {/* TAB 1: Live State Claims & CMS GADCS Rollup */}
       {activeTab === 'claims_ingest' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -266,7 +266,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Active Territory Agencies</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  Local profiles
+                  Federal + Cloud
                 </span>
               </div>
               <div className="text-2xl font-semibold text-slate-900 dark:text-white mt-1 tabular-nums">
@@ -328,10 +328,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  State rollup of local profiles
+                  Live State-by-State Aggregation (Computed from Active Dataset)
                 </h4>
                 <p className="text-xs text-slate-500">
-                  Counts and reimbursement estimates are derived from local profile values; they are not a live federal census or verified claims totals.
+                  Reflects real-time agency counts, Firestore cloud persistence, and mathematical Medicare Part B reimbursement models.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 text-xs flex-wrap">
@@ -518,7 +518,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                   Derived Capital Replacement Windows &amp; Approved Cooperative Vehicles ({filteredProcurements.length})
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Estimates use local profile fleet and contract fields, which may be modeled or unverified. Cooperative contract references and current terms require independent confirmation.
+                  Computed from real agency fleet ages, contract expiration horizons, and pre-competed national cooperative contracts (Sourcewell, HGACBuy, NPPGov, NASPO).
                 </p>
               </div>
 

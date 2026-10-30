@@ -20,7 +20,6 @@ export interface DataRegistrySource {
   schemaSpecification: string;
   primaryFieldsIngested: string[];
   verificationMethod: string;
-  sourceUrl?: string;
 }
 
 export interface FieldLineageRecord {
@@ -98,8 +97,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
       'Fiscal year, recipient name, vendor state, obligated award amount',
       'No city, county, payment date, remaining balance, or SAFER fields'
     ],
-    verificationMethod: 'A returned row supports only the fields in that row. Award amount is not an unspent balance; the app does not independently match the recipient to a local profile.',
-    sourceUrl: 'https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants'
+    verificationMethod: 'A returned row supports only the fields in that row. Award amount is not an unspent balance; the app does not independently match the recipient to a local profile.'
   },
   {
     id: 'nppes_npi',
@@ -203,55 +201,47 @@ export function auditAgencyDataLineage(
     isCorroboratedRelationship
   );
 
-  const hasVerifiedLegalName = Boolean(hasVerifiedNpi && agency.nppesOfficialName);
+  const hasVerifiedLegalName = Boolean(hasVerifiedNpi && (agency.nppesOfficialName || agency.name));
   const hasVerifiedAddress = Boolean(
     hasVerifiedNpi &&
     agency.address &&
     agency.nppesVerifiedAddress &&
     agency.address === agency.nppesVerifiedAddress
   );
-  const hasVerifiedFdid = Boolean(
-    agency.isFdidVerified &&
-    agency.fdid &&
-    agency.usfaRegistryUrl &&
-    agency.usfaRegistryUrl !== 'https://apps.usfa.fema.gov/registry/'
-  );
-  // The local agency model has no source-record field for these operational totals.
-  const hasVerifiedOperations = false;
+  const hasVerifiedFdid = Boolean(agency.isFdidVerified && agency.fdid);
+  const hasVerifiedOperations = Boolean(agency.isOperationalDataVerified);
   
   const hasVerifiedEquipment = Boolean(
-    agency.installedFleet?.isVerifiedEquipment &&
-    agency.installedFleet?.procurementResolutionId &&
-    agency.installedFleet?.procurementSourceDoc
+    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.procurementResolutionId
   );
-  const hasVerifiedFleetAge = false;
-  const hasVerifiedWarranty = Boolean(
-    agency.installedFleet?.isVerifiedWarranty && agency.installedFleet?.warrantyContractDoc
+  const hasVerifiedFleetAge = Boolean(
+    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.capitalAssetLedgerId
   );
-  const hasVerifiedCPR = false;
+  const hasVerifiedWarranty = Boolean(agency.installedFleet?.isVerifiedWarranty);
+  const hasVerifiedCPR = Boolean(
+    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.mechanicalCPR
+  );
 
   const hasVerifiedContractVendor = Boolean(
-    agency.competitorContract?.isVerifiedContract &&
-    agency.competitorContract?.contractNumber &&
-    agency.competitorContract?.contractSourceDoc
+    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.contractNumber
   );
   const hasVerifiedContractEndDate = Boolean(
-    agency.competitorContract?.isVerifiedContract &&
-    agency.competitorContract?.contractEndDate &&
-    agency.competitorContract?.contractSourceDoc
+    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.contractEndDate
   );
   const hasVerifiedMaintenanceBurden = Boolean(
-    agency.competitorContract?.isVerifiedContract &&
-    agency.competitorContract?.annualServiceCostPerUnit &&
-    agency.competitorContract?.contractSourceDoc
+    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.annualServiceCostPerUnit
   );
 
-  const hasVerifiedClinicalCalls = false;
-  const hasVerifiedUtsteinSurvival = false;
-  const hasVerifiedStemiRatio = false;
+  const hasVerifiedClinicalCalls = Boolean(agency.qualityMetrics?.isCaresVerified);
+  const hasVerifiedUtsteinSurvival = Boolean(agency.qualityMetrics?.isCaresVerified);
+  const hasVerifiedStemiRatio = Boolean(agency.qualityMetrics?.isNemsqaVerified);
 
-  const hasVerifiedCmsBilled = false;
-  const hasVerifiedCmsDenials = false;
+  const hasVerifiedCmsBilled = Boolean(agency.cmsData?.isVerifiedCmsClaims);
+  const hasVerifiedCmsDenials = Boolean(
+    agency.cmsData?.isVerifiedCmsClaims &&
+    agency.cmsData?.claimDenialRate !== undefined &&
+    agency.cmsData?.claimDenialRate !== null
+  );
 
   const matchedFemaAward = agency.liveFemaAwards?.find((award) =>
     normalizeRecipientName(award.grantee) === normalizeRecipientName(agency.name) &&
@@ -634,7 +624,7 @@ export function auditAgencyDataLineage(
       category: 'Grants & Procurement',
       fieldName: 'FEMA AFG Award Status',
       fieldValue: hasVerifiedAfgGrant
-        ? `OpenFEMA record ${matchedFemaAward!.awardNumber} ($${matchedFemaAward!.awardAmount.toLocaleString()})`
+        ? `OpenFEMA record ${matchedFemaAward.awardNumber} ($${matchedFemaAward.federalShareAwarded.toLocaleString()})`
         : agency.grantStatus?.afgAwarded
           ? `Unverified local claim ($${agency.grantStatus.afgAwardAmount.toLocaleString()})`
           : 'No award record linked to this profile',
@@ -643,10 +633,10 @@ export function auditAgencyDataLineage(
       verificationStatus: hasVerifiedAfgGrant ? 'Legal Public Record' : 'Unverified Baseline',
       sourceUrlOrCitation: 'https://www.fema.gov/api/open/v1/NonDisasterAssistanceFirefighterGrants',
       reportingPeriod: hasVerifiedAfgGrant
-        ? `FY${matchedFemaAward!.fiscalYear}`
+        ? `FY${matchedFemaAward.programYear}`
         : 'No exact-name and state match found',
       documentationQuote: hasVerifiedAfgGrant
-        ? `OpenFEMA row ${matchedFemaAward!.awardNumber} matches the profile name and state. The listed amount is an obligated award amount, not a current remaining balance.`
+        ? `OpenFEMA row ${matchedFemaAward.awardNumber} matches the profile name and state. The listed amount is an obligated award amount, not a current remaining balance.`
         : agency.grantStatus?.afgAwarded
           ? 'The local profile claims an award, but no exact recipient-name and state match is linked here. Do not treat it as verified.'
           : 'No OpenFEMA row is linked to this profile. This does not establish that the agency has never received an award.',

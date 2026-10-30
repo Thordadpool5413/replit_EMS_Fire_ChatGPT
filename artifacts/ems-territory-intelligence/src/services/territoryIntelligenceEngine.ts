@@ -9,11 +9,12 @@ import { CITIES_BY_STATE_AND_COUNTY, ALL_CITIES_BY_STATE, STATE_GEO_AND_AREA_COD
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { calculateScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
 import { nationalProviderDb } from './nationalProviderDatabase';
+import { hasCompleteVerifiedDirectoryProfile } from '../data/providerIdentity';
 
 /**
  * ZOLL Territory Manager Intelligence Engine
  * Provides comprehensive, nationwide geographic and account resolution across
- * all 50 US States + DC, covering all 3,144 counties, 9,800+ US Census cities
+ * all 50 US States + DC, with a 2020 Census county-equivalent navigation index
  * and Fire/EMS protection districts, and 5-digit postal jurisdictions.
  */
 class TerritoryIntelligenceService {
@@ -244,8 +245,8 @@ class TerritoryIntelligenceService {
   }
 
   /**
-   * Get all agencies for a state, providing full dual coverage across
-   * 100% of the state's counties AND incorporated municipal cities for BOTH EMS Providers AND Fire Departments.
+   * Return source-backed agency profiles for a state. This is a directory lookup,
+   * not a claim of complete EMS or fire coverage.
    */
   public getAgenciesForState(
     stateCode: string, 
@@ -253,7 +254,8 @@ class TerritoryIntelligenceService {
     categoryFilter: 'all' | 'ems' | 'fire' = 'all'
   ): Agency[] {
     let sc = stateCode ? stateCode.toUpperCase().trim() : '';
-    if (!sc || sc.toLowerCase() === 'all') return this.filterByCategory(existingAgencies, categoryFilter);
+    const verifiedExistingAgencies = existingAgencies.filter(hasCompleteVerifiedDirectoryProfile);
+    if (!sc || sc.toLowerCase() === 'all') return this.filterByCategory(verifiedExistingAgencies, categoryFilter);
     if (!ALL_50_STATES_SUMMARIES[sc]) {
       const match = Object.entries(ALL_50_STATES_SUMMARIES).find(
         ([code, s]) => s.state.toLowerCase() === stateCode.toLowerCase().trim()
@@ -266,7 +268,7 @@ class TerritoryIntelligenceService {
       // Merge any user-edited existing agencies with database agencies
       const byId = new Map<string, Agency>();
       for (const a of dbAgencies) byId.set(a.id, a);
-      for (const ex of existingAgencies) {
+      for (const ex of verifiedExistingAgencies) {
         if (ex.stateCode.toUpperCase() === sc) {
           byId.set(ex.id, ex);
         }
@@ -274,7 +276,7 @@ class TerritoryIntelligenceService {
       return this.filterByCategory(Array.from(byId.values()), categoryFilter);
     }
 
-    return this.filterByCategory(existingAgencies, categoryFilter);
+    return this.filterByCategory(verifiedExistingAgencies, categoryFilter);
   }
 
   public filterByCategory(list: Agency[], categoryFilter: 'all' | 'ems' | 'fire'): Agency[] {
@@ -289,8 +291,7 @@ class TerritoryIntelligenceService {
   }
 
   /**
-   * Get all authoritative agencies for a specific jurisdiction (State, County, or City),
-   * providing BOTH the EMS Provider AND the Fire Department for full dual coverage.
+   * Get source-backed directory profiles for a specific jurisdiction.
    */
   public getAgenciesForJurisdiction(
     stateCode: string,
@@ -322,37 +323,18 @@ class TerritoryIntelligenceService {
     for (const a of dbMatched) resultsMap.set(a.id, a);
 
     for (const a of existingAgencies) {
+      if (!hasCompleteVerifiedDirectoryProfile(a)) continue;
       if (a.stateCode !== sc) continue;
       if (cleanCounty && a.county.toLowerCase().replace(/ county| parish| borough/gi, '').trim() !== cleanCounty.toLowerCase().replace(/ county| parish| borough/gi, '').trim()) continue;
       if (cleanCity && a.city.toLowerCase().trim() !== cleanCity.toLowerCase().trim()) continue;
       resultsMap.set(a.id, a);
     }
 
-    const results = Array.from(resultsMap.values());
-    const countyToTarget = cleanCounty || this.getCountiesForState(sc)[0]?.countyName || `${sc} County`;
-    const cityToTarget = cleanCity || this.getCountyRecord(sc, countyToTarget)?.countySeat || 'Metro';
-
-    if (categoryFilter === 'all' || categoryFilter === 'ems') {
-      const hasEms = results.some(a => !a.agencyType.toLowerCase().includes('fire') && (!cleanCity || a.city.toLowerCase() === cleanCity.toLowerCase()));
-      if (!hasEms) {
-        const emsAgency = this.resolveOrSynthesizeAgency(sc, countyToTarget, cityToTarget, existingAgencies, 'ems');
-        results.push(emsAgency);
-      }
-    }
-
-    if (categoryFilter === 'all' || categoryFilter === 'fire') {
-      const hasFire = results.some(a => a.agencyType.toLowerCase().includes('fire') && (!cleanCity || a.city.toLowerCase() === cleanCity.toLowerCase()));
-      if (!hasFire) {
-        const fireAgency = this.resolveOrSynthesizeAgency(sc, countyToTarget, cityToTarget, existingAgencies, 'fire');
-        results.push(fireAgency);
-      }
-    }
-
-    return this.filterByCategory(results, categoryFilter);
+    return this.filterByCategory(Array.from(resultsMap.values()), categoryFilter);
   }
 
   /**
-   * Get complete dual EMS + Fire coverage for a county AND all of its incorporated municipal cities.
+   * Get source-backed EMS/fire profiles for a county and its mapped place names.
    */
   public getAgenciesForCountyAndCities(
     stateCode: string,
@@ -722,7 +704,7 @@ class TerritoryIntelligenceService {
   }
 
   /**
-   * Universal search across all 3,144 counties and 9,800+ cities & fire/EMS districts nationwide
+   * Search the county-equivalent directory and local place-name navigation index nationwide.
    */
   public searchNationwide(query: string, limit: number = 20): Array<{
     type: 'county' | 'city' | 'zip';
@@ -757,10 +739,10 @@ class TerritoryIntelligenceService {
         results.push({
           type: 'county',
           label: `${county.countyName}, ${county.stateCode}`,
-          sublabel: `Pop: ${county.population.toLocaleString()} • Seat: ${county.countySeat} • Cities: ${county.cities.length}`,
+          sublabel: `FIPS ${county.countyFips} · 2020 Census county-equivalent index`,
           stateCode: county.stateCode,
           countyName: county.countyName,
-          cityName: county.countySeat
+          cityName: ''
         });
       }
     }

@@ -504,7 +504,7 @@ export default function App() {
           className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
         >
           <p>
-            <strong>Data provenance:</strong> local agency profiles may contain modeled or sample values. Cloud storage does not verify them. Treat a value as sourced only when its field-level evidence is shown; live registry lookups confirm only the returned fields.
+            <strong>Data provenance:</strong> geographic browsing does not depend on agency records. Local place names and ZIP associations are navigation aids, not verified operational data. Some local profile fields may be modeled or sample values; cloud storage does not verify them. A field is sourced only when its evidence is attached, and live registry results verify only the fields returned.
           </p>
           <button
             type="button"

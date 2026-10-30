@@ -277,7 +277,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
               <span className="font-semibold uppercase tracking-wider text-[10px]">Active Dataset Integrity</span>
             </div>
             <div className="font-bold text-slate-900 dark:text-slate-100">{agencies.length.toLocaleString()} Agencies Loaded</div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">All 50 States · 3,144 Counties</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">Geography index: 50 states · 3,143 2020 Census county equivalents</div>
           </div>
         </div>
       </div>

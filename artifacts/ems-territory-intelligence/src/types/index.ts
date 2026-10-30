@@ -74,9 +74,9 @@ export interface ScoreBreakdown {
 
 export interface CountyCityRecord {
   name: string;
-  zipCode: string;
-  latitude: number;
-  longitude: number;
+  zipCode?: string;
+  latitude?: number;
+  longitude?: number;
   isCountySeat: boolean;
 }
 

@@ -88,11 +88,12 @@ import { ExecutiveBriefingDossier } from './ExecutiveBriefingDossier';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { TermTooltip } from './TermTooltip';
+import { FieldProvenanceBadge } from './FieldProvenanceBadge';
 import { useVerifyProviderLive } from '@workspace/api-client-react';
 
 /**
- * Guarantees complete agency fields for any selected EMS Provider or Fire Department
- * without ever injecting synthetic (555) phone numbers or fabricated staff emails.
+ * Adds display defaults when source profile fields are missing.
+ * Field provenance labels distinguish these defaults from source-linked data.
  */
 function ensureCompleteAgencyData(raw: Agency): Agency {
   const existingContacts = raw.keyContacts || [];
@@ -422,10 +423,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     setCityNpiProviders([]);
   }, [rawAgency.id]);
 
-  const agency = useMemo(
-    () => ensureCompleteAgencyData({ ...rawAgency, ...livePatch }),
-    [rawAgency, livePatch]
-  );
+  const sourceProfile = useMemo(() => ({ ...rawAgency, ...livePatch }), [rawAgency, livePatch]);
+  const agency = useMemo(() => ensureCompleteAgencyData(sourceProfile), [sourceProfile]);
   const suppliers = useMemo(() => resolveEquipmentSuppliers(agency), [agency]);
   const tcoModel = useMemo(() => calculateAgencyFleetTco(agency, 5), [agency]);
   const hcpcsModel = useMemo(() => calculateAgencyHcpcsBreakdown(agency), [agency]);
@@ -974,7 +973,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     )}
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span>Taxonomy: {agency.taxonomyCode || 'Standard EMS/Fire'}</span>
+                  <span className="inline-flex items-center gap-1">Taxonomy: {agency.taxonomyCode || 'Not provided'} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="taxonomyCode" /></span>
                   <span aria-hidden="true">·</span>
                   {agency.isVerifiedRecord && agency.npiNumber && validateNpiCheckDigit(agency.npiNumber).isValid ? (
                     <button
@@ -998,17 +997,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
 
                 <div>
-                  <h1 className="pi-page-title text-[28px] sm:text-[32px] font-[650] text-[#14283F] dark:text-white leading-[1.2]">
-                    {agency.name}
-                  </h1>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="pi-page-title text-[28px] sm:text-[32px] font-[650] text-[#14283F] dark:text-white leading-[1.2]">
+                      {agency.name}
+                    </h1>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="name" />
+                  </div>
                   <p className="pi-supporting mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold text-[#14283F] dark:text-white">
-                      {agency.isVerifiedRecord ? `NPPES Practice Location: ${agency.address}` : agency.address}
+                      {agency.isVerifiedRecord && agency.address === agency.nppesVerifiedAddress ? `NPPES Practice Location: ${agency.address}` : agency.address}
                     </span>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="address" />
                     <span aria-hidden="true">·</span>
                     <span>{agency.county}, {agency.state} ({agency.stateCode})</span>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="city" />
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="stateCode" />
                     <span aria-hidden="true">·</span>
                     <span>{agency.agencyType}</span>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="agencyType" />
                     <span aria-hidden="true">·</span>
                     <a
                       href={agency.googleMapsUri}
@@ -1016,9 +1022,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       rel="noopener noreferrer"
                       className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
                     >
-                      <span>Google Maps</span>
+                      <span>{sourceProfile.googleMapsUri ? 'Google Maps listing' : 'Search Maps'}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="googleMapsUri" />
                     <span aria-hidden="true">·</span>
                     <a
                       href={agency.officialWebsite}
@@ -1026,9 +1033,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       rel="noopener noreferrer"
                       className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
                     >
-                      <span>Official Portal</span>
+                      <span>{sourceProfile.officialWebsite ? 'Official website' : 'Search for official site'}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="officialWebsite" />
                   </p>
                 </div>
 
@@ -1036,13 +1044,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#DFE6EF] dark:bg-[#1E2D42] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg overflow-hidden text-xs">
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
                     <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      {agency.isVerifiedRecord ? 'NPPES Authorized Official' : 'Agency leadership'}
+                      {agency.isVerifiedRecord && agency.nppesOfficialName ? 'NPPES Authorized Official' : 'Agency leadership · unverified'}
                     </div>
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5 truncate">
-                      {agency.nppesOfficialName || primaryContact?.name || 'Administrative Official'}
+                      {agency.nppesOfficialName || primaryContact?.name || 'No contact recorded'}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath={agency.nppesOfficialName ? 'nppesOfficialName' : 'keyContacts'} />
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 truncate mt-0.5">
-                      {agency.nppesOfficialTitle || primaryContact?.title || 'NPPES Authorized Official'}
+                      {agency.nppesOfficialTitle || primaryContact?.title || 'Title not provided'}
                     </div>
                   </div>
 
@@ -1052,9 +1061,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
                       {agency.totalAmbulances} {agency.totalAmbulances === 1 ? 'ambulance' : 'ambulances'}{agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} ${agency.totalFireEngines === 1 ? 'engine' : 'engines'}` : ''}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalAmbulances" />
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalFireEngines" />
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
                       {agency.stationsCount} stations · {formatInteger(agency.populationServed)} residents
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="stationsCount" />
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="populationServed" />
                     </div>
                   </div>
 
@@ -1064,9 +1077,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
                       {formatInteger(agency.annual911Transports)} transports / yr
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annual911Transports" />
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
                       {formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · {formatPercent(agency.utsteinSurvivalRate)} Utstein
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCardiacArrestCalls" />
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="utsteinSurvivalRate" />
                     </div>
                   </div>
                 </div>
@@ -1077,9 +1093,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
                     <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · {agency.zollOpportunity.priorityTier}
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="zollOpportunity.priorityTier" />
                   </span>
-                  <span className="font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
+                  <span className="inline-flex items-center gap-1 font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
                     {agency.zollOpportunity.pulseIqScore}<span className="text-xs font-normal text-[#53657B]">/100</span>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="zollOpportunity.pulseIqScore" />
                   </span>
                 </div>
 
@@ -1097,6 +1115,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="text-base font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
                       {formatCurrency(actuarialForecast.netCapExBase)}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="zollOpportunity.projectedPipelineValue" kindOverride="modeled" explanationOverride="Calculated from assumed unit counts and pricing; not a quote or budget." />
                     </div>
                   </div>
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-2.5 text-right">
@@ -1105,6 +1124,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">
                       {formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="zollOpportunity.projectedPipelineValue" kindOverride="modeled" explanationOverride="Calculated from modeled lifecycle assumptions; not a verified savings figure." />
                     </div>
                   </div>
                 </div>
@@ -1112,6 +1132,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div>
                   <label className="block text-xs font-medium text-[#53657B] dark:text-slate-400 mb-1">
                     Active pipeline stage
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="zollOpportunity.salesStage" />
                   </label>
                   <select
                     value={agency.zollOpportunity.salesStage}
@@ -1528,14 +1549,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div>
                   <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#1E3A8A] flex items-center gap-1.5">
                     <Activity className="w-4 h-4 text-[#1E3A8A]" />
-                    <span>Empirical Agency Facts &amp; Operational Baseline</span>
+                    <span>Agency Profile Values &amp; Operational Baseline</span>
                   </div>
                   <h3 className="text-lg font-bold text-[#111827] mt-0.5">
                     Hardware, operational volume &amp; contract profile fields
                   </h3>
                 </div>
                 <div className="text-xs font-mono font-semibold px-3 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
-                  Zero Synthetic Weights · Raw Empirical Data
+                  Source status shown beside each value
                 </div>
               </div>
 
@@ -1548,25 +1569,26 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Monitor brand</span>
-                      <strong className="text-slate-900 dark:text-white">{agency.installedFleet.defibBrand}</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white">{agency.installedFleet.defibBrand}<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibBrand" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Deployed fleet age</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{agency.installedFleet.defibAgeYears} years old</strong>
+                      <strong className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 tabular-nums">{agency.installedFleet.defibAgeYears} years old<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibAgeYears" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Total defib units</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.installedFleet.defibUnitsCount} units</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{agency.installedFleet.defibUnitsCount} units<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibUnitsCount" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Warranty support</span>
                       <strong className={agency.installedFleet.defibWarrantyStatus.includes('Expired') ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
                         {agency.installedFleet.defibWarrantyStatus}
                       </strong>
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibWarrantyStatus" />
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">ePCR system</span>
-                      <strong className="text-slate-900 dark:text-white truncate max-w-[160px]">{agency.installedFleet.epcrCadSoftware}</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white truncate max-w-[160px]">{agency.installedFleet.epcrCadSoftware}<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.epcrCadSoftware" /></strong>
                     </div>
                   </div>
                 </div>
@@ -1579,19 +1601,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual 911 calls</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{(agency.annualCallVolume || agency.annual911Transports).toLocaleString()}</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{(agency.annualCallVolume || agency.annual911Transports).toLocaleString()}<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCallVolume" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual cardiac arrests</span>
-                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{agency.annualCardiacArrestCalls.toLocaleString()} runs</strong>
+                      <strong className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 tabular-nums">{agency.annualCardiacArrestCalls.toLocaleString()} runs<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCardiacArrestCalls" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Utstein survival rate</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.utsteinSurvivalRate}%</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{agency.utsteinSurvivalRate}%<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="utsteinSurvivalRate" /></strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Active ambulances</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.totalAmbulances} units</strong>
+                      <strong className="inline-flex items-center gap-1 text-slate-900 dark:text-white tabular-nums">{agency.totalAmbulances} units<FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalAmbulances" /></strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">Fire suppression engines</span>
@@ -1802,52 +1824,53 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#1E3A8A]">
                     <Award className="w-3.5 h-3.5 text-[#1E3A8A]" />
                     <span>AHA Mission: Lifeline {agency.qualityMetrics.ahaMissionLifelineTier}</span>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="qualityMetrics.ahaMissionLifelineTier" />
                   </span>
                 </div>
 
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 text-xs">
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual emergency calls</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Annual emergency calls</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCallVolume" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annualCallVolume.toLocaleString()}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Total 911 dispatches</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual 911 transports</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Annual 911 transports</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annual911Transports" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annual911Transports.toLocaleString()}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Billable patient runs</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Cardiac arrest (OHCA) calls</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Cardiac arrest (OHCA) calls</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annualCardiacArrestCalls" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annualCardiacArrestCalls.toLocaleString()} / yr</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Resuscitation activations</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400 font-medium">Utstein cardiac survival</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400 font-medium"><span>Utstein cardiac survival</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="utsteinSurvivalRate" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{agency.utsteinSurvivalRate}%</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Survival to discharge</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400 font-medium">CARES good neuro (CPC 1/2)</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400 font-medium"><span>CARES good neuro (CPC 1/2)</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="qualityMetrics.caresGoodNeurologicalSurvivalPct" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{agency.qualityMetrics.caresGoodNeurologicalSurvivalPct}%</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Intact neurological outcome</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Bystander CPR rate</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Bystander CPR rate</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="bystanderCPRRate" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.bystanderCPRRate}%</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Prior to EMS arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual trauma incidents</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Annual trauma incidents</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.annualTraumaIncidents" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.annualTraumaIncidents.toLocaleString()}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">{agency.gisData.traumaCenterLevel} corridor</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Avg EMS transport time</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>Avg EMS transport time</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.avgTransportTimeMinutes" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.avgTransportTimeMinutes} mins</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Scene to ED arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">STEMI PCI Cath Lab dist.</dt>
+                    <dt className="flex flex-wrap items-center justify-between gap-1 text-[#53657B] dark:text-slate-400"><span>STEMI PCI Cath Lab dist.</span><FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.distanceToNearestCathLabMiles" /></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.distanceToNearestCathLabMiles} miles</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">12-lead pre-activation</dd>
                   </div>
@@ -1857,9 +1880,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div>
                     <span className="text-[#53657B] dark:text-slate-400 font-medium">Primary Receiving Trauma &amp; Cardiac Hospital: </span>
                     <strong className="text-[#0F172A] dark:text-white">{agency.gisData.primaryReceivingHospital}</strong>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.primaryReceivingHospital" />
                   </div>
                   <span className="tabular-nums font-semibold text-[#1E3A8A] dark:text-blue-400">
                     {agency.gisData.annualHospitalDestinationTransports?.toLocaleString()} ED Transports / yr
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.annualHospitalDestinationTransports" />
                   </span>
                 </div>
               </section>
@@ -1878,31 +1903,37 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   {[
                     {
                       label: 'Cardiac-01: 12-Lead STEMI ECG Acquired ≤ 10 Mins',
+                      fieldPath: 'qualityMetrics.nemsqaStemi12LeadAcquisitionPct',
                       val: agency.qualityMetrics.nemsqaStemi12LeadAcquisitionPct,
                       bench: 85
                     },
                     {
                       label: 'Resuscitation: Chest Compression Fraction (CCF %)',
+                      fieldPath: 'qualityMetrics.nemsqaChestCompressionFractionPct',
                       val: agency.qualityMetrics.nemsqaChestCompressionFractionPct,
                       bench: 78
                     },
                     {
                       label: 'Airway: EtCO2 Waveform Capnography Compliance (35–45 mmHg)',
+                      fieldPath: 'qualityMetrics.nemsqaEtco2VentilationCompliancePct',
                       val: agency.qualityMetrics.nemsqaEtco2VentilationCompliancePct,
                       bench: 64
                     },
                     {
                       label: 'Pediatrics-01: Pediatric Respiratory Assessment & Support',
+                      fieldPath: 'qualityMetrics.nemsqaPediatricRespiratorySupportPct',
                       val: agency.qualityMetrics.nemsqaPediatricRespiratorySupportPct,
                       bench: 72
                     },
                     {
                       label: 'Stroke-01: Last Known Well (LKW) Time Documented',
+                      fieldPath: 'qualityMetrics.nemsqaStrokeLkwDocumentedPct',
                       val: agency.qualityMetrics.nemsqaStrokeLkwDocumentedPct,
                       bench: 80
                     },
                     {
                       label: 'Trauma-01: Pain Assessment & Effective Analgesic Care',
+                      fieldPath: 'qualityMetrics.nemsqaPainManagementEffectivePct',
                       val: agency.qualityMetrics.nemsqaPainManagementEffectivePct,
                       bench: 75
                     }
@@ -1910,7 +1941,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div key={item.label} className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-slate-800">{item.label}</span>
-                        <span className="font-bold font-mono tabular-nums text-[#0F172A]">
+                        <span className="inline-flex flex-wrap items-center justify-end gap-1 font-bold font-mono tabular-nums text-[#0F172A]">
+                          <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath={item.fieldPath} />
                           {item.val}% <span className="text-slate-400 font-normal">(Benchmark: {item.bench}%)</span>
                         </span>
                       </div>
@@ -1986,11 +2018,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <span>Insurance Information Outcomes (Medicare, Medicaid, Commercial, Self-Pay), Denials &amp; Recoverable Revenue</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Complete payer mix distribution, CMS Ground Ambulance Data Collection System (GADCS) status, and claims recovery analysis
+                  Profile values and modeled recovery estimates are labeled individually; the app does not receive agency-specific CMS claims here.
                 </p>
               </div>
               <span className="text-xs font-semibold text-slate-700">
-                GADCS Status: <strong className="text-[#0F172A]">{agency.cmsData.gadcsReportingStatus}</strong> · Cost-to-Charge Ratio: <strong className="font-mono tabular-nums text-[#0F172A]">{agency.qualityMetrics.gadcsCostToChargeRatio}</strong>
+                Profile GADCS status: <strong className="text-[#0F172A]">{agency.cmsData.gadcsReportingStatus}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.gadcsReportingStatus" /> · Cost-to-Charge Ratio: <strong className="font-mono tabular-nums text-[#0F172A]">{agency.qualityMetrics.gadcsCostToChargeRatio}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="qualityMetrics.gadcsCostToChargeRatio" />
               </span>
             </div>
 
@@ -2006,27 +2038,27 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">01. Medicare</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicarePayerPct}% of Runs</span>
+                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicarePayerPct}% of Runs <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicarePayerPct" /></span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-[#0F172A] h-full rounded-full" style={{ width: `${agency.cmsData.medicarePayerPct}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5 font-mono tabular-nums">
-                      <div>Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicareBilledAnnual.toLocaleString()}</strong></div>
-                      <div>Annual Allowed: <strong className="text-[#0F172A]">${agency.cmsData.medicareAllowedAnnual.toLocaleString()}</strong></div>
+                      <div>Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicareBilledAnnual.toLocaleString()}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareBilledAnnual" /></div>
+                      <div>Annual Allowed: <strong className="text-[#0F172A]">${agency.cmsData.medicareAllowedAnnual.toLocaleString()}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicareAllowedAnnual" /></div>
                     </div>
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">02. Medicaid</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicaidPayerPct}% of Runs</span>
+                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicaidPayerPct}% of Runs <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicaidPayerPct" /></span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${agency.cmsData.medicaidPayerPct}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicaidBilledAnnual.toLocaleString()}</strong></div>
+                      <div className="font-mono tabular-nums">Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicaidBilledAnnual.toLocaleString()}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.medicaidBilledAnnual" /></div>
                       <div>Supplemental GEMT / IGT Eligible</div>
                     </div>
                   </div>
@@ -2034,13 +2066,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">03. Commercial Insurance</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.commercialPayerMixPct}% of Runs</span>
+                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.commercialPayerMixPct}% of Runs <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.commercialPayerMixPct" /></span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${agency.cmsData.commercialPayerMixPct}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Underpayment Gap: <strong className="text-[#0F172A]">${agency.qualityMetrics.commercialUnderpaymentPerTrip} / trip</strong></div>
+                      <div className="font-mono tabular-nums">Underpayment Gap: <strong className="text-[#0F172A]">${agency.qualityMetrics.commercialUnderpaymentPerTrip} / trip</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="qualityMetrics.commercialUnderpaymentPerTrip" /></div>
                       <div>Out-of-Network Balance Billing Protected</div>
                     </div>
                   </div>
@@ -2048,7 +2080,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">04. Self-Pay / Uninsured</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-amber-700">{agency.cmsData.selfPayPayerPct}% of Runs</span>
+                      <span className="inline-flex flex-wrap items-center gap-1 text-sm font-bold font-mono tabular-nums text-amber-700">{agency.cmsData.selfPayPayerPct}% of Runs <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.selfPayPayerPct" /></span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-amber-600 h-full rounded-full" style={{ width: `${agency.cmsData.selfPayPayerPct}%` }} />
@@ -2070,16 +2102,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
                     <div className="text-xs font-semibold text-slate-600">Active Claims Denial Rate</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{agency.cmsData.claimDenialRate}%</div>
+                    <div className="inline-flex flex-wrap items-center gap-1 text-3xl font-bold font-mono tabular-nums text-rose-700">{agency.cmsData.claimDenialRate}% <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.claimDenialRate" /></div>
                     <div className="text-[11px] text-slate-600">
-                      Primary Denial Code: <strong className="font-mono text-[#0F172A]">{agency.cmsData.topDenialReasonCode}</strong>
+                      Primary Denial Code: <strong className="font-mono text-[#0F172A]">{agency.cmsData.topDenialReasonCode}</strong> <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.topDenialReasonCode" />
                     </div>
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
                     <div className="text-xs font-semibold text-slate-600">Net Annual Recoverable Revenue</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-emerald-700">
+                    <div className="inline-flex flex-wrap items-center gap-1 text-3xl font-bold font-mono tabular-nums text-emerald-700">
                       ${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.estimatedRecoverableRevenue" />
                     </div>
                     <div className="text-[11px] text-slate-600">
                       Recapturable via ZOLL AR Boost &amp; ePCR NEMSIS validation
@@ -2291,74 +2324,83 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                       <th className="py-3 px-4">Equipment / System Category</th>
-                      <th className="py-3 px-4">Actual Model / Software in Use</th>
-                      <th className="py-3 px-4">Active Units</th>
-                      <th className="py-3 px-4">Age &amp; Warranty Status</th>
-                      <th className="py-3 px-4">Current Supplier / Distributor</th>
-                      <th className="py-3 px-4">Maintenance Contract &amp; Renewal</th>
+                      <th className="py-3 px-4">Model / software in profile</th>
+                      <th className="py-3 px-4">Recorded or estimated units</th>
+                      <th className="py-3 px-4">Age / status</th>
+                      <th className="py-3 px-4">Supplier listed or inferred</th>
+                      <th className="py-3 px-4">Contract profile fields</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Cardiac Monitors / Defibrillators</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.defibBrand}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.defibUnitsCount} Frontline Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.defibBrand} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibBrand" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.defibUnitsCount} Frontline Units <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibUnitsCount" /></td>
                       <td className="py-3 px-4 font-mono tabular-nums">
                         {agency.installedFleet.defibAgeYears} yrs · <span className="font-sans font-semibold text-rose-700">{agency.installedFleet.defibWarrantyStatus}</span>
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibAgeYears" />
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibWarrantyStatus" />
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.defibSupplier}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.defibSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibBrand" kindOverride="modeled" explanationOverride="Supplier was inferred from the profile’s listed equipment brand; no supplier record is linked." /></td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
                         {agency.competitorContract.vendor} (${agency.competitorContract.annualServiceCostPerUnit.toLocaleString()}/unit · Ends {agency.competitorContract.contractEndDate})
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.vendor" />
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.annualServiceCostPerUnit" />
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.contractEndDate" />
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Mechanical CPR Resuscitation</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.mechanicalCPR}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.cprUnitsCount} Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.mechanicalCPR} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.mechanicalCPR" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.cprUnitsCount} Units <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.cprUnitsCount" /></td>
                       <td className="py-3 px-4">
                         {agency.installedFleet.cprUnitsCount > 0 ? `${Math.max(3, agency.installedFleet.defibAgeYears - 2)} yrs · Active Service` : 'No Automated CPR'}
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.defibAgeYears" kindOverride="modeled" explanationOverride="This service-age value is calculated from the defibrillator age estimate." />
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cprSupplier}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cprSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.mechanicalCPR" kindOverride="modeled" explanationOverride="Supplier was inferred from the profile’s equipment model; no supplier record is linked." /></td>
                       <td className="py-3 px-4 text-slate-600">
                         {agency.installedFleet.cprUnitsCount > 0 ? 'Annual Preventive Calibration' : 'Target for ZOLL AutoPulse Trial'}
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.cprUnitsCount" kindOverride="modeled" explanationOverride="Maintenance text is a template, not a contract record." />
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Emergency Transport Ventilators</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.transportVentilator}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.ventUnitsCount} Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.transportVentilator} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.transportVentilator" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.ventUnitsCount} Units <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.ventUnitsCount" /></td>
                       <td className="py-3 px-4">
                         {agency.installedFleet.ventUnitsCount > 0 ? 'Active Biomedical Fleet' : 'Manual BVM Only'}
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.ventUnitsCount" />
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.ventSupplier}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.ventSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.transportVentilator" kindOverride="modeled" explanationOverride="Supplier was inferred from the profile’s equipment model; no supplier record is linked." /></td>
                       <td className="py-3 px-4 text-slate-600">
                         {agency.installedFleet.ventUnitsCount > 0 ? 'OEM Biomedical Agreement' : 'Target for ZOLL Z Vent Deployment'}
+                        <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.ventUnitsCount" kindOverride="modeled" explanationOverride="Maintenance text is a template, not a contract record." />
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">ePCR Clinical Charting Software</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.epcrCadSoftware}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.totalAmbulances + agency.totalFireEngines} Field Tablets</td>
-                      <td className="py-3 px-4">Annual SaaS License</td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.epcrSupplier}</td>
-                      <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">Renewal Window: {agency.competitorContract.renewalWindowDays} Days Prior</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.epcrCadSoftware} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.epcrCadSoftware" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.totalAmbulances + agency.totalFireEngines} Field Tablets <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalAmbulances" kindOverride="modeled" explanationOverride="Tablet count is calculated from apparatus totals; it is not an inventory count." /></td>
+                      <td className="py-3 px-4">Annual SaaS License <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.epcrCadSoftware" kindOverride="modeled" explanationOverride="License term is a template, not a source-backed contract value." /></td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.epcrSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.epcrCadSoftware" kindOverride="modeled" explanationOverride="Supplier was inferred from a software mapping; no supplier record is linked." /></td>
+                      <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">Renewal Window: {agency.competitorContract.renewalWindowDays} Days Prior <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.renewalWindowDays" /></td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">911 Dispatch CAD Platform</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.dispatchCadVendor}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.stationsCount} Stations Connected</td>
-                      <td className="py-3 px-4">Municipal PSAP Contract</td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cadSupplier}</td>
-                      <td className="py-3 px-4 text-slate-600">Multi-Year County/City Dispatch Agreement</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.dispatchCadVendor} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.dispatchCadVendor" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.stationsCount} Stations Connected <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="stationsCount" kindOverride="modeled" explanationOverride="Connection count is inferred from station count; no CAD inventory is linked." /></td>
+                      <td className="py-3 px-4">Municipal PSAP Contract <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.dispatchCadVendor" kindOverride="modeled" explanationOverride="Contract description is a template, not an executed agreement." /></td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cadSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.dispatchCadVendor" kindOverride="modeled" explanationOverride="Supplier was inferred from a vendor mapping; no supplier record is linked." /></td>
+                      <td className="py-3 px-4 text-slate-600">Multi-Year County/City Dispatch Agreement <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.dispatchCadVendor" kindOverride="modeled" explanationOverride="Agreement text is a template, not a source-backed contract." /></td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Revenue Cycle &amp; Claims Billing</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.annual911Transports.toLocaleString()} Claims / yr</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.cmsData.claimDenialRate}% Current Denial Rate</td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.billingSupplier}</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.billingSoftware" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.annual911Transports.toLocaleString()} Claims / yr <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="annual911Transports" /></td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{agency.cmsData.claimDenialRate}% Current Denial Rate <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.claimDenialRate" /></td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{suppliers.billingSupplier} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="installedFleet.billingSoftware" kindOverride="modeled" explanationOverride="Supplier was inferred from a software mapping; no supplier record is linked." /></td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
-                        ${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()} Recoverable w/ ZOLL AR Boost
+                        ${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()} Recoverable w/ ZOLL AR Boost <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="cmsData.estimatedRecoverableRevenue" />
                       </td>
                     </tr>
                   </tbody>
@@ -2559,23 +2601,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
               <dl className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Ambulance Fleet</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Ambulance Fleet <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalAmbulances" /></dt>
                   <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalAmbulances)} Frontline Units</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Fire Apparatus</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Fire Apparatus <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalFireEngines" /></dt>
                   <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalFireEngines)} Engines / Ladders</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Current Maintenance Vendor</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Current Maintenance Vendor <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.vendor" /></dt>
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.competitorContract.vendor}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Contract Expiration Date</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Contract Expiration Date <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.contractEndDate" /></dt>
                   <dd className="font-semibold pi-data-inline text-slate-900 dark:text-white mt-0.5">{agency.competitorContract.contractEndDate}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Annual Service Cost / Unit</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Annual Service Cost / Unit <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="competitorContract.annualServiceCostPerUnit" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatCurrency(agency.competitorContract.annualServiceCostPerUnit, { perYear: true, compact: false })}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
@@ -2656,9 +2698,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     ) : (
                       <span className="text-slate-900 dark:text-white">No award claim in local profile; eligibility not checked</span>
                     )}
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgAwarded" />
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgAwardAmount" />
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgFiscalYear" />
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
                     Profile-reported purpose (unverified): <strong className="text-slate-900 dark:text-white">{agency.grantStatus.afgPurpose || 'Not recorded'}</strong>
+                    <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.afgPurpose" />
                   </p>
                 </div>
 
@@ -2667,6 +2713,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] font-mono uppercase tracking-wider">SAFER profile flag · not checked</div>
                     <div className="font-bold text-slate-900 dark:text-white">
                       {agency.grantStatus.saferGrantActive ? 'Profile claims SAFER activity' : 'No SAFER claim in profile'}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.saferGrantActive" />
                     </div>
                   </div>
 
@@ -2674,6 +2721,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] font-mono uppercase tracking-wider">Profile budget-cycle value</div>
                     <div className="font-bold text-slate-900 dark:text-white">
                       {agency.gisData.fiscalBudgetCycleQuarter} · FY Ends {agency.grantStatus.fiscalYearEndMonth}
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.fiscalBudgetCycleQuarter" />
+                      <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="grantStatus.fiscalYearEndMonth" />
                     </div>
                   </div>
                 </div>
@@ -2689,39 +2738,39 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Service Model</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Service Model <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="agencyType" /></dt>
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.agencyType}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Government Level</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Government Level <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="jurisdictionLevel" /></dt>
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.jurisdictionLevel} Jurisdiction</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Population Served</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Population Served <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="populationServed" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.populationServed)}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Stations &amp; Facilities</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Stations &amp; Facilities <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="stationsCount" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.stationsCount)} Active Stations</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Certified Personnel</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Certified Personnel <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="totalEMSStaff" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalEMSStaff)} Responders</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Coverage Territory</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Coverage Territory <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="responseAreaSqMiles" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{agency.responseAreaSqMiles} Sq. Miles</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Senior Population (65+)</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Senior Population (65+) <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.seniorPopulationPct" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatPercent(agency.gisData.seniorPopulationPct)} of Residents</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Median Household Income</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Median Household Income <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.medianHouseholdIncome" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatCurrency(agency.gisData.medianHouseholdIncome, { compact: false })}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Community Poverty Rate</dt>
+                  <dt className="flex flex-wrap items-center justify-between gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">Community Poverty Rate <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="gisData.povertyRate" /></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatPercent(agency.gisData.povertyRate)}</dd>
                 </div>
               </dl>
@@ -2768,17 +2817,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </section>
 
-            {/* 5-Year Federal FEMA AFG, SAFER & Homeland Security Grant History */}
+            {/* Grant entries and public award records */}
             {agency.femaGrantHistory && agency.femaGrantHistory.length > 0 && (
               <section className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
                       <Award className="w-4 h-4 text-emerald-700" />
-                  <span>Grant entries recorded in the local profile</span>
+                        <span>Grant entries and public award records</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      These entries are not a verified award history. OpenFEMA AFG rows provide award amount and fiscal year, but not city, equipment scope, local match, disbursement status, or remaining funds.
+                      Each row is labeled by provenance. OpenFEMA AFG records provide award amount and fiscal year, but not a verified local match, disbursement status, remaining funds, or an automatic local-agency match.
                     </p>
                   </div>
                 </div>
@@ -2798,7 +2847,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <tbody className="divide-y divide-slate-200">
                       {agency.femaGrantHistory.map((g, idx) => (
                         <tr key={`${g.fiscalYear}-${idx}`} className="hover:bg-slate-50/80">
-                          <td className="py-2.5 px-4 font-mono font-bold text-[#0F172A]">FY {g.fiscalYear}</td>
+                          <td className="py-2.5 px-4 font-mono font-bold text-[#0F172A]">FY {g.fiscalYear} <FieldProvenanceBadge rawProfile={sourceProfile} profile={agency} fieldPath="femaGrantHistory" /></td>
                           <td className="py-2.5 px-4 font-bold text-[#1E3A8A]">{g.programName}</td>
                           <td className="py-2.5 px-4 text-slate-700 max-w-md">{g.purpose}</td>
                           <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-700">${g.awardAmount.toLocaleString()}</td>
@@ -3295,6 +3344,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       {/* One-Click Printable Executive Account Briefing Dossier Modal */}
       <ExecutiveBriefingDossier
         agency={agency}
+        rawProfile={sourceProfile}
         isOpen={showDossierModal}
         onClose={() => setShowDossierModal(false)}
       />

@@ -37,17 +37,20 @@ import {
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/syncStore';
+import { FieldProvenanceBadge } from './FieldProvenanceBadge';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;
+  rawProfile?: Agency;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> = ({
   agency,
+  rawProfile,
   isOpen,
   onClose
 }) => {
@@ -55,6 +58,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const documentRef = useRef<HTMLDivElement>(null);
+  const provenanceSource = rawProfile ?? agency;
 
   // Support closing with Escape key
   useEffect(() => {
@@ -91,7 +95,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
   const primaryContact = agency.keyContacts && agency.keyContacts.length > 0 ? agency.keyContacts[0] : undefined;
-  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || '(555) 230-9110';
+  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not recorded';
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -99,27 +103,36 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   });
 
   const fleet = agency.apparatusFleet || {
-    alsAmbulances: agency.totalAmbulances || 6,
-    blsAmbulances: 2,
-    fireEngines: isFire ? Math.max(3, agency.totalFireEngines || 4) : 0,
-    ladderTrucks: isFire ? 1 : 0,
-    heavyRescueUnits: 1,
-    commandVehicles: 2,
-    totalActiveUnits: (agency.totalAmbulances || 6) + (isFire ? 5 : 2),
-    avgVehicleAgeYears: 6.4,
-    replacementCycleYears: 7
+    alsAmbulances: agency.totalAmbulances ?? 0,
+    blsAmbulances: 0,
+    fireEngines: agency.totalFireEngines ?? 0,
+    ladderTrucks: 0,
+    heavyRescueUnits: 0,
+    commandVehicles: 0,
+    totalActiveUnits: (agency.totalAmbulances ?? 0) + (agency.totalFireEngines ?? 0),
+    avgVehicleAgeYears: 0,
+    replacementCycleYears: 0
   };
 
+  const hasFleetDetails = Boolean(provenanceSource.apparatusFleet);
+  const hasHospitalLogistics = Boolean(provenanceSource.hospitalLogistics);
+  const hasAmbulanceCount = hasFleetDetails || provenanceSource.totalAmbulances != null;
+  const hasFireCount = hasFleetDetails || provenanceSource.totalFireEngines != null;
+  const knownActiveUnits = hasFleetDetails
+    ? fleet.totalActiveUnits
+    : hasAmbulanceCount || hasFireCount
+      ? (provenanceSource.totalAmbulances ?? 0) + (provenanceSource.totalFireEngines ?? 0)
+      : null;
   const logistics = agency.hospitalLogistics || {
-    primaryTraumaHospital: `${agency.city} Regional Medical Center (${agency.gisData?.traumaCenterLevel || 'Level 1 Trauma'})`,
-    traumaLevel: agency.gisData?.traumaCenterLevel || 'Level 1 Regional Trauma',
-    distanceToTraumaMiles: agency.gisData?.avgTransportDistanceToTraumaMiles || 7.2,
-    transportTimeMinutes: agency.gisData?.avgTransportTimeMinutes || 13,
-    primaryCathLabHospital: `${agency.city} Heart & Vascular Pavilion (24/7 STEMI PCI)`,
-    cathLabDistanceMiles: 6.5,
-    cathLabTransportMinutes: 11,
-    annualEdTransports: Math.round((agency.annual911Transports || 2800) * 0.88),
-    avgEdOffloadLatencyMinutes: 21
+    primaryTraumaHospital: 'Not provided',
+    traumaLevel: 'Not provided',
+    distanceToTraumaMiles: 0,
+    transportTimeMinutes: 0,
+    primaryCathLabHospital: 'Not provided',
+    cathLabDistanceMiles: 0,
+    cathLabTransportMinutes: 0,
+    annualEdTransports: 0,
+    avgEdOffloadLatencyMinutes: 0
   };
 
   const femaGrants = agency.femaGrantHistory || [];
@@ -349,20 +362,27 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                       {isFire ? 'Fire department' : 'EMS provider'}
                     </span>
                     <span className="text-xs text-slate-600 font-medium">
-                      {agency.agencyType} &middot; {agency.jurisdictionLevel} jurisdiction
+                      {agency.agencyType} &middot; {agency.jurisdictionLevel} jurisdiction <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="agencyType" /> <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="jurisdictionLevel" />
                     </span>
                   </div>
                   <h1 className="text-[28px] sm:text-[32px] font-[650] text-slate-900 tracking-tight mt-1 leading-tight">
                     {agency.name}
                   </h1>
+                  <div className="mt-1"><FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="name" /></div>
                   <p className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-2">
                     <span>{agency.address || `${agency.city}, ${agency.stateCode}`}, {agency.city}, {agency.county}, {agency.stateCode} {agency.zipCode}</span>
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="address" />
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="city" />
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="stateCode" />
                     <span aria-hidden="true">&middot;</span>
                     <span className="text-slate-700">FDID: {agency.fdid || 'Not Recorded'}</span>
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="fdid" />
                     <span aria-hidden="true">&middot;</span>
                     <span className="text-slate-700">NPI: {agency.npiNumber || 'Unassigned'}</span>
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="npiNumber" />
                     <span aria-hidden="true">&middot;</span>
-                    <span className="text-slate-700">Taxonomy: {agency.taxonomyCode || '341600000X'}</span>
+                    <span className="text-slate-700">Taxonomy: {agency.taxonomyCode || 'Not provided'}</span>
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="taxonomyCode" />
                   </p>
                 </div>
               </div>
@@ -372,7 +392,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="text-xs font-semibold text-slate-900 mt-0.5">{currentDate}</div>
                 <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Verified public record</span>
+                  <span>Field provenance varies</span>
                 </div>
               </div>
             </div>
@@ -380,20 +400,21 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {/* Official Leadership & Key Contacts Directory */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>Agency leadership and authorizing officials</span>
-                <span className="text-xs text-slate-500">CMS NPPES &amp; municipal records</span>
+                <span>Listed leadership and contacts · confirm before outreach</span>
+                <span className="text-xs text-slate-500">No agency-specific contact source is linked</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <div>
                   <div className="text-[11px] font-medium text-slate-500">Authorized official</div>
                   <div className="text-sm font-semibold text-slate-900 mt-0.5">
-                    {agency.nppesOfficialName || primaryContact?.name || 'Chief Executive Officer'}
+                    {agency.nppesOfficialName || primaryContact?.name || 'Not listed'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath={agency.nppesOfficialName ? 'nppesOfficialName' : 'keyContacts'} />
                   </div>
                   <div className="text-xs text-slate-600">
-                    {agency.nppesOfficialTitle || primaryContact?.title || (isFire ? 'Fire Chief & Authorized Official' : 'EMS Director & Authorized Official')}
+                    {agency.nppesOfficialTitle || primaryContact?.title || 'Title not provided'}
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
-                    Direct: {departmentPhone}
+                    Direct: {departmentPhone} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath={agency.headquartersPhone ? 'headquartersPhone' : 'keyContacts'} />
                   </div>
                 </div>
 
@@ -415,7 +436,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div>
                   <div className="text-[11px] font-medium text-slate-500">Clinical software stack</div>
                   <div className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Billing: {agency.installedFleet?.billingSoftware || 'In-House Municipal'}
+                    Billing: {agency.installedFleet?.billingSoftware || 'Not provided'}
                   </div>
                   <div className="text-xs text-slate-700 mt-0.5">
                     ePCR: <span className="font-medium">{agency.installedFleet?.epcrCadSoftware || 'ImageTrend Elite'}</span>
@@ -488,20 +509,28 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50">
                   <div className="text-xs text-emerald-800 font-medium">Billing recovery potential</div>
                   <div className="text-[24px] font-[650] text-emerald-700 mt-1 tabular-nums leading-none">
-                    ${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 145000) / 1000)}K per year
+                    {agency.cmsData?.estimatedRecoverableRevenue != null
+                      ? `$${Math.round(agency.cmsData.estimatedRecoverableRevenue / 1000)}K per year`
+                      : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="cmsData.estimatedRecoverableRevenue" />
                   </div>
                   <div className="text-xs text-emerald-800 mt-1.5 tabular-nums">
-                    {agency.cmsData?.claimDenialRate || 19.4}% denials &middot; Code {agency.cmsData?.topDenialReasonCode || 'CO-16'}
+                    {agency.cmsData?.claimDenialRate != null ? `${agency.cmsData.claimDenialRate}% denials` : 'Denial rate not provided'} &middot; Code {agency.cmsData?.topDenialReasonCode || 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="cmsData.claimDenialRate" />
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="cmsData.topDenialReasonCode" />
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Cardiac survival &amp; acuity</div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
-                    {agency.utsteinSurvivalRate || 14.2}%
+                    {agency.utsteinSurvivalRate != null ? `${agency.utsteinSurvivalRate}%` : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="utsteinSurvivalRate" />
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    {(agency.annualCardiacArrestCalls || 680).toLocaleString()} OHCA calls &middot; AHA {agency.qualityMetrics?.ahaMissionLifelineTier || 'Gold Plus'}
+                    {agency.annualCardiacArrestCalls != null ? agency.annualCardiacArrestCalls.toLocaleString() : 'Not provided'} OHCA calls &middot; AHA {agency.qualityMetrics?.ahaMissionLifelineTier || 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="annualCardiacArrestCalls" />
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.ahaMissionLifelineTier" />
                   </div>
                 </div>
               </div>
@@ -515,15 +544,18 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     Modeled priority index
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1E3A8A] text-white">
-                    {agency.zollOpportunity?.priorityTier || 'Tier 1 Target'}
+                    {agency.zollOpportunity?.priorityTier || 'Not set'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="zollOpportunity.priorityTier" />
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-white text-blue-900 border border-blue-200">
-                    Stage: {agency.zollOpportunity?.salesStage || 'Evaluation Trial'}
+                    Stage: {agency.zollOpportunity?.salesStage || 'Not set'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="zollOpportunity.salesStage" />
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[24px] font-[650] text-[#1E3A8A] tabular-nums">
-                    {agency.zollOpportunity?.pulseIqScore || 92}
+                    {agency.zollOpportunity?.pulseIqScore ?? 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="zollOpportunity.pulseIqScore" />
                   </span>
                   <span className="text-xs text-slate-500">/ 100</span>
                 </div>
@@ -546,8 +578,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
               {/* Strategic Rationale Narrative */}
               <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-blue-200/50">
-                <strong className="font-semibold text-slate-900">Strategic conversion rationale:</strong> {agency.zollOpportunity?.scoreRationale || 
-                  `Aging incumbent ${agency.installedFleet?.defibBrand} monitors are past manufacturer end-of-life with elevated maintenance liability. High Medicare claim rejection rate (${agency.cmsData?.claimDenialRate}%) presents immediate ROI through ZOLL RescueNet integration.`}
+                <strong className="font-semibold text-slate-900">Strategic conversion rationale:</strong> {agency.zollOpportunity?.scoreRationale ||
+                  'No agency-specific rationale is available. Confirm the underlying metrics and source records before using this summary.'}
+                <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="zollOpportunity.scoreRationale" />
               </div>
             </div>
 
@@ -555,7 +588,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Apparatus and emergency fleet breakdown</span>
-                <span className="text-xs text-slate-600 tabular-nums">Total active units: {fleet.totalActiveUnits} &middot; Stations: {agency.stationsCount || 4}</span>
+                <span className="text-xs text-slate-600 tabular-nums">
+                  Total active units: {knownActiveUnits ?? 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.totalActiveUnits" kindOverride={knownActiveUnits == null ? 'unavailable' : hasFleetDetails ? undefined : 'modeled'} explanationOverride={knownActiveUnits == null ? 'No fleet count is provided.' : 'Without a linked fleet inventory this sums only provided ambulance and fire-engine counts; other categories may be omitted.'} />
+                  &middot; Stations: {agency.stationsCount ?? 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="stationsCount" />
+                </span>
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
@@ -570,44 +606,50 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     <tr>
                       <td className="py-2 px-3 font-semibold text-slate-900">Frontline ALS Ambulances (Type I/III)</td>
-                      <td className="py-2 px-3 text-center font-semibold text-blue-900 tabular-nums">{fleet.alsAmbulances}</td>
-                      <td className="py-2 px-3 text-slate-600">Advanced 12-Lead Monitor, Mechanical CPR, Transport Vent</td>
-                      <td className="py-2 px-3 text-slate-700">7-Year High-Mileage Replacement Cycle</td>
+                      <td className="py-2 px-3 text-center font-semibold text-blue-900 tabular-nums">{hasFleetDetails ? fleet.alsAmbulances : provenanceSource.totalAmbulances ?? 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath={hasFleetDetails ? 'apparatusFleet.alsAmbulances' : 'totalAmbulances'} kindOverride={!hasFleetDetails && provenanceSource.totalAmbulances == null ? 'unavailable' : undefined} explanationOverride={!hasFleetDetails && provenanceSource.totalAmbulances == null ? 'No ambulance inventory count is provided.' : undefined} /></td>
+                      <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.alsAmbulances" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                      <td className="py-2 px-3 text-slate-700">Replacement-cycle assumption <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.replacementCycleYears" kindOverride="modeled" explanationOverride="General lifecycle assumption; not an agency contract or age record." /></td>
                     </tr>
-                    <tr>
-                      <td className="py-2 px-3 font-medium text-slate-900">Reserve / BLS Ambulances</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.blsAmbulances}</td>
-                      <td className="py-2 px-3 text-slate-600">Automated External Defibrillator (AED), BVM Airway</td>
-                      <td className="py-2 px-3 text-slate-700">Secondary Peak-Volume Backup Units</td>
-                    </tr>
-                    {fleet.fireEngines > 0 && (
+                    {hasFleetDetails && fleet.blsAmbulances > 0 && (
+                      <tr>
+                        <td className="py-2 px-3 font-medium text-slate-900">Reserve / BLS Ambulances</td>
+                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.blsAmbulances} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.blsAmbulances" /></td>
+                        <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.blsAmbulances" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                        <td className="py-2 px-3 text-slate-700">General lifecycle note <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.blsAmbulances" kindOverride="modeled" explanationOverride="General lifecycle text; not agency-specific." /></td>
+                      </tr>
+                    )}
+                    {hasFireCount && fleet.fireEngines > 0 && (
                       <tr>
                         <td className="py-2 px-3 font-medium text-slate-900">Type 1 Fire Engines / Pumpers</td>
-                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.fireEngines}</td>
-                        <td className="py-2 px-3 text-slate-600">First-Response AED, Oxygen Resuscitation Pack</td>
-                        <td className="py-2 px-3 text-slate-700">10-15 Year Frontline Service Standard</td>
+                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{hasFleetDetails ? fleet.fireEngines : provenanceSource.totalFireEngines ?? 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath={hasFleetDetails ? 'apparatusFleet.fireEngines' : 'totalFireEngines'} kindOverride={!hasFleetDetails && provenanceSource.totalFireEngines == null ? 'unavailable' : undefined} explanationOverride={!hasFleetDetails && provenanceSource.totalFireEngines == null ? 'No fire engine inventory count is provided.' : undefined} /></td>
+                        <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.fireEngines" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                        <td className="py-2 px-3 text-slate-700">General lifecycle note <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.fireEngines" kindOverride="modeled" explanationOverride="General lifecycle text; not agency-specific." /></td>
                       </tr>
                     )}
-                    {fleet.ladderTrucks > 0 && (
+                    {hasFleetDetails && fleet.ladderTrucks > 0 && (
                       <tr>
                         <td className="py-2 px-3 font-medium text-slate-900">Aerial Ladders / Platforms</td>
-                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.ladderTrucks}</td>
-                        <td className="py-2 px-3 text-slate-600">High-Angle Rescue, First-In Medical AED</td>
-                        <td className="py-2 px-3 text-slate-700">Municipal Capital Depreciation Schedule</td>
+                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.ladderTrucks} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.ladderTrucks" /></td>
+                        <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.ladderTrucks" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                        <td className="py-2 px-3 text-slate-700">General lifecycle note <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.ladderTrucks" kindOverride="modeled" explanationOverride="General lifecycle text; not agency-specific." /></td>
                       </tr>
                     )}
+                    {hasFleetDetails && fleet.heavyRescueUnits > 0 && (
                     <tr>
                       <td className="py-2 px-3 font-medium text-slate-900">Heavy Rescue &amp; Extrication Squads</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.heavyRescueUnits}</td>
-                      <td className="py-2 px-3 text-slate-600">Full ALS Defibrillator &amp; Hydraulic Extrication</td>
-                      <td className="py-2 px-3 text-slate-700">County Mutual Aid Technical Team</td>
+                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.heavyRescueUnits} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.heavyRescueUnits" /></td>
+                      <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.heavyRescueUnits" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                      <td className="py-2 px-3 text-slate-700">General lifecycle note <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.heavyRescueUnits" kindOverride="modeled" explanationOverride="General lifecycle text; not agency-specific." /></td>
                     </tr>
+                    )}
+                    {hasFleetDetails && fleet.commandVehicles > 0 && (
                     <tr>
                       <td className="py-2 px-3 font-medium text-slate-900">Command &amp; EMS Supervisor Interceptors</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.commandVehicles}</td>
-                      <td className="py-2 px-3 text-slate-600">Supervisor Monitor-Defibrillator &amp; Incident Telemetry</td>
-                      <td className="py-2 px-3 text-slate-700">Battalion Field Command Units</td>
+                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.commandVehicles} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.commandVehicles" /></td>
+                      <td className="py-2 px-3 text-slate-600">Typical payload, not an inventory record <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.commandVehicles" kindOverride="modeled" explanationOverride="Generic equipment description; not confirmed for this agency." /></td>
+                      <td className="py-2 px-3 text-slate-700">General lifecycle note <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="apparatusFleet.commandVehicles" kindOverride="modeled" explanationOverride="General lifecycle text; not agency-specific." /></td>
                     </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -617,17 +659,23 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               <div>
                 <div className="text-xs text-slate-500 font-medium">Primary receiving trauma hospital</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics.primaryTraumaHospital}</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                  {hasHospitalLogistics ? logistics.primaryTraumaHospital : 'Not provided'}
+                  <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.primaryTraumaHospital" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} explanationOverride={!hasHospitalLogistics ? 'No hospital logistics record is provided.' : undefined} />
+                </div>
                 <div className="text-xs text-slate-600 mt-1 tabular-nums">
-                  Driving distance: <strong className="font-medium text-slate-800">{logistics.distanceToTraumaMiles} miles</strong> &middot; Transit time: <strong className="font-medium text-slate-800">{logistics.transportTimeMinutes} mins</strong>
+                  Driving distance: <strong className="font-medium text-slate-800">{hasHospitalLogistics ? `${logistics.distanceToTraumaMiles} miles` : 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.distanceToTraumaMiles" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} /></strong> &middot; Transit time: <strong className="font-medium text-slate-800">{hasHospitalLogistics ? `${logistics.transportTimeMinutes} mins` : 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.transportTimeMinutes" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} /></strong>
                 </div>
               </div>
 
               <div>
                 <div className="text-xs text-slate-500 font-medium">24/7 STEMI PCI cath lab destination</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics.primaryCathLabHospital}</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                  {hasHospitalLogistics ? logistics.primaryCathLabHospital : 'Not provided'}
+                  <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.primaryCathLabHospital" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} explanationOverride={!hasHospitalLogistics ? 'No hospital logistics record is provided.' : undefined} />
+                </div>
                 <div className="text-xs text-slate-600 mt-1 tabular-nums">
-                  Distance: <strong className="font-medium text-slate-800">{logistics.cathLabDistanceMiles} miles</strong> &middot; Offload latency: <strong className="font-medium text-slate-800">{logistics.avgEdOffloadLatencyMinutes} mins</strong>
+                  Distance: <strong className="font-medium text-slate-800">{hasHospitalLogistics ? `${logistics.cathLabDistanceMiles} miles` : 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.cathLabDistanceMiles" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} /></strong> &middot; Offload latency: <strong className="font-medium text-slate-800">{hasHospitalLogistics ? `${logistics.avgEdOffloadLatencyMinutes} mins` : 'Not provided'} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="hospitalLogistics.avgEdOffloadLatencyMinutes" kindOverride={!hasHospitalLogistics ? 'unavailable' : undefined} /></strong>
                 </div>
               </div>
             </div>
@@ -658,7 +706,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>NEMSQA clinical quality measures &amp; CARES neurological survival</span>
                 <span className="text-xs text-emerald-800 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  AHA Mission: Lifeline {agency.qualityMetrics?.ahaMissionLifelineTier || 'Gold Plus'}
+                  AHA Mission: Lifeline {agency.qualityMetrics?.ahaMissionLifelineTier || 'Not provided'}
+                  <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.ahaMissionLifelineTier" />
                 </span>
               </div>
 
@@ -666,40 +715,44 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">STEMI 12-lead acquisition</div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct || 89}%
+                    {agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct != null ? `${agency.qualityMetrics.nemsqaStemi12LeadAcquisitionPct}%` : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.nemsqaStemi12LeadAcquisitionPct" />
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    Target: &ge;85% within &le;10 min
+                    Reference threshold: &ge;85% within &le;10 min · no citation linked
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Chest compression fraction</div>
                   <div className="text-[24px] font-[650] text-emerald-800 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaChestCompressionFractionPct || 81}%
+                    {agency.qualityMetrics?.nemsqaChestCompressionFractionPct != null ? `${agency.qualityMetrics.nemsqaChestCompressionFractionPct}%` : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.nemsqaChestCompressionFractionPct" />
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    Target: &ge;78% (AutoPulse 98%)
+                    Reference threshold: &ge;78% · no citation linked
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">ETCO2 ventilation compliance</div>
                   <div className="text-[24px] font-[650] text-amber-800 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct || 68}%
+                    {agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct != null ? `${agency.qualityMetrics.nemsqaEtco2VentilationCompliancePct}%` : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.nemsqaEtco2VentilationCompliancePct" />
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    Target: &ge;64% (Real BVM Help)
+                    Reference threshold: &ge;64% · no citation linked
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Pediatric respiratory support</div>
                   <div className="text-[24px] font-[650] text-purple-900 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct || 74}%
+                    {agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct != null ? `${agency.qualityMetrics.nemsqaPediatricRespiratorySupportPct}%` : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="qualityMetrics.nemsqaPediatricRespiratorySupportPct" />
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    Target: &ge;72% pediatric standard
+                    Reference threshold: &ge;72% · no citation linked
                   </div>
                 </div>
               </div>
@@ -713,13 +766,17 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     CMS reimbursement &amp; revenue recovery analytics
                   </span>
                   <h4 className="text-base font-semibold text-slate-900 mt-0.5">
-                    Medicare denial rate: {agency.cmsData?.claimDenialRate || 19.4}% vs. 8.2% ZOLL benchmark
+                    Medicare denial rate: {agency.cmsData?.claimDenialRate != null ? `${agency.cmsData.claimDenialRate}%` : 'Not provided'} · benchmark citation not linked
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="cmsData.claimDenialRate" />
                   </h4>
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-600 font-medium">Annual recoverable cash:</span>
                   <div className="text-[24px] font-[650] text-emerald-700 tabular-nums leading-none mt-0.5">
-                    +${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 145000)).toLocaleString()} per year
+                    {agency.cmsData?.estimatedRecoverableRevenue != null
+                      ? `+$${Math.round(agency.cmsData.estimatedRecoverableRevenue).toLocaleString()} per year`
+                      : 'Not provided'}
+                    <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="cmsData.estimatedRecoverableRevenue" />
                   </div>
                 </div>
               </div>
@@ -759,7 +816,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   </div>
                 </div>
                 <div className="text-xs text-slate-700 mt-2">
-                  <strong className="font-semibold text-slate-900">Primary denial reason:</strong> {agency.cmsData?.topDenialReason || 'Inadequate Medical Necessity Documentation & Missing Signatures'} ({agency.cmsData?.topDenialReasonCode || 'CO-16'}). ZOLL RescueNet Billing eliminates 88% of these technical denials at transmission.
+                  <strong className="font-semibold text-slate-900">Primary denial reason:</strong> {agency.cmsData?.topDenialReason || 'Not provided'} ({agency.cmsData?.topDenialReasonCode || 'Not provided'}). No agency-specific claims record is linked; any recoverability estimate requires validation against source claims data.
                 </div>
               </div>
             </div>
@@ -1030,8 +1087,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {/* 4. Multi-Year FEMA AFG Grant Award History */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>Grant entries in the local profile</span>
-                <span className="text-xs text-amber-700">Unverified unless linked to a source record</span>
+                <span>Grant entries and public award records</span>
+                <span className="text-xs text-amber-700">Check the provenance label on each row</span>
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
@@ -1047,15 +1104,19 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     {femaGrants.map((g, idx) => (
                       <tr key={idx} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 font-medium text-slate-900 tabular-nums">FY{g.fiscalYear}</td>
+                        <td className="py-2 px-3 font-medium text-slate-900 tabular-nums">FY{g.fiscalYear} <FieldProvenanceBadge rawProfile={provenanceSource} profile={agency} fieldPath="femaGrantHistory" /></td>
                         <td className="py-2 px-3 font-medium text-slate-900">{g.programName}</td>
                         <td className="py-2 px-3 text-slate-600 max-w-xs">{g.purpose}</td>
                         <td className="py-2 px-3 text-right font-medium text-slate-900 tabular-nums">
                           ${g.awardAmount.toLocaleString()}
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                            Unverified profile claim
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            g.status === 'Award record only'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {g.status || 'Unverified profile claim'}
                           </span>
                         </td>
                       </tr>

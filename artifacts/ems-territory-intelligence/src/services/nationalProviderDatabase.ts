@@ -156,6 +156,7 @@ class NationalProviderDatabaseService {
             verificationSource: updated.verificationSource,
             isVerifiedRecord: true,
             lastVerifiedAt: updated.lastVerifiedAt || new Date().toISOString(),
+            factEvidence: updated.factEvidence,
             keyContacts: updated.keyContacts,
           };
           window.localStorage.setItem(verifiedCacheKey(), JSON.stringify(current));
@@ -399,14 +400,14 @@ class NationalProviderDatabaseService {
         povertyRate: c.povertyRatePct,
         avgTransportTimeMinutes: c.averageTransportMinutes,
         distanceToNearestCathLabMiles: c.primaryCathLabDistanceMiles,
-        traumaCenterLevel: (posHash % 3 === 0) ? 'Level 1 Trauma' : 'Level 2 Trauma',
+        traumaCenterLevel: 'Not source-verified',
         publicAccessAedDeficitPct: aedDeficit,
         highRiseBuildingDensity: (popServed > 120000) ? 'High' : 'Moderate',
         annualTraumaIncidents: Math.round(emsTransports * 0.15),
         fiscalBudgetCycleQuarter: 'Q3 (Jul-Sep)',
         territoryClusterId: `${sc.toLowerCase()}-${category}-${c.countyFips}`,
         territoryClusterName: `${c.countyName} Regional Health Corridor`,
-        primaryReceivingHospital: `${cleanCityDisplay} Regional Medical Center (Level ${(posHash % 2) + 1} Trauma & PCI)`,
+        primaryReceivingHospital: 'Not source-verified',
         annualHospitalDestinationTransports: Math.round(emsTransports * 0.88)
       },
       qualityMetrics: {
@@ -581,7 +582,7 @@ class NationalProviderDatabaseService {
         isVerifiedRecord: false,
         gisData: {
           ...rawAgency.gisData,
-          primaryReceivingHospital: rawAgency.gisData.primaryReceivingHospital || `${rawAgency.city} Regional Medical Center (${rawAgency.gisData.traumaCenterLevel} & STEMI PCI)`,
+          primaryReceivingHospital: rawAgency.gisData.primaryReceivingHospital || 'Not source-verified',
           annualHospitalDestinationTransports: rawAgency.gisData.annualHospitalDestinationTransports ?? Math.round(rawAgency.annual911Transports * 0.88)
         },
         cmsData: {

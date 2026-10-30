@@ -111,11 +111,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   };
 
   const logistics = agency.hospitalLogistics || {
-    primaryTraumaHospital: `${agency.city} Regional Medical Center (${agency.gisData?.traumaCenterLevel || 'Level 1 Trauma'})`,
-    traumaLevel: agency.gisData?.traumaCenterLevel || 'Level 1 Regional Trauma',
+    primaryTraumaHospital: agency.gisData?.primaryReceivingHospital || 'Not source-verified',
+    traumaLevel: agency.gisData?.traumaCenterLevel || 'Not source-verified',
     distanceToTraumaMiles: agency.gisData?.avgTransportDistanceToTraumaMiles || 7.2,
     transportTimeMinutes: agency.gisData?.avgTransportTimeMinutes || 13,
-    primaryCathLabHospital: `${agency.city} Heart & Vascular Pavilion (24/7 STEMI PCI)`,
+    primaryCathLabHospital: 'Not source-verified',
     cathLabDistanceMiles: 6.5,
     cathLabTransportMinutes: 11,
     annualEdTransports: Math.round((agency.annual911Transports || 2800) * 0.88),

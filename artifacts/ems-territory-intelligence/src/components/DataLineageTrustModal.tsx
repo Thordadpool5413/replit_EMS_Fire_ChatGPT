@@ -127,8 +127,8 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
       `================================================`,
       `Department: ${activeAgency.name}`,
       `Jurisdiction: ${activeAgency.city}, ${activeAgency.stateCode} (${activeAgency.county})`,
-      `FDID: ${activeAgency.fdid || 'Verified Public Agency'}`,
-      `Integrity Score: ${auditReport.overallIntegrityScore}% (All 7 Dimensions Mapped)`,
+      `FDID: ${activeAgency.fdid || 'Not recorded'}`,
+      `Evidence Coverage: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (${auditReport.verifiedSupportedFields} of ${auditReport.applicableAuditedFields} fields have reviewed evidence)`,
       `Audit Date: ${new Date().toISOString().split('T')[0]}`,
       ``,
       `FIELD-BY-FIELD DATA CHAIN & CITATIONS:`,
@@ -173,11 +173,11 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 </span>
                 <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Cross-walked by USFA FDID &middot; CMS NPI &middot; Census FIPS
+                  Evidence is evaluated per field; registry identity does not verify operations
                 </span>
               </div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                Institutional data lineage &amp; federal registry sync verifier
+                Field-by-field source evidence audit
               </h2>
             </div>
           </div>
@@ -340,7 +340,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                       <span className={`font-semibold text-xs ${
                         activeAgency.isVerifiedRecord ? 'text-[#1E3A8A] dark:text-blue-400' : 'text-slate-500'
                       }`}>
-                        {activeAgency.isVerifiedRecord ? 'Verified Federal Match' : activeAgency.npiNumber ? 'Candidate Cross-Reference' : 'Sourcing Required'}
+                        {activeAgency.isVerifiedRecord ? 'NPPES legal-entity match only' : activeAgency.npiNumber ? 'Unmatched NPI candidate' : 'Sourcing Required'}
                       </span>
                     </div>
                   </div>
@@ -353,14 +353,14 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white block">USFA National Fire Registry</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified Federal Record (FDID)</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verify this agency and FDID against a current source</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">CMS Part B PUF FY2025</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified NPI Claims &amp; Denials</span>
+                    <span className="font-bold text-slate-900 dark:text-white block">CMS Part B PUF</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Provider-level claims require a matched NPI and source record</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
@@ -434,6 +434,21 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <td className="py-2.5 px-3">
                           <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 block">{r.sourceRegistry}</span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">{r.documentationQuote}</span>
+                          {r.sourceUrlOrCitation && (
+                            <a
+                              href={r.sourceUrlOrCitation}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                            >
+                              Open cited source <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                          {r.sourceRecordId && (
+                            <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                              Record: {r.sourceRecordId}{r.reviewedAt ? ` · Reviewed ${r.reviewedAt.slice(0, 10)}` : ''}
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                           {r.schemaIdentifier}
@@ -448,7 +463,9 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                                   : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                           }`}>
-                            <CheckCircle2 className="w-3 h-3" />
+                            {r.isFieldVerified
+                              ? <CheckCircle2 className="w-3 h-3" />
+                              : <Lock className="w-3 h-3" />}
                             <span>{r.verificationStatus}</span>
                           </span>
                         </td>
@@ -470,7 +487,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   <span>Federal, State & Clinical Data Ingestion Framework</span>
                 </h3>
                 <p className="text-xs text-sky-800/90 leading-relaxed">
-                  Every data point ingested into this territory platform originates from statutory federal filings, state EMS repositories, and publicly disclosed procurement records. No values are manufactured.
+                  These are possible authoritative source systems, not proof that each displayed value was ingested or verified. Check the field-level evidence ledger before relying on a record.
                 </p>
               </div>
 
@@ -512,7 +529,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
 
                     <div className="pt-2 border-t border-slate-100">
                       <span className="text-[10px] uppercase font-mono font-semibold text-slate-400 block mb-1">
-                        Ingested Core Fields:
+                        Potential source coverage:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {repo.primaryFieldsIngested.map((f, idx) => (
@@ -533,7 +550,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold block">
-                  Deterministic Opportunity Formula (No AI Hallucinations)
+                  Heuristic opportunity score — not a validated predictive model
                 </span>
                 <div className="p-3 bg-slate-950 text-sky-300 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
                   PulseIQ Score (0–100) = [ 
@@ -545,7 +562,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   ]
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Every point awarded is mathematically bound to public registry values. If a department operates a 9-year-old Stryker LIFEPAK 15, the fleet obsolescence pillar deterministically outputs 25/25 pts. If claim denial exceeds 18%, CMS recovery outputs 20/20 pts.
+                  Scores are a prioritization heuristic. Many input values are modeled or unverified in this app; the score is not evidence of agency conditions, clinical outcomes, purchasing intent, or likely sales conversion.
                 </p>
               </div>
 
@@ -682,10 +699,10 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                    <span className="font-bold text-slate-900 text-xs">CMS GADCS Audited</span>
+                    <span className="font-bold text-slate-900 text-xs">GADCS framework reference</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Aligned with the CMS Ground Ambulance Data Collection System (GADCS) cost reporting mandate, ensuring revenue recovery models meet federal MAC audit standards.
+                    This references the CMS Ground Ambulance Data Collection System framework; it is not an agency-specific audit or confirmation of reporting readiness.
                   </p>
                 </div>
               </div>
@@ -698,7 +715,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2 font-mono text-[11px]">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>All 7 Department Data Dimensions Cross-Walked (FDID + NPI + FIPS)</span>
+            <span>{auditReport?.verifiedSupportedFields ?? 0} of {auditReport?.applicableAuditedFields ?? 0} fields have reviewed, field-specific evidence</span>
           </div>
           <button
             onClick={onClose}

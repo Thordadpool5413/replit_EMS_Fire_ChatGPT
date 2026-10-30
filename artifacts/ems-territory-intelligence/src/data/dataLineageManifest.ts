@@ -5,6 +5,7 @@
 
 import { Agency } from '../types';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
+import { hasAgencyFactEvidence } from './agencyFactEvidence';
 
 export interface DataRegistrySource {
   id: string;
@@ -31,6 +32,8 @@ export interface FieldLineageRecord {
   reportingPeriod?: string;
   evidenceBasis?: string;
   evidenceScope?: 'FIELD_VERIFIED' | 'ORGANIZATION_IDENTITY_ONLY' | 'REGIONAL_BENCHMARK' | 'MODELED_ESTIMATE' | 'UNVERIFIED';
+  sourceRecordId?: string;
+  reviewedAt?: string;
 }
 
 export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
@@ -197,43 +200,95 @@ export function auditAgencyDataLineage(
     isNpiCheckDigitValid &&
     agency.npiNumber &&
     agency.isVerifiedRecord &&
+    agency.lastVerifiedAt &&
+    agency.nppesRegistryUrl &&
     !isUnrelatedOrIndividual &&
     isCorroboratedRelationship
   );
 
   const hasVerifiedLegalName = Boolean(hasVerifiedNpi && (agency.nppesOfficialName || agency.name));
-  const hasVerifiedAddress = Boolean(hasVerifiedNpi && agency.address);
-  const hasVerifiedFdid = Boolean(agency.isFdidVerified && agency.fdid);
-  const hasVerifiedOperations = Boolean(agency.isOperationalDataVerified);
+  const hasVerifiedAddress = Boolean(
+    hasVerifiedNpi &&
+    agency.address &&
+    hasAgencyFactEvidence(agency, 'providerAddress')
+  );
+  const hasVerifiedFdid = Boolean(
+    agency.isFdidVerified &&
+    agency.fdid &&
+    hasAgencyFactEvidence(agency, 'departmentRegistry')
+  );
+  const hasVerifiedOperations = hasAgencyFactEvidence(agency, 'annualEmergencyVolume');
+  const hasVerifiedApparatusStations = hasAgencyFactEvidence(agency, 'frontlineApparatusStations');
+  const hasVerifiedApparatusBreakdown = hasAgencyFactEvidence(agency, 'apparatusBreakdown');
+  const hasVerifiedHospitalLogistics = hasAgencyFactEvidence(agency, 'receivingHospitalStemi');
+  const hasVerifiedLeadership = hasAgencyFactEvidence(agency, 'agencyLeadership');
+  const hasVerifiedDecisionMakers = hasAgencyFactEvidence(agency, 'decisionMakers');
+  const hasVerifiedCommunications = hasAgencyFactEvidence(agency, 'communicationsSystems');
+  const hasVerifiedDefibFleet = hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet');
+  const hasVerifiedMaintenanceContracts = hasAgencyFactEvidence(agency, 'maintenanceContracts');
+  const hasVerifiedSuppliers = hasAgencyFactEvidence(agency, 'equipmentSuppliers');
+  const hasVerifiedHardware = hasAgencyFactEvidence(agency, 'verifiedHardware');
   
   const hasVerifiedEquipment = Boolean(
-    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.procurementResolutionId
+    agency.installedFleet?.isVerifiedEquipment &&
+    agency.installedFleet?.procurementResolutionId &&
+    hasVerifiedHardware
   );
   const hasVerifiedFleetAge = Boolean(
-    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.capitalAssetLedgerId
+    agency.installedFleet?.isVerifiedEquipment &&
+    agency.installedFleet?.capitalAssetLedgerId &&
+    hasVerifiedDefibFleet
   );
-  const hasVerifiedWarranty = Boolean(agency.installedFleet?.isVerifiedWarranty);
+  const hasVerifiedWarranty = Boolean(
+    agency.installedFleet?.isVerifiedWarranty &&
+    hasVerifiedDefibFleet
+  );
   const hasVerifiedCPR = Boolean(
-    agency.installedFleet?.isVerifiedEquipment && agency.installedFleet?.mechanicalCPR
+    agency.installedFleet?.isVerifiedEquipment &&
+    agency.installedFleet?.mechanicalCPR &&
+    hasVerifiedDefibFleet
   );
 
   const hasVerifiedContractVendor = Boolean(
-    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.contractNumber
+    agency.competitorContract?.isVerifiedContract &&
+    agency.competitorContract?.contractNumber &&
+    hasVerifiedMaintenanceContracts &&
+    hasVerifiedSuppliers
   );
   const hasVerifiedContractEndDate = Boolean(
-    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.contractEndDate
+    agency.competitorContract?.isVerifiedContract &&
+    agency.competitorContract?.contractNumber &&
+    agency.competitorContract?.contractEndDate &&
+    hasVerifiedMaintenanceContracts
+  );
+  const hasVerifiedContract = Boolean(
+    hasVerifiedMaintenanceContracts &&
+    hasVerifiedSuppliers
   );
   const hasVerifiedMaintenanceBurden = Boolean(
-    agency.competitorContract?.isVerifiedContract && agency.competitorContract?.annualServiceCostPerUnit
+    agency.competitorContract?.isVerifiedContract &&
+    agency.competitorContract?.contractNumber &&
+    agency.competitorContract?.annualServiceCostPerUnit &&
+    hasVerifiedMaintenanceContracts
   );
 
-  const hasVerifiedClinicalCalls = Boolean(agency.qualityMetrics?.isCaresVerified);
-  const hasVerifiedUtsteinSurvival = Boolean(agency.qualityMetrics?.isCaresVerified);
-  const hasVerifiedStemiRatio = Boolean(agency.qualityMetrics?.isNemsqaVerified);
+  const hasVerifiedClinicalCalls = Boolean(
+    agency.qualityMetrics?.isCaresVerified &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes')
+  );
+  const hasVerifiedUtsteinSurvival = hasVerifiedClinicalCalls;
+  const hasVerifiedStemiRatio = Boolean(
+    agency.qualityMetrics?.isNemsqaVerified &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes')
+  );
 
-  const hasVerifiedCmsBilled = Boolean(agency.cmsData?.isVerifiedCmsClaims);
+  const hasVerifiedCmsBilled = Boolean(
+    agency.cmsData?.isVerifiedCmsClaims &&
+    hasAgencyFactEvidence(agency, 'cmsClaims')
+  );
   const hasVerifiedCmsDenials = Boolean(
     agency.cmsData?.isVerifiedCmsClaims &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
     agency.cmsData?.claimDenialRate !== undefined &&
     agency.cmsData?.claimDenialRate !== null
   );
@@ -241,7 +296,8 @@ export function auditAgencyDataLineage(
   const hasVerifiedAfgGrant = Boolean(
     agency.grantStatus?.afgAwarded &&
     Array.isArray(agency.liveFemaAwards) &&
-    agency.liveFemaAwards.length > 0
+    agency.liveFemaAwards.length > 0 &&
+    hasAgencyFactEvidence(agency, 'federalGrant')
   );
 
   const isParentMunicipality = agency.operatingRelationship === 'PARENT_MUNICIPALITY' ||
@@ -293,7 +349,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Operational Telemetry',
       fieldName: 'Legal Organization Entity Name',
-      fieldValue: agency.nppesOfficialName || agency.name,
+      fieldValue: hasVerifiedLegalName ? agency.nppesOfficialName || agency.name : `Directory candidate: ${agency.name}`,
       sourceRegistry: 'CMS National Plan and Provider Enumeration System (NPPES)',
       schemaIdentifier: 'NPI Legal Business Name (LBN)',
       verificationStatus: hasVerifiedLegalName ? 'Verified Official' : 'Unverified Baseline',
@@ -309,7 +365,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Operational Telemetry',
       fieldName: 'Headquarters Physical Practice Address',
-      fieldValue: agency.address || 'Uncorroborated / Sourcing Required',
+      fieldValue: hasVerifiedAddress ? agency.address : 'Not source-verified',
       sourceRegistry: 'CMS NPPES Practice Location Registry',
       schemaIdentifier: 'Primary Practice Location Address',
       verificationStatus: hasVerifiedAddress ? 'Verified Official' : 'Sourcing Required',
@@ -320,12 +376,14 @@ export function auditAgencyDataLineage(
         : 'Physical practice location unverified; postal address confirmation required.',
       evidenceBasis: hasVerifiedAddress ? 'NPPES practice location corroborated with local municipal jurisdiction.' : 'Uncorroborated postal string.',
       evidenceScope: hasVerifiedAddress ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      sourceRecordId: hasVerifiedAddress ? agency.factEvidence?.providerAddress?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedAddress ? agency.factEvidence?.providerAddress?.reviewedAt : undefined,
       isFieldVerified: hasVerifiedAddress
     },
     {
       category: 'Operational Telemetry',
       fieldName: 'Department Identifier (FDID)',
-      fieldValue: agency.fdid || 'Not Recorded / Sourcing Required',
+      fieldValue: hasVerifiedFdid ? agency.fdid || 'Not recorded' : 'Not source-verified',
       sourceRegistry: 'USFA National Fire Department Registry',
       schemaIdentifier: 'NFIRS 5.0 State Agency Code',
       verificationStatus: hasVerifiedFdid ? 'Verified Official' : agency.fdid ? 'Cross-Referenced' : 'Sourcing Required',
@@ -338,12 +396,64 @@ export function auditAgencyDataLineage(
         : 'State fire marshal or EMS division identifier not confirmed.',
       evidenceBasis: hasVerifiedFdid ? 'USFA Registry certified fire department record.' : 'Uncorroborated state ID string.',
       evidenceScope: hasVerifiedFdid ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      sourceRecordId: hasVerifiedFdid ? agency.factEvidence?.departmentRegistry?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedFdid ? agency.factEvidence?.departmentRegistry?.reviewedAt : undefined,
       isFieldVerified: hasVerifiedFdid
     },
     {
       category: 'Operational Telemetry',
+      fieldName: 'Agency Command Leadership',
+      fieldValue: hasVerifiedLeadership ? agency.keyContacts.map(contact => contact.name).join(', ') : 'Not source-verified',
+      sourceRegistry: hasVerifiedLeadership ? agency.factEvidence?.agencyLeadership?.sourceName || 'Reviewed agency source' : 'Official agency source required',
+      schemaIdentifier: 'Agency leadership roster',
+      verificationStatus: hasVerifiedLeadership ? 'Verified Official' : 'Sourcing Required',
+      sourceUrlOrCitation: hasVerifiedLeadership ? agency.factEvidence?.agencyLeadership?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedLeadership ? agency.factEvidence?.agencyLeadership?.reportingPeriod : undefined,
+      documentationQuote: hasVerifiedLeadership
+        ? 'Agency leadership details have a reviewed, field-specific source record.'
+        : 'NPPES authorized officials are not assumed to be operational EMS or fire leadership.',
+      evidenceBasis: hasVerifiedLeadership ? 'Reviewed source record tied to agency leadership.' : 'Leadership roster not independently sourced.',
+      evidenceScope: hasVerifiedLeadership ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      isFieldVerified: hasVerifiedLeadership
+    },
+    {
+      category: 'Operational Telemetry',
+      fieldName: 'Decision Makers & Command Directory',
+      fieldValue: hasVerifiedDecisionMakers ? agency.keyContacts.map(contact => contact.name).join(', ') : 'Not source-verified',
+      sourceRegistry: hasVerifiedDecisionMakers ? agency.factEvidence?.decisionMakers?.sourceName || 'Reviewed agency source' : 'Official agency source required',
+      schemaIdentifier: 'Current command and decision-maker roster',
+      verificationStatus: hasVerifiedDecisionMakers ? 'Verified Official' : 'Sourcing Required',
+      sourceUrlOrCitation: hasVerifiedDecisionMakers ? agency.factEvidence?.decisionMakers?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedDecisionMakers ? agency.factEvidence?.decisionMakers?.reportingPeriod : undefined,
+      documentationQuote: hasVerifiedDecisionMakers
+        ? 'Decision-maker details have a reviewed, field-specific source record.'
+        : 'Contact names and roles are not confirmed as current command or purchasing decision makers.',
+      evidenceBasis: hasVerifiedDecisionMakers ? 'Reviewed source record tied to the current decision-maker roster.' : 'Current decision-maker roster not independently sourced.',
+      evidenceScope: hasVerifiedDecisionMakers ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      isFieldVerified: hasVerifiedDecisionMakers
+    },
+    {
+      category: 'Operational Telemetry',
+      fieldName: '911 CAD & ePCR Systems',
+      fieldValue: hasVerifiedCommunications
+        ? `${agency.installedFleet?.dispatchCadVendor || 'CAD listed'} · ${agency.installedFleet?.epcrCadSoftware || 'ePCR listed'}`
+        : 'Not source-verified',
+      sourceRegistry: hasVerifiedCommunications ? agency.factEvidence?.communicationsSystems?.sourceName || 'Reviewed agency source' : 'Agency or procurement source required',
+      schemaIdentifier: 'Active 911 CAD and ePCR system inventory',
+      verificationStatus: hasVerifiedCommunications ? 'Verified Official' : 'Sourcing Required',
+      sourceUrlOrCitation: hasVerifiedCommunications ? agency.factEvidence?.communicationsSystems?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedCommunications ? agency.factEvidence?.communicationsSystems?.reportingPeriod : undefined,
+      documentationQuote: hasVerifiedCommunications
+        ? 'Dispatch and ePCR system details have a reviewed, field-specific source record.'
+        : 'Displayed CAD and ePCR vendor fields are not confirmed by an agency or procurement source.',
+      evidenceBasis: hasVerifiedCommunications ? 'Reviewed source record tied to current communications systems.' : 'Active CAD/ePCR systems not independently sourced.',
+      evidenceScope: hasVerifiedCommunications ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      isFieldVerified: hasVerifiedCommunications
+    },
+    {
+      category: 'Operational Telemetry',
       fieldName: 'Annual 911 Call Volume',
-      fieldValue: `${agency.annualCallVolume.toLocaleString()} calls`,
+      fieldValue: hasVerifiedOperations ? `${agency.annualCallVolume.toLocaleString()} calls` : `Unverified estimate: ${agency.annualCallVolume.toLocaleString()} calls`,
       sourceRegistry: hasVerifiedOperations ? 'Municipal CAFR Budget & Dispatch Audits' : 'Demographic Call Volume Estimation Model',
       schemaIdentifier: 'RunLog.01 Annual Dispatch Volume',
       verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
@@ -358,7 +468,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Operational Telemetry',
       fieldName: 'Annual 911 Emergency Transports',
-      fieldValue: `${agency.annual911Transports.toLocaleString()} transports`,
+      fieldValue: hasVerifiedOperations ? `${agency.annual911Transports.toLocaleString()} transports` : `Unverified estimate: ${agency.annual911Transports.toLocaleString()} transports`,
       sourceRegistry: hasVerifiedOperations ? 'State EMS Office Annual Transport Census' : 'Emergency Transport Estimation Model',
       schemaIdentifier: 'eResponse.07 Unit Dispatched / Transported',
       verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
@@ -373,24 +483,49 @@ export function auditAgencyDataLineage(
     {
       category: 'Operational Telemetry',
       fieldName: 'Apparatus Fleet Breakdown',
-      fieldValue: `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Fire Engines`,
-      sourceRegistry: hasVerifiedOperations ? 'County Dispatch Apparatus Roster' : 'Municipal Station & Vehicle Density Model',
+      fieldValue: hasVerifiedApparatusBreakdown
+        ? `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Fire Engines`
+        : `Unverified estimate: ${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Fire Engines`,
+      sourceRegistry: hasVerifiedApparatusBreakdown ? agency.factEvidence?.apparatusBreakdown?.sourceName || 'Reviewed apparatus roster' : 'Municipal Station & Vehicle Density Model',
       schemaIdentifier: 'NFIRS Apparatus Inventory Record',
-      verificationStatus: hasVerifiedOperations ? 'Verified Official' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedOperations ? 'CY2025 Active Dispatch Fleet' : 'Modeled Baseline',
-      documentationQuote: hasVerifiedOperations
-        ? 'Audited apparatus and active vehicle count registered with county dispatch.'
+      verificationStatus: hasVerifiedApparatusBreakdown ? 'Verified Official' : 'Model / Estimate',
+      sourceUrlOrCitation: hasVerifiedApparatusBreakdown ? agency.factEvidence?.apparatusBreakdown?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedApparatusBreakdown ? agency.factEvidence?.apparatusBreakdown?.reportingPeriod : 'Modeled Baseline',
+      documentationQuote: hasVerifiedApparatusBreakdown
+        ? 'Apparatus counts have a reviewed, field-specific source record.'
         : 'Modeled apparatus allocation; frontline fleet inventory inspection required.',
-      evidenceBasis: hasVerifiedOperations ? 'Audited county dispatch CAD unit roster.' : 'Station density projection model.',
-      evidenceScope: hasVerifiedOperations ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
-      isFieldVerified: hasVerifiedOperations
+      evidenceBasis: hasVerifiedApparatusBreakdown ? 'Reviewed source record tied to the vehicle inventory.' : 'Station density projection model.',
+      evidenceScope: hasVerifiedApparatusBreakdown ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
+      sourceRecordId: hasVerifiedApparatusBreakdown ? agency.factEvidence?.apparatusBreakdown?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedApparatusBreakdown ? agency.factEvidence?.apparatusBreakdown?.reviewedAt : undefined,
+      isFieldVerified: hasVerifiedApparatusBreakdown
+    },
+    {
+      category: 'Operational Telemetry',
+      fieldName: 'Frontline Apparatus & Stations',
+      fieldValue: hasVerifiedApparatusStations
+        ? `${agency.stationsCount} stations · ${agency.totalAmbulances} ambulances · ${agency.totalFireEngines} engines`
+        : `Unverified estimate: ${agency.stationsCount} stations · ${agency.totalAmbulances} ambulances · ${agency.totalFireEngines} engines`,
+      sourceRegistry: hasVerifiedApparatusStations ? agency.factEvidence?.frontlineApparatusStations?.sourceName || 'Reviewed agency source' : 'Official agency or dispatch source required',
+      schemaIdentifier: 'Current station and frontline unit roster',
+      verificationStatus: hasVerifiedApparatusStations ? 'Verified Official' : 'Model / Estimate',
+      sourceUrlOrCitation: hasVerifiedApparatusStations ? agency.factEvidence?.frontlineApparatusStations?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedApparatusStations ? agency.factEvidence?.frontlineApparatusStations?.reportingPeriod : 'Modeled Baseline',
+      documentationQuote: hasVerifiedApparatusStations
+        ? 'Station and frontline unit counts have a reviewed, field-specific source record.'
+        : 'Station and unit counts are modeled estimates, not a verified current roster.',
+      evidenceBasis: hasVerifiedApparatusStations ? 'Reviewed source record tied to active stations and apparatus.' : 'Population and station-density model.',
+      evidenceScope: hasVerifiedApparatusStations ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
+      sourceRecordId: hasVerifiedApparatusStations ? agency.factEvidence?.frontlineApparatusStations?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedApparatusStations ? agency.factEvidence?.frontlineApparatusStations?.reviewedAt : undefined,
+      isFieldVerified: hasVerifiedApparatusStations
     },
 
     // 2. Installed Equipment Fleet
     {
       category: 'Installed Fleet',
       fieldName: 'Incumbent Defibrillator Monitor Brand',
-      fieldValue: agency.installedFleet?.defibBrand || 'Unknown Monitor Fleet',
+      fieldValue: hasVerifiedEquipment ? agency.installedFleet?.defibBrand || 'Not recorded' : 'Not source-verified',
       sourceRegistry: hasVerifiedEquipment ? 'Municipal Council RFP & Award Ledger' : 'Regional Competitive Equipment Model',
       schemaIdentifier: 'Equipment Procurement Contract Schedule',
       verificationStatus: hasVerifiedEquipment ? 'Legal Public Record' : 'Model / Estimate',
@@ -406,7 +541,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Installed Fleet',
       fieldName: 'Defibrillator Fleet Age',
-      fieldValue: `${agency.installedFleet?.defibAgeYears ?? '—'} years old`,
+      fieldValue: hasVerifiedFleetAge ? `${agency.installedFleet?.defibAgeYears ?? '—'} years old` : 'Not source-verified',
       sourceRegistry: hasVerifiedFleetAge ? 'Municipal Capital Asset Depreciation Ledger' : 'Capital Asset Lifecycle Estimate',
       schemaIdentifier: 'Asset Management Tag / Capital Inception Year',
       verificationStatus: hasVerifiedFleetAge ? 'Legal Public Record' : 'Model / Estimate',
@@ -421,7 +556,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Installed Fleet',
       fieldName: 'Defibrillator Warranty / Service Status',
-      fieldValue: agency.installedFleet?.defibWarrantyStatus || 'Unverified',
+      fieldValue: hasVerifiedWarranty ? agency.installedFleet?.defibWarrantyStatus || 'Not recorded' : 'Not source-verified',
       sourceRegistry: hasVerifiedWarranty ? 'Manufacturer Maintenance Agreement Registry' : 'Standard OEM Warranty Lifecycle Model',
       schemaIdentifier: 'Service SLA Status Code',
       verificationStatus: hasVerifiedWarranty ? 'Legal Public Record' : 'Model / Estimate',
@@ -437,7 +572,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Installed Fleet',
       fieldName: 'Mechanical CPR Deployment',
-      fieldValue: agency.installedFleet?.mechanicalCPR || 'Not Reported',
+      fieldValue: hasVerifiedEquipment ? agency.installedFleet?.mechanicalCPR || 'Not recorded' : 'Not source-verified',
       sourceRegistry: hasVerifiedCPR ? 'State EMS Clinical Equipment Registry' : 'Clinical Equipment Adoption Model',
       schemaIdentifier: 'eEquipment.02 Mechanical Resuscitation',
       verificationStatus: hasVerifiedCPR ? 'Legal Public Record' : 'Model / Estimate',
@@ -454,7 +589,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Competitor Contracts',
       fieldName: 'Current Service Contract Vendor',
-      fieldValue: agency.competitorContract?.vendor || 'Unknown Vendor',
+      fieldValue: hasVerifiedContractVendor ? agency.competitorContract?.vendor || 'Not recorded' : 'Not source-verified',
       sourceRegistry: hasVerifiedContractVendor ? 'City Council Contract Register' : 'Incumbent Service Provider Projection',
       schemaIdentifier: 'Vendor Master Agreement',
       verificationStatus: hasVerifiedContractVendor ? 'Legal Public Record' : 'Model / Estimate',
@@ -470,7 +605,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Competitor Contracts',
       fieldName: 'Service Contract Expiration Date',
-      fieldValue: agency.competitorContract?.contractEndDate || 'Not Recorded',
+      fieldValue: hasVerifiedContract ? agency.competitorContract?.contractEndDate || 'Not recorded' : 'Not source-verified',
       sourceRegistry: hasVerifiedContractEndDate ? 'Public Procurement Contract Register' : 'Estimated Master Contract Cycle',
       schemaIdentifier: 'Contract Schedule Expiration Date',
       verificationStatus: hasVerifiedContractEndDate ? 'Legal Public Record' : 'Model / Estimate',
@@ -485,7 +620,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Competitor Contracts',
       fieldName: 'Annual Service Maintenance Burden',
-      fieldValue: agency.competitorContract?.annualServiceCostPerUnit
+      fieldValue: hasVerifiedContract && agency.competitorContract?.annualServiceCostPerUnit
         ? `$${agency.competitorContract.annualServiceCostPerUnit.toLocaleString()} / unit / year`
         : '—',
       sourceRegistry: hasVerifiedMaintenanceBurden ? 'Municipal Operating Budget Purchase Orders' : 'Actuarial Service Maintenance Benchmark',
@@ -504,7 +639,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Clinical & NEMSIS',
       fieldName: 'Out-of-Hospital Cardiac Arrests (OHCA)',
-      fieldValue: `${calls.toLocaleString()} calls/yr`,
+      fieldValue: hasVerifiedClinicalCalls ? `${calls.toLocaleString()} calls/yr` : 'Not source-verified',
       sourceRegistry: hasVerifiedClinicalCalls ? 'NEMSIS v3.5 Registry & CARES Incident Records' : 'Regional Cardiac Arrest Incidence Model',
       schemaIdentifier: 'eDefib.01 Cardiac Resuscitation Event',
       verificationStatus: hasVerifiedClinicalCalls ? 'HIPAA De-Identified' : 'Model / Estimate',
@@ -519,7 +654,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Clinical & NEMSIS',
       fieldName: 'Utstein ROSC Survival to Discharge',
-      fieldValue: `${agency.utsteinSurvivalRate}%`,
+      fieldValue: hasVerifiedUtsteinSurvival ? `${agency.utsteinSurvivalRate}%` : 'Not source-verified',
       sourceRegistry: hasVerifiedUtsteinSurvival ? 'CARES Registry Agency Submission' : 'State CARES Benchmark Summary',
       schemaIdentifier: 'CARES Outcome Variable CPC 1 & 2',
       verificationStatus: hasVerifiedUtsteinSurvival ? 'HIPAA De-Identified' : 'Geographic Benchmark',
@@ -534,7 +669,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Clinical & NEMSIS',
       fieldName: 'STEMI 12-Lead Transmission Ratio',
-      fieldValue: `${Math.round(calls * 0.165)} activations / yr`,
+      fieldValue: hasVerifiedStemiRatio ? `${Math.round(calls * 0.165)} activations / yr` : 'Not source-verified',
       sourceRegistry: hasVerifiedStemiRatio ? 'NEMSQA Cardiac-01 Quality Measure' : 'NEMSQA Protocol Activation Model',
       schemaIdentifier: 'Cardiac-01 STEMI 12-Lead <= 10min',
       verificationStatus: hasVerifiedStemiRatio ? 'Verified Official' : 'Model / Estimate',
@@ -551,7 +686,7 @@ export function auditAgencyDataLineage(
     {
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Annual Medicare Billed Volume',
-      fieldValue: agency.cmsData?.medicareBilledAnnual
+      fieldValue: hasVerifiedCmsBilled && agency.cmsData?.medicareBilledAnnual
         ? `$${(agency.cmsData.medicareBilledAnnual / 1000).toFixed(0)}K billed`
         : '—',
       sourceRegistry: hasVerifiedCmsBilled ? 'CMS Medicare Part B Ground Ambulance Claims PUF' : 'Fee-for-Service Ambulance Billing Model',
@@ -568,7 +703,7 @@ export function auditAgencyDataLineage(
     {
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Medicare Claim Denial Rate',
-      fieldValue: agency.cmsData?.claimDenialRate !== undefined && agency.cmsData?.claimDenialRate !== null
+      fieldValue: hasVerifiedCmsDenials && agency.cmsData?.claimDenialRate !== undefined && agency.cmsData?.claimDenialRate !== null
         ? `${agency.cmsData.claimDenialRate}%`
         : 'Not available',
       sourceRegistry: hasVerifiedCmsDenials ? 'CMS Remittance Advice Remark Code (RARC) Feed' : 'Medicare Administrative Contractor (MAC) Summary',
@@ -585,7 +720,7 @@ export function auditAgencyDataLineage(
     {
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Addressable Cash Recovery via Clean Claims',
-      fieldValue: agency.cmsData?.estimatedRecoverableRevenue
+      fieldValue: hasVerifiedCmsBilled && agency.cmsData?.estimatedRecoverableRevenue
         ? `$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K recoverable (Projected)`
         : '—',
       sourceRegistry: 'Actuarial Billing Model Projection (ZOLL AR Boost)',
@@ -602,7 +737,7 @@ export function auditAgencyDataLineage(
     {
       category: 'Demographics & GIS',
       fieldName: 'Cath Lab Transport Drive Time',
-      fieldValue: `${agency.gisData?.avgTransportTimeMinutes ?? '—'} min (${agency.gisData?.distanceToNearestCathLabMiles ?? '—'} mi)`,
+      fieldValue: `Modeled route estimate: ${agency.gisData?.avgTransportTimeMinutes ?? '—'} min (${agency.gisData?.distanceToNearestCathLabMiles ?? '—'} mi)`,
       sourceRegistry: 'US DOT National Highway System & OpenStreetMap GIS',
       schemaIdentifier: 'Isochrone Distance Calculation',
       verificationStatus: 'Model / Estimate',
@@ -612,34 +747,50 @@ export function auditAgencyDataLineage(
       evidenceScope: 'MODELED_ESTIMATE',
       isFieldVerified: false
     },
+    {
+      category: 'Demographics & GIS',
+      fieldName: 'Receiving Hospital & STEMI Cath Lab',
+      fieldValue: hasVerifiedHospitalLogistics
+        ? `${agency.hospitalLogistics?.primaryCathLabHospital || agency.gisData?.primaryReceivingHospital || 'Source record'}`
+        : 'Not source-verified',
+      sourceRegistry: hasVerifiedHospitalLogistics ? agency.factEvidence?.receivingHospitalStemi?.sourceName || 'Reviewed agency or hospital source' : 'Agency, hospital, or EMS source required',
+      schemaIdentifier: 'Receiving facility and PCI-capable cath lab relationship',
+      verificationStatus: hasVerifiedHospitalLogistics ? 'Cross-Referenced' : 'Sourcing Required',
+      sourceUrlOrCitation: hasVerifiedHospitalLogistics ? agency.factEvidence?.receivingHospitalStemi?.sourceUrl : undefined,
+      reportingPeriod: hasVerifiedHospitalLogistics ? agency.factEvidence?.receivingHospitalStemi?.reportingPeriod : undefined,
+      documentationQuote: hasVerifiedHospitalLogistics
+        ? 'Receiving facility details have a reviewed, field-specific source record.'
+        : 'Hospital names and STEMI/cath-lab relationships have not been confirmed for this agency.',
+      evidenceBasis: hasVerifiedHospitalLogistics ? 'Reviewed source record tied to the agency or receiving facility.' : 'Geographic or generated hospital labels are not confirmation of a receiving relationship.',
+      evidenceScope: hasVerifiedHospitalLogistics ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      sourceRecordId: hasVerifiedHospitalLogistics ? agency.factEvidence?.receivingHospitalStemi?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedHospitalLogistics ? agency.factEvidence?.receivingHospitalStemi?.reviewedAt : undefined,
+      isFieldVerified: hasVerifiedHospitalLogistics
+    },
 
     // 7. Grants & Procurement
     {
       category: 'Grants & Procurement',
       fieldName: 'FEMA AFG Award Status',
-      fieldValue: agency.grantStatus?.afgAwarded
+      fieldValue: hasVerifiedAfgGrant && agency.grantStatus?.afgAwarded
         ? `Awarded ($${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K)`
-        : 'No Active Federal Award Found',
-      sourceRegistry: 'USASpending.gov FEMA Assistance to Firefighters Grants',
+        : 'Not verified',
+      sourceRegistry: hasVerifiedAfgGrant ? agency.factEvidence?.federalGrant?.sourceName || 'Reviewed FEMA award record' : 'FEMA / USASpending source required',
       schemaIdentifier: 'CFDA 97.044 Federal Prime Award',
-      verificationStatus: hasVerifiedAfgGrant
-        ? 'Legal Public Record'
-        : agency.grantStatus?.afgAwarded
-          ? 'Cross-Referenced'
-          : 'Public Record (No Active Award)',
+      verificationStatus: hasVerifiedAfgGrant ? 'Legal Public Record' : 'Sourcing Required',
       sourceUrlOrCitation: hasVerifiedAfgGrant && agency.liveFemaAwards?.[0]?.awardNumber
-        ? `https://www.usaspending.gov/award/${agency.liveFemaAwards[0].awardNumber}`
-        : 'https://www.usaspending.gov/search',
+        ? agency.factEvidence?.federalGrant?.sourceUrl
+        : undefined,
       reportingPeriod: hasVerifiedAfgGrant && agency.liveFemaAwards?.[0]?.programYear
         ? `FY${agency.liveFemaAwards[0].programYear}`
-        : 'Current Federal Fiscal Year',
-      documentationQuote: agency.grantStatus?.afgAwarded
-        ? (hasVerifiedAfgGrant
-            ? `Federal funding confirmed via OpenFEMA API: ${agency.liveFemaAwards![0].awardNumber}.`
-            : `Reported federal award of $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K; federal grant disbursement pending.`)
-        : 'Authoritative federal grant ledger confirms no active FEMA AFG equipment obligation for this agency in current FY.',
+        : agency.factEvidence?.federalGrant?.reportingPeriod,
+      documentationQuote: hasVerifiedAfgGrant
+        ? `Award record reviewed: ${agency.liveFemaAwards?.[0]?.awardNumber || agency.factEvidence?.federalGrant?.sourceRecordId || 'source record attached'}.`
+        : 'No reviewed award record is attached. Missing data here does not mean the agency has no award.',
       evidenceBasis: hasVerifiedAfgGrant ? 'Verified federal award transaction in USASpending prime award ledger.' : 'Uncorroborated grant report.',
       evidenceScope: hasVerifiedAfgGrant ? 'FIELD_VERIFIED' : 'UNVERIFIED',
+      sourceRecordId: hasVerifiedAfgGrant ? agency.factEvidence?.federalGrant?.sourceRecordId : undefined,
+      reviewedAt: hasVerifiedAfgGrant ? agency.factEvidence?.federalGrant?.reviewedAt : undefined,
       isFieldVerified: hasVerifiedAfgGrant
     }
   ];
@@ -655,7 +806,7 @@ export function auditAgencyDataLineage(
     }
   }
 
-  const applicableAuditedFields = records.length; // Exactly 22 fields
+  const applicableAuditedFields = records.length;
   const verifiedSupportedFields = records.filter(r => r.isFieldVerified).length;
 
   const evidenceCompletenessPct = Math.round((verifiedSupportedFields / applicableAuditedFields) * 100);
@@ -667,10 +818,10 @@ export function auditAgencyDataLineage(
   if (verifiedSupportedFields === 0) {
     integrityStatus = 'INCOMPLETE_EVIDENCE';
     integrityStatusLabel = 'Incomplete Evidence (0%)';
-  } else if (verifiedSupportedFields < 15) {
+  } else if (verifiedSupportedFields < applicableAuditedFields) {
     integrityStatus = 'PARTIALLY_CORROBORATED';
     integrityStatusLabel = hasVerifiedNpi
-      ? `Identity Corroborated (${evidenceCompletenessPct}%) · Equipment & Contracts Unverified`
+      ? `Identity Corroborated · Other fields require their own sources (${evidenceCompletenessPct}%)`
       : `Partially Corroborated Evidence (${evidenceCompletenessPct}%)`;
   } else {
     integrityStatus = 'VERIFIED_CORROBORATED';

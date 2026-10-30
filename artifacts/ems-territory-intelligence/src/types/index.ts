@@ -113,7 +113,7 @@ export interface GisAndDemographics {
   povertyRate: number; // percentage
   avgTransportTimeMinutes: number; // average EMS drive time to receiving facility
   distanceToNearestCathLabMiles: number; // distance to STEMI PCI Cath Lab
-  traumaCenterLevel: 'Level 1 Trauma' | 'Level 2 Trauma' | 'Level 3 / Critical Access';
+  traumaCenterLevel: 'Level 1 Trauma' | 'Level 2 Trauma' | 'Level 3 / Critical Access' | 'Not source-verified';
   publicAccessAedDeficitPct: number; // unmet public access AED need in schools, municipal buildings, parks
   highRiseBuildingDensity: 'High' | 'Moderate' | 'Low';
   annualTraumaIncidents: number;
@@ -326,6 +326,12 @@ export interface Agency {
   operatingRelationship?: 'DIRECT_OPERATING_AGENCY' | 'PARENT_MUNICIPALITY' | 'CONTRACTED_PROVIDER' | 'UNRELATED_ENTITY' | 'UNRESOLVED' | string;
   operatingRelationshipSummary?: string;
   registryEntityConfirmed?: boolean;
+  /**
+   * A fact is considered source-verified only when an individual evidence record
+   * is attached to that fact. Agency identity verification never verifies
+   * operational, clinical, fleet, hospital, contract, or leadership fields.
+   */
+  factEvidence?: Partial<Record<AgencyFactEvidenceKey, AgencyFactEvidence>>;
 
   // Granular Apparatus Vehicle Fleet Breakdown
   apparatusFleet?: {
@@ -394,6 +400,36 @@ export interface Agency {
     status: string;
     awardAmount: number;
   }>;
+}
+
+export type AgencyFactEvidenceKey =
+  | 'providerAddress'
+  | 'departmentRegistry'
+  | 'agencyLeadership'
+  | 'decisionMakers'
+  | 'frontlineApparatusStations'
+  | 'annualEmergencyVolume'
+  | 'apparatusBreakdown'
+  | 'receivingHospitalStemi'
+  | 'defibrillatorBiomedicalFleet'
+  | 'maintenanceContracts'
+  | 'communicationsSystems'
+  | 'equipmentSuppliers'
+  | 'verifiedHardware'
+  | 'operationalVolumeContracts'
+  | 'clinicalOutcomes'
+  | 'cmsClaims'
+  | 'federalGrant';
+
+export interface AgencyFactEvidence {
+  /** Set only after a reviewer checks that this source supports this exact fact. */
+  reviewed: boolean;
+  sourceName: string;
+  sourceUrl: string;
+  sourceRecordId: string;
+  reviewedAt: string;
+  reportingPeriod?: string;
+  note?: string;
 }
 
 export interface TerritoryCluster {

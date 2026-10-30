@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Agency, LeadStage, FieldNote, KeyContact } from '../types';
+import { Agency, LeadStage, FieldNote, KeyContact, AgencyFactEvidenceKey } from '../types';
+import { AGENCY_FACT_EVIDENCE_FIELDS, hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import {
   ArrowLeft,
   MapPin,
@@ -71,6 +72,26 @@ interface FocusedProviderProfileProps {
   onOpenDataLineage?: (agency: Agency) => void;
 }
 
+const FactVerificationTag: React.FC<{
+  agency: Agency;
+  field: AgencyFactEvidenceKey;
+  unverifiedLabel?: string;
+}> = ({ agency, field, unverifiedLabel = 'Unverified · source required' }) => {
+  const verified = hasAgencyFactEvidence(agency, field);
+  return (
+    <span
+      data-testid={`status-fact-${field}-${agency.id}`}
+      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+        verified
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+      }`}
+    >
+      {verified ? 'Source reviewed' : unverifiedLabel}
+    </span>
+  );
+};
+
 type ProfileSection =
   | 'overview'
   | 'equipment'
@@ -99,61 +120,35 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
 
   // Honest Evidence Integrity: No synthetic NPI or FDID hashing
   const npiNumber = raw.npiNumber || undefined;
-  const taxonomyCode = raw.taxonomyCode || (raw.npiNumber ? (isFire ? '3416L0300X' : '341600000X') : undefined);
-  const taxonomyDescription =
-    raw.taxonomyDescription ||
-    (raw.npiNumber
-      ? (isFire
-          ? '3416L0300X - Land Transport / Municipal Fire Rescue'
-          : '341600000X - Ambulance Service Provider / Advanced Life Support')
-      : undefined);
+  const taxonomyCode = raw.taxonomyCode;
+  const taxonomyDescription = raw.taxonomyDescription;
   const nppesRegistryUrl = raw.nppesRegistryUrl || (npiNumber ? `https://npiregistry.cms.hhs.gov/provider-view/${npiNumber}` : undefined);
   const fdid = raw.fdid || undefined;
 
-  const officialWebsite =
-    raw.officialWebsite ||
-    `https://www.google.com/search?q=${encodeURIComponent(`${raw.name} ${raw.city} ${raw.stateCode} official government website`)}`;
+  const officialWebsite = raw.officialWebsite || '';
   const googleMapsUri =
     raw.googleMapsUri ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${raw.name}, ${raw.address}`)}`;
-
-  const defaultOfficialName = isFire ? 'Office of the Fire Chief' : 'Office of the EMS Director';
-  const defaultOfficialTitle = isFire ? 'Authorized Municipal Fire Command' : 'Authorized EMS Command Official';
-  const nppesOfficialName = raw.nppesOfficialName || existingContacts[0]?.name || defaultOfficialName;
-  const nppesOfficialTitle = raw.nppesOfficialTitle || existingContacts[0]?.title || defaultOfficialTitle;
 
   const normalizedContacts: KeyContact[] =
     existingContacts.length > 0
       ? existingContacts.map((c) => ({
           ...c,
-          name: c.name || nppesOfficialName,
-          title: c.title || nppesOfficialTitle,
           email: '',
           phone: '',
-          officialWebsite: c.officialWebsite || officialWebsite,
+          officialWebsite: c.officialWebsite || '',
           headquartersAddress: c.headquartersAddress || raw.address,
-          isVerifiedOfficial: Boolean(c.isVerifiedOfficial && raw.isVerifiedRecord),
-          verificationSource: c.verificationSource || (raw.isVerifiedRecord ? 'CMS NPPES Federal Provider Registry' : 'Official Municipal Sourcing Required'),
-          notes:
-            'Use Official Department Website or Google Maps Station Lookup for verified contact details.'
+          isVerifiedOfficial: Boolean(
+            c.isVerifiedOfficial &&
+            hasAgencyFactEvidence(raw, 'agencyLeadership') &&
+            hasAgencyFactEvidence(raw, 'decisionMakers')
+          ),
+          verificationSource: c.verificationSource || 'Official agency roster source required',
+          notes: 'Contact details require a current, agency-specific source.'
         }))
-      : [
-          {
-            id: `kc-${raw.id}-hq`,
-            name: nppesOfficialName,
-            title: nppesOfficialTitle || 'NPPES Authorized Administrative Official',
-            role: 'NPPES Authorized Official',
-            email: '',
-            phone: '',
-            officialWebsite,
-            headquartersAddress: raw.address,
-            isVerifiedOfficial: Boolean(raw.isVerifiedRecord),
-            verificationSource: raw.isVerifiedRecord ? 'Federal CMS NPPES NPI Registry' : 'Public Agency Baseline',
-            notes: 'NPPES Practice Location. Use Official Department Website or Google Maps Station Lookup for verified contact details.'
-          }
-        ];
+      : [];
 
-  // 2. Granular Apparatus Fleet Breakdown - from observed metrics
+  // 2. Preserve candidate estimates, but never describe them as observed facts.
   const totalAmbulances = raw.totalAmbulances || Math.max(1, Math.round((raw.populationServed || 25000) / (isFire ? 22000 : 11000)));
   const totalEngines = raw.totalFireEngines || (isFire ? Math.max(1, Math.round((raw.populationServed || 25000) / 14000)) : 0);
   const stationsCount = raw.stationsCount || Math.max(1, Math.round((raw.populationServed || 25000) / 18000));
@@ -180,9 +175,9 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     replacementCycleYears
   };
 
-  // 3. Hospital Trauma & STEMI Transport Logistics
-  const traumaHospitalName = raw.gisData?.primaryReceivingHospital || `${raw.city} Regional Medical Center (${raw.gisData?.traumaCenterLevel || 'Level 1 Trauma'} & Comprehensive Stroke)`;
-  const cathLabHospitalName = `${raw.city} Heart & Vascular Pavilion (24/7 STEMI PCI Cath Lab)`;
+  // 3. Do not create hospital names from a city's name.
+  const traumaHospitalName = raw.hospitalLogistics?.primaryTraumaHospital || raw.gisData?.primaryReceivingHospital || 'Not source-verified';
+  const cathLabHospitalName = raw.hospitalLogistics?.primaryCathLabHospital || 'Not source-verified';
   const distTrauma = raw.gisData?.avgTransportDistanceToTraumaMiles ?? 8.5;
   const latencyTrauma = raw.gisData?.avgTransportTimeMinutes ?? 12;
   const distCath = +(distTrauma * 0.85).toFixed(1);
@@ -253,8 +248,8 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     npiNumber,
     taxonomyCode,
     taxonomyDescription,
-    nppesOfficialName: raw.nppesOfficialName || nppesOfficialName,
-    nppesOfficialTitle: raw.nppesOfficialTitle || nppesOfficialTitle,
+    nppesOfficialName: raw.nppesOfficialName || undefined,
+    nppesOfficialTitle: raw.nppesOfficialTitle || undefined,
     nppesRegistryUrl,
     officialWebsite,
     googleMapsUri,
@@ -264,8 +259,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     femaGrantHistory,
     gisData: {
       ...raw.gisData,
-      primaryReceivingHospital:
-        raw.gisData?.primaryReceivingHospital || traumaHospitalName,
+      primaryReceivingHospital: raw.gisData?.primaryReceivingHospital || 'Not source-verified',
     },
     cmsData: {
       ...raw.cmsData,
@@ -281,15 +275,15 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     },
     installedFleet: {
       ...(raw.installedFleet || {}),
-      defibBrand: raw.installedFleet?.defibBrand || 'Stryker LIFEPAK 15',
+      defibBrand: raw.installedFleet?.defibBrand || 'Not source-verified',
       defibAgeYears: raw.installedFleet?.defibAgeYears ?? 7.5,
       defibUnitsCount: raw.installedFleet?.defibUnitsCount ?? Math.max(4, totalAmbulances),
-      defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Expired - T&M Service',
-      mechanicalCPR: raw.installedFleet?.mechanicalCPR || 'Stryker LUCAS 3',
-      transportVentilator: raw.installedFleet?.transportVentilator || 'Legacy Pneumatics',
-      epcrCadSoftware: raw.installedFleet?.epcrCadSoftware || 'ImageTrend Elite',
+      defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Not source-verified',
+      mechanicalCPR: raw.installedFleet?.mechanicalCPR || 'Not source-verified',
+      transportVentilator: raw.installedFleet?.transportVentilator || 'Not source-verified',
+      epcrCadSoftware: raw.installedFleet?.epcrCadSoftware || 'Not source-verified',
       billingSoftware: raw.installedFleet?.billingSoftware || 'Digitech EMS',
-      dispatchCadVendor: raw.installedFleet?.dispatchCadVendor || 'CentralSquare Enterprise CAD'
+      dispatchCadVendor: raw.installedFleet?.dispatchCadVendor || 'Not source-verified'
     },
     zollOpportunity: {
       ...(raw.zollOpportunity || {}),
@@ -442,6 +436,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [customDenialCapturePct, setCustomDenialCapturePct] = useState<number>(65);
 
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
+  const hasVerifiedNppesIdentity = Boolean(
+    agency.isVerifiedRecord &&
+    agency.npiNumber &&
+    validateNpiCheckDigit(agency.npiNumber).isValid &&
+    agency.lastVerifiedAt &&
+    agency.nppesRegistryUrl
+  );
+  const verifiedFactGroupCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) =>
+    hasAgencyFactEvidence(agency, key)
+  ).length;
 
   const actuarialForecast = useMemo(() => {
     const units = Math.max(1, agency.installedFleet.defibUnitsCount || agency.totalAmbulances || 4);
@@ -501,6 +505,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       }
 
       const isMatched = data.outcome === 'MATCHED' && data.verified === true;
+      const verifiedAt = new Date().toISOString();
+      const verifiedNpi = data.npiNumber || rawAgency.npiNumber;
+      const nppesSourceUrl = verifiedNpi
+        ? `https://npiregistry.cms.hhs.gov/provider-view/${verifiedNpi}`
+        : '';
       const patch: Partial<Agency> = {
         address: data.address || rawAgency.address,
         zipCode: data.zipCode || rawAgency.zipCode,
@@ -508,21 +517,35 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         npiNumber: isMatched ? (data.npiNumber || rawAgency.npiNumber) : rawAgency.npiNumber,
         taxonomyCode: isMatched ? (data.taxonomyCode || rawAgency.taxonomyCode) : rawAgency.taxonomyCode,
         taxonomyDescription: isMatched ? (data.taxonomyDescription || rawAgency.taxonomyDescription) : rawAgency.taxonomyDescription,
-        nppesOfficialName: isMatched ? (data.nppesOfficialName || data.authorizedOfficial?.name || rawAgency.nppesOfficialName) : rawAgency.nppesOfficialName,
+        nppesOfficialName: isMatched ? (data.nppesOfficialName || rawAgency.nppesOfficialName) : rawAgency.nppesOfficialName,
         nppesOfficialTitle: isMatched ? (data.nppesOfficialTitle || data.authorizedOfficial?.title || rawAgency.nppesOfficialTitle) : rawAgency.nppesOfficialTitle,
         nppesLastUpdated: isMatched ? (data.nppesLastUpdated || rawAgency.nppesLastUpdated) : rawAgency.nppesLastUpdated,
         nppesRegistryUrl: isMatched && (data.npiNumber || rawAgency.npiNumber)
-          ? `https://npiregistry.cms.hhs.gov/provider-view/${data.npiNumber || rawAgency.npiNumber}`
+          ? nppesSourceUrl
           : rawAgency.nppesRegistryUrl,
+        factEvidence: isMatched && data.address && verifiedNpi
+          ? {
+              ...rawAgency.factEvidence,
+              providerAddress: {
+                reviewed: true,
+                sourceName: 'CMS NPPES NPI Registry',
+                sourceUrl: nppesSourceUrl,
+                sourceRecordId: `NPI ${verifiedNpi}`,
+                reviewedAt: verifiedAt,
+                reportingPeriod: data.nppesLastUpdated || 'Current NPPES registry response',
+                note: 'Exact legal-organization name and requested geography matched.'
+              }
+            }
+          : rawAgency.factEvidence,
         usfaRegistryUrl: data.usfaRegistryUrl || rawAgency.usfaRegistryUrl || 'https://apps.usfa.fema.gov/registry/',
         liveFemaAwards: Array.isArray(data.liveFemaAwards) && data.liveFemaAwards.length > 0 ? data.liveFemaAwards : rawAgency.liveFemaAwards,
         officialWebsite: data.officialWebsite || rawAgency.officialWebsite,
         googleMapsUri: data.googleMapsUri || rawAgency.googleMapsUri,
         verificationSource: isMatched ? (data.verificationSource || 'Federal CMS NPI & OpenFEMA Verified') : rawAgency.verificationSource || 'Unverified — Corroborating Source Required',
         isVerifiedRecord: isMatched ? true : (rawAgency.isVerifiedRecord ?? false),
-        lastVerifiedAt: isMatched ? new Date().toISOString() : rawAgency.lastVerifiedAt,
+        lastVerifiedAt: isMatched ? verifiedAt : rawAgency.lastVerifiedAt,
         verificationAttempt: {
-          timestamp: new Date().toISOString(),
+          timestamp: verifiedAt,
           outcome: data.outcome || (isMatched ? 'MATCHED' : 'NOT_MATCHED'),
           status: data.outcome || (isMatched ? 'MATCHED' : 'NOT_MATCHED'),
           details: data.details || (isMatched ? 'Live CMS NPPES match confirmed.' : 'Query completed without corroborated match; existing records preserved.')
@@ -918,6 +941,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
         {/* Main Account 360 Workspace Content */}
         <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 min-w-0">
+          <div
+            role="status"
+            data-testid={`status-account-data-evidence-${agency.id}`}
+            className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong>{verifiedFactGroupCount} of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact groups have reviewed, field-specific sources</strong>
+              <span>Registry identity does not verify operations, fleet, leadership, hospitals, systems, or contracts.</span>
+            </div>
+          </div>
           {/* ================================================================
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ================================================================ */}
@@ -930,7 +963,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="space-y-3 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
-                    Account 360 · {isFire ? 'Fire Department' : 'EMS Provider'}
+                    {hasAgencyFactEvidence(agency, 'departmentRegistry') && hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                      ? `Source-reviewed ${isFire ? 'Fire Department' : 'EMS Provider'}`
+                      : `Unverified candidate · ${isFire ? 'Fire Department' : 'EMS Provider'}`}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span>FDID: <span className="font-mono text-[11px]">{agency.fdid || 'Not recorded'}</span></span>
@@ -952,14 +987,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <span aria-hidden="true">·</span>
                   <span>Taxonomy: {agency.taxonomyCode || 'Standard EMS/Fire'}</span>
                   <span aria-hidden="true">·</span>
-                  {agency.isVerifiedRecord && agency.npiNumber && validateNpiCheckDigit(agency.npiNumber).isValid ? (
+                  {hasVerifiedNppesIdentity ? (
                     <button
                       type="button"
                       onClick={() => setIsSourceDrawerOpen(true)}
                       className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Verified federal record</span>
+                      <span>NPPES identity match</span>
                     </button>
                   ) : (
                     <button
@@ -979,8 +1014,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </h1>
                   <p className="pi-supporting mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold text-[#14283F] dark:text-white">
-                      {agency.isVerifiedRecord ? `NPPES Practice Location: ${agency.address}` : agency.address}
+                      {hasAgencyFactEvidence(agency, 'providerAddress')
+                        ? agency.address
+                        : 'Address not source-verified'}
                     </span>
+                    <FactVerificationTag agency={agency} field="providerAddress" />
                     <span aria-hidden="true">·</span>
                     <span>{agency.county}, {agency.state} ({agency.stateCode})</span>
                     <span aria-hidden="true">·</span>
@@ -996,15 +1034,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <ExternalLink className="w-3 h-3" />
                     </a>
                     <span aria-hidden="true">·</span>
-                    <a
-                      href={agency.officialWebsite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
-                    >
-                      <span>Official Portal</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {agency.officialWebsite && (
+                      <a
+                        href={agency.officialWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Official Portal</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </p>
                 </div>
 
@@ -1012,14 +1052,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#DFE6EF] dark:bg-[#1E2D42] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg overflow-hidden text-xs">
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
                     <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      {agency.isVerifiedRecord ? 'NPPES Authorized Official' : 'Agency leadership'}
+                      Agency leadership
                     </div>
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5 truncate">
-                      {agency.nppesOfficialName || primaryContact?.name || 'Administrative Official'}
+                      {hasAgencyFactEvidence(agency, 'agencyLeadership')
+                        ? primaryContact?.name || 'Source reviewed'
+                        : 'Not source-verified'}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 truncate mt-0.5">
-                      {agency.nppesOfficialTitle || primaryContact?.title || 'NPPES Authorized Official'}
+                      {hasAgencyFactEvidence(agency, 'agencyLeadership')
+                        ? primaryContact?.title || 'Agency leadership'
+                        : 'NPPES administrative officials are not operational command'}
                     </div>
+                    <FactVerificationTag agency={agency} field="agencyLeadership" />
                   </div>
 
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
@@ -1027,11 +1072,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Frontline apparatus &amp; stations
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
-                      {agency.totalAmbulances} {agency.totalAmbulances === 1 ? 'ambulance' : 'ambulances'}{agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} ${agency.totalFireEngines === 1 ? 'engine' : 'engines'}` : ''}
+                      {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                        ? `${agency.totalAmbulances} ambulances${agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} engines` : ''}`
+                        : `Modeled: ${agency.totalAmbulances} ambulances${agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} engines` : ''}`}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {agency.stationsCount} stations · {formatInteger(agency.populationServed)} residents
+                      {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                        ? `${agency.stationsCount} stations`
+                        : `${agency.stationsCount} modeled stations · not confirmed`}
                     </div>
+                    <FactVerificationTag agency={agency} field="frontlineApparatusStations" />
                   </div>
 
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
@@ -1039,11 +1089,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Annual emergency volume
                     </div>
                     <div className="font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
-                      {formatInteger(agency.annual911Transports)} transports / yr
+                      {hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                        ? `${formatInteger(agency.annual911Transports)} transports / yr`
+                        : `Modeled: ${formatInteger(agency.annual911Transports)} transports / yr`}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · {formatPercent(agency.utsteinSurvivalRate)} Utstein
+                      {hasAgencyFactEvidence(agency, 'clinicalOutcomes')
+                        ? `${formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · ${formatPercent(agency.utsteinSurvivalRate)} Utstein`
+                        : 'Cardiac and outcome figures not source-verified'}
                     </div>
+                    <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
                   </div>
                 </div>
               </div>
@@ -1432,26 +1487,29 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <section className="pi-surface p-6 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
                 <div>
-                  <h2 className="pi-section-heading">
-                    Decision Makers &amp; Verified Command Directory
+                    <h2 className="pi-section-heading">
+                    Decision Makers &amp; Command Directory
                   </h2>
                   <p className="pi-supporting mt-0.5">
-                    Authorized officials indexed via Federal CMS NPPES Registry and municipal headquarters verification (zero synthetic phone/email placeholders).
+                    Names appear as verified decision makers only when a current agency-specific roster has been reviewed. A CMS NPPES authorized official is not necessarily operational command.
                   </p>
                 </div>
-                <a
-                  href={agency.officialWebsite}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 hover:underline inline-flex items-center gap-1.5"
-                >
-                  <span>Open Official Department Roster</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                {agency.officialWebsite && (
+                  <a
+                    href={agency.officialWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 hover:underline inline-flex items-center gap-1.5"
+                  >
+                    <span>Open agency website</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {agency.keyContacts.map((contact) => (
+                {hasAgencyFactEvidence(agency, 'decisionMakers')
+                  ? agency.keyContacts.map((contact) => (
                   <div
                     key={contact.id}
                     className="p-4 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
@@ -1462,7 +1520,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                         <ShieldCheck className="w-3 h-3" />
-                        <span>Verified Official</span>
+                        <span>Roster source reviewed</span>
                       </span>
                     </div>
                     <div className="text-base font-bold text-[#14283F] dark:text-white">
@@ -1473,10 +1531,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400 space-y-1">
                       <div>HQ: <strong className="text-[#14283F] dark:text-slate-200">{contact.headquartersAddress || agency.address}</strong></div>
-                      <div>Source: <span className="font-mono">{contact.verificationSource || 'CMS NPPES Federal Provider Registry'}</span></div>
+                      <div>Source: <a href={agency.factEvidence?.decisionMakers?.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-700 hover:underline dark:text-blue-300">{agency.factEvidence?.decisionMakers?.sourceName}</a></div>
                     </div>
                   </div>
-                ))}
+                ))
+                  : (
+                    <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
+                      No command or decision-maker names are currently supported by a reviewed, agency-specific roster.
+                    </div>
+                  )}
               </div>
             </section>
           )}
@@ -1504,14 +1567,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div>
                   <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#1E3A8A] flex items-center gap-1.5">
                     <Activity className="w-4 h-4 text-[#1E3A8A]" />
-                    <span>Empirical Agency Facts &amp; Operational Baseline</span>
+                    <span>Agency Facts &amp; Operational Baseline</span>
                   </div>
                   <h3 className="text-lg font-bold text-[#111827] mt-0.5">
-                    Verified Hardware, Operational Volume &amp; Contract Records
+                    Hardware, operational volume &amp; contract records
                   </h3>
                 </div>
                 <div className="text-xs font-mono font-semibold px-3 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
-                  Zero Synthetic Weights · Raw Empirical Data
+                  Source status shown per field
                 </div>
               </div>
 
@@ -1521,28 +1584,30 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-xs font-semibold text-[#14283F] dark:text-white">
                     1. Installed Fleet &amp; Hardware
                   </div>
+                  <FactVerificationTag agency={agency} field="defibrillatorBiomedicalFleet" />
+                  <FactVerificationTag agency={agency} field="verifiedHardware" />
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Monitor brand</span>
-                      <strong className="text-slate-900 dark:text-white">{agency.installedFleet.defibBrand}</strong>
+                      <strong className="text-slate-900 dark:text-white">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? agency.installedFleet.defibBrand : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Deployed fleet age</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{agency.installedFleet.defibAgeYears} years old</strong>
+                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} years old` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Total defib units</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.installedFleet.defibUnitsCount} units</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibUnitsCount} units` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Warranty support</span>
-                      <strong className={agency.installedFleet.defibWarrantyStatus.includes('Expired') ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
-                        {agency.installedFleet.defibWarrantyStatus}
+                      <strong className={hasAgencyFactEvidence(agency, 'maintenanceContracts') && agency.installedFleet.defibWarrantyStatus.includes('Expired') ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
+                        {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? agency.installedFleet.defibWarrantyStatus : 'Not source-verified'}
                       </strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">ePCR system</span>
-                      <strong className="text-slate-900 dark:text-white truncate max-w-[160px]">{agency.installedFleet.epcrCadSoftware}</strong>
+                      <strong className="text-slate-900 dark:text-white truncate max-w-[160px]">{hasAgencyFactEvidence(agency, 'communicationsSystems') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}</strong>
                     </div>
                   </div>
                 </div>
@@ -1552,26 +1617,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-xs font-semibold text-[#14283F] dark:text-white">
                     2. Emergency Volume &amp; Acuity
                   </div>
+                  <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
+                  <FactVerificationTag agency={agency} field="clinicalOutcomes" />
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual 911 calls</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{(agency.annualCallVolume || agency.annual911Transports).toLocaleString()}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'annualEmergencyVolume') ? (agency.annualCallVolume || agency.annual911Transports).toLocaleString() : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual cardiac arrests</span>
-                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{agency.annualCardiacArrestCalls.toLocaleString()} runs</strong>
+                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.annualCardiacArrestCalls.toLocaleString()} runs` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Utstein survival rate</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.utsteinSurvivalRate}%</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}%` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Active ambulances</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.totalAmbulances} units</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalAmbulances} units` : 'Modeled estimate, unverified'}</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">Fire suppression engines</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{agency.totalFireEngines} units</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalFireEngines} units` : 'Modeled estimate, unverified'}</strong>
                     </div>
                   </div>
                 </div>
@@ -1581,27 +1648,30 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-xs font-semibold text-[#14283F] dark:text-white">
                     3. Contract &amp; Financial Realities
                   </div>
+                  <FactVerificationTag agency={agency} field="maintenanceContracts" />
+                  <FactVerificationTag agency={agency} field="cmsClaims" />
+                  <FactVerificationTag agency={agency} field="federalGrant" />
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Contract end date</span>
-                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{agency.competitorContract.contractEndDate}</strong>
+                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{hasAgencyFactEvidence(agency, 'maintenanceContracts') ? agency.competitorContract.contractEndDate : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Contract status</span>
-                      <strong className="text-slate-900 dark:text-white">{agency.competitorContract.status}</strong>
+                      <strong className="text-slate-900 dark:text-white">{hasAgencyFactEvidence(agency, 'maintenanceContracts') ? agency.competitorContract.status : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Medicare claim denials</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{agency.cmsData.claimDenialRate}% denied</strong>
+                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% denied` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Lost claim revenue</span>
-                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">+{formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true })}</strong>
+                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{hasAgencyFactEvidence(agency, 'cmsClaims') ? `+${formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true })}` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">FEMA AFG grants</span>
                       <strong className="text-slate-900 truncate max-w-[160px]">
-                        {agency.grantStatus.afgAwarded ? `$${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K (FY${agency.grantStatus.afgFiscalYear})` : 'Eligible Candidate'}
+                        {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded ? `$${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K (FY${agency.grantStatus.afgFiscalYear})` : 'Not source-verified'}
                       </strong>
                     </div>
                   </div>
@@ -1620,9 +1690,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <Truck className="w-4 h-4 text-[#1E3A8A]" />
                     <span>Apparatus &amp; Emergency Vehicle Fleet Breakdown</span>
                   </h2>
-                  <span className="text-xs font-mono font-bold text-[#1E3A8A] bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
-                    {agency.apparatusFleet.totalActiveUnits} Total Active Vehicles
-                  </span>
+                  <FactVerificationTag agency={agency} field="apparatusBreakdown" unverifiedLabel="Modeled estimate · unverified" />
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
@@ -1666,24 +1734,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>Receiving Hospital &amp; STEMI Cath Lab Logistics</span>
                   </h2>
                   <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
-                    {agency.hospitalLogistics.annualEdTransports.toLocaleString()} ED Transports/yr
+                    ED transport count not source-verified
                   </span>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div className="p-3.5 rounded-lg bg-[#F8F7F4] border border-[#E5E4DF] space-y-1">
                     <div className="text-slate-500 font-semibold">Primary Regional Trauma Center</div>
-                    <div className="text-sm font-extrabold text-[#111827]">{agency.hospitalLogistics.primaryTraumaHospital}</div>
+                    <div className="text-sm font-extrabold text-[#111827]">{hasAgencyFactEvidence(agency, 'receivingHospitalStemi') ? agency.hospitalLogistics.primaryTraumaHospital : 'Not source-verified'}</div>
                     <div className="text-slate-600 font-mono">
-                      Distance: <strong className="text-[#111827]">{agency.hospitalLogistics.distanceToTraumaMiles} mi</strong> · Avg Drive Time: <strong className="text-[#111827]">{agency.hospitalLogistics.transportTimeMinutes} mins</strong>
+                      GIS estimate: <strong className="text-[#111827]">{agency.hospitalLogistics.distanceToTraumaMiles} mi</strong> · <strong className="text-[#111827]">{agency.hospitalLogistics.transportTimeMinutes} mins</strong>
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-[#F8F7F4] border border-[#E5E4DF] space-y-1">
                     <div className="text-slate-500 font-semibold">24/7 STEMI PCI Cardiac Receiving Center</div>
-                    <div className="text-sm font-extrabold text-[#111827]">{agency.hospitalLogistics.primaryCathLabHospital}</div>
+                    <div className="text-sm font-extrabold text-[#111827]">{hasAgencyFactEvidence(agency, 'receivingHospitalStemi') ? agency.hospitalLogistics.primaryCathLabHospital : 'Not source-verified'}</div>
                     <div className="text-slate-600 font-mono">
-                      Distance: <strong className="text-[#111827]">{agency.hospitalLogistics.cathLabDistanceMiles} mi</strong> · Avg Drive Time: <strong className="text-[#111827]">{agency.hospitalLogistics.cathLabTransportMinutes} mins</strong> · ED Offload: <strong className="text-[#111827]">{agency.hospitalLogistics.avgEdOffloadLatencyMinutes} mins</strong>
+                      GIS route estimate: <strong className="text-[#111827]">{agency.hospitalLogistics.cathLabDistanceMiles} mi</strong> · <strong className="text-[#111827]">{agency.hospitalLogistics.cathLabTransportMinutes} mins</strong> · ED offload: Not source-verified
                     </div>
                   </div>
                 </div>
@@ -2904,11 +2972,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <section className="pi-surface p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
               <div>
-                <h2 className="pi-section-heading">
-                  Federal Public-Record Provenance &amp; Evidence Ledger
-                </h2>
+                  <h2 className="pi-section-heading">
+                    Source Evidence &amp; Verification Ledger
+                  </h2>
                 <p className="pi-supporting mt-0.5">
-                  Transparent distinction between verified public federal records and actuarial model forecasts for {agency.name}.
+                    Each field is marked only when its own reviewed source is attached. Registry matches do not verify operational details for {agency.name}.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -2918,7 +2986,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   disabled={isVerifyingLive}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white cursor-pointer disabled:opacity-50"
                 >
-                  {isVerifyingLive ? 'Verifying Live Federal APIs...' : 'Re-Verify Live NPI & FEMA'}
+                    {isVerifyingLive ? 'Checking NPPES identity...' : 'Check NPPES identity'}
                 </button>
                 {onOpenDataLineage && (
                   <button
@@ -2946,10 +3014,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <tbody>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Provider Identity &amp; NPI</td>
-                    <td className="pi-metric-id">NPI {agency.npiNumber} · Taxonomy {agency.taxonomyCode}</td>
+                    <td className="pi-metric-id">{hasVerifiedNppesIdentity ? `NPI ${agency.npiNumber} · ${agency.nppesOfficialName || 'NPPES organization'}` : 'No exact NPPES organization match reviewed'}</td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Verified Federal Record
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasVerifiedNppesIdentity ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                        {hasVerifiedNppesIdentity ? 'NPPES organization match' : 'Candidate / unverified'}
                       </span>
                     </td>
                     <td>U.S. HHS CMS NPPES Provider Registry</td>
@@ -2967,10 +3035,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Department FDID &amp; Stations</td>
-                    <td className="pi-metric-id">FDID {agency.fdid} · <span className="pi-data-inline font-normal">{agency.stationsCount} Stations</span></td>
+                    <td className="pi-metric-id">{hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified ? `FDID ${agency.fdid}` : 'FDID not source-verified'} · {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.stationsCount} stations` : 'station count unverified'}</td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Verified Federal Record
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified && hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                        {hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified && hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? 'Source reviewed' : 'Sourcing required'}
                       </span>
                     </td>
                     <td>U.S. Fire Administration (USFA) National Registry</td>
@@ -2989,13 +3057,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">FEMA AFG &amp; SAFER Grants</td>
                     <td className="pi-data-table font-semibold">
-                      {agency.grantStatus.afgAwarded
+                      {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded
                         ? `${formatCurrency(agency.grantStatus.afgAwardAmount, { compact: false })} (FY${agency.grantStatus.afgFiscalYear})`
-                        : 'Eligible Regional Candidate'}
+                        : 'Not source-verified'}
                     </td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Verified Federal Record
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasAgencyFactEvidence(agency, 'federalGrant') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                        {hasAgencyFactEvidence(agency, 'federalGrant') ? 'Source record reviewed' : 'Not verified'}
                       </span>
                     </td>
                     <td>OpenFEMA Assistance to Firefighters Grants v2 API</td>
@@ -3013,10 +3081,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Medicare Part B Ambulance Volume</td>
-                    <td className="pi-data-table font-semibold text-emerald-700">{formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false })}</td>
+                    <td className="pi-data-table font-semibold text-emerald-700">{hasAgencyFactEvidence(agency, 'cmsClaims') ? formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false }) : 'Not source-verified'}</td>
                     <td>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Verified Federal Record
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                        {hasAgencyFactEvidence(agency, 'cmsClaims') ? 'Source record reviewed' : 'Not verified'}
                       </span>
                     </td>
                     <td>CMS Medicare Provider Utilization &amp; Payment PUF</td>
@@ -3037,7 +3105,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td className="pi-data-table font-semibold text-emerald-700">+{formatCurrency(actuarialForecast.fiveYrTcoBase, { compact: false })} Savings</td>
                     <td>
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        Actuarial Model (90% CI)
+                        Scenario model · not observed savings
                       </span>
                     </td>
                     <td>Sourcewell #041823-ZOL &amp; OEM Lifecycle Model</td>
@@ -3169,16 +3237,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
                 <div className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Verified Federal Public-Record Baseline</span>
+                  <span>{hasVerifiedNppesIdentity ? 'NPPES legal-organization match' : 'Registry match not established'}</span>
                 </div>
                 <p className="text-emerald-900/80 dark:text-emerald-200/80 leading-relaxed">
-                  Organizational identity, street address, NPI taxonomy, and authorized official records are cross-indexed with federal registries.
+                  NPPES can confirm a matched legal organization and its registry listing. It does not establish that the organization is an operating EMS or fire agency, that the listed address is an operating station, or that an authorized official is operational command.
                 </p>
               </div>
 
               <div className="space-y-2.5">
                 <div className="font-mono text-[10px] uppercase tracking-wider text-[#53657B] font-semibold">
-                  1. Verified Registry Identifiers
+                  1. Registry Identifiers &amp; Match Status
                 </div>
                 <div className="p-3.5 rounded-lg bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 font-mono">
                   <div className="flex justify-between">

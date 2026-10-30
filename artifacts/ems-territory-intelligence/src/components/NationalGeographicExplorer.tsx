@@ -388,6 +388,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           annualCardiacCalls: Math.round(activeCountyRecord.annualCardiacArrestIncidents * 0.4),
           cathLabDistanceMiles: activeCountyRecord.primaryCathLabDistanceMiles,
           avgTransportMinutes: activeCountyRecord.averageTransportMinutes,
+          medicareDenialRate: activeStateSummary?.avgMedicareDenialRate || 18.5
         } as ZipCityRecord;
       });
     }
@@ -697,17 +698,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         : selectedCountyName === 'all' && selectedCityName === 'all' && middleTab !== 'cities'
           ? 'counties'
           : 'providers';
-
-  if (agencies.length === 0) {
-    return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-        <h2 className="text-sm font-semibold">Territory metrics are withheld</h2>
-        <p className="mt-1 text-xs leading-relaxed">
-          Geographic boundaries can be browsed after source-backed agency records are loaded. County, city, and state operational estimates are hidden because their source records are not verified.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="workspace-section-grid">

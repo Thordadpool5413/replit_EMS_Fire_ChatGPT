@@ -915,7 +915,6 @@ export default function App() {
               selectedState={globalState}
               selectedCounty={globalCounty}
               agencies={agencies}
-              weights={weights}
               onSelectCounty={(c) => {
                 setGlobalCounty(c);
                 setGlobalCity('all');

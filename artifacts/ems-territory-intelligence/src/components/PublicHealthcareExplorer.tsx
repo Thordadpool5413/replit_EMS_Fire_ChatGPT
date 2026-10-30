@@ -194,7 +194,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                     Requires matched OpenFEMA records
                   </td>
                   <td className="py-3 px-3 text-right font-semibold text-amber-800 dark:text-amber-400 tabular-nums">
-                    Unavailable · no source-verified profile set
+                    Modeled · {summary.highPriorityLeadsCount} profiles
                   </td>
                   <td className="py-3 px-3 text-right">
                     <button

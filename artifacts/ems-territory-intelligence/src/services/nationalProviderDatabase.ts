@@ -15,7 +15,6 @@ import { CITIES_BY_STATE_AND_COUNTY, STATE_GEO_AND_AREA_CODES } from '../data/al
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { INITIAL_AGENCIES } from '../data/healthcareData';
 import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
-import { hasCompleteVerifiedDirectoryProfile } from '../data/providerIdentity';
 
 export interface ProviderFilterOptions {
   state?: string;
@@ -161,7 +160,6 @@ class NationalProviderDatabaseService {
             verificationSource: updated.verificationSource,
             isVerifiedRecord: true,
             lastVerifiedAt: updated.lastVerifiedAt || new Date().toISOString(),
-            verifiedFieldEvidence: updated.verifiedFieldEvidence,
             keyContacts: updated.keyContacts,
           };
           window.localStorage.setItem(verifiedCacheKey(), JSON.stringify(current));
@@ -509,7 +507,6 @@ class NationalProviderDatabaseService {
   }
 
   private registerAgency(agency: Agency) {
-    if (!hasCompleteVerifiedDirectoryProfile(agency)) return;
     if (this.providersById.has(agency.id)) return;
     this.providers.push(agency);
     this.providersById.set(agency.id, agency);
@@ -610,12 +607,10 @@ class NationalProviderDatabaseService {
       enriched.headquartersPhone = '';
       enriched.keyContacts = enriched.keyContacts.map((c) => ({ ...c, phone: '' }));
 
-      if (hasCompleteVerifiedDirectoryProfile(enriched)) {
-        this.registerAgency(enriched);
-        const isFire = enriched.agencyType.toLowerCase().includes('fire');
-        const rawCountyClean = enriched.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
-        seenCityCategory.add(`${enriched.stateCode.toUpperCase()}:${rawCountyClean}:${enriched.city.toLowerCase().trim()}:${isFire ? 'fire' : 'ems'}`);
-      }
+      this.registerAgency(enriched);
+      const isFire = enriched.agencyType.toLowerCase().includes('fire');
+      const rawCountyClean = enriched.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
+      seenCityCategory.add(`${enriched.stateCode.toUpperCase()}:${rawCountyClean}:${enriched.city.toLowerCase().trim()}:${isFire ? 'fire' : 'ems'}`);
     }
 
     // 2. Connect all 3,144 Counties and all Official US Census Cities & Unincorporated Districts across all 50 States + DC
@@ -661,21 +656,15 @@ class NationalProviderDatabaseService {
         if (!seenCityCategory.has(emsKey)) {
           const baseEms = this.createJurisdictionAgency(c, sc, cityName, isMunicipalCity, 'ems', stSummary);
           const savedPatch = savedVerifications[baseEms.id] || {};
-          const candidate = { ...baseEms, ...savedPatch };
-          if (hasCompleteVerifiedDirectoryProfile(candidate)) {
-            this.registerAgency(candidate);
-            seenCityCategory.add(emsKey);
-          }
+          this.registerAgency({ ...baseEms, ...savedPatch });
+          seenCityCategory.add(emsKey);
         }
 
         if (!seenCityCategory.has(fireKey)) {
           const baseFire = this.createJurisdictionAgency(c, sc, cityName, isMunicipalCity, 'fire', stSummary);
           const savedPatch = savedVerifications[baseFire.id] || {};
-          const candidate = { ...baseFire, ...savedPatch };
-          if (hasCompleteVerifiedDirectoryProfile(candidate)) {
-            this.registerAgency(candidate);
-            seenCityCategory.add(fireKey);
-          }
+          this.registerAgency({ ...baseFire, ...savedPatch });
+          seenCityCategory.add(fireKey);
         }
       }
     }

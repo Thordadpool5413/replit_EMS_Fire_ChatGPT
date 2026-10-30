@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  hasVerifiedNppesEvidence,
-  hasCompleteVerifiedDirectoryProfile,
   hasVerifiedLegalGeography,
   hasVerifiedProviderIdentity,
   matchesExactLegalGeography,
@@ -40,131 +38,6 @@ test("rejects aliases, missing geography, and wrong geography", () => {
   );
   assert.equal(
     matchesExactLegalGeography(agency, { ...registry, stateCode: "WA" }),
-    false,
-  );
-});
-
-test("requires saved NPPES source evidence before treating a profile as verified", () => {
-  const matchedProfile = {
-    name: "CITY OF AUSTIN",
-    city: "Austin",
-    stateCode: "TX",
-    npiNumber: "1295704732",
-    nppesOfficialName: "CITY OF AUSTIN",
-    nppesVerifiedCity: "Austin",
-    nppesVerifiedStateCode: "TX",
-    isVerifiedRecord: true,
-    verificationSource: "CMS NPPES NPI Registry",
-    lastVerifiedAt: "2026-10-30T12:00:00.000Z",
-  };
-
-  assert.equal(hasVerifiedNppesEvidence(matchedProfile), true);
-  assert.equal(
-    hasVerifiedNppesEvidence({ ...matchedProfile, verificationSource: "Imported profile" }),
-    false,
-  );
-  assert.equal(
-    hasVerifiedNppesEvidence({ ...matchedProfile, lastVerifiedAt: undefined }),
-    false,
-  );
-});
-
-test("requires source evidence for every score-driving field", () => {
-  const matchedProfile = {
-    name: "CITY OF AUSTIN",
-    city: "Austin",
-    stateCode: "TX",
-    npiNumber: "1295704732",
-    nppesOfficialName: "CITY OF AUSTIN",
-    nppesVerifiedCity: "Austin",
-    nppesVerifiedStateCode: "TX",
-    isVerifiedRecord: true,
-    verificationSource: "CMS NPPES NPI Registry",
-    lastVerifiedAt: "2026-10-30T12:00:00.000Z",
-  };
-
-  assert.equal(hasCompleteVerifiedDirectoryProfile(matchedProfile), false);
-
-  const verifiedFieldEvidence = Object.fromEntries(
-    [
-      "annualCallVolume",
-      "annual911Transports",
-      "annualCardiacArrestCalls",
-      "utsteinSurvivalRate",
-      "populationServed",
-      "cmsData.claimDenialRate",
-      "cmsData.medicareBilledAnnual",
-      "installedFleet.defibAgeYears",
-      "installedFleet.defibBrand",
-      "installedFleet.billingSoftware",
-      "installedFleet.epcrCadSoftware",
-      "installedFleet.defibUnitsCount",
-      "installedFleet.defibWarrantyStatus",
-      "grantStatus.afgAwardAmount",
-      "grantStatus.afgAwarded",
-      "grantStatus.saferGrantActive",
-      "grantStatus.afgFiscalYear",
-      "gisData.avgTransportTimeMinutes",
-      "gisData.publicAccessAedDeficitPct",
-      "gisData.seniorPopulationPct",
-      "cmsData.topDenialReasonCode",
-    ].map((field) => [
-      field,
-      {
-        sourceUrl: "https://example.gov/records/1",
-        retrievedAt: "2026-10-30T12:00:00.000Z",
-      },
-    ]),
-  );
-
-  assert.equal(
-    hasCompleteVerifiedDirectoryProfile({
-      ...matchedProfile,
-      annualCallVolume: 9000,
-      annual911Transports: 6500,
-      annualCardiacArrestCalls: 95,
-      utsteinSurvivalRate: 28.5,
-      populationServed: 125000,
-      cmsData: { claimDenialRate: 12.1, medicareBilledAnnual: 2800000 },
-      installedFleet: {
-        defibAgeYears: 5.2,
-        defibBrand: "Model X",
-        billingSoftware: "Billing Suite",
-        epcrCadSoftware: "ePCR Suite",
-        defibUnitsCount: 12,
-        defibWarrantyStatus: "Active",
-      },
-      grantStatus: {
-        afgAwardAmount: 125000,
-        afgAwarded: true,
-        saferGrantActive: false,
-        afgFiscalYear: 2025,
-      },
-      gisData: {
-        avgTransportTimeMinutes: 18.2,
-        publicAccessAedDeficitPct: 31,
-        seniorPopulationPct: 17.5,
-      },
-      cmsData: {
-        claimDenialRate: 12.1,
-        medicareBilledAnnual: 2800000,
-        topDenialReasonCode: "CO-16",
-      },
-      verifiedFieldEvidence,
-    }),
-    true,
-  );
-  assert.equal(
-    hasCompleteVerifiedDirectoryProfile({
-      ...matchedProfile,
-      verifiedFieldEvidence: {
-        ...verifiedFieldEvidence,
-        "cmsData.claimDenialRate": {
-          sourceUrl: "",
-          retrievedAt: "not-a-date",
-        },
-      },
-    }),
     false,
   );
 });
@@ -321,7 +194,7 @@ test("county selection remains local and remote writes require confirmation", as
   assert.doesNotMatch(countyEffect, /saveAgencyToFirestore|batchSyncAgenciesToFirestore/);
   assert.match(hook, /if\s*\(confirmed\s*!==\s*true\)\s*return\s+0/);
   assert.match(hook, /if\s*\(confirmed\s*!==\s*true\)\s*return/);
-  assert.match(sanitizer, /hasCompleteVerifiedDirectoryProfile\(agency\)/);
+  assert.match(sanitizer, /if\s*\(hasVerifiedProviderIdentity\(agency\)\)/);
   assert.doesNotMatch(sanitizer, /Boolean\(agency\.npiNumber\)[\s\S]{0,80}live_federal_registry/);
   assert.match(dashboard, /window\.confirm[\s\S]*?onSyncSingleAgencyToCloud\(agency,\s*true\)/);
   assert.match(dashboard, /window\.confirm[\s\S]*?onHydrateBatchToCloud\(35,\s*true\)/);

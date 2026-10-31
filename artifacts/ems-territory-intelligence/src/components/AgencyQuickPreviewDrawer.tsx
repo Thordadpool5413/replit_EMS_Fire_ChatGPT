@@ -237,7 +237,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
                     : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                       ? agency.installedFleet.defibBrand
-                      : 'Not source-verified'}
+                      : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'monitorModelTransition')
@@ -252,7 +252,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                   {hasDecisionGradeInputs ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block truncate">
-                  {hasDecisionGradeInputs ? `Target: ${agency.zollOpportunity.primaryTargetProduct}` : 'Requires verified operational and financial inputs'}
+                  {hasDecisionGradeInputs ? `Target: ${agency.zollOpportunity.primaryTargetProduct}` : 'More model inputs are not listed'}
                 </span>
               </div>
 
@@ -261,12 +261,12 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'cmsClaims')
                     ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                    : 'Not source-verified'}
+                    : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'cmsClaims')
                     ? `${formatPercent(agency.cmsData.claimDenialRate)} CMS Part B denials`
-                    : 'Agency-specific denial data not verified'}
+                    : 'Agency record does not list claim denial data'}
                 </span>
               </div>
 
@@ -277,11 +277,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     ? `${formatInteger(agency.annualCallVolume)} calls received`
                     : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                       ? `${formatInteger(agency.annual911Transports)} transports / yr`
-                      : 'Not source-verified'}
+                      : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                    ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'EMS transports and outcomes not verified'
+                    ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reporting period not listed'
                     : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
                       ? `${formatPercent(agency.utsteinSurvivalRate)} Utstein survival`
                     : 'No clinical-outcome source mapped'}
@@ -334,7 +334,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           </div>
           ) : (
             <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-              PulseIQ score is withheld until required inputs have been source-checked. Mapped source links remain available for user review.
+              This model output is unavailable because required inputs are not listed in the agency record.
             </div>
           )}
 

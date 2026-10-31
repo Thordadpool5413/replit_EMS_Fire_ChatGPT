@@ -53,7 +53,7 @@ SECTION 2. PRICING, MAINTENANCE, AND TOTAL COST OF OWNERSHIP
 ${includeFiveYearTcoCap
     ? '- Request itemized pricing, maintenance, batteries, consumables, warranty terms, replacement parts, and optional trade-in assumptions over the requested contract term. Require vendors to state all assumptions and exclusions.'
     : '- Procurement staff should define the requested pricing schedule and maintenance term.'}
-No agency-specific incumbent cost, equipment count, trade-in credit, or savings estimate is included because those inputs have not been source-verified.
+Use listed agency-record figures as starting references. Confirm equipment counts, incumbent costs, trade-in credits, and savings directly with the agency before relying on them.
 
 SECTION 3. COOPERATIVE PURCHASING AND PROCUREMENT REVIEW
 ${includeSourcewellCoop

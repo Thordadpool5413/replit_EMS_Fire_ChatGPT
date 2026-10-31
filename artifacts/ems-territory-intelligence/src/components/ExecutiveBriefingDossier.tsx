@@ -90,7 +90,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   if (!isOpen || !agency) return null;
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
   const primaryContact = agency.keyContacts && agency.keyContacts.length > 0 ? agency.keyContacts[0] : undefined;
-  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not source-verified';
+  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not listed';
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -110,11 +110,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   };
 
   const logistics = agency.hospitalLogistics || {
-    primaryTraumaHospital: agency.gisData?.primaryReceivingHospital || 'Not source-verified',
-    traumaLevel: agency.gisData?.traumaCenterLevel || 'Not source-verified',
+    primaryTraumaHospital: agency.gisData?.primaryReceivingHospital || 'Not listed',
+    traumaLevel: agency.gisData?.traumaCenterLevel || 'Not listed',
     distanceToTraumaMiles: agency.gisData?.avgTransportDistanceToTraumaMiles || 7.2,
     transportTimeMinutes: agency.gisData?.avgTransportTimeMinutes || 13,
-    primaryCathLabHospital: 'Not source-verified',
+    primaryCathLabHospital: 'Not listed',
     cathLabDistanceMiles: 6.5,
     cathLabTransportMinutes: 11,
     annualEdTransports: Math.round((agency.annual911Transports || 2800) * 0.88),

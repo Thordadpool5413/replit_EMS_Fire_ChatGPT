@@ -1658,7 +1658,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 ))
                   : (
                     <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
-                      No command or decision-maker names are currently supported by a reviewed, agency-specific roster.
+                      No command or decision-maker names are listed in this agency record.
                     </div>
                   )}
               </div>
@@ -1666,18 +1666,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* 1. Executive Deal Story & Conversion Playbook Section */}
-          {showSection('deal_story') &&
-          !(
-            hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-            hasAgencyFactEvidence(agency, 'cmsClaims') &&
-            hasAgencyFactEvidence(agency, 'receivingHospitalStemi') &&
-            hasAgencyFactEvidence(agency, 'federalGrant')
-          ) ? (
-            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-              The briefing narrative depends on current fleet, volume, hospital, funding, and financial records. Those agency-specific inputs are not fully source-verified, so the narrative is withheld.
-            </div>
-          ) : showSection('deal_story') && (
+          {showSection('deal_story') && (
             <div id="meeting-preparation-section" className="scroll-mt-32">
               <DealStoryBriefingView
                 agency={agency}
@@ -2384,15 +2373,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
-        {showSection('suppliers') &&
+          {showSection('suppliers') &&
           !(
-            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-            hasAgencyFactEvidence(agency, 'equipmentSuppliers') &&
-            hasAgencyFactEvidence(agency, 'verifiedHardware') &&
+            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ||
+            hasAgencyFactEvidence(agency, 'equipmentSuppliers') ||
+            hasAgencyFactEvidence(agency, 'verifiedHardware') ||
             hasAgencyFactEvidence(agency, 'maintenanceContracts')
           ) ? (
             <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 space-y-3">
-              Equipment models, active counts, suppliers, and maintenance terms are withheld until current agency-specific inventory or contract sources are reviewed.
+              No equipment, supplier, or maintenance details are listed in this agency record.
               {hasAgencyFactEvidence(agency, 'monitorModelTransition') && (
                 <div className="rounded-lg border border-amber-200 bg-white/70 p-3 space-y-1">
                   <div className="font-semibold">Verified partial monitor record</div>
@@ -2891,9 +2880,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
               <div className="p-4 bg-white dark:bg-slate-900 space-y-2">
                 <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">EMS Billing &amp; Revenue Software</div>
-                <div className="text-base font-bold text-slate-900 dark:text-white">Not source-verified</div>
+                <div className="text-base font-bold text-slate-900 dark:text-white">{agency.installedFleet.billingSoftware || 'Not listed in agency record'}</div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Billing platform and agency-specific payer mix have not been independently sourced.
+                  Agency payer mix: {agency.cmsData.primaryPayerMix || 'Not listed in agency record'}.
                 </p>
               </div>
             </div>

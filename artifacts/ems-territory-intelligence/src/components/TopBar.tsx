@@ -171,36 +171,40 @@ export const TopBar: React.FC<TopBarProps> = ({
   return (
     <>
       {/* ====================================================================
-          PRIMARY LEFT SIDEBAR (~280px, #0B1728) — DESKTOP
+          PRIMARY LEFT SIDEBAR (256px, #0B1728) — DESKTOP
          ==================================================================== */}
       <aside
         aria-label="Primary Workspace Navigation"
-        className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-[280px] bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
+        className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
       >
-        {/* Brand Identity Header — Prominent Full-Width Emblem */}
-        <div className="py-6 px-3 flex items-center justify-center border-b border-[#172D49] shrink-0">
+        {/* Compact identity keeps the workspace navigation immediately in view. */}
+        <div className="px-4 py-3.5 flex items-center border-b border-[#172D49] shrink-0">
           <button
             type="button"
             onClick={onGoHome}
-            className="flex items-center justify-center group focus:outline-none cursor-pointer"
+            className="flex items-center gap-3 group focus:outline-none cursor-pointer text-left min-w-0"
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
-            <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-full overflow-hidden ring-3 ring-[#285EE8]/40 shadow-2xl bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#285EE8]/40 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
               {!logoFailed ? (
                 <img
                   src={logoSrc}
                   alt="Territory Intelligence Logo"
-                  className="w-full h-full object-cover rounded-full"
+                  className="w-full h-full object-cover"
                   onError={() => {
                     if (logoSrc !== fallbackLogo) setLogoSrc(fallbackLogo);
                     else setLogoFailed(true);
                   }}
                 />
               ) : (
-                <span className="font-display font-bold text-3xl text-white">NF</span>
+                <span className="font-display font-bold text-sm text-white">NF</span>
               )}
             </div>
+            <span className="min-w-0">
+              <span className="block text-[13px] leading-tight font-semibold text-white truncate">EMS &amp; Fire</span>
+              <span className="block mt-0.5 text-[10px] leading-tight text-slate-400 truncate">Territory Intelligence</span>
+            </span>
           </button>
         </div>
 
@@ -564,7 +568,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* ====================================================================
           STABLE TOP TOOLBAR (~64px)
          ==================================================================== */}
-      <header className="sticky top-0 z-40 h-16 md:pl-[280px] bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
+      <header className="sticky top-0 z-40 h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}
           <div className="flex items-center gap-3 min-w-0">
@@ -577,13 +581,13 @@ export const TopBar: React.FC<TopBarProps> = ({
               <div className="w-10 h-10 rounded-full ring-1.5 ring-[#285EE8]/40 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
                 <img
                   src={logoSrc}
-                  alt="Nick's EMS & Fire Logo"
+                  alt="EMS & Fire Territory Intelligence logo"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-display font-[650] text-[13px] text-[#14283F] dark:text-white leading-tight truncate">
-                  Nick's EMS &amp; Fire
+                  EMS &amp; Fire
                 </span>
                 <span className="font-sans text-[10px] text-[#53657B] dark:text-slate-400 truncate">
                   Territory Intelligence

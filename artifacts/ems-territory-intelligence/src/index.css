@@ -498,3 +498,58 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* Territory workspace refinements: compact, legible surfaces with shared tokens. */
+.profile-workspace {
+  scroll-padding-top: 7rem;
+}
+
+.profile-workspace .pi-surface {
+  border-radius: 0.9rem;
+}
+
+.profile-workspace section {
+  scroll-margin-top: 7rem;
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] {
+  box-shadow: 0 8px 24px -20px rgba(20, 40, 63, 0.35);
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+  min-height: 2.5rem;
+}
+
+.profile-workspace .pi-profile-title,
+.profile-workspace .pi-page-title {
+  overflow-wrap: anywhere;
+}
+
+.profile-workspace .pi-meta {
+  color: var(--pi-text-secondary);
+}
+
+@media (max-width: 767px) {
+  .profile-workspace {
+    padding-bottom: max(6rem, env(safe-area-inset-bottom));
+  }
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] {
+    margin-inline: -0.25rem;
+    width: calc(100% + 0.5rem);
+  }
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

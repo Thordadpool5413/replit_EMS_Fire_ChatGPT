@@ -406,17 +406,12 @@ export const TerritoryResearchAssistant: React.FC<Props> = ({
         type="button"
         onClick={onOpen}
         aria-label="Open Territory Strategy Desk"
-        className="fixed right-4 sm:right-6 bottom-20 md:bottom-8 z-40 group flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#0A1322] dark:bg-[#0E1B2E] text-white border border-[#1E3A5F] shadow-2xl hover:border-blue-500 hover:shadow-blue-500/20 transition-all cursor-pointer transform hover:-translate-y-0.5 active:scale-95"
+        title="Open Strategy & RFP Desk"
+        className="fixed right-4 sm:right-6 bottom-20 md:bottom-8 z-40 group h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-[#0A1322] dark:bg-[#0E1B2E] text-white border border-[#1E3A5F] shadow-xl hover:border-blue-500 hover:shadow-blue-500/20 transition-all cursor-pointer transform hover:-translate-y-0.5 active:scale-95"
       >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#285EE8]" />
-        </span>
-        <div className="text-left">
-          <span className="text-xs font-bold block tracking-wide">Strategy &amp; RFP Desk</span>
-          <span className="text-[10px] text-slate-400 block -mt-0.5">Gemini 3.8 Flash AI</span>
-        </div>
-        <Sparkles className="w-4 h-4 text-blue-400 ml-1 group-hover:rotate-12 transition-transform" />
+        <Sparkles className="w-5 h-5 text-blue-400 group-hover:rotate-12 transition-transform" />
+        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#285EE8] ring-2 ring-[#0A1322]" />
+        <span className="sr-only">Open Territory Strategy Desk</span>
       </button>
     );
   }

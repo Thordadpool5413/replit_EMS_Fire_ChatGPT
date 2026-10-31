@@ -183,13 +183,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* ====================================================================
           1. COMPACT PREMIUM HEADER WITH DISCIPLINE FILTER & SEARCH
          ==================================================================== */}
       <section
         aria-label="Daily Territory Intelligence Briefing Header"
-        className="pi-surface p-5 sm:p-6 space-y-4"
+        className="pi-surface p-4 sm:p-5 space-y-4"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -312,9 +312,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
          ==================================================================== */}
       <section
         aria-label="Interactive U.S. Territory Map"
-        className="pi-surface p-5 sm:p-6 space-y-5"
+        className="pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
           <div>
             <h2 className="pi-section-heading flex items-center gap-2">
               <Compass className="w-5 h-5 text-[#285EE8] dark:text-blue-400 shrink-0" />
@@ -344,14 +344,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
         </div>
 
-        {/* 12-Column Layout: 8/9 Columns Map Canvas + 3/4 Columns State Intelligence Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* 12-Column Layout: Map stays primary, with a compact state intelligence summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
           {/* Map Canvas Column (8 Cols on LG, 9 Cols on XL) */}
           <div className="lg:col-span-8 xl:col-span-9 min-w-0 space-y-3">
-            <div className="relative bg-slate-50 dark:bg-[#070F1C] rounded-2xl border border-[#DFE6EF] dark:border-[#1E2D42] overflow-hidden p-3 shadow-inner">
+            <div className="relative bg-[#EEF3F8] dark:bg-[#0B1728] rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] overflow-hidden p-2 sm:p-3">
               <svg
                 viewBox="0 0 920 500"
-                className="w-full h-[360px] sm:h-[430px] md:h-[480px] select-none"
+                className="w-full h-[280px] sm:h-[360px] xl:h-[460px] select-none"
                 role="img"
                 aria-label="Interactive United States Territory Boundary Map"
               >
@@ -499,8 +499,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
 
           {/* State Intelligence Dossier Column (4 Cols on LG, 3 Cols on XL) */}
-          <div className="lg:col-span-4 xl:col-span-3 min-w-0 space-y-4">
-            <div className="p-5 rounded-2xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-4">
+          <div className="lg:col-span-4 xl:col-span-3 min-w-0 space-y-3">
+            <div className="p-4 sm:p-5 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-3">
               <div className="flex items-center justify-between border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <div className="min-w-0">
                   <span className="text-[10px] font-bold tracking-wider uppercase text-[#285EE8] dark:text-blue-400 block">
@@ -517,7 +517,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
               {/* State Key Statistics */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
+                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
                     Counties
                   </span>
@@ -525,7 +525,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     {formatInteger(stateStats.countiesCount)}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
+                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
                     Directory records
                   </span>
@@ -533,7 +533,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     {formatInteger(stateStats.count)} entries
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
+                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
                     Modeled avg PulseIQ
                   </span>
@@ -544,7 +544,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     {formatInteger(stateStats.pulseIqDataCount)} of {formatInteger(stateStats.count)} agency records
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
+                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
                     Reference denial estimate
                   </span>
@@ -617,7 +617,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </div>
 
             {/* Quick Popular Territory Chips */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
+            <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Popular Jurisdictions
               </span>

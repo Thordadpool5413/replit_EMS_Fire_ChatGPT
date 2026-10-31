@@ -450,7 +450,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Primary Navigation Shell (280px Sidebar + 64px Top Toolbar) */}
+      {/* Primary Navigation Shell (256px Sidebar + 64px Top Toolbar) */}
       <TopBar
         activeTab={activeTab}
         setActiveTab={handleNavigateTab}
@@ -490,8 +490,8 @@ export default function App() {
         onOpenProviderFinder={() => setIsMobileProviderFinderOpen(true)}
       />
 
-      {/* Main Workspace Body (Cohesive Responsive CSS Grid Layout with 280px Desktop Sidebar Offset) */}
-      <div className="md:pl-[280px] flex-1 flex flex-col min-w-0">
+      {/* Main Workspace Body with a synchronized desktop sidebar offset */}
+      <div className="md:pl-64 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
         
         {/* Workspace Sub-Navigation Strip for Opportunities, Territory, My Work, and Advanced Intelligence */}

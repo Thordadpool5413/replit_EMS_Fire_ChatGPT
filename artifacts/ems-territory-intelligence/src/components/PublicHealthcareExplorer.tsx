@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { NATIONAL_BENCHMARKS, STATE_SUMMARIES } from '../data/healthcareData';
 import { Agency } from '../types';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { getStateZipDenialProfileSummary } from '../services/countyDenialProfileService';
 import { 
   Building2, 
   TrendingDown, 
@@ -204,7 +205,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
                 <th className="py-2.5 px-3">State / Jurisdiction</th>
                 <th className="py-2.5 px-3 text-right">Registered Agencies</th>
-                <th className="py-2.5 px-3 text-right">County ambulance denial rate</th>
+                <th className="py-2.5 px-3 text-right">State ZIP-profile average</th>
                 <th className="py-2.5 px-3 text-right">Cardiac Survival (Utstein)</th>
                 <th className="py-2.5 px-3 text-right">YTD AFG Grant Awards</th>
                 <th className="py-2.5 px-3 text-center">Medicaid Expansion</th>
@@ -222,7 +223,10 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                     {summary.totalAgencies.toLocaleString()}
                   </td>
                   <td className="py-3 px-3 text-right text-slate-500 dark:text-slate-400">
-                    Not published
+                    {(() => {
+                      const denialProfile = getStateZipDenialProfileSummary(summary.code);
+                      return denialProfile ? `${denialProfile.ratePct.toFixed(1)}%` : 'No profile';
+                    })()}
                   </td>
                   <td className={`py-3 px-3 text-right tabular-nums ${
                     summary.avgUtsteinSurvival < 28 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'

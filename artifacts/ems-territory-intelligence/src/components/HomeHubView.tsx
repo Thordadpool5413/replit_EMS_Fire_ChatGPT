@@ -27,9 +27,12 @@ import {
   Building2
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
-import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
+import {
+  getStateZipDenialProfileSummary,
+  getStateZipDenialProfiles,
+} from '../services/countyDenialProfileService';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
@@ -175,13 +178,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   }, [scopedAgencies, displayStateCode, activeStateSummary]);
 
   const stateZipDenialProfiles = useMemo(
-    () =>
-      NATIONAL_ZIP_CITY_REGISTRY.filter(
-        (record) =>
-          record.stateCode === displayStateCode &&
-          typeof record.medicareDenialRate === 'number' &&
-          Number.isFinite(record.medicareDenialRate),
-      ),
+    () => getStateZipDenialProfiles(displayStateCode),
+    [displayStateCode],
+  );
+  const stateZipDenialSummary = useMemo(
+    () => getStateZipDenialProfileSummary(displayStateCode),
     [displayStateCode],
   );
 
@@ -555,16 +556,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    {stateZipDenialProfiles.length > 0 ? 'Available ZIP-profile rates' : 'County ambulance denial rate'}
+                    {stateZipDenialSummary ? 'State ZIP-profile average' : 'County ambulance denial rate'}
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card tabular-nums">
-                    {stateZipDenialProfiles.length > 0
-                      ? `${stateZipDenialProfiles.length} individual values`
+                    {stateZipDenialSummary
+                      ? `${stateZipDenialSummary.ratePct.toFixed(1)}%`
                       : 'Not published'}
                   </span>
-                  {stateZipDenialProfiles.length > 0 && (
+                  {stateZipDenialSummary && (
                     <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                      Each percentage is listed below
+                      Unweighted mean · {stateZipDenialSummary.profileCount} ZIP profiles
                     </span>
                   )}
                 </div>
@@ -599,7 +600,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     )}
                   </div>
                   <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                    These are ZIP-profile entries in the app, not a county claims aggregate. They have no denied/adjudicated claim counts.
+                    State average is the unweighted mean of these ZIP-profile percentages; denied/adjudicated claim counts are not included.
                   </p>
                 </div>
               )}

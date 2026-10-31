@@ -12,7 +12,11 @@ import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodes
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getCountyMedicareDenialRatePct } from '../services/countyMedicareDenialService';
-import { getCountyZipDenialProfile, getCountyZipDenialProfiles } from '../services/countyDenialProfileService';
+import {
+  getCountyZipDenialProfile,
+  getCountyZipDenialProfiles,
+  getStateZipDenialProfileSummary,
+} from '../services/countyDenialProfileService';
 import { 
   Globe, 
   MapPin, 
@@ -1134,6 +1138,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   (() => {
                     const hSt = ALL_50_STATES_SUMMARIES[hoveredMapStateCode];
                     const cCount = territoryEngine.getCountiesForState(hSt.code).length;
+                    const denialProfileSummary = getStateZipDenialProfileSummary(hSt.code);
                     return (
                       <div className="flex flex-wrap items-center gap-2.5 tabular-nums">
                         <span className="px-2 py-0.5 rounded bg-[#1E3A8A] text-white font-semibold">
@@ -1143,7 +1148,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">{cCount} Counties</span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-slate-700 dark:text-slate-300">County ambulance denials: <strong className="font-semibold">Not published</strong></span>
+                        <span className="text-slate-700 dark:text-slate-300">
+                          State ZIP-profile average: <strong className="font-semibold">
+                            {denialProfileSummary ? `${denialProfileSummary.ratePct.toFixed(1)}%` : 'No profile'}
+                          </strong>
+                        </span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="text-slate-700 dark:text-slate-300">FEMA Grants: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">${(hSt.totalAfgAwardsYtd / 1000000).toFixed(1)}M</strong></span>
                       </div>

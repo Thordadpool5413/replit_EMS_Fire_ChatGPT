@@ -37,8 +37,6 @@ import {
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/syncStore';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;
@@ -125,6 +123,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
     try {
       const element = documentRef.current;
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
 
       // Capture at 2x scale with guaranteed solid white background
       const canvas = await html2canvas(element, {

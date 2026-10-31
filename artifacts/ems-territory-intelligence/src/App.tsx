@@ -29,36 +29,37 @@ import {
   ALERT_TEMPLATES 
 } from './utils/notificationService';
 import { TopBar } from './components/TopBar';
-import { PredictiveLeadQueue } from './components/PredictiveLeadQueue';
-import { GisTerritoryHeatmap } from './components/GisTerritoryHeatmap';
-import { PredictiveWeightsModal } from './components/PredictiveWeightsModal';
-import { PublicHealthcareExplorer } from './components/PublicHealthcareExplorer';
-import { AfgGrantsTracker } from './components/AfgGrantsTracker';
-import { FieldModeView } from './components/FieldModeView';
-import { NotificationDrawer } from './components/NotificationDrawer';
-import { QuickVisitModal } from './components/QuickVisitModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
-import { ContractExpirationCalendar } from './components/ContractExpirationCalendar';
-import { RfpSpecGeneratorModal } from './components/RfpSpecGeneratorModal';
-import { CloudBackupResilienceView } from './components/CloudBackupResilienceView';
-import { NationwideDataGatewayView } from './components/NationwideDataGatewayView';
-import { DataLineageTrustModal } from './components/DataLineageTrustModal';
-import { CommandPaletteModal } from './components/CommandPaletteModal';
-import { NationalGeographicExplorer } from './components/NationalGeographicExplorer';
-import { ThreeApparatusStudio } from './components/ThreeApparatusStudio';
-import { GeminiChatbotDrawer } from './components/GeminiChatbotDrawer';
-import { PulseIqRegionalBreakdownChart } from './components/PulseIqRegionalBreakdownChart';
-import { FocusedProviderProfile } from './components/FocusedProviderProfile';
-import { AgencyQuickPreviewDrawer } from './components/AgencyQuickPreviewDrawer';
-import { ClinicalCompetitiveKnowledgeHub } from './components/ClinicalCompetitiveKnowledgeHub';
-import { ZollMobileDashboard } from './components/ZollMobileDashboard';
-import { HomeHubView } from './components/HomeHubView';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { GoogleMapsTerritoryExplorer } from './components/GoogleMapsTerritoryExplorer';
-import { DataHealthDashboard } from './components/DataHealthDashboard';
-import { MobileProviderSelectorDrawer } from './components/MobileProviderSelectorDrawer';
 import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
 import { CheckCircle2, AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
+
+const PredictiveLeadQueue = React.lazy(() => import('./components/PredictiveLeadQueue').then((module) => ({ default: module.PredictiveLeadQueue })));
+const GisTerritoryHeatmap = React.lazy(() => import('./components/GisTerritoryHeatmap').then((module) => ({ default: module.GisTerritoryHeatmap })));
+const PredictiveWeightsModal = React.lazy(() => import('./components/PredictiveWeightsModal').then((module) => ({ default: module.PredictiveWeightsModal })));
+const PublicHealthcareExplorer = React.lazy(() => import('./components/PublicHealthcareExplorer').then((module) => ({ default: module.PublicHealthcareExplorer })));
+const AfgGrantsTracker = React.lazy(() => import('./components/AfgGrantsTracker').then((module) => ({ default: module.AfgGrantsTracker })));
+const FieldModeView = React.lazy(() => import('./components/FieldModeView').then((module) => ({ default: module.FieldModeView })));
+const NotificationDrawer = React.lazy(() => import('./components/NotificationDrawer').then((module) => ({ default: module.NotificationDrawer })));
+const QuickVisitModal = React.lazy(() => import('./components/QuickVisitModal').then((module) => ({ default: module.QuickVisitModal })));
+const ContractExpirationCalendar = React.lazy(() => import('./components/ContractExpirationCalendar').then((module) => ({ default: module.ContractExpirationCalendar })));
+const RfpSpecGeneratorModal = React.lazy(() => import('./components/RfpSpecGeneratorModal').then((module) => ({ default: module.RfpSpecGeneratorModal })));
+const CloudBackupResilienceView = React.lazy(() => import('./components/CloudBackupResilienceView').then((module) => ({ default: module.CloudBackupResilienceView })));
+const NationwideDataGatewayView = React.lazy(() => import('./components/NationwideDataGatewayView').then((module) => ({ default: module.NationwideDataGatewayView })));
+const DataLineageTrustModal = React.lazy(() => import('./components/DataLineageTrustModal').then((module) => ({ default: module.DataLineageTrustModal })));
+const CommandPaletteModal = React.lazy(() => import('./components/CommandPaletteModal').then((module) => ({ default: module.CommandPaletteModal })));
+const NationalGeographicExplorer = React.lazy(() => import('./components/NationalGeographicExplorer').then((module) => ({ default: module.NationalGeographicExplorer })));
+const ThreeApparatusStudio = React.lazy(() => import('./components/ThreeApparatusStudio').then((module) => ({ default: module.ThreeApparatusStudio })));
+const GeminiChatbotDrawer = React.lazy(() => import('./components/GeminiChatbotDrawer').then((module) => ({ default: module.GeminiChatbotDrawer })));
+const PulseIqRegionalBreakdownChart = React.lazy(() => import('./components/PulseIqRegionalBreakdownChart').then((module) => ({ default: module.PulseIqRegionalBreakdownChart })));
+const FocusedProviderProfile = React.lazy(() => import('./components/FocusedProviderProfile').then((module) => ({ default: module.FocusedProviderProfile })));
+const AgencyQuickPreviewDrawer = React.lazy(() => import('./components/AgencyQuickPreviewDrawer').then((module) => ({ default: module.AgencyQuickPreviewDrawer })));
+const ClinicalCompetitiveKnowledgeHub = React.lazy(() => import('./components/ClinicalCompetitiveKnowledgeHub').then((module) => ({ default: module.ClinicalCompetitiveKnowledgeHub })));
+const ZollMobileDashboard = React.lazy(() => import('./components/ZollMobileDashboard').then((module) => ({ default: module.ZollMobileDashboard })));
+const HomeHubView = React.lazy(() => import('./components/HomeHubView').then((module) => ({ default: module.HomeHubView })));
+const GoogleMapsTerritoryExplorer = React.lazy(() => import('./components/GoogleMapsTerritoryExplorer').then((module) => ({ default: module.GoogleMapsTerritoryExplorer })));
+const DataHealthDashboard = React.lazy(() => import('./components/DataHealthDashboard').then((module) => ({ default: module.DataHealthDashboard })));
+const MobileProviderSelectorDrawer = React.lazy(() => import('./components/MobileProviderSelectorDrawer').then((module) => ({ default: module.MobileProviderSelectorDrawer })));
 
 export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' | 'error' } | null>(null);
@@ -688,6 +689,7 @@ export default function App() {
           </section>
         )}
 
+        <React.Suspense fallback={<div className="workspace-view-container min-h-40 flex items-center justify-center text-sm text-slate-500" role="status">Loading workspace…</div>}>
         <ErrorBoundary onReset={() => setActiveTab('home')}>
         {/* Executive Home & Guided Onboarding Hub */}
         {activeTab === 'home' && (
@@ -1141,6 +1143,7 @@ export default function App() {
           </div>
         )}
         </ErrorBoundary>
+        </React.Suspense>
 
       </main>
 
@@ -1174,7 +1177,8 @@ export default function App() {
       </div>
 
       {/* Slide-Over Quick Preview Drawer (2-second inspection before opening full dossier) */}
-      <AgencyQuickPreviewDrawer
+      <React.Suspense fallback={null}>
+      {previewAgency && <AgencyQuickPreviewDrawer
         agency={previewAgency}
         onClose={() => setPreviewAgency(null)}
         onOpenFullDossier={(a) => {
@@ -1187,7 +1191,7 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onAddFieldNote={handleAddFieldNote}
         onOpenRfpGenerator={(a) => setRfpAgency(a)}
-      />
+      />}
 
       {/* Full Actuarial Department Dossier */}
       {currentActive && (
@@ -1225,7 +1229,7 @@ export default function App() {
       )}
 
       {/* Push Notifications Drawer */}
-      <NotificationDrawer
+      {isNotificationsOpen && <NotificationDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
         alerts={alerts}
@@ -1239,16 +1243,16 @@ export default function App() {
           saveStoredNotifications([]);
         }}
         onSelectAlertAgency={handleSelectAlertAgency}
-      />
+      />}
 
       {/* Quick Field Visit Entry Modal */}
-      <QuickVisitModal
+      {isQuickVisitOpen && <QuickVisitModal
         isOpen={isQuickVisitOpen}
         onClose={() => setIsQuickVisitOpen(false)}
         agencies={agencies}
         onAddFieldNote={handleAddFieldNote}
         isOnline={isOnline}
-      />
+      />}
 
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav
@@ -1261,7 +1265,7 @@ export default function App() {
       />
 
       {/* Data Lineage & Trust Disclosures Center Modal */}
-      <DataLineageTrustModal
+      {isDataLineageOpen && <DataLineageTrustModal
         isOpen={isDataLineageOpen}
         onClose={() => setIsDataLineageOpen(false)}
         agencies={agencies}
@@ -1270,10 +1274,10 @@ export default function App() {
           setSelectedAgency(agency);
           setActiveAccount(agency);
         }}
-      />
+      />}
 
       {/* Universal Command Palette Search Modal (⌘K) */}
-      <CommandPaletteModal
+      {isCommandPaletteOpen && <CommandPaletteModal
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         agencies={agencies}
@@ -1282,18 +1286,18 @@ export default function App() {
           setActiveAccount(agency);
         }}
         onNavigateTab={(tab) => setActiveTab(tab)}
-      />
+      />}
 
       {/* Interactive 5-Pillar Scoring Weights Calibration Modal */}
-      <PredictiveWeightsModal
+      {isWeightsModalOpen && <PredictiveWeightsModal
         isOpen={isWeightsModalOpen}
         onClose={() => setIsWeightsModalOpen(false)}
         weights={weights}
         onSaveWeights={handleSaveWeights}
-      />
+      />}
 
       {/* Territory Strategy & RFP Desk */}
-      <GeminiChatbotDrawer
+      {isChatbotOpen && <GeminiChatbotDrawer
         isOpen={isChatbotOpen}
         onOpen={() => setIsChatbotOpen(true)}
         onClose={() => setIsChatbotOpen(false)}
@@ -1302,10 +1306,10 @@ export default function App() {
           setSelectedAgency(agency);
           setActiveAccount(agency);
         }}
-      />
+      />}
 
       {/* Mobile Provider Quick Finder & Selector Drawer */}
-      <MobileProviderSelectorDrawer
+      {isMobileProviderFinderOpen && <MobileProviderSelectorDrawer
         isOpen={isMobileProviderFinderOpen}
         onClose={() => setIsMobileProviderFinderOpen(false)}
         agencies={agencies}
@@ -1321,7 +1325,8 @@ export default function App() {
         onSelectState={(st) => setGlobalState(st)}
         selectedCounty={globalCounty}
         onSelectCounty={(co) => setGlobalCounty(co)}
-      />
+      />}
+      </React.Suspense>
 
       {/* Toast Notification Pill */}
       {toast && (

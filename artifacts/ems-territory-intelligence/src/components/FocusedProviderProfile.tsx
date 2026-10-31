@@ -138,7 +138,11 @@ type ProfileSection =
 
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { ExternalLink, RefreshCw, Globe, ChevronDown, ChevronUp, X, ArrowRight } from 'lucide-react';
-import { ExecutiveBriefingDossier } from './ExecutiveBriefingDossier';
+const ExecutiveBriefingDossier = React.lazy(() =>
+  import('./ExecutiveBriefingDossier').then((module) => ({
+    default: module.ExecutiveBriefingDossier
+  }))
+);
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { TermTooltip } from './TermTooltip';
@@ -3515,11 +3519,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       )}
 
       {/* One-Click Printable Executive Account Briefing Dossier Modal */}
-      <ExecutiveBriefingDossier
-        agency={agency}
-        isOpen={showDossierModal}
-        onClose={() => setShowDossierModal(false)}
-      />
+      {showDossierModal && (
+        <React.Suspense fallback={null}>
+          <ExecutiveBriefingDossier
+            agency={agency}
+            isOpen
+            onClose={() => setShowDossierModal(false)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

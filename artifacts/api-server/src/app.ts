@@ -29,6 +29,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// The API artifact's preview/startup probe requests `/`; keep that request healthy
+// while the versioned application endpoints remain under `/api`.
+app.get("/", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use("/api", router);
 
 export default app;

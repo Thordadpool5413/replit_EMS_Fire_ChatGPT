@@ -20,7 +20,7 @@ export interface ZipCityRecord {
   annualCardiacCalls: number;
   cathLabDistanceMiles: number;
   avgTransportMinutes: number;
-  medicareDenialRate: number;
+  medicareDenialRate: number | null;
 }
 
 /**
@@ -283,7 +283,6 @@ export function lookupZipCode(zip: string): ZipCityRecord | undefined {
   );
 
   if (matchedCounty) {
-    const stSummary = ALL_50_STATES_SUMMARIES[matchedCounty.stateCode];
     const city = matchedCounty.countySeat || (matchedCounty.cities && matchedCounty.cities[0]) || matchedCounty.rawName;
     const rec: ZipCityRecord = {
       zipCode: clean,
@@ -302,7 +301,7 @@ export function lookupZipCode(zip: string): ZipCityRecord | undefined {
       annualCardiacCalls: Math.round(matchedCounty.annualCardiacArrestIncidents * 0.4),
       cathLabDistanceMiles: matchedCounty.primaryCathLabDistanceMiles,
       avgTransportMinutes: matchedCounty.averageTransportMinutes,
-      medicareDenialRate: stSummary ? stSummary.avgMedicareDenialRate : 18.4
+      medicareDenialRate: null
     };
     dynamicZipCache.set(clean, rec);
     return rec;
@@ -334,7 +333,7 @@ export function lookupZipCode(zip: string): ZipCityRecord | undefined {
             annualCardiacCalls: 85,
             cathLabDistanceMiles: county.primaryCathLabDistanceMiles,
             avgTransportMinutes: county.averageTransportMinutes,
-            medicareDenialRate: summary.avgMedicareDenialRate
+            medicareDenialRate: null
           };
           dynamicZipCache.set(clean, rec);
           return rec;
@@ -404,7 +403,7 @@ export function searchLocations(query: string): ZipCityRecord[] {
             annualCardiacCalls: c.annualCardiacArrestIncidents,
             cathLabDistanceMiles: c.primaryCathLabDistanceMiles,
             avgTransportMinutes: c.averageTransportMinutes,
-            medicareDenialRate: stSummary ? stSummary.avgMedicareDenialRate : 18.5
+            medicareDenialRate: null
           });
           if (results.length >= 15) break;
         }

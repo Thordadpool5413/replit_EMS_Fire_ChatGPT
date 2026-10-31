@@ -13,6 +13,9 @@ import {
 } from '../services/countyBoundaryHierarchyService';
 import { Compass, Layers, MapPin, Building2, CheckCircle2, ExternalLink } from 'lucide-react';
 
+const CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL =
+  'https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county';
+
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
   selectedCountyName: string;
@@ -93,6 +96,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     }
     return projectedState.projectedCounties[0] || null;
   }, [hoveredCountyFips, activeCountyNode, projectedState]);
+  const hasCountyDenialData = projectedState.projectedCounties.some(
+    (county) => county.medicareDenialRatePct !== null
+  );
 
   if (!stateNode) return null;
 
@@ -165,10 +171,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <g>
                     {projectedState.projectedCounties.map((pc) => {
                       const isHovered = hoveredCountyFips === pc.countyFips;
-                      const isHighDenial = pc.medicareDenialRatePct !== null && pc.medicareDenialRatePct >= 19.5;
+                      const hasCountyDenialRate = pc.medicareDenialRatePct !== null;
                       const fillColor = isHovered
                         ? '#1E3A8A'
-                        : isHighDenial
+                        : hasCountyDenialRate
                           ? '#DBEAFE'
                           : '#F1F5F9';
                       const strokeColor = isHovered ? '#0F172A' : '#94A3B8';
@@ -185,7 +191,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi`}
+                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · MCR denial: ${pc.medicareDenialRatePct === null ? 'not available' : `${pc.medicareDenialRatePct}%`}`}
                           </title>
                         </path>
                       );
@@ -199,12 +205,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
-                  <span>Standard County Boundary</span>
+                  <span>County rate unavailable</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
-                  <span>Elevated Claim Denial (&ge;19.5%)</span>
-                </span>
+                {hasCountyDenialData ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
+                    <span>County rate available</span>
+                  </span>
+                ) : (
+                  <span>County-level MCR denial data unavailable</span>
+                )}
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#1E3A8A] inline-block" />
                   <span>Active / Hovered County</span>
@@ -248,11 +258,37 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         ? `${inspectedCounty.medicareDenialRatePct}%`
                         : 'Not available'}
                     </span>
-                    {inspectedCounty.medicareDenialRatePct === null && (
+                    {inspectedCounty.medicareDenialRatePct === null ? (
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        {inspectedCounty.stateBenchmarkDenialRatePct !== null && inspectedCounty.stateBenchmarkDenialRatePct !== undefined
-                          ? `State benchmark: ${inspectedCounty.stateBenchmarkDenialRatePct}%`
-                          : 'State denial benchmark unavailable'}
+                        CMS Geographic Variation county data reports Medicare use and spending, but not ambulance claim denials. No state or ZIP rate is substituted.
+                        {' '}
+                        <a
+                          href={CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline"
+                        >
+                          CMS data details
+                        </a>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
+                        {[inspectedCounty.medicareDenialSource, inspectedCounty.medicareDenialReportingPeriod]
+                          .filter(Boolean)
+                          .join(' · ')}
+                        {inspectedCounty.medicareDenialSourceUrl && (
+                          <>
+                            {' · '}
+                            <a
+                              href={inspectedCounty.medicareDenialSourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-700 hover:underline"
+                            >
+                              Source
+                            </a>
+                          </>
+                        )}
                       </span>
                     )}
                   </div>

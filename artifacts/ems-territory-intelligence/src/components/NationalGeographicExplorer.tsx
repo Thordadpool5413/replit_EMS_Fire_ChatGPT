@@ -11,6 +11,7 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
+import { getCountyMedicareDenialRatePct } from '../services/countyMedicareDenialService';
 import { 
   Globe, 
   MapPin, 
@@ -397,7 +398,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           annualCardiacCalls: Math.round(activeCountyRecord.annualCardiacArrestIncidents * 0.4),
           cathLabDistanceMiles: activeCountyRecord.primaryCathLabDistanceMiles,
           avgTransportMinutes: activeCountyRecord.averageTransportMinutes,
-          medicareDenialRate: activeStateSummary?.avgMedicareDenialRate || 18.5
+          medicareDenialRate: null
         } as ZipCityRecord;
       });
     }
@@ -1479,6 +1480,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
+                const countyDenialRatePct = getCountyMedicareDenialRatePct(c);
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1562,13 +1564,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">MCR Denial</span>
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {c.medicareDenialRatePct !== undefined && c.medicareDenialRatePct !== null
-                              ? `${c.medicareDenialRatePct}%`
-                              : 'Not available'}
+                            {countyDenialRatePct !== null ? `${countyDenialRatePct}%` : 'Not available'}
                           </span>
-                          {(c.medicareDenialRatePct === undefined || c.medicareDenialRatePct === null) && (
+                          {countyDenialRatePct === null && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              State denial benchmark unavailable
+                              CMS Geographic Variation county data does not include ambulance claim denials
                             </span>
                           )}
                         </div>

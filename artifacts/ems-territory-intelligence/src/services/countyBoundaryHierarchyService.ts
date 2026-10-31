@@ -7,6 +7,7 @@ import { gunzipSync, strFromU8 } from 'fflate';
 import { Agency } from '../types';
 import { ALL_NATIONWIDE_COUNTIES, ComprehensiveCountyRecord, CityBoundaryRecord } from '../data/allCountiesDatabase';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
+import { getCountyMedicareDenialRatePct } from './countyMedicareDenialService';
 import { territoryEngine } from './territoryIntelligenceEngine';
 
 export interface GeoJsonGeometry {
@@ -103,8 +104,9 @@ export interface SvgProjectedCounty {
   citiesCount: number;
   population: number;
   medicareDenialRatePct: number | null;
-  stateBenchmarkDenialRatePct?: number | null;
   medicareDenialSource?: string;
+  medicareDenialReportingPeriod?: string;
+  medicareDenialSourceUrl?: string;
   averageTransportMinutes: number;
   svgPath: string;
   labelX: number;
@@ -424,26 +426,15 @@ class CountyBoundaryHierarchyService {
       return [+x.toFixed(1), +y.toFixed(1)];
     };
 
-    const stSummary = ALL_50_STATES_SUMMARIES[sc];
-    // CMS Part B Ground Ambulance claims are adjudicated across regional MAC jurisdictions.
-    // Standard CMS PUF releases do not publish standalone state-by-state denial tables
-    // unless custom FOIA/claims data extraction is performed.
-    // If no authenticated state-level CMS PUF dataset meeting all 7 criteria is linked,
-    // state denial benchmark is explicitly marked unavailable.
-    const hasAuthenticBenchmark = false; // Set to false to prevent uncorroborated benchmarks from masquerading as official CMS PUF
-    const stateBenchmark = hasAuthenticBenchmark ? stSummary?.avgMedicareDenialRate : null;
-
     const projectedCounties: SvgProjectedCounty[] = [];
 
     for (const co of countiesWithGeom) {
       const svgPath = this.geometryToSvgPath(co.geometry!, projectPoint);
       if (!svgPath) continue;
       const [labelX, labelY] = projectPoint(co.centroid.lng, co.centroid.lat);
-      // Factual county rate: null if no measured county rate exists in authoritative CMS PUF record.
-      // Never substitute state-level averages into the county's measured rate field!
-      const denialRate = co.countyRecord.medicareDenialRatePct !== undefined && co.countyRecord.medicareDenialRatePct !== null
-        ? co.countyRecord.medicareDenialRatePct
-        : null;
+      // County rates must be attached to this exact county record (5-digit county FIPS).
+      // Never fill a missing value from state averages, ZIP samples, or neighboring counties.
+      const denialRate = getCountyMedicareDenialRatePct(co.countyRecord);
 
       projectedCounties.push({
         countyFips: co.countyFips,
@@ -454,8 +445,9 @@ class CountyBoundaryHierarchyService {
         citiesCount: co.citiesList.length,
         population: co.countyRecord.population,
         medicareDenialRatePct: denialRate,
-        stateBenchmarkDenialRatePct: stateBenchmark,
-        medicareDenialSource: denialRate !== null ? (co.countyRecord.medicareDenialSource ?? 'CMS Measured County Rate') : undefined,
+        medicareDenialSource: denialRate !== null ? co.countyRecord.medicareDenialSource : undefined,
+        medicareDenialReportingPeriod: denialRate !== null ? co.countyRecord.medicareDenialReportingPeriod : undefined,
+        medicareDenialSourceUrl: denialRate !== null ? co.countyRecord.medicareDenialSourceUrl : undefined,
         averageTransportMinutes: co.countyRecord.averageTransportMinutes,
         svgPath,
         labelX,

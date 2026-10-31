@@ -102,8 +102,13 @@ export interface CountyHealthRecord {
   primaryZipCodes: string[];
   cities?: string[];
   cityRecords?: CountyCityRecord[];
+  /** County-level Medicare denial values only; never populate from ZIP or state averages. */
   medicareDenialRatePct?: number;
+  medicareDeniedClaimCount?: number;
+  medicareAdjudicatedClaimCount?: number;
+  medicareDenialReportingPeriod?: string;
   medicareDenialSource?: string;
+  medicareDenialSourceUrl?: string;
 }
 
 export interface GisAndDemographics {

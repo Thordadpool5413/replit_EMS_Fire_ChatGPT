@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Agency, LeadStage, FieldNote, KeyContact, AgencyFactEvidenceKey } from '../types';
 import {
-  AGENCY_FACT_EVIDENCE_FIELDS,
   getAgencyFactEvidenceStatus,
   hasAgencyFactEvidence,
   hasMappedAgencyFactEvidence,
@@ -469,13 +468,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     agency.lastVerifiedAt &&
     agency.nppesRegistryUrl
   );
-  const verifiedFactGroupCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) =>
-    hasReviewedAgencyFactEvidence(agency, key)
-  ).length;
-  const mappedFactGroupCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) =>
-    hasMappedAgencyFactEvidence(agency, key)
-  ).length;
-
   const actuarialForecast = useMemo(() => {
     const units = Math.max(1, agency.installedFleet.defibUnitsCount || agency.totalAmbulances || 4);
     const grossCapExBase = units * customUnitMsrp;
@@ -1002,16 +994,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
         {/* Main Account 360 Workspace Content */}
         <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 min-w-0">
-          <div
-            role="status"
-            data-testid={`status-account-data-evidence-${agency.id}`}
-            className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong>{mappedFactGroupCount} of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact groups have a source mapped; {verifiedFactGroupCount} were source-checked</strong>
-              <span>Source mapping is not user verification. Review the linked record and reporting period before relying on a value.</span>
-            </div>
-          </div>
           {/* ================================================================
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ================================================================ */}

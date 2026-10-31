@@ -44,16 +44,16 @@ import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { InteractiveSparkline } from './InteractiveSparkline';
 import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
-import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
-  hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-  hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-  hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-  hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-  hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
-  hasReviewedAgencyFactEvidence(agency, 'federalGrant');
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface PredictiveLeadQueueProps {
   agencies: Agency[];
@@ -896,7 +896,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           </div>
                         )}
                       <span className="text-xs text-slate-400 mt-1">
-                          {hasVerifiedModel ? 'PulseIQ' : 'Inputs unverified'}
+                          {hasVerifiedModel ? 'PulseIQ estimate' : 'Inputs incomplete'}
                       </span>
                     </div>
                   </div>
@@ -1429,7 +1429,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       {/* Target Pipeline Value */}
                       <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                         <div className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                          {hasVerifiedModel ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not source-verified'}
+                          {hasVerifiedModel ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Inputs incomplete'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                           {hasVerifiedModel ? `${agency.zollOpportunity.probabilityPct}% model probability` : 'Model inputs unverified'}

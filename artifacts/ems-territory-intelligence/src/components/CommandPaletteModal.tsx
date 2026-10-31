@@ -23,16 +23,16 @@ import {
 import { Agency } from '../types';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { formatCurrency } from '../utils/formatters';
-import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
-  hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-  hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-  hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-  hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-  hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
-  hasReviewedAgencyFactEvidence(agency, 'federalGrant');
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -207,7 +207,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    title={hasVerifiedModelInputs(agency) ? `PulseIQ Score: ${agency.zollOpportunity.pulseIqScore}/100` : 'Model inputs not source-verified'}
+                    title={hasVerifiedModelInputs(agency) ? `PulseIQ Score: ${agency.zollOpportunity.pulseIqScore}/100` : 'Model inputs are incomplete'}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-xs tabular-nums shrink-0 ${
                       hasVerifiedModelInputs(agency) && agency.zollOpportunity.pulseIqScore >= 88
                         ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
@@ -229,7 +229,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                           ? `${agency.installedFleet.defibBrand} (${agency.installedFleet.defibAgeYears} yrs)`
                           : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                             ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                            : 'Fleet not source-verified'}
+                            : 'Fleet details not listed'}
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">

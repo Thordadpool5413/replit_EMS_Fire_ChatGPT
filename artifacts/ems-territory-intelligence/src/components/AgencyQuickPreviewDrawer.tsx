@@ -18,7 +18,7 @@ import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } 
 import {
   AGENCY_FACT_EVIDENCE_FIELDS,
   hasAgencyFactEvidence,
-  hasReviewedAgencyFactEvidence
+  hasMappedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
 
 interface AgencyQuickPreviewDrawerProps {
@@ -80,16 +80,16 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`;
 
   const hasDecisionGradeInputs =
-    hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-    hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-    hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-    hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-    hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
-    hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
-    hasReviewedAgencyFactEvidence(agency, 'federalGrant');
+    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasAgencyFactEvidence(agency, 'federalGrant');
 
   const mappedEvidenceSources = AGENCY_FACT_EVIDENCE_FIELDS
-    .filter(({ key }) => hasAgencyFactEvidence(agency, key))
+    .filter(({ key }) => hasMappedAgencyFactEvidence(agency, key))
     .map(({ key, label }) => ({ key, label, evidence: agency.factEvidence?.[key] }));
 
   // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.

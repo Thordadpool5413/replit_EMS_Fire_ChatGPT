@@ -9,6 +9,7 @@ import {
   AGENCY_FACT_EVIDENCE_FIELDS,
   getAgencyFactEvidenceStatus,
   hasAgencyFactEvidence,
+  hasMappedAgencyFactEvidence,
   hasReviewedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
 import {
@@ -472,7 +473,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     hasReviewedAgencyFactEvidence(agency, key)
   ).length;
   const mappedFactGroupCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) =>
-    hasAgencyFactEvidence(agency, key)
+    hasMappedAgencyFactEvidence(agency, key)
   ).length;
 
   const actuarialForecast = useMemo(() => {
@@ -707,13 +708,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   };
 
   const hasDecisionGradeInputs =
-    hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-    hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-    hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-    hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-    hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
-    hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
-    hasReviewedAgencyFactEvidence(agency, 'federalGrant');
+    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasAgencyFactEvidence(agency, 'federalGrant');
 
   // Up to 3 structured "Fact -> Why It Matters -> Next Action" rows for Above the Fold
   const equipDisplay = formatEquipmentDisplay(
@@ -3264,7 +3265,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Department FDID &amp; Stations</td>
                     <td className="pi-metric-id">
-                      {hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified ? `FDID ${agency.fdid}` : 'No FDID source mapped'}
+                      {hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified ? `FDID ${agency.fdid}` : 'Not available'}
                       {' · '}
                       {hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'No station-count source mapped'}
                     </td>
@@ -3272,13 +3273,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
                         hasReviewedAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified && hasReviewedAgencyFactEvidence(agency, 'stationCount')
                           ? 'bg-sky-50 text-sky-700 border border-sky-200'
-                          : hasAgencyFactEvidence(agency, 'departmentRegistry') || hasAgencyFactEvidence(agency, 'stationCount')
+                          : hasMappedAgencyFactEvidence(agency, 'departmentRegistry') || hasMappedAgencyFactEvidence(agency, 'stationCount')
                             ? 'bg-blue-50 text-blue-700 border border-blue-200'
                             : 'bg-amber-50 text-amber-800 border border-amber-200'
                       }`}>
                         {hasReviewedAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified && hasReviewedAgencyFactEvidence(agency, 'stationCount')
                           ? 'Source checked · user verify'
-                          : hasAgencyFactEvidence(agency, 'departmentRegistry') || hasAgencyFactEvidence(agency, 'stationCount')
+                          : hasMappedAgencyFactEvidence(agency, 'departmentRegistry') || hasMappedAgencyFactEvidence(agency, 'stationCount')
                             ? 'Source mapped · user verify'
                             : 'No source mapped'}
                       </span>
@@ -3302,14 +3303,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       {hasAgencyFactEvidence(agency, 'federalGrant')
                         ? agency.grantStatus.afgAwarded
                           ? `${formatCurrency(agency.grantStatus.afgAwardAmount, { compact: false })} (FY${agency.grantStatus.afgFiscalYear})`
-                          : 'No award reported in mapped source'
-                        : 'No source mapped'}
+                          : 'No award listed in the agency record'
+                        : 'Not available'}
                     </td>
                     <td>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasAgencyFactEvidence(agency, 'federalGrant') ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasMappedAgencyFactEvidence(agency, 'federalGrant') ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
                         {getAgencyFactEvidenceStatus(agency, 'federalGrant') === 'source-reviewed'
                           ? 'Source checked · user verify'
-                          : hasAgencyFactEvidence(agency, 'federalGrant')
+                          : hasMappedAgencyFactEvidence(agency, 'federalGrant')
                             ? 'Source mapped · user verify'
                             : 'No source mapped'}
                       </span>
@@ -3329,12 +3330,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Medicare Part B Ambulance Volume</td>
-                    <td className="pi-data-table font-semibold text-emerald-700">{hasAgencyFactEvidence(agency, 'cmsClaims') ? formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false }) : 'No source mapped'}</td>
+                    <td className="pi-data-table font-semibold text-emerald-700">{hasAgencyFactEvidence(agency, 'cmsClaims') ? formatCurrency(agency.cmsData.medicareAllowedAnnual, { perYear: true, compact: false }) : 'Not available'}</td>
                     <td>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${hasMappedAgencyFactEvidence(agency, 'cmsClaims') ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
                         {getAgencyFactEvidenceStatus(agency, 'cmsClaims') === 'source-reviewed'
                           ? 'Source checked · user verify'
-                          : hasAgencyFactEvidence(agency, 'cmsClaims')
+                          : hasMappedAgencyFactEvidence(agency, 'cmsClaims')
                             ? 'Source mapped · user verify'
                             : 'No source mapped'}
                       </span>

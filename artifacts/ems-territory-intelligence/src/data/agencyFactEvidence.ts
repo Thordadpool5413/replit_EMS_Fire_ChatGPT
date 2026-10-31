@@ -75,12 +75,65 @@ export function hasReviewedAgencyFactEvidence(
   return hasReviewedFactEvidence(agency.factEvidence?.[key]);
 }
 
-/** Source mapped for user review; this is not the same as source-reviewed. */
+/** True when the agency record contains data this field can display. */
 export function hasAgencyFactEvidence(
+  agency: Agency,
+  key: AgencyFactEvidenceKey,
+): boolean {
+  return hasMappedFactSource(agency.factEvidence?.[key]) || hasAgencyFactData(agency, key);
+}
+
+export function hasMappedAgencyFactEvidence(
   agency: Pick<Agency, 'factEvidence'>,
   key: AgencyFactEvidenceKey,
 ): boolean {
   return hasMappedFactSource(agency.factEvidence?.[key]);
+}
+
+function containsDisplayableValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === 'number' || typeof value === 'boolean') return true;
+  if (Array.isArray(value)) return value.some(containsDisplayableValue);
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(containsDisplayableValue);
+  }
+  return false;
+}
+
+export function hasAgencyFactData(
+  agency: Agency,
+  key: AgencyFactEvidenceKey,
+): boolean {
+  const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
+    providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
+    departmentRegistry: [agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],
+    agencyLeadership: [agency.keyContacts],
+    decisionMakers: [agency.keyContacts],
+    frontlineApparatusStations: [
+      agency.totalAmbulances, agency.totalFireEngines, agency.stationsCount,
+      agency.frontlineRescueUnitCount, agency.responseUnitCount, agency.apparatusFleet,
+    ],
+    annualEmergencyVolume: [agency.annualCallVolume, agency.annual911Transports],
+    apparatusBreakdown: [agency.apparatusFleet, agency.fleet],
+    receivingHospitalStemi: [agency.hospitalLogistics, agency.clinical?.primaryReceivingHospitals, agency.gisData?.primaryReceivingHospital],
+    defibrillatorBiomedicalFleet: [agency.installedFleet, agency.fleet],
+    maintenanceContracts: [agency.competitorContract, agency.installedFleet?.warrantyContractDoc],
+    communicationsSystems: [agency.installedFleet?.dispatchCadVendor, agency.installedFleet?.epcrCadSoftware],
+    equipmentSuppliers: [agency.installedFleet, agency.fleet],
+    verifiedHardware: [agency.installedFleet?.capitalAssetLedgerId, agency.installedFleet?.procurementResolutionId, agency.installedFleet?.procurementSourceDoc],
+    operationalVolumeContracts: [agency.annualCallVolume, agency.annual911Transports, agency.competitorContract],
+    clinicalOutcomes: [agency.annualCardiacArrestCalls, agency.utsteinSurvivalRate, agency.clinical, agency.qualityMetrics],
+    cmsClaims: [agency.cmsData],
+    federalGrant: [agency.grantStatus, agency.femaGrantHistory, agency.afgGrants, agency.liveFemaAwards],
+    stationCount: [agency.stationsCount, agency.fleet?.totalStations],
+    frontlineRescueUnits: [agency.frontlineRescueUnitCount, agency.responseUnitCount],
+    annualCallsReceived: [agency.annualCallVolume, agency.annual911Transports],
+    epcrSystem: [agency.installedFleet?.epcrCadSoftware],
+    monitorModelTransition: [agency.installedFleet?.defibBrand, agency.fleet?.currentDefibVendor],
+    serviceArea: [agency.populationServed, agency.responseAreaSqMiles, agency.gisData],
+  };
+  return facts[key].some(containsDisplayableValue);
 }
 
 export function getAgencyFactEvidenceStatus(
@@ -88,6 +141,6 @@ export function getAgencyFactEvidenceStatus(
   key: AgencyFactEvidenceKey,
 ): 'source-reviewed' | 'source-mapped' | 'source-required' {
   if (hasReviewedAgencyFactEvidence(agency, key)) return 'source-reviewed';
-  if (hasAgencyFactEvidence(agency, key)) return 'source-mapped';
+  if (hasMappedAgencyFactEvidence(agency, key)) return 'source-mapped';
   return 'source-required';
 }

@@ -5,7 +5,7 @@
 
 import { Agency } from '../types';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
-import { hasAgencyFactEvidence } from './agencyFactEvidence';
+import { hasReviewedAgencyFactEvidence as hasAgencyFactEvidence } from './agencyFactEvidence';
 
 export interface DataRegistrySource {
   id: string;

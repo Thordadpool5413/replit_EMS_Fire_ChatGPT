@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
-import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
@@ -54,13 +54,13 @@ import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
-  hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-  hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-  hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-  hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-  hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
-  hasReviewedAgencyFactEvidence(agency, 'federalGrant');
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface NationalGeographicExplorerProps {
   agencies: Agency[];
@@ -1982,7 +1982,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Upgrade Value</span>
                           <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block tabular-nums">
-                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Model withheld pending source checks'}
+                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Required model inputs not available'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block tabular-nums">
                             {hasAgencyFactEvidence(agency, 'maintenanceContracts')
@@ -2036,7 +2036,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <span className="text-slate-600 dark:text-slate-400 truncate">
                         {hasVerifiedModel
                           ? <>Model target: <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
-                          : 'Model recommendation withheld pending source checks'}
+                          : 'Recommendation not available'}
                       </span>
 
                       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -2131,7 +2131,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Model withheld pending source checks'}
+                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Required model inputs not available'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? `Exp ${agency.competitorContract.contractEndDate}` : 'No contract source mapped'}

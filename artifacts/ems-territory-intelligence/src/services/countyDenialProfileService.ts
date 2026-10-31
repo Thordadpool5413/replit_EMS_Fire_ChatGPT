@@ -1,6 +1,29 @@
 import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
+import type { CountyHealthRecord } from '../types';
+import { getCountyMedicareDenialMetric } from './countyMedicareDenialService';
 
 type ZipDenialProfile = (typeof NATIONAL_ZIP_CITY_REGISTRY)[number];
+
+export type CountyDenialDisplay =
+  | {
+      kind: 'county-claims-rate';
+      countyFips: string;
+      ratePct: number;
+      deniedClaimCount: number;
+      adjudicatedClaimCount: number;
+      claimScope: string;
+      reportingPeriod: string;
+      source: string;
+      sourceUrl: string;
+    }
+  | {
+      kind: 'zip-profile';
+      countyFips: string;
+      ratePct: number;
+      zipCode: string;
+      city: string;
+    }
+  | { kind: 'unavailable'; countyFips: string };
 
 export function getCountyZipDenialProfiles(countyFips: string): ZipDenialProfile[] {
   const fips = countyFips.trim();
@@ -37,6 +60,35 @@ export function getCountyZipDenialProfile(
     profiles[0] ??
     null
   );
+}
+
+/**
+ * Prefer a verified county claims calculation, then preserve the established
+ * deterministic ZIP-profile fallback. The fallback is explicitly not a county
+ * claims aggregate.
+ */
+export function getCountyDenialDisplay(county: CountyHealthRecord): CountyDenialDisplay {
+  const countyMetric = getCountyMedicareDenialMetric(county);
+  if (countyMetric) {
+    return { kind: 'county-claims-rate', ...countyMetric };
+  }
+
+  const zipProfile = getCountyZipDenialProfile(
+    county.countyFips,
+    county.countySeat,
+    county.primaryZipCodes ?? [],
+  );
+  if (zipProfile && typeof zipProfile.medicareDenialRate === 'number') {
+    return {
+      kind: 'zip-profile',
+      countyFips: county.countyFips,
+      ratePct: zipProfile.medicareDenialRate,
+      zipCode: zipProfile.zipCode,
+      city: zipProfile.city,
+    };
+  }
+
+  return { kind: 'unavailable', countyFips: county.countyFips };
 }
 
 export function getStateZipDenialProfiles(stateCode: string): ZipDenialProfile[] {

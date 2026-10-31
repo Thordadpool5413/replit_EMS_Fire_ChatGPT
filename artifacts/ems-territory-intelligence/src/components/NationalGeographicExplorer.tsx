@@ -11,9 +11,8 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { getCountyMedicareDenialRatePct } from '../services/countyMedicareDenialService';
 import {
-  getCountyZipDenialProfile,
+  getCountyDenialDisplay,
   getCountyZipDenialProfiles,
   getStateZipDenialProfileSummary,
 } from '../services/countyDenialProfileService';
@@ -909,9 +908,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         </div>
       )}
 
-      {/* =====================================================================
+      {/* ---------------------------------------------------------------------
           LEVEL 1: CLEAN TERRITORY SELECTOR & INTERACTIVE U.S. MAP (NO 50-STATE CARD WALL)
-         ===================================================================== */}
+         --------------------------------------------------------------------- */}
       {activeFocusLevel === 'states' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 items-start w-full min-w-0">
           
@@ -1394,9 +1393,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         </div>
       )}
 
-      {/* =====================================================================
+      {/* ---------------------------------------------------------------------
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
-         ===================================================================== */}
+         --------------------------------------------------------------------- */}
       {activeFocusLevel === 'counties' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-xs grid grid-cols-1 gap-5 min-w-0">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800 min-w-0">
@@ -1488,17 +1487,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
-                const countyDenialRatePct = getCountyMedicareDenialRatePct(c);
+                const countyDenialDisplay = getCountyDenialDisplay(c);
                 const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
-                const countyZipDenialProfile = getCountyZipDenialProfile(
-                  c.countyFips,
-                  c.countySeat,
-                  c.primaryZipCodes ?? [],
-                );
-                const countyZipDenialRateDisplay =
-                  typeof countyZipDenialProfile?.medicareDenialRate === 'number'
-                    ? `${countyZipDenialProfile.medicareDenialRate.toFixed(1)}%`
-                    : null;
+                const countyDenialRateDisplay =
+                  countyDenialDisplay.kind === 'unavailable'
+                    ? null
+                    : `${countyDenialDisplay.ratePct.toFixed(1)}%`;
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1581,37 +1575,37 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                         <div>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
-                            {countyDenialRatePct !== null
-                              ? 'Medicare ambulance denial rate'
-                              : countyZipDenialRateDisplay
+                            {countyDenialDisplay.kind === 'county-claims-rate'
+                              ? 'Medicare ambulance claim denial rate'
+                              : countyDenialDisplay.kind === 'zip-profile'
                                 ? 'Selected ZIP-profile rate'
-                                : 'Medicare ambulance denial rate'}
+                                : 'County claim denial rate'}
                           </span>
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {countyDenialRatePct !== null
-                              ? `${countyDenialRatePct}%`
-                              : countyZipDenialRateDisplay ?? 'Not published'}
+                            {countyDenialRateDisplay ?? 'Not published'}
                           </span>
-                          {countyDenialRatePct === null && countyZipDenialRateDisplay !== null && (
+                          {countyDenialDisplay.kind === 'zip-profile' && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              ZIP {countyZipDenialProfile?.zipCode}; not a county claims aggregate
+                              {countyDenialDisplay.city} · ZIP {countyDenialDisplay.zipCode}; not a county claims aggregate
                             </span>
                           )}
-                          {countyDenialRatePct !== null && c.medicareDenialSource && c.medicareDenialSourceUrl && (
+                          {countyDenialDisplay.kind === 'county-claims-rate' && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              {c.medicareDenialReportingPeriod || 'Period not listed'} ·{' '}
+                              FIPS {countyDenialDisplay.countyFips} · denied {countyDenialDisplay.deniedClaimCount} /{' '}
+                              adjudicated {countyDenialDisplay.adjudicatedClaimCount} · {countyDenialDisplay.claimScope} ·{' '}
+                              {countyDenialDisplay.reportingPeriod} ·{' '}
                               <a
                                 className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
-                                href={c.medicareDenialSourceUrl}
+                                href={countyDenialDisplay.sourceUrl}
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={event => event.stopPropagation()}
                               >
-                                {c.medicareDenialSource}
+                                {countyDenialDisplay.source}
                               </a>
                             </span>
                           )}
-                          {countyDenialRatePct === null && countyZipDenialRateDisplay === null && (
+                          {countyDenialDisplay.kind === 'unavailable' && (
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 block">
                               Requires denied ÷ adjudicated ambulance claims with the same claim scope and reporting period
                               <a
@@ -1692,9 +1686,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         </div>
       )}
 
-      {/* =====================================================================
+      {/* ---------------------------------------------------------------------
           LEVEL 3: PROVIDERS IN SELECTED COUNTY / CITY (SINGLE FOCUSED VIEW)
-         ===================================================================== */}
+         --------------------------------------------------------------------- */}
       {activeFocusLevel === 'providers' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 grid grid-cols-1 gap-4 min-w-0">
           

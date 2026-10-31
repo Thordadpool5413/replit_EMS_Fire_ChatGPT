@@ -12,6 +12,17 @@ type CountyDenialInput = Pick<
   | 'medicareDenialSourceUrl'
 >;
 
+export interface CountyMedicareDenialMetric {
+  countyFips: string;
+  ratePct: number;
+  deniedClaimCount: number;
+  adjudicatedClaimCount: number;
+  claimScope: string;
+  reportingPeriod: string;
+  source: string;
+  sourceUrl: string;
+}
+
 function hasCountyDenialProvenance(county: CountyDenialInput): boolean {
   if (
     !county.medicareDenialClaimScope?.trim() ||
@@ -31,39 +42,44 @@ function hasCountyDenialProvenance(county: CountyDenialInput): boolean {
 }
 
 /**
- * Returns a county-only Medicare denial rate.
- * The formula is denied finalized ambulance claims / all finalized adjudicated ambulance
- * claims * 100. Counts must share a scope and reporting period and include source
- * attribution. A reported percentage is accepted only from the exact county record.
- * This function never substitutes a state, ZIP, or neighboring-county value.
+ * Returns a county-only Medicare denial rate calculated from matching claim counts.
+ * A standalone reported percentage is not sufficient: the denied and adjudicated
+ * counts, reporting period, claim scope, and source must all come from this exact
+ * five-digit county record. This never substitutes ZIP, provider, state, or
+ * neighboring-county values.
  */
-export function getCountyMedicareDenialRatePct(county: CountyDenialInput): number | null {
+export function getCountyMedicareDenialMetric(
+  county: CountyDenialInput,
+): CountyMedicareDenialMetric | null {
   if (!/^\d{5}$/.test(county.countyFips)) return null;
 
   const denied = county.medicareDeniedClaimCount;
   const adjudicated = county.medicareAdjudicatedClaimCount;
-  if (denied !== undefined || adjudicated !== undefined) {
-    if (
-      !hasCountyDenialProvenance(county) ||
-      typeof denied !== 'number' ||
-      typeof adjudicated !== 'number' ||
-      !Number.isInteger(denied) ||
-      !Number.isInteger(adjudicated) ||
-      adjudicated <= 0 ||
-      denied < 0 ||
-      denied > adjudicated
-    ) {
-      return null;
-    }
-    return Number(((denied / adjudicated) * 100).toFixed(1));
+  if (
+    !hasCountyDenialProvenance(county) ||
+    typeof denied !== 'number' ||
+    typeof adjudicated !== 'number' ||
+    !Number.isSafeInteger(denied) ||
+    !Number.isSafeInteger(adjudicated) ||
+    adjudicated <= 0 ||
+    denied < 0 ||
+    denied > adjudicated
+  ) {
+    return null;
   }
 
-  const reportedRate = county.medicareDenialRatePct;
-  return hasCountyDenialProvenance(county) &&
-    typeof reportedRate === 'number' &&
-    Number.isFinite(reportedRate) &&
-    reportedRate >= 0 &&
-    reportedRate <= 100
-    ? reportedRate
-    : null;
+  return {
+    countyFips: county.countyFips,
+    ratePct: Number(((denied / adjudicated) * 100).toFixed(1)),
+    deniedClaimCount: denied,
+    adjudicatedClaimCount: adjudicated,
+    claimScope: county.medicareDenialClaimScope!.trim(),
+    reportingPeriod: county.medicareDenialReportingPeriod!.trim(),
+    source: county.medicareDenialSource!.trim(),
+    sourceUrl: county.medicareDenialSourceUrl!.trim(),
+  };
+}
+
+export function getCountyMedicareDenialRatePct(county: CountyDenialInput): number | null {
+  return getCountyMedicareDenialMetric(county)?.ratePct ?? null;
 }

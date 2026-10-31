@@ -7,7 +7,7 @@ import { gunzipSync, strFromU8 } from 'fflate';
 import { Agency } from '../types';
 import { ALL_NATIONWIDE_COUNTIES, ComprehensiveCountyRecord, CityBoundaryRecord } from '../data/allCountiesDatabase';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
-import { getCountyMedicareDenialRatePct } from './countyMedicareDenialService';
+import { getCountyMedicareDenialMetric } from './countyMedicareDenialService';
 import { territoryEngine } from './territoryIntelligenceEngine';
 
 export interface GeoJsonGeometry {
@@ -104,6 +104,9 @@ export interface SvgProjectedCounty {
   citiesCount: number;
   population: number;
   medicareDenialRatePct: number | null;
+  medicareDeniedClaimCount?: number;
+  medicareAdjudicatedClaimCount?: number;
+  medicareDenialClaimScope?: string;
   medicareDenialSource?: string;
   medicareDenialReportingPeriod?: string;
   medicareDenialSourceUrl?: string;
@@ -434,7 +437,7 @@ class CountyBoundaryHierarchyService {
       const [labelX, labelY] = projectPoint(co.centroid.lng, co.centroid.lat);
       // County rates must be attached to this exact county record (5-digit county FIPS).
       // Never fill a missing value from state averages, ZIP samples, or neighboring counties.
-      const denialRate = getCountyMedicareDenialRatePct(co.countyRecord);
+      const denialMetric = getCountyMedicareDenialMetric(co.countyRecord);
 
       projectedCounties.push({
         countyFips: co.countyFips,
@@ -444,10 +447,13 @@ class CountyBoundaryHierarchyService {
         landAreaSqMiles: co.landAreaSqMiles,
         citiesCount: co.citiesList.length,
         population: co.countyRecord.population,
-        medicareDenialRatePct: denialRate,
-        medicareDenialSource: denialRate !== null ? co.countyRecord.medicareDenialSource : undefined,
-        medicareDenialReportingPeriod: denialRate !== null ? co.countyRecord.medicareDenialReportingPeriod : undefined,
-        medicareDenialSourceUrl: denialRate !== null ? co.countyRecord.medicareDenialSourceUrl : undefined,
+        medicareDenialRatePct: denialMetric?.ratePct ?? null,
+        medicareDeniedClaimCount: denialMetric?.deniedClaimCount,
+        medicareAdjudicatedClaimCount: denialMetric?.adjudicatedClaimCount,
+        medicareDenialClaimScope: denialMetric?.claimScope,
+        medicareDenialSource: denialMetric?.source,
+        medicareDenialReportingPeriod: denialMetric?.reportingPeriod,
+        medicareDenialSourceUrl: denialMetric?.sourceUrl,
         averageTransportMinutes: co.countyRecord.averageTransportMinutes,
         svgPath,
         labelX,

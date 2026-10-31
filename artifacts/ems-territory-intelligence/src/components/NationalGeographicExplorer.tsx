@@ -1149,9 +1149,28 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="text-slate-700 dark:text-slate-300">
                           State ZIP-profile average: <strong className="font-semibold">
-                            {denialProfileSummary ? `${denialProfileSummary.ratePct.toFixed(1)}%` : 'No profile'}
+                            {denialProfileSummary ? `${denialProfileSummary.ratePct.toFixed(1)}%` : 'Not published'}
                           </strong>
                         </span>
+                        {denialProfileSummary && (
+                          <>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {denialProfileSummary.reportingPeriod} · {denialProfileSummary.claimScope}
+                            </span>
+                            {denialProfileSummary.sources.map((source) => (
+                              <a
+                                key={source.zipCode}
+                                href={source.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={event => event.stopPropagation()}
+                                className="text-[10px] text-blue-700 dark:text-blue-300 underline underline-offset-2"
+                              >
+                                ZIP {source.zipCode} source
+                              </a>
+                            ))}
+                          </>
+                        )}
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="text-slate-700 dark:text-slate-300">FEMA Grants: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">${(hSt.totalAfgAwardsYtd / 1000000).toFixed(1)}M</strong></span>
                       </div>
@@ -1584,11 +1603,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
                             {countyDenialRateDisplay ?? 'Not published'}
                           </span>
-                          {countyDenialDisplay.kind === 'zip-profile' && (
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              {countyDenialDisplay.city} · ZIP {countyDenialDisplay.zipCode}; not a county claims aggregate
-                            </span>
-                          )}
+                           {countyDenialDisplay.kind === 'zip-profile' && (
+                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                               {countyDenialDisplay.city} · ZIP {countyDenialDisplay.zipCode}; {countyDenialDisplay.claimScope} · {countyDenialDisplay.reportingPeriod} · not a county claims aggregate ·{' '}
+                               <a
+                                 className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                 href={countyDenialDisplay.sourceUrl}
+                                 target="_blank"
+                                 rel="noreferrer"
+                                 onClick={event => event.stopPropagation()}
+                               >
+                                 profile source
+                               </a>
+                             </span>
+                           )}
                           {countyDenialDisplay.kind === 'county-claims-rate' && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                               FIPS {countyDenialDisplay.countyFips} · denied {countyDenialDisplay.deniedClaimCount} /{' '}
@@ -1625,16 +1653,27 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               className="mt-1 space-y-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400"
                             >
                               <span className="block font-medium">Matched ZIP-profile values:</span>
-                              {countyZipDenialProfiles.map(record => (
-                                <span
+                               {countyZipDenialProfiles.map(record => (
+                                 <span
                                   key={`${record.fipsCounty}-${record.zipCode}`}
-                                  className="block tabular-nums"
+                                   className="block"
                                 >
-                                  {record.city} · {record.zipCode}: {record.medicareDenialRate}%
+                                   <a
+                                     className="tabular-nums underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                     href={record.medicareDenialRateSourceUrl!}
+                                     target="_blank"
+                                     rel="noreferrer"
+                                     onClick={event => event.stopPropagation()}
+                                   >
+                                     {record.city} · {record.zipCode}: {record.medicareDenialRate}%
+                                   </a>
+                                   <span className="block">
+                                     {record.medicareDenialRateReportingPeriod} · {record.medicareDenialClaimScope}
+                                   </span>
                                 </span>
                               ))}
                               <span className="block">
-                                Individual ZIP values; no county average is calculated.
+                                 Individual source-linked ZIP values; no county average is calculated.
                               </span>
                             </div>
                           )}

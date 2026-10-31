@@ -225,7 +225,28 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                   <td className="py-3 px-3 text-right text-slate-500 dark:text-slate-400">
                     {(() => {
                       const denialProfile = getStateZipDenialProfileSummary(summary.code);
-                      return denialProfile ? `${denialProfile.ratePct.toFixed(1)}%` : 'No profile';
+                      if (!denialProfile) return 'Not published';
+                      return (
+                        <div className="space-y-1">
+                          <div className="font-semibold tabular-nums">{denialProfile.ratePct.toFixed(1)}%</div>
+                          <div className="text-[10px]" title={denialProfile.claimScope}>
+                            {denialProfile.reportingPeriod} · {denialProfile.claimScope}
+                          </div>
+                          <div className="flex flex-wrap justify-end gap-x-2">
+                            {denialProfile.sources.map((source) => (
+                              <a
+                                key={source.zipCode}
+                                href={source.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-blue-700 dark:text-blue-300 underline underline-offset-2"
+                              >
+                                ZIP {source.zipCode}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      );
                     })()}
                   </td>
                   <td className={`py-3 px-3 text-right tabular-nums ${

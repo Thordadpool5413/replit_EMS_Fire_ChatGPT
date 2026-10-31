@@ -281,8 +281,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             value: zipDenialSummary?.ratePct ?? null,
             coverage: zipDenialSummary
               ? `Unweighted mean of ${formatInteger(zipDenialSummary.profileCount)} ZIP-profile percentages.`
-              : `${formatInteger(zipProfiles.length)} ZIP-profile percentages available.`,
-            period: 'The ZIP-profile records do not state a reporting period.',
+              : `${formatInteger(zipProfiles.length)} source-backed ZIP-profile denial records available.`,
+            period: zipDenialSummary?.reportingPeriod ?? 'No source-backed reporting period is available.',
             sourceAction: 'zip-profiles',
           },
         };
@@ -859,7 +859,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    {stateZipDenialSummary ? 'State ZIP-profile average' : 'County ambulance denial rate'}
+                    {stateZipDenialSummary ? 'State ZIP-profile average' : 'Ambulance denial rate'}
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card tabular-nums">
                     {stateZipDenialSummary
@@ -874,35 +874,73 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
               </div>
 
-              {stateZipDenialProfiles.length > 0 && (
-                <div
-                  id="state-zip-profile-values"
-                  data-testid={`zip-denial-profile-values-${displayStateCode}`}
-                  className="rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] p-3 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">
-                      Available ZIP-profile denial values
-                    </span>
-                    <span className="text-[10px] text-[#53657B] dark:text-slate-400">
-                      {stateZipDenialProfiles.length} entries
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {stateZipDenialProfiles.map((record) => (
-                      <span
-                        key={`${record.fipsCounty}-${record.zipCode}`}
-                        className="rounded-md bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[10px] text-[#53657B] dark:text-slate-300 tabular-nums"
-                      >
-                        {record.county} · {record.zipCode} · {record.medicareDenialRate}%
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                    State average is the unweighted mean of these ZIP-profile percentages; denied/adjudicated claim counts are not included.
-                  </p>
+              <div
+                id="state-zip-profile-values"
+                data-testid={`zip-denial-profile-values-${displayStateCode}`}
+                className="rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] p-3 space-y-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">
+                    ZIP-profile denial values
+                  </span>
+                  <span className="text-[10px] text-[#53657B] dark:text-slate-400">
+                    {stateZipDenialProfiles.length} source-backed entries
+                  </span>
                 </div>
-              )}
+                {stateZipDenialProfiles.length > 0 ? (
+                  <>
+                    <div className="space-y-1.5">
+                      {stateZipDenialProfiles.map((record) => (
+                        <div
+                          key={`${record.fipsCounty}-${record.zipCode}`}
+                          className="rounded-md bg-slate-50 dark:bg-slate-800 px-2.5 py-2"
+                        >
+                          <a
+                            href={record.medicareDenialRateSourceUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                          >
+                            {record.county} · {record.zipCode} · {record.medicareDenialRate}%
+                          </a>
+                          <div className="mt-0.5 text-[10px] text-[#53657B] dark:text-slate-400">
+                            {record.medicareDenialRateReportingPeriod} · {record.medicareDenialClaimScope}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {stateZipDenialSummary && (
+                      <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                        The state ZIP-profile average is an unweighted mean for one reporting period and claim scope. It is not a state claims denial rate.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                      No source-backed ZIP denial percentages are available in the app records. CMS publishes ambulance payment geography by ZIP and paid-claim utilization by state/county, not ZIP-level denied and adjudicated claim counts.
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                      <a
+                        href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                      >
+                        CMS ambulance ZIP/payment files
+                      </a>
+                      <a
+                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/program-integrity-market-saturation-by-type-of-service/market-saturation-utilization-state-county"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                      >
+                        CMS paid-claim county data
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Apparatus Fleet & Grant Funding Overview */}
               <div className="space-y-2 text-xs border-t border-[#DFE6EF] dark:border-[#1E2D42] pt-3">
@@ -940,7 +978,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   {formatInteger(stateStats.medicareAllowedDataCount)} of {formatInteger(stateStats.count)} agency records
                 </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  CMS public geographic files report use and spending, not county ambulance claim denials. No state or ZIP rate is substituted.
+                  These CMS links describe ZIP payment geography and state/county paid utilization; neither is a source for ambulance denial percentages. No state or ZIP rate is substituted.
                 </p>
               </div>
 

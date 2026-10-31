@@ -21,14 +21,16 @@ export interface ZipCityRecord {
   cathLabDistanceMiles: number;
   avgTransportMinutes: number;
   medicareDenialRate: number | null;
+  medicareDenialRateSourceUrl?: string | null;
+  medicareDenialRateReportingPeriod?: string | null;
+  medicareDenialClaimScope?: string | null;
 }
 
 /**
- * Authoritative National Geographic & Postal Registry covering all 50 US States + District of Columbia.
- * Maps 5-digit postal zip codes, incorporated cities, and counties to regional EMS trauma systems,
- * Medicare billing profiles, and cardiac emergency call volumes.
+ * Curated ZIP/city/county and EMS profile records.
+ * Denial percentages require their own source, reporting period, and claim scope.
  */
-export const NATIONAL_ZIP_CITY_REGISTRY: ZipCityRecord[] = [
+const LEGACY_ZIP_CITY_REGISTRY: ZipCityRecord[] = [
   // --- ALABAMA (AL) ---
   { zipCode: '35203', city: 'Birmingham', county: 'Jefferson County', stateCode: 'AL', stateName: 'Alabama', fipsCounty: '01073', population: 24200, seniorPopPct: 16.8, medianIncome: 39400, latitude: 33.5207, longitude: -86.8025, primaryAgencyName: 'Birmingham Fire and Rescue Service', annualEmergencyTransports: 5800, annualCardiacCalls: 120, cathLabDistanceMiles: 2.1, avgTransportMinutes: 18.2, medicareDenialRate: 21.4 },
   { zipCode: '35205', city: 'Birmingham', county: 'Jefferson County', stateCode: 'AL', stateName: 'Alabama', fipsCounty: '01073', population: 31800, seniorPopPct: 15.2, medianIncome: 44200, latitude: 33.4988, longitude: -86.7924, primaryAgencyName: 'Birmingham Fire and Rescue Service', annualEmergencyTransports: 6400, annualCardiacCalls: 140, cathLabDistanceMiles: 1.8, avgTransportMinutes: 16.5, medicareDenialRate: 20.8 },
@@ -254,11 +256,32 @@ export const NATIONAL_ZIP_CITY_REGISTRY: ZipCityRecord[] = [
   { zipCode: '82601', city: 'Casper', county: 'Natrona County', stateCode: 'WY', stateName: 'Wyoming', fipsCounty: '56025', population: 32800, seniorPopPct: 16.9, medianIncome: 64800, latitude: 42.8501, longitude: -106.3252, primaryAgencyName: 'Casper Fire-EMS', annualEmergencyTransports: 3400, annualCardiacCalls: 68, cathLabDistanceMiles: 5.2, avgTransportMinutes: 26.2, medicareDenialRate: 16.8 }
 ];
 
+/**
+ * The legacy ZIP denial percentages have no source URL, reporting period, claim
+ * scope, or supporting counts. Keep those raw entries out of the exported
+ * registry until a traceable source record is supplied.
+ */
+export const NATIONAL_ZIP_CITY_REGISTRY: ZipCityRecord[] = LEGACY_ZIP_CITY_REGISTRY.map((record) => {
+  const hasTraceableDenialRate =
+    typeof record.medicareDenialRate === 'number' &&
+    Number.isFinite(record.medicareDenialRate) &&
+    record.medicareDenialRate >= 0 &&
+    record.medicareDenialRate <= 100 &&
+    /^https:\/\//i.test(record.medicareDenialRateSourceUrl ?? '') &&
+    Boolean(record.medicareDenialRateReportingPeriod?.trim()) &&
+    Boolean(record.medicareDenialClaimScope?.trim());
+
+  return {
+    ...record,
+    medicareDenialRate: hasTraceableDenialRate ? record.medicareDenialRate : null,
+  };
+});
+
 import { ALL_NATIONWIDE_COUNTIES } from './allCountiesDatabase';
 import { ALL_50_STATES_SUMMARIES } from './nationalGeographicData';
 
 /**
- * Authoritative zip code index and lookup cache
+ * ZIP code index and lookup cache
  */
 const dynamicZipCache = new Map<string, ZipCityRecord>();
 

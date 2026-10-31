@@ -61,7 +61,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   onSelectState
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedStateCode, setSelectedStateCode] = useState<string>('IL');
+  const [selectedStateCode, setSelectedStateCode] = useState<string>('FL');
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
 
@@ -93,7 +93,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   // Active state to display in the Intelligence summary panel
   const displayStateCode = hoveredStateCode || selectedStateCode;
-  const activeStateSummary = ALL_50_STATES_SUMMARIES[displayStateCode] || ALL_50_STATES_SUMMARIES['IL'];
+  const activeStateSummary = ALL_50_STATES_SUMMARIES[displayStateCode] || ALL_50_STATES_SUMMARIES['FL'];
 
   // Real statistics computed for the active state
   const stateStats = useMemo(() => {
@@ -105,13 +105,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return {
         count: 0,
         countiesCount,
-        avgPulseIq: 72,
-        totalAmbulances: 42,
-        totalFireEngines: 68,
-        medicareAllowed: activeStateSummary?.totalAgencies 
-          ? activeStateSummary.totalAgencies * 450000 
-          : 540000,
-        grantFunds: activeStateSummary?.totalAfgAwardsYtd || 1250000
+        avgPulseIq: null,
+        totalAmbulances: null,
+        totalFireEngines: null,
+        medicareAllowed: null,
+        grantFunds: null
       };
     }
 
@@ -507,7 +505,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     Modeled avg PulseIQ
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card">
-                    {formatScore(stateStats.avgPulseIq)}
+                    {stateStats.avgPulseIq === null ? 'Not available' : formatScore(stateStats.avgPulseIq)}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -525,19 +523,25 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-[#53657B] dark:text-slate-400">Estimated ambulances:</span>
                   <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {formatInteger(stateStats.totalAmbulances)} units
+                    {stateStats.totalAmbulances === null
+                      ? 'Not available'
+                      : `${formatInteger(stateStats.totalAmbulances)} units`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#53657B] dark:text-slate-400">Estimated fire engines:</span>
                   <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {formatInteger(stateStats.totalFireEngines)} apparatus
+                    {stateStats.totalFireEngines === null
+                      ? 'Not available'
+                      : `${formatInteger(stateStats.totalFireEngines)} apparatus`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#53657B] dark:text-slate-400">Estimated Medicare allowed:</span>
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400 pi-data-number">
-                    {formatCurrency(stateStats.medicareAllowed)}
+                    {stateStats.medicareAllowed === null
+                      ? 'Not available'
+                      : formatCurrency(stateStats.medicareAllowed)}
                   </span>
                 </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">

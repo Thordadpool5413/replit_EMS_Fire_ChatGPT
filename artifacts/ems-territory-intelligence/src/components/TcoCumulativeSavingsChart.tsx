@@ -18,8 +18,19 @@ interface TcoCumulativeSavingsChartProps {
 export const TcoCumulativeSavingsChart: React.FC<TcoCumulativeSavingsChartProps> = ({ agency, className = '' }) => {
   const [hoverYear, setHoverYear] = useState<number>(5);
 
+  const reportedUnits = agency.installedFleet?.defibUnitsCount;
+  const hasReportedUnits = typeof reportedUnits === 'number' && Number.isFinite(reportedUnits);
   const tco = calculateAgencyFleetTco(agency, 5);
-  const units = tco.unitCount;
+  if (!hasReportedUnits || reportedUnits <= 0) {
+    return (
+      <div role="status" className={`rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 ${className}`}>
+        {hasReportedUnits
+          ? 'TCO estimate not calculated: 0 defibrillator units reported.'
+          : 'TCO estimate not calculated: defibrillator unit count not reported.'}
+      </div>
+    );
+  }
+  const units = reportedUnits;
 
   // Compute year-by-year cumulative costs
   const yearlyData = [1, 2, 3, 4, 5].map((yr) => {
@@ -62,8 +73,11 @@ export const TcoCumulativeSavingsChart: React.FC<TcoCumulativeSavingsChartProps>
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>5-Year Cumulative Operating Burden &amp; Net Cash Savings Ledger</span>
+            <span>Illustrative 5-Year TCO Benchmark</span>
           </h3>
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Not reported agency spending. Inputs: {units} reported defibrillator units and five years; benchmark {tco.incumbentModel} vs {tco.zollModel}; per-unit annual service {formatCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs {formatCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries {formatCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs {formatCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables {formatCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs {formatCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption {formatCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: five-year service, battery, and consumables cost difference plus modeled trade-in credit.
+          </p>
         </div>
 
         {/* Unboxed Tabular Total 5-Year Net Savings Readout */}

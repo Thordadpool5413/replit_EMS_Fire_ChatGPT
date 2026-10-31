@@ -375,8 +375,8 @@ export interface Agency {
     programName: string;
     purpose: string;
     awardAmount: number;
-    localMatchAmount: number;
-    federalSharePct: number;
+    localMatchAmount: number | null;
+    federalSharePct: number | null;
     status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible';
     applicationRound?: string;
   }>;

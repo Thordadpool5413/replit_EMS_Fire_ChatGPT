@@ -46,6 +46,9 @@ interface ExecutiveBriefingDossierProps {
   onClose: () => void;
 }
 
+const reportNumber = (value: number | null | undefined, suffix = '') =>
+  value == null || !Number.isFinite(value) ? 'Not reported' : `${value.toLocaleString()}${suffix}`;
+
 export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> = ({
   agency,
   isOpen,
@@ -71,7 +74,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   // Derived 5-Year TCO Comparison Model
   const tcoModel = useMemo(() => {
     if (!agency) return null;
-    return calculateAgencyFleetTco(agency, 5);
+    const reportedDefibCount = agency.installedFleet?.defibUnitsCount;
+    if (reportedDefibCount == null || !Number.isFinite(reportedDefibCount) || reportedDefibCount <= 0) return null;
+    return calculateAgencyFleetTco(agency, 5, reportedDefibCount);
   }, [agency]);
 
   // Derived Granular HCPCS Medicare & Commercial Denial Model
@@ -79,6 +84,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     if (!agency) return null;
     return calculateAgencyHcpcsBreakdown(agency);
   }, [agency]);
+  const hasTcoInputs = Boolean(tcoModel && tcoModel.unitCount > 0);
+  const formatTcoValue = (value: number | undefined) =>
+    !hasTcoInputs || value == null || !Number.isFinite(value)
+      ? 'Not calculated'
+      : `$${value.toLocaleString()}`;
 
   // Derived 5-Pillar Algorithmic Score Attribution
   const scoreExplanation = useMemo(() => {
@@ -90,75 +100,16 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   if (!isOpen || !agency) return null;
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
   const primaryContact = agency.keyContacts && agency.keyContacts.length > 0 ? agency.keyContacts[0] : undefined;
-  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not listed';
+  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not reported';
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric'
   });
 
-  const fleet = agency.apparatusFleet || {
-    alsAmbulances: agency.totalAmbulances || 6,
-    blsAmbulances: 2,
-    fireEngines: isFire ? Math.max(3, agency.totalFireEngines || 4) : 0,
-    ladderTrucks: isFire ? 1 : 0,
-    heavyRescueUnits: 1,
-    commandVehicles: 2,
-    totalActiveUnits: (agency.totalAmbulances || 6) + (isFire ? 5 : 2),
-    avgVehicleAgeYears: 6.4,
-    replacementCycleYears: 7
-  };
-
-  const logistics = agency.hospitalLogistics || {
-    primaryTraumaHospital: agency.gisData?.primaryReceivingHospital || 'Not listed',
-    traumaLevel: agency.gisData?.traumaCenterLevel || 'Not listed',
-    distanceToTraumaMiles: agency.gisData?.avgTransportDistanceToTraumaMiles || 7.2,
-    transportTimeMinutes: agency.gisData?.avgTransportTimeMinutes || 13,
-    primaryCathLabHospital: 'Not listed',
-    cathLabDistanceMiles: 6.5,
-    cathLabTransportMinutes: 11,
-    annualEdTransports: Math.round((agency.annual911Transports || 2800) * 0.88),
-    avgEdOffloadLatencyMinutes: 21
-  };
-
-  const femaGrants = agency.femaGrantHistory || [
-    {
-      fiscalYear: 2025,
-      programName: 'FEMA Assistance to Firefighters Grant (AFG)',
-      purpose: 'Operations & Safety — Advanced Monitor-Defibrillator & Mechanical CPR Upgrades',
-      awardAmount: 185000,
-      localMatchAmount: 18500,
-      federalSharePct: 90,
-      status: 'Awarded & Disbursed' as const
-    },
-    {
-      fiscalYear: 2024,
-      programName: 'FEMA Regional AFG Interoperability Award',
-      purpose: 'NEMSIS 3.5 12-Lead ECG Gateways & Hospital Telemetry Gateways',
-      awardAmount: 140000,
-      localMatchAmount: 21000,
-      federalSharePct: 85,
-      status: 'Awarded - Active Spending' as const
-    },
-    {
-      fiscalYear: 2023,
-      programName: 'Staffing for Adequate Fire & Emergency Response (SAFER)',
-      purpose: 'Frontline Paramedic Hiring & 24/7 Resuscitation Squad Coverage',
-      awardAmount: 390000,
-      localMatchAmount: 0,
-      federalSharePct: 100,
-      status: 'Awarded & Disbursed' as const
-    },
-    {
-      fiscalYear: 2026,
-      programName: 'FY2026 FEMA AFG Equipment Modernization Priority',
-      purpose: 'LifePak-15 Replacement & Next-Gen Real CPR Help Defibrillator Spec',
-      awardAmount: 220000,
-      localMatchAmount: 22000,
-      federalSharePct: 90,
-      status: 'Eligible' as const
-    }
-  ];
+  const fleet = agency.apparatusFleet;
+  const logistics = agency.hospitalLogistics;
+  const femaGrants = agency.femaGrantHistory ?? [];
 
   // ACTION 1: Trigger Native Browser Print Dialog (Scoped CSS ensures only document prints)
   const handlePrint = () => {
@@ -398,7 +349,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     <span aria-hidden="true">&middot;</span>
                     <span className="text-slate-700">NPI: {agency.npiNumber || 'Unassigned'}</span>
                     <span aria-hidden="true">&middot;</span>
-                    <span className="text-slate-700">Taxonomy: {agency.taxonomyCode || '341600000X'}</span>
+                    <span className="text-slate-700">Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
                   </p>
                 </div>
               </div>
@@ -451,13 +402,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div>
                   <div className="text-[11px] font-medium text-slate-500">Clinical software stack</div>
                   <div className="text-xs font-semibold text-slate-900 mt-0.5">
-                    Billing: {agency.installedFleet?.billingSoftware || 'In-House Municipal'}
+                    Billing: {agency.installedFleet?.billingSoftware || 'Not reported'}
                   </div>
                   <div className="text-xs text-slate-700 mt-0.5">
-                    ePCR: <span className="font-medium">{agency.installedFleet?.epcrCadSoftware || 'ImageTrend Elite'}</span>
+                    ePCR: <span className="font-medium">{agency.installedFleet?.epcrCadSoftware || 'Not reported'}</span>
                   </div>
                   <div className="text-xs text-blue-700 font-medium">
-                    CAD: {agency.installedFleet?.dispatchCadVendor || 'Municipal 911 CAD'}
+                    CAD: {agency.installedFleet?.dispatchCadVendor || 'Not reported'}
                   </div>
                 </div>
               </div>
@@ -504,40 +455,41 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Annual 911 transports</div>
                   <div className="text-[24px] font-[650] text-slate-900 mt-1 tabular-nums leading-none">
-                    {(agency.annual911Transports || 3200).toLocaleString()}
+                    {reportNumber(agency.annual911Transports)}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    {(agency.annualCallVolume || 5400).toLocaleString()} dispatches &middot; Pop {(agency.populationServed || 45000).toLocaleString()}
+                    {reportNumber(agency.annualCallVolume)} dispatches &middot; Pop {reportNumber(agency.populationServed)}
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Installed defib fleet</div>
                   <div className="text-sm font-semibold text-slate-900 mt-1 truncate" title={agency.installedFleet?.defibBrand}>
-                    {agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15'}
+                    {agency.installedFleet?.defibBrand || 'Not reported'}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    {agency.installedFleet?.defibUnitsCount || 12} devices &middot; Age: {agency.installedFleet?.defibAgeYears || 8} yrs
+                    {reportNumber(agency.installedFleet?.defibUnitsCount)} devices &middot; Age: {reportNumber(agency.installedFleet?.defibAgeYears, ' yrs')}
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50">
                   <div className="text-xs text-emerald-800 font-medium">Billing recovery potential</div>
                   <div className="text-[24px] font-[650] text-emerald-700 mt-1 tabular-nums leading-none">
-                    ${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 145000) / 1000)}K per year
+                    Estimate unavailable
                   </div>
                   <div className="text-xs text-emerald-800 mt-1.5 tabular-nums">
-                    {agency.cmsData?.claimDenialRate || 19.4}% denials &middot; Code {agency.cmsData?.topDenialReasonCode || 'CO-16'}
+                    Denials {reportNumber(agency.cmsData?.claimDenialRate, '%')} &middot; Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
                   </div>
+                  <div className="text-[10px] text-emerald-900 mt-1">No estimate shown without its inputs and method.</div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Cardiac survival &amp; acuity</div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
-                    {agency.utsteinSurvivalRate || 14.2}%
+                    {reportNumber(agency.utsteinSurvivalRate, '%')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                    {(agency.annualCardiacArrestCalls || 680).toLocaleString()} OHCA calls &middot; AHA {agency.qualityMetrics?.ahaMissionLifelineTier || 'Gold Plus'}
+                    {reportNumber(agency.annualCardiacArrestCalls)} OHCA calls &middot; AHA {agency.qualityMetrics?.ahaMissionLifelineTier || 'Not reported'}
                   </div>
                 </div>
               </div>
@@ -551,15 +503,15 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     Modeled priority index
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1E3A8A] text-white">
-                    {agency.zollOpportunity?.priorityTier || 'Tier 1 Target'}
+                    {agency.zollOpportunity?.priorityTier || 'Not calculated'}
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-white text-blue-900 border border-blue-200">
-                    Stage: {agency.zollOpportunity?.salesStage || 'Evaluation Trial'}
+                    Stage: {agency.zollOpportunity?.salesStage || 'Not reported'}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[24px] font-[650] text-[#1E3A8A] tabular-nums">
-                    {agency.zollOpportunity?.pulseIqScore || 92}
+                    {reportNumber(agency.zollOpportunity?.pulseIqScore)}
                   </span>
                   <span className="text-xs text-slate-500">/ 100</span>
                 </div>
@@ -582,8 +534,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
               {/* Strategic Rationale Narrative */}
               <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-blue-200/50">
-                <strong className="font-semibold text-slate-900">Strategic conversion rationale:</strong> {agency.zollOpportunity?.scoreRationale || 
-                  `Aging incumbent ${agency.installedFleet?.defibBrand} monitors are past manufacturer end-of-life with elevated maintenance liability. High Medicare claim rejection rate (${agency.cmsData?.claimDenialRate}%) presents immediate ROI through ZOLL RescueNet integration.`}
+                <strong className="font-semibold text-slate-900">Strategic rationale:</strong> {agency.zollOpportunity?.scoreRationale || 'Agency-specific inputs and rationale are not reported.'}
               </div>
             </div>
 
@@ -591,7 +542,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Apparatus and emergency fleet breakdown</span>
-                <span className="text-xs text-slate-600 tabular-nums">Total active units: {fleet.totalActiveUnits} &middot; Stations: {agency.stationsCount || 4}</span>
+                <span className="text-xs text-slate-600 tabular-nums">Total active units: {reportNumber(fleet?.totalActiveUnits)} &middot; Stations: {reportNumber(agency.stationsCount)}</span>
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
@@ -606,41 +557,41 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     <tr>
                       <td className="py-2 px-3 font-semibold text-slate-900">Frontline ALS Ambulances (Type I/III)</td>
-                      <td className="py-2 px-3 text-center font-semibold text-blue-900 tabular-nums">{fleet.alsAmbulances}</td>
+                      <td className="py-2 px-3 text-center font-semibold text-blue-900 tabular-nums">{reportNumber(fleet?.alsAmbulances)}</td>
                       <td className="py-2 px-3 text-slate-600">Advanced 12-Lead Monitor, Mechanical CPR, Transport Vent</td>
                       <td className="py-2 px-3 text-slate-700">7-Year High-Mileage Replacement Cycle</td>
                     </tr>
                     <tr>
                       <td className="py-2 px-3 font-medium text-slate-900">Reserve / BLS Ambulances</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.blsAmbulances}</td>
+                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{reportNumber(fleet?.blsAmbulances)}</td>
                       <td className="py-2 px-3 text-slate-600">Automated External Defibrillator (AED), BVM Airway</td>
                       <td className="py-2 px-3 text-slate-700">Secondary Peak-Volume Backup Units</td>
                     </tr>
-                    {fleet.fireEngines > 0 && (
+                    {fleet?.fireEngines != null && fleet.fireEngines > 0 && (
                       <tr>
                         <td className="py-2 px-3 font-medium text-slate-900">Type 1 Fire Engines / Pumpers</td>
-                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.fireEngines}</td>
+                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{reportNumber(fleet.fireEngines)}</td>
                         <td className="py-2 px-3 text-slate-600">First-Response AED, Oxygen Resuscitation Pack</td>
                         <td className="py-2 px-3 text-slate-700">10-15 Year Frontline Service Standard</td>
                       </tr>
                     )}
-                    {fleet.ladderTrucks > 0 && (
+                    {fleet?.ladderTrucks != null && fleet.ladderTrucks > 0 && (
                       <tr>
                         <td className="py-2 px-3 font-medium text-slate-900">Aerial Ladders / Platforms</td>
-                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.ladderTrucks}</td>
+                        <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{reportNumber(fleet.ladderTrucks)}</td>
                         <td className="py-2 px-3 text-slate-600">High-Angle Rescue, First-In Medical AED</td>
                         <td className="py-2 px-3 text-slate-700">Municipal Capital Depreciation Schedule</td>
                       </tr>
                     )}
                     <tr>
                       <td className="py-2 px-3 font-medium text-slate-900">Heavy Rescue &amp; Extrication Squads</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.heavyRescueUnits}</td>
+                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{reportNumber(fleet?.heavyRescueUnits)}</td>
                       <td className="py-2 px-3 text-slate-600">Full ALS Defibrillator &amp; Hydraulic Extrication</td>
                       <td className="py-2 px-3 text-slate-700">County Mutual Aid Technical Team</td>
                     </tr>
                     <tr>
                       <td className="py-2 px-3 font-medium text-slate-900">Command &amp; EMS Supervisor Interceptors</td>
-                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{fleet.commandVehicles}</td>
+                      <td className="py-2 px-3 text-center text-slate-700 tabular-nums">{reportNumber(fleet?.commandVehicles)}</td>
                       <td className="py-2 px-3 text-slate-600">Supervisor Monitor-Defibrillator &amp; Incident Telemetry</td>
                       <td className="py-2 px-3 text-slate-700">Battalion Field Command Units</td>
                     </tr>
@@ -653,17 +604,17 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               <div>
                 <div className="text-xs text-slate-500 font-medium">Primary receiving trauma hospital</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics.primaryTraumaHospital}</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics?.primaryTraumaHospital || 'Not reported'}</div>
                 <div className="text-xs text-slate-600 mt-1 tabular-nums">
-                  Driving distance: <strong className="font-medium text-slate-800">{logistics.distanceToTraumaMiles} miles</strong> &middot; Transit time: <strong className="font-medium text-slate-800">{logistics.transportTimeMinutes} mins</strong>
+                  Driving distance: <strong className="font-medium text-slate-800">{reportNumber(logistics?.distanceToTraumaMiles, ' miles')}</strong> &middot; Transit time: <strong className="font-medium text-slate-800">{reportNumber(logistics?.transportTimeMinutes, ' mins')}</strong>
                 </div>
               </div>
 
               <div>
                 <div className="text-xs text-slate-500 font-medium">24/7 STEMI PCI cath lab destination</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics.primaryCathLabHospital}</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics?.primaryCathLabHospital || 'Not reported'}</div>
                 <div className="text-xs text-slate-600 mt-1 tabular-nums">
-                  Distance: <strong className="font-medium text-slate-800">{logistics.cathLabDistanceMiles} miles</strong> &middot; Offload latency: <strong className="font-medium text-slate-800">{logistics.avgEdOffloadLatencyMinutes} mins</strong>
+                  Distance: <strong className="font-medium text-slate-800">{reportNumber(logistics?.cathLabDistanceMiles, ' miles')}</strong> &middot; Offload latency: <strong className="font-medium text-slate-800">{reportNumber(logistics?.avgEdOffloadLatencyMinutes, ' mins')}</strong>
                 </div>
               </div>
             </div>
@@ -685,7 +636,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <h3 className="text-lg font-semibold text-slate-900">Clinical resuscitation quality, CMS denials &amp; contract timeline</h3>
               </div>
               <div className="text-xs text-slate-600 tabular-nums">
-                {agency.npiNumber ? `NPI #${agency.npiNumber}` : 'NPI: Unassigned'} &middot; FDID: {agency.fdid || 'Not Recorded'}
+                {agency.npiNumber ? `NPI #${agency.npiNumber}` : 'NPI: Unassigned'} &middot; FDID: {agency.fdid || 'Not reported'}
               </div>
             </div>
 
@@ -694,7 +645,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>NEMSQA clinical quality measures &amp; CARES neurological survival</span>
                 <span className="text-xs text-emerald-800 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  AHA Mission: Lifeline {agency.qualityMetrics?.ahaMissionLifelineTier || 'Gold Plus'}
+                  AHA Mission: Lifeline {agency.qualityMetrics?.ahaMissionLifelineTier || 'Not reported'}
                 </span>
               </div>
 
@@ -702,7 +653,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">STEMI 12-lead acquisition</div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct || 89}%
+                    {reportNumber(agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct, '%')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
                     Target: &ge;85% within &le;10 min
@@ -712,7 +663,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Chest compression fraction</div>
                   <div className="text-[24px] font-[650] text-emerald-800 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaChestCompressionFractionPct || 81}%
+                    {reportNumber(agency.qualityMetrics?.nemsqaChestCompressionFractionPct, '%')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
                     Target: &ge;78% (AutoPulse 98%)
@@ -722,7 +673,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">ETCO2 ventilation compliance</div>
                   <div className="text-[24px] font-[650] text-amber-800 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct || 68}%
+                    {reportNumber(agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct, '%')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
                     Target: &ge;64% (Real BVM Help)
@@ -732,7 +683,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
                   <div className="text-xs text-slate-500 font-medium">Pediatric respiratory support</div>
                   <div className="text-[24px] font-[650] text-purple-900 mt-1 tabular-nums leading-none">
-                    {agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct || 74}%
+                    {reportNumber(agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct, '%')}
                   </div>
                   <div className="text-xs text-slate-500 mt-1.5 tabular-nums">
                     Target: &ge;72% pediatric standard
@@ -749,13 +700,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     CMS reimbursement &amp; revenue recovery analytics
                   </span>
                   <h4 className="text-base font-semibold text-slate-900 mt-0.5">
-                    Medicare denial rate: {agency.cmsData?.claimDenialRate || 19.4}% vs. 8.2% ZOLL benchmark
+                    Medicare denial rate: {reportNumber(agency.cmsData?.claimDenialRate, '%')}
                   </h4>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-600 font-medium">Annual recoverable cash:</span>
+                  <span className="text-xs text-slate-600 font-medium">Estimated annual recoverable cash:</span>
                   <div className="text-[24px] font-[650] text-emerald-700 tabular-nums leading-none mt-0.5">
-                    +${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 145000)).toLocaleString()} per year
+                    Not reported: estimate inputs and method unavailable
                   </div>
                 </div>
               </div>
@@ -765,37 +716,37 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <div className="flex items-center justify-between text-xs text-slate-700 font-medium">
                   <span>Payer mix breakdown:</span>
                   <span className="text-slate-500 text-xs tabular-nums">
-                    GADCS status: {agency.cmsData?.gadcsReportingStatus || 'Selected - Compliant'}
+                    GADCS status: {agency.cmsData?.gadcsReportingStatus || 'Not reported'}
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
                   <div className="p-2 rounded bg-white border border-slate-200">
                     <div className="text-xs text-slate-500 font-medium">Medicare</div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
-                      {agency.cmsData?.medicarePayerPct || agency.cmsData?.payerMix?.medicare || 48}%
+                      {reportNumber(agency.cmsData?.medicarePayerPct ?? agency.cmsData?.payerMix?.medicare, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
                     <div className="text-xs text-slate-500 font-medium">Medicaid</div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
-                      {agency.cmsData?.medicaidPayerPct || agency.cmsData?.payerMix?.medicaid || 22}%
+                      {reportNumber(agency.cmsData?.medicaidPayerPct ?? agency.cmsData?.payerMix?.medicaid, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
                     <div className="text-xs text-slate-500 font-medium">Commercial</div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
-                      {agency.cmsData?.commercialPayerMixPct || agency.cmsData?.payerMix?.commercial || 20}%
+                      {reportNumber(agency.cmsData?.commercialPayerMixPct ?? agency.cmsData?.payerMix?.commercial, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
                     <div className="text-xs text-slate-500 font-medium">Self-Pay / Other</div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
-                      {agency.cmsData?.selfPayPayerPct || agency.cmsData?.payerMix?.selfPay || 10}%
+                      {reportNumber(agency.cmsData?.selfPayPayerPct ?? agency.cmsData?.payerMix?.selfPay, '%')}
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-slate-700 mt-2">
-                  <strong className="font-semibold text-slate-900">Primary denial reason:</strong> {agency.cmsData?.topDenialReason || 'Inadequate Medical Necessity Documentation & Missing Signatures'} ({agency.cmsData?.topDenialReasonCode || 'CO-16'}). ZOLL RescueNet Billing eliminates 88% of these technical denials at transmission.
+                  <strong className="font-semibold text-slate-900">Primary denial reason:</strong> {agency.cmsData?.topDenialReason || 'Not reported'} ({agency.cmsData?.topDenialReasonCode || 'Not reported'}).
                 </div>
               </div>
             </div>
@@ -805,7 +756,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Incumbent service contract expiration timeline</span>
                 <span className="text-amber-700 font-medium bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-xs tabular-nums">
-                  {agency.competitorContract?.status || 'Expiring Soon (90 Days)'}
+                  {agency.competitorContract?.status || 'Not reported'}
                 </span>
               </div>
               <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 text-xs space-y-2">
@@ -813,25 +764,24 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Incumbent provider</div>
                     <div className="text-sm font-semibold text-slate-900 mt-0.5">
-                      {agency.competitorContract?.vendor || 'Stryker ProCare Master Agreement'}
+                      {agency.competitorContract?.vendor || 'Not reported'}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Expiration date</div>
                     <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">
-                      {agency.competitorContract?.contractEndDate || '2026-12-31'}
+                      {agency.competitorContract?.contractEndDate || 'Not reported'}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Renewal window</div>
                     <div className="text-sm font-semibold text-amber-800 mt-0.5 tabular-nums">
-                      {agency.competitorContract?.renewalWindowDays || 45} days to expiration
+                      {reportNumber(agency.competitorContract?.renewalWindowDays, ' days')}
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-slate-700 pt-2 border-t border-amber-200/70">
-                  <strong className="font-semibold text-slate-900">Recommended action:</strong> {agency.competitorContract?.actionRecommendation || 
-                    'Provide city purchasing agent with Sourcewell contract #011822-ZLL quote to preempt Stryker 3-year auto-renewal lock.'}
+                  <strong className="font-semibold text-slate-900">Recommended action:</strong> {agency.competitorContract?.actionRecommendation || 'Not reported'}
                 </div>
               </div>
             </div>
@@ -895,60 +845,67 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>5-year total cost of ownership: ZOLL upgrade vs. incumbent fleet</span>
                 <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs tabular-nums">
-                  Net 5-year municipal savings: +${tcoModel?.totalSavingsIncludingTradeIn.toLocaleString() || '107,700'}
+                  Net 5-year modeled savings: {tcoModel ? formatTcoValue(tcoModel.totalSavingsIncludingTradeIn) : 'Not calculated'}
                 </span>
               </div>
+              <p className="text-xs text-slate-500">
+                {tcoModel
+                  ? `Illustrative estimate, not reported agency spending. Inputs: ${tcoModel.unitCount} reported defibrillator units and five years; benchmark ${tcoModel.incumbentModel} vs ${tcoModel.zollModel}; per-unit annual service ${formatTcoValue(tcoModel.matchedIntel.incumbentAnnualServicePerUnit)} vs ${formatTcoValue(tcoModel.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${formatTcoValue(tcoModel.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${formatTcoValue(tcoModel.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${formatTcoValue(tcoModel.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${formatTcoValue(tcoModel.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption ${formatTcoValue(tcoModel.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: five-year service, battery, and consumables cost difference plus modeled trade-in credit.`
+                  : agency.installedFleet?.defibUnitsCount != null && Number.isFinite(agency.installedFleet.defibUnitsCount)
+                    ? 'Not calculated: 0 defibrillator units reported.'
+                    : 'Not calculated: defibrillator unit count not reported.'}
+              </p>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
                       <th className="py-2.5 px-3">TCO cost component</th>
-                      <th className="py-2.5 px-3">Incumbent ({tcoModel?.incumbentModel || agency.installedFleet?.defibBrand})</th>
-                      <th className="py-2.5 px-3">ZOLL {tcoModel?.zollModel || 'X Series Advanced'}</th>
+                      <th className="py-2.5 px-3">Incumbent ({tcoModel?.incumbentModel || agency.installedFleet?.defibBrand || 'Not reported'})</th>
+                      <th className="py-2.5 px-3">ZOLL {tcoModel?.zollModel || 'model not selected'}</th>
                       <th className="py-2.5 px-3 text-right">5-year savings</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     <tr>
                       <td className="py-2.5 px-3 font-medium text-slate-900">Preventive maintenance &amp; factory service</td>
-                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">${tcoModel?.incumbentServiceTotal.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">${tcoModel?.zollServiceTotal.toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">{formatTcoValue(tcoModel?.incumbentServiceTotal)}</td>
+                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">{formatTcoValue(tcoModel?.zollServiceTotal)}</td>
                       <td className="py-2.5 px-3 text-right font-semibold text-emerald-700 tabular-nums">
-                        +${((tcoModel?.incumbentServiceTotal || 0) - (tcoModel?.zollServiceTotal || 0)).toLocaleString()}
+                        {hasTcoInputs ? `+${formatTcoValue(tcoModel!.incumbentServiceTotal - tcoModel!.zollServiceTotal)}` : 'Not calculated'}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-2.5 px-3 font-medium text-slate-900">Lithium-ion batteries &amp; smart chargers</td>
-                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">${tcoModel?.incumbentBatteryTotal.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">${tcoModel?.zollBatteryTotal.toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">{formatTcoValue(tcoModel?.incumbentBatteryTotal)}</td>
+                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">{formatTcoValue(tcoModel?.zollBatteryTotal)}</td>
                       <td className="py-2.5 px-3 text-right font-semibold text-emerald-700 tabular-nums">
-                        +${((tcoModel?.incumbentBatteryTotal || 0) - (tcoModel?.zollBatteryTotal || 0)).toLocaleString()}
+                        {hasTcoInputs ? `+${formatTcoValue(tcoModel!.incumbentBatteryTotal - tcoModel!.zollBatteryTotal)}` : 'Not calculated'}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-2.5 px-3 font-medium text-slate-900">CPR sensors &amp; clinical electrodes</td>
-                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">${tcoModel?.incumbentConsumablesTotal.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">${tcoModel?.zollConsumablesTotal.toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-slate-700 tabular-nums">{formatTcoValue(tcoModel?.incumbentConsumablesTotal)}</td>
+                      <td className="py-2.5 px-3 text-slate-900 font-medium tabular-nums">{formatTcoValue(tcoModel?.zollConsumablesTotal)}</td>
                       <td className="py-2.5 px-3 text-right font-semibold text-emerald-700 tabular-nums">
-                        +${((tcoModel?.incumbentConsumablesTotal || 0) - (tcoModel?.zollConsumablesTotal || 0)).toLocaleString()}
+                        {hasTcoInputs ? `+${formatTcoValue(tcoModel!.incumbentConsumablesTotal - tcoModel!.zollConsumablesTotal)}` : 'Not calculated'}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-2.5 px-3 font-medium text-slate-900">ZOLL fleet trade-in credit allowance</td>
-                      <td className="py-2.5 px-3 text-slate-400 tabular-nums">$0</td>
+                      <td className="py-2.5 px-3 text-slate-400 tabular-nums">{formatTcoValue(0)}</td>
                       <td className="py-2.5 px-3 text-emerald-700 font-semibold tabular-nums">
-                        -${tcoModel?.totalTradeInCredit.toLocaleString()}
+                        {hasTcoInputs ? `-${formatTcoValue(tcoModel!.totalTradeInCredit)}` : 'Not calculated'}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-emerald-700 tabular-nums">
-                        +${tcoModel?.totalTradeInCredit.toLocaleString()}
+                        {hasTcoInputs ? `+${formatTcoValue(tcoModel!.totalTradeInCredit)}` : 'Not calculated'}
                       </td>
                     </tr>
                     <tr className="bg-emerald-50/60 font-semibold border-t-2 border-emerald-300">
                       <td className="py-3 px-3 text-emerald-950 font-semibold">Net 5-year financial advantage</td>
-                      <td className="py-3 px-3 text-slate-700 tabular-nums">${tcoModel?.incumbentOperatingTotal.toLocaleString()}</td>
-                      <td className="py-3 px-3 text-emerald-900 tabular-nums">${tcoModel?.zollNetOperatingTotal.toLocaleString()}</td>
+                      <td className="py-3 px-3 text-slate-700 tabular-nums">{formatTcoValue(tcoModel?.incumbentOperatingTotal)}</td>
+                      <td className="py-3 px-3 text-emerald-900 tabular-nums">{formatTcoValue(tcoModel?.zollNetOperatingTotal)}</td>
                       <td className="py-3 px-3 text-right font-semibold text-emerald-700 text-sm tabular-nums">
-                        +${tcoModel?.totalSavingsIncludingTradeIn.toLocaleString()} net savings
+                        {hasTcoInputs ? `+${formatTcoValue(tcoModel!.totalSavingsIncludingTradeIn)} net savings` : 'Not calculated'}
                       </td>
                     </tr>
                   </tbody>
@@ -961,9 +918,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Medicare &amp; insurance reimbursement recovery (HCPCS fee schedule)</span>
                 <span className="text-rose-700 font-medium tabular-nums text-xs">
-                  Annual denial exposure: -${hcpcsModel?.totalAnnualDenialLoss.toLocaleString() || '185,000'}/yr
+                  Annual modeled denial exposure: {hcpcsModel ? `-$${hcpcsModel.totalAnnualDenialLoss.toLocaleString()}/yr` : 'Not calculated'}
                 </span>
               </div>
+              <p className="text-xs text-slate-500">
+                {hcpcsModel
+                  ? `Estimate inputs: ${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports, ${hcpcsModel.inputs.claimDenialRatePct}% denial rate, and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
+                  : 'Not calculated: reported annual transports, denial rate, and Medicare payer share are required.'}
+              </p>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
@@ -1024,7 +986,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200">
                     <span className="text-slate-700">Contract renewal window:</span>
                     <span className="font-medium text-amber-700 tabular-nums">
-                      {agency.competitorContract?.renewalWindowDays || 45} days to expiration
+                      {reportNumber(agency.competitorContract?.renewalWindowDays, ' days')}
                     </span>
                   </div>
                 </div>
@@ -1053,9 +1015,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   </div>
 
                   <div className="p-2 rounded bg-white border border-blue-100">
-                    <div className="font-semibold text-slate-900">FEMA AFG equipment funding (90% federal share)</div>
+                    <div className="font-semibold text-slate-900">FEMA AFG program overview</div>
                     <div className="text-slate-600 text-xs mt-0.5">
-                      Active FEMA AFG equipment priority for replacing monitors older than 7 years with 10% local match requirement.
+                      Match requirements and eligibility depend on the current program notice. No agency-specific eligibility or funding estimate is shown here.
                     </div>
                   </div>
                 </div>
@@ -1066,7 +1028,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {/* 4. Multi-Year FEMA AFG Grant Award History */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>FEMA AFG &amp; federal grant award history (5-year record)</span>
+                <span>FEMA AFG &amp; federal grant awards (reported records)</span>
                 <span className="text-xs text-slate-500">Verified federal database records</span>
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">

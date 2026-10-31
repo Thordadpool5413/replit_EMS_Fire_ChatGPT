@@ -35,6 +35,15 @@ interface DealStoryBriefingViewProps {
   className?: string;
 }
 
+const hasReportedValue = (value: number | null | undefined): value is number =>
+  value != null && Number.isFinite(value);
+
+const reportMetric = (value: number | null | undefined, suffix = '') =>
+  hasReportedValue(value) ? `${value.toLocaleString()}${suffix}` : 'Not reported';
+
+const reportCurrency = (value: number | null | undefined) =>
+  hasReportedValue(value) ? `$${value.toLocaleString()}` : 'Not reported';
+
 export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   agency,
   variant = 'compact',
@@ -55,33 +64,46 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     return isFire ? COOPERATIVE_CONTRACTS[1] : COOPERATIVE_CONTRACTS[0]; // Sourcewell or HGACBuy
   }, [isFire]);
 
-  const defibBrand = agency.installedFleet?.defibBrand || 'Incumbent Defibrillator';
-  const defibAge = agency.installedFleet?.defibAgeYears || 7;
-  const defibCount = agency.installedFleet?.defibUnitsCount || 8;
-  const warranty = agency.installedFleet?.defibWarrantyStatus || 'Expired';
-  const denialRate = agency.cmsData?.claimDenialRate || 14.2;
-  const recoverableK = Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000);
-  const fiveYrSavingsK = Math.round(tco.fiveYearOperatingSavings / 1000);
-  const tradeInK = Math.round(tco.totalTradeInCredit / 1000);
+  const hasReportedDefibCount = hasReportedValue(agency.installedFleet?.defibUnitsCount);
+  const defibBrand = agency.installedFleet?.defibBrand || 'Not reported';
+  const reportedDefibAge = agency.installedFleet?.defibAgeYears;
+  const defibAge = reportMetric(reportedDefibAge, ' years');
+  const defibCount = reportMetric(agency.installedFleet?.defibUnitsCount);
+  const warranty = agency.installedFleet?.defibWarrantyStatus || 'Not reported';
+  const defibAgeQuestionPhrase = hasReportedValue(reportedDefibAge) && defibBrand !== 'Not reported'
+    ? `the reported ${reportedDefibAge}-year-old ${defibBrand} fleet`
+    : 'your current monitor fleet';
+  const hasTcoInputs = hasReportedDefibCount && agency.installedFleet.defibUnitsCount > 0;
+  const fiveYrSavings = hasTcoInputs ? `$${Math.round(tco.fiveYearOperatingSavings / 1000)}K` : 'Not calculated';
+  const tradeIn = hasTcoInputs ? `$${Math.round(tco.totalTradeInCredit / 1000)}K` : 'Not calculated';
+  const tcoMethod = hasTcoInputs
+    ? `Inputs: ${reportMetric(tco.unitCount)} reported defibrillator units; five years; benchmark ${tco.incumbentModel} vs ${tco.zollModel}; per-unit annual service ${reportCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs ${reportCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${reportCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${reportCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption ${reportCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: operating cost difference plus trade-in; modeled values, not an agency quote.`
+    : 'Not calculated: no positive reported defibrillator unit count.';
+  const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
+  const denialRate = reportMetric(agency.cmsData?.claimDenialRate, '%');
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
-  const grantAmtK = Math.round((agency.grantStatus?.afgAwardAmount || 0) / 1000);
+  const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);
+  const grantFiscalYear = reportMetric(agency.grantStatus?.afgFiscalYear);
 
   // Strategic Executive Elevator Pitch
   const elevatorPitch = useMemo(() => {
     const leaderTitle = isFire ? 'Chief' : 'Director';
     const leaderName = agency.keyContacts[0]?.name ? `${leaderTitle} ${agency.keyContacts[0].name.split(' ').pop()}` : leaderTitle;
-    const grantSentence = hasGrant 
-      ? ` With $${grantAmtK}K in active FEMA AFG grant liquidity allocated to the department, this capital upgrade aligns directly with your federal grant cycle.`
+    const grantSentence = hasGrant
+      ? ` A FEMA AFG award is listed for FY${grantFiscalYear}, with an amount of ${grantAmt}; current availability and eligible uses are not verified here.`
       : '';
 
-    return `${leaderName} at ${agency.name}: Your current ${defibBrand} fleet of ${defibCount} frontline units is ${defibAge} years old and currently operating with ${warranty.toLowerCase()} warranty status. In our actuarial model, transitioning to ZOLL X Series Advanced provides up to $${tradeInK}K in estimated trade-in credits, an estimated $${fiveYrSavingsK}K in 5-year biomedical service contract savings, and protects an estimated +$${recoverableK}K/year in recoverable Medicare claims through automated 12-lead transmission.${grantSentence} Furthermore, this configuration can be procured through ${coopContract.contractName} (${coopContract.contractNumber}), satisfying competitive bidding requirements under applicable local thresholds.`;
-  }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, tradeInK, fiveYrSavingsK, recoverableK, hasGrant, grantAmtK, coopContract]);
+    const tcoSentence = hasTcoInputs
+      ? ` Illustrative 5-year estimate for ${defibCount} reported defibrillator units: ${fiveYrSavings} operating savings plus ${tradeIn} trade-in credit. ${tcoMethod}`
+      : ` A 5-year fleet estimate is not calculated because a positive reported defibrillator unit count is unavailable. ${tcoMethod}`;
+    return `${leaderName} at ${agency.name}: Recorded defibrillator details are ${defibCount} units, ${defibBrand} brand, age ${defibAge}, and warranty status ${warranty}.${tcoSentence} Medicare denial rate: ${denialRate}; recoverable revenue: ${recoverableEstimate}${grantSentence} Cooperative purchasing option listed: ${coopContract.contractName} (${coopContract.contractNumber}); local eligibility and requirements need confirmation.`;
+  }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, hasTcoInputs, fiveYrSavings, tradeIn, tcoMethod, denialRate, recoverableEstimate, hasGrant, grantAmt, grantFiscalYear, coopContract]);
 
   // Tailored Discovery Questions (3+ for different command roles)
   const discoveryQuestions = useMemo(() => [
     {
       role: isFire ? 'Fire Chief / Executive Command' : 'EMS Director / Executive Command',
-      question: `How significantly have your annual preventative maintenance and battery replacement costs increased on your ${defibAge}-year-old ${defibBrand} fleet over the past two budget cycles?`,
+      question: `How have annual preventative maintenance and battery replacement costs changed for ${defibAgeQuestionPhrase} over the past two budget cycles?`,
       objective: 'Establish escalating cost of ownership and transition the conversation toward fixed-cap 5-year service guarantees.'
     },
     {
@@ -97,11 +119,11 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     {
       role: 'Finance Officer / Municipal Purchasing Agent',
       question: hasGrant 
-        ? `What is your timeline for expending the $${grantAmtK}K FY${agency.grantStatus?.afgFiscalYear || 2024} FEMA AFG allocation before federal period-of-performance deadlines?`
+        ? `What is the current status of the FEMA AFG award listed for FY${grantFiscalYear} with a recorded amount of ${grantAmt}?`
         : `Does your municipality currently utilize cooperative purchasing contracts such as ${coopContract.contractName} (${coopContract.contractNumber}) to accelerate capital equipment procurement?`,
       objective: 'Identify procurement vehicles and ensure adherence to local competitive purchasing thresholds.'
     }
-  ], [agency, isFire, defibAge, defibBrand, hasGrant, grantAmtK, coopContract]);
+  ], [agency, isFire, defibAgeQuestionPhrase, hasGrant, grantAmt, grantFiscalYear, coopContract]);
 
   const handleCopyPitch = () => {
     navigator.clipboard.writeText(elevatorPitch);
@@ -126,7 +148,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               Prepare for Meeting: {agency.name}
             </h4>
             <p className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-              Executive conversation strategy · {defibBrand} replacement window
+              Executive conversation strategy · reported data and research gaps
             </p>
           </div>
 
@@ -158,7 +180,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <span>1. Incumbent fleet status</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
-              <strong className="text-[#14283F] dark:text-white">{defibCount}× {defibBrand}</strong> ({defibAge} yrs old, {warranty.toLowerCase()}). High biomedical maintenance overhead.
+              Reported fleet: <strong className="text-[#14283F] dark:text-white">{defibCount} × {defibBrand}</strong>; age {defibAge}; warranty {warranty}. Maintenance cost is not reported here.
             </p>
           </div>
 
@@ -168,7 +190,9 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <span>2. Modeled financial value</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
-              Estimated <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">+${fiveYrSavingsK}K</strong> 5-yr TCO savings and <strong className="text-[#14283F] dark:text-white tabular-nums">${tradeInK}K</strong> trade-in credit.
+              {hasTcoInputs
+                ? <>Illustrative estimate: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">{fiveYrSavings}</strong> five-year operating savings plus <strong className="text-[#14283F] dark:text-white tabular-nums">{tradeIn}</strong> trade-in credit. {tcoMethod}</>
+                : tcoMethod}
             </p>
           </div>
 
@@ -308,28 +332,28 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Apparatus &amp; Stations: </strong>
-                    Operates {agency.totalAmbulances} frontline ambulances across {agency.stationsCount} stations, serving a population of {agency.populationServed.toLocaleString()}.
+                    {reportMetric(agency.totalAmbulances)} frontline ambulances across {reportMetric(agency.stationsCount)} stations; population served {reportMetric(agency.populationServed)}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Installed Defibrillators: </strong>
-                    Fleet of {defibCount}× {defibBrand} units with an average age of {defibAge} years ({warranty.toLowerCase()} warranty status).
+                    Reported units: {defibCount}; brand: {defibBrand}; age: {defibAge}; warranty: {warranty}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Federal Identifiers: </strong>
-                    Verified CMS NPI #{agency.npiNumber || 'Registered'} and USFA FDID {agency.fdid}.
+                    NPI {agency.npiNumber || 'Not reported'} and USFA FDID {agency.fdid || 'Not reported'}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Call Volume &amp; Acuity: </strong>
-                    Responds to {agency.annual911Transports.toLocaleString()} annual transports and {agency.annualCardiacArrestCalls} cardiac arrest runs per year.
+                    {reportMetric(agency.annual911Transports)} annual transports and {reportMetric(agency.annualCardiacArrestCalls)} cardiac arrest runs per year.
                   </span>
                 </li>
                 {hasGrant && (
@@ -337,7 +361,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                     <span>
                       <strong className="text-[#14283F] dark:text-white">Public Grant Liquidity: </strong>
-                      FEMA AFG Award FY{agency.grantStatus?.afgFiscalYear || 2024} of ${grantAmtK}K allocated.
+                      FEMA AFG award listed for FY{grantFiscalYear}, amount {grantAmt}; current availability not verified.
                     </span>
                   </li>
                 )}
@@ -357,7 +381,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Biomedical Trade-In Serial Numbers: </strong>
-                    Confirm exact serial numbers, battery health, and accessory compatibility on the {defibCount} {defibBrand} units.
+                    Confirm serial numbers, battery health, and accessory compatibility for the reported {defibCount} {defibBrand} units.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -448,7 +472,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </span>
               </div>
               <p className="text-[#53657B] dark:text-slate-300 leading-relaxed">
-                Replaces aging {defibBrand} fleet with lightweight (11.7 lbs) ruggedized monitor featuring Real BVM Help® ventilation feedback and automated 12-lead cellular transmission.
+                Potential monitor option: lightweight (11.7 lbs) ruggedized hardware with Real BVM Help® ventilation feedback and automated 12-lead cellular transmission. Agency fit and replacement need are not verified.
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Target Clinical Metric: </strong>
@@ -471,7 +495,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Transport Logistics: </strong>
-                {agency.hospitalLogistics?.transportTimeMinutes || 18} min average transit to STEMI facility.
+                {reportMetric(agency.hospitalLogistics?.transportTimeMinutes, ' min')} average transit to STEMI facility.
               </div>
             </div>
 
@@ -490,7 +514,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Modeled Recovery: </strong>
-                Up to ${recoverableK}K/year in recoverable Medicare claims.
+                {recoverableEstimate}
               </div>
             </div>
           </div>
@@ -509,7 +533,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <div>
                 <div className="font-semibold text-[#14283F] dark:text-white">Acknowledge &amp; Validate Current Operations</div>
                 <p className="text-[#53657B] dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Start by commending their {agency.annual911Transports.toLocaleString()} annual runs and CPR community initiatives. Acknowledge familiarity with their {defibCount} {defibBrand} units and local trauma logistics.
+                  Ask about annual transport volume ({reportMetric(agency.annual911Transports)} reported) and CPR community initiatives. Confirm the reported {defibCount} {defibBrand} units and local trauma logistics.
                 </p>
               </div>
             </div>
@@ -519,7 +543,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <div>
                 <div className="font-semibold text-[#14283F] dark:text-white">Explore Equipment Lifecycle &amp; Maintenance Burden</div>
                 <p className="text-[#53657B] dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Inquire about maintenance turnaround times, battery replacements, and manufacturer end-of-service dates on their {defibAge}-year-old monitors without putting the customer on the defensive.
+                  Inquire about maintenance turnaround times, battery replacements, and manufacturer end-of-service dates for {defibAgeQuestionPhrase} without assuming those details are verified.
                 </p>
               </div>
             </div>

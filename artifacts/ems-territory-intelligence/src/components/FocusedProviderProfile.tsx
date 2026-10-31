@@ -117,6 +117,15 @@ const FactVerificationTag: React.FC<{
   );
 };
 
+const reportMetric = (value: number | null | undefined, suffix = '') =>
+  value == null || !Number.isFinite(value) ? 'Not reported' : `${value.toLocaleString()}${suffix}`;
+
+const reportCurrency = (value: number | null | undefined) =>
+  value == null || !Number.isFinite(value) ? 'Not reported' : `$${value.toLocaleString()}`;
+
+const hasReportedValue = (value: number | null | undefined): value is number =>
+  value != null && Number.isFinite(value);
+
 type ProfileSection =
   | 'overview'
   | 'equipment'
@@ -141,8 +150,6 @@ import { useVerifyProviderLive } from '@workspace/api-client-react';
  */
 function ensureCompleteAgencyData(raw: Agency): Agency {
   const existingContacts = raw.keyContacts || [];
-  const isFire = raw.providerCategory === 'FIRE' || raw.agencyType.toLowerCase().includes('fire');
-
   // Honest Evidence Integrity: No synthetic NPI or FDID hashing
   const npiNumber = raw.npiNumber || undefined;
   const taxonomyCode = raw.taxonomyCode;
@@ -173,99 +180,38 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
         }))
       : [];
 
-  // 2. Preserve candidate estimates, but never describe them as observed facts.
-  const totalAmbulances = raw.totalAmbulances || Math.max(1, Math.round((raw.populationServed || 25000) / (isFire ? 22000 : 11000)));
-  const totalEngines = raw.totalFireEngines || (isFire ? Math.max(1, Math.round((raw.populationServed || 25000) / 14000)) : 0);
-  const stationsCount = raw.stationsCount || Math.max(1, Math.round((raw.populationServed || 25000) / 18000));
-
-  const alsAmbulances = isFire ? Math.max(1, Math.round(totalAmbulances * 0.75)) : Math.max(1, Math.round(totalAmbulances * 0.8));
-  const blsAmbulances = Math.max(0, totalAmbulances - alsAmbulances);
-  const fireEngines = isFire ? Math.max(1, totalEngines) : 0;
-  const ladderTrucks = isFire ? Math.max(0, Math.round(stationsCount * 0.4)) : 0;
-  const heavyRescueUnits = isFire ? Math.max(0, Math.round(stationsCount * 0.3)) : Math.max(0, Math.round(stationsCount * 0.25));
-  const commandVehicles = Math.max(1, Math.round(stationsCount * 0.5));
-  const totalActiveUnits = alsAmbulances + blsAmbulances + fireEngines + ladderTrucks + heavyRescueUnits + commandVehicles;
-  const avgVehicleAgeYears = raw.installedFleet?.defibAgeYears ?? 7;
-  const replacementCycleYears = (raw.annual911Transports || 3000) > 6000 ? 7 : 10;
-
-  const apparatusFleet = raw.apparatusFleet || {
-    alsAmbulances,
-    blsAmbulances,
-    fireEngines,
-    ladderTrucks,
-    heavyRescueUnits,
-    commandVehicles,
-    totalActiveUnits,
-    avgVehicleAgeYears,
-    replacementCycleYears
-  };
-
-  // 3. Do not create hospital names from a city's name.
-  const traumaHospitalName = raw.hospitalLogistics?.primaryTraumaHospital || raw.gisData?.primaryReceivingHospital || 'Not source-verified';
-  const cathLabHospitalName = raw.hospitalLogistics?.primaryCathLabHospital || 'Not source-verified';
-  const distTrauma = raw.gisData?.avgTransportDistanceToTraumaMiles ?? 8.5;
-  const latencyTrauma = raw.gisData?.avgTransportTimeMinutes ?? 12;
-  const distCath = +(distTrauma * 0.85).toFixed(1);
-  const latencyCath = Math.round(latencyTrauma * 0.9);
-  const annualTransports = raw.annual911Transports || 2500;
-  const annualEdTransports = Math.round(annualTransports * 0.88);
-  const avgEdOffloadLatencyMinutes = 20;
-
-  const hospitalLogistics = raw.hospitalLogistics || {
-    primaryTraumaHospital: traumaHospitalName,
-    traumaLevel: raw.gisData?.traumaCenterLevel || 'Level 1 Regional Trauma',
-    distanceToTraumaMiles: distTrauma,
-    transportTimeMinutes: latencyTrauma,
-    primaryCathLabHospital: cathLabHospitalName,
-    cathLabDistanceMiles: distCath,
-    cathLabTransportMinutes: latencyCath,
-    annualEdTransports,
-    avgEdOffloadLatencyMinutes
-  };
+  // Preserve only source-provided fleet and hospital data. Missing data stays missing.
+  const apparatusFleet = raw.apparatusFleet;
+  const hospitalLogistics = raw.hospitalLogistics;
 
   // 4. Genuine FEMA Grant Records - authentic awards only, no synthetic multi-year generation
   const femaGrantHistory = raw.femaGrantHistory || (raw.liveFemaAwards && raw.liveFemaAwards.length > 0
-    ? raw.liveFemaAwards.map((a, idx) => ({
-        fiscalYear: a.programYear || 2024,
-        programName: a.programActivity || 'Assistance to Firefighters Grants (AFG)',
-        purpose: a.programActivity || 'Operations & Safety Resuscitation Equipment',
-        awardAmount: a.federalShareAwarded || 0,
-        localMatchAmount: Math.round((a.federalShareAwarded || 0) * 0.1),
-        federalSharePct: 90,
+    ? raw.liveFemaAwards
+        .filter((a) => hasReportedValue(a.programYear) && hasReportedValue(a.federalShareAwarded))
+        .map((a) => ({
+        fiscalYear: a.programYear,
+        programName: a.programActivity || 'Grant program not reported',
+        purpose: a.programActivity || 'Grant purpose not reported',
+        awardAmount: a.federalShareAwarded,
+        localMatchAmount: null,
+        federalSharePct: null,
         status: 'Awarded & Disbursed' as const,
-        applicationRound: a.awardNumber || `Round ${idx + 1}`
+        applicationRound: a.awardNumber || 'Not reported'
       }))
-    : (raw.grantStatus?.afgAwarded
+    : (raw.grantStatus?.afgAwarded && hasReportedValue(raw.grantStatus.afgFiscalYear) && hasReportedValue(raw.grantStatus.afgAwardAmount)
         ? [
             {
-              fiscalYear: raw.grantStatus.afgFiscalYear || 2024,
+              fiscalYear: raw.grantStatus.afgFiscalYear,
               programName: 'FEMA Assistance to Firefighters Grant (AFG)',
-              purpose: raw.grantStatus.afgPurpose || 'Operations & Safety — Defibrillator Upgrade',
-              awardAmount: raw.grantStatus.afgAwardAmount || 0,
-              localMatchAmount: Math.round((raw.grantStatus.afgAwardAmount || 0) * 0.1),
-              federalSharePct: 90,
+              purpose: raw.grantStatus.afgPurpose || 'Grant purpose not reported',
+              awardAmount: raw.grantStatus.afgAwardAmount,
+              localMatchAmount: null,
+              federalSharePct: null,
               status: 'Awarded & Disbursed' as const,
-              applicationRound: raw.grantStatus.afgAwardNumber || 'Active Obligation'
+              applicationRound: raw.grantStatus.afgAwardNumber || 'Not reported'
             }
           ]
         : []));
-
-  const denialCode = raw.cmsData?.topDenialReasonCode || 'CO-16';
-  const denialReasonLookup: Record<string, string> = {
-    'CO-16': 'CO-16: Claim/service lacks medical necessity documentation or prior clinical justification',
-    'CO-18': 'CO-18: Exact duplicate claim or service submission error',
-    'CO-50': 'CO-50: Non-covered service not deemed medically necessary by payer',
-    'PR-204': 'PR-204: Service not covered under current patient benefit plan or prior auth missing',
-    'CO-97': 'CO-97: Payment adjusted because benefit for this service is bundled'
-  };
-
-  const medicarePct = raw.cmsData?.medicarePayerPct ?? raw.cmsData?.payerMix?.medicare ?? 41.5;
-  const medicaidPct = raw.cmsData?.medicaidPayerPct ?? raw.cmsData?.payerMix?.medicaid ?? 23.5;
-  const commercialPct = raw.cmsData?.commercialPayerMixPct ?? raw.cmsData?.payerMix?.commercial ?? 24.0;
-  const selfPayPct =
-    raw.cmsData?.selfPayPayerPct ??
-    raw.cmsData?.payerMix?.selfPay ??
-    +(Math.max(4.0, 100 - medicarePct - medicaidPct - commercialPct)).toFixed(1);
 
   return {
     ...raw,
@@ -288,46 +234,39 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     },
     cmsData: {
       ...raw.cmsData,
-      topDenialReasonCode: denialCode,
-      topDenialReason:
-        raw.cmsData?.topDenialReason ||
-        denialReasonLookup[denialCode] ||
-        `${denialCode}: Lacks Medical Necessity & Clinical Signature Documentation`,
-      commercialPayerMixPct: commercialPct,
-      medicarePayerPct: medicarePct,
-      medicaidPayerPct: medicaidPct,
-      selfPayPayerPct: selfPayPct
+      topDenialReasonCode: raw.cmsData?.topDenialReasonCode,
+      topDenialReason: raw.cmsData?.topDenialReason
     },
     installedFleet: {
       ...(raw.installedFleet || {}),
       defibBrand: raw.installedFleet?.defibBrand || 'Not source-verified',
-      defibAgeYears: raw.installedFleet?.defibAgeYears ?? 7.5,
-      defibUnitsCount: raw.installedFleet?.defibUnitsCount ?? Math.max(4, totalAmbulances),
+      defibAgeYears: raw.installedFleet?.defibAgeYears,
+      defibUnitsCount: raw.installedFleet?.defibUnitsCount,
       defibWarrantyStatus: raw.installedFleet?.defibWarrantyStatus || 'Not source-verified',
       mechanicalCPR: raw.installedFleet?.mechanicalCPR || 'Not source-verified',
       transportVentilator: raw.installedFleet?.transportVentilator || 'Not source-verified',
       epcrCadSoftware: raw.installedFleet?.epcrCadSoftware || 'Not source-verified',
-      billingSoftware: raw.installedFleet?.billingSoftware || 'Digitech EMS',
+      billingSoftware: raw.installedFleet?.billingSoftware || 'Not source-verified',
       dispatchCadVendor: raw.installedFleet?.dispatchCadVendor || 'Not source-verified'
     },
     zollOpportunity: {
       ...(raw.zollOpportunity || {}),
-      pulseIqScore: raw.zollOpportunity?.pulseIqScore ?? 84,
-      priorityTier: raw.zollOpportunity?.priorityTier || 'High Value',
-      primaryTargetProduct: raw.zollOpportunity?.primaryTargetProduct || 'X Series Advanced',
-      recommendedBundle: raw.zollOpportunity?.recommendedBundle || ['X Series Advanced', 'Real BVM Help', 'RescueNet CaseReview'],
-      projectedPipelineValue: raw.zollOpportunity?.projectedPipelineValue ?? Math.max(4, totalAmbulances) * 38500,
-      salesStage: raw.zollOpportunity?.salesStage || 'Target Lead',
-      probabilityPct: raw.zollOpportunity?.probabilityPct ?? 65,
-      clinicalBenefitNarrative: raw.zollOpportunity?.clinicalBenefitNarrative || 'Real BVM Help® + See-Thru CPR® targets AHA CCF >80% and peri-shock pause <10s.',
-      financialRoiNarrative: raw.zollOpportunity?.financialRoiNarrative || 'Sourcewell #041823-ZOL 5-year TCO cap + automated NEMSIS v3.5.0 claim scrubbing.',
-      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Deterministic 5-factor PulseIQ index derived from fleet age, CMS denials, OHCA acuity, and AFG liquidity.',
+      pulseIqScore: raw.zollOpportunity?.pulseIqScore,
+      priorityTier: raw.zollOpportunity?.priorityTier || 'Not calculated',
+      primaryTargetProduct: raw.zollOpportunity?.primaryTargetProduct || 'Not selected',
+      recommendedBundle: raw.zollOpportunity?.recommendedBundle || [],
+      projectedPipelineValue: raw.zollOpportunity?.projectedPipelineValue,
+      salesStage: raw.zollOpportunity?.salesStage || 'Not reported',
+      probabilityPct: raw.zollOpportunity?.probabilityPct,
+      clinicalBenefitNarrative: raw.zollOpportunity?.clinicalBenefitNarrative || 'Not reported',
+      financialRoiNarrative: raw.zollOpportunity?.financialRoiNarrative || 'Not reported',
+      scoreRationale: raw.zollOpportunity?.scoreRationale || 'Score inputs and method not reported.',
       scoreBreakdown: {
-        clinicalAcuityPts: raw.zollOpportunity?.scoreBreakdown?.clinicalAcuityPts ?? 18,
-        fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts ?? 21,
-        cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts ?? 17,
-        demographicVulnerabilityPts: raw.zollOpportunity?.scoreBreakdown?.demographicVulnerabilityPts ?? 13,
-        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts ?? 15
+        clinicalAcuityPts: raw.zollOpportunity?.scoreBreakdown?.clinicalAcuityPts,
+        fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts,
+        cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts,
+        demographicVulnerabilityPts: raw.zollOpportunity?.scoreBreakdown?.demographicVulnerabilityPts,
+        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts
       }
     },
     keyContacts: normalizedContacts,
@@ -441,7 +380,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     [rawAgency, livePatch]
   );
   const suppliers = useMemo(() => resolveEquipmentSuppliers(agency), [agency]);
-  const tcoModel = useMemo(() => calculateAgencyFleetTco(agency, 5), [agency]);
+  const tcoModel = useMemo(() => {
+    const reportedDefibCount = agency.installedFleet.defibUnitsCount;
+    if (!hasReportedValue(reportedDefibCount) || reportedDefibCount <= 0) return null;
+    return calculateAgencyFleetTco(agency, 5, reportedDefibCount);
+  }, [agency]);
   const hcpcsModel = useMemo(() => calculateAgencyHcpcsBreakdown(agency), [agency]);
   const protocolModel = useMemo(() => getAgencyClinicalProtocolAlignment(agency), [agency]);
 
@@ -469,24 +412,36 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     agency.nppesRegistryUrl
   );
   const actuarialForecast = useMemo(() => {
-    const units = Math.max(1, agency.installedFleet.defibUnitsCount || agency.totalAmbulances || 4);
+    const reportedUnitCount = agency.installedFleet.defibUnitsCount ?? agency.totalAmbulances;
+    const hasUnitCount = hasReportedValue(reportedUnitCount);
+    const units = reportedUnitCount ?? 0;
     const grossCapExBase = units * customUnitMsrp;
     const totalTradeIn = units * customTradeInCredit;
-    const netCapExBase = Math.max(15000, grossCapExBase - totalTradeIn);
+    const netCapExBase = Math.max(0, grossCapExBase - totalTradeIn);
     const netCapExLow = Math.round(netCapExBase * 0.85);
     const netCapExHigh = Math.round(netCapExBase * 1.15);
 
-    const deniedPool = Math.round((agency.cmsData.medicareBilledAnnual || 850000) * ((agency.cmsData.claimDenialRate || 16) / 100));
+    const hasRecoveryInputs =
+      agency.cmsData.medicareBilledAnnual != null &&
+      agency.cmsData.claimDenialRate != null &&
+      Number.isFinite(agency.cmsData.medicareBilledAnnual) &&
+      Number.isFinite(agency.cmsData.claimDenialRate);
+    const deniedPool = hasRecoveryInputs
+      ? Math.round(agency.cmsData.medicareBilledAnnual * (agency.cmsData.claimDenialRate / 100))
+      : 0;
     const annualRecoveryBase = Math.round(deniedPool * (customDenialCapturePct / 100));
     const annualRecoveryLow = Math.round(annualRecoveryBase * 0.82);
     const annualRecoveryHigh = Math.round(annualRecoveryBase * 1.18);
 
-    const fiveYrTcoBase = tcoModel.fiveYearOperatingSavings + totalTradeIn;
+    const fiveYrTcoBase = (tcoModel?.fiveYearOperatingSavings ?? 0) + totalTradeIn;
     const fiveYrTcoLow = Math.round(fiveYrTcoBase * 0.85);
     const fiveYrTcoHigh = Math.round(fiveYrTcoBase * 1.15);
 
     return {
       units,
+      hasUnitCount,
+      hasRecoveryInputs,
+      hasTcoInputs: Boolean(tcoModel && tcoModel.unitCount > 0),
       netCapExLow,
       netCapExBase,
       netCapExHigh,
@@ -720,8 +675,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       id: 'intel-fleet',
       category: 'Equipment & contract timing',
       primaryFact: equipDisplay.primary,
-      secondaryFact: `${equipDisplay.secondary} · Contract ends ${agency.competitorContract.contractEndDate}`,
-      whyItMatters: `Frontline monitor fleet exceeds optimal capital replacement age; renewal window opens ${agency.competitorContract.renewalWindowDays} days prior to expiration.`,
+      secondaryFact: `${equipDisplay.secondary} · Contract ends ${agency.competitorContract.contractEndDate || 'Not reported'}`,
+      whyItMatters: hasReportedValue(agency.installedFleet.defibAgeYears)
+        ? `Reported monitor age is ${reportMetric(agency.installedFleet.defibAgeYears)} years; verify replacement criteria and the reported contract timeline.`
+        : 'Monitor age is not reported; verify fleet age and the contract timeline before assessing replacement needs.',
       nextActionLabel: 'Inspect equipment',
       targetTopic: 'equipment' as ProfileSection,
       sourceBadge: 'USFA service record'
@@ -730,10 +687,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       id: 'intel-purchasing',
       category: 'Purchasing & grant liquidity',
       primaryFact: agency.grantStatus.afgAwarded
-        ? `${formatCurrency(agency.grantStatus.afgAwardAmount)} FEMA AFG award (FY${agency.grantStatus.afgFiscalYear})`
-        : 'Sourcewell #041823-ZOL & HGACBuy #EE08-24 eligible',
-      secondaryFact: `${formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })} projected 5-year TCO savings`,
-      whyItMatters: `Pre-competed cooperative contracts and trade-in credits (${formatCurrency(customTradeInCredit)}/unit) bypass typical municipal RFP cycles.`,
+        ? `${reportCurrency(agency.grantStatus.afgAwardAmount)} FEMA AFG award (FY${reportMetric(agency.grantStatus.afgFiscalYear)})`
+        : 'Public-sector cooperative purchasing contracts are listed; verify local eligibility and terms.',
+      secondaryFact: actuarialForecast.hasTcoInputs
+        ? `${formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })} illustrative 5-year estimate; reported unit count × benchmark service, battery, and consumables savings plus selected trade-in credit.`
+        : '5-year fleet estimate not calculated: positive reported defibrillator count is unavailable.',
+      whyItMatters: `Illustrative trade-in assumption: ${formatCurrency(customTradeInCredit)} per unit; confirm current pricing and eligibility before use.`,
       nextActionLabel: 'Review purchasing',
       targetTopic: 'purchasing' as ProfileSection,
       sourceBadge: 'OpenFEMA AFG & TCO model'
@@ -741,9 +700,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     {
       id: 'intel-clinical-cms',
       category: 'Medicare & resuscitation impact',
-      primaryFact: `${formatPercent(agency.cmsData.claimDenialRate)} CMS claim denials (${agency.cmsData.topDenialReasonCode})`,
-      secondaryFact: `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} estimated recovery scenario`,
-      whyItMatters: `Automated NEMSIS v3.5.0 waveform documentation recaptures denied Medicare revenue while Real BVM Help® targets AHA CCF >80%.`,
+      primaryFact: `${reportMetric(agency.cmsData.claimDenialRate, '%')} CMS claim denials (${agency.cmsData.topDenialReasonCode || 'Not reported'})`,
+      secondaryFact: actuarialForecast.hasRecoveryInputs
+        ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported Medicare billings × reported denial rate × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
+        : 'Recovery estimate not calculated: reported Medicare billings and denial rate are required.',
+      whyItMatters: 'Review billing and documentation workflows; no agency-specific recovery amount is attributed to product features without verified inputs.',
       nextActionLabel: 'Inspect Medicare',
       targetTopic: 'medicare' as ProfileSection,
       sourceBadge: 'CMS Part B PUF & NEMSIS'
@@ -755,11 +716,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
     const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
     const grantAmt = agency.grantStatus?.afgAwardAmount ?? 0;
-    const defibBrand = agency.installedFleet?.defibBrand || 'Frontline Monitor';
-    const defibAge = agency.installedFleet?.defibAgeYears ?? 7;
-    const defibCount = agency.installedFleet?.defibUnitsCount ?? Math.max(2, agency.totalAmbulances);
-    const contractEnd = agency.competitorContract?.contractEndDate || '2026-09-30';
-    const denialRate = agency.cmsData?.claimDenialRate ?? 14;
+    const defibBrand = agency.installedFleet?.defibBrand || 'Not reported';
+    const defibAge = agency.installedFleet?.defibAgeYears;
+    const contractEnd = agency.competitorContract?.contractEndDate || 'Not reported';
+    const denialRate = agency.cmsData?.claimDenialRate;
     const hasNotes = Array.isArray(agency.fieldNotes) && agency.fieldNotes.length > 0;
     const topNote = hasNotes ? agency.fieldNotes[0] : null;
 
@@ -775,13 +735,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         ? `Leadership is listed in the cited agency source: ${primaryContact?.name || 'see source record'}.`
         : 'No source mapped for current agency leadership.',
       hasAgencyFactEvidence(agency, 'stationCount')
-        ? `The county reports ${agency.stationsCount} fire-rescue stations.`
+        ? `The county reports ${reportMetric(agency.stationsCount)} fire-rescue stations.`
         : 'No source mapped for the station count.',
-      hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
-        ? `The county reports ${agency.frontlineRescueUnitCount} front-line rescue units and ${agency.responseUnitCount || 'an unlisted number of'} total rescue, suppression, battalion, and specialty units.`
+      hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && hasReportedValue(agency.frontlineRescueUnitCount)
+        ? `The county reports ${reportMetric(agency.frontlineRescueUnitCount)} front-line rescue units and ${reportMetric(agency.responseUnitCount)} total rescue, suppression, battalion, and specialty units.`
         : 'No source mapped for frontline rescue-unit and apparatus-type counts.',
       hasAgencyFactEvidence(agency, 'annualCallsReceived')
-        ? `${agency.annualCallVolume.toLocaleString()} Fire Rescue calls were received in ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'the cited reporting period'}; this is not an EMS transport count.`
+        ? `${reportMetric(agency.annualCallVolume)} Fire Rescue calls were received in ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'the cited reporting period'}; this is not an EMS transport count.`
         : 'No source mapped for annual Fire Rescue call volume.',
       hasAgencyFactEvidence(agency, 'epcrSystem')
         ? `${agency.installedFleet.epcrCadSoftware} is identified as the department’s primary ePCR; CAD and EMS transport volume are not verified.`
@@ -797,13 +757,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       developmentsThatMatter.push(`Active field relationship: Logged ${topNote.meetingType} on ${topNote.date}. Next action committed: "${topNote.nextAction || 'Follow up with leadership'}".`);
     }
     if (hasAgencyFactEvidence(agency, 'federalGrant') && hasGrant && grantAmt > 0) {
-      developmentsThatMatter.push(`Active capital grant liquidity: FEMA AFG Award FY${agency.grantStatus?.afgFiscalYear || 2024} of $${Math.round(grantAmt / 1000)}K allocated for operational equipment upgrades.`);
+      developmentsThatMatter.push(`Active capital grant liquidity: FEMA AFG Award FY${agency.grantStatus?.afgFiscalYear ?? 'Not reported'} of $${Math.round(grantAmt / 1000)}K allocated for operational equipment upgrades.`);
     }
     if (hasAgencyFactEvidence(agency, 'maintenanceContracts') && (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon')) {
       developmentsThatMatter.push(`Incumbent service contract renewal window: Contract ends ${contractEnd}. Opportunity to avoid multi-year maintenance cost locks via cooperative purchasing.`);
     }
-    if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate >= 18) {
-      developmentsThatMatter.push(`Elevated Medicare Part B claim denial exposure: ${denialRate}% denials (${agency.cmsData?.topDenialReasonCode || 'CO-16'}), representing an estimated +$${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000)}K/yr unrecovered claim pool.`);
+    if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null && denialRate >= 18) {
+      developmentsThatMatter.push(`Elevated Medicare Part B claim denial exposure: ${denialRate}% denials (${agency.cmsData?.topDenialReasonCode || 'Not reported'}). Recovery estimate inputs and method are unavailable.`);
     }
     if (developmentsThatMatter.length === 0) {
       developmentsThatMatter.push('No current, source-verified operational or procurement development is attached to this agency record.');
@@ -831,7 +791,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     } else if (hasAgencyFactEvidence(agency, 'federalGrant') && hasGrant && grantAmt > 0) {
       primaryMoveAction = `Align ZOLL Solution Package to $${Math.round(grantAmt / 1000)}K FEMA AFG Grant`;
       primaryMoveWhy = `Provide compliant equipment specifications and quote before the federal award expenditure period closes.`;
-      primaryMoveEvidence = `OpenFEMA AFG Award #${agency.grantStatus?.afgAwardNumber || 'Active'} · FY${agency.grantStatus?.afgFiscalYear || 2024}`;
+      primaryMoveEvidence = `OpenFEMA AFG Award #${agency.grantStatus?.afgAwardNumber || 'Not reported'} · FY${agency.grantStatus?.afgFiscalYear ?? 'Not reported'}`;
       primaryMoveNextStep = 'Generate Co-Op RFP';
     } else if (
       hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
@@ -841,9 +801,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveWhy = `Present 5-year fixed biomedical service cost caps to prevent automatic renewal of legacy T&M service contracts.`;
       primaryMoveEvidence = `Competitor Contract Ledger · Renewal Notice Window`;
       primaryMoveNextStep = 'Review Purchasing';
-    } else if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate >= 18) {
+    } else if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null && denialRate >= 18) {
       primaryMoveAction = `Present Medicare Denial Recovery & NEMSIS Documentation Strategy`;
-      primaryMoveWhy = `Show how automated 12-lead ePCR transmission reduces ${agency.cmsData?.topDenialReasonCode || 'CO-16'} denials by an estimated +$${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000)}K/yr.`;
+      primaryMoveWhy = `Review ${agency.cmsData?.topDenialReasonCode || 'reported denial reasons'} and obtain source-backed billing inputs before estimating recovery.`;
       primaryMoveEvidence = `CMS Part B Ground Ambulance PUF (Calendar Year Census)`;
       primaryMoveNextStep = 'Inspect Medicare';
     }
@@ -1128,17 +1088,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
                       {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                        ? `${agency.totalAmbulances} ambulances${agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} engines` : ''}`
-                        : hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
-                          ? `${agency.frontlineRescueUnitCount} front-line rescue units`
+                    ? `${reportMetric(agency.totalAmbulances)} ambulances${hasReportedValue(agency.totalFireEngines) ? ` · ${reportMetric(agency.totalFireEngines)} engines` : ''}`
+                        : hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && hasReportedValue(agency.frontlineRescueUnitCount)
+                          ? `${reportMetric(agency.frontlineRescueUnitCount)} front-line rescue units`
                           : 'No apparatus-roster source mapped'}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
                       {hasAgencyFactEvidence(agency, 'stationCount')
-                        ? `${agency.stationsCount} stations`
+                        ? `${reportMetric(agency.stationsCount)} stations`
                         : 'No station-count source mapped'}
-                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.responseUnitCount
-                        ? ` · ${agency.responseUnitCount} total rescue, suppression, battalion, and specialty units`
+                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && hasReportedValue(agency.responseUnitCount)
+                        ? ` · ${reportMetric(agency.responseUnitCount)} total rescue, suppression, battalion, and specialty units`
                         : ''}
                     </div>
                     <FactVerificationTag agency={agency} field="stationCount" />
@@ -1163,16 +1123,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
                       {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                        ? `${formatInteger(agency.annualCallVolume)} calls received`
+                        ? `${reportMetric(agency.annualCallVolume)} calls received`
                         : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                          ? `${formatInteger(agency.annual911Transports)} transports / yr`
+                          ? `${reportMetric(agency.annual911Transports)} transports / yr`
                           : 'Not source-verified'}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
                       {hasAgencyFactEvidence(agency, 'annualCallsReceived')
                         ? `${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not listed'} · not an EMS transport count`
                         : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
-                          ? `${formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · ${formatPercent(agency.utsteinSurvivalRate)} Utstein`
+                          ? `${reportMetric(agency.annualCardiacArrestCalls)} cardiac calls / yr · ${reportMetric(agency.utsteinSurvivalRate, '%')} Utstein`
                           : 'No source mapped for transport, cardiac, or outcome figures'}
                     </div>
                     <FactVerificationTag agency={agency} field="annualCallsReceived" />
@@ -1197,7 +1157,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · {hasDecisionGradeInputs ? agency.zollOpportunity.priorityTier : 'Not scored'}
                   </span>
                   <span className="font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
-                    {hasDecisionGradeInputs
+                    {hasDecisionGradeInputs && Number.isFinite(agency.zollOpportunity.pulseIqScore)
                       ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs font-normal text-[#53657B]">/100</span></>
                       : <span className="text-sm font-medium">Needs verified inputs</span>}
                   </span>
@@ -1461,10 +1421,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="text-xs font-semibold text-[#285EE8] dark:text-blue-400">
-                      Actuarial sensitivity model ({actuarialForecast.units} frontline units)
+                      Actuarial sensitivity model ({actuarialForecast.hasUnitCount ? actuarialForecast.units : 'Not reported'} frontline units)
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      PulseIQ ({agency.zollOpportunity.pulseIqScore}/100) = Fleet ({agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts}/25) + CMS denials ({agency.zollOpportunity.scoreBreakdown.cmsFinancialPts}/20) + Acuity ({agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts}/20) + Grants ({agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts}/20) + Software ({agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts}/15)
+                      PulseIQ ({reportMetric(agency.zollOpportunity.pulseIqScore)}/100) = Fleet ({reportMetric(agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts)}/25) + CMS denials ({reportMetric(agency.zollOpportunity.scoreBreakdown.cmsFinancialPts)}/20) + Acuity ({reportMetric(agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts)}/20) + Grants ({reportMetric(agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts)}/20) + Software ({reportMetric(agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts)}/15)
+                    </div>
+                    <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
+                      Scenario method: unit count × selected MSRP less selected trade-in credit, with low/high scenarios at ±15%. Five-year savings use reported unit count × benchmark service, battery, and consumables savings plus trade-in credit. Recovery uses reported Medicare billings × reported denial rate × selected capture rate, with low/high scenarios at ±18%; no result is shown when required agency inputs are missing.
                     </div>
                   </div>
                 </div>
@@ -1485,9 +1448,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       className="w-full accent-[#285EE8] cursor-pointer"
                     />
                     <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {formatCurrency(actuarialForecast.netCapExLow)}</span>
-                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {formatCurrency(actuarialForecast.netCapExBase)}</strong>
-                      <span>High: {formatCurrency(actuarialForecast.netCapExHigh)}</span>
+                      <span>Low: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExLow) : 'Not calculated'}</span>
+                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExBase) : 'Not calculated'}</strong>
+                      <span>High: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExHigh) : 'Not calculated'}</span>
                     </div>
                   </div>
 
@@ -1506,9 +1469,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       className="w-full accent-emerald-600 cursor-pointer"
                     />
                     <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {formatCurrency(actuarialForecast.fiveYrTcoLow, { showSign: true })}</span>
-                      <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Base: {formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })}</strong>
-                      <span>High: {formatCurrency(actuarialForecast.fiveYrTcoHigh, { showSign: true })}</span>
+                      <span>Low: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoLow, { showSign: true }) : 'Not calculated'}</span>
+                      <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Base: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true }) : 'Not calculated'}</strong>
+                      <span>High: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoHigh, { showSign: true }) : 'Not calculated'}</span>
                     </div>
                   </div>
 
@@ -1527,9 +1490,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       className="w-full accent-amber-600 cursor-pointer"
                     />
                     <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {formatCurrency(actuarialForecast.annualRecoveryLow, { perYear: true, showSign: true })}</span>
-                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })}</strong>
-                      <span>High: {formatCurrency(actuarialForecast.annualRecoveryHigh, { perYear: true, showSign: true })}</span>
+                      <span>Low: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryLow, { perYear: true, showSign: true }) : 'Not calculated'}</span>
+                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true }) : 'Not calculated'}</strong>
+                      <span>High: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryHigh, { perYear: true, showSign: true }) : 'Not calculated'}</span>
                     </div>
                   </div>
                 </div>
@@ -1711,11 +1674,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Deployed fleet age</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} years old` : 'Not source-verified'}</strong>
+                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${reportMetric(agency.installedFleet.defibAgeYears, ' years old')}` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Total defib units</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibUnitsCount} units` : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${reportMetric(agency.installedFleet.defibUnitsCount)} units` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Warranty support</span>
@@ -1748,9 +1711,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <span className="text-[#53657B] dark:text-slate-400">Reported Fire Rescue calls</span>
                       <strong className="text-slate-900 dark:text-white tabular-nums">
                         {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                          ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod}`
+                          ? `${reportMetric(agency.annualCallVolume)} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not listed'}`
                           : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                            ? `${agency.annual911Transports.toLocaleString()} EMS transports`
+                            ? `${reportMetric(agency.annual911Transports)} EMS transports`
                             : 'Not source-verified'}
                       </strong>
                     </div>
@@ -1759,19 +1722,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     )}
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual cardiac arrests</span>
-                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.annualCardiacArrestCalls.toLocaleString()} runs` : 'Not source-verified'}</strong>
+                      <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${reportMetric(agency.annualCardiacArrestCalls)} runs` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Utstein survival rate</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}%` : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? reportMetric(agency.utsteinSurvivalRate, '%') : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Active ambulances</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalAmbulances} units` : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${reportMetric(agency.totalAmbulances)} units` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">Fire suppression engines</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalFireEngines} units` : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${reportMetric(agency.totalFireEngines)} units` : 'Not source-verified'}</strong>
                     </div>
                   </div>
                 </div>
@@ -1799,12 +1762,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Lost claim revenue</span>
-                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{hasAgencyFactEvidence(agency, 'cmsClaims') ? `+${formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true })}` : 'Not source-verified'}</strong>
+                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{hasAgencyFactEvidence(agency, 'cmsClaims') ? 'Not reported with a reproducible method' : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">FEMA AFG grants</span>
                       <strong className="text-slate-900 truncate max-w-[160px]">
-                        {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded ? `$${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K (FY${agency.grantStatus.afgFiscalYear})` : 'Not source-verified'}
+                        {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded ? `${reportCurrency(agency.grantStatus.afgAwardAmount)} (FY${reportMetric(agency.grantStatus.afgFiscalYear)})` : 'Not source-verified'}
                       </strong>
                     </div>
                   </div>
@@ -1994,54 +1957,54 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </h2>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#1E3A8A]">
                     <Award className="w-3.5 h-3.5 text-[#1E3A8A]" />
-                    <span>AHA Mission: Lifeline {agency.qualityMetrics.ahaMissionLifelineTier}</span>
+                    <span>AHA Mission: Lifeline {agency.qualityMetrics.ahaMissionLifelineTier || 'Not reported'}</span>
                   </span>
                 </div>
 
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 text-xs">
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Annual emergency calls</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annualCallVolume.toLocaleString()}</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annualCallVolume)}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Total 911 dispatches</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Annual 911 transports</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annual911Transports.toLocaleString()}</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annual911Transports)}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Billable patient runs</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Cardiac arrest (OHCA) calls</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.annualCardiacArrestCalls.toLocaleString()} / yr</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annualCardiacArrestCalls)} / yr</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Resuscitation activations</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400 font-medium">Utstein cardiac survival</dt>
-                    <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{agency.utsteinSurvivalRate}%</dd>
+                    <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{reportMetric(agency.utsteinSurvivalRate, '%')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Survival to discharge</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400 font-medium">CARES good neuro (CPC 1/2)</dt>
-                    <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{agency.qualityMetrics.caresGoodNeurologicalSurvivalPct}%</dd>
+                    <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{reportMetric(agency.qualityMetrics.caresGoodNeurologicalSurvivalPct, '%')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Intact neurological outcome</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Bystander CPR rate</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.bystanderCPRRate}%</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.bystanderCPRRate, '%')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Prior to EMS arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Annual trauma incidents</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.annualTraumaIncidents.toLocaleString()}</dd>
-                    <dd className="text-[10px] text-slate-500 dark:text-slate-400">{agency.gisData.traumaCenterLevel} corridor</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.annualTraumaIncidents)}</dd>
+                    <dd className="text-[10px] text-slate-500 dark:text-slate-400">{agency.gisData.traumaCenterLevel || 'Trauma center level not reported'}</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">Avg EMS transport time</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.avgTransportTimeMinutes} mins</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.avgTransportTimeMinutes, ' mins')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Scene to ED arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
                     <dt className="text-[#53657B] dark:text-slate-400">STEMI PCI Cath Lab dist.</dt>
-                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{agency.gisData.distanceToNearestCathLabMiles} miles</dd>
+                    <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.distanceToNearestCathLabMiles, ' miles')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">12-lead pre-activation</dd>
                   </div>
                 </dl>
@@ -2049,10 +2012,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42] text-xs flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="text-[#53657B] dark:text-slate-400 font-medium">Primary Receiving Trauma &amp; Cardiac Hospital: </span>
-                    <strong className="text-[#0F172A] dark:text-white">{agency.gisData.primaryReceivingHospital}</strong>
+                    <strong className="text-[#0F172A] dark:text-white">{agency.gisData.primaryReceivingHospital || 'Not reported'}</strong>
                   </div>
                   <span className="tabular-nums font-semibold text-[#1E3A8A] dark:text-blue-400">
-                    {agency.gisData.annualHospitalDestinationTransports?.toLocaleString()} ED Transports / yr
+                    {reportMetric(agency.gisData.annualHospitalDestinationTransports)} ED Transports / yr
                   </span>
                 </div>
               </section>
@@ -2104,11 +2067,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-slate-800">{item.label}</span>
                         <span className="font-bold font-mono tabular-nums text-[#0F172A]">
-                          {item.val}% <span className="text-slate-400 font-normal">(Benchmark: {item.bench}%)</span>
+                          {reportMetric(item.val, '%')} <span className="text-slate-400 font-normal">(Benchmark: {item.bench}%)</span>
                         </span>
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${Math.min(100, item.val)}%` }} />
+                        <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${hasReportedValue(item.val) ? Math.min(100, item.val) : 0}%` }} />
                       </div>
                     </div>
                   ))}
@@ -2187,7 +2150,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </p>
               </div>
               <span className="text-xs font-semibold text-slate-700">
-                GADCS Status: <strong className="text-[#0F172A]">{agency.cmsData.gadcsReportingStatus}</strong> · Cost-to-Charge Ratio: <strong className="font-mono tabular-nums text-[#0F172A]">{agency.qualityMetrics.gadcsCostToChargeRatio}</strong>
+                GADCS Status: <strong className="text-[#0F172A]">{agency.cmsData.gadcsReportingStatus || 'Not reported'}</strong> · Cost-to-Charge Ratio: <strong className="font-mono tabular-nums text-[#0F172A]">{reportMetric(agency.qualityMetrics.gadcsCostToChargeRatio)}</strong>
               </span>
             </div>
 
@@ -2203,27 +2166,27 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">01. Medicare</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicarePayerPct}% of Runs</span>
+                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.medicarePayerPct, '%')} of Runs</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#0F172A] h-full rounded-full" style={{ width: `${agency.cmsData.medicarePayerPct}%` }} />
+                      <div className="bg-[#0F172A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.medicarePayerPct) ? agency.cmsData.medicarePayerPct : 0}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5 font-mono tabular-nums">
-                      <div>Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicareBilledAnnual.toLocaleString()}</strong></div>
-                      <div>Annual Allowed: <strong className="text-[#0F172A]">${agency.cmsData.medicareAllowedAnnual.toLocaleString()}</strong></div>
+                      <div>Annual Billed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicareBilledAnnual)}</strong></div>
+                      <div>Annual Allowed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicareAllowedAnnual)}</strong></div>
                     </div>
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">02. Medicaid</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.medicaidPayerPct}% of Runs</span>
+                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.medicaidPayerPct, '%')} of Runs</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${agency.cmsData.medicaidPayerPct}%` }} />
+                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.medicaidPayerPct) ? agency.cmsData.medicaidPayerPct : 0}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Annual Billed: <strong className="text-[#0F172A]">${agency.cmsData.medicaidBilledAnnual.toLocaleString()}</strong></div>
+                      <div className="font-mono tabular-nums">Annual Billed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicaidBilledAnnual)}</strong></div>
                       <div>Supplemental GEMT / IGT Eligible</div>
                     </div>
                   </div>
@@ -2231,13 +2194,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">03. Commercial Insurance</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{agency.cmsData.commercialPayerMixPct}% of Runs</span>
+                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.commercialPayerMixPct, '%')} of Runs</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${agency.cmsData.commercialPayerMixPct}%` }} />
+                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.commercialPayerMixPct) ? agency.cmsData.commercialPayerMixPct : 0}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Underpayment Gap: <strong className="text-[#0F172A]">${agency.qualityMetrics.commercialUnderpaymentPerTrip} / trip</strong></div>
+                      <div className="font-mono tabular-nums">Underpayment Gap: <strong className="text-[#0F172A]">{reportCurrency(agency.qualityMetrics.commercialUnderpaymentPerTrip)} / trip</strong></div>
                       <div>Out-of-Network Balance Billing Protected</div>
                     </div>
                   </div>
@@ -2245,10 +2208,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#0F172A] text-sm">04. Self-Pay / Uninsured</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-amber-700">{agency.cmsData.selfPayPayerPct}% of Runs</span>
+                      <span className="text-sm font-bold font-mono tabular-nums text-amber-700">{reportMetric(agency.cmsData.selfPayPayerPct, '%')} of Runs</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-600 h-full rounded-full" style={{ width: `${agency.cmsData.selfPayPayerPct}%` }} />
+                      <div className="bg-amber-600 h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.selfPayPayerPct) ? agency.cmsData.selfPayPayerPct : 0}%` }} />
                     </div>
                     <div className="pt-1 text-slate-600 space-y-0.5">
                       <div>High bad-debt write-off exposure</div>
@@ -2267,16 +2230,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
                     <div className="text-xs font-semibold text-slate-600">Active Claims Denial Rate</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{agency.cmsData.claimDenialRate}%</div>
+                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{reportMetric(agency.cmsData.claimDenialRate, '%')}</div>
                     <div className="text-[11px] text-slate-600">
-                      Primary Denial Code: <strong className="font-mono text-[#0F172A]">{agency.cmsData.topDenialReasonCode}</strong>
+                      Primary Denial Code: <strong className="font-mono text-[#0F172A]">{agency.cmsData.topDenialReasonCode || 'Not reported'}</strong>
                     </div>
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
                     <div className="text-xs font-semibold text-slate-600">Net Annual Recoverable Revenue</div>
                     <div className="text-3xl font-bold font-mono tabular-nums text-emerald-700">
-                      ${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()}
+                      Not reported with a reproducible method
                     </div>
                     <div className="text-[11px] text-slate-600">
                       Recapturable via ZOLL AR Boost &amp; ePCR NEMSIS validation
@@ -2287,14 +2250,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
                   <div>
                     <span className="text-slate-500 font-medium">Primary Claim Denial Cause: </span>
-                    <strong className="text-[#0F172A]">{agency.cmsData.topDenialReason}</strong>
+                    <strong className="text-[#0F172A]">{agency.cmsData.topDenialReason || 'Not reported'}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500 font-medium">Current Revenue Cycle Software in Use: </span>
-                    <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware}</strong> · Supplied by: <strong className="text-[#0F172A]">{suppliers.billingSupplier}</strong>
+                    <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> · Supplied by: <strong className="text-[#0F172A]">{suppliers.billingSupplier || 'Not reported'}</strong>
                   </div>
                   <p className="text-slate-600 leading-relaxed pt-2 border-t border-slate-200">
-                    Integrating automated pre-billing NEMSIS v3.5 validation and real-time patient insurance discovery eliminates missing Physician Certification Statements (PCS), incomplete ECG/EtCO2 waveform attachments, and demographic mismatches—recovering an estimated <strong className="font-mono tabular-nums text-[#0F172A]">${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()}</strong> annually for {agency.name}.
+                    No agency-specific recovery amount is shown because its inputs and calculation method are not attached to this record.
                   </p>
                 </div>
               </div>
@@ -2309,11 +2272,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     Procedure-Level HCPCS Ambulance Fee Schedule &amp; CMS GADCS 10% Penalty Exposure
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {hcpcsModel.gadcs.cohortWave} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel.gadcs.reportingReadinessStatus}</strong> · {hcpcsModel.gadcs.keyComplianceGap}
+                    {hcpcsModel?.gadcs.cohortWave ?? 'Not calculated'} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel?.gadcs.reportingReadinessStatus ?? 'Not calculated'}</strong> · {hcpcsModel?.gadcs.keyComplianceGap ?? 'Reported annual transports, denial rate, and Medicare payer share are required.'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Modeled estimate inputs: {hcpcsModel
+                      ? `${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports, ${hcpcsModel.inputs.claimDenialRatePct}% denial rate, and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
+                      : 'not calculated because required reported inputs are missing.'}
                   </p>
                 </div>
                 <span className="font-mono text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">
-                  GADCS 10% Medicare Penalty Risk: -${hcpcsModel.gadcs.gadcs10PctPenaltyExposure.toLocaleString()}/yr
+                  GADCS 10% Medicare Penalty Risk: {hcpcsModel ? `-$${hcpcsModel.gadcs.gadcs10PctPenaltyExposure.toLocaleString()}/yr` : 'Not calculated'}
                 </span>
               </div>
 
@@ -2331,7 +2299,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {hcpcsModel.procedures.map(proc => (
+                    {hcpcsModel?.procedures.map(proc => (
                       <tr key={proc.code} className="hover:bg-slate-50/80">
                         <td className="py-2.5 px-4 font-mono font-bold text-[#1E3A8A]">{proc.code}</td>
                         <td className="py-2.5 px-4">
@@ -2392,7 +2360,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </p>
               </div>
               <span className="text-xs font-semibold text-slate-700">
-                Primary Service Contract: <strong className="text-[#0F172A]">{agency.competitorContract.vendor}</strong> · Ends <strong className="font-mono tabular-nums text-[#0F172A]">{agency.competitorContract.contractEndDate}</strong>
+                Primary Service Contract: <strong className="text-[#0F172A]">{agency.competitorContract.vendor || 'Not reported'}</strong> · Ends <strong className="font-mono tabular-nums text-[#0F172A]">{agency.competitorContract.contractEndDate || 'Not reported'}</strong>
               </span>
             </div>
 
@@ -2407,15 +2375,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-[#1E3A8A]">Cardiac Monitors / Defibrillators</span>
                     <span className="font-mono tabular-nums font-semibold text-slate-600">
-                      {agency.installedFleet.defibUnitsCount} Units
+                      {reportMetric(agency.installedFleet.defibUnitsCount)} Units
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.defibBrand}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.defibBrand || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Current Supplier: <strong className="text-[#0F172A]">{suppliers.defibSupplier}</strong>
                   </div>
                   <div className="text-slate-500 text-[11px] pt-1 border-t border-slate-200 font-mono tabular-nums">
-                    Age: {agency.installedFleet.defibAgeYears} yrs · Warranty: <strong className="font-sans text-[#0F172A]">{agency.installedFleet.defibWarrantyStatus}</strong> · Ends: {agency.competitorContract.contractEndDate}
+                    Age: {reportMetric(agency.installedFleet.defibAgeYears)} yrs · Warranty: <strong className="font-sans text-[#0F172A]">{agency.installedFleet.defibWarrantyStatus || 'Not reported'}</strong> · Ends: {agency.competitorContract.contractEndDate || 'Not reported'}
                   </div>
                 </div>
 
@@ -2426,7 +2394,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       NEMSIS v3.5
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.epcrCadSoftware}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.epcrCadSoftware || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Current Supplier: <strong className="text-[#0F172A]">{suppliers.epcrSupplier}</strong>
                   </div>
@@ -2442,7 +2410,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       PSAP Dispatch
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.dispatchCadVendor}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.dispatchCadVendor || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Current Supplier: <strong className="text-[#0F172A]">{suppliers.cadSupplier}</strong>
                   </div>
@@ -2455,10 +2423,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-[#1E3A8A]">Mechanical CPR System</span>
                     <span className="font-mono tabular-nums font-semibold text-slate-600">
-                      {agency.installedFleet.cprUnitsCount} Units
+                      {reportMetric(agency.installedFleet.cprUnitsCount)} Units
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.mechanicalCPR}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.mechanicalCPR || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Current Supplier: <strong className="text-[#0F172A]">{suppliers.cprSupplier}</strong>
                   </div>
@@ -2471,10 +2439,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-[#1E3A8A]">Transport Ventilators</span>
                     <span className="font-mono tabular-nums font-semibold text-slate-600">
-                      {agency.installedFleet.ventUnitsCount} Units
+                      {reportMetric(agency.installedFleet.ventUnitsCount)} Units
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.transportVentilator}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">In Use: {agency.installedFleet.transportVentilator || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Current Supplier: <strong className="text-[#0F172A]">{suppliers.ventSupplier}</strong>
                   </div>
@@ -2490,7 +2458,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       RCM &amp; Supply
                     </span>
                   </div>
-                  <div className="text-sm font-bold text-[#0F172A]">Billing: {agency.installedFleet.billingSoftware}</div>
+                  <div className="text-sm font-bold text-[#0F172A]">Billing: {agency.installedFleet.billingSoftware || 'Not reported'}</div>
                   <div className="text-slate-700">
                     Billing Supplier: <strong className="text-[#0F172A]">{suppliers.billingSupplier}</strong>
                   </div>
@@ -2522,64 +2490,72 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <tbody className="divide-y divide-slate-200">
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Cardiac Monitors / Defibrillators</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.defibBrand}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.defibUnitsCount} Frontline Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.defibBrand || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.installedFleet.defibUnitsCount)} Frontline Units</td>
                       <td className="py-3 px-4 font-mono tabular-nums">
-                        {agency.installedFleet.defibAgeYears} yrs · <span className="font-sans font-semibold text-rose-700">{agency.installedFleet.defibWarrantyStatus}</span>
+                        {reportMetric(agency.installedFleet.defibAgeYears)} yrs · <span className="font-sans font-semibold text-rose-700">{agency.installedFleet.defibWarrantyStatus || 'Not reported'}</span>
                       </td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.defibSupplier}</td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
-                        {agency.competitorContract.vendor} (${agency.competitorContract.annualServiceCostPerUnit.toLocaleString()}/unit · Ends {agency.competitorContract.contractEndDate})
+                        {agency.competitorContract.vendor || 'Not reported'} ({reportCurrency(agency.competitorContract.annualServiceCostPerUnit)}/unit · Ends {agency.competitorContract.contractEndDate || 'Not reported'})
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Mechanical CPR Resuscitation</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.mechanicalCPR}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.cprUnitsCount} Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.mechanicalCPR || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.installedFleet.cprUnitsCount)} Units</td>
                       <td className="py-3 px-4">
-                        {agency.installedFleet.cprUnitsCount > 0 ? `${Math.max(3, agency.installedFleet.defibAgeYears - 2)} yrs · Active Service` : 'No Automated CPR'}
+                        {hasReportedValue(agency.installedFleet.cprUnitsCount)
+                          ? (agency.installedFleet.cprUnitsCount > 0 ? `${agency.installedFleet.cprUnitsCount} units reported` : '0 units reported')
+                          : 'Not reported'}
                       </td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cprSupplier}</td>
                       <td className="py-3 px-4 text-slate-600">
-                        {agency.installedFleet.cprUnitsCount > 0 ? 'Annual Preventive Calibration' : 'Target for ZOLL AutoPulse Trial'}
+                        {hasReportedValue(agency.installedFleet.cprUnitsCount)
+                          ? (agency.installedFleet.cprUnitsCount > 0 ? 'Annual Preventive Calibration' : '0 units reported')
+                          : 'Not reported'}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Emergency Transport Ventilators</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.transportVentilator}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.installedFleet.ventUnitsCount} Units</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.transportVentilator || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.installedFleet.ventUnitsCount)} Units</td>
                       <td className="py-3 px-4">
-                        {agency.installedFleet.ventUnitsCount > 0 ? 'Active Biomedical Fleet' : 'Manual BVM Only'}
+                        {hasReportedValue(agency.installedFleet.ventUnitsCount)
+                          ? (agency.installedFleet.ventUnitsCount > 0 ? 'Active Biomedical Fleet' : '0 units reported')
+                          : 'Not reported'}
                       </td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.ventSupplier}</td>
                       <td className="py-3 px-4 text-slate-600">
-                        {agency.installedFleet.ventUnitsCount > 0 ? 'OEM Biomedical Agreement' : 'Target for ZOLL Z Vent Deployment'}
+                        {hasReportedValue(agency.installedFleet.ventUnitsCount)
+                          ? (agency.installedFleet.ventUnitsCount > 0 ? 'OEM Biomedical Agreement' : 'Not reported')
+                          : 'Not reported'}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">ePCR Clinical Charting Software</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.epcrCadSoftware}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.totalAmbulances + agency.totalFireEngines} Field Tablets</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.epcrCadSoftware || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{hasReportedValue(agency.totalAmbulances) && hasReportedValue(agency.totalFireEngines) ? reportMetric(agency.totalAmbulances + agency.totalFireEngines) : 'Not reported'} Field Tablets</td>
                       <td className="py-3 px-4">Annual SaaS License</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.epcrSupplier}</td>
-                      <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">Renewal Window: {agency.competitorContract.renewalWindowDays} Days Prior</td>
+                      <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">Renewal Window: {reportMetric(agency.competitorContract.renewalWindowDays, ' days prior')}</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">911 Dispatch CAD Platform</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.dispatchCadVendor}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.stationsCount} Stations Connected</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.dispatchCadVendor || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.stationsCount)} Stations</td>
                       <td className="py-3 px-4">Municipal PSAP Contract</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.cadSupplier}</td>
                       <td className="py-3 px-4 text-slate-600">Multi-Year County/City Dispatch Agreement</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Revenue Cycle &amp; Claims Billing</td>
-                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware}</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.annual911Transports.toLocaleString()} Claims / yr</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{agency.cmsData.claimDenialRate}% Current Denial Rate</td>
+                      <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.annual911Transports)} Claims / yr</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.cmsData.claimDenialRate, '%')} Current Denial Rate</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.billingSupplier}</td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
-                        ${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()} Recoverable w/ ZOLL AR Boost
+                        Estimate not shown; required inputs and method are unavailable.
                       </td>
                     </tr>
                   </tbody>
@@ -2607,14 +2583,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <tr>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">Defibrillation &amp; Telemetry</td>
                       <td className="py-3 px-4 text-slate-700">
-                        <strong className="text-[#0F172A]">{agency.installedFleet.defibBrand}</strong> ({agency.installedFleet.defibAgeYears} yrs old)<br />
+                        <strong className="text-[#0F172A]">{agency.installedFleet.defibBrand || 'Not reported'}</strong> ({reportMetric(agency.installedFleet.defibAgeYears)} yrs old)<br />
                         <span className="text-slate-500">Supplier: {suppliers.defibSupplier}</span>
                       </td>
                       <td className="py-3 px-4 font-bold text-[#1E3A8A] bg-slate-50">
-                        ZOLL X Series Advanced ({agency.installedFleet.defibUnitsCount} Units)
+                        ZOLL X Series Advanced ({reportMetric(agency.installedFleet.defibUnitsCount)} Units)
                       </td>
                       <td className="py-3 px-4 text-slate-700">
-                        Real BVM Help®, Real CPR Help®, TBI Dashboard, and 50% lighter weight; elevates CCF from {agency.qualityMetrics.nemsqaChestCompressionFractionPct}% to &gt;88%.
+                        Real BVM Help®, Real CPR Help®, and TBI Dashboard are product features. Agency chest-compression fraction: {reportMetric(agency.qualityMetrics.nemsqaChestCompressionFractionPct, '%')}; no agency-specific outcome forecast is shown.
                       </td>
                     </tr>
                     <tr>
@@ -2627,7 +2603,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         ZOLL AutoPulse NXT Resuscitation System
                       </td>
                       <td className="py-3 px-4 text-slate-700">
-                        Circumferential load-distributing band compressions with ShockSync™ integration to improve Utstein survival ({agency.utsteinSurvivalRate}%).
+                        Circumferential load-distributing band compressions with ShockSync™ integration; agency Utstein rate: {reportMetric(agency.utsteinSurvivalRate, '%')}.
                       </td>
                     </tr>
                     <tr>
@@ -2646,14 +2622,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <tr>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">Revenue Cycle &amp; Claims Recovery</td>
                       <td className="py-3 px-4 text-slate-700">
-                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware}</strong> ({agency.cmsData.claimDenialRate}% Denials)<br />
+                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> ({reportMetric(agency.cmsData.claimDenialRate, '%')} Denials)<br />
                         <span className="text-slate-500">Supplier: {suppliers.billingSupplier}</span>
                       </td>
                       <td className="py-3 px-4 font-bold text-[#1E3A8A] bg-slate-50">
                         ZOLL Billing &amp; AR Boost Insurance Discovery
                       </td>
                       <td className="py-3 px-4 font-semibold text-emerald-700">
-                        Recaptures up to <span className="font-mono tabular-nums">${agency.cmsData.estimatedRecoverableRevenue.toLocaleString()}</span> annually by resolving {agency.cmsData.topDenialReasonCode} denials and self-pay accounts.
+                        Recovery estimate not shown: no agency-specific calculation inputs and method are available.
                       </td>
                     </tr>
                   </tbody>
@@ -2662,6 +2638,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* MODALITY 4: INCUMBENT FDA RECALL EXPOSURE & 5-YEAR FLEET TCO COMPARISON */}
+            {tcoModel ? (
             <div className="pt-4 border-t border-slate-200 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -2674,7 +2651,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </p>
                 </div>
                 <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                  5-Yr Net ZOLL Lifecycle Savings: +${tcoModel.totalSavingsIncludingTradeIn.toLocaleString()}
+                  Estimated 5-Yr Net ZOLL Lifecycle Savings: {formatCurrency(tcoModel.totalSavingsIncludingTradeIn)}
                 </span>
               </div>
 
@@ -2717,9 +2694,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </table>
               </div>
 
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Illustrative benchmark, not reported agency spending. Inputs: {reportMetric(tcoModel.unitCount)} reported defibrillator units and five years; benchmark {tcoModel.incumbentModel} vs {tcoModel.zollModel}; per-unit annual service {reportCurrency(tcoModel.matchedIntel.incumbentAnnualServicePerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries {reportCurrency(tcoModel.matchedIntel.incumbentBattery5YrCostPerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables {reportCurrency(tcoModel.matchedIntel.incumbentConsumableAnnualPerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption {reportCurrency(tcoModel.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: five-year service, battery, and consumables cost difference plus modeled trade-in credit.
+              </p>
+
               {/* Interactive 5-Year Cumulative TCO Savings Area Chart */}
               <TcoCumulativeSavingsChart agency={agency} className="mt-4" />
             </div>
+            ) : (
+              <div role="status" className="pt-4 border-t border-slate-200 text-xs text-amber-800">
+                {hasReportedValue(agency.installedFleet.defibUnitsCount)
+                  ? 'TCO estimate not calculated: 0 defibrillator units reported.'
+                  : 'TCO estimate not calculated: defibrillator unit count not reported.'}
+              </div>
+            )}
           </section>
         )}
 
@@ -2738,9 +2726,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="grid grid-cols-1 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3.5 bg-white dark:bg-slate-900 space-y-1">
                   <div className="text-slate-500 dark:text-slate-400 font-medium font-mono text-[11px] uppercase tracking-wider">Frontline Monitor / Defibrillators</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.defibBrand}</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.defibBrand || 'Not reported'}</div>
                   <div className="text-slate-600 dark:text-slate-300 font-mono tabular-nums">
-                    <strong className="text-slate-900 dark:text-white">{agency.installedFleet.defibUnitsCount} active units</strong> · <strong className="text-slate-900 dark:text-white">{agency.installedFleet.defibAgeYears} years</strong> in service · Warranty: <strong className="font-sans text-slate-900 dark:text-white">{agency.installedFleet.defibWarrantyStatus}</strong>
+                    <strong className="text-slate-900 dark:text-white">{reportMetric(agency.installedFleet.defibUnitsCount)} active units</strong> · <strong className="text-slate-900 dark:text-white">{reportMetric(agency.installedFleet.defibAgeYears)} years</strong> in service · Warranty: <strong className="font-sans text-slate-900 dark:text-white">{agency.installedFleet.defibWarrantyStatus || 'Not reported'}</strong>
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                     Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.defibSupplier}</strong>
@@ -2749,11 +2737,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 <div className="p-3.5 bg-white dark:bg-slate-900 space-y-1">
                   <div className="text-slate-500 dark:text-slate-400 font-medium font-mono text-[11px] uppercase tracking-wider">Mechanical CPR Equipment</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.mechanicalCPR}</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.mechanicalCPR || 'Not reported'}</div>
                   <div className="text-slate-600 dark:text-slate-300">
-                    {agency.installedFleet.cprUnitsCount > 0
-                      ? `${agency.installedFleet.cprUnitsCount} automated compression units deployed across frontline units`
-                      : 'Currently manual compressions only — high priority for mechanical CPR upgrade'}
+                    {hasReportedValue(agency.installedFleet.cprUnitsCount)
+                      ? (agency.installedFleet.cprUnitsCount > 0
+                        ? `${reportMetric(agency.installedFleet.cprUnitsCount)} automated compression units reported`
+                        : '0 automated compression units reported')
+                      : 'Equipment count not reported'}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                     Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.cprSupplier}</strong>
@@ -2762,11 +2752,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 <div className="p-3.5 bg-white dark:bg-slate-900 space-y-1">
                   <div className="text-slate-500 dark:text-slate-400 font-medium font-mono text-[11px] uppercase tracking-wider">Emergency Transport Ventilators</div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.transportVentilator}</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">{agency.installedFleet.transportVentilator || 'Not reported'}</div>
                   <div className="text-slate-600 dark:text-slate-300">
-                    {agency.installedFleet.ventUnitsCount > 0
-                      ? `${agency.installedFleet.ventUnitsCount} transport ventilator units deployed`
-                      : 'Bag-Valve-Mask only during emergency transports'}
+                    {hasReportedValue(agency.installedFleet.ventUnitsCount)
+                      ? `${reportMetric(agency.installedFleet.ventUnitsCount)} transport ventilator units reported`
+                      : 'Equipment count not reported'}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                     Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.ventSupplier}</strong>
@@ -2784,11 +2774,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <dl className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3 bg-white dark:bg-slate-900">
                   <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Ambulance Fleet</dt>
-                  <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalAmbulances)} Frontline Units</dd>
+                  <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.totalAmbulances)} Frontline Units</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
                   <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Fire Apparatus</dt>
-                  <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalFireEngines)} Engines / Ladders</dd>
+                  <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.totalFireEngines)} Engines / Ladders</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
                   <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Current Maintenance Vendor</dt>
@@ -2895,14 +2885,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     {agency.grantStatus.afgAwarded ? (
                       <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-mono tabular-nums">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Awarded: ${(agency.grantStatus.afgAwardAmount || 0).toLocaleString()} (FY {agency.grantStatus.afgFiscalYear})</span>
+                        <span>Awarded: {reportCurrency(agency.grantStatus.afgAwardAmount)} (FY {reportMetric(agency.grantStatus.afgFiscalYear)})</span>
                       </span>
                     ) : (
-                      <span className="text-slate-900 dark:text-white">Eligible Regional Applicant — Pre-Application Spec Ready (FY {agency.grantStatus.afgFiscalYear || 2025})</span>
+                      <span className="text-slate-900 dark:text-white">No award indicated in this record; eligibility not assessed.</span>
                     )}
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Approved Funding Scope: <strong className="text-slate-900 dark:text-white">{agency.grantStatus.afgPurpose || 'Operations & Safety — Cardiac Monitor & Mechanical CPR Upgrade'}</strong>
+                    Funding scope: <strong className="text-slate-900 dark:text-white">{agency.grantStatus.afgPurpose || 'Not reported'}</strong>
                   </p>
                 </div>
 
@@ -2942,7 +2932,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
                   <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Population Served</dt>
-                  <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.populationServed)}</dd>
+                  <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.populationServed)}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
                   <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Stations &amp; Facilities</dt>
@@ -3022,7 +3012,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <span>Multi-Year FEMA AFG, SAFER &amp; Homeland Security Grant Track Record</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      5-year federal grant funding history and FY2026 equipment modernization eligibility for {agency.name}
+                      Federal grant funding history and equipment modernization eligibility for {agency.name}
                     </p>
                   </div>
                 </div>
@@ -3046,7 +3036,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                           <td className="py-2.5 px-4 font-bold text-[#1E3A8A]">{g.programName}</td>
                           <td className="py-2.5 px-4 text-slate-700 max-w-md">{g.purpose}</td>
                           <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-700">${g.awardAmount.toLocaleString()}</td>
-                          <td className="py-2.5 px-4 text-right font-mono text-slate-600">${g.localMatchAmount.toLocaleString()} ({100 - g.federalSharePct}%)</td>
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-600">{g.localMatchAmount == null || g.federalSharePct == null ? 'Not reported' : `$${g.localMatchAmount.toLocaleString()} (${100 - g.federalSharePct}%)`}</td>
                           <td className="py-2.5 px-4 text-right font-semibold">
                             <span className={`px-2 py-0.5 rounded-md ${
                               g.status.includes('Awarded')

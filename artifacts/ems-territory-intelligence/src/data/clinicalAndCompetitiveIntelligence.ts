@@ -283,11 +283,12 @@ export function calculateAgencyFleetTco(
   customUnitCount?: number,
   overrideIntelId?: string
 ): AgencyTcoComparison {
-  const defaultUnits = Math.max(
-    4,
-    (agency.installedFleet?.alsMonitorsCount || 8) +
-      Math.round((agency.installedFleet?.blsDefibsCount || 4) * 0.5)
-  );
+  // Use the agency's reported count when available. Ambulance count is an
+  // explicit proxy estimate; do not invent a fleet size when both are absent.
+  const defaultUnits =
+    agency.installedFleet?.defibUnitsCount ??
+    agency.totalAmbulances ??
+    0;
   const unitCount = customUnitCount ?? defaultUnits;
 
   let matchedIntel = COMPETITOR_HARDWARE_INTEL[0];
@@ -354,10 +355,33 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
   gadcs: AgencyGadcsAssessment;
   totalGrossMedicareAndAlsBilling: number;
   totalAnnualDenialLoss: number;
-} {
-  const transports = Math.max(400, agency.annual911Transports || 3200);
-  const denialRate = (agency.cmsData?.claimDenialRate || 12.4) / 100;
-  const medicarePct = (agency.cmsData?.medicarePayerPct || 42.0) / 100;
+  inputs: {
+    annualTransports: number;
+    claimDenialRatePct: number;
+    medicarePayerPct: number;
+    method: string;
+  };
+} | null {
+  const annualTransports = agency.annual911Transports;
+  const claimDenialRatePct = agency.cmsData?.claimDenialRate;
+  const medicarePayerPct =
+    agency.cmsData?.medicarePayerPct ??
+    agency.cmsData?.payerMix?.medicare;
+
+  if (
+    annualTransports == null ||
+    claimDenialRatePct == null ||
+    medicarePayerPct == null ||
+    !Number.isFinite(annualTransports) ||
+    !Number.isFinite(claimDenialRatePct) ||
+    !Number.isFinite(medicarePayerPct)
+  ) {
+    return null;
+  }
+
+  const transports = annualTransports;
+  const denialRate = claimDenialRatePct / 100;
+  const medicarePct = medicarePayerPct / 100;
 
   const als1Count = Math.round(transports * 0.52);
   const blsCount = Math.round(transports * 0.34);
@@ -438,7 +462,14 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
     procedures,
     gadcs,
     totalGrossMedicareAndAlsBilling,
-    totalAnnualDenialLoss
+    totalAnnualDenialLoss,
+    inputs: {
+      annualTransports,
+      claimDenialRatePct,
+      medicarePayerPct,
+      method:
+        'Estimated from reported annual transports, the 52% ALS1 / 34% BLS / 14% ALS2 claim mix, 7.8 loaded miles per transport, published example HCPCS rates, reported denial rate, and Medicare payer share.'
+    }
   };
 }
 

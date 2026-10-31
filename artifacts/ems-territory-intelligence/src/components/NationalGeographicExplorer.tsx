@@ -1487,6 +1487,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       Number.isFinite(record.medicareDenialRate),
                   )
                   .sort((a, b) => a.zipCode.localeCompare(b.zipCode));
+                const countyZipDenialRates = countyZipDenialProfiles.map(
+                  record => record.medicareDenialRate as number,
+                );
+                const countyZipDenialRateRange = countyZipDenialRates.length === 0
+                  ? null
+                  : {
+                      min: Math.min(...countyZipDenialRates),
+                      max: Math.max(...countyZipDenialRates),
+                    };
+                const countyZipDenialRateDisplay = countyZipDenialRateRange === null
+                  ? null
+                  : countyZipDenialRateRange.min === countyZipDenialRateRange.max
+                    ? `${countyZipDenialRateRange.min.toFixed(1)}%`
+                    : `${countyZipDenialRateRange.min.toFixed(1)}–${countyZipDenialRateRange.max.toFixed(1)}%`;
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1568,10 +1582,23 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Medicare ambulance denial rate</span>
-                          <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {countyDenialRatePct !== null ? `${countyDenialRatePct}%` : 'Not published'}
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
+                            {countyDenialRatePct !== null
+                              ? 'Medicare ambulance denial rate'
+                              : countyZipDenialRateDisplay
+                                ? 'Available ZIP-profile rate'
+                                : 'Medicare ambulance denial rate'}
                           </span>
+                          <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
+                            {countyDenialRatePct !== null
+                              ? `${countyDenialRatePct}%`
+                              : countyZipDenialRateDisplay ?? 'Not published'}
+                          </span>
+                          {countyDenialRatePct === null && countyZipDenialRateDisplay !== null && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                              ZIP profile value; not a county claims aggregate
+                            </span>
+                          )}
                           {countyDenialRatePct !== null && c.medicareDenialSource && c.medicareDenialSourceUrl && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                               {c.medicareDenialReportingPeriod || 'Period not listed'} ·{' '}
@@ -1586,7 +1613,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               </a>
                             </span>
                           )}
-                          {countyDenialRatePct === null && (
+                          {countyDenialRatePct === null && countyZipDenialRateDisplay === null && (
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 block">
                               Requires denied ÷ adjudicated ambulance claims with the same claim scope and reporting period
                               <a

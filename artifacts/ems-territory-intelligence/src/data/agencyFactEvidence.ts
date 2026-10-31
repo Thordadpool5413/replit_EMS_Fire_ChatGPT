@@ -41,7 +41,13 @@ export function hasMappedFactSource(
     return false;
   }
 
-  if (evidence.sourceKind === 'logic' && evidence.note?.trim()) {
+  if (
+    (evidence.sourceKind === 'logic' ||
+      evidence.sourceKind === 'mcp' ||
+      evidence.sourceKind === 'dataset' ||
+      evidence.sourceKind === 'manual') &&
+    evidence.note?.trim()
+  ) {
     return true;
   }
 

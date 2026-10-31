@@ -426,7 +426,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                   </a>
                 ) : (
                   <span key={key} title={evidence?.note} className="rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-600 dark:border-slate-700 dark:text-slate-300">
-                    {label} · methodology mapped
+                    {label} · {(evidence?.sourceKind || 'methodology')} mapped
                   </span>
                 ))}
               </div>

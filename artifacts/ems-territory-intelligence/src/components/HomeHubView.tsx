@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Agency, PushAlert } from '../types';
 import {
   Search,
@@ -39,6 +39,63 @@ import { formatCurrency, formatPercent, formatInteger, formatScore } from '../ut
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
+const STATE_MAP_METRICS = [
+  { key: 'agency-records', label: 'Agency directory records' },
+  { key: 'ambulances', label: 'Agency-profile ambulance total' },
+  { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
+  { key: 'pulseiq', label: 'Modeled average PulseIQ' },
+  { key: 'zip-denial', label: 'ZIP-profile denial average' },
+] as const;
+
+type StateMapMetricKey = (typeof STATE_MAP_METRICS)[number]['key'];
+
+interface StateStats {
+  count: number;
+  countiesCount: number;
+  avgPulseIq: number | null;
+  pulseIqDataCount: number;
+  totalAmbulances: number | null;
+  ambulanceDataCount: number;
+  totalFireEngines: number | null;
+  fireEngineDataCount: number;
+  medicareAllowed: number | null;
+  medicareAllowedDataCount: number;
+  grantFunds: number;
+}
+
+interface StateMapMetricDatum {
+  value: number | null;
+  coverage: string;
+  period: string;
+  sourceAction: 'agency-records' | 'zip-profiles';
+}
+
+const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
+  if (value === null) return 'Not reported';
+  if (metric === 'zip-denial') return `${value.toFixed(1)}%`;
+  if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
+  return formatInteger(value);
+};
+
+const interpolateStateFill = (value: number, min: number, max: number) => {
+  const t = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const start = [219, 234, 254];
+  const end = [30, 64, 175];
+  const channels = start.map((channel, index) =>
+    Math.round(channel + (end[index] - channel) * t),
+  );
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+};
+
+const readableTextForFill = (hexColor: string) => {
+  const channels = hexColor.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [219, 234, 254];
+  const [red, green, blue] = channels.map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.45 ? '#10233A' : '#FFFFFF';
+};
+
 interface HomeHubViewProps {
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
@@ -72,6 +129,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [selectedStateCode, setSelectedStateCode] = useState<string>('FL');
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
+  const [mapMetric, setMapMetric] = useState<StateMapMetricKey>('agency-records');
+  const mapViewportRef = useRef<HTMLDivElement>(null);
 
   // Filter agencies by global category (All / EMS / Fire)
   const scopedAgencies = useMemo(() => {
@@ -81,6 +140,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return globalCategory === 'fire' ? isFire : !isFire;
     });
   }, [agencies, globalCategory]);
+  const providerScopeLabel = globalCategory === 'all'
+    ? 'all-provider'
+    : globalCategory === 'ems'
+      ? 'EMS-only'
+      : 'fire-only';
 
   // Instant inline universal search results
   const searchResults = useMemo(() => {
@@ -99,84 +163,79 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       .slice(0, 8);
   }, [scopedAgencies, searchQuery]);
 
-  // Active state to display in the Intelligence summary panel
-  const displayStateCode = hoveredStateCode || selectedStateCode;
+  // Keep the selected dossier stable while hovering only updates the map readout.
+  const displayStateCode = selectedStateCode;
+  const hoverReadoutStateCode = hoveredStateCode || selectedStateCode;
   const activeStateSummary = ALL_50_STATES_SUMMARIES[displayStateCode] || ALL_50_STATES_SUMMARIES['FL'];
 
-  // Real statistics computed for the active state
-  const stateStats = useMemo(() => {
-    const stateAgencies = scopedAgencies.filter((a) => a.stateCode === displayStateCode);
-    const count = stateAgencies.length;
-    const countiesCount = territoryEngine.getCountiesForState(displayStateCode).length;
-
-    if (count === 0) {
-      return {
-        count: 0,
-        countiesCount,
-        avgPulseIq: null,
-        pulseIqDataCount: 0,
-        totalAmbulances: null,
-        ambulanceDataCount: 0,
-        totalFireEngines: null,
-        fireEngineDataCount: 0,
-        medicareAllowed: null,
-        medicareAllowedDataCount: 0,
-        grantFunds: null
-      };
+  const stateStatsByCode = useMemo(() => {
+    const agenciesByState = new Map<string, Agency[]>();
+    for (const agency of scopedAgencies) {
+      const group = agenciesByState.get(agency.stateCode) ?? [];
+      group.push(agency);
+      agenciesByState.set(agency.stateCode, group);
     }
 
-    let sumPulseIq = 0;
-    let pulseIqDataCount = 0;
-    let ambulances = 0;
-    let ambulanceDataCount = 0;
-    let fireEngines = 0;
-    let fireEngineDataCount = 0;
-    let medicare = 0;
-    let medicareAllowedDataCount = 0;
-    let grants = 0;
+    return Object.fromEntries(
+      Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
+        const stateAgencies = agenciesByState.get(state.code) ?? [];
+        let sumPulseIq = 0;
+        let pulseIqDataCount = 0;
+        let ambulances = 0;
+        let ambulanceDataCount = 0;
+        let fireEngines = 0;
+        let fireEngineDataCount = 0;
+        let medicare = 0;
+        let medicareAllowedDataCount = 0;
+        let grants = 0;
 
-    for (const a of stateAgencies) {
-      const pulseIq = a.zollOpportunity?.pulseIqScore;
-      const ambulanceCount = a.totalAmbulances;
-      const fireEngineCount = a.totalFireEngines;
-      const medicareAllowed = a.cmsData?.medicareAllowedAnnual;
+        for (const agency of stateAgencies) {
+          const pulseIq = agency.zollOpportunity?.pulseIqScore;
+          const ambulanceCount = agency.totalAmbulances;
+          const fireEngineCount = agency.totalFireEngines;
+          const medicareAllowed = agency.cmsData?.medicareAllowedAnnual;
 
-      if (hasReportedValue(pulseIq)) {
-        sumPulseIq += pulseIq;
-        pulseIqDataCount++;
-      }
-      if (hasReportedValue(ambulanceCount)) {
-        ambulances += ambulanceCount;
-        ambulanceDataCount++;
-      }
-      if (hasReportedValue(fireEngineCount)) {
-        fireEngines += fireEngineCount;
-        fireEngineDataCount++;
-      }
-      if (hasReportedValue(medicareAllowed)) {
-        medicare += medicareAllowed;
-        medicareAllowedDataCount++;
-      }
-      const grantAmount = a.grantStatus?.afgAwardAmount;
-      if (a.grantStatus?.afgAwarded && hasReportedValue(grantAmount)) {
-        grants += grantAmount;
-      }
-    }
+          if (hasReportedValue(pulseIq)) {
+            sumPulseIq += pulseIq;
+            pulseIqDataCount++;
+          }
+          if (hasReportedValue(ambulanceCount)) {
+            ambulances += ambulanceCount;
+            ambulanceDataCount++;
+          }
+          if (hasReportedValue(fireEngineCount)) {
+            fireEngines += fireEngineCount;
+            fireEngineDataCount++;
+          }
+          if (hasReportedValue(medicareAllowed)) {
+            medicare += medicareAllowed;
+            medicareAllowedDataCount++;
+          }
+          const grantAmount = agency.grantStatus?.afgAwardAmount;
+          if (agency.grantStatus?.afgAwarded && hasReportedValue(grantAmount)) {
+            grants += grantAmount;
+          }
+        }
 
-    return {
-      count,
-      countiesCount,
-      avgPulseIq: pulseIqDataCount ? Math.round(sumPulseIq / pulseIqDataCount) : null,
-      pulseIqDataCount,
-      totalAmbulances: ambulanceDataCount ? ambulances : null,
-      ambulanceDataCount,
-      totalFireEngines: fireEngineDataCount ? fireEngines : null,
-      fireEngineDataCount,
-      medicareAllowed: medicareAllowedDataCount ? medicare : null,
-      medicareAllowedDataCount,
-      grantFunds: grants
-    };
-  }, [scopedAgencies, displayStateCode, activeStateSummary]);
+        const stats: StateStats = {
+          count: stateAgencies.length,
+          countiesCount: territoryEngine.getCountiesForState(state.code).length,
+          avgPulseIq: pulseIqDataCount ? Math.round(sumPulseIq / pulseIqDataCount) : null,
+          pulseIqDataCount,
+          totalAmbulances: ambulanceDataCount ? ambulances : null,
+          ambulanceDataCount,
+          totalFireEngines: fireEngineDataCount ? fireEngines : null,
+          fireEngineDataCount,
+          medicareAllowed: medicareAllowedDataCount ? medicare : null,
+          medicareAllowedDataCount,
+          grantFunds: grants,
+        };
+        return [state.code, stats];
+      }),
+    ) as Record<string, StateStats>;
+  }, [scopedAgencies]);
+
+  const stateStats = stateStatsByCode[displayStateCode];
 
   const stateZipDenialProfiles = useMemo(
     () => getStateZipDenialProfiles(displayStateCode),
@@ -187,6 +246,72 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     [displayStateCode],
   );
 
+  const stateMapMetricsByCode = useMemo(() => {
+    return Object.fromEntries(
+      Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
+        const stats = stateStatsByCode[state.code];
+        const zipProfiles = getStateZipDenialProfiles(state.code);
+        const zipDenialSummary = getStateZipDenialProfileSummary(state.code);
+        const metricData: Record<StateMapMetricKey, StateMapMetricDatum> = {
+          'agency-records': {
+            value: stats.count,
+            coverage: `${formatInteger(stats.count)} ${providerScopeLabel} agency records in the current directory.`,
+            period: 'Current app directory snapshot; no as-of date is recorded.',
+            sourceAction: 'agency-records',
+          },
+          ambulances: {
+            value: stats.totalAmbulances,
+            coverage: `Sum of ambulance counts in ${formatInteger(stats.ambulanceDataCount)} of ${formatInteger(stats.count)} ${providerScopeLabel} agency profiles.`,
+            period: 'Agency profile periods vary or are not stated.',
+            sourceAction: 'agency-records',
+          },
+          'fire-engines': {
+            value: stats.totalFireEngines,
+            coverage: `Sum of fire-engine counts in ${formatInteger(stats.fireEngineDataCount)} of ${formatInteger(stats.count)} ${providerScopeLabel} agency profiles.`,
+            period: 'Agency profile periods vary or are not stated.',
+            sourceAction: 'agency-records',
+          },
+          pulseiq: {
+            value: stats.avgPulseIq,
+            coverage: `Mean of available scores from ${formatInteger(stats.pulseIqDataCount)} of ${formatInteger(stats.count)} ${providerScopeLabel} agency records.`,
+            period: 'Modeled from current agency profile inputs; source periods are not standardized.',
+            sourceAction: 'agency-records',
+          },
+          'zip-denial': {
+            value: zipDenialSummary?.ratePct ?? null,
+            coverage: zipDenialSummary
+              ? `Unweighted mean of ${formatInteger(zipDenialSummary.profileCount)} ZIP-profile percentages.`
+              : `${formatInteger(zipProfiles.length)} ZIP-profile percentages available.`,
+            period: 'The ZIP-profile records do not state a reporting period.',
+            sourceAction: 'zip-profiles',
+          },
+        };
+        return [state.code, metricData];
+      }),
+    ) as Record<string, Record<StateMapMetricKey, StateMapMetricDatum>>;
+  }, [providerScopeLabel, stateStatsByCode]);
+
+  const mapMetricValues = Object.values(stateMapMetricsByCode)
+    .map((metrics) => metrics[mapMetric].value)
+    .filter(hasReportedValue);
+  const mapMetricMin = mapMetricValues.length ? Math.min(...mapMetricValues) : 0;
+  const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
+  const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
+  const mapReadoutMetric = stateMapMetricsByCode[hoverReadoutStateCode][mapMetric];
+  const mapReadoutState = ALL_50_STATES_SUMMARIES[hoverReadoutStateCode];
+
+  useEffect(() => {
+    const viewport = mapViewportRef.current;
+    const stateBoundary = US_STATES_SVG_PATHS[selectedStateCode];
+    const svg = viewport?.querySelector('svg');
+    if (!viewport || !stateBoundary || !svg || window.innerWidth >= 640) return;
+
+    const stateX = (stateBoundary.labelX / 920) * svg.getBoundingClientRect().width;
+    const desiredLeft = stateX - viewport.clientWidth / 2;
+    const maxScrollLeft = viewport.scrollWidth - viewport.clientWidth;
+    viewport.scrollTo({ left: Math.max(0, Math.min(maxScrollLeft, desiredLeft)), behavior: 'auto' });
+  }, [selectedStateCode]);
+
   const handleStateClick = (code: string) => {
     setSelectedStateCode(code);
     if (onSelectState) {
@@ -194,6 +319,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     } else {
       onNavigateTab('states_directory');
     }
+  };
+
+  const handleMapSourceAction = (stateCode: string, sourceAction: StateMapMetricDatum['sourceAction']) => {
+    if (sourceAction === 'zip-profiles') {
+      setSelectedStateCode(stateCode);
+      window.requestAnimationFrame(() => {
+        document.getElementById('state-zip-profile-values')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
+      return;
+    }
+    handleStateClick(stateCode);
   };
 
   return (
@@ -369,7 +508,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
 
           {/* Region Filter Segmented Control */}
-          <div className="flex flex-wrap items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] shrink-0">
+          <div className="max-w-full overflow-x-auto">
+            <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">
             {(['All', 'Northeast', 'Midwest', 'South', 'West'] as const).map((reg) => (
               <button
                 key={reg}
@@ -384,6 +524,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 {reg}
               </button>
             ))}
+            </div>
           </div>
         </div>
 
@@ -391,16 +532,95 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
           {/* Map Canvas Column (8 Cols on LG, 9 Cols on XL) */}
           <div className="lg:col-span-8 xl:col-span-9 min-w-0 space-y-3">
-            <div className="relative bg-[#EEF3F8] dark:bg-[#0B1728] rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] overflow-hidden p-2 sm:p-3">
+            <div
+              className="relative bg-[#EEF3F8] dark:bg-[#0B1728] rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] overflow-hidden p-3 sm:p-4 space-y-3"
+              onMouseLeave={() => setHoveredStateCode(null)}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setHoveredStateCode(null);
+                }
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold text-[#53657B] dark:text-slate-300">
+                  Shade states by
+                  <select
+                    id="home-state-map-metric"
+                    value={mapMetric}
+                    onChange={(event) => setMapMetric(event.target.value as StateMapMetricKey)}
+                    className="min-h-10 min-w-0 sm:min-w-[245px] rounded-lg border border-[#CBD5E1] dark:border-[#334155] bg-white dark:bg-[#111C2D] px-3 text-sm font-semibold text-[#14283F] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {STATE_MAP_METRICS.map((metric) => (
+                      <option key={metric.key} value={metric.key}>{metric.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400 sm:max-w-[360px]">
+                  Colors compare available state values. Exact values, coverage, period, and record links are shown below.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-white/80 dark:bg-[#111C2D]/80 border border-[#DFE6EF] dark:border-[#1E2D42] px-3 py-2">
+                <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">{activeMapMetric.label}</span>
+                <span className="flex items-center gap-2 text-[10px] text-[#53657B] dark:text-slate-400">
+                  <span>Lower</span>
+                  <span className="h-2.5 w-24 rounded-full bg-gradient-to-r from-blue-100 to-blue-800" aria-hidden="true" />
+                  <span>Higher</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] text-[#53657B] dark:text-slate-400">
+                  <span className="inline-block h-3.5 w-4 rounded-sm border border-slate-400 bg-[repeating-linear-gradient(135deg,#e2e8f0_0px,#e2e8f0_3px,#94a3b8_3px,#94a3b8_4px)] dark:bg-[repeating-linear-gradient(135deg,#1e293b_0px,#1e293b_3px,#64748b_3px,#64748b_4px)]" aria-hidden="true" />
+                  Not reported
+                </span>
+                <span className="text-[10px] text-[#53657B] dark:text-slate-400">A reported 0 is colored; it is not missing.</span>
+              </div>
+
+              <div
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] px-3.5 py-3"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="text-xs font-bold text-[#14283F] dark:text-white">
+                      {mapReadoutState.state} ({mapReadoutState.code})
+                    </span>
+                    <span className="text-[10px] font-medium text-[#53657B] dark:text-slate-400">{activeMapMetric.label}</span>
+                    <span className="text-sm font-bold tabular-nums text-[#1D4ED8] dark:text-blue-300">
+                      {formatStateMapValue(mapMetric, mapReadoutMetric.value)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                    {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
+                  className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50 dark:bg-blue-950/40 px-3 text-[11px] font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {mapReadoutMetric.sourceAction === 'zip-profiles' ? 'View ZIP profile records' : 'Review agency records'}
+                </button>
+              </div>
+
+              <p className="text-[10px] text-[#53657B] dark:text-slate-400 sm:hidden">
+                Swipe the map sideways to inspect states. State details appear below it.
+              </p>
+
+              <div ref={mapViewportRef} className="overflow-x-auto overscroll-x-contain rounded-lg">
               <svg
                 viewBox="0 0 920 500"
-                className="w-full h-[280px] sm:h-[360px] xl:h-[460px] select-none"
-                role="img"
-                aria-label="Interactive United States Territory Boundary Map"
+                className="block w-full min-w-[620px] sm:min-w-0 h-auto select-none"
+                style={{ aspectRatio: '920 / 500' }}
+                role="group"
+                aria-label={`Interactive United States map shaded by ${activeMapMetric.label}`}
               >
                 <defs>
                   <pattern id="home-map-grid" width="46" height="46" patternUnits="userSpaceOnUse">
                     <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
+                  </pattern>
+                  <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                    <rect width="7" height="7" fill="#E2E8F0" className="dark:fill-[#1E293B]" />
+                    <path d="M 0 0 L 0 7" stroke="#94A3B8" strokeWidth="2" className="dark:stroke-slate-500" />
                   </pattern>
                 </defs>
                 <rect width="920" height="500" fill="url(#home-map-grid)" />
@@ -424,38 +644,48 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isSelected = selectedStateCode === st.code;
                     const isHovered = hoveredStateCode === st.code;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
-
-                    const fillColor = isSelected
-                      ? '#285EE8'
-                      : isHovered
-                        ? '#194BC8'
-                        : !isInRegion
-                          ? '#F1F5F9'
-                          : '#E2E8F0';
-
-                    const strokeColor = isSelected
-                      ? '#FFFFFF'
-                      : isHovered
-                        ? '#0B1728'
-                        : !isInRegion
-                          ? '#E2E8F0'
-                          : '#64748B';
+                    const datum = stateMapMetricsByCode[st.code][mapMetric];
+                    const fillColor = hasReportedValue(datum.value)
+                      ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
+                      : 'url(#home-map-missing-data)';
+                    const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}`;
 
                     return (
-                      <path
-                        key={`home-poly-${st.code}`}
-                        d={boundary.d}
-                        fill={fillColor}
-                        stroke={strokeColor}
-                        strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1}
-                        opacity={isInRegion ? 1 : 0.4}
-                        onClick={() => handleStateClick(st.code)}
-                        onMouseEnter={() => setHoveredStateCode(st.code)}
-                        onMouseLeave={() => setHoveredStateCode(null)}
-                        className="cursor-pointer transition-colors duration-150"
-                      >
-                        <title>{`${st.state} (${st.code}) — Click to explore ${countyCount} Counties`}</title>
-                      </path>
+                      <g key={`home-poly-${st.code}`} opacity={isInRegion ? 1 : 0.36}>
+                        {isSelected && (
+                          <path
+                            d={boundary.d}
+                            fill="none"
+                            stroke="#FFFFFF"
+                            strokeWidth="6"
+                            strokeLinejoin="round"
+                            pointerEvents="none"
+                          />
+                        )}
+                        <path
+                          d={boundary.d}
+                          fill={fillColor}
+                          stroke={isSelected ? '#0B1728' : isHovered ? '#0B1728' : '#64748B'}
+                          strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1}
+                          strokeLinejoin="round"
+                          onClick={() => handleStateClick(st.code)}
+                          onMouseEnter={() => setHoveredStateCode(st.code)}
+                          onFocus={() => setHoveredStateCode(st.code)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              handleStateClick(st.code);
+                            }
+                          }}
+                          tabIndex={isInRegion ? 0 : -1}
+                          role="button"
+                          aria-pressed={isSelected}
+                          aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
+                          className="cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#F59E0B] focus:stroke-[3px]"
+                        >
+                          <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${countyCount} counties`}</title>
+                        </path>
+                      </g>
                     );
                   })}
                 </g>
@@ -472,15 +702,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
                     const isHovered = hoveredStateCode === st.code;
+                    const datum = stateMapMetricsByCode[st.code][mapMetric];
+                    const fillColor = hasReportedValue(datum.value)
+                      ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
+                      : '#CBD5E1';
+                    const labelTextColor = readableTextForFill(fillColor);
 
                     return (
                       <g
                         key={`home-lbl-${st.code}`}
                         transform={`translate(${boundary.labelX}, ${boundary.labelY})`}
-                        onClick={() => handleStateClick(st.code)}
-                        onMouseEnter={() => setHoveredStateCode(st.code)}
-                        onMouseLeave={() => setHoveredStateCode(null)}
-                        className="cursor-pointer"
+                        pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
                         <rect
@@ -489,18 +721,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           width="26"
                           height="18"
                           rx="5"
-                          fill={isSelected || isHovered ? '#0B1728' : '#FFFFFF'}
-                          fillOpacity={isSelected || isHovered ? 1 : 0.92}
-                          stroke={isSelected ? '#285EE8' : isHovered ? '#FFFFFF' : '#94A3B8'}
-                          strokeWidth={isSelected || isHovered ? 1.5 : 1}
+                          fill={fillColor}
+                          fillOpacity="0.96"
+                          stroke={isSelected ? '#0B1728' : isHovered ? '#FFFFFF' : '#FFFFFF'}
+                          strokeWidth={isSelected ? 2 : isHovered ? 1.5 : 1}
                         />
                         <text
                           textAnchor="middle"
                           dy="3.5"
-                          fill={isSelected || isHovered ? '#FFFFFF' : '#0F172A'}
+                          fill={labelTextColor}
                           fontSize="9.5"
                           fontWeight="800"
-                          fontFamily="monospace"
+                          fontFamily="Inter, system-ui, sans-serif"
                         >
                           {st.code}
                         </text>
@@ -509,6 +741,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   })}
                 </g>
               </svg>
+              </div>
 
               {/* East Coast Compact Callout Buttons */}
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] flex flex-wrap items-center gap-1.5 text-xs">
@@ -517,18 +750,26 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </span>
                 {EAST_COAST_CALLOUT_STATES.map((c) => {
                   const isSelected = selectedStateCode === c.code;
+                  const datum = stateMapMetricsByCode[c.code][mapMetric];
+                  const chipFill = hasReportedValue(datum.value)
+                    ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
+                    : '#E2E8F0';
                   return (
                     <button
                       key={c.code}
                       type="button"
                       onClick={() => handleStateClick(c.code)}
                       onMouseEnter={() => setHoveredStateCode(c.code)}
-                      onMouseLeave={() => setHoveredStateCode(null)}
-                      className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#285EE8] text-white shadow-xs'
-                          : 'bg-white dark:bg-[#16243A] text-slate-700 dark:text-slate-200 border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8]'
-                      }`}
+                      onFocus={() => setHoveredStateCode(c.code)}
+                      aria-pressed={isSelected}
+                      aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${formatStateMapValue(mapMetric, datum.value)}`}
+                      style={{
+                        backgroundColor: chipFill,
+                        color: hasReportedValue(datum.value) ? readableTextForFill(chipFill) : '#334155',
+                        outline: isSelected ? '2px solid #0B1728' : undefined,
+                        outlineOffset: isSelected ? '1px' : undefined,
+                      }}
+                      className="min-h-8 min-w-9 px-2 rounded-md border border-white/80 dark:border-slate-600 text-[11px] font-bold font-mono transition-[outline,filter] hover:brightness-95 focus:outline focus:outline-2 focus:outline-amber-500"
                     >
                       {c.code}
                     </button>
@@ -554,6 +795,38 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   {displayStateCode}
                 </span>
               </div>
+
+                <div className="rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50/80 dark:bg-blue-950/30 p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-blue-800 dark:text-blue-300">
+                    Selected map layer
+                  </span>
+                  <div className="mt-0.5 flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 text-xs font-semibold text-[#14283F] dark:text-slate-200">
+                      {activeMapMetric.label}
+                    </span>
+                    <span className="shrink-0 text-lg font-bold tabular-nums text-[#14283F] dark:text-white">
+                      {formatStateMapValue(mapMetric, stateMapMetricsByCode[displayStateCode][mapMetric].value)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                    {stateMapMetricsByCode[displayStateCode][mapMetric].coverage}
+                  </p>
+                  <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                    Period: {stateMapMetricsByCode[displayStateCode][mapMetric].period}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleMapSourceAction(
+                      displayStateCode,
+                      stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction,
+                    )}
+                    className="mt-1 min-h-8 rounded-md px-1 text-[10px] font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction === 'zip-profiles'
+                      ? 'View ZIP profile records'
+                      : 'Review agency records'}
+                  </button>
+                </div>
 
               {/* State Key Statistics */}
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -603,6 +876,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
               {stateZipDenialProfiles.length > 0 && (
                 <div
+                  id="state-zip-profile-values"
                   data-testid={`zip-denial-profile-values-${displayStateCode}`}
                   className="rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] p-3 space-y-2"
                 >
@@ -615,7 +889,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {stateZipDenialProfiles.slice(0, 8).map((record) => (
+                    {stateZipDenialProfiles.map((record) => (
                       <span
                         key={`${record.fipsCounty}-${record.zipCode}`}
                         className="rounded-md bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[10px] text-[#53657B] dark:text-slate-300 tabular-nums"
@@ -623,11 +897,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         {record.county} · {record.zipCode} · {record.medicareDenialRate}%
                       </span>
                     ))}
-                    {stateZipDenialProfiles.length > 8 && (
-                      <span className="px-1 py-1 text-[10px] text-[#53657B] dark:text-slate-400">
-                        +{stateZipDenialProfiles.length - 8} more
-                      </span>
-                    )}
                   </div>
                   <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
                     State average is the unweighted mean of these ZIP-profile percentages; denied/adjudicated claim counts are not included.

@@ -6,7 +6,7 @@
 /**
  * PRECISION INTELLIGENCE CENTRALIZED NUMERICAL FORMATTING ENGINE
  * Standardized numerical and financial typography formatters adhering to:
- * - Instrument Sans Variable with lining-nums and tabular-nums
+ * - Inter Variable with lining-nums and tabular-nums
  * - High-precision financial conversions ($3066K -> $3.07M, $4517K/yr -> $4.52M annually)
  * - Safe percentage handling (no NaN%, undefined%, or false zeros)
  * - Restrained scores and clear equipment/clinical metrics

@@ -1,4 +1,4 @@
-import '@fontsource-variable/instrument-sans';
+import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/geist';
 import {createRoot} from 'react-dom/client';

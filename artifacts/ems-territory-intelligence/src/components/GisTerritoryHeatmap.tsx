@@ -10,6 +10,13 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
+import {
+  classifyOhcaRate,
+  FLEET_AGE_BANDS,
+  getFleetAgeBand,
+  getOhcaRatePerThousand,
+  getOhcaRateThresholds
+} from '../services/gisMetricService';
 import { 
   Layers, 
   Activity, 
@@ -58,6 +65,16 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
 const reportMetric = (value: number | null | undefined, suffix = '') =>
   hasReportedValue(value) ? `${value.toLocaleString()}${suffix}` : 'Not reported';
 
+const getAgencyOhcaRatePerThousand = (agency: Agency) =>
+  getOhcaRatePerThousand(agency.annualCardiacArrestCalls, agency.annual911Transports);
+
+const getAgencyFleetAgeColor = (agency: Agency) => {
+  const ageBand = getFleetAgeBand(agency.installedFleet?.defibAgeYears);
+  return ageBand
+    ? FLEET_AGE_BANDS.find(band => band.key === ageBand)?.color ?? '#64748b'
+    : '#64748b';
+};
+
 interface HexBinCell {
   id: string;
   cx: number;
@@ -67,6 +84,9 @@ interface HexBinCell {
   agencyCount: number;
   totalCardiacCalls: number;
   cardiacCallsDataCount: number;
+  totalTransports: number;
+  ohcaRateDataCount: number;
+  ohcaRatePerThousand: number | null;
   avgSurvival: number;
   survivalDataCount: number;
   normalizedIntensity: number;
@@ -204,6 +224,13 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     return nationalProviderDb.getInitialBaselineAgencies();
   }, [agencies]);
 
+  const nationalOhcaRateThresholds = useMemo(() => {
+    const rates = effectiveAgencies
+      .map(getAgencyOhcaRatePerThousand)
+      .filter((rate): rate is number => rate !== null);
+    return getOhcaRateThresholds(rates);
+  }, [effectiveAgencies]);
+
   const availableStates = useMemo(() => Object.keys(ALL_50_STATES_SUMMARIES).sort(), []);
 
   const stateCountsMap = useMemo(() => {
@@ -247,10 +274,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
       // Active Layer Threshold Filtering
       if (selectedLayer === 'nemsis_cardiac') {
-        const calls = a.annualCardiacArrestCalls;
-        if (!hasReportedValue(calls)) return false;
-        if (nemsisAcuityFilter === 'high' && calls < 400) return false;
-        if (nemsisAcuityFilter === 'critical' && calls < 800) return false;
+        const ohcaRate = getAgencyOhcaRatePerThousand(a);
+        if (nemsisAcuityFilter !== 'all' && ohcaRate == null) return false;
+        if (nemsisAcuityFilter === 'high' && nationalOhcaRateThresholds.p75 != null && ohcaRate != null && ohcaRate < nationalOhcaRateThresholds.p75) return false;
+        if (nemsisAcuityFilter === 'critical' && nationalOhcaRateThresholds.p90 != null && ohcaRate != null && ohcaRate < nationalOhcaRateThresholds.p90) return false;
       } else if (layerThresholdFilter === 'high') {
         if (selectedLayer === 'cardiac') {
           if (!hasReportedValue(a.utsteinSurvivalRate) || a.utsteinSurvivalRate >= 26) return false;
@@ -279,12 +306,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       return [activeAccount, ...base.filter(a => a.id !== activeAccount.id)];
     }
     return base;
-  }, [agencies, selectedState, selectedCounty, selectedCity, selectedCategory, selectedClusterId, selectedTargetProduct, activeAccount, selectedLayer, nemsisAcuityFilter, layerThresholdFilter]);
+  }, [agencies, selectedState, selectedCounty, selectedCity, selectedCategory, selectedClusterId, selectedTargetProduct, activeAccount, selectedLayer, nemsisAcuityFilter, layerThresholdFilter, nationalOhcaRateThresholds]);
 
   // Layer-specific metric evaluation function for accurate hotspot ranking
   const getLayerMetric = (a: Agency, layer: string): number => {
     if (layer === 'nemsis_cardiac') {
-      return a.annualCardiacArrestCalls ?? 0;
+      return getAgencyOhcaRatePerThousand(a) ?? 0;
     }
     if (layer === 'cardiac') {
       // Survival Deficit: lower survival rate (<30%) and higher cardiac arrest calls
@@ -313,6 +340,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       return {
         totalCardiacCalls: 0,
         cardiacCallsDataCount: 0,
+        ohcaRateDataCount: 0,
+        ohcaRatePerThousand: null,
         total911Transports: 0,
         transportsDataCount: 0,
         totalStemiTransmissions: 0,
@@ -344,6 +373,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
     let totalCardiacCalls = 0;
     let cardiacCallsDataCount = 0;
+    let ohcaRateDataCount = 0;
+    let ohcaRateTotalCalls = 0;
+    let ohcaRateTotalTransports = 0;
     let total911Transports = 0;
     let transportsDataCount = 0;
     let sumSurvival = 0;
@@ -395,6 +427,16 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         total911Transports += transports;
         transportsDataCount++;
       }
+      if (
+        hasReportedValue(cardiacCalls) &&
+        cardiacCalls >= 0 &&
+        hasReportedValue(transports) &&
+        transports > 0
+      ) {
+        ohcaRateDataCount++;
+        ohcaRateTotalCalls += cardiacCalls;
+        ohcaRateTotalTransports += transports;
+      }
       if (hasReportedValue(survival)) {
         sumSurvival += survival;
         survivalDataCount++;
@@ -435,10 +477,15 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const avgAedDeficit = aedDataCount ? Math.round(sumAedDeficit / aedDataCount) : 0;
     const avgTransportTime = transportDataCount ? +(sumTransportTime / transportDataCount).toFixed(1) : 0;
     const avgDenialRate = null;
+    const ohcaRatePerThousand = ohcaRateDataCount
+      ? +((ohcaRateTotalCalls / ohcaRateTotalTransports) * 1000).toFixed(1)
+      : null;
 
     return {
       totalCardiacCalls,
       cardiacCallsDataCount,
+      ohcaRateDataCount,
+      ohcaRatePerThousand,
       total911Transports,
       transportsDataCount,
       totalStemiTransmissions,
@@ -469,12 +516,15 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   }, [filteredAgencies]);
 
   const primaryMetricDataCount =
-    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.cardiacCallsDataCount :
+    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.ohcaRateDataCount :
     selectedLayer === 'cardiac' ? nemsisTerritoryStats.survivalDataCount :
     selectedLayer === 'aed' ? nemsisTerritoryStats.aedDataCount :
     selectedLayer === 'transport' ? nemsisTerritoryStats.transportDataCount :
     nemsisTerritoryStats.denialDataCount;
-  const secondaryMetricDataCount = primaryMetricDataCount;
+  const secondaryMetricDataCount =
+    selectedLayer === 'nemsis_cardiac'
+      ? nemsisTerritoryStats.cardiacCallsDataCount
+      : primaryMetricDataCount;
   const tertiaryMetricDataCount =
     selectedLayer === 'nemsis_cardiac' || selectedLayer === 'aed' ? nemsisTerritoryStats.transportsDataCount :
     selectedLayer === 'cardiac' ? nemsisTerritoryStats.mechanicalCprDataCount :
@@ -488,49 +538,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       ? 'Coverage not available'
       : `${count.toLocaleString()} of ${filteredAgencies.length.toLocaleString()} filtered agency records`;
 
-  // Nationwide geographic distribution across all 50 states + DC ensuring coast-to-coast coverage
-  const mapRenderedAgencies = useMemo(() => {
-    if (selectedState !== 'all') {
-      // In single-state view, prioritize by active layer metric
-      return [...filteredAgencies]
-        .sort((a, b) => getLayerMetric(b, selectedLayer) - getLayerMetric(a, selectedLayer))
-        .slice(0, 300);
-    }
-
-    // In nationwide 50-state view, ensure every state across West, Midwest, South, and East is populated!
-    const byState = new Map<string, Agency[]>();
-    for (let i = 0; i < filteredAgencies.length; i++) {
-      const a = filteredAgencies[i];
-      const sc = a.stateCode;
-      if (!byState.has(sc)) byState.set(sc, []);
-      byState.get(sc)!.push(a);
-    }
-
-    const selectedSet = new Set<string>();
-    const sampled: Agency[] = [];
-
-    // 1. Pick top 8 priority agencies for the active layer from EVERY single state across the country (West, Midwest, South, East)
-    byState.forEach((stateAgencies) => {
-      const sorted = [...stateAgencies].sort((a, b) => getLayerMetric(b, selectedLayer) - getLayerMetric(a, selectedLayer));
-      for (let i = 0; i < Math.min(8, sorted.length); i++) {
-        if (!selectedSet.has(sorted[i].id)) {
-          selectedSet.add(sorted[i].id);
-          sampled.push(sorted[i]);
-        }
-      }
-    });
-
-    // 2. Supplement with top 120 nationwide highest-urgency epicenters for this layer
-    const allSorted = [...filteredAgencies].sort((a, b) => getLayerMetric(b, selectedLayer) - getLayerMetric(a, selectedLayer));
-    for (let i = 0; i < Math.min(120, allSorted.length); i++) {
-      if (!selectedSet.has(allSorted[i].id)) {
-        selectedSet.add(allSorted[i].id);
-        sampled.push(allSorted[i]);
-      }
-    }
-
-    return sampled;
-  }, [filteredAgencies, selectedLayer, selectedState]);
+  // Use every filtered agency. KDE and hexbin aggregate the complete filtered set;
+  // pins remain available when the full marker layer is too visually dense.
+  const mapRenderedAgencies = useMemo(() => filteredAgencies, [filteredAgencies]);
 
   // Ranked hotspots for the active layer
   const topCardiacEpicenters = useMemo(() => {
@@ -546,45 +556,88 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     let baselineCount = 0;
     let agingDefibCount = 0;
     let defibAgeDataCount = 0;
-    let callsDataCount = 0;
-
-    const countyMap: Record<string, { name: string; totalCalls: number; agencyCount: number; survivalCount: number; avgSurvival: number }> = {};
+    let rateDataCount = 0;
+    const ageBandCounts: Record<'0-4' | '5-6' | '7-9' | '10+', number> = {
+      '0-4': 0,
+      '5-6': 0,
+      '7-9': 0,
+      '10+': 0
+    };
+    const countyMap: Record<string, {
+      name: string;
+      stateCode: string;
+      totalCalls: number;
+      rateCalls: number;
+      rateTransports: number;
+      rateAgencyCount: number;
+      agencyCount: number;
+      survivalCount: number;
+      avgSurvival: number;
+    }> = {};
 
     filteredAgencies.forEach(a => {
-      if (hasReportedValue(a.installedFleet?.defibAgeYears)) {
+      const fleetAge = a.installedFleet?.defibAgeYears;
+      const ageBand = getFleetAgeBand(fleetAge);
+      if (ageBand) {
         defibAgeDataCount++;
-        if (a.installedFleet.defibAgeYears >= 7) agingDefibCount++;
+        ageBandCounts[ageBand]++;
+        if (fleetAge != null && fleetAge >= 7) agingDefibCount++;
       }
       const calls = a.annualCardiacArrestCalls;
-      if (!hasReportedValue(calls)) return;
-      callsDataCount++;
-      if (calls >= 800) criticalCount++;
-      else if (calls >= 400) highCount++;
-      else if (calls >= 200) moderateCount++;
-      else baselineCount++;
-
-      const cName = a.county || 'County not reported';
-      if (!countyMap[cName]) {
-        countyMap[cName] = { name: cName, totalCalls: 0, agencyCount: 0, survivalCount: 0, avgSurvival: 0 };
+      const transports = a.annual911Transports;
+      const ohcaRate = getAgencyOhcaRatePerThousand(a);
+      if (ohcaRate != null) {
+        rateDataCount++;
+        const tier = classifyOhcaRate(ohcaRate, nationalOhcaRateThresholds);
+        if (tier === 'critical') criticalCount++;
+        else if (tier === 'high') highCount++;
+        else if (tier === 'moderate') moderateCount++;
+        else if (tier === 'baseline') baselineCount++;
       }
-      countyMap[cName].totalCalls += calls;
-      countyMap[cName].agencyCount += 1;
-      if (hasReportedValue(a.utsteinSurvivalRate)) {
-        countyMap[cName].avgSurvival += a.utsteinSurvivalRate;
-        countyMap[cName].survivalCount++;
+
+      if (hasReportedValue(calls) && calls >= 0) {
+        const cName = a.county || 'County not reported';
+        const countyKey = `${a.stateCode}:${cName}`;
+        if (!countyMap[countyKey]) {
+          countyMap[countyKey] = {
+            name: cName,
+            stateCode: a.stateCode,
+            totalCalls: 0,
+            rateCalls: 0,
+            rateTransports: 0,
+            rateAgencyCount: 0,
+            agencyCount: 0,
+            survivalCount: 0,
+            avgSurvival: 0
+          };
+        }
+        const county = countyMap[countyKey];
+        county.totalCalls += calls;
+        county.agencyCount += 1;
+        if (ohcaRate != null && hasReportedValue(transports)) {
+          county.rateCalls += calls;
+          county.rateTransports += transports;
+          county.rateAgencyCount += 1;
+        }
+        if (hasReportedValue(a.utsteinSurvivalRate)) {
+          county.avgSurvival += a.utsteinSurvivalRate;
+          county.survivalCount++;
+        }
       }
     });
 
     const sortedCounties = Object.values(countyMap)
       .map(c => ({
         ...c,
-        avgSurvival: c.survivalCount ? +(c.avgSurvival / c.survivalCount).toFixed(1) : 0
+        avgSurvival: c.survivalCount ? +(c.avgSurvival / c.survivalCount).toFixed(1) : 0,
+        ohcaRatePerThousand: c.rateTransports > 0
+          ? +((c.rateCalls / c.rateTransports) * 1000).toFixed(1)
+          : null
       }))
       .sort((a, b) => b.totalCalls - a.totalCalls)
       .slice(0, 5);
 
-    const total = Math.max(1, callsDataCount);
-    const ageTotal = Math.max(1, defibAgeDataCount);
+    const total = Math.max(1, rateDataCount);
 
     return {
       criticalCount,
@@ -592,16 +645,23 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       moderateCount,
       baselineCount,
       agingDefibCount,
-      callsDataCount,
+      rateDataCount,
       criticalPct: Math.round((criticalCount / total) * 100),
       highPct: Math.round((highCount / total) * 100),
       moderatePct: Math.round((moderateCount / total) * 100),
       baselinePct: Math.round((baselineCount / total) * 100),
-      agingPct: Math.round((agingDefibCount / ageTotal) * 100),
       defibAgeDataCount,
+      missingFleetAgeCount: Math.max(0, filteredAgencies.length - defibAgeDataCount),
+      fleetAgeBands: FLEET_AGE_BANDS.map(band => ({
+        ...band,
+        count: ageBandCounts[band.key],
+        pct: defibAgeDataCount
+          ? Math.round((ageBandCounts[band.key] / defibAgeDataCount) * 100)
+          : 0
+      })),
       sortedCounties
     };
-  }, [filteredAgencies]);
+  }, [filteredAgencies, nationalOhcaRateThresholds]);
 
   // State-level thematic intensity for choropleth mapping across all 50 states + DC
   const stateAcuityMap = useMemo<Record<string, {
@@ -617,6 +677,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const stateStats: Record<string, {
       totalCardiac: number;
       cardiacCount: number;
+      rateCalls: number;
+      rateTransports: number;
+      rateAgencyCount: number;
       agencyCount: number;
       sumSurvival: number;
       survivalCount: number;
@@ -631,7 +694,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const sc = a.stateCode;
       if (!stateStats[sc]) {
         stateStats[sc] = {
-          totalCardiac: 0, cardiacCount: 0, agencyCount: 0, sumSurvival: 0,
+          totalCardiac: 0, cardiacCount: 0, rateCalls: 0, rateTransports: 0, rateAgencyCount: 0, agencyCount: 0, sumSurvival: 0,
           survivalCount: 0, sumAed: 0, aedCount: 0, sumTransport: 0,
           transportCount: 0, denialCount: 0
         };
@@ -641,6 +704,16 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       if (hasReportedValue(a.annualCardiacArrestCalls)) {
         st.totalCardiac += a.annualCardiacArrestCalls;
         st.cardiacCount++;
+      }
+      if (
+        hasReportedValue(a.annualCardiacArrestCalls) &&
+        a.annualCardiacArrestCalls >= 0 &&
+        hasReportedValue(a.annual911Transports) &&
+        a.annual911Transports > 0
+      ) {
+        st.rateCalls += a.annualCardiacArrestCalls;
+        st.rateTransports += a.annual911Transports;
+        st.rateAgencyCount++;
       }
       if (hasReportedValue(a.utsteinSurvivalRate)) {
         st.sumSurvival += a.utsteinSurvivalRate;
@@ -674,22 +747,27 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       let borderColor = '#94a3b8';
 
       if (selectedLayer === 'nemsis_cardiac') {
-        const totalCalls = stats?.totalCardiac ?? 0;
-        metricLabel = 'Annual Cardiac Arrests';
-        metricValue = stats?.cardiacCount ? `${totalCalls.toLocaleString()} calls` : 'Not reported';
-        if (stats?.cardiacCount && totalCalls >= 10000) {
+        const rate = stats?.rateAgencyCount
+          ? (stats.rateCalls / stats.rateTransports) * 1000
+          : null;
+        const rateTier = classifyOhcaRate(rate, nationalOhcaRateThresholds);
+        metricLabel = 'OHCA per 1,000 transports';
+        metricValue = rate != null
+          ? `${rate.toFixed(1)} · ${stats?.rateAgencyCount} agencies`
+          : 'Not reported';
+        if (rateTier === 'critical') {
           tier = 'critical';
           fillColor = basemapTheme === 'dark' ? '#7f1d1d' : '#fecdd3';
           borderColor = basemapTheme === 'dark' ? '#f43f5e' : '#e11d48';
-        } else if (stats?.cardiacCount && totalCalls >= 5000) {
+        } else if (rateTier === 'high') {
           tier = 'high';
           fillColor = basemapTheme === 'dark' ? '#7c2d12' : '#fed7aa';
           borderColor = basemapTheme === 'dark' ? '#f97316' : '#ea580c';
-        } else if (stats?.cardiacCount && totalCalls >= 2000) {
+        } else if (rateTier === 'moderate') {
           tier = 'moderate';
           fillColor = basemapTheme === 'dark' ? '#713f12' : '#fef08a';
           borderColor = basemapTheme === 'dark' ? '#eab308' : '#d97706';
-        } else if (stats?.cardiacCount) {
+        } else if (rateTier === 'baseline') {
           tier = 'baseline';
           fillColor = basemapTheme === 'dark' ? '#0c4a6e' : '#e0f2fe';
           borderColor = basemapTheme === 'dark' ? '#38bdf8' : '#0284c7';
@@ -775,7 +853,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     });
 
     return result;
-  }, [effectiveAgencies, selectedLayer, basemapTheme]);
+  }, [effectiveAgencies, selectedLayer, basemapTheme, nationalOhcaRateThresholds]);
 
   // Map coordinates projection aligned with 920x500 US_STATES_SVG_PATHS (with Alaska & Hawaii insets)
   const mapWidth = 920;
@@ -876,12 +954,19 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     if (!ctx) return '';
 
     const densityField = new Float32Array(gridW * gridH);
+    const rateValueField = new Float32Array(gridW * gridH);
+    const rateWeightField = new Float32Array(gridW * gridH);
+    const rateMode = selectedLayer === 'nemsis_cardiac';
     const metrics = mapRenderedAgencies.map(a => getLayerMetric(a, selectedLayer));
     let minM = Infinity;
     let maxM = -Infinity;
     for (let i = 0; i < metrics.length; i++) {
       if (metrics[i] < minM) minM = metrics[i];
       if (metrics[i] > maxM) maxM = metrics[i];
+    }
+    if (rateMode) {
+      minM = nationalOhcaRateThresholds.p10 ?? minM;
+      maxM = nationalOhcaRateThresholds.p90 ?? maxM;
     }
     const metricSpan = Math.max(1e-5, maxM - minM);
 
@@ -891,6 +976,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
     for (let i = 0; i < mapRenderedAgencies.length; i++) {
       const a = mapRenderedAgencies[i];
+      const agencyRate = rateMode ? getAgencyOhcaRatePerThousand(a) : null;
+      if (rateMode && agencyRate == null) continue;
       const pt = projectCoord(a.latitude, a.longitude);
       const gx = pt.x * scaleX;
       const gy = pt.y * scaleY;
@@ -909,15 +996,22 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           const dx = px - gx;
           const dSq = dx * dx + dySq;
           if (dSq <= cutoffRadius * cutoffRadius) {
-            densityField[rowOffset + px] += normWeight * Math.exp(-dSq / twoSigmaSq);
+            const kernelWeight = Math.exp(-dSq / twoSigmaSq);
+            if (rateMode) {
+              rateValueField[rowOffset + px] += (agencyRate ?? 0) * kernelWeight;
+              rateWeightField[rowOffset + px] += kernelWeight;
+            } else {
+              densityField[rowOffset + px] += normWeight * kernelWeight;
+            }
           }
         }
       }
     }
 
     let maxDensity = 0;
-    for (let i = 0; i < densityField.length; i++) {
-      if (densityField[i] > maxDensity) maxDensity = densityField[i];
+    for (let i = 0; i < (rateMode ? rateWeightField.length : densityField.length); i++) {
+      const value = rateMode ? rateWeightField[i] : densityField[i];
+      if (value > maxDensity) maxDensity = value;
     }
     if (maxDensity <= 0) return '';
 
@@ -925,8 +1019,16 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const data = imgData.data;
 
     for (let i = 0; i < densityField.length; i++) {
-      const rawNorm = densityField[i] / maxDensity;
-      if (rawNorm < 0.045) continue;
+      let rawNorm: number;
+      if (rateMode) {
+        const support = rateWeightField[i];
+        if (support < 0.025) continue;
+        const localRate = rateValueField[i] / support;
+        rawNorm = (localRate - minM) / metricSpan;
+      } else {
+        rawNorm = densityField[i] / maxDensity;
+        if (rawNorm < 0.045) continue;
+      }
 
       // Non-linear gamma boost for rich mid-range thermal visibility
       const t = Math.pow(rawNorm, 0.72);
@@ -961,7 +1063,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
     ctx.putImageData(imgData, 0, 0);
     return canvas.toDataURL('image/png');
-  }, [mapRenderedAgencies, selectedLayer, kdeBandwidth, colorSpectrum, showIsoContours]);
+  }, [mapRenderedAgencies, selectedLayer, kdeBandwidth, colorSpectrum, showIsoContours, nationalOhcaRateThresholds]);
 
   // H3 Spatial Hexagonal Tessellation & Aggregation Engine
   const hexBinCells = useMemo<HexBinCell[]>(() => {
@@ -970,7 +1072,17 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const dx = hexRadius * 1.5;
     const dy = hexRadius * Math.sqrt(3);
 
-    const bins = new Map<string, { col: number; row: number; cx: number; cy: number; agencies: Agency[]; metricSum: number }>();
+    const bins = new Map<string, {
+      col: number;
+      row: number;
+      cx: number;
+      cy: number;
+      agencies: Agency[];
+      metricSum: number;
+      rateCalls: number;
+      rateTransports: number;
+      rateAgencyCount: number;
+    }>();
 
     for (let i = 0; i < mapRenderedAgencies.length; i++) {
       const a = mapRenderedAgencies[i];
@@ -983,16 +1095,28 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const key = `${col}:${row}`;
 
       if (!bins.has(key)) {
-        bins.set(key, { col, row, cx, cy, agencies: [], metricSum: 0 });
+        bins.set(key, { col, row, cx, cy, agencies: [], metricSum: 0, rateCalls: 0, rateTransports: 0, rateAgencyCount: 0 });
       }
       const cell = bins.get(key)!;
       cell.agencies.push(a);
-      cell.metricSum += getLayerMetric(a, selectedLayer);
+      if (selectedLayer === 'nemsis_cardiac') {
+        const rate = getAgencyOhcaRatePerThousand(a);
+        if (rate != null) {
+          cell.rateCalls += a.annualCardiacArrestCalls ?? 0;
+          cell.rateTransports += a.annual911Transports ?? 0;
+          cell.rateAgencyCount++;
+        }
+      } else {
+        cell.metricSum += getLayerMetric(a, selectedLayer);
+      }
     }
 
     let maxCellScore = 0;
     bins.forEach((cell) => {
-      if (cell.metricSum > maxCellScore) maxCellScore = cell.metricSum;
+      const score = selectedLayer === 'nemsis_cardiac'
+        ? (cell.rateTransports > 0 ? (cell.rateCalls / cell.rateTransports) * 1000 : 0)
+        : cell.metricSum;
+      if (score > maxCellScore) maxCellScore = score;
     });
     const safeMax = Math.max(1, maxCellScore);
 
@@ -1008,13 +1132,30 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         pts.push(`${px.toFixed(1)},${py.toFixed(1)}`);
       }
 
-      const norm = Math.pow(cell.metricSum / safeMax, 0.65);
+      const cellRate = cell.rateTransports > 0
+        ? (cell.rateCalls / cell.rateTransports) * 1000
+        : null;
+      const rawNorm = selectedLayer === 'nemsis_cardiac'
+        ? (cellRate == null
+            ? 0
+            : (cellRate - (nationalOhcaRateThresholds.p10 ?? 0)) /
+              Math.max(1e-5, (nationalOhcaRateThresholds.p90 ?? maxCellScore) - (nationalOhcaRateThresholds.p10 ?? 0)))
+        : cell.metricSum / safeMax;
+      const norm = Math.pow(Math.max(0, Math.min(1, rawNorm)), 0.65);
+      const hasOhcaRate = cell.rateAgencyCount > 0 && cellRate != null;
       const [r, g, b] = sampleSpectrumRgb(Math.max(0.18, norm), colorSpectrum);
-      const fillColor = `rgb(${r}, ${g}, ${b})`;
-      const strokeColor = norm > 0.7 ? '#ffffff' : `rgba(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)}, 0.85)`;
+      const fillColor = selectedLayer === 'nemsis_cardiac' && !hasOhcaRate
+        ? '#475569'
+        : `rgb(${r}, ${g}, ${b})`;
+      const strokeColor = selectedLayer === 'nemsis_cardiac' && !hasOhcaRate
+        ? '#94a3b8'
+        : norm > 0.7 ? '#ffffff' : `rgba(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)}, 0.85)`;
 
       let totalCalls = 0;
       let callsDataCount = 0;
+      let rateCalls = 0;
+      let totalTransports = 0;
+      let ohcaRateDataCount = 0;
       let sumSurv = 0;
       let survivalDataCount = 0;
       let topAgency = cell.agencies[0];
@@ -1025,6 +1166,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         if (hasReportedValue(ag.annualCardiacArrestCalls)) {
           totalCalls += ag.annualCardiacArrestCalls;
           callsDataCount++;
+        }
+        if (getAgencyOhcaRatePerThousand(ag) != null) {
+          rateCalls += ag.annualCardiacArrestCalls ?? 0;
+          totalTransports += ag.annual911Transports ?? 0;
+          ohcaRateDataCount++;
         }
         if (hasReportedValue(ag.utsteinSurvivalRate)) {
           sumSurv += ag.utsteinSurvivalRate;
@@ -1039,7 +1185,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
       const avgSurvival = survivalDataCount ? +(sumSurv / survivalDataCount).toFixed(1) : 0;
       const metricSummary =
-        selectedLayer === 'nemsis_cardiac' ? (callsDataCount ? `${totalCalls.toLocaleString()} OHCA calls` : 'Not reported') :
+        selectedLayer === 'nemsis_cardiac' ? (
+          ohcaRateDataCount && totalTransports > 0
+            ? `${((rateCalls / totalTransports) * 1000).toFixed(1)} OHCA / 1,000 transports · n=${ohcaRateDataCount}`
+            : 'Rate not reported'
+        ) :
         selectedLayer === 'cardiac' ? (survivalDataCount ? `${avgSurvival}% avg Utstein survival` : 'Not reported') :
         selectedLayer === 'aed' ? (hasReportedValue(topAgency.gisData?.publicAccessAedDeficitPct) ? `${topAgency.gisData.publicAccessAedDeficitPct}% peak AED deficit` : 'Not reported') :
         selectedLayer === 'transport' ? (hasReportedValue(topAgency.gisData?.avgTransportTimeMinutes) ? `${topAgency.gisData.avgTransportTimeMinutes} min peak transit` : 'Not reported') :
@@ -1054,6 +1204,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         agencyCount: cell.agencies.length,
         totalCardiacCalls: totalCalls,
         cardiacCallsDataCount: callsDataCount,
+        totalTransports,
+        ohcaRateDataCount,
+        ohcaRatePerThousand: ohcaRateDataCount && totalTransports > 0
+          ? +((rateCalls / totalTransports) * 1000).toFixed(1)
+          : null,
         avgSurvival,
         survivalDataCount,
         normalizedIntensity: norm,
@@ -1065,7 +1220,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     });
 
     return cells;
-  }, [mapRenderedAgencies, selectedLayer, selectedState, colorSpectrum]);
+  }, [mapRenderedAgencies, selectedLayer, selectedState, colorSpectrum, nationalOhcaRateThresholds]);
 
   // Active Route Corridors for agencies selected for Field Route
   const activeRouteCorridorPoints = useMemo(() => {
@@ -1091,7 +1246,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   const getAgencyLayerVisual = (agency: Agency, layer: string): AgencyLayerVisual => {
     const hasMetric =
-      layer === 'nemsis_cardiac' ? hasReportedValue(agency.annualCardiacArrestCalls) :
+      layer === 'nemsis_cardiac' ? getAgencyOhcaRatePerThousand(agency) != null :
       layer === 'cardiac' ? hasReportedValue(agency.utsteinSurvivalRate) :
       layer === 'aed' ? hasReportedValue(agency.gisData?.publicAccessAedDeficitPct) :
       layer === 'transport' ? hasReportedValue(agency.gisData?.avgTransportTimeMinutes) :
@@ -1113,8 +1268,16 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     }
 
     if (layer === 'nemsis_cardiac') {
-      const calls = agency.annualCardiacArrestCalls!;
-      if (calls >= 800) {
+      const rate = getAgencyOhcaRatePerThousand(agency)!;
+      const calls = agency.annualCardiacArrestCalls ?? 0;
+      const rateTier = classifyOhcaRate(rate, nationalOhcaRateThresholds) ?? 'baseline';
+      const rateSpan = Math.max(
+        1e-5,
+        (nationalOhcaRateThresholds.p90 ?? rate) - (nationalOhcaRateThresholds.p10 ?? rate)
+      );
+      const relativeRate = Math.max(0, Math.min(1, (rate - (nationalOhcaRateThresholds.p10 ?? 0)) / rateSpan));
+      const metricDisplay = `${rate.toFixed(1)} / 1,000 transports · ${calls.toLocaleString()} OHCA/yr`;
+      if (rateTier === 'critical') {
         return {
           gradientId: 'nemsis-critical-gradient',
           ringColor: '#e11d48',
@@ -1123,12 +1286,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerFill: '#be123c',
           markerStroke: '#ffe4e6',
           markerRadius: 6.5,
-          heatRadius: Math.min(74, 38 + Math.round(calls / 30)),
-          tierLabel: 'Critical Epicenter (≥800 Calls)',
-          metricDisplay: `${calls.toLocaleString()} OHCA calls/yr`
+          heatRadius: 18 + Math.round(relativeRate * 56),
+          tierLabel: 'Top 10% OHCA rate',
+          metricDisplay
         };
       }
-      if (calls >= 400) {
+      if (rateTier === 'high') {
         return {
           gradientId: 'nemsis-high-gradient',
           ringColor: '#ea580c',
@@ -1137,12 +1300,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerFill: '#ea580c',
           markerStroke: '#ffedd5',
           markerRadius: 5.5,
-          heatRadius: Math.min(52, 26 + Math.round(calls / 35)),
-          tierLabel: 'High Acuity (400–799 Calls)',
-          metricDisplay: `${calls.toLocaleString()} OHCA calls/yr`
+          heatRadius: 18 + Math.round(relativeRate * 48),
+          tierLabel: '75th–90th percentile OHCA rate',
+          metricDisplay
         };
       }
-      if (calls >= 200) {
+      if (rateTier === 'moderate') {
         return {
           gradientId: 'nemsis-moderate-gradient',
           ringColor: '#f59e0b',
@@ -1151,9 +1314,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerFill: '#d97706',
           markerStroke: '#fef3c7',
           markerRadius: 4.5,
-          heatRadius: Math.min(36, 18 + Math.round(calls / 40)),
-          tierLabel: 'Moderate Volume (200–399 Calls)',
-          metricDisplay: `${calls.toLocaleString()} OHCA calls/yr`
+          heatRadius: 18 + Math.round(relativeRate * 40),
+          tierLabel: '50th–75th percentile OHCA rate',
+          metricDisplay
         };
       }
       return {
@@ -1164,9 +1327,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         markerFill: '#0284c7',
         markerStroke: '#e0f2fe',
         markerRadius: 4,
-        heatRadius: 18,
-        tierLabel: 'Baseline Volume (<200 Calls)',
-        metricDisplay: `${calls.toLocaleString()} OHCA calls/yr`
+        heatRadius: 18 + Math.round(relativeRate * 30),
+        tierLabel: 'Below-median OHCA rate',
+        metricDisplay
       };
     }
 
@@ -1450,7 +1613,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 <HeartPulse className="w-3.5 h-3.5 shrink-0" />
-                <span>NEMSIS Cardiac Acuity</span>
+                <span>OHCA Rate / 1k Transports</span>
               </button>
               <button
                 type="button"
@@ -1580,7 +1743,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 <MapPin className="w-4 h-4 text-[#285EE8] dark:text-blue-400 shrink-0" />
                 <h2 className="text-sm font-semibold text-[#14283F] dark:text-white tracking-tight truncate">
                   {selectedLayer === 'nemsis_cardiac'
-                    ? `NEMSIS Cardiac Acuity Intensity (${filteredAgencies.length.toLocaleString()} Providers)`
+                    ? `OHCA Rate / 1,000 Transports (${filteredAgencies.length.toLocaleString()} Agencies)`
                     : selectedLayer === 'cardiac'
                       ? `Survival Deficit Analysis (${filteredAgencies.length.toLocaleString()} Providers)`
                       : selectedLayer === 'aed'
@@ -1789,14 +1952,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-sm sm:text-base text-white tracking-tight flex items-center gap-1.5 flex-wrap">
                       <span>
-                        {selectedLayer === 'nemsis_cardiac' ? 'NEMSIS High-Acuity Cardiac Telemetry' :
+                         {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate per 1,000 Transports' :
                          selectedLayer === 'cardiac' ? 'Cardiac Arrest Survival Deficit Zones' :
                          selectedLayer === 'aed' ? 'Public Access AED Need & Demographics' :
                          selectedLayer === 'transport' ? 'Extended Transport Isochrones (>20 min)' :
                          'CMS Medicare Claim Denial Concentrations'}
                       </span>
                       <span className="text-xs text-slate-300 font-normal">
-                        · {selectedLayer === 'nemsis_cardiac' ? 'v3.5 Live Dataset' :
+                         · {selectedLayer === 'nemsis_cardiac' ? 'Matched agency reports' :
                            selectedLayer === 'cardiac' ? 'Utstein Resuscitation Registry' :
                            selectedLayer === 'aed' ? 'GIS PAD Census' :
                            selectedLayer === 'transport' ? 'NEMSIS Transit Registry' :
@@ -1805,7 +1968,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </h3>
                   </div>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-3xl">
-                    {selectedLayer === 'nemsis_cardiac' && `Territory-wide Out-of-Hospital Cardiac Arrest (OHCA) call volume, STEMI transmissions & Utstein survival telemetry across ${selectedCounty !== 'all' ? selectedCounty : selectedState !== 'all' ? selectedState : 'all 50 states'}.`}
+                    {selectedLayer === 'nemsis_cardiac' && `Reported OHCA calls divided by reported 911 transports, multiplied by 1,000. Relative agency tiers use national percentiles; records without both values are excluded. Scope: ${selectedCounty !== 'all' ? selectedCounty : selectedState !== 'all' ? selectedState : 'nationwide'}.`}
                     {selectedLayer === 'cardiac' && `Identifying severe survival deficits (<26% Utstein survival rate) where ZOLL AutoPulse and ResQCPR generate highest clinical resuscitation impact.`}
                     {selectedLayer === 'aed' && `Mapping public access AED deficits and age 65+ demographic vulnerability to deploy ZOLL AED 3 community networks.`}
                     {selectedLayer === 'transport' && `Long transport corridors (>20 min) requiring EMV+ mechanical transport ventilators and uninterrupted patient monitoring.`}
@@ -1841,7 +2004,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         }`}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                        <span className="tabular-nums">≥400 Calls</span>
+                         <span className="tabular-nums">Top 25% Rate</span>
                       </button>
                       <button
                         onClick={() => setNemsisAcuityFilter('critical')}
@@ -1852,7 +2015,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         }`}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                        <span className="tabular-nums">≥800 Epicenters</span>
+                         <span className="tabular-nums">Top 10% Rate</span>
                       </button>
                     </>
                   )}
@@ -2149,7 +2312,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between min-w-0 overflow-hidden">
                 <div className="min-w-0">
                   <span className="text-xs text-slate-400 font-medium truncate block">
-                    {selectedLayer === 'nemsis_cardiac' ? 'Total Cardiac Arrests' :
+                     {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate' :
                      selectedLayer === 'cardiac' ? 'Avg Utstein Survival' :
                      selectedLayer === 'aed' ? 'Avg Public Access Deficit' :
                      selectedLayer === 'transport' ? 'Avg Emergency Transit' :
@@ -2157,14 +2320,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-400 tabular-nums">
-                      {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.cardiacCallsDataCount ? nemsisTerritoryStats.totalCardiacCalls.toLocaleString() : 'Not reported')}
+                       {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.ohcaRatePerThousand != null ? nemsisTerritoryStats.ohcaRatePerThousand.toFixed(1) : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.survivalDataCount ? `${nemsisTerritoryStats.avgSurvival}%` : 'Not reported')}
                       {selectedLayer === 'aed' && (nemsisTerritoryStats.aedDataCount ? `${nemsisTerritoryStats.avgAedDeficit}%` : 'Not reported')}
                       {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.avgTransportTime} min` : 'Not reported')}
                       {selectedLayer === 'cms' && (nemsisTerritoryStats.denialDataCount ? `${nemsisTerritoryStats.denialDataCount} records` : 'Not reported')}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
-                      {selectedLayer === 'nemsis_cardiac' ? 'OHCA/yr' :
+                       {selectedLayer === 'nemsis_cardiac' ? 'per 1,000 transports' :
                        selectedLayer === 'cardiac' ? 'vs 29.7% bench' :
                        selectedLayer === 'aed' ? 'community gap' :
                        selectedLayer === 'transport' ? 'to hospital' :
@@ -2826,7 +2989,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       onMouseEnter={() => setHoveredAgency(agency)}
                       onMouseLeave={() => setHoveredAgency(null)}
                     >
-                      {(visual.isCritical || isRouteStop) && (
+                      {(isRouteStop || (visual.isCritical && selectedLayer !== 'nemsis_cardiac')) && (
                         <circle
                           r={baseR + 3.2}
                           fill="none"
@@ -2835,11 +2998,20 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                           opacity="0.85"
                         />
                       )}
+                      {selectedLayer === 'nemsis_cardiac' && (
+                        <circle
+                          r={baseR + 3.2}
+                          fill="none"
+                          stroke={getAgencyFleetAgeColor(agency)}
+                          strokeWidth="1.3"
+                          opacity="0.95"
+                        />
+                      )}
                       <circle
                         r={isHovered ? baseR * 1.8 : baseR}
                         fill={isRouteStop ? '#10B981' : visual.markerFill}
-                        stroke={basemapTheme === 'dark' ? '#0F172A' : '#FFFFFF'}
-                        strokeWidth={1.1}
+                        stroke={selectedLayer === 'nemsis_cardiac' ? getAgencyFleetAgeColor(agency) : (basemapTheme === 'dark' ? '#0F172A' : '#FFFFFF')}
+                        strokeWidth={selectedLayer === 'nemsis_cardiac' ? 0.8 : 1.1}
                         className="transition-transform duration-150"
                       />
                       {(visual.isCritical || isHovered) && (
@@ -2876,7 +3048,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                      selectedLayer === 'aed' ? <Zap className="w-3.5 h-3.5 text-fuchsia-400" /> :
                      selectedLayer === 'transport' ? <Clock className="w-3.5 h-3.5 text-amber-400" /> :
                      <DollarSign className="w-3.5 h-3.5 text-emerald-400" />}
-                    {selectedLayer === 'nemsis_cardiac' ? 'NEMSIS OHCA Density' :
+                    {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate Surface' :
                      selectedLayer === 'cardiac' ? 'Utstein Deficit Surface' :
                      selectedLayer === 'aed' ? 'Public AED Deficit' :
                      selectedLayer === 'transport' ? 'Transit Isochrones' :
@@ -2902,9 +3074,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       }}
                     />
                     <div className="flex justify-between text-xs text-slate-400 mt-1 font-medium">
-                      <span>Baseline</span>
-                      <span>Median</span>
-                      <span className="text-amber-300 font-semibold">Peak</span>
+                      <span>{selectedLayer === 'nemsis_cardiac' ? 'Lower rate' : 'Baseline'}</span>
+                      <span>{selectedLayer === 'nemsis_cardiac' ? 'National median' : 'Median'}</span>
+                      <span className="text-amber-300 font-semibold">{selectedLayer === 'nemsis_cardiac' ? 'Higher rate' : 'Peak'}</span>
                     </div>
                   </div>
                 )}
@@ -2913,19 +3085,44 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="space-y-1.5 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
-                      <span className="font-semibold text-slate-100">≥800 Calls (Critical)</span>
+                      <span className="font-semibold text-slate-100">
+                        Top 10% · ≥{nationalOhcaRateThresholds.p90?.toFixed(1) ?? '—'} / 1,000
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                      <span className="text-slate-300">400–799 Calls (High)</span>
+                      <span className="text-slate-300">
+                        75th–90th percentile · {nationalOhcaRateThresholds.p75?.toFixed(1) ?? '—'}–{nationalOhcaRateThresholds.p90?.toFixed(1) ?? '—'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
-                      <span className="text-slate-400">200–399 Calls (Moderate)</span>
+                      <span className="text-slate-400">
+                        50th–75th percentile · {nationalOhcaRateThresholds.p50?.toFixed(1) ?? '—'}–{nationalOhcaRateThresholds.p75?.toFixed(1) ?? '—'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0"></span>
-                      <span className="text-slate-400">&lt;200 Calls (Baseline)</span>
+                      <span className="text-slate-400">Below national median rate</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0"></span>
+                      <span className="text-slate-400">No paired OHCA / transport report</span>
+                    </div>
+                    <div className="border-t border-slate-700/60 pt-1.5 mt-1.5">
+                      <span className="text-slate-300 block mb-1">Station outline: defibrillator age</span>
+                      <div className="flex flex-wrap gap-x-2 gap-y-1">
+                        {FLEET_AGE_BANDS.map(band => (
+                          <span key={band.key} className="flex items-center gap-1 text-slate-400">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: band.color }} />
+                            {band.label}
+                          </span>
+                        ))}
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <span className="w-2 h-2 rounded-full bg-slate-500" />
+                          Not reported
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -3041,7 +3238,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 py-1 text-center bg-slate-900/80 rounded-lg p-2 border border-white/10 mb-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1 text-center bg-slate-900/80 rounded-lg p-2 border border-white/10 mb-2.5">
                   <div>
                     <span className="text-xs text-slate-400 block font-medium">Annual OHCA</span>
                     <span className="text-xs font-semibold text-rose-400 tabular-nums">
@@ -3049,15 +3246,21 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-medium">Utstein Survival</span>
-                    <span className="text-xs font-semibold text-emerald-400 tabular-nums">
-                      {hasReportedValue(hoveredAgency.utsteinSurvivalRate) ? `${hoveredAgency.utsteinSurvivalRate}%` : 'Not reported'}
+                    <span className="text-xs text-slate-400 block font-medium">Annual Transports</span>
+                    <span className="text-xs font-semibold text-sky-400 tabular-nums">
+                      {reportMetric(hoveredAgency.annual911Transports)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-medium">Priority Score</span>
+                    <span className="text-xs text-slate-400 block font-medium">OHCA / 1,000</span>
                     <span className="text-xs font-semibold text-amber-400 tabular-nums">
-                      {reportMetric(hoveredAgency.zollOpportunity.pulseIqScore)} / 100
+                      {getAgencyOhcaRatePerThousand(hoveredAgency)?.toFixed(1) ?? 'Not reported'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400 block font-medium">Utstein Survival</span>
+                    <span className="text-xs font-semibold text-emerald-400 tabular-nums">
+                      {hasReportedValue(hoveredAgency.utsteinSurvivalRate) ? `${hoveredAgency.utsteinSurvivalRate}%` : 'Not reported'}
                     </span>
                   </div>
                 </div>
@@ -3266,7 +3469,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 <BarChart3 className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Acuity Dist.</span>
+                <span>OHCA &amp; Fleet</span>
               </button>
               <button
                 onClick={() => setSidebarTab('product_matrix')}
@@ -3283,19 +3486,20 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           </div>
 
           {sidebarTab === 'nemsis_epicenters' ? (
-            /* Ranked High-Acuity Cardiac Epicenters in Territory */
+            /* Ranked OHCA rate leaders in the selected territory */
             <div className="space-y-3 min-w-0">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[#14283F] dark:text-white">Top High-Acuity Resuscitation Hotspots</span>
-                <span className="text-xs text-[#53657B] dark:text-slate-400">By OHCA Volume</span>
+                <span className="font-semibold text-[#14283F] dark:text-white">Highest Reported OHCA Rates</span>
+                <span className="text-xs text-[#53657B] dark:text-slate-400">Per 1,000 transports</span>
               </div>
 
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {topCardiacEpicenters.map((agency, idx) => {
                   const calls = hasReportedValue(agency.annualCardiacArrestCalls) ? agency.annualCardiacArrestCalls : null;
-                  const callCount = calls ?? 0;
-                  const isExtreme = calls != null && callCount >= 800;
-                  const isHigh = calls != null && callCount >= 400 && callCount < 800;
+                  const ohcaRate = getAgencyOhcaRatePerThousand(agency);
+                  const rateTier = classifyOhcaRate(ohcaRate, nationalOhcaRateThresholds);
+                  const isExtreme = rateTier === 'critical';
+                  const isHigh = rateTier === 'high';
                   const defibBrand = agency.installedFleet.defibBrand || 'Not reported';
                   const isStryker = !defibBrand.toLowerCase().includes('not source-verified') && (defibBrand.toLowerCase().includes('stryker') || defibBrand.toLowerCase().includes('lifepak'));
                   const isOldFleet = hasReportedValue(agency.installedFleet.defibAgeYears) && agency.installedFleet.defibAgeYears >= 7;
@@ -3334,7 +3538,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                               ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40'
                               : 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300'
                         }`}>
-                          {calls == null ? 'Not reported' : `${calls.toLocaleString()} OHCA`}
+                          {ohcaRate == null ? 'Rate not reported' : `${ohcaRate.toFixed(1)} / 1k`}
                         </span>
                       </div>
 
@@ -3386,11 +3590,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
             <div className="space-y-4 text-xs min-w-0">
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-[#14283F] dark:text-white">Cardiac Acuity Tier Breakdown</span>
-                  <span className="text-xs text-[#53657B] dark:text-slate-400 tabular-nums">{filteredAgencies.length} Accounts</span>
+                   <span className="font-semibold text-[#14283F] dark:text-white">OHCA Rate Distribution</span>
+                   <span className="text-xs text-[#53657B] dark:text-slate-400 tabular-nums">{acuityDistributionStats.rateDataCount} paired records</span>
                 </div>
                 <p className="text-xs text-[#53657B] dark:text-slate-400 leading-relaxed">
-                  Distribution of departments across NEMSIS cardiac event intensity tiers.
+                   Annual OHCA calls per 1,000 reported transports. Tiers are relative to national agency-rate percentiles, not clinical acuity levels.
                 </p>
               </div>
 
@@ -3400,14 +3604,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-rose-600"></span>
-                      <span>Critical Epicenter (≥800 OHCA)</span>
+                       <span>Top 10% OHCA rate</span>
                     </span>
                     <span className="font-semibold text-[#14283F] dark:text-slate-200 tabular-nums">
                       {acuityDistributionStats.criticalCount} ({acuityDistributionStats.criticalPct}%)
                     </span>
                   </div>
                   <div className="w-full bg-[#DFE6EF] dark:bg-[#1E2D42] rounded-full h-2 overflow-hidden">
-                    <div className="bg-rose-600 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.max(4, acuityDistributionStats.criticalPct)}%` }}></div>
+                     <div className="bg-rose-600 h-2 rounded-full transition-all duration-500" style={{ width: `${acuityDistributionStats.criticalPct}%` }}></div>
                   </div>
                 </div>
 
@@ -3415,14 +3619,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                      <span>High Acuity (400–799 OHCA)</span>
+                       <span>75th–90th percentile</span>
                     </span>
                     <span className="font-semibold text-[#14283F] dark:text-slate-200 tabular-nums">
                       {acuityDistributionStats.highCount} ({acuityDistributionStats.highPct}%)
                     </span>
                   </div>
                   <div className="w-full bg-[#DFE6EF] dark:bg-[#1E2D42] rounded-full h-2 overflow-hidden">
-                    <div className="bg-amber-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.max(4, acuityDistributionStats.highPct)}%` }}></div>
+                     <div className="bg-amber-500 h-2 rounded-full transition-all duration-500" style={{ width: `${acuityDistributionStats.highPct}%` }}></div>
                   </div>
                 </div>
 
@@ -3430,14 +3634,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-[#285EE8] flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#285EE8]"></span>
-                      <span>Moderate Acuity (200–399 OHCA)</span>
+                       <span>50th–75th percentile</span>
                     </span>
                     <span className="font-semibold text-[#14283F] dark:text-slate-200 tabular-nums">
                       {acuityDistributionStats.moderateCount} ({acuityDistributionStats.moderatePct}%)
                     </span>
                   </div>
                   <div className="w-full bg-[#DFE6EF] dark:bg-[#1E2D42] rounded-full h-2 overflow-hidden">
-                    <div className="bg-[#285EE8] h-2 rounded-full transition-all duration-500" style={{ width: `${Math.max(4, acuityDistributionStats.moderatePct)}%` }}></div>
+                     <div className="bg-[#285EE8] h-2 rounded-full transition-all duration-500" style={{ width: `${acuityDistributionStats.moderatePct}%` }}></div>
                   </div>
                 </div>
 
@@ -3445,32 +3649,53 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-[#53657B] dark:text-slate-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                      <span>Baseline (&lt;200 OHCA)</span>
+                       <span>Below median OHCA rate</span>
                     </span>
                     <span className="font-semibold text-[#14283F] dark:text-slate-200 tabular-nums">
                       {acuityDistributionStats.baselineCount} ({acuityDistributionStats.baselinePct}%)
                     </span>
                   </div>
                   <div className="w-full bg-[#DFE6EF] dark:bg-[#1E2D42] rounded-full h-2 overflow-hidden">
-                    <div className="bg-slate-400 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.max(4, acuityDistributionStats.baselinePct)}%` }}></div>
+                     <div className="bg-slate-400 h-2 rounded-full transition-all duration-500" style={{ width: `${acuityDistributionStats.baselinePct}%` }}></div>
                   </div>
                 </div>
               </div>
 
-              {/* Defibrillator Fleet Age Risk Callout */}
-              <div className="p-3.5 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 rounded-xl space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+              {/* Defibrillator fleet age distribution; unreported ages remain separate from newer fleets. */}
+              <div className="p-3.5 bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-[#14283F] dark:text-white flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>Incumbent Fleet Replacement Risk</span>
+                    <span>Defibrillator Fleet Age</span>
                   </span>
-                  <span className="text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded tabular-nums">
-                    {acuityDistributionStats.agingPct}% Vulnerable
+                  <span className="text-[11px] text-[#53657B] dark:text-slate-400 tabular-nums">
+                    {acuityDistributionStats.defibAgeDataCount} / {filteredAgencies.length} reported
                   </span>
                 </div>
-                <p className="text-xs text-amber-900/80 dark:text-amber-300/80 leading-relaxed">
-                  <strong>{acuityDistributionStats.defibAgeDataCount ? `${acuityDistributionStats.agingDefibCount} of ${acuityDistributionStats.defibAgeDataCount} reporting departments` : 'Fleet age not reported'}</strong>
-                  {acuityDistributionStats.defibAgeDataCount > 0 && ' report monitor/defibrillator fleets at least 7 years old.'}
+                {acuityDistributionStats.defibAgeDataCount > 0 ? (
+                  <div className="space-y-2">
+                    {acuityDistributionStats.fleetAgeBands.map(band => (
+                      <div key={band.key} className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#53657B] dark:text-slate-300">{band.label}</span>
+                          <span className="font-semibold text-[#14283F] dark:text-slate-200 tabular-nums">
+                            {band.count} ({band.pct}%)
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[#DFE6EF] dark:bg-[#1E2D42] overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${band.pct}%`, backgroundColor: band.color }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#53657B] dark:text-slate-400">Fleet age is not reported for this selection.</p>
+                )}
+                <p className="text-[11px] text-[#53657B] dark:text-slate-400 leading-relaxed">
+                  Age not reported: <strong className="text-[#14283F] dark:text-slate-200">{acuityDistributionStats.missingFleetAgeCount}</strong>. Missing ages are not treated as new or low-risk.
                 </p>
               </div>
 
@@ -3478,24 +3703,29 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               {acuityDistributionStats.sortedCounties.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold text-[#14283F] dark:text-white">
-                    <span>Top County Resuscitation Volumes</span>
-                    <span className="text-xs text-[#53657B] dark:text-slate-400">OHCA &amp; Survival</span>
+                    <span>County OHCA Volume &amp; Rate</span>
+                    <span className="text-xs text-[#53657B] dark:text-slate-400">Matched reports</span>
                   </div>
                   <div className="space-y-2">
                     {acuityDistributionStats.sortedCounties.map((county) => (
                       <div key={county.name} className="p-3 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] hover:bg-white dark:hover:bg-[#111C2D] transition-colors">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-[#14283F] dark:text-white">{county.name}</span>
+                          <span className="font-semibold text-[#14283F] dark:text-white">{county.name}, {county.stateCode}</span>
                           <span className="font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
                             {county.totalCalls.toLocaleString()} OHCA
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-[#53657B] dark:text-slate-400 mt-1">
-                          <span>{county.agencyCount} Department{county.agencyCount > 1 ? 's' : ''}</span>
+                          <span>{county.agencyCount} call-reporting · {county.rateAgencyCount} rate pairs</span>
                           <span>
-                            Avg ROSC: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">{county.survivalCount ? `${county.avgSurvival}%` : 'Not reported'}</strong>{county.survivalCount > 0 && <span className="text-[11px] text-[#53657B] dark:text-slate-500"> (vs 29.7% benchmark)</span>}
+                            OHCA/1k: <strong className="text-rose-600 dark:text-rose-400 font-semibold tabular-nums">{county.ohcaRatePerThousand != null ? county.ohcaRatePerThousand.toFixed(1) : 'Not reported'}</strong>
                           </span>
                         </div>
+                        {county.survivalCount > 0 && (
+                          <div className="text-[11px] text-[#53657B] dark:text-slate-400 mt-1">
+                            Avg reported Utstein survival: <strong className="text-emerald-600 dark:text-emerald-400">{county.avgSurvival}%</strong> · n={county.survivalCount}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3733,7 +3963,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 <HeartPulse className="w-3.5 h-3.5" />
-                <span>NEMSIS Cardiac</span>
+                <span>OHCA Rate</span>
               </button>
               <button
                 onClick={() => setSelectedLayer('cardiac')}
@@ -4038,11 +4268,20 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         onMouseEnter={() => setHoveredAgency(agency)}
                         onMouseLeave={() => setHoveredAgency(null)}
                       >
+                        {selectedLayer === 'nemsis_cardiac' && (
+                          <circle
+                            r={baseR + 3.2}
+                            fill="none"
+                            stroke={getAgencyFleetAgeColor(agency)}
+                            strokeWidth="1.3"
+                            opacity="0.95"
+                          />
+                        )}
                         <circle
                           r={isHovered ? baseR * 1.6 : baseR}
                           fill={visual.markerFill}
-                          stroke="#0F172A"
-                          strokeWidth={1.1}
+                          stroke={selectedLayer === 'nemsis_cardiac' ? getAgencyFleetAgeColor(agency) : '#0F172A'}
+                          strokeWidth={selectedLayer === 'nemsis_cardiac' ? 0.8 : 1.1}
                           className="transition-transform duration-150"
                         />
                       </g>
@@ -4055,25 +4294,46 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <div className="absolute top-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-3 shadow-xl text-xs pointer-events-auto">
                 <span className="font-semibold text-white text-xs block mb-1.5 flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Intensity scale</span>
+                  <span>{selectedLayer === 'nemsis_cardiac' ? 'Relative OHCA rate' : 'Layer intensity'}</span>
                 </span>
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-600 ring-2 ring-rose-400"></span>
-                    <span className="text-white font-semibold">Critical Epicenter</span>
+                    <span className="text-white font-semibold">{selectedLayer === 'nemsis_cardiac' ? 'Top 10% OHCA rate' : 'Critical Epicenter'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                    <span className="text-slate-300">High Acuity / Deficit</span>
+                    <span className="text-slate-300">{selectedLayer === 'nemsis_cardiac' ? '75th–90th percentile' : 'High Acuity / Deficit'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-                    <span className="text-slate-400">Moderate Need</span>
+                    <span className="text-slate-400">{selectedLayer === 'nemsis_cardiac' ? '50th–75th percentile' : 'Moderate Need'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
-                    <span className="text-slate-400">Baseline Tier</span>
+                    <span className="text-slate-400">{selectedLayer === 'nemsis_cardiac' ? 'Below median rate' : 'Baseline Tier'}</span>
                   </div>
+                  {selectedLayer === 'nemsis_cardiac' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                        <span className="text-slate-400">Rate not reported</span>
+                      </div>
+                      <div className="border-t border-slate-700 pt-2 mt-2 space-y-1">
+                        <span className="text-slate-300 block">Marker outline = defib age</span>
+                        {FLEET_AGE_BANDS.map(band => (
+                          <div key={band.key} className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: band.color }}></span>
+                            <span className="text-slate-400">{band.label}</span>
+                          </div>
+                        ))}
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                          <span className="text-slate-400">Age not reported</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

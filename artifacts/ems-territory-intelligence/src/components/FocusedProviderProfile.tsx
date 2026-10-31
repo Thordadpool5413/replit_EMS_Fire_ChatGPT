@@ -81,20 +81,20 @@ const FactVerificationTag: React.FC<{
   agency: Agency;
   field: AgencyFactEvidenceKey;
   unverifiedLabel?: string;
-}> = ({ agency, field, unverifiedLabel = 'No source mapped · source needed' }) => {
+}> = ({ agency, field, unverifiedLabel = 'No source link attached' }) => {
   const status = getAgencyFactEvidenceStatus(agency, field);
   const evidence = agency.factEvidence?.[field];
   const label = status === 'source-reviewed'
     ? 'Source checked · verify'
     : status === 'source-mapped'
       ? 'Source mapped · verify'
-      : 'No source mapped · source needed';
+      : 'No source link attached';
   const className = `inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
     status === 'source-reviewed'
       ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
       : status === 'source-mapped'
         ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
   }`;
   const title = evidence
     ? `${evidence.sourceName}${evidence.sourceKind ? ` · ${evidence.sourceKind.toUpperCase()}` : ''}${evidence.note ? ` · ${evidence.note}` : ''}`
@@ -1010,7 +1010,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       ? 'Registry and leadership sources checked · verify'
                       : hasAgencyFactEvidence(agency, 'departmentRegistry') && hasAgencyFactEvidence(agency, 'agencyLeadership')
                         ? 'Registry and leadership sources mapped · verify'
-                        : `Candidate · ${isFire ? 'Fire Department' : 'EMS Provider'} source needed`}
+                        : `Candidate · ${isFire ? 'Fire Department' : 'EMS Provider'}`}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span>

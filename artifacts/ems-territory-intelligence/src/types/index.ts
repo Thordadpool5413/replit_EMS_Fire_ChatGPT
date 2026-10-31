@@ -182,6 +182,8 @@ export interface Agency {
   totalEMSStaff: number;
   annualCallVolume: number;
   annual911Transports: number;
+  frontlineRescueUnitCount?: number;
+  responseUnitCount?: number;
   annualCardiacArrestCalls: number; // Out-of-Hospital Cardiac Arrest (OHCA)
   bystanderCPRRate: number; // percentage
   utsteinSurvivalRate: number; // percentage survival to hospital discharge (CARES)
@@ -288,6 +290,8 @@ export interface Agency {
   // Optional telemetry, verification, and fleet synchronization properties
   providerCategory?: 'FIRE' | 'EMS' | string;
   stateLicenseNumber?: string;
+  stateLicenseType?: string;
+  stateLicenseExpiration?: string;
   isFdidVerified?: boolean;
   isOperationalDataVerified?: boolean;
   npiNumber?: string;
@@ -420,7 +424,13 @@ export type AgencyFactEvidenceKey =
   | 'operationalVolumeContracts'
   | 'clinicalOutcomes'
   | 'cmsClaims'
-  | 'federalGrant';
+  | 'federalGrant'
+  | 'stationCount'
+  | 'frontlineRescueUnits'
+  | 'annualCallsReceived'
+  | 'epcrSystem'
+  | 'monitorModelTransition'
+  | 'serviceArea';
 
 export interface AgencyFactEvidence {
   /** Set only after a reviewer checks that this source supports this exact fact. */

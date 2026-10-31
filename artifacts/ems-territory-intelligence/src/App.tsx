@@ -688,6 +688,15 @@ export default function App() {
           </section>
         )}
 
+        <div
+          role="status"
+          className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          <strong>Data verification in progress:</strong> Florida review is underway, but nationwide agency coverage is incomplete.
+          Only fields with cited, reviewed evidence should be treated as verified; other operational figures, forecasts, scores,
+          and benchmarks may be estimates or unverified.
+        </div>
+
         <ErrorBoundary onReset={() => setActiveTab('home')}>
         {/* Executive Home & Guided Onboarding Hub */}
         {activeTab === 'home' && (

@@ -783,7 +783,11 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
     name: 'Miami-Dade County Fire Rescue Department',
     fdid: '',
     stateLicenseNumber: '1312',
+    stateLicenseType: 'ALS/T',
+    stateLicenseExpiration: '2027-03-22',
     providerCategory: 'FIRE',
+    headquartersPhone: '786-331-5000',
+    officialWebsite: 'https://www.miamidade.gov/global/fire/contact-fire-rescue.page',
     isFdidVerified: false,
     factEvidence: {
       providerAddress: {
@@ -801,7 +805,7 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
         sourceRecordId: 'Florida EMS provider license 1312',
         reviewedAt: '2026-10-30',
         reportingPeriod: 'Report processed 2026-10-23',
-        note: 'State EMS license, not a USFA fire department FDID. Listed as ALS transport provider.'
+        note: 'State EMS license 1312, type ALS/T, expiration 2027-03-22; not a USFA fire department FDID. Report processed 2026-10-23.'
       },
       agencyLeadership: {
         reviewed: true,
@@ -818,6 +822,60 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
         sourceRecordId: 'Fire Rescue department contact page',
         reviewedAt: '2026-10-30',
         reportingPeriod: 'Current public department contact page'
+      },
+      stationCount: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — FY 2025-26 Adopted Budget, Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/resources/budget/adopted/fy2025-26/fire-rescue.pdf',
+        sourceRecordId: 'Fire Rescue Department overview',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'FY 2025-26 adopted budget',
+        note: 'The county budget reports 72 fire-rescue stations. This verifies the station count, not a station-by-station roster or exact apparatus assignment.'
+      },
+      frontlineRescueUnits: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — FY 2024-25 Q2 Performance Report, Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/resources/management/documents/performance/quarterly-reports/FY2024-25/Q2/fire-rescue.pdf',
+        sourceRecordId: 'Fire Rescue Department overview',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'FY 2024-25 Q2',
+        note: 'The county reports 65 front-line rescue units and 167 total rescue, suppression, battalion, and specialty units. These are not an exact vehicle-by-type fleet roster.'
+      },
+      serviceArea: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — FY 2024-25 Q2 Performance Report, Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/resources/management/documents/performance/quarterly-reports/FY2024-25/Q2/fire-rescue.pdf',
+        sourceRecordId: 'Fire Rescue Department overview',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'FY 2024-25 Q2',
+        note: 'The county describes MDFR as serving a 1,907-square-mile territory.'
+      },
+      annualCallsReceived: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — FY 2025-26 Adopted Budget, Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/resources/budget/adopted/fy2025-26/fire-rescue.pdf',
+        sourceRecordId: 'Performance measure: Number of Fire Rescue calls received',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'FY 2023-24 actual',
+        note: 'The county reports 296,858 total Fire Rescue calls received in FY 2023-24. This is not an EMS-transport count.'
+      },
+      epcrSystem: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — ePCR Software Contract Memorandum',
+        sourceUrl: 'https://www.miamidade.gov/govaction/legistarfiles/Matters/Y2026/261449.pdf',
+        sourceRecordId: 'Contract BW-10321; Agenda Item 8(P)(5)',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'Memorandum dated 2026-10-06',
+        note: 'The county identifies Saffire Software, Inc. d/b/a MetroPCR as MDFR’s primary ePCR. The memo requests an extension; that request is not treated here as proof of final Board approval.'
+      },
+      monitorModelTransition: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — Critical Care and EMS Equipment Contract Memorandum',
+        sourceUrl: 'https://www.miamidade.gov/govaction/legistarfiles/Matters/Y2026/261567.pdf',
+        sourceRecordId: 'Sourcewell Contract RFP-041823-STY; Agenda Item 8(P)(13)',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'Memorandum dated 2026-10-06',
+        note: 'The county says most county medical equipment/AEDs are manufactured and maintained by Stryker; MDFR currently uses LIFEPAK-15 and has begun purchasing LIFEPAK-35 monitors for a vehicle retrofit. Exact counts, completion, warranty, and final contract status are not reported.'
       }
     },
     agencyType: 'Career Fire Department',
@@ -831,13 +889,15 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
     latitude: 25.8118,
     longitude: -80.3475,
     populationServed: 2710000,
-    responseAreaSqMiles: 1946.0,
-    stationsCount: 71,
+    responseAreaSqMiles: 1907.0,
+    stationsCount: 72,
     totalAmbulances: 92,
     totalFireEngines: 71,
     totalEMSStaff: 2100,
-    annualCallVolume: 284000,
+    annualCallVolume: 296858,
     annual911Transports: 184000,
+    frontlineRescueUnitCount: 65,
+    responseUnitCount: 167,
     annualCardiacArrestCalls: 3820,
     bystanderCPRRate: 29.8,
     utsteinSurvivalRate: 26.4,
@@ -887,7 +947,7 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
       estimatedRecoverableRevenue: 2450000
     },
     installedFleet: {
-      defibBrand: 'Philips Tempus Pro',
+      defibBrand: 'Stryker LIFEPAK 15',
       defibUnitsCount: 95,
       defibAgeYears: 5.8,
       defibWarrantyStatus: 'Active',
@@ -895,7 +955,7 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
       cprUnitsCount: 68,
       transportVentilator: 'ZOLL Z Vent',
       ventUnitsCount: 54,
-      epcrCadSoftware: 'ZOLL RescueNet',
+      epcrCadSoftware: 'MetroPCR (Saffire Software, Inc.)',
       billingSoftware: 'In-House Municipal'
     },
     grantStatus: {
@@ -916,10 +976,22 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
       financialRoiNarrative: 'Captures $2.45M in unbilled ground ambulance transports and streamlines Medicare billing.',
       scoreRationale: 'Active sole-source municipal notice pending. AutoPulse already embedded across 68 front-line units.',
       scoreBreakdown: { clinicalAcuityPts: 23, fleetObsolescencePts: 18, cmsFinancialPts: 20, demographicVulnerabilityPts: 15, budgetGrantReadinessPts: 16 },
-      salesStage: 'Contract Won',
+      salesStage: 'Target Lead',
       probabilityPct: 92
     },
-    keyContacts: [{ id: 'c4', name: 'Chief Ray Jadallah', title: 'Fire Chief', role: 'Fire Chief', email: 'rjadallah@miamidade.gov', phone: '(786) 331-5000' }],
+    keyContacts: [{
+      id: 'c4',
+      name: 'Raied "Ray" Jadallah',
+      title: 'Fire Chief',
+      role: 'Fire Chief',
+      email: '',
+      phone: '',
+      officialWebsite: 'https://www.miamidade.gov/global/government/biographies/fire-rescue.page',
+      headquartersAddress: '9300 NW 41st Street, Miami, FL 33178-2414',
+      isVerifiedOfficial: true,
+      verificationSource: 'Miami-Dade County Fire Rescue biography',
+      notes: 'Name and title source-reviewed on 2026-10-30; no direct phone or email was verified.'
+    }],
     fieldNotes: [],
     lastContactDate: '2026-10-15',
     isBookmarked: false,

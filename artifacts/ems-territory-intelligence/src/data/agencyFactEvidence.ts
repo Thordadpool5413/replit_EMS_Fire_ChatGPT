@@ -21,6 +21,12 @@ export const AGENCY_FACT_EVIDENCE_FIELDS: Array<{
   { key: 'clinicalOutcomes', label: 'Clinical outcomes' },
   { key: 'cmsClaims', label: 'CMS claims and reimbursement' },
   { key: 'federalGrant', label: 'Federal grant records' },
+  { key: 'stationCount', label: 'Fire-rescue station count' },
+  { key: 'frontlineRescueUnits', label: 'Frontline rescue-unit count' },
+  { key: 'annualCallsReceived', label: 'Reported fire-rescue calls received' },
+  { key: 'epcrSystem', label: 'ePCR system and contract record' },
+  { key: 'monitorModelTransition', label: 'Cardiac monitor model and replacement status' },
+  { key: 'serviceArea', label: 'Reported service area' },
 ];
 
 /**

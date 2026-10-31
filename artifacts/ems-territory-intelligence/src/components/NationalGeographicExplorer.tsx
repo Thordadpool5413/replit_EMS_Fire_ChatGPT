@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
@@ -51,6 +52,15 @@ import { PulseIqScoreTooltip } from './PulseIqScoreTooltip';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
+
+const hasVerifiedModelInputs = (agency: Agency) =>
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface NationalGeographicExplorerProps {
   agencies: Agency[];
@@ -1355,7 +1365,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </div>
                 <div className="p-2.5 bg-slate-50/80 dark:bg-slate-900">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Data Provenance</span>
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block">FDID · NPI · FIPS Verified</span>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5 block">Registry coverage varies; operational facts need separate sources</span>
                 </div>
               </div>
 
@@ -1854,12 +1864,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               {paginatedAgencies.map(agency => {
                 const isFire = agency.agencyType.toLowerCase().includes('fire');
                 const primaryContact = agency.keyContacts[0];
+                const hasVerifiedModel = hasVerifiedModelInputs(agency);
                 const websiteUrl =
-                  agency.officialWebsite ||
+                  (hasAgencyFactEvidence(agency, 'departmentRegistry') ? agency.officialWebsite : undefined) ||
                   `https://www.google.com/search?q=${encodeURIComponent(`${agency.name} ${agency.city} ${agency.stateCode} official website`)}`;
                 const mapsUrl =
-                  agency.googleMapsUri ||
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`;
+                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    hasAgencyFactEvidence(agency, 'providerAddress')
+                      ? agency.address
+                      : `${agency.name}, ${agency.city}, ${agency.stateCode}`
+                  )}`;
 
                 return (
                   <div
@@ -1875,14 +1889,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
                           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                          <span>FDID {agency.fdid || '04102'}</span>
-                          {agency.npiNumber && (
+                          <span>FDID {agency.fdid || 'Not source-verified'}</span>
+                          {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span>NPI {agency.npiNumber}</span>
                             </>
                           )}
-                          {agency.grantStatus.afgAwarded && (
+                          {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
@@ -1921,7 +1935,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <PulseIqScoreTooltip agency={agency} size="compact" showLabel={true} />
+                          {hasVerifiedModel
+                            ? <PulseIqScoreTooltip agency={agency} size="compact" showLabel={true} />
+                            : <span className="text-[10px] text-slate-500 dark:text-slate-400">Model score withheld</span>}
                         </div>
                       </div>
 
@@ -1931,12 +1947,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="truncate">
-                          {primaryContact && (
+                          {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact && (
                             <span>
                               <strong className="text-slate-900 dark:text-white">{primaryContact.name}</strong> ({primaryContact.title}) ·{' '}
                             </span>
                           )}
-                          <span>{agency.address}</span>
+                          <span>{hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Address not source-verified'}</span>
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0 font-medium">
@@ -1966,40 +1982,50 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Upgrade Value</span>
                           <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block tabular-nums">
-                            ${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K
+                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Not source-verified'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block tabular-nums">
-                            Exp: {agency.competitorContract.contractEndDate}
+                            {hasAgencyFactEvidence(agency, 'maintenanceContracts')
+                              ? `Exp: ${agency.competitorContract.contractEndDate}`
+                              : 'Contract not source-verified'}
                           </span>
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Installed Fleet</span>
                           <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mt-0.5 truncate block tabular-nums" title={agency.installedFleet.defibBrand}>
-                            {agency.installedFleet.defibUnitsCount}× {agency.installedFleet.defibBrand.split(' ')[0]}
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                              ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand}`
+                              : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                                ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
+                                : 'Not source-verified'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {agency.installedFleet.defibAgeYears} yrs old
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} yrs old` : 'Fleet age not source-verified'}
                           </span>
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Claim Recovery</span>
                           <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                            +${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'Not source-verified'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {agency.cmsData.claimDenialRate}% Denials
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
                           </span>
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Runs &amp; ROSC</span>
                           <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                            {agency.annual911Transports.toLocaleString()}
+                            {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                              ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
+                              : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                                ? agency.annual911Transports.toLocaleString()
+                                : 'Not source-verified'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {agency.utsteinSurvivalRate}% ROSC
+                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}
                           </span>
                         </div>
                       </div>
@@ -2008,7 +2034,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     {/* Clean Card Footer */}
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
                       <span className="text-slate-600 dark:text-slate-400 truncate">
-                        Target: <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong>
+                        {hasVerifiedModel
+                          ? <>Model target: <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
+                          : 'Product recommendation not source-verified'}
                       </span>
 
                       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -2071,6 +2099,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                     {paginatedAgencies.map((agency) => {
                       const isFire = agency.agencyType.toLowerCase().includes('fire');
+                      const hasVerifiedModel = hasVerifiedModelInputs(agency);
                       return (
                         <tr
                           key={agency.id}
@@ -2078,46 +2107,54 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums">
-                            {agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span>
+                            {hasVerifiedModel ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></> : '—'}
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
                               {agency.name}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid}</span>
+                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'Not source-verified'}</span>
                             </div>
                           </td>
                           <td className="py-2.5 px-3 hidden md:table-cell">
                             <div className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                              {agency.installedFleet.defibUnitsCount}× {agency.installedFleet.defibBrand.split(' ')[0]} ({agency.installedFleet.defibAgeYears}y)
+                              {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                                ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand} (${agency.installedFleet.defibAgeYears}y)`
+                                : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                                  ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
+                                  : 'Not source-verified'}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              {agency.installedFleet.epcrCadSoftware}
+                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'ePCR not source-verified'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              ${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K
+                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Not source-verified'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              Exp {agency.competitorContract.contractEndDate}
+                              {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? `Exp ${agency.competitorContract.contractEndDate}` : 'Contract not source-verified'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden lg:table-cell">
                             <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                              +${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr
+                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'Not source-verified'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {agency.cmsData.claimDenialRate}% Denials
+                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden xl:table-cell">
                             <div className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                              {agency.annual911Transports.toLocaleString()}
+                              {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                                ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
+                                : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                                  ? agency.annual911Transports.toLocaleString()
+                                  : 'Not source-verified'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {agency.utsteinSurvivalRate}% ROSC
+                              {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}
                             </div>
                           </td>
                           <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>

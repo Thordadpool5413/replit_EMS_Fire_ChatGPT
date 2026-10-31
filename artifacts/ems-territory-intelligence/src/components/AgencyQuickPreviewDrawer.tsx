@@ -15,6 +15,7 @@ import {
   Send
 } from 'lucide-react';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -74,7 +75,16 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
     agency.googleMapsUri ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`;
 
-  // 4-Factor PulseIQ Breakdown
+  const hasDecisionGradeInputs =
+    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasAgencyFactEvidence(agency, 'federalGrant');
+
+  // These inputs are only rendered when their source groups have been reviewed.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
   const cmsDenialSub = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
   const clinicalSub = Math.min(
@@ -118,9 +128,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                   {isFire ? 'Fire Department' : 'EMS Provider'}
                 </span>
                 <span>·</span>
-                <span>FDID <span className="font-mono text-[11px]">{agency.fdid || 'Not Recorded'}</span></span>
+                  <span>
+                    {agency.stateLicenseNumber
+                      ? <>State EMS license <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
+                      : <>FDID <span className="font-mono text-[11px]">{agency.fdid || 'Not source-verified'}</span></>}
+                  </span>
                 <span>·</span>
-                <span>NPI <span className="font-mono text-[11px]">{npiNumber || 'Unassigned'}</span></span>
+                <span>NPI <span className="font-mono text-[11px]">{npiNumber || 'Not source-verified'}</span></span>
               </div>
 
               <h2
@@ -132,6 +146,9 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                 {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode}
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Address not source-verified'}
               </p>
             </div>
 
@@ -166,7 +183,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             >
               {STAGES.map((st) => (
                 <option key={st} value={st}>
-                  Stage: {st}
+                  Workspace stage: {st}
                 </option>
               ))}
             </select>
@@ -206,48 +223,67 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             </div>
             <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden tabular-nums">
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Frontline monitor fleet</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">Cardiac monitor models</span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {agency.installedFleet.defibUnitsCount} {agency.installedFleet.defibBrand.split(' ')[0]} devices
+                  {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                    ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
+                    : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                      ? agency.installedFleet.defibBrand
+                      : 'Not source-verified'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  Reported age: {agency.installedFleet.defibAgeYears} yrs · Ends {agency.competitorContract.contractEndDate}
+                  {hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                    ? 'County memo reports LIFEPAK-35 replacement underway; count and completion are not reported.'
+                    : 'Model, fleet count, age, and contract are not source-verified.'}
                 </span>
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Est. CapEx replacement</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">Opportunity estimate</span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {formatCurrency(agency.zollOpportunity.projectedPipelineValue)}
+                  {hasDecisionGradeInputs ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block truncate">
-                  Target: {agency.zollOpportunity.primaryTargetProduct}
+                  {hasDecisionGradeInputs ? `Target: ${agency.zollOpportunity.primaryTargetProduct}` : 'Requires verified operational and financial inputs'}
                 </span>
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
                 <span className="text-xs text-slate-500 dark:text-slate-400 block">Annual Medicare recovery</span>
                 <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                  {formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })}
+                  {hasAgencyFactEvidence(agency, 'cmsClaims')
+                    ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
+                    : 'Not source-verified'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {formatPercent(agency.cmsData.claimDenialRate)} CMS Part B denials
+                  {hasAgencyFactEvidence(agency, 'cmsClaims')
+                    ? `${formatPercent(agency.cmsData.claimDenialRate)} CMS Part B denials`
+                    : 'Agency-specific denial data not verified'}
                 </span>
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Emergency volume &amp; survival</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">Fire Rescue calls &amp; outcomes</span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {formatInteger(agency.annual911Transports)} runs / yr
+                  {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                    ? `${formatInteger(agency.annualCallVolume)} calls received`
+                    : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                      ? `${formatInteger(agency.annual911Transports)} transports / yr`
+                      : 'Not source-verified'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {formatPercent(agency.utsteinSurvivalRate)} Utstein survival
+                  {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                    ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'EMS transports and outcomes not verified'
+                    : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
+                      ? `${formatPercent(agency.utsteinSurvivalRate)} Utstein survival`
+                      : 'Clinical outcomes not source-verified'}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Actuarial PulseIQ Score Breakdown */}
+          {hasDecisionGradeInputs ? (
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 bg-slate-50/50 dark:bg-slate-900 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-900 dark:text-white">
@@ -288,25 +324,44 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               ))}
             </div>
           </div>
+          ) : (
+            <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              PulseIQ score withheld until the required agency fleet, volume, outcomes, contracts, CMS, and grant inputs are source-verified.
+            </div>
+          )}
 
           {/* Command & Infrastructure Details */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 text-xs">
             <div className="p-3 flex items-center justify-between gap-2">
               <span className="text-slate-500 dark:text-slate-400">Command Contact</span>
               <span className="font-semibold text-slate-900 dark:text-white text-right">
-                {primaryContact ? `${primaryContact.name} (${primaryContact.title})` : 'Office of the Chief'}
+                {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact
+                  ? `${primaryContact.name} (${primaryContact.title})`
+                  : 'Not source-verified'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
               <span className="text-slate-500 dark:text-slate-400">Apparatus Baseline</span>
               <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                {agency.totalAmbulances} Ambulances · {agency.totalFireEngines} Engines · {agency.stationsCount} Stations
+                {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                  ? `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Engines · ${agency.stationsCount} Stations`
+                    : [
+                        hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'Station count not source-verified',
+                        hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
+                          ? `${agency.frontlineRescueUnitCount} front-line rescue units`
+                          : 'Rescue-unit count not source-verified',
+                        hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.responseUnitCount
+                          ? `${agency.responseUnitCount} total response units`
+                          : 'Vehicle-type totals not source-verified'
+                      ].join(' · ')}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
               <span className="text-slate-500 dark:text-slate-400">Installed ePCR &amp; CAD</span>
               <span className="font-semibold text-slate-900 dark:text-white text-right">
-                {agency.installedFleet.epcrCadSoftware}
+                {hasAgencyFactEvidence(agency, 'epcrSystem')
+                  ? `${agency.installedFleet.epcrCadSoftware} · CAD not source-verified`
+                  : 'ePCR and CAD not source-verified'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">

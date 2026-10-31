@@ -339,7 +339,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
                       {agency.name}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {agency.city}, {agency.stateCode} &middot; {agency.county} &middot; FDID {agency.fdid || `${agency.stateCode}-FD`}
+                      {agency.city}, {agency.stateCode} &middot; {agency.county} &middot; FDID {agency.fdid || 'Not source-verified'}
                     </div>
                   </td>
 

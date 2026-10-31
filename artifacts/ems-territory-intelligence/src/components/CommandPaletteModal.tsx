@@ -23,6 +23,16 @@ import {
 import { Agency } from '../types';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { formatCurrency } from '../utils/formatters';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+
+const hasVerifiedModelInputs = (agency: Agency) =>
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -68,13 +78,13 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         a.city.toLowerCase().includes(q) ||
         (a.county && a.county.toLowerCase().includes(q)) ||
         (a.zipCode && a.zipCode.includes(q)) ||
-        (a.npiNumber && a.npiNumber.includes(q)) ||
-        (a.fdid && a.fdid.toLowerCase().includes(q)) ||
+        (hasAgencyFactEvidence(a, 'departmentRegistry') && a.npiNumber && a.npiNumber.includes(q)) ||
+        (hasAgencyFactEvidence(a, 'departmentRegistry') && a.fdid && a.fdid.toLowerCase().includes(q)) ||
         a.state.toLowerCase().includes(q) ||
         a.stateCode.toLowerCase() === q ||
-        a.installedFleet.defibBrand.toLowerCase().includes(q) ||
-        (a.installedFleet?.dispatchCadVendor && a.installedFleet.dispatchCadVendor.toLowerCase().includes(q)) ||
-        a.keyContacts.some(c => c.name.toLowerCase().includes(q))
+        (hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet') && a.installedFleet.defibBrand.toLowerCase().includes(q)) ||
+        (hasAgencyFactEvidence(a, 'communicationsSystems') && a.installedFleet?.dispatchCadVendor && a.installedFleet.dispatchCadVendor.toLowerCase().includes(q)) ||
+        (hasAgencyFactEvidence(a, 'agencyLeadership') && a.keyContacts.some(c => c.name.toLowerCase().includes(q)))
       ) {
         matches.push(a);
         if (matches.length >= 12) break;
@@ -197,14 +207,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    title={`PulseIQ Score: ${agency.zollOpportunity.pulseIqScore}/100`}
+                    title={hasVerifiedModelInputs(agency) ? `PulseIQ Score: ${agency.zollOpportunity.pulseIqScore}/100` : 'Model inputs not source-verified'}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-xs tabular-nums shrink-0 ${
-                      agency.zollOpportunity.pulseIqScore >= 88
+                      hasVerifiedModelInputs(agency) && agency.zollOpportunity.pulseIqScore >= 88
                         ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
                         : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     }`}
                   >
-                    {agency.zollOpportunity.pulseIqScore}
+                    {hasVerifiedModelInputs(agency) ? agency.zollOpportunity.pulseIqScore : '—'}
                   </div>
                   <div className="min-w-0">
                     <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 truncate">
@@ -214,12 +224,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span>{agency.installedFleet.defibBrand} ({agency.installedFleet.defibAgeYears} yrs)</span>
+                      <span>
+                        {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                          ? `${agency.installedFleet.defibBrand} (${agency.installedFleet.defibAgeYears} yrs)`
+                          : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                            ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
+                            : 'Fleet not source-verified'}
+                      </span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">
-                        {formatCurrency(agency.zollOpportunity.projectedPipelineValue)} pipeline
+                        {hasVerifiedModelInputs(agency) ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} model pipeline` : 'Model not validated'}
                       </span>
-                      {agency.npiNumber && (
+                      {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
                         <>
                           <span className="text-slate-300 dark:text-slate-600">·</span>
                           <span className="font-mono text-[10px] text-slate-400">NPI {agency.npiNumber}</span>

@@ -44,6 +44,16 @@ import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { InteractiveSparkline } from './InteractiveSparkline';
 import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+
+const hasVerifiedModelInputs = (agency: Agency) =>
+  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface PredictiveLeadQueueProps {
   agencies: Agency[];
@@ -699,26 +709,33 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   const headers = [
                     'Department Name',
                     'Category',
-                    'Street Address',
+                    'Verified Street Address',
                     'City',
                     'County',
                     'State',
                     'ZIP Code',
-                    'Command Official',
+                    'Verified Command Official',
                     'Official Website',
                     'Google Maps Link',
-                    'Installed Defib Brand',
-                    'Defib Units',
-                    'Fleet Age (Years)',
-                    'Annual 911 Calls'
+                    'Verified Defib Brand',
+                    'Verified Defib Units',
+                    'Verified Fleet Age (Years)',
+                    'Verified Annual Volume'
                   ];
                   const rows = exportRows.map((a) => {
-                    const chief = a.keyContacts[0];
-                    const mapsLink = a.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${a.name}, ${a.address}`)}`;
+                    const chief = hasAgencyFactEvidence(a, 'agencyLeadership') ? a.keyContacts[0] : undefined;
+                    const verifiedAddress = hasAgencyFactEvidence(a, 'providerAddress') ? a.address : '';
+                    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(verifiedAddress || `${a.name}, ${a.city}, ${a.stateCode}`)}`;
+                    const hasVerifiedDefibFleet = hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet');
+                    const verifiedVolume = hasAgencyFactEvidence(a, 'annualCallsReceived')
+                      ? a.annualCallVolume
+                      : hasAgencyFactEvidence(a, 'annualEmergencyVolume')
+                        ? a.annual911Transports
+                        : '';
                     return [
                       `"${(a.name || '').replace(/"/g, '""')}"`,
                       a.providerCategory || (a.agencyType.toLowerCase().includes('fire') ? 'FIRE' : 'EMS'),
-                      `"${(a.address || '').replace(/"/g, '""')}"`,
+                      `"${verifiedAddress.replace(/"/g, '""')}"`,
                       `"${(a.city || '').replace(/"/g, '""')}"`,
                       `"${(a.county || '').replace(/"/g, '""')}"`,
                       a.stateCode,
@@ -726,10 +743,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       `"${(chief?.name || '').replace(/"/g, '""')}"`,
                       `"${(a.officialWebsite || '').replace(/"/g, '""')}"`,
                       `"${mapsLink.replace(/"/g, '""')}"`,
-                      `"${(a.installedFleet.defibBrand || '').replace(/"/g, '""')}"`,
-                      a.installedFleet.defibUnitsCount,
-                      a.installedFleet.defibAgeYears,
-                      a.annualCallVolume || a.annual911Transports
+                      `"${(hasVerifiedDefibFleet ? a.installedFleet.defibBrand : '').replace(/"/g, '""')}"`,
+                      hasVerifiedDefibFleet ? a.installedFleet.defibUnitsCount : '',
+                      hasVerifiedDefibFleet ? a.installedFleet.defibAgeYears : '',
+                      verifiedVolume
                     ].join(',');
                   });
                   const csv = [headers.join(','), ...rows].join('\n');
@@ -761,15 +778,19 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
           {paginatedAgencies.map((agency) => {
             const isFire = agency.agencyType.toLowerCase().includes('fire');
             const isExpanded = Boolean(expandedAgencyIds[agency.id]);
+            const hasVerifiedModel = hasVerifiedModelInputs(agency);
 
             const fireChiefContact = agency.keyContacts.find(c => c.role === 'Fire Chief' || c.title.toLowerCase().includes('fire')) || agency.keyContacts[0];
             const emsDirectorContact = agency.keyContacts.find(c => c.role === 'EMS Chief' || c.title.toLowerCase().includes('ems')) || agency.keyContacts[1] || agency.keyContacts[0];
-            const medicarePct = agency.cmsData.medicarePayerPct ?? 42.0;
-            const medicaidPct = agency.cmsData.medicaidPayerPct ?? 24.0;
-            const commercialPct = agency.cmsData.commercialPayerMixPct ?? 26.0;
-            const cadVendor = agency.installedFleet.dispatchCadVendor || 'CentralSquare Enterprise CAD';
-            const receivingHospital = agency.gisData.primaryReceivingHospital || `${agency.city} Regional Medical Center`;
-            const hospitalTransports = agency.gisData.annualHospitalDestinationTransports ?? Math.round(agency.annual911Transports * 0.88);
+            const cadVendor = hasAgencyFactEvidence(agency, 'communicationsSystems')
+              ? agency.installedFleet.dispatchCadVendor
+              : undefined;
+            const receivingHospital = hasAgencyFactEvidence(agency, 'receivingHospitalStemi')
+              ? agency.gisData.primaryReceivingHospital
+              : undefined;
+            const hospitalTransports = hasAgencyFactEvidence(agency, 'receivingHospitalStemi')
+              ? agency.gisData.annualHospitalDestinationTransports
+              : undefined;
 
             // Compute 5-pillar sub-scores for micro-bar visualization
             const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8));
@@ -822,14 +843,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             <span>{isFire ? 'Fire Department' : 'EMS Provider'}</span>
                           </span>
                           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                          <span>FDID <span className="font-mono text-[11px]">{agency.fdid || '04102'}</span></span>
+                          <span>FDID <span className="font-mono text-[11px]">{agency.fdid || 'Not source-verified'}</span></span>
                           {agency.npiNumber && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span>NPI <span className="font-mono text-[11px]">{agency.npiNumber}</span></span>
                             </>
                           )}
-                          {agency.grantStatus.afgAwarded && (
+                          {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                               <span className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
@@ -861,19 +882,21 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                     >
                       <div className="flex items-baseline justify-end gap-0.5">
                         <span className="text-xl font-semibold text-slate-900 dark:text-white tabular-nums leading-none">
-                          {agency.zollOpportunity.pulseIqScore}
+                          {hasVerifiedModel ? agency.zollOpportunity.pulseIqScore : '—'}
                         </span>
                         <span className="text-xs text-slate-400 tabular-nums">/100</span>
                       </div>
 
-                      <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-800 mt-1.5 overflow-hidden">
-                        <div
-                          className="h-full bg-[#1E3A8A] dark:bg-blue-400"
-                          style={{ width: `${Math.min(100, agency.zollOpportunity.pulseIqScore)}%` }}
-                        />
-                      </div>
+                        {hasVerifiedModel && (
+                          <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-800 mt-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-[#1E3A8A] dark:bg-blue-400"
+                              style={{ width: `${Math.min(100, agency.zollOpportunity.pulseIqScore)}%` }}
+                            />
+                          </div>
+                        )}
                       <span className="text-xs text-slate-400 mt-1">
-                        PulseIQ
+                          {hasVerifiedModel ? 'PulseIQ' : 'Inputs unverified'}
                       </span>
                     </div>
                   </div>
@@ -888,10 +911,17 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         Frontline fleet
                       </div>
                       <div className="font-semibold text-sm text-slate-900 dark:text-white tabular-nums truncate">
-                        {agency.installedFleet.defibUnitsCount} {agency.installedFleet.defibBrand.split(' ')[0]} devices
+                        {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                          ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
+                          : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                            ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
+                            : 'Not source-verified'}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
-                        Reported age: {agency.installedFleet.defibAgeYears} yrs · Ends {agency.competitorContract.contractEndDate}
+                        {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                          ? `Reported age: ${agency.installedFleet.defibAgeYears} yrs`
+                          : 'Fleet age not source-verified'}
+                        {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? ` · Ends ${agency.competitorContract.contractEndDate}` : ''}
                       </div>
                     </div>
 
@@ -903,10 +933,13 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         Est. Medicare recovery
                       </div>
                       <div className="font-semibold text-sm text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                        {formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })}
+                        {hasAgencyFactEvidence(agency, 'cmsClaims')
+                          ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
+                          : 'Not source-verified'}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
-                        {formatCurrency(agency.zollOpportunity.projectedPipelineValue)} CapEx · {formatPercent(agency.cmsData.claimDenialRate)} denial
+                        {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
+                        {hasAgencyFactEvidence(agency, 'cmsClaims') ? ` · ${formatPercent(agency.cmsData.claimDenialRate)} denial` : ''}
                       </div>
                     </div>
                   </div>
@@ -921,25 +954,33 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Frontline apparatus</span>
                           <div className="font-semibold tabular-nums text-slate-900 dark:text-white mt-0.5">
-                            {agency.totalAmbulances} Amb · {agency.totalFireEngines} Eng
+                            {hasAgencyFactEvidence(agency, 'apparatusBreakdown')
+                              ? `${agency.totalAmbulances} ambulances · ${agency.totalFireEngines} engines`
+                              : 'Exact apparatus breakdown not source-verified'}
                           </div>
                         </div>
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claims denial rate</span>
                           <div className="font-semibold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
-                            {agency.cmsData.claimDenialRate}% denied
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% denied` : 'Not source-verified'}
                           </div>
                         </div>
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Utstein survival</span>
                           <div className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
-                            {agency.utsteinSurvivalRate}% survival
+                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% survival` : 'Not source-verified'}
                           </div>
                         </div>
                         <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Annual 911 runs</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                            {hasAgencyFactEvidence(agency, 'annualCallsReceived') ? 'Reported calls received' : 'Annual EMS transports'}
+                          </span>
                           <div className="font-semibold tabular-nums text-slate-900 dark:text-white mt-0.5">
-                            {agency.annual911Transports.toLocaleString()} transports
+                            {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                              ? `${agency.annualCallVolume.toLocaleString()} · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
+                              : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                                ? `${agency.annual911Transports.toLocaleString()} transports`
+                                : 'Not source-verified'}
                           </div>
                         </div>
                       </div>
@@ -947,10 +988,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <div>
                           <span>ePCR/CAD: </span>
-                          <strong className="text-slate-900 dark:text-white">{agency.installedFleet.epcrCadSoftware}</strong>
+                          <strong className="text-slate-900 dark:text-white">
+                            ePCR: {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}
+                          </strong>
                           <span className="mx-1.5">·</span>
                           <span>Command: </span>
-                          <strong className="text-slate-900 dark:text-white">{fireChiefContact?.name}</strong>
+                          <strong className="text-slate-900 dark:text-white">
+                            {hasAgencyFactEvidence(agency, 'agencyLeadership') ? fireChiefContact?.name : 'Not source-verified'}
+                          </strong>
                         </div>
                         <div className="flex items-center gap-2 font-mono text-[11px]">
                           <a
@@ -1244,6 +1289,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {paginatedAgencies.map((agency) => {
+                  const hasVerifiedModel = hasVerifiedModelInputs(agency);
                   const fireChiefContact = agency.keyContacts.find(c => c.role === 'Fire Chief' || c.title.toLowerCase().includes('fire')) || agency.keyContacts[0];
                   const emsDirectorContact = agency.keyContacts.find(c => c.role === 'EMS Chief' || c.title.toLowerCase().includes('ems')) || agency.keyContacts[1];
 
@@ -1264,10 +1310,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="space-y-1 w-20">
                           <div className="flex items-baseline justify-between">
                             <span className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">
-                              {agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span>
+                              {hasVerifiedModel ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></> : '—'}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                              {agency.installedFleet.defibAgeYears}y
+                              {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears}y` : '—'}
                             </span>
                           </div>
                           <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -1314,7 +1360,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
                               <span>{agency.agencyType}</span>
                               <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                              <span>FDID <span className="font-mono text-[11px]">{agency.fdid}</span></span>
+                          <span>FDID <span className="font-mono text-[11px]">{agency.fdid || 'Not source-verified'}</span></span>
                             </div>
                           </div>
                         </div>
@@ -1323,20 +1369,28 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       {/* Apparatus & Leadership */}
                       <td className="py-2.5 px-3 hidden 2xl:table-cell">
                         <div className="font-medium text-slate-900 dark:text-white tabular-nums">
-                          {agency.totalFireEngines > 0 ? `${agency.totalFireEngines} Eng · ` : ''}{agency.totalAmbulances} ALS/BLS Units
+                          {hasAgencyFactEvidence(agency, 'apparatusBreakdown')
+                            ? `${agency.totalFireEngines > 0 ? `${agency.totalFireEngines} Eng · ` : ''}${agency.totalAmbulances} ALS/BLS Units`
+                            : 'Exact apparatus breakdown not verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[210px]">
-                          {fireChiefContact?.name} · {emsDirectorContact?.name}
+                          {hasAgencyFactEvidence(agency, 'agencyLeadership')
+                            ? `${fireChiefContact?.name || ''}${fireChiefContact && emsDirectorContact ? ' · ' : ''}${emsDirectorContact?.name || ''}`
+                            : 'Leadership not source-verified'}
                         </div>
                       </td>
 
                       {/* Installed Fleet, ePCR & CAD */}
                       <td className="py-2.5 px-3 hidden md:table-cell">
                         <div className="text-slate-900 dark:text-slate-100 font-semibold tabular-nums">
-                          {agency.installedFleet.defibUnitsCount} {agency.installedFleet.defibBrand.split(' ')[0]} devices ({agency.installedFleet.defibAgeYears}y)
+                          {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                            ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices (${agency.installedFleet.defibAgeYears}y)`
+                            : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                              ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
+                              : 'Not source-verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[210px]">
-                          {agency.installedFleet.epcrCadSoftware}
+                          ePCR: {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}
                         </div>
                       </td>
 
@@ -1345,16 +1399,20 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className={`font-semibold tabular-nums ${
                           agency.cmsData.claimDenialRate > 18 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'
                         }`}>
-                          {formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })}
+                          {hasAgencyFactEvidence(agency, 'cmsClaims')
+                            ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
+                            : 'Not source-verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {formatPercent(agency.cmsData.claimDenialRate)} denial · MCR {agency.cmsData.medicarePayerPct ?? 42}%
+                          {hasAgencyFactEvidence(agency, 'cmsClaims')
+                            ? `${formatPercent(agency.cmsData.claimDenialRate)} denial · MCR ${agency.cmsData.medicarePayerPct ?? 42}%`
+                            : 'Claim data not source-verified'}
                         </div>
                       </td>
 
                       {/* AFG Grant */}
                       <td className="py-2.5 px-3 text-right hidden lg:table-cell">
-                        {agency.grantStatus.afgAwarded ? (
+                        {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded ? (
                           <>
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
                               {formatCurrency(agency.grantStatus.afgAwardAmount)}
@@ -1371,10 +1429,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       {/* Target Pipeline Value */}
                       <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                         <div className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                          {formatCurrency(agency.zollOpportunity.projectedPipelineValue)}
+                          {hasVerifiedModel ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not source-verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {agency.zollOpportunity.probabilityPct}% probability
+                          {hasVerifiedModel ? `${agency.zollOpportunity.probabilityPct}% model probability` : 'Model inputs unverified'}
                         </div>
                       </td>
 

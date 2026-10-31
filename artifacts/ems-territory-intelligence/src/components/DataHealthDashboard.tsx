@@ -883,7 +883,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                     </td>
 
                     <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                      <div>FDID: {agency.fdid || 'Verified Municipal'}</div>
+                      <div>FDID: {agency.fdid || 'Not source-verified'}</div>
                       {agency.npiNumber && <div>NPI: {agency.npiNumber}</div>}
                     </td>
 

@@ -253,7 +253,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     nppesRegistryUrl,
     officialWebsite,
     googleMapsUri,
-    headquartersPhone: '',
+    headquartersPhone: hasAgencyFactEvidence(raw, 'decisionMakers') ? raw.headquartersPhone || '' : '',
     apparatusFleet,
     hospitalLogistics,
     femaGrantHistory,
@@ -678,6 +678,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     return false;
   };
 
+  const hasDecisionGradeInputs =
+    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasAgencyFactEvidence(agency, 'federalGrant');
+
   // Up to 3 structured "Fact -> Why It Matters -> Next Action" rows for Above the Fold
   const equipDisplay = formatEquipmentDisplay(
     agency.installedFleet.defibUnitsCount,
@@ -744,7 +753,21 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       hasAgencyFactEvidence(agency, 'agencyLeadership')
         ? `Leadership is listed in the cited agency source: ${primaryContact?.name || 'see source record'}.`
         : 'Current agency leadership is not source-verified.',
-      'Fleet, stations, annual volume, hospital routing, clinical outcomes, systems, equipment, contracts, and financial values are not verified by the identity sources.'
+      hasAgencyFactEvidence(agency, 'stationCount')
+        ? `The county reports ${agency.stationsCount} fire-rescue stations.`
+        : 'Station count is not source-verified.',
+      hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
+        ? `The county reports ${agency.frontlineRescueUnitCount} front-line rescue units and ${agency.responseUnitCount || 'an unlisted number of'} total rescue, suppression, battalion, and specialty units.`
+        : 'Frontline rescue-unit and apparatus-type counts are not source-verified.',
+      hasAgencyFactEvidence(agency, 'annualCallsReceived')
+        ? `${agency.annualCallVolume.toLocaleString()} Fire Rescue calls were received in ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'the cited reporting period'}; this is not an EMS transport count.`
+        : 'Annual Fire Rescue call volume is not source-verified.',
+      hasAgencyFactEvidence(agency, 'epcrSystem')
+        ? `${agency.installedFleet.epcrCadSoftware} is identified as the department’s primary ePCR; CAD and EMS transport volume are not verified.`
+        : 'Current ePCR and CAD systems are not source-verified.',
+      hasAgencyFactEvidence(agency, 'monitorModelTransition')
+        ? 'The county reports LIFEPAK-15 devices in use and LIFEPAK-35 replacement activity; exact counts and completion are unknown.'
+        : 'Monitor and defibrillator fleet counts and models are not source-verified.'
     ];
 
     // 2. Developments That Matter
@@ -767,7 +790,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
     // 3. What Is Not Yet Confirmed (Research Gaps)
     const whatIsNotConfirmed = [
-      `Exact biomedical trade-in serial numbers and battery inventory across the ${defibCount} frontline units.`,
+      'Exact biomedical inventory, serial numbers, and battery inventory across frontline units.',
       `Municipal council or district board capital budget voting timeline and FY2026 appropriation gates.`,
       `Medical Direction stance on Real BVM Help® ventilation guidance vs. automated mechanical CPR adoption.`,
       `Local municipal procurement threshold for cooperative contract utilization versus sealed competitive RFP.`
@@ -784,17 +807,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveWhy = `Maintain momentum from ${topNote.date} discussion with ${primaryContact?.name || 'station command'}.`;
       primaryMoveEvidence = `My Work Field Visit Note (${topNote.date})`;
       primaryMoveNextStep = 'Log Station Note';
-    } else if (hasGrant && grantAmt > 0) {
+    } else if (hasAgencyFactEvidence(agency, 'federalGrant') && hasGrant && grantAmt > 0) {
       primaryMoveAction = `Align ZOLL Solution Package to $${Math.round(grantAmt / 1000)}K FEMA AFG Grant`;
       primaryMoveWhy = `Provide compliant equipment specifications and quote before the federal award expenditure period closes.`;
       primaryMoveEvidence = `OpenFEMA AFG Award #${agency.grantStatus?.afgAwardNumber || 'Active'} · FY${agency.grantStatus?.afgFiscalYear || 2024}`;
       primaryMoveNextStep = 'Generate Co-Op RFP';
-    } else if (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon') {
+    } else if (
+      hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+      (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon')
+    ) {
       primaryMoveAction = `Review Service Contract Notice Ahead of ${contractEnd} Renewal`;
       primaryMoveWhy = `Present 5-year fixed biomedical service cost caps to prevent automatic renewal of legacy T&M service contracts.`;
       primaryMoveEvidence = `Competitor Contract Ledger · Renewal Notice Window`;
       primaryMoveNextStep = 'Review Purchasing';
-    } else if (denialRate >= 18) {
+    } else if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate >= 18) {
       primaryMoveAction = `Present Medicare Denial Recovery & NEMSIS Documentation Strategy`;
       primaryMoveWhy = `Show how automated 12-lead ePCR transmission reduces ${agency.cmsData?.topDenialReasonCode || 'CO-16'} denials by an estimated +$${Math.round((agency.cmsData?.estimatedRecoverableRevenue || 85000) / 1000)}K/yr.`;
       primaryMoveEvidence = `CMS Part B Ground Ambulance PUF (Calendar Year Census)`;
@@ -953,8 +979,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong>{verifiedFactGroupCount} of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact groups have reviewed, field-specific sources</strong>
-              <span>Registry identity does not verify operations, fleet, leadership, hospitals, systems, or contracts.</span>
+              <strong>{verifiedFactGroupCount} of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact checks have reviewed, field-specific sources</strong>
+              <span>Sources support only the specific facts they cite; a partial source does not verify a full operational roster.</span>
             </div>
           </div>
           {/* ================================================================
@@ -969,14 +995,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="space-y-3 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
-                    {hasAgencyFactEvidence(agency, 'departmentRegistry') && hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                      ? `Source-reviewed ${isFire ? 'Fire Department' : 'EMS Provider'}`
+                    {hasAgencyFactEvidence(agency, 'departmentRegistry') && hasAgencyFactEvidence(agency, 'agencyLeadership')
+                      ? 'Registry and leadership sources reviewed'
                       : `Unverified candidate · ${isFire ? 'Fire Department' : 'EMS Provider'}`}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span>
                     {agency.stateLicenseNumber
-                      ? <>Florida EMS license: <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
+                      ? <>Florida EMS license: <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span> · {agency.stateLicenseType || 'Type not listed'} · expires {agency.stateLicenseExpiration || 'Not recorded'}</>
                       : <>FDID: <span className="font-mono text-[11px]">{agency.fdid || 'Not source-verified'}</span></>}
                   </span>
                   <span aria-hidden="true">·</span>
@@ -995,7 +1021,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     )}
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span>Taxonomy: {agency.taxonomyCode || 'Standard EMS/Fire'}</span>
+                  <span>Taxonomy: {agency.taxonomyCode || 'Not source-verified'}</span>
                   <span aria-hidden="true">·</span>
                   {hasVerifiedNppesIdentity ? (
                     <button
@@ -1033,6 +1059,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>{agency.county}, {agency.state} ({agency.stateCode})</span>
                     <span aria-hidden="true">·</span>
                     <span>{agency.agencyType}</span>
+                    {hasAgencyFactEvidence(agency, 'decisionMakers') && agency.headquartersPhone && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>Public main: {agency.headquartersPhone}</span>
+                      </>
+                    )}
                     <span aria-hidden="true">·</span>
                     <a
                       href={agency.googleMapsUri}
@@ -1084,31 +1116,63 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
                       {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
                         ? `${agency.totalAmbulances} ambulances${agency.totalFireEngines > 0 ? ` · ${agency.totalFireEngines} engines` : ''}`
-                        : 'Not source-verified'}
+                        : hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
+                          ? `${agency.frontlineRescueUnitCount} front-line rescue units`
+                          : 'Apparatus roster not source-verified'}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                      {hasAgencyFactEvidence(agency, 'stationCount')
                         ? `${agency.stationsCount} stations`
                         : 'Station count not source-verified'}
+                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.responseUnitCount
+                        ? ` · ${agency.responseUnitCount} total rescue, suppression, battalion, and specialty units`
+                        : ''}
                     </div>
-                    <FactVerificationTag agency={agency} field="frontlineApparatusStations" />
+                    <FactVerificationTag agency={agency} field="stationCount" />
+                    <FactVerificationTag agency={agency} field="frontlineRescueUnits" />
+                    <div className="flex flex-wrap gap-2 text-[10px]">
+                      {hasAgencyFactEvidence(agency, 'stationCount') && (
+                        <a className="text-blue-700 dark:text-blue-300 hover:underline" href={agency.factEvidence?.stationCount?.sourceUrl} target="_blank" rel="noopener noreferrer">
+                          Station-count source
+                        </a>
+                      )}
+                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && (
+                        <a className="text-blue-700 dark:text-blue-300 hover:underline" href={agency.factEvidence?.frontlineRescueUnits?.sourceUrl} target="_blank" rel="noopener noreferrer">
+                          Unit-count source
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
                     <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Annual emergency volume
+                      Reported Fire Rescue calls
                     </div>
                     <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
-                      {hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                        ? `${formatInteger(agency.annual911Transports)} transports / yr`
-                        : 'Not source-verified'}
+                      {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                        ? `${formatInteger(agency.annualCallVolume)} calls received`
+                        : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                          ? `${formatInteger(agency.annual911Transports)} transports / yr`
+                          : 'Not source-verified'}
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {hasAgencyFactEvidence(agency, 'clinicalOutcomes')
-                        ? `${formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · ${formatPercent(agency.utsteinSurvivalRate)} Utstein`
-                        : 'Cardiac and outcome figures not source-verified'}
+                      {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                        ? `${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not listed'} · not an EMS transport count`
+                        : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
+                          ? `${formatInteger(agency.annualCardiacArrestCalls)} cardiac calls / yr · ${formatPercent(agency.utsteinSurvivalRate)} Utstein`
+                          : 'Transport, cardiac, and outcome figures not source-verified'}
                     </div>
-                    <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
+                    <FactVerificationTag agency={agency} field="annualCallsReceived" />
+                    {hasAgencyFactEvidence(agency, 'annualCallsReceived') && (
+                      <a
+                        className="inline-flex text-[10px] text-blue-700 dark:text-blue-300 hover:underline"
+                        href={agency.factEvidence?.annualCallsReceived?.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View annual-volume source
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1117,17 +1181,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="xl:pl-6 xl:border-l xl:border-[#DFE6EF] dark:xl:border-[#1E2D42] space-y-3">
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                    <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · {agency.zollOpportunity.priorityTier}
+                    <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · {hasDecisionGradeInputs ? agency.zollOpportunity.priorityTier : 'Not scored'}
                   </span>
                   <span className="font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
-                    {agency.zollOpportunity.pulseIqScore}<span className="text-xs font-normal text-[#53657B]">/100</span>
+                    {hasDecisionGradeInputs
+                      ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs font-normal text-[#53657B]">/100</span></>
+                      : <span className="text-sm font-medium">Needs verified inputs</span>}
                   </span>
                 </div>
 
                 <div className="w-full h-1.5 bg-[#DFE6EF] dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#285EE8]"
-                    style={{ width: `${agency.zollOpportunity.pulseIqScore}%` }}
+                    style={{ width: hasDecisionGradeInputs ? `${agency.zollOpportunity.pulseIqScore}%` : '0%' }}
                   />
                 </div>
 
@@ -1137,7 +1203,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Estimated CapEx
                     </div>
                     <div className="text-base font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
-                      {formatCurrency(actuarialForecast.netCapExBase)}
+                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.netCapExBase) : 'Not calculated'}
                     </div>
                   </div>
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-2.5 text-right">
@@ -1145,7 +1211,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       5-Yr TCO savings
                     </div>
                     <div className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      {formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })}
+                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true }) : 'Not calculated'}
                     </div>
                   </div>
                 </div>
@@ -1154,15 +1220,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <label className="block text-xs font-medium text-[#53657B] dark:text-slate-400 mb-1">
                     Active pipeline stage
                   </label>
-                  <select
-                    value={agency.zollOpportunity.salesStage}
-                    onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
-                    className="w-full h-9 bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg px-3 text-xs font-medium text-[#14283F] dark:text-white focus:outline-none focus:border-[#285EE8] cursor-pointer"
-                  >
-                    {stages.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  {hasDecisionGradeInputs ? (
+                    <select
+                      value={agency.zollOpportunity.salesStage}
+                      onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
+                      className="w-full h-9 bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg px-3 text-xs font-medium text-[#14283F] dark:text-white focus:outline-none focus:border-[#285EE8] cursor-pointer"
+                    >
+                      {stages.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="text-xs text-amber-700 dark:text-amber-400">No reviewed opportunity record is attached.</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1178,7 +1248,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>Account Assessment</span>
                   </h2>
                   <p className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                    Objective operational situation analysis derived from verified federal public records.
+                    Facts are shown as verified only when field-specific citations are attached; modeled values are not verified records.
                   </p>
                 </div>
 
@@ -1561,7 +1631,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* 1. Executive Deal Story & Conversion Playbook Section */}
-          {showSection('deal_story') && (
+          {showSection('deal_story') &&
+          !(
+            hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+            hasAgencyFactEvidence(agency, 'cmsClaims') &&
+            hasAgencyFactEvidence(agency, 'receivingHospitalStemi') &&
+            hasAgencyFactEvidence(agency, 'federalGrant')
+          ) ? (
+            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              The briefing narrative depends on current fleet, volume, hospital, funding, and financial records. Those agency-specific inputs are not fully source-verified, so the narrative is withheld.
+            </div>
+          ) : showSection('deal_story') && (
             <div id="meeting-preparation-section" className="scroll-mt-32">
               <DealStoryBriefingView
                 agency={agency}
@@ -1572,7 +1653,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* 2. Competitive Battlecard & Head-to-Head Spec Matrix Section */}
-          {showSection('battlecard') && (
+          {showSection('battlecard') &&
+          !(
+            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+            hasAgencyFactEvidence(agency, 'equipmentSuppliers') &&
+            hasAgencyFactEvidence(agency, 'maintenanceContracts')
+          ) ? (
+            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Competitor and product comparisons depend on verified installed equipment and current contracts. This agency-specific battlecard is withheld until those sources are reviewed.
+            </div>
+          ) : showSection('battlecard') && (
             <CompetitiveBattlecardView agency={agency} variant="full" />
           )}
 
@@ -1605,7 +1695,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Monitor brand</span>
-                      <strong className="text-slate-900 dark:text-white">{hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? agency.installedFleet.defibBrand : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white">
+                        {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                          ? agency.installedFleet.defibBrand
+                          : hasAgencyFactEvidence(agency, 'monitorModelTransition')
+                            ? 'Stryker LIFEPAK 15; LIFEPAK 35 retrofit underway'
+                            : 'Not source-verified'}
+                      </strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Deployed fleet age</span>
@@ -1623,7 +1719,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">ePCR system</span>
-                      <strong className="text-slate-900 dark:text-white truncate max-w-[160px]">{hasAgencyFactEvidence(agency, 'communicationsSystems') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}</strong>
+                      <strong className="text-slate-900 dark:text-white truncate max-w-[160px]">
+                        {hasAgencyFactEvidence(agency, 'epcrSystem')
+                          ? agency.installedFleet.epcrCadSoftware
+                          : hasAgencyFactEvidence(agency, 'communicationsSystems')
+                            ? agency.installedFleet.epcrCadSoftware
+                            : 'Not source-verified'}
+                      </strong>
                     </div>
                   </div>
                 </div>
@@ -1631,15 +1733,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 {/* Fact Block 2: Emergency Response Volume */}
                 <div className="p-4 rounded-xl bg-[#F8F7F4] dark:bg-[#16243A] border border-[#E5E4DF] dark:border-[#1E2D42] space-y-2.5">
                   <div className="text-xs font-semibold text-[#14283F] dark:text-white">
-                    2. Emergency Volume &amp; Acuity
+                    2. Reported Calls &amp; Acuity
                   </div>
-                  <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
+                  <FactVerificationTag agency={agency} field="annualCallsReceived" />
                   <FactVerificationTag agency={agency} field="clinicalOutcomes" />
                   <div className="text-sm space-y-1.5">
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Annual 911 calls</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'annualEmergencyVolume') ? (agency.annualCallVolume || agency.annual911Transports).toLocaleString() : 'Not source-verified'}</strong>
+                      <span className="text-[#53657B] dark:text-slate-400">Reported Fire Rescue calls</span>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">
+                        {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                          ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod}`
+                          : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                            ? `${agency.annual911Transports.toLocaleString()} EMS transports`
+                            : 'Not source-verified'}
+                      </strong>
                     </div>
+                    {!hasAgencyFactEvidence(agency, 'annualEmergencyVolume') && (
+                      <div className="text-[11px] text-slate-500">EMS transport volume is not source-verified.</div>
+                    )}
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Annual cardiac arrests</span>
                       <strong className="text-rose-700 dark:text-rose-400 tabular-nums">{hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.annualCardiacArrestCalls.toLocaleString()} runs` : 'Not source-verified'}</strong>
@@ -1650,11 +1761,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Active ambulances</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalAmbulances} units` : 'Modeled estimate, unverified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalAmbulances} units` : 'Not source-verified'}</strong>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-[#53657B] dark:text-slate-400">Fire suppression engines</span>
-                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalFireEngines} units` : 'Modeled estimate, unverified'}</strong>
+                      <strong className="text-slate-900 dark:text-white tabular-nums">{hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? `${agency.totalFireEngines} units` : 'Not source-verified'}</strong>
                     </div>
                   </div>
                 </div>
@@ -1697,7 +1808,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* Granular Apparatus Vehicle Fleet, Hospital Transport Logistics & Multi-Year FEMA Grant History */}
-          {showSection('fleet') && agency.apparatusFleet && agency.hospitalLogistics && (
+          {showSection('fleet') &&
+          !(
+            hasAgencyFactEvidence(agency, 'apparatusBreakdown') &&
+            hasAgencyFactEvidence(agency, 'receivingHospitalStemi')
+          ) ? (
+            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Apparatus counts and receiving-hospital/STEMI routing are not source-verified for this agency. Detailed values are withheld.
+            </div>
+          ) : showSection('fleet') && agency.apparatusFleet && agency.hospitalLogistics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Granular Apparatus Vehicle Breakdown */}
               <section className="bg-white rounded-xl border border-[#E5E4DF] p-6 shadow-[0_1px_3px_rgba(17,24,39,0.03)] space-y-4">
@@ -1842,7 +1961,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
         {/* SECTION: CLINICAL EMERGENCY PERFORMANCE, QUALITY & PATIENT OUTCOMES */}
-        {showSection('clinical') && (
+        {showSection('clinical') &&
+          !(
+            hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+            hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+          ) ? (
+            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Clinical outcomes and annual emergency volume are not source-verified for this agency. Related charts and comparison claims are withheld.
+            </div>
+          ) : showSection('clinical') && (
           <div className="space-y-6">
             {/* Interactive Longitudinal Performance & Survival Funnel Visualizer */}
             <ResuscitationSurvivalFunnel agency={agency} />
@@ -2037,7 +2164,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: INSURANCE OUTCOMES (MEDICARE, MEDICAID, COMMERCIAL, SELF-PAY) & DENIALS / RECOVERABLE */}
-        {showSection('billing') && (
+        {showSection('billing') && !hasAgencyFactEvidence(agency, 'cmsClaims') ? (
+          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            Agency-specific CMS claims, payer mix, denial rates, and revenue estimates are not source-verified. Billing analysis is withheld.
+          </div>
+        ) : showSection('billing') && (
           <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -2218,7 +2349,31 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
-        {showSection('suppliers') && (
+        {showSection('suppliers') &&
+          !(
+            hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+            hasAgencyFactEvidence(agency, 'equipmentSuppliers') &&
+            hasAgencyFactEvidence(agency, 'verifiedHardware') &&
+            hasAgencyFactEvidence(agency, 'maintenanceContracts')
+          ) ? (
+            <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 space-y-3">
+              Equipment models, active counts, suppliers, and maintenance terms are withheld until current agency-specific inventory or contract sources are reviewed.
+              {hasAgencyFactEvidence(agency, 'monitorModelTransition') && (
+                <div className="rounded-lg border border-amber-200 bg-white/70 p-3 space-y-1">
+                  <div className="font-semibold">Verified partial monitor record</div>
+                  <p>{agency.factEvidence?.monitorModelTransition?.note}</p>
+                  <a
+                    className="inline-flex text-blue-700 hover:underline"
+                    href={agency.factEvidence?.monitorModelTransition?.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View county procurement memo
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : showSection('suppliers') && (
           <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -2563,7 +2718,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: ACTIVE DEFIBRILLATOR & BIOMEDICAL FLEET + FRONTLINE APPARATUS & MAINTENANCE CONTRACTS */}
-        {showSection('fleet') && (
+        {showSection('fleet') &&
+          hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+          hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+          hasAgencyFactEvidence(agency, 'frontlineApparatusStations') && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2663,28 +2821,44 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden text-xs">
               <div className="p-4 bg-white dark:bg-slate-900 space-y-2">
                 <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">911 Dispatch CAD System</div>
-                <div className="text-base font-bold text-slate-900 dark:text-white">{agency.installedFleet.dispatchCadVendor}</div>
-                <div className="text-slate-600 dark:text-slate-400">Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.cadSupplier}</strong></div>
+                <div className="text-base font-bold text-slate-900 dark:text-white">
+                  {hasAgencyFactEvidence(agency, 'communicationsSystems') ? agency.installedFleet.dispatchCadVendor : 'Not source-verified'}
+                </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Primary PSAP computer-aided dispatch system routing emergency calls to {agency.stationsCount} station{agency.stationsCount > 1 ? 's' : ''} and frontline apparatus.
+                  No agency-specific CAD vendor or dispatch configuration is cited.
                 </p>
               </div>
 
               <div className="p-4 bg-white dark:bg-slate-900 space-y-2">
                 <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">Electronic Patient Care Report (ePCR)</div>
-                <div className="text-base font-bold text-slate-900 dark:text-white">{agency.installedFleet.epcrCadSoftware}</div>
-                <div className="text-slate-600 dark:text-slate-400">Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.epcrSupplier}</strong></div>
+                <div className="text-base font-bold text-slate-900 dark:text-white">
+                  {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}
+                </div>
+                {hasAgencyFactEvidence(agency, 'epcrSystem') && (
+                  <div className="text-slate-600 dark:text-slate-400">Supplier: <strong className="text-slate-900 dark:text-white">Saffire Software, Inc.</strong></div>
+                )}
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Field clinical chart documentation platform managing <span className="font-mono tabular-nums">{agency.annual911Transports.toLocaleString()}</span> annual transports under NEMSIS v3.5 standards.
+                  {hasAgencyFactEvidence(agency, 'epcrSystem')
+                    ? 'The county identifies MetroPCR as its primary ePCR system; this source does not verify annual EMS transports.'
+                    : 'No agency-specific ePCR source has been reviewed.'}
                 </p>
+                {hasAgencyFactEvidence(agency, 'epcrSystem') && (
+                  <a
+                    className="text-xs text-blue-700 dark:text-blue-300 hover:underline"
+                    href={agency.factEvidence?.epcrSystem?.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View county contract record
+                  </a>
+                )}
               </div>
 
               <div className="p-4 bg-white dark:bg-slate-900 space-y-2">
                 <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">EMS Billing &amp; Revenue Software</div>
-                <div className="text-base font-bold text-slate-900 dark:text-white">{agency.installedFleet.billingSoftware}</div>
-                <div className="text-slate-600 dark:text-slate-400">Current Supplier: <strong className="text-slate-900 dark:text-white">{suppliers.billingSupplier}</strong></div>
+                <div className="text-base font-bold text-slate-900 dark:text-white">Not source-verified</div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Revenue cycle management system processing Medicare ({agency.cmsData.medicarePayerPct}%), Medicaid ({agency.cmsData.medicaidPayerPct}%), Commercial ({agency.cmsData.commercialPayerMixPct}%), and Self-Pay ({agency.cmsData.selfPayPayerPct}%) claims.
+                  Billing platform and agency-specific payer mix have not been independently sourced.
                 </p>
               </div>
             </div>
@@ -2692,7 +2866,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: FEDERAL FEMA GRANT READINESS & FUNDING STATUS + JURISDICTION & SERVICE DEMOGRAPHICS */}
-        {showSection('grants') && (
+        {showSection('grants') && !hasAgencyFactEvidence(agency, 'federalGrant') ? (
+          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            Grant awards, SAFER status, and procurement eligibility are not source-verified for this agency. Funding and purchasing claims are withheld.
+          </div>
+        ) : showSection('grants') && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* Federal FEMA Grant Readiness & Funding Status */}

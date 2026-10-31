@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Agency, SyncOutboxItem, FieldNote, LeadStage } from '../types';
 import { ZOLL_PRODUCTS } from '../data/zollProducts';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { 
   Car, 
   Phone, 
@@ -75,27 +76,39 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       'Stop #',
       'Department Name',
       'Category',
-      'Street Address',
+      'Verified Street Address',
       'City',
       'County',
       'State',
       'ZIP Code',
-      'Command Official',
+      'Verified Command Official',
       'Title',
       'Official Website',
       'Google Maps Link',
-      'Installed Defib Brand',
-      'Defib Units',
-      'Priority Score'
+      'Verified Defib Brand',
+      'Verified Defib Units',
+      'Model Priority Score (verified inputs only)'
     ];
     const rows = targetList.map((a, idx) => {
-      const chief = a.keyContacts.find(c => c.role.includes('Chief')) || a.keyContacts[0];
-      const mapsLink = a.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${a.name}, ${a.address}`)}`;
+      const chief = hasAgencyFactEvidence(a, 'agencyLeadership')
+        ? a.keyContacts.find(c => c.role.includes('Chief')) || a.keyContacts[0]
+        : undefined;
+      const verifiedAddress = hasAgencyFactEvidence(a, 'providerAddress') ? a.address : '';
+      const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(verifiedAddress || `${a.name}, ${a.city}, ${a.stateCode}`)}`;
+      const hasVerifiedDefibFleet = hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet');
+      const hasVerifiedModelInputs =
+        hasAgencyFactEvidence(a, 'frontlineApparatusStations') &&
+        hasAgencyFactEvidence(a, 'annualEmergencyVolume') &&
+        hasAgencyFactEvidence(a, 'clinicalOutcomes') &&
+        hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet') &&
+        hasAgencyFactEvidence(a, 'maintenanceContracts') &&
+        hasAgencyFactEvidence(a, 'cmsClaims') &&
+        hasAgencyFactEvidence(a, 'federalGrant');
       return [
         idx + 1,
         `"${(a.name || '').replace(/"/g, '""')}"`,
         a.providerCategory || (a.agencyType.toLowerCase().includes('fire') ? 'FIRE' : 'EMS'),
-        `"${(a.address || '').replace(/"/g, '""')}"`,
+         `"${verifiedAddress.replace(/"/g, '""')}"`,
         `"${(a.city || '').replace(/"/g, '""')}"`,
         `"${(a.county || '').replace(/"/g, '""')}"`,
         a.stateCode,
@@ -104,9 +117,9 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
         `"${(chief?.title || '').replace(/"/g, '""')}"`,
         `"${(a.officialWebsite || '').replace(/"/g, '""')}"`,
         `"${mapsLink.replace(/"/g, '""')}"`,
-        `"${(a.installedFleet.defibBrand || '').replace(/"/g, '""')}"`,
-        a.installedFleet.defibUnitsCount,
-        a.zollOpportunity.pulseIqScore
+         `"${(hasVerifiedDefibFleet ? a.installedFleet.defibBrand : '').replace(/"/g, '""')}"`,
+         hasVerifiedDefibFleet ? a.installedFleet.defibUnitsCount : '',
+         hasVerifiedModelInputs ? a.zollOpportunity.pulseIqScore : ''
       ].join(',');
     });
     const csvContent = [headers.join(','), ...rows].join('\n');

@@ -19,6 +19,7 @@ import {
   Filter
 } from 'lucide-react';
 import { formatCurrency, formatInteger, formatDate } from '../utils/numberFormatting';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 
 interface ContractExpirationCalendarProps {
   agencies: Agency[];
@@ -84,6 +85,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
 
   const expiringAgencies = useMemo(() => {
     const sorted = agencies.filter(a => {
+      if (!hasAgencyFactEvidence(a, 'maintenanceContracts')) return false;
       if (selectedState !== 'all' && a.stateCode !== selectedState) return false;
       if (selectedCounty !== 'all') {
         const cleanTarget = selectedCounty.replace(/\s+(County|Parish|Borough)$/i, '').toLowerCase();
@@ -105,7 +107,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
     }).sort((a, b) => {
       return new Date(a.competitorContract.contractEndDate).getTime() - new Date(b.competitorContract.contractEndDate).getTime();
     });
-    if (activeAccount) {
+    if (activeAccount && hasAgencyFactEvidence(activeAccount, 'maintenanceContracts')) {
       return [activeAccount, ...sorted.filter(a => a.id !== activeAccount.id)];
     }
     return sorted;

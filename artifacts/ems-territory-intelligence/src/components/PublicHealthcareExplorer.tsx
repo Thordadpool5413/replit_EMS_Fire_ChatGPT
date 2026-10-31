@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { NATIONAL_BENCHMARKS, STATE_SUMMARIES } from '../data/healthcareData';
 import { Agency } from '../types';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { 
   Building2, 
   TrendingDown, 
@@ -40,6 +41,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
   activeAccount
 }) => {
   const [selectedPlaybook, setSelectedPlaybook] = useState<'cms' | 'rosc' | 'fleet' | 'afg' | 'nemsqa' | 'et3'>('cms');
+  const hasDecisionGradeInputs = activeAccount &&
+    hasAgencyFactEvidence(activeAccount, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(activeAccount, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(activeAccount, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(activeAccount, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(activeAccount, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(activeAccount, 'cmsClaims') &&
+    hasAgencyFactEvidence(activeAccount, 'federalGrant');
 
   return (
     <div className="space-y-6">
@@ -58,7 +67,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                  Locked account CMS telemetry
+                  Selected agency record · source status shown
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">NPI: {activeAccount.npiNumber || 'Unassigned'}</span>
               </div>
@@ -69,21 +78,39 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">CMS Denial Rate</span>
-              <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">{activeAccount.cmsData.claimDenialRate}%</span>
+              <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">CMS Denial Rate</span>
+                <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
+                  {hasAgencyFactEvidence(activeAccount, 'cmsClaims') ? `${activeAccount.cmsData.claimDenialRate}%` : 'Not source-verified'}
+                </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Annual 911 Runs</span>
-              <span className="text-slate-900 dark:text-white font-semibold tabular-nums text-sm">{activeAccount.annual911Transports.toLocaleString()}</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">
+                  {hasAgencyFactEvidence(activeAccount, 'annualEmergencyVolume') ? 'Annual EMS transports' : 'Reported Fire Rescue calls'}
+                </span>
+                <span className="text-slate-900 dark:text-white font-semibold tabular-nums text-sm">
+                  {hasAgencyFactEvidence(activeAccount, 'annualEmergencyVolume')
+                    ? activeAccount.annual911Transports.toLocaleString()
+                    : hasAgencyFactEvidence(activeAccount, 'annualCallsReceived')
+                      ? `${activeAccount.annualCallVolume.toLocaleString()} · ${activeAccount.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
+                      : 'Not source-verified'}
+                </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
               <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Primary Insurer</span>
-              <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">{activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')}</span>
+                <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">
+                  {hasAgencyFactEvidence(activeAccount, 'cmsClaims')
+                    ? activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')
+                    : 'Not source-verified'}
+                </span>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/80 px-3 py-1.5 rounded-lg">
-              <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Est. Deal Value</span>
-              <span className="text-emerald-800 dark:text-emerald-400 font-semibold tabular-nums text-sm">${(activeAccount.zollOpportunity.estimatedDealValue ?? activeAccount.zollOpportunity.projectedPipelineValue).toLocaleString()}</span>
+                <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Opportunity model</span>
+                <span className="text-emerald-800 dark:text-emerald-400 font-semibold tabular-nums text-sm">
+                  {hasDecisionGradeInputs
+                    ? `$${(activeAccount.zollOpportunity.estimatedDealValue ?? activeAccount.zollOpportunity.projectedPipelineValue).toLocaleString()}`
+                    : 'Not calculated'}
+                </span>
             </div>
           </div>
         </div>
@@ -101,14 +128,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               Public healthcare, CMS claims &amp; EMS outcomes engine
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-3xl leading-relaxed">
-              How territory managers leverage public datasets—CMS Medicare Part B ground ambulance claims, NEMSIS cardiac call volumes, USFA registries, CARES survival benchmarks, and FEMA AFG grant allocations—to prioritize accounts and consultative proposals.
+              Reference playbooks for reviewing public datasets. Agency-specific claims, outcomes, fleet, and grant figures require a current primary source before they are used in outreach.
             </p>
           </div>
 
           <div className="bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 p-4 rounded-xl shrink-0 text-right">
-            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium">Total public addressable EMS market</div>
-            <div className="text-2xl font-[650] text-sky-950 dark:text-white tabular-nums mt-0.5">$5.8B Annual</div>
-            <div className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">CMS ground ambulance Medicare Part B</div>
+            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium">National market estimate</div>
+            <div className="text-sm font-semibold text-sky-950 dark:text-white mt-0.5">Reference value not source-verified</div>
+            <div className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">Do not use as an audited market total</div>
           </div>
         </div>
 
@@ -337,14 +364,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 1: The CMS Medicare Ground Ambulance Reimbursement Play
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CMS Medicare Part B ground ambulance claims show that departments with in-house or generic municipal clearinghouses suffer average denial rates of 18% to 25%. Under the mandatory Ground Ambulance Data Collection System (GADCS), agencies that fail to report or submit incomplete trip logs face a statutory 10% payment reduction penalty across all Medicare transports.
+                <strong>Source check:</strong> Use agency-specific CMS claims only when the reporting period, provider identity, and claim measure are documented. Do not assume denial rates or penalties from national averages.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Pitch <strong>ZOLL Billing and AR Boost</strong> directly to the City Finance Director, Town Auditor, and EMS Chief. Show them that AR Boost automated demographic matching and insurance discovery finds commercial insurance coverage on Medicare Advantage patients, immediately increasing collection rates by $85–$140 per transport.
+                <strong>Discussion:</strong> If an agency-specific claims review identifies a billing workflow issue, compare vendor capabilities, costs, compliance responsibilities, and expected outcomes with finance and procurement.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Chief, your county is currently writing off $785,000 every year in denied ambulance claims because of documentation technicalities. ZOLL Billing scrubs those claims automatically before submission—recovering more than enough cash to replace your entire defibrillator fleet.&rdquo;
+                &ldquo;Before we discuss potential savings, can we review a source-backed claims baseline and confirm the reporting period with your finance team?&rdquo;
               </div>
             </>
           )}
@@ -355,14 +382,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 2: The Out-of-Hospital Cardiac Arrest (OHCA) Survival Play
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CARES and NEMSIS cardiac arrest registry data reveals counties where the Utstein survival rate falls below the 29.7% national benchmark (e.g., Cuyahoga 24.2%, Akron 23.5%, Harris 21.8%).
+                <strong>Source check:</strong> Confirm the agency’s CARES participation, case definition, reporting period, and comparison benchmark before describing local cardiac-arrest outcomes.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Pitch the combined <strong>AutoPulse Resuscitation System</strong> and <strong>X Series Advanced Real BVM Help</strong> to the EMS Medical Director and Training Captain. Point out that manual chest compressions degrade significantly during stairwell extrications and high-speed transit. The AutoPulse circumferential band provides continuous cerebral and coronary perfusion. Real BVM Help prevents hyperventilation—the leading cause of decreased survival in resuscitation.
+                <strong>Discussion:</strong> Review protocol, training, and clinical evidence with medical direction. Compare equipment options using the agency’s requirements and independently reviewed evidence; do not infer an outcome improvement.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Dr. Chen, your medics are doing hero work, but physics is working against them down 3 flights of stairs. The AutoPulse delivers unbroken compressions from living room to cath lab. Combined with Real BVM Help ventilation rate feedback, we consistently see peer agencies boost survival by 10 to 14 percentage points.&rdquo;
+                &ldquo;Would it be useful to compare the clinical evidence, training requirements, and operational tradeoffs for the available resuscitation options?&rdquo;
               </div>
             </>
           )}
@@ -373,14 +400,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 3: The Aging Competitor Fleet & Obsolescence Replacement
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> USFA equipment rosters indicate that over 40% of fire and EMS agencies still operate 8-to-11-year-old Stryker LIFEPAK 15 (v1/v2) and phased-out Philips HeartStart MRx monitors. Stryker has escalated annual maintenance fees by 20%+, and Philips no longer manufactures MRx replacement circuit boards.
+                <strong>Source check:</strong> Verify each agency’s actual monitor models, service status, age, and replacement plans from current inventory and procurement records. Do not generalize one agency’s equipment status to another.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Offer the <strong>X Series Advanced Trade-In Program</strong>. Present the 11.7 lb weight advantage (reducing back strain on medics compared to 19+ lb LIFEPAK units) plus the integrated Traumatic Brain Injury (TBI) EPIC protocol dashboard.
+                <strong>Discussion:</strong> Compare requested capabilities, service terms, training, lifecycle costs, and any trade-in offer using current written vendor quotes and the agency’s verified inventory.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Chief, your LP15 monitors are now out of factory warranty. When a battery or display board fails next week, Stryker&apos;s turnaround is 6 to 8 weeks. ZOLL will give you $3,500 per unit in trade-in credits, deliver an 11-pound modern monitor, and bundle 5-year on-site comprehensive warranty coverage.&rdquo;
+                &ldquo;If your current inventory or contract records identify an upcoming replacement need, we can compare written offers against your specifications and service requirements.&rdquo;
               </div>
             </>
           )}
@@ -394,11 +421,11 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 <strong>The Public Data Trigger:</strong> FEMA publishes public lists of fire and EMS departments awarded AFG and SAFER grants under the &ldquo;Operations and Safety - EMS Equipment&rdquo; category.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Contact awarded departments within 48 hours of public listing. Provide ready-to-sign procurement packets utilizing national purchasing cooperatives (Sourcewell and HGACBuy), which allows the Chief to spend the federal grant immediately without holding a 6-month competitive RFP.
+                <strong>Discussion:</strong> Confirm the award, allowable costs, period of performance, matching requirements, and local procurement rules. Do not promise a grant can be spent immediately or that competition can be bypassed.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Congratulations on the $485,000 AFG award! Because ZOLL is already awarded under Sourcewell Contract #041223-ZOL, you don&apos;t have to navigate a complex bid process. We can lock in your delivery schedule today and ensure compliance with all federal procurement guidelines.&rdquo;
+                &ldquo;I can share product and pricing information for your team to evaluate against the grant terms and your procurement process.&rdquo;
               </div>
             </>
           )}
@@ -409,14 +436,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 5: NEMSQA Quality Measures & AHA Mission: Lifeline Recognition
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> NEMSIS v3 public eOutcomes show that agencies struggle with STEMI 12-lead acquisition speed (&le;10 min), chest compression fraction (CCF &lt;75%), and end-tidal CO2 (ETCO2) ventilation compliance during resuscitation. Many departments are stuck at Bronze or Silver AHA Mission: Lifeline recognition due to manual documentation delays.
+                <strong>Source check:</strong> Validate any quality measure against its original registry, inclusion criteria, and reporting period. Do not infer a quality gap or recognition status from general benchmarks.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Present the <strong>X Series Advanced with Real CPR Help and Real BVM Help</strong> alongside <strong>RescueNet ePCR</strong>. Real BVM Help automatically records rate and tidal volume directly into the ePCR, providing audit-proof compliance for AHA Mission: Lifeline Gold Plus recognition.
+                <strong>Discussion:</strong> Compare device and documentation features with the agency’s clinical, technical, privacy, and procurement requirements; have the agency validate all interoperability and recognition criteria.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Chief, achieving AHA Mission: Lifeline Gold Plus status not only showcases clinical excellence to your city council, but it protects your agency against malpractice liability. ZOLL provides the only clinical system that measures real-time ventilation rate and depth directly at the patient&apos;s side.&rdquo;
+                &ldquo;Which quality measures and documentation workflows are priorities for your medical director, and what source would you use to establish a baseline?&rdquo;
               </div>
             </>
           )}
@@ -427,14 +454,14 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 6: CMS ET3, Hospital Handoff Reduction & Community Paramedicine
               </div>
               <p>
-                <strong>The Public Data Trigger:</strong> CMS Emergency Triage, Treat, and Transport (ET3) models and Mobile Integrated Health (MIH) regulations permit reimbursement for treatment-in-place and transport to alternative destinations (urgent care, behavioral crisis centers). In urban areas, transfer-of-care (hospital wall time) averages 45+ minutes, depleting front-line 911 coverage.
+                <strong>Source check:</strong> Confirm current program availability, local protocols, payer rules, destination agreements, and any agency-specific offload-time data before discussing reimbursement or coverage impacts.
               </p>
               <p>
-                <strong>The ZOLL Solution:</strong> Deploy <strong>ZOLL Respond CAD and RescueNet Telehealth</strong>. Paramedics can initiate secure video telemetry consults directly from the scene, receive emergency physician sign-off for treatment-in-place, and bill Medicare at standard transport rates without unnecessary hospital transfer delays.
+                <strong>Discussion:</strong> Review dispatch, telehealth, and alternative-destination workflows with clinical leadership, receiving facilities, compliance, and procurement. Do not assume eligibility or payment.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
                 <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-1">Consultative soundbite:</span>
-                &ldquo;Every minute your crews wait on hospital wall time costs your city $8.50 in unbilled labor while leaving districts uncovered. ZOLL Telehealth and ET3 billing integration allow your medics to treat and release low-acuity patients on scene while generating Medicare reimbursement.&rdquo;
+                &ldquo;Do you have a current source for transfer-of-care time and a locally approved protocol for alternative destinations? We can review system requirements once those are confirmed.&rdquo;
               </div>
             </>
           )}

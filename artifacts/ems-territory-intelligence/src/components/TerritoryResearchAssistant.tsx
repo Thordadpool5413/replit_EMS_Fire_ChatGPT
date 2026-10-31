@@ -31,6 +31,7 @@ import {
   ArrowLeftRight
 } from 'lucide-react';
 import type { Agency } from '../types';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { useSendTerritoryResearchMessage, useSearchGroundedPlaces } from '@workspace/api-client-react';
 
 type Mode = 'clinical' | 'procurement' | 'billing' | 'places';
@@ -607,7 +608,7 @@ export const TerritoryResearchAssistant: React.FC<Props> = ({
             <span className="font-semibold text-white truncate">{activeAgency.name}</span>
             <span className="text-slate-500">·</span>
             <span>{activeAgency.city}, {activeAgency.stateCode}</span>
-            {activeAgency.installedFleet && (
+            {hasAgencyFactEvidence(activeAgency, 'defibrillatorBiomedicalFleet') && (
               <>
                 <span className="text-slate-500">·</span>
                 <span className="text-amber-300 font-mono text-[10px]">
@@ -615,6 +616,13 @@ export const TerritoryResearchAssistant: React.FC<Props> = ({
                 </span>
               </>
             )}
+            {!hasAgencyFactEvidence(activeAgency, 'defibrillatorBiomedicalFleet') &&
+              hasAgencyFactEvidence(activeAgency, 'monitorModelTransition') && (
+                <>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-amber-300 font-mono text-[10px]">LIFEPAK-15; LIFEPAK-35 replacement reported</span>
+                </>
+              )}
           </div>
           <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 shrink-0">
             In Scope

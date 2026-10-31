@@ -37,6 +37,7 @@ import {
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/syncStore';
+import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -88,10 +89,46 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
   // ALWAYS KEEP ALL HOOKS ABOVE EARLY RETURN
   if (!isOpen || !agency) return null;
+  const requiredDossierFactsVerified =
+    hasAgencyFactEvidence(agency, 'providerAddress') &&
+    hasAgencyFactEvidence(agency, 'agencyLeadership') &&
+    hasAgencyFactEvidence(agency, 'decisionMakers') &&
+    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasAgencyFactEvidence(agency, 'apparatusBreakdown') &&
+    hasAgencyFactEvidence(agency, 'receivingHospitalStemi') &&
+    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasAgencyFactEvidence(agency, 'communicationsSystems') &&
+    hasAgencyFactEvidence(agency, 'equipmentSuppliers') &&
+    hasAgencyFactEvidence(agency, 'verifiedHardware') &&
+    hasAgencyFactEvidence(agency, 'operationalVolumeContracts') &&
+    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasAgencyFactEvidence(agency, 'federalGrant');
+  if (!requiredDossierFactsVerified) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Evidence required for executive dossier">
+        <div className="w-full max-w-lg rounded-xl border border-amber-200 bg-white p-6 shadow-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Executive dossier withheld</h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                This dossier includes operational, clinical, equipment, contract, funding, and financial claims. It can be generated only after each required fact group has a reviewed, agency-specific source.
+              </p>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-md p-2 text-slate-500 hover:bg-slate-100" aria-label="Close dossier notice">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
   const primaryContact = agency.keyContacts && agency.keyContacts.length > 0 ? agency.keyContacts[0] : undefined;
-  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || '(555) 230-9110';
+  const departmentPhone = agency.headquartersPhone || primaryContact?.phone || 'Not source-verified';
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',

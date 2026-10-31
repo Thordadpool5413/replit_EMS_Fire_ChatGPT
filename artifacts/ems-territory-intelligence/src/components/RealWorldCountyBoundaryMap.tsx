@@ -267,20 +267,29 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         ? 'Medicare ambulance claim denial rate'
                         : inspectedCountyDenialDisplay?.kind === 'zip-profile'
                           ? 'ZIP-profile rate'
-                          : 'County claim denial rate'}
+                          : 'County ambulance denial rate'}
                     </span>
                     <span className="text-sm font-bold text-rose-700 mt-0.5 block">
                       {inspectedCountyDenialDisplay && inspectedCountyDenialDisplay.kind !== 'unavailable'
                         ? `${inspectedCountyDenialDisplay.ratePct.toFixed(1)}%`
-                        : 'Not available'}
+                        : 'Not published'}
                     </span>
                     {inspectedCountyDenialDisplay?.kind === 'zip-profile' ? (
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        {inspectedCountyDenialDisplay.city} · ZIP {inspectedCountyDenialDisplay.zipCode} profile value; not a county claims aggregate.
+                        {inspectedCountyDenialDisplay.city} · ZIP {inspectedCountyDenialDisplay.zipCode} profile · {inspectedCountyDenialDisplay.reportingPeriod} · {inspectedCountyDenialDisplay.claimScope} ·{' '}
+                        <a
+                          href={inspectedCountyDenialDisplay.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline"
+                        >
+                          source
+                        </a>
+                        ; not a county claims aggregate.
                       </span>
                     ) : inspectedCountyDenialDisplay?.kind === 'unavailable' ? (
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        No county claim percentage or ZIP profile is available.
+                        No source-backed denied/adjudicated ambulance claim counts are loaded for this county. The rate requires denied ÷ adjudicated claims for the same FIPS, claim scope, and reporting period.
                         {' '}
                         <a
                           href={CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL}
@@ -288,7 +297,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           rel="noopener noreferrer"
                           className="text-blue-700 hover:underline"
                         >
-                          CMS data details
+                          CMS use/spending data (not denials)
                         </a>
                       </span>
                     ) : (

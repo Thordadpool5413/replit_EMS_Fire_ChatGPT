@@ -287,6 +287,7 @@ export interface Agency {
 
   // Optional telemetry, verification, and fleet synchronization properties
   providerCategory?: 'FIRE' | 'EMS' | string;
+  stateLicenseNumber?: string;
   isFdidVerified?: boolean;
   isOperationalDataVerified?: boolean;
   npiNumber?: string;

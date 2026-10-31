@@ -780,16 +780,54 @@ export const COMPREHENSIVE_NATIONWIDE_AGENCIES: Agency[] = [
   },
   {
     id: 'zoll-agency-fl-miami',
-    name: 'Miami-Dade Fire Rescue Department - EMS Division',
-    fdid: 'FL-13002',
+    name: 'Miami-Dade County Fire Rescue Department',
+    fdid: '',
+    stateLicenseNumber: '1312',
+    providerCategory: 'FIRE',
+    isFdidVerified: false,
+    factEvidence: {
+      providerAddress: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County Fire Rescue — Contact Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/global/fire/contact-fire-rescue.page',
+        sourceRecordId: 'R. David Paulison Fire Rescue Headquarters',
+        reviewedAt: '2026-10-30',
+        note: 'Official department headquarters address; not a station roster.'
+      },
+      departmentRegistry: {
+        reviewed: true,
+        sourceName: 'Florida Department of Health — EMS Data Unit Weekly Providers Report',
+        sourceUrl: 'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf',
+        sourceRecordId: 'Florida EMS provider license 1312',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'Report processed 2026-10-23',
+        note: 'State EMS license, not a USFA fire department FDID. Listed as ALS transport provider.'
+      },
+      agencyLeadership: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County — Raied “Ray” Jadallah Fire Chief',
+        sourceUrl: 'https://www.miamidade.gov/global/government/biographies/fire-rescue.page',
+        sourceRecordId: 'Fire Chief biography',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'Current public county biography'
+      },
+      decisionMakers: {
+        reviewed: true,
+        sourceName: 'Miami-Dade County Fire Rescue — Contact Fire Rescue',
+        sourceUrl: 'https://www.miamidade.gov/global/fire/contact-fire-rescue.page',
+        sourceRecordId: 'Fire Rescue department contact page',
+        reviewedAt: '2026-10-30',
+        reportingPeriod: 'Current public department contact page'
+      }
+    },
     agencyType: 'Career Fire Department',
     jurisdictionLevel: 'County',
     state: 'Florida',
     stateCode: 'FL',
     county: 'Miami-Dade County',
     city: 'Miami',
-    zipCode: '33125',
-    address: '9300 NW 41st St, Doral, FL 33178',
+    zipCode: '33178',
+    address: '9300 NW 41st Street, Miami, FL 33178-2414',
     latitude: 25.8118,
     longitude: -80.3475,
     populationServed: 2710000,

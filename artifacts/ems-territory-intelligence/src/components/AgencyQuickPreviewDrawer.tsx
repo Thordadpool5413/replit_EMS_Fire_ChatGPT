@@ -267,8 +267,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null
-                    ? `${formatPercent(denialRate)} CMS Part B denials`
+                  {typeof denialRate === 'number'
+                    ? `${formatPercent(denialRate)} ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS Part B denials' : 'provider profile value'}`
                     : 'Agency record does not list claim denial data'}
                 </span>
               </div>

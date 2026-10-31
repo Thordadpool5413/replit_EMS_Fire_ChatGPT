@@ -947,8 +947,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
-                        {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
-                          ? ` · ${formatPercent(agency.cmsData.claimDenialRate)} denial`
+                        {typeof agency.cmsData.claimDenialRate === 'number'
+                          ? ` · ${formatPercent(agency.cmsData.claimDenialRate)} ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS' : 'profile'} denial`
                           : ''}
                       </div>
                     </div>
@@ -972,8 +972,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claims denial rate</span>
                           <div className="font-semibold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
-                              ? `${agency.cmsData.claimDenialRate}% denied`
+                            {typeof agency.cmsData.claimDenialRate === 'number'
+                              ? `${agency.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS' : 'profile'}`
                               : 'Not published'}
                           </div>
                         </div>
@@ -1420,8 +1420,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             : 'Not source-verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
-                            ? `${formatPercent(agency.cmsData.claimDenialRate)} denial · MCR ${agency.cmsData.medicarePayerPct ?? 42}%`
+                          {typeof agency.cmsData.claimDenialRate === 'number'
+                            ? `${formatPercent(agency.cmsData.claimDenialRate)} ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS' : 'profile'} denial · MCR ${agency.cmsData.medicarePayerPct ?? 42}%`
                             : 'Claim data not source-verified'}
                         </div>
                       </td>

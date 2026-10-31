@@ -11,6 +11,7 @@ import {
   StateHierarchyNode,
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
+import { getCountyZipDenialProfile } from '../services/countyDenialProfileService';
 import { Compass, Layers, MapPin, Building2, CheckCircle2, ExternalLink } from 'lucide-react';
 
 const CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL =
@@ -96,8 +97,29 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     }
     return projectedState.projectedCounties[0] || null;
   }, [hoveredCountyFips, activeCountyNode, projectedState]);
-  const hasCountyDenialData = projectedState.projectedCounties.some(
-    (county) => county.medicareDenialRatePct !== null
+  const inspectedCountyZipDenialProfile = useMemo(
+    () =>
+      inspectedCounty
+        ? getCountyZipDenialProfile(
+            inspectedCounty.countyFips,
+            inspectedCounty.countySeat,
+            inspectedCounty.node.primaryZipCodes,
+          )
+        : null,
+    [inspectedCounty],
+  );
+  const inspectedCountyDenialRate =
+    inspectedCounty?.medicareDenialRatePct ??
+    inspectedCountyZipDenialProfile?.medicareDenialRate ??
+    null;
+  const hasDenialProfileData = projectedState.projectedCounties.some(
+    (county) =>
+      county.medicareDenialRatePct !== null ||
+      getCountyZipDenialProfile(
+        county.countyFips,
+        county.countySeat,
+        county.node.primaryZipCodes,
+      ) !== null,
   );
 
   if (!stateNode) return null;
@@ -171,7 +193,13 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <g>
                     {projectedState.projectedCounties.map((pc) => {
                       const isHovered = hoveredCountyFips === pc.countyFips;
-                      const hasCountyDenialRate = pc.medicareDenialRatePct !== null;
+                      const profile = getCountyZipDenialProfile(
+                        pc.countyFips,
+                        pc.countySeat,
+                        pc.node.primaryZipCodes,
+                      );
+                      const denialRate = pc.medicareDenialRatePct ?? profile?.medicareDenialRate ?? null;
+                      const hasCountyDenialRate = denialRate !== null;
                       const fillColor = isHovered
                         ? '#1E3A8A'
                         : hasCountyDenialRate
@@ -191,7 +219,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · MCR denial: ${pc.medicareDenialRatePct === null ? 'not available' : `${pc.medicareDenialRatePct}%`}`}
+                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · MCR denial: ${denialRate === null ? 'not available' : `${denialRate.toFixed(1)}%`}`}
                           </title>
                         </path>
                       );
@@ -205,15 +233,15 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
-                  <span>County rate unavailable</span>
+                    <span>No rate profile</span>
                 </span>
-                {hasCountyDenialData ? (
+                {hasDenialProfileData ? (
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
-                    <span>County rate available</span>
+                    <span>Rate profile available</span>
                   </span>
                 ) : (
-                  <span>County-level MCR denial data unavailable</span>
+                  <span>No mapped rate profiles in this state</span>
                 )}
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#1E3A8A] inline-block" />
@@ -252,15 +280,21 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-sans text-slate-500 block">MCR Denials</span>
+                    <span className="text-[11px] font-sans text-slate-500 block">
+                      {inspectedCounty.medicareDenialRatePct !== null ? 'MCR denial rate' : 'ZIP-profile rate'}
+                    </span>
                     <span className="text-sm font-bold text-rose-700 mt-0.5 block">
-                      {inspectedCounty.medicareDenialRatePct !== null
-                        ? `${inspectedCounty.medicareDenialRatePct}%`
+                      {inspectedCountyDenialRate !== null
+                        ? `${inspectedCountyDenialRate.toFixed(1)}%`
                         : 'Not available'}
                     </span>
-                    {inspectedCounty.medicareDenialRatePct === null ? (
+                    {inspectedCounty.medicareDenialRatePct === null && inspectedCountyZipDenialProfile ? (
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        CMS Geographic Variation county data reports Medicare use and spending, but not ambulance claim denials. No state or ZIP rate is substituted.
+                        ZIP {inspectedCountyZipDenialProfile.zipCode} profile value; not a county claims aggregate.
+                      </span>
+                    ) : inspectedCounty.medicareDenialRatePct === null ? (
+                      <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
+                        No county claim percentage or ZIP profile is available.
                         {' '}
                         <a
                           href={CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL}

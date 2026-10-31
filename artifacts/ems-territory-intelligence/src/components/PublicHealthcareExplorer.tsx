@@ -81,8 +81,8 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Agency Medicare denial rate</span>
                 <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
-                  {hasAgencyFactEvidence(activeAccount, 'cmsClaims') && activeAccount.cmsData.claimDenialRate != null
-                    ? `${activeAccount.cmsData.claimDenialRate}%`
+                  {typeof activeAccount.cmsData.claimDenialRate === 'number'
+                    ? `${activeAccount.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(activeAccount, 'cmsClaims') ? 'CMS' : 'profile'}`
                     : 'Not published'}
                 </span>
             </div>

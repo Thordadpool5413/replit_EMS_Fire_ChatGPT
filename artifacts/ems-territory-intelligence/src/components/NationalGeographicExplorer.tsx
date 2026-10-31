@@ -12,6 +12,7 @@ import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodes
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getCountyMedicareDenialRatePct } from '../services/countyMedicareDenialService';
+import { getCountyZipDenialProfile, getCountyZipDenialProfiles } from '../services/countyDenialProfileService';
 import { 
   Globe, 
   MapPin, 
@@ -1479,28 +1480,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
                 const countyDenialRatePct = getCountyMedicareDenialRatePct(c);
-                const countyZipDenialProfiles = NATIONAL_ZIP_CITY_REGISTRY
-                  .filter(
-                    record =>
-                      record.fipsCounty === c.countyFips &&
-                      typeof record.medicareDenialRate === 'number' &&
-                      Number.isFinite(record.medicareDenialRate),
-                  )
-                  .sort((a, b) => a.zipCode.localeCompare(b.zipCode));
-                const countyZipDenialRates = countyZipDenialProfiles.map(
-                  record => record.medicareDenialRate as number,
+                const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
+                const countyZipDenialProfile = getCountyZipDenialProfile(
+                  c.countyFips,
+                  c.countySeat,
+                  c.primaryZipCodes ?? [],
                 );
-                const countyZipDenialRateRange = countyZipDenialRates.length === 0
-                  ? null
-                  : {
-                      min: Math.min(...countyZipDenialRates),
-                      max: Math.max(...countyZipDenialRates),
-                    };
-                const countyZipDenialRateDisplay = countyZipDenialRateRange === null
-                  ? null
-                  : countyZipDenialRateRange.min === countyZipDenialRateRange.max
-                    ? `${countyZipDenialRateRange.min.toFixed(1)}%`
-                    : `${countyZipDenialRateRange.min.toFixed(1)}–${countyZipDenialRateRange.max.toFixed(1)}%`;
+                const countyZipDenialRateDisplay =
+                  typeof countyZipDenialProfile?.medicareDenialRate === 'number'
+                    ? `${countyZipDenialProfile.medicareDenialRate.toFixed(1)}%`
+                    : null;
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1586,7 +1575,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {countyDenialRatePct !== null
                               ? 'Medicare ambulance denial rate'
                               : countyZipDenialRateDisplay
-                                ? 'Available ZIP-profile rate'
+                                ? 'Selected ZIP-profile rate'
                                 : 'Medicare ambulance denial rate'}
                           </span>
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
@@ -1596,7 +1585,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </span>
                           {countyDenialRatePct === null && countyZipDenialRateDisplay !== null && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              ZIP profile value; not a county claims aggregate
+                              ZIP {countyZipDenialProfile?.zipCode}; not a county claims aggregate
                             </span>
                           )}
                           {countyDenialRatePct !== null && c.medicareDenialSource && c.medicareDenialSourceUrl && (
@@ -1642,7 +1631,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 </span>
                               ))}
                               <span className="block">
-                                Profile entries only; not a county claims rate.
+                                Individual ZIP values; no county average is calculated.
                               </span>
                             </div>
                           )}
@@ -2086,8 +2075,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
-                              ? `${agency.cmsData.claimDenialRate}% Denials`
+                            {typeof agency.cmsData.claimDenialRate === 'number'
+                              ? `${agency.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS denials' : 'profile value'}`
                               : 'Denial rate not published'}
                           </span>
                         </div>
@@ -2219,8 +2208,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
-                                ? `${agency.cmsData.claimDenialRate}% Denials`
+                              {typeof agency.cmsData.claimDenialRate === 'number'
+                                ? `${agency.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS denials' : 'profile value'}`
                                 : 'Denial rate not published'}
                             </div>
                           </td>

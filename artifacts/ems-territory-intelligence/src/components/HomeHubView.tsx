@@ -184,14 +184,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       ),
     [displayStateCode],
   );
-  const stateZipDenialRateRange = useMemo(() => {
-    const rates = stateZipDenialProfiles.map((record) => record.medicareDenialRate as number);
-    if (rates.length === 0) return null;
-    return {
-      min: Math.min(...rates),
-      max: Math.max(...rates),
-    };
-  }, [stateZipDenialProfiles]);
 
   const handleStateClick = (code: string) => {
     setSelectedStateCode(code);
@@ -563,18 +555,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    {stateZipDenialRateRange ? 'Available ZIP-profile rates' : 'County ambulance denial rate'}
+                    {stateZipDenialProfiles.length > 0 ? 'Available ZIP-profile rates' : 'County ambulance denial rate'}
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card tabular-nums">
-                    {stateZipDenialRateRange
-                      ? stateZipDenialRateRange.min === stateZipDenialRateRange.max
-                        ? `${stateZipDenialRateRange.min.toFixed(1)}%`
-                        : `${stateZipDenialRateRange.min.toFixed(1)}–${stateZipDenialRateRange.max.toFixed(1)}%`
+                    {stateZipDenialProfiles.length > 0
+                      ? `${stateZipDenialProfiles.length} individual values`
                       : 'Not published'}
                   </span>
-                  {stateZipDenialRateRange && (
+                  {stateZipDenialProfiles.length > 0 && (
                     <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                      Range of {stateZipDenialProfiles.length} ZIP entries
+                      Each percentage is listed below
                     </span>
                   )}
                 </div>

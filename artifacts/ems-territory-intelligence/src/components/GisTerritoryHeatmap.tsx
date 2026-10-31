@@ -167,7 +167,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   const [colorSpectrum, setColorSpectrum] = useState<'inferno' | 'plasma' | 'viridis'>('inferno');
   const [showIsoContours, setShowIsoContours] = useState<boolean>(true);
   const [showGraticule, setShowGraticule] = useState<boolean>(true);
-  const [showStationOverlay, setShowStationOverlay] = useState<boolean>(true);
+  const [showStationOverlay, setShowStationOverlay] = useState<boolean>(false);
   const [cursorGeoCoords, setCursorGeoCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [isDraggingMap, setIsDraggingMap] = useState<boolean>(false);
   const [dragStartPt, setDragStartPt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -346,7 +346,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         transportsDataCount: 0,
         totalStemiTransmissions: 0,
         survivalDataCount: 0,
-        cardiacCallsAndDefibAgeDataCount: 0,
+        ohcaRateAndDefibAgeDataCount: 0,
         avgSurvival: 0,
         criticalCount: 0,
         agingFleetInCardiacZonesCount: 0,
@@ -380,7 +380,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     let transportsDataCount = 0;
     let sumSurvival = 0;
     let survivalDataCount = 0;
-    let cardiacCallsAndDefibAgeDataCount = 0;
+    let ohcaRateAndDefibAgeDataCount = 0;
     let criticalCount = 0;
     let agingFleetInCardiacZonesCount = 0;
     let criticalSurvivalCount = 0;
@@ -414,14 +414,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const mechCpr = a.installedFleet?.mechanicalCPR;
       const vent = a.installedFleet?.transportVentilator;
 
-      if (hasReportedValue(cardiacCalls) && hasReportedValue(defibAge)) {
-        cardiacCallsAndDefibAgeDataCount++;
-      }
       if (hasReportedValue(cardiacCalls)) {
         totalCardiacCalls += cardiacCalls;
         cardiacCallsDataCount++;
-        if (cardiacCalls >= 800) criticalCount++;
-        if (cardiacCalls >= 400 && hasReportedValue(defibAge) && defibAge >= 7) agingFleetInCardiacZonesCount++;
       }
       if (hasReportedValue(transports)) {
         total911Transports += transports;
@@ -436,6 +431,16 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         ohcaRateDataCount++;
         ohcaRateTotalCalls += cardiacCalls;
         ohcaRateTotalTransports += transports;
+      }
+      const ohcaRate = getAgencyOhcaRatePerThousand(a);
+      if (ohcaRate != null && nationalOhcaRateThresholds.p90 != null && ohcaRate >= nationalOhcaRateThresholds.p90) {
+        criticalCount++;
+      }
+      if (ohcaRate != null && getFleetAgeBand(defibAge)) {
+        ohcaRateAndDefibAgeDataCount++;
+        if (nationalOhcaRateThresholds.p75 != null && ohcaRate >= nationalOhcaRateThresholds.p75 && defibAge! >= 7) {
+          agingFleetInCardiacZonesCount++;
+        }
       }
       if (hasReportedValue(survival)) {
         sumSurvival += survival;
@@ -466,7 +471,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         mechanicalCprDataCount++;
         if (mechCpr.includes('None')) autoPulseNeedCount++;
       }
-      if (hasReportedValue(defibAge)) {
+      if (getFleetAgeBand(defibAge)) {
         defibAgeDataCount++;
         if (defibAge >= 7) agingDefibCount++;
       }
@@ -490,7 +495,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       transportsDataCount,
       totalStemiTransmissions,
       survivalDataCount,
-      cardiacCallsAndDefibAgeDataCount,
+      ohcaRateAndDefibAgeDataCount,
       avgSurvival,
       criticalCount,
       agingFleetInCardiacZonesCount,
@@ -530,7 +535,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     selectedLayer === 'cardiac' ? nemsisTerritoryStats.mechanicalCprDataCount :
     null;
   const fourthMetricDataCount =
-    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.cardiacCallsAndDefibAgeDataCount :
+    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.ohcaRateAndDefibAgeDataCount :
     selectedLayer === 'cardiac' ? nemsisTerritoryStats.defibAgeDataCount :
     null;
   const coverageText = (count: number | null) =>
@@ -1575,7 +1580,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       
       {/* Top GIS Header */}
       <div className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-4 sm:p-6 shadow-2xs min-w-0">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] items-start xl:items-center justify-between gap-4 min-w-0">
+        <div className="grid grid-cols-1 items-start gap-4 min-w-0">
           <div>
             <div className="text-xs text-[#285EE8] dark:text-blue-400 font-semibold flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#285EE8] dark:text-blue-400" />
@@ -2407,7 +2412,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between min-w-0 overflow-hidden">
                 <div className="min-w-0">
                   <span className="text-xs text-rose-300 font-medium truncate block">
-                    {selectedLayer === 'nemsis_cardiac' ? 'High-Acuity Defib Deficit' :
+                    {selectedLayer === 'nemsis_cardiac' ? 'Top-Quartile OHCA Rates with 7+ Year Defibs' :
                      selectedLayer === 'cardiac' ? 'Aging Fleets in Deficit' :
                      selectedLayer === 'aed' ? 'AED 3 Upgrade Target' :
                      selectedLayer === 'transport' ? 'Ventilator Expansion Need' :
@@ -2415,7 +2420,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-300 tabular-nums">
-                      {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.cardiacCallsDataCount && nemsisTerritoryStats.defibAgeDataCount ? `${nemsisTerritoryStats.agingFleetInCardiacZonesCount}` : 'Not reported')}
+                      {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.ohcaRateAndDefibAgeDataCount ? `${nemsisTerritoryStats.agingFleetInCardiacZonesCount}` : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.defibAgeDataCount ? `${nemsisTerritoryStats.agingDefibCount}` : 'Not reported')}
                       {selectedLayer === 'aed' && 'Not calculated'}
                       {selectedLayer === 'transport' && 'Not calculated'}
@@ -2429,7 +2434,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 <div data-testid="text-fourth-metric-coverage" className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
                   {fourthMetricDataCount === null
                     ? 'This figure is not calculated for the selected layer.'
-                    : `Based on ${coverageText(fourthMetricDataCount)} with the required measure${selectedLayer === 'nemsis_cardiac' ? ' pair' : ''}.`}
+                    : selectedLayer === 'nemsis_cardiac'
+                      ? `Age and OHCA/transport data available for ${fourthMetricDataCount.toLocaleString()} filtered agencies; top quartile uses national rate cutoffs.`
+                      : `Based on ${coverageText(fourthMetricDataCount)} with the required measure.`}
                 </div>
               </div>
 

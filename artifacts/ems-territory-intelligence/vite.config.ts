@@ -72,6 +72,15 @@ export default defineConfig({
           if (id.includes('/node_modules/three/build/three.module.js')) {
             return 'three-module';
           }
+          if (id.includes('/node_modules/.pnpm/@firebase+firestore@')) {
+            return 'firebase-firestore';
+          }
+          if (id.includes('/node_modules/.pnpm/@firebase+auth@')) {
+            return 'firebase-auth';
+          }
+          if (id.endsWith('/src/data/allCitiesDatabase.ts')) {
+            return 'city-directory-data';
+          }
         },
       },
     },

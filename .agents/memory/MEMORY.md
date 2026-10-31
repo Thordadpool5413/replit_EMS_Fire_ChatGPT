@@ -1,2 +1,3 @@
 - [Display available agency data](display-available-agency-data.md) — show available information and let end users verify it directly with the account.
 - [County Medicare denial matching](county-mcr-denial-mapping.md) — use exact county FIPS and same-scope claims counts; CMS county use/spending data is not a denial source.
+- [Compressed Vite assets](vite-gzip-assets.md) — browser fetch may transparently decompress `.gz` URLs in development; detect gzip magic before inflating.

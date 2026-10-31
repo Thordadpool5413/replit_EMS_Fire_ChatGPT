@@ -23,16 +23,16 @@ import {
 import { Agency } from '../types';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { formatCurrency } from '../utils/formatters';
-import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
-  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasAgencyFactEvidence(agency, 'cmsClaims') &&
-  hasAgencyFactEvidence(agency, 'federalGrant');
+  hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasReviewedAgencyFactEvidence(agency, 'federalGrant');
 
 interface CommandPaletteModalProps {
   isOpen: boolean;

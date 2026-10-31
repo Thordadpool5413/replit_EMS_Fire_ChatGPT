@@ -692,9 +692,9 @@ export default function App() {
           role="status"
           className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
         >
-          <strong>Data verification in progress:</strong> Florida review is underway, but nationwide agency coverage is incomplete.
-          Only fields with cited, reviewed evidence should be treated as verified; other operational figures, forecasts, scores,
-          and benchmarks may be estimates or unverified.
+          <strong>Source mapping and user review:</strong> A mapped link, API, dataset, MCP source, or documented calculation is a route to check a fact—not proof that it is correct.
+          “Source checked” means the citation was reviewed in this app; users should still confirm the source, date, and scope.
+          “No source mapped” means no fact-specific source is attached. Nationwide agency coverage is incomplete.
         </div>
 
         <ErrorBoundary onReset={() => setActiveTab('home')}>

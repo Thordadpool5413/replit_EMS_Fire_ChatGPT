@@ -433,12 +433,13 @@ export type AgencyFactEvidenceKey =
   | 'serviceArea';
 
 export interface AgencyFactEvidence {
-  /** Set only after a reviewer checks that this source supports this exact fact. */
+  /** True only after a reviewer checks that this source supports this exact fact. */
   reviewed: boolean;
+  sourceKind?: 'link' | 'api' | 'mcp' | 'dataset' | 'logic' | 'manual';
   sourceName: string;
-  sourceUrl: string;
+  sourceUrl?: string;
   sourceRecordId: string;
-  reviewedAt: string;
+  reviewedAt?: string;
   reportingPeriod?: string;
   note?: string;
 }

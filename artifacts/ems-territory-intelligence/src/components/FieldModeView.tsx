@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Agency, SyncOutboxItem, FieldNote, LeadStage } from '../types';
 import { ZOLL_PRODUCTS } from '../data/zollProducts';
-import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { 
   Car, 
   Phone, 
@@ -97,13 +97,13 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(verifiedAddress || `${a.name}, ${a.city}, ${a.stateCode}`)}`;
       const hasVerifiedDefibFleet = hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet');
       const hasVerifiedModelInputs =
-        hasAgencyFactEvidence(a, 'frontlineApparatusStations') &&
-        hasAgencyFactEvidence(a, 'annualEmergencyVolume') &&
-        hasAgencyFactEvidence(a, 'clinicalOutcomes') &&
-        hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet') &&
-        hasAgencyFactEvidence(a, 'maintenanceContracts') &&
-        hasAgencyFactEvidence(a, 'cmsClaims') &&
-        hasAgencyFactEvidence(a, 'federalGrant');
+        hasReviewedAgencyFactEvidence(a, 'frontlineApparatusStations') &&
+        hasReviewedAgencyFactEvidence(a, 'annualEmergencyVolume') &&
+        hasReviewedAgencyFactEvidence(a, 'clinicalOutcomes') &&
+        hasReviewedAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet') &&
+        hasReviewedAgencyFactEvidence(a, 'maintenanceContracts') &&
+        hasReviewedAgencyFactEvidence(a, 'cmsClaims') &&
+        hasReviewedAgencyFactEvidence(a, 'federalGrant');
       return [
         idx + 1,
         `"${(a.name || '').replace(/"/g, '""')}"`,

@@ -30,37 +30,58 @@ export const AGENCY_FACT_EVIDENCE_FIELDS: Array<{
 ];
 
 /**
- * Requires a reviewed, fact-specific citation. Generic registry homepages,
- * search links, format checks, and broad verification flags are insufficient.
+ * Indicates that a fact has a concrete source or methodology mapped to it.
+ * This does not assert that the value is correct; the end user still reviews
+ * the linked source. A reviewed flag is tracked separately.
  */
-export function hasReviewedFactEvidence(
+export function hasMappedFactSource(
   evidence: AgencyFactEvidence | undefined,
 ): boolean {
-  if (!evidence?.reviewed || !evidence.sourceName.trim() || !evidence.sourceRecordId.trim()) {
+  if (!evidence?.sourceName.trim() || !evidence.sourceRecordId.trim()) {
     return false;
   }
 
-  const reviewedAt = Date.parse(evidence.reviewedAt);
-  if (!Number.isFinite(reviewedAt) || reviewedAt > Date.now()) return false;
+  if (evidence.sourceKind === 'logic' && evidence.note?.trim()) {
+    return true;
+  }
 
   try {
-    const source = new URL(evidence.sourceUrl);
+    const source = new URL(evidence.sourceUrl || '');
     return source.protocol === 'https:' && source.pathname.length > 1;
   } catch {
     return false;
   }
 }
 
-export function hasAgencyFactEvidence(
+/** Indicates that a mapped source was checked against the exact fact. */
+export function hasReviewedFactEvidence(
+  evidence: AgencyFactEvidence | undefined,
+): boolean {
+  if (!evidence?.reviewed || !hasMappedFactSource(evidence)) return false;
+  const reviewedAt = Date.parse(evidence.reviewedAt || '');
+  return Number.isFinite(reviewedAt) && reviewedAt <= Date.now();
+}
+
+export function hasReviewedAgencyFactEvidence(
   agency: Pick<Agency, 'factEvidence'>,
   key: AgencyFactEvidenceKey,
 ): boolean {
   return hasReviewedFactEvidence(agency.factEvidence?.[key]);
 }
 
+/** Source mapped for user review; this is not the same as source-reviewed. */
+export function hasAgencyFactEvidence(
+  agency: Pick<Agency, 'factEvidence'>,
+  key: AgencyFactEvidenceKey,
+): boolean {
+  return hasMappedFactSource(agency.factEvidence?.[key]);
+}
+
 export function getAgencyFactEvidenceStatus(
   agency: Pick<Agency, 'factEvidence'>,
   key: AgencyFactEvidenceKey,
-): 'verified' | 'unverified' {
-  return hasAgencyFactEvidence(agency, key) ? 'verified' : 'unverified';
+): 'source-reviewed' | 'source-mapped' | 'source-required' {
+  if (hasReviewedAgencyFactEvidence(agency, key)) return 'source-reviewed';
+  if (hasAgencyFactEvidence(agency, key)) return 'source-mapped';
+  return 'source-required';
 }

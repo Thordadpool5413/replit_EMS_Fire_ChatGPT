@@ -15,7 +15,11 @@ import {
   Send
 } from 'lucide-react';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
-import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import {
+  AGENCY_FACT_EVIDENCE_FIELDS,
+  hasAgencyFactEvidence,
+  hasReviewedAgencyFactEvidence
+} from '../data/agencyFactEvidence';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -76,15 +80,19 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`;
 
   const hasDecisionGradeInputs =
-    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-    hasAgencyFactEvidence(agency, 'cmsClaims') &&
-    hasAgencyFactEvidence(agency, 'federalGrant');
+    hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+    hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+    hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+    hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+    hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
+    hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
+    hasReviewedAgencyFactEvidence(agency, 'federalGrant');
 
-  // These inputs are only rendered when their source groups have been reviewed.
+  const mappedEvidenceSources = AGENCY_FACT_EVIDENCE_FIELDS
+    .filter(({ key }) => hasAgencyFactEvidence(agency, key))
+    .map(({ key, label }) => ({ key, label, evidence: agency.factEvidence?.[key] }));
+
+  // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
   const cmsDenialSub = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
   const clinicalSub = Math.min(
@@ -131,10 +139,10 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                   <span>
                     {agency.stateLicenseNumber
                       ? <>State EMS license <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
-                      : <>FDID <span className="font-mono text-[11px]">{agency.fdid || 'Not source-verified'}</span></>}
+                      : <>FDID <span className="font-mono text-[11px]">{agency.fdid || 'No source mapped'}</span></>}
                   </span>
                 <span>·</span>
-                <span>NPI <span className="font-mono text-[11px]">{npiNumber || 'Not source-verified'}</span></span>
+                <span>NPI <span className="font-mono text-[11px]">{npiNumber || 'No source mapped'}</span></span>
               </div>
 
               <h2
@@ -148,7 +156,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode}
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Address not source-verified'}
+                {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'No address source mapped'}
               </p>
             </div>
 
@@ -234,7 +242,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'monitorModelTransition')
                     ? 'County memo reports LIFEPAK-35 replacement underway; count and completion are not reported.'
-                    : 'Model, fleet count, age, and contract are not source-verified.'}
+                    : 'No source mapped for exact fleet count, age, or contract terms.'}
                 </span>
               </div>
 
@@ -276,7 +284,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'EMS transports and outcomes not verified'
                     : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
                       ? `${formatPercent(agency.utsteinSurvivalRate)} Utstein survival`
-                      : 'Clinical outcomes not source-verified'}
+                    : 'No clinical-outcome source mapped'}
                 </span>
               </div>
             </div>
@@ -326,7 +334,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           </div>
           ) : (
             <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-              PulseIQ score withheld until the required agency fleet, volume, outcomes, contracts, CMS, and grant inputs are source-verified.
+              PulseIQ score is withheld until required inputs have been source-checked. Mapped source links remain available for user review.
             </div>
           )}
 
@@ -337,7 +345,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               <span className="font-semibold text-slate-900 dark:text-white text-right">
                 {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact
                   ? `${primaryContact.name} (${primaryContact.title})`
-                  : 'Not source-verified'}
+                  : 'No leadership source mapped'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
@@ -346,13 +354,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
                   ? `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Engines · ${agency.stationsCount} Stations`
                     : [
-                        hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'Station count not source-verified',
+                        hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'No station-count source mapped',
                         hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
                           ? `${agency.frontlineRescueUnitCount} front-line rescue units`
-                          : 'Rescue-unit count not source-verified',
+                          : 'No rescue-unit source mapped',
                         hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.responseUnitCount
                           ? `${agency.responseUnitCount} total response units`
-                          : 'Vehicle-type totals not source-verified'
+                          : 'No vehicle-type source mapped'
                       ].join(' · ')}
               </span>
             </div>
@@ -360,8 +368,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               <span className="text-slate-500 dark:text-slate-400">Installed ePCR &amp; CAD</span>
               <span className="font-semibold text-slate-900 dark:text-white text-right">
                 {hasAgencyFactEvidence(agency, 'epcrSystem')
-                  ? `${agency.installedFleet.epcrCadSoftware} · CAD not source-verified`
-                  : 'ePCR and CAD not source-verified'}
+                  ? `${agency.installedFleet.epcrCadSoftware} · no CAD source mapped`
+                  : 'No ePCR or CAD source mapped'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
@@ -397,6 +405,35 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
             </div>
           </div>
+
+          {/* Field-specific source map for end-user review */}
+          <section className="rounded-lg border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Mapped sources · user review
+            </div>
+            {mappedEvidenceSources.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {mappedEvidenceSources.map(({ key, label, evidence }) => evidence?.sourceUrl ? (
+                  <a
+                    key={key}
+                    href={evidence.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`${evidence.sourceName}${evidence.sourceKind ? ` · ${evidence.sourceKind.toUpperCase()}` : ''}${evidence.note ? ` · ${evidence.note}` : ''}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-800 hover:underline dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"
+                  >
+                    {label} <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <span key={key} title={evidence?.note} className="rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                    {label} · methodology mapped
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">No field-specific sources are mapped to this agency record yet.</p>
+            )}
+          </section>
 
           {/* Quick Field Note Logger */}
           {onAddFieldNote && (

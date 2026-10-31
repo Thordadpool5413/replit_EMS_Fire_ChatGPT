@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
-import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
@@ -54,13 +54,13 @@ import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
-  hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-  hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-  hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-  hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-  hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasAgencyFactEvidence(agency, 'cmsClaims') &&
-  hasAgencyFactEvidence(agency, 'federalGrant');
+  hasReviewedAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
+  hasReviewedAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
+  hasReviewedAgencyFactEvidence(agency, 'clinicalOutcomes') &&
+  hasReviewedAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
+  hasReviewedAgencyFactEvidence(agency, 'maintenanceContracts') &&
+  hasReviewedAgencyFactEvidence(agency, 'cmsClaims') &&
+  hasReviewedAgencyFactEvidence(agency, 'federalGrant');
 
 interface NationalGeographicExplorerProps {
   agencies: Agency[];
@@ -1889,7 +1889,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
                           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                          <span>FDID {agency.fdid || 'Not source-verified'}</span>
+                          <span>FDID {agency.fdid || 'No registry source mapped'}</span>
                           {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
@@ -1952,7 +1952,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               <strong className="text-slate-900 dark:text-white">{primaryContact.name}</strong> ({primaryContact.title}) ·{' '}
                             </span>
                           )}
-                          <span>{hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Address not source-verified'}</span>
+                          <span>{hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'No address source mapped'}</span>
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0 font-medium">
@@ -1982,12 +1982,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Upgrade Value</span>
                           <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block tabular-nums">
-                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Not source-verified'}
+                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Model withheld pending source checks'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block tabular-nums">
                             {hasAgencyFactEvidence(agency, 'maintenanceContracts')
                               ? `Exp: ${agency.competitorContract.contractEndDate}`
-                              : 'Contract not source-verified'}
+                              : 'No contract source mapped'}
                           </span>
                         </div>
 
@@ -1998,17 +1998,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand}`
                               : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                 ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                : 'Not source-verified'}
+                                : 'No fleet source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} yrs old` : 'Fleet age not source-verified'}
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} yrs old` : 'No fleet-age source mapped'}
                           </span>
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Claim Recovery</span>
                           <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'Not source-verified'}
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
                             {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
@@ -2022,7 +2022,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
                               : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                                 ? agency.annual911Transports.toLocaleString()
-                                : 'Not source-verified'}
+                                : 'No volume source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
                             {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}
@@ -2036,7 +2036,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <span className="text-slate-600 dark:text-slate-400 truncate">
                         {hasVerifiedModel
                           ? <>Model target: <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
-                          : 'Product recommendation not source-verified'}
+                          : 'Model recommendation withheld pending source checks'}
                       </span>
 
                       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -2114,7 +2114,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {agency.name}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'Not source-verified'}</span>
+                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'No registry source mapped'}</span>
                             </div>
                           </td>
                           <td className="py-2.5 px-3 hidden md:table-cell">
@@ -2123,23 +2123,23 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand} (${agency.installedFleet.defibAgeYears}y)`
                                 : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                   ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                  : 'Not source-verified'}
+                                  : 'No fleet source mapped'}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'ePCR not source-verified'}
+                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'No ePCR source mapped'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Not source-verified'}
+                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Model withheld pending source checks'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? `Exp ${agency.competitorContract.contractEndDate}` : 'Contract not source-verified'}
+                              {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? `Exp ${agency.competitorContract.contractEndDate}` : 'No contract source mapped'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden lg:table-cell">
                             <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'Not source-verified'}
+                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
@@ -2151,7 +2151,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
                                 : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                                   ? agency.annual911Transports.toLocaleString()
-                                  : 'Not source-verified'}
+                                  : 'No volume source mapped'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}

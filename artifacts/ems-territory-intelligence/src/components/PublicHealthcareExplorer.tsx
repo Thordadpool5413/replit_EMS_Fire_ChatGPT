@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { NATIONAL_BENCHMARKS, STATE_SUMMARIES } from '../data/healthcareData';
 import { Agency } from '../types';
-import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { hasAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { 
   Building2, 
   TrendingDown, 
@@ -42,13 +42,13 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
 }) => {
   const [selectedPlaybook, setSelectedPlaybook] = useState<'cms' | 'rosc' | 'fleet' | 'afg' | 'nemsqa' | 'et3'>('cms');
   const hasDecisionGradeInputs = activeAccount &&
-    hasAgencyFactEvidence(activeAccount, 'frontlineApparatusStations') &&
-    hasAgencyFactEvidence(activeAccount, 'annualEmergencyVolume') &&
-    hasAgencyFactEvidence(activeAccount, 'clinicalOutcomes') &&
-    hasAgencyFactEvidence(activeAccount, 'defibrillatorBiomedicalFleet') &&
-    hasAgencyFactEvidence(activeAccount, 'maintenanceContracts') &&
-    hasAgencyFactEvidence(activeAccount, 'cmsClaims') &&
-    hasAgencyFactEvidence(activeAccount, 'federalGrant');
+    hasReviewedAgencyFactEvidence(activeAccount, 'frontlineApparatusStations') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'annualEmergencyVolume') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'clinicalOutcomes') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'defibrillatorBiomedicalFleet') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'maintenanceContracts') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'cmsClaims') &&
+    hasReviewedAgencyFactEvidence(activeAccount, 'federalGrant');
 
   return (
     <div className="space-y-6">

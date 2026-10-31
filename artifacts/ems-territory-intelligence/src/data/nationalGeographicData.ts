@@ -7,7 +7,8 @@ import { StateSummary } from './healthcareData';
 import { Agency } from '../types';
 
 /**
- * Complete, authoritative dataset for all 50 US States + District of Columbia (51 Jurisdictions).
+ * Reference estimates for all 50 states and DC. Keep these distinct from aggregates computed
+ * from agency records so reference values are never presented as agency-record totals.
  * Sources: US Census Bureau, CMS Medicare Part B Ground Ambulance PUF 2024.1, CARES Registry, USFA Fire Registry.
  */
 export const ALL_50_STATES_SUMMARIES: Record<string, StateSummary & { fips: string; region: 'Northeast' | 'Midwest' | 'South' | 'West'; majorCounties: string[]; primaryZipPrefixes: string[] }> = {

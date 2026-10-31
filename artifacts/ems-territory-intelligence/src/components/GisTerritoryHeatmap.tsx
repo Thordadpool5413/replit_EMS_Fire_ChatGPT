@@ -317,6 +317,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         transportsDataCount: 0,
         totalStemiTransmissions: 0,
         survivalDataCount: 0,
+        cardiacCallsAndDefibAgeDataCount: 0,
         avgSurvival: 0,
         criticalCount: 0,
         agingFleetInCardiacZonesCount: 0,
@@ -347,6 +348,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     let transportsDataCount = 0;
     let sumSurvival = 0;
     let survivalDataCount = 0;
+    let cardiacCallsAndDefibAgeDataCount = 0;
     let criticalCount = 0;
     let agingFleetInCardiacZonesCount = 0;
     let criticalSurvivalCount = 0;
@@ -381,6 +383,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const mechCpr = a.installedFleet?.mechanicalCPR;
       const vent = a.installedFleet?.transportVentilator;
 
+      if (hasReportedValue(cardiacCalls) && hasReportedValue(defibAge)) {
+        cardiacCallsAndDefibAgeDataCount++;
+      }
       if (hasReportedValue(cardiacCalls)) {
         totalCardiacCalls += cardiacCalls;
         cardiacCallsDataCount++;
@@ -440,6 +445,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       transportsDataCount,
       totalStemiTransmissions,
       survivalDataCount,
+      cardiacCallsAndDefibAgeDataCount,
       avgSurvival,
       criticalCount,
       agingFleetInCardiacZonesCount,
@@ -463,6 +469,26 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       ventOpportunityCount
     };
   }, [filteredAgencies]);
+
+  const primaryMetricDataCount =
+    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.cardiacCallsDataCount :
+    selectedLayer === 'cardiac' ? nemsisTerritoryStats.survivalDataCount :
+    selectedLayer === 'aed' ? nemsisTerritoryStats.aedDataCount :
+    selectedLayer === 'transport' ? nemsisTerritoryStats.transportDataCount :
+    nemsisTerritoryStats.denialDataCount;
+  const secondaryMetricDataCount = primaryMetricDataCount;
+  const tertiaryMetricDataCount =
+    selectedLayer === 'nemsis_cardiac' || selectedLayer === 'aed' ? nemsisTerritoryStats.transportsDataCount :
+    selectedLayer === 'cardiac' ? nemsisTerritoryStats.mechanicalCprDataCount :
+    null;
+  const fourthMetricDataCount =
+    selectedLayer === 'nemsis_cardiac' ? nemsisTerritoryStats.cardiacCallsAndDefibAgeDataCount :
+    selectedLayer === 'cardiac' ? nemsisTerritoryStats.defibAgeDataCount :
+    null;
+  const coverageText = (count: number | null) =>
+    count === null
+      ? 'Coverage not available'
+      : `${count.toLocaleString()} of ${filteredAgencies.length.toLocaleString()} filtered agency records`;
 
   // Nationwide geographic distribution across all 50 states + DC ensuring coast-to-coast coverage
   const mapRenderedAgencies = useMemo(() => {
@@ -2168,8 +2194,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
-                  Historical trend data not reported
+                <div data-testid="text-primary-metric-coverage" className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
+                  Based on {coverageText(primaryMetricDataCount)} with this measure. Historical trend data not reported.
                 </div>
               </div>
 
@@ -2196,8 +2222,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
-                  Estimate method: 16.5% of reported OHCA calls. Historical trend data not reported.
+                <div data-testid="text-secondary-metric-coverage" className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
+                  {selectedLayer === 'nemsis_cardiac'
+                    ? `Estimate method: 16.5% of reported OHCA calls. Based on ${coverageText(secondaryMetricDataCount)}.`
+                    : `Based on ${coverageText(secondaryMetricDataCount)} with this measure.`}
                 </div>
               </div>
 
@@ -2227,8 +2255,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
-                  Historical trend data not reported
+                <div data-testid="text-tertiary-metric-coverage" className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
+                  {tertiaryMetricDataCount === null
+                    ? 'This figure is not calculated for the selected layer.'
+                    : `Based on ${coverageText(tertiaryMetricDataCount)} with this measure.`}
                 </div>
               </div>
 
@@ -2255,8 +2285,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
-                  Historical trend data not reported
+                <div data-testid="text-fourth-metric-coverage" className="mt-2.5 pt-2 border-t border-slate-800 text-[10px] text-slate-500">
+                  {fourthMetricDataCount === null
+                    ? 'This figure is not calculated for the selected layer.'
+                    : `Based on ${coverageText(fourthMetricDataCount)} with the required measure${selectedLayer === 'nemsis_cardiac' ? ' pair' : ''}.`}
                 </div>
               </div>
 

@@ -31,6 +31,9 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
 
+const hasReportedValue = (value: number | null | undefined): value is number =>
+  value != null && Number.isFinite(value);
+
 interface HomeHubViewProps {
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
@@ -106,36 +109,66 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         count: 0,
         countiesCount,
         avgPulseIq: null,
+        pulseIqDataCount: 0,
         totalAmbulances: null,
+        ambulanceDataCount: 0,
         totalFireEngines: null,
+        fireEngineDataCount: 0,
         medicareAllowed: null,
+        medicareAllowedDataCount: 0,
         grantFunds: null
       };
     }
 
     let sumPulseIq = 0;
+    let pulseIqDataCount = 0;
     let ambulances = 0;
+    let ambulanceDataCount = 0;
     let fireEngines = 0;
+    let fireEngineDataCount = 0;
     let medicare = 0;
+    let medicareAllowedDataCount = 0;
     let grants = 0;
 
     for (const a of stateAgencies) {
-      sumPulseIq += a.zollOpportunity?.pulseIqScore || 0;
-      ambulances += a.totalAmbulances || 0;
-      fireEngines += a.totalFireEngines || 0;
-      medicare += a.cmsData?.medicareAllowedAnnual || 0;
-      if (a.grantStatus?.afgAwarded) {
-        grants += a.grantStatus.afgAwardAmount || 0;
+      const pulseIq = a.zollOpportunity?.pulseIqScore;
+      const ambulanceCount = a.totalAmbulances;
+      const fireEngineCount = a.totalFireEngines;
+      const medicareAllowed = a.cmsData?.medicareAllowedAnnual;
+
+      if (hasReportedValue(pulseIq)) {
+        sumPulseIq += pulseIq;
+        pulseIqDataCount++;
+      }
+      if (hasReportedValue(ambulanceCount)) {
+        ambulances += ambulanceCount;
+        ambulanceDataCount++;
+      }
+      if (hasReportedValue(fireEngineCount)) {
+        fireEngines += fireEngineCount;
+        fireEngineDataCount++;
+      }
+      if (hasReportedValue(medicareAllowed)) {
+        medicare += medicareAllowed;
+        medicareAllowedDataCount++;
+      }
+      const grantAmount = a.grantStatus?.afgAwardAmount;
+      if (a.grantStatus?.afgAwarded && hasReportedValue(grantAmount)) {
+        grants += grantAmount;
       }
     }
 
     return {
       count,
       countiesCount,
-      avgPulseIq: Math.round(sumPulseIq / count),
-      totalAmbulances: ambulances,
-      totalFireEngines: fireEngines,
-      medicareAllowed: medicare,
+      avgPulseIq: pulseIqDataCount ? Math.round(sumPulseIq / pulseIqDataCount) : null,
+      pulseIqDataCount,
+      totalAmbulances: ambulanceDataCount ? ambulances : null,
+      ambulanceDataCount,
+      totalFireEngines: fireEngineDataCount ? fireEngines : null,
+      fireEngineDataCount,
+      medicareAllowed: medicareAllowedDataCount ? medicare : null,
+      medicareAllowedDataCount,
       grantFunds: grants
     };
   }, [scopedAgencies, displayStateCode, activeStateSummary]);
@@ -507,6 +540,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card">
                     {stateStats.avgPulseIq === null ? 'Not available' : formatScore(stateStats.avgPulseIq)}
                   </span>
+                  <span data-testid={`text-pulseiq-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 block">
+                    {formatInteger(stateStats.pulseIqDataCount)} of {formatInteger(stateStats.count)} agency records
+                  </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
@@ -528,6 +564,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       : `${formatInteger(stateStats.totalAmbulances)} units`}
                   </span>
                 </div>
+                <div data-testid={`text-ambulance-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
+                  {formatInteger(stateStats.ambulanceDataCount)} of {formatInteger(stateStats.count)} agency records
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#53657B] dark:text-slate-400">Estimated fire engines:</span>
                   <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
@@ -535,6 +574,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       ? 'Not available'
                       : `${formatInteger(stateStats.totalFireEngines)} apparatus`}
                   </span>
+                </div>
+                <div data-testid={`text-fire-engine-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
+                  {formatInteger(stateStats.fireEngineDataCount)} of {formatInteger(stateStats.count)} agency records
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#53657B] dark:text-slate-400">Estimated Medicare allowed:</span>
@@ -544,8 +586,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       : formatCurrency(stateStats.medicareAllowed)}
                   </span>
                 </div>
+                <div data-testid={`text-medicare-allowed-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
+                  {formatInteger(stateStats.medicareAllowedDataCount)} of {formatInteger(stateStats.count)} agency records
+                </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  Territory metrics are reference estimates unless a field is individually verified from a cited primary source.
+                  The denial rate above is a separate state reference estimate, not an agency-record total. Other figures use records reporting that measure.
                 </p>
               </div>
 

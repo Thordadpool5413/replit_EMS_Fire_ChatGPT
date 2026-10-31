@@ -12,11 +12,16 @@ export interface NationwideIngestState {
   totalAgencies: number;
   cloudSyncedAgencies: number;
   totalMedicareClaims: number;
+  medicareClaimsDataCount: number;
   totalBilledVolumeDollars: number;
+  billedVolumeDataCount: number;
   avgClaimDenialRatePct: number;
+  denialRateDataCount: number;
   totalRecoverableDollars: number;
+  recoverableRevenueDataCount: number;
   afgGrantRecipients: number;
   totalAfgDollars: number;
+  afgAwardAmountDataCount: number;
   provenanceLabel: string;
 }
 
@@ -75,6 +80,9 @@ const STATE_REGION_MAP: Record<string, 'Northeast' | 'Midwest' | 'South' | 'West
   AK: 'West', CA: 'West', HI: 'West', OR: 'West', WA: 'West'
 };
 
+const hasReportedValue = (value: number | null | undefined): value is number =>
+  value != null && Number.isFinite(value);
+
 /**
  * Computes real-time state-level aggregations directly from the active, sanitized Agency dataset
  * (zero hardcoded sample tables).
@@ -94,27 +102,30 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
     const region = STATE_REGION_MAP[stateCode] || 'South';
     const totalAgencies = list.length;
     const cloudSyncedAgencies = list.filter(a => a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced').length;
-    const totalMedicareClaims = list.reduce(
-      (sum, a) => sum + (a.cmsData?.medicareClaimsVolume || Math.round((a.annual911Transports || 0) * 0.42)),
+    const medicareClaimsRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareClaimsVolume));
+    const billedVolumeRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareBilledAnnual));
+    const denialRateRecords = list.filter(a => hasReportedValue(a.cmsData?.claimDenialRate));
+    const recoverableRevenueRecords = list.filter(a => hasReportedValue(a.cmsData?.estimatedRecoverableRevenue));
+    const afgAwardAmountRecords = list.filter(
+      a => a.grantStatus?.afgAwarded && hasReportedValue(a.grantStatus.afgAwardAmount)
+    );
+    const totalMedicareClaims = medicareClaimsRecords.reduce(
+      (sum, a) => sum + a.cmsData.medicareClaimsVolume!,
       0
     );
-    const totalBilledVolumeDollars = list.reduce(
-      (sum, a) => sum + (a.cmsData?.medicareBilledAnnual || 0),
+    const totalBilledVolumeDollars = billedVolumeRecords.reduce(
+      (sum, a) => sum + a.cmsData.medicareBilledAnnual,
       0
     );
-    const avgClaimDenialRatePct =
-      totalAgencies > 0
-        ? +(list.reduce((sum, a) => sum + (a.cmsData?.claimDenialRate || 0), 0) / totalAgencies).toFixed(1)
-        : 0;
-    const totalRecoverableDollars = list.reduce(
-      (sum, a) => sum + (a.cmsData?.estimatedRecoverableRevenue || 0),
+    const avgClaimDenialRatePct = denialRateRecords.length
+      ? +(denialRateRecords.reduce((sum, a) => sum + a.cmsData.claimDenialRate, 0) / denialRateRecords.length).toFixed(1)
+      : 0;
+    const totalRecoverableDollars = recoverableRevenueRecords.reduce(
+      (sum, a) => sum + a.cmsData.estimatedRecoverableRevenue,
       0
     );
     const afgGrantRecipients = list.filter(a => a.grantStatus?.afgAwarded).length;
-    const totalAfgDollars = list.reduce(
-      (sum, a) => sum + (a.grantStatus?.afgAwarded ? (a.grantStatus?.afgAwardAmount || 0) : 0),
-      0
-    );
+    const totalAfgDollars = afgAwardAmountRecords.reduce((sum, a) => sum + a.grantStatus.afgAwardAmount, 0);
 
     results.push({
       stateCode,
@@ -123,11 +134,16 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
       totalAgencies,
       cloudSyncedAgencies,
       totalMedicareClaims,
+      medicareClaimsDataCount: medicareClaimsRecords.length,
       totalBilledVolumeDollars,
+      billedVolumeDataCount: billedVolumeRecords.length,
       avgClaimDenialRatePct,
+      denialRateDataCount: denialRateRecords.length,
       totalRecoverableDollars,
+      recoverableRevenueDataCount: recoverableRevenueRecords.length,
       afgGrantRecipients,
       totalAfgDollars,
+      afgAwardAmountDataCount: afgAwardAmountRecords.length,
       provenanceLabel:
         cloudSyncedAgencies > 0
           ? `Firestore Cloud (${cloudSyncedAgencies}/${totalAgencies}) + Federal Baseline`

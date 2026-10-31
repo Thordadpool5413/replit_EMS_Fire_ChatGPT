@@ -113,12 +113,24 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
     () => stateAggregations.reduce((s, r) => s + r.totalMedicareClaims, 0),
     [stateAggregations]
   );
+  const totalClaimsRecords = useMemo(
+    () => stateAggregations.reduce((s, r) => s + r.medicareClaimsDataCount, 0),
+    [stateAggregations]
+  );
   const totalBilledSpend = useMemo(
     () => stateAggregations.reduce((s, r) => s + r.totalBilledVolumeDollars, 0),
     [stateAggregations]
   );
+  const totalBilledRecords = useMemo(
+    () => stateAggregations.reduce((s, r) => s + r.billedVolumeDataCount, 0),
+    [stateAggregations]
+  );
   const totalRecoverableSpend = useMemo(
     () => stateAggregations.reduce((s, r) => s + r.totalRecoverableDollars, 0),
+    [stateAggregations]
+  );
+  const totalRecoverableRecords = useMemo(
+    () => stateAggregations.reduce((s, r) => s + r.recoverableRevenueDataCount, 0),
     [stateAggregations]
   );
   const totalCloudSynced = useMemo(
@@ -283,16 +295,16 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
 
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">Modeled Medicare Claims</span>
+                <span className="text-xs text-slate-500 font-medium">Agency-Record Medicare Claims</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                  PulseIQ Model
+                  Agency records
                 </span>
               </div>
               <div className="text-2xl font-semibold text-slate-900 dark:text-white mt-1 tabular-nums">
-                {totalClaimsVolume.toLocaleString()}
+                {totalClaimsRecords ? totalClaimsVolume.toLocaleString() : 'Not reported'}
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">
-                CMS Part B Ground Ambulance Baseline
+                {totalClaimsRecords.toLocaleString()} agency records have claim-volume values
               </div>
             </div>
 
@@ -304,10 +316,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 </span>
               </div>
               <div className="text-2xl font-semibold text-slate-900 dark:text-white mt-1 tabular-nums">
-                ${(totalBilledSpend / 1_000_000).toFixed(2)}M
+                {totalBilledRecords ? `$${(totalBilledSpend / 1_000_000).toFixed(2)}M` : 'Not reported'}
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">
-                Subject to CMS GADCS 10% Penalty Mandate
+                {totalBilledRecords.toLocaleString()} agency records have billed-volume values
               </div>
             </div>
 
@@ -319,10 +331,10 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 </span>
               </div>
               <div className="text-2xl font-semibold text-emerald-700 dark:text-emerald-400 mt-1 tabular-nums">
-                +${(totalRecoverableSpend / 1_000_000).toFixed(2)}M/yr
+                {totalRecoverableRecords ? `+$${(totalRecoverableSpend / 1_000_000).toFixed(2)}M/yr` : 'Not reported'}
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">
-                Via NEMSIS v3.5.0 ePCR + ZOLL Billing Sync
+                {totalRecoverableRecords.toLocaleString()} agency records have recovery-estimate values
               </div>
             </div>
           </div>
@@ -335,7 +347,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                   Live State-by-State Aggregation (Computed from Active Dataset)
                 </h4>
                 <p className="text-xs text-slate-500">
-                  Reflects real-time agency counts, Firestore cloud persistence, and mathematical Medicare Part B reimbursement models.
+                  Missing measures are excluded. Each value below shows how many agency records contributed; model and reference estimates remain labeled separately.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 text-xs flex-wrap">
@@ -362,7 +374,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                     <th className="py-2.5 px-4">State &amp; Region</th>
                     <th className="py-2.5 px-4 text-right">Loaded Agencies</th>
                     <th className="py-2.5 px-4 text-right">Cloud Synced</th>
-                    <th className="py-2.5 px-4 text-right">Est. Medicare Claims</th>
+                    <th className="py-2.5 px-4 text-right">Medicare Claims</th>
                     <th className="py-2.5 px-4 text-right">Billed Volume</th>
                     <th className="py-2.5 px-4 text-right">Avg Denial %</th>
                     <th className="py-2.5 px-4 text-right">Recoverable Rev</th>
@@ -378,10 +390,22 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                       </td>
                       <td className="py-3 px-4 text-right text-slate-800 dark:text-slate-200">{s.totalAgencies.toLocaleString()}</td>
                       <td className="py-3 px-4 text-right text-emerald-700 dark:text-emerald-400 font-bold">{s.cloudSyncedAgencies.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">{s.totalMedicareClaims.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M</td>
-                      <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-400">{s.avgClaimDenialRatePct}%</td>
-                      <td className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">+${(s.totalRecoverableDollars / 1000).toFixed(0)}K</td>
+                      <td data-testid={`text-claims-coverage-${s.stateCode}`} className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
+                        {s.medicareClaimsDataCount ? s.totalMedicareClaims.toLocaleString() : 'Not reported'}
+                        <span className="block text-[10px] text-slate-400">{s.medicareClaimsDataCount} records</span>
+                      </td>
+                      <td data-testid={`text-billed-coverage-${s.stateCode}`} className="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">
+                        {s.billedVolumeDataCount ? `$${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M` : 'Not reported'}
+                        <span className="block text-[10px] font-normal text-slate-400">{s.billedVolumeDataCount} records</span>
+                      </td>
+                      <td data-testid={`text-denial-coverage-${s.stateCode}`} className="py-3 px-4 text-right text-amber-700 dark:text-amber-400">
+                        {s.denialRateDataCount ? `${s.avgClaimDenialRatePct}%` : 'Not reported'}
+                        <span className="block text-[10px] text-slate-400">{s.denialRateDataCount} records</span>
+                      </td>
+                      <td data-testid={`text-recovery-coverage-${s.stateCode}`} className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">
+                        {s.recoverableRevenueDataCount ? `+$${(s.totalRecoverableDollars / 1000).toFixed(0)}K` : 'Not reported'}
+                        <span className="block text-[10px] font-normal text-slate-400">{s.recoverableRevenueDataCount} records</span>
+                      </td>
                       <td className="py-3 px-4 font-sans">
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           {s.provenanceLabel}

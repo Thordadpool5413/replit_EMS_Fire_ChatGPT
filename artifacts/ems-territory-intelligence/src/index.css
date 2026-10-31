@@ -53,6 +53,15 @@
   --pi-estimated-bg: #FFFBEB;
   --pi-estimated-text: #B45309;
   --pi-estimated-border: #FDE68A;
+  --pi-info-bg: #EFF6FF;
+  --pi-info-text: #1D4ED8;
+  --pi-info-border: #BFDBFE;
+  --pi-warning-bg: #FFF7ED;
+  --pi-warning-text: #C2410C;
+  --pi-warning-border: #FED7AA;
+  --pi-critical-bg: #FEF2F2;
+  --pi-critical-text: #B91C1C;
+  --pi-critical-border: #FECACA;
 
   /* Legacy alias variables for compatibility across existing views */
   --bg-canvas: #F5F7FA;
@@ -96,6 +105,15 @@
   --pi-action: #3B73F6;
   --pi-action-hover: #285EE8;
   --pi-action-subtle: rgba(40, 94, 232, 0.16);
+  --pi-info-bg: rgba(30, 64, 175, 0.2);
+  --pi-info-text: #93C5FD;
+  --pi-info-border: rgba(59, 130, 246, 0.4);
+  --pi-warning-bg: rgba(154, 52, 18, 0.2);
+  --pi-warning-text: #FDBA74;
+  --pi-warning-border: rgba(249, 115, 22, 0.35);
+  --pi-critical-bg: rgba(127, 29, 29, 0.24);
+  --pi-critical-text: #FCA5A5;
+  --pi-critical-border: rgba(248, 113, 113, 0.35);
 
   --bg-canvas: #0B1320;
   --bg-surface: #111C2D;
@@ -355,15 +373,15 @@
 .pi-surface {
   background-color: var(--pi-surface-bg);
   border: 1px solid var(--pi-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: 0.95rem;
+  box-shadow: 0 1px 2px rgba(20, 40, 63, 0.035), 0 8px 22px -18px rgba(20, 40, 63, 0.22);
 }
 
 .pi-surface-interactive {
   background-color: var(--pi-surface-bg);
   border: 1px solid var(--pi-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: 0.95rem;
+  box-shadow: 0 1px 2px rgba(20, 40, 63, 0.035), 0 8px 22px -18px rgba(20, 40, 63, 0.22);
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
 
@@ -413,8 +431,8 @@
 .surface-card {
   background-color: var(--pi-surface-bg);
   border: 1px solid var(--pi-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: 0.95rem;
+  box-shadow: 0 1px 2px rgba(20, 40, 63, 0.035), 0 8px 22px -18px rgba(20, 40, 63, 0.22);
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
@@ -529,6 +547,53 @@
   color: var(--pi-text-secondary);
 }
 
+/* Shared shell polish: a quiet canvas, a legible command bar, and stable nav states. */
+.pi-app-shell {
+  background-image: radial-gradient(ellipse at 78% 0%, rgba(40, 94, 232, 0.045), transparent 34rem);
+}
+
+.dark .pi-app-shell {
+  background-image: radial-gradient(ellipse at 78% 0%, rgba(59, 115, 246, 0.1), transparent 34rem);
+}
+
+.pi-primary-sidebar {
+  box-shadow: 12px 0 28px -28px rgba(0, 0, 0, 0.75);
+}
+
+.pi-command-header {
+  background-color: color-mix(in srgb, var(--pi-surface-bg) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dark .pi-command-header {
+  background-color: color-mix(in srgb, var(--pi-surface-bg) 92%, transparent);
+}
+
+.pi-primary-nav button,
+.pi-mobile-nav button,
+.pi-command-header button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pi-primary-nav button:focus-visible,
+.pi-mobile-nav button:focus-visible,
+.pi-command-header button:focus-visible {
+  outline: 2px solid var(--pi-action);
+  outline-offset: 2px;
+}
+
+.workspace-grid-shell > nav {
+  border-radius: 0.9rem;
+  box-shadow: 0 1px 3px rgba(20, 40, 63, 0.04);
+}
+
+.workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-grid-shell select,
+.workspace-grid-shell textarea {
+  accent-color: var(--pi-action);
+}
+
 @media (max-width: 767px) {
   .profile-workspace {
     padding-bottom: max(6rem, env(safe-area-inset-bottom));
@@ -541,6 +606,11 @@
 
   .profile-workspace [aria-label="Account 360 Topic Navigation"] button {
     min-height: 2.75rem;
+  }
+
+  .pi-mobile-nav {
+    height: calc(4rem + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

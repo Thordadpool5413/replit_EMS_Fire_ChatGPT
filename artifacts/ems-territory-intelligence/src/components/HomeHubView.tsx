@@ -24,7 +24,8 @@ import {
   Flame,
   Globe,
   SlidersHorizontal,
-  Building2
+  Building2,
+  X
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -207,10 +208,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="pi-page-title">
-              Your Territory. Your Next Move.
+              EMS &amp; Fire territory, at a glance
             </h1>
             <p className="pi-supporting">
-              Interactive 50-state map with public-record references and territory estimates. Confirm agency identity, equipment, contracts, and performance data with primary sources before acting.
+              Explore agency records, locations, fleet details, and operational signals in one workspace.
             </p>
           </div>
 
@@ -250,13 +251,27 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search any agency name, city, county, ZIP code, or NPI across all 3,143 counties..."
+              aria-label="Search EMS and fire agencies"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Search agencies by name, city, county, ZIP, NPI, or FDID"
               className="w-full h-11 pl-10 pr-24 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-xs font-semibold text-[#14283F] dark:text-white placeholder-[#53657B] dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#285EE8] focus:bg-white dark:focus:bg-[#111C2D] transition-all"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear agency search"
+                className={`absolute ${onOpenCommandPalette ? 'right-[7.25rem]' : 'right-2'} p-2 rounded-md text-[#53657B] dark:text-slate-400 hover:bg-white dark:hover:bg-[#111C2D] hover:text-[#14283F] dark:hover:text-white transition-colors cursor-pointer`}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
             {onOpenCommandPalette && (
               <button
                 type="button"
                 onClick={onOpenCommandPalette}
+                aria-label="Open command palette"
                 className="absolute right-2 px-2.5 py-1 rounded-md text-[11px] font-mono font-medium text-[#53657B] dark:text-slate-400 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] hover:text-[#285EE8] transition-colors cursor-pointer"
               >
                 ⌘K Palette
@@ -265,8 +280,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
 
           {/* Quick Search Dropdown Overlay */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl shadow-xl z-30 divide-y divide-[#DFE6EF] dark:divide-[#1E2D42] max-h-80 overflow-y-auto">
+          {searchQuery.trim() && (
+            <div
+              role="region"
+              aria-label="Agency search results"
+              aria-live="polite"
+              className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl shadow-xl z-30 divide-y divide-[#DFE6EF] dark:divide-[#1E2D42] max-h-80 overflow-y-auto"
+            >
+              {searchResults.length === 0 && (
+                <div className="px-4 py-5 text-center">
+                  <p className="text-sm font-semibold text-[#14283F] dark:text-slate-100">No matching agencies</p>
+                  <p className="mt-1 text-xs text-[#53657B] dark:text-slate-400">Try a different agency name, location, ZIP, NPI, or FDID.</p>
+                </div>
+              )}
               {searchResults.map((agency) => (
                 <div
                   key={agency.id}
@@ -294,13 +320,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       </div>
                     </div>
                     <div className="text-xs text-[#53657B] dark:text-slate-400 mt-1">
-                      {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode} · NPI {agency.npiNumber || 'Verified'}
+                      {agency.city}, {agency.stateCode} · {agency.county}
+                      {agency.zipCode ? ` · ZIP ${agency.zipCode}` : ''}
+                      {agency.npiNumber ? ` · NPI ${agency.npiNumber}` : ' · NPI not reported'}
                     </div>
                   </button>
 
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-semibold text-[#14283F] dark:text-slate-200 pi-data-inline">
-                      PulseIQ <strong className="pi-data-number text-xs">{formatScore(agency.zollOpportunity?.pulseIqScore || 75)}</strong>
+                      PulseIQ <strong className="pi-data-number text-xs">
+                        {hasReportedValue(agency.zollOpportunity?.pulseIqScore) ? formatScore(agency.zollOpportunity.pulseIqScore) : '—'}
+                      </strong>
                     </span>
                     <button
                       type="button"
@@ -334,7 +364,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <span>Interactive U.S. Territory Map</span>
             </h2>
             <p className="pi-supporting mt-0.5">
-              Choose a state or region to inspect county counts, equipment estimates, and candidate EMS &amp; Fire records. Verify agency status and operations with primary sources.
+              Choose a state or region to review county coverage and available EMS and fire agency records.
             </p>
           </div>
 

@@ -175,7 +175,7 @@ export const TopBar: React.FC<TopBarProps> = ({
          ==================================================================== */}
       <aside
         aria-label="Primary Workspace Navigation"
-        className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
+        className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
       >
         {/* Compact identity keeps the workspace navigation immediately in view. */}
         <div className="px-4 py-3.5 flex items-center border-b border-[#172D49] shrink-0">
@@ -239,7 +239,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Primary 5 Workspaces Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5 no-scrollbar">
+        <nav className="pi-primary-nav flex-1 overflow-y-auto px-3 py-2 space-y-5 no-scrollbar">
           <div>
             <div className="text-xs font-medium text-slate-400 px-2.5 mb-1.5">
               Workspaces
@@ -568,7 +568,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* ====================================================================
           STABLE TOP TOOLBAR (~64px)
          ==================================================================== */}
-      <header className="sticky top-0 z-40 h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
+      <header className="pi-command-header sticky top-0 z-40 h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}
           <div className="flex items-center gap-3 min-w-0">

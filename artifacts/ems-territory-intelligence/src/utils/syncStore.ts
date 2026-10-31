@@ -100,12 +100,15 @@ export function calculateScore(agency: Agency, weights: PredictiveWeights = DEFA
   }
 
   // 2. CMS Denial Component (0-100)
-  const denial = agency.cmsData?.claimDenialRate ?? 18;
-  let cmsScore = 30;
-  if (denial >= 22) cmsScore = 100;
-  else if (denial >= 18) cmsScore = 85;
-  else if (denial >= 15) cmsScore = 65;
-  else cmsScore = 40;
+  const denial = agency.cmsData?.claimDenialRate;
+  const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
+  let cmsScore = 50;
+  if (hasDenialRate) {
+    if (denial >= 22) cmsScore = 100;
+    else if (denial >= 18) cmsScore = 85;
+    else if (denial >= 15) cmsScore = 65;
+    else cmsScore = 40;
+  }
 
   // 3. Cardiac Volume / Clinical Acuity (0-100)
   const cardiac = agency.annualCardiacArrestCalls ?? 600;
@@ -181,12 +184,15 @@ export function explainAgencyScore(
   const fleetPts = +((fleetScore * wFleet) / totalWeight).toFixed(1);
 
   // 2. CMS Denial Component
-  const denial = agency.cmsData?.claimDenialRate ?? 18;
-  let cmsScore = 30;
-  if (denial >= 22) cmsScore = 100;
-  else if (denial >= 18) cmsScore = 85;
-  else if (denial >= 15) cmsScore = 65;
-  else cmsScore = 40;
+  const denial = agency.cmsData?.claimDenialRate;
+  const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
+  let cmsScore = 50;
+  if (hasDenialRate) {
+    if (denial >= 22) cmsScore = 100;
+    else if (denial >= 18) cmsScore = 85;
+    else if (denial >= 15) cmsScore = 65;
+    else cmsScore = 40;
+  }
   const cmsPts = +((cmsScore * wCms) / totalWeight).toFixed(1);
 
   // 3. Cardiac Volume / Clinical Acuity
@@ -240,12 +246,13 @@ export function explainAgencyScore(
       weightPct: Math.round((wCms / totalWeight) * 100),
       componentScore: cmsScore,
       pointsContributed: cmsPts,
-      agencyMetricValue: `${denial}% Rejected · Code ${agency.cmsData?.topDenialReasonCode || 'CO-16'}`,
-      clinicalImpactSummary:
-        denial >= 18
-          ? `High denial rate (${denial}%) due to lack of medical necessity charting. Recoverable billing estimated at +$${recovRev}K/yr.`
-          : `Claim denial rate is ${denial}%, with +$${recovRev}K/yr billing recovery potential.`,
-      urgencyLevel: denial >= 20 ? 'Critical' : denial >= 16 ? 'Elevated' : 'Moderate'
+      agencyMetricValue: hasDenialRate
+        ? `${denial}% reported · Code ${agency.cmsData?.topDenialReasonCode || 'Not reported'}`
+        : 'County-matched denial rate not published',
+      clinicalImpactSummary: hasDenialRate
+        ? `Reported claim denial rate is ${denial}%. Recoverable billing is not calculated from a denial proxy.`
+        : 'No county-matched denied and adjudicated ambulance claim counts are available; a neutral score contribution is used.',
+      urgencyLevel: hasDenialRate && denial >= 20 ? 'Critical' : hasDenialRate && denial >= 16 ? 'Elevated' : 'Moderate'
     },
     {
       id: 'cardiac',

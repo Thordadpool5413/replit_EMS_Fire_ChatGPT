@@ -567,8 +567,10 @@ class DataSanitizationService {
       ? (age >= 9 ? 25 : age >= 7 ? 21 : age >= 5 ? 16 : 10)
       : (age >= 7 ? 19 : 8);
 
-    const denial = agency.cmsData?.claimDenialRate ?? 18;
-    const cmsPts = denial >= 22 ? 20 : denial >= 18 ? 17 : denial >= 15 ? 13 : 8;
+    const denial = agency.cmsData?.claimDenialRate;
+    const cmsPts = typeof denial === 'number' && Number.isFinite(denial)
+      ? (denial >= 22 ? 20 : denial >= 18 ? 17 : denial >= 15 ? 13 : 8)
+      : 10;
 
     const cardiac = agency.annualCardiacArrestCalls ?? 600;
     const clinicalPts = cardiac >= 1800 ? 25 : cardiac >= 1000 ? 21 : cardiac >= 500 ? 18 : 13;

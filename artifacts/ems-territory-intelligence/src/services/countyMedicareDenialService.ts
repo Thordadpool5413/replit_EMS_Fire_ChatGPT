@@ -6,13 +6,36 @@ type CountyDenialInput = Pick<
   | 'medicareDenialRatePct'
   | 'medicareDeniedClaimCount'
   | 'medicareAdjudicatedClaimCount'
+  | 'medicareDenialClaimScope'
+  | 'medicareDenialReportingPeriod'
+  | 'medicareDenialSource'
+  | 'medicareDenialSourceUrl'
 >;
+
+function hasCountyDenialProvenance(county: CountyDenialInput): boolean {
+  if (
+    !county.medicareDenialClaimScope?.trim() ||
+    !county.medicareDenialReportingPeriod?.trim() ||
+    !county.medicareDenialSource?.trim() ||
+    !county.medicareDenialSourceUrl?.trim()
+  ) {
+    return false;
+  }
+
+  try {
+    const url = new URL(county.medicareDenialSourceUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Returns a county-only Medicare denial rate.
- * Claim counts take precedence and must share the same scope and reporting period.
- * A reported percentage is accepted only from the county record itself; this function
- * never substitutes a state, ZIP, or neighboring-county value.
+ * The formula is denied finalized ambulance claims / all finalized adjudicated ambulance
+ * claims * 100. Counts must share a scope and reporting period and include source
+ * attribution. A reported percentage is accepted only from the exact county record.
+ * This function never substitutes a state, ZIP, or neighboring-county value.
  */
 export function getCountyMedicareDenialRatePct(county: CountyDenialInput): number | null {
   if (!/^\d{5}$/.test(county.countyFips)) return null;
@@ -21,6 +44,7 @@ export function getCountyMedicareDenialRatePct(county: CountyDenialInput): numbe
   const adjudicated = county.medicareAdjudicatedClaimCount;
   if (denied !== undefined || adjudicated !== undefined) {
     if (
+      !hasCountyDenialProvenance(county) ||
       typeof denied !== 'number' ||
       typeof adjudicated !== 'number' ||
       !Number.isInteger(denied) ||
@@ -35,7 +59,8 @@ export function getCountyMedicareDenialRatePct(county: CountyDenialInput): numbe
   }
 
   const reportedRate = county.medicareDenialRatePct;
-  return typeof reportedRate === 'number' &&
+  return hasCountyDenialProvenance(county) &&
+    typeof reportedRate === 'number' &&
     Number.isFinite(reportedRate) &&
     reportedRate >= 0 &&
     reportedRate <= 100

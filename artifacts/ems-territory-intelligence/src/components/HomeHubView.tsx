@@ -380,7 +380,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
                     const isHovered = hoveredStateCode === st.code;
-                    const isHighDenial = st.avgMedicareDenialRate >= 19.5;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
 
                     const fillColor = isSelected
@@ -389,9 +388,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         ? '#194BC8'
                         : !isInRegion
                           ? '#F1F5F9'
-                          : isHighDenial
-                            ? '#DBEAFE'
-                            : '#E2E8F0';
+                          : '#E2E8F0';
 
                     const strokeColor = isSelected
                       ? '#FFFFFF'
@@ -546,10 +543,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Reference denial estimate
+                    County ambulance denial rate
                   </span>
                   <span className="font-semibold text-amber-600 dark:text-amber-400 text-base pi-metric-card">
-                    {formatPercent(activeStateSummary.avgMedicareDenialRate)}
+                    Not published
                   </span>
                 </div>
               </div>
@@ -590,7 +587,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   {formatInteger(stateStats.medicareAllowedDataCount)} of {formatInteger(stateStats.count)} agency records
                 </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  The denial rate above is a separate state reference estimate, not an agency-record total. Other figures use records reporting that measure.
+                  CMS public geographic files report use and spending, not county ambulance claim denials. No state or ZIP rate is substituted.
                 </p>
               </div>
 
@@ -724,7 +721,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             {
               id: 'claims',
               title: 'Medicare Claims & Payer Mix',
-              desc: 'CMS Ground Ambulance Cost Data (GADCS), Medicare allowed PUF & denial recovery',
+              desc: 'CMS Ground Ambulance Cost Data (GADCS) and Medicare payment references',
               icon: DollarSign,
               badge: 'CMS Data'
             },

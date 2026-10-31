@@ -15,7 +15,7 @@ export interface NationwideIngestState {
   medicareClaimsDataCount: number;
   totalBilledVolumeDollars: number;
   billedVolumeDataCount: number;
-  avgClaimDenialRatePct: number;
+  weightedClaimDenialRatePct: number | null;
   denialRateDataCount: number;
   totalRecoverableDollars: number;
   recoverableRevenueDataCount: number;
@@ -104,7 +104,24 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
     const cloudSyncedAgencies = list.filter(a => a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced').length;
     const medicareClaimsRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareClaimsVolume));
     const billedVolumeRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareBilledAnnual));
-    const denialRateRecords = list.filter(a => hasReportedValue(a.cmsData?.claimDenialRate));
+    const denialRateRecords = list.filter(a => {
+      const denied = a.cmsData?.medicareDeniedClaimCount;
+      const adjudicated = a.cmsData?.medicareAdjudicatedClaimCount;
+      return Number.isInteger(denied) &&
+        Number.isInteger(adjudicated) &&
+        adjudicated! > 0 &&
+        denied! >= 0 &&
+        denied! <= adjudicated! &&
+        Boolean(a.cmsData?.medicareDenialClaimScope?.trim()) &&
+        Boolean(a.cmsData?.medicareDenialReportingPeriod?.trim()) &&
+        Boolean(a.cmsData?.medicareDenialSource?.trim()) &&
+        Boolean(a.cmsData?.medicareDenialSourceUrl?.trim());
+    });
+    const denialCohorts = new Set(
+      denialRateRecords.map(a =>
+        `${a.cmsData.medicareDenialClaimScope!.trim().toLowerCase()}|${a.cmsData.medicareDenialReportingPeriod!.trim().toLowerCase()}`
+      )
+    );
     const recoverableRevenueRecords = list.filter(a => hasReportedValue(a.cmsData?.estimatedRecoverableRevenue));
     const afgAwardAmountRecords = list.filter(
       a => a.grantStatus?.afgAwarded && hasReportedValue(a.grantStatus.afgAwardAmount)
@@ -117,9 +134,16 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
       (sum, a) => sum + a.cmsData.medicareBilledAnnual,
       0
     );
-    const avgClaimDenialRatePct = denialRateRecords.length
-      ? +(denialRateRecords.reduce((sum, a) => sum + a.cmsData.claimDenialRate, 0) / denialRateRecords.length).toFixed(1)
+    const canAggregateDenials = denialRateRecords.length > 0 && denialCohorts.size === 1;
+    const totalDeniedClaims = canAggregateDenials
+      ? denialRateRecords.reduce((sum, a) => sum + a.cmsData.medicareDeniedClaimCount!, 0)
       : 0;
+    const totalAdjudicatedDenialClaims = canAggregateDenials
+      ? denialRateRecords.reduce((sum, a) => sum + a.cmsData.medicareAdjudicatedClaimCount!, 0)
+      : 0;
+    const weightedClaimDenialRatePct = totalAdjudicatedDenialClaims > 0
+      ? +((totalDeniedClaims / totalAdjudicatedDenialClaims) * 100).toFixed(1)
+      : null;
     const totalRecoverableDollars = recoverableRevenueRecords.reduce(
       (sum, a) => sum + a.cmsData.estimatedRecoverableRevenue,
       0
@@ -137,7 +161,7 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
       medicareClaimsDataCount: medicareClaimsRecords.length,
       totalBilledVolumeDollars,
       billedVolumeDataCount: billedVolumeRecords.length,
-      avgClaimDenialRatePct,
+      weightedClaimDenialRatePct,
       denialRateDataCount: denialRateRecords.length,
       totalRecoverableDollars,
       recoverableRevenueDataCount: recoverableRevenueRecords.length,

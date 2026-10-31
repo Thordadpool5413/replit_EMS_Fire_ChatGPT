@@ -425,13 +425,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     const netCapExLow = Math.round(netCapExBase * 0.85);
     const netCapExHigh = Math.round(netCapExBase * 1.15);
 
+    const deniedAmount = agency.cmsData.medicareDeniedAmountAnnual;
     const hasRecoveryInputs =
-      agency.cmsData.medicareBilledAnnual != null &&
-      agency.cmsData.claimDenialRate != null &&
-      Number.isFinite(agency.cmsData.medicareBilledAnnual) &&
-      Number.isFinite(agency.cmsData.claimDenialRate);
+      typeof deniedAmount === 'number' &&
+      Number.isFinite(deniedAmount) &&
+      deniedAmount >= 0 &&
+      Boolean(agency.cmsData.medicareDenialClaimScope?.trim()) &&
+      Boolean(agency.cmsData.medicareDenialReportingPeriod?.trim()) &&
+      Boolean(agency.cmsData.medicareDenialSource?.trim()) &&
+      Boolean(agency.cmsData.medicareDenialSourceUrl?.trim());
     const deniedPool = hasRecoveryInputs
-      ? Math.round(agency.cmsData.medicareBilledAnnual * (agency.cmsData.claimDenialRate / 100))
+      ? deniedAmount
       : 0;
     const annualRecoveryBase = Math.round(deniedPool * (customDenialCapturePct / 100));
     const annualRecoveryLow = Math.round(annualRecoveryBase * 0.82);
@@ -706,8 +710,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       category: 'Medicare & resuscitation impact',
       primaryFact: `${reportMetric(agency.cmsData.claimDenialRate, '%')} CMS claim denials (${agency.cmsData.topDenialReasonCode || 'Not reported'})`,
       secondaryFact: actuarialForecast.hasRecoveryInputs
-        ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported Medicare billings × reported denial rate × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
-        : 'Recovery estimate not calculated: reported Medicare billings and denial rate are required.',
+        ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported denied-claim dollars × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
+        : 'Recovery estimate not calculated: same-scope reported denied-claim dollars and reporting period are required.',
       whyItMatters: 'Review billing and documentation workflows; no agency-specific recovery amount is attributed to product features without verified inputs.',
       nextActionLabel: 'Inspect Medicare',
       targetTopic: 'medicare' as ProfileSection,
@@ -3492,7 +3496,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   3. Modeled vs. Empirical Disclosure
                 </div>
                 <p className="text-[#53657B] dark:text-slate-400 leading-relaxed">
-                  5-year TCO savings (+${(actuarialForecast.fiveYrTcoBase / 1000).toFixed(0)}K) and CO-16 claim recovery forecasts (+${(actuarialForecast.annualRecoveryBase / 1000).toFixed(0)}K/yr) are deterministic actuarial estimates based on Sourcewell #041823-ZOL pricing and CMS Part B denial benchmarks.
+                  5-year TCO savings (+${(actuarialForecast.fiveYrTcoBase / 1000).toFixed(0)}K) and claim-recovery scenarios use reported denied-claim dollar amounts only; a claim-count denial rate is not converted into dollars.
                 </p>
               </div>
             </div>

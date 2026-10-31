@@ -493,7 +493,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       if (providerSortBy === 'pulseIq') return (b.zollOpportunity.pulseIqScore || 0) - (a.zollOpportunity.pulseIqScore || 0);
       if (providerSortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (providerSortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
-      if (providerSortBy === 'denial') return b.cmsData.claimDenialRate - a.cmsData.claimDenialRate;
+      if (providerSortBy === 'denial') {
+        const aRate = a.cmsData.claimDenialRate;
+        const bRate = b.cmsData.claimDenialRate;
+        if (aRate == null) return bRate == null ? 0 : 1;
+        if (bRate == null) return -1;
+        return bRate - aRate;
+      }
       return 0;
     });
   }, [jurisdictionBaseAgencies, agencyCategoryFilter, providerSortBy]);
@@ -506,7 +512,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         totalPipelineValue: 0,
         totalMedicareBilled: 0,
         totalRecoverableRevenue: 0,
-        avgClaimDenialRate: 0,
         avgUtsteinSurvival: 0,
         totalAmbulances: 0,
         totalFireEngines: 0,
@@ -523,7 +528,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     let totalPipelineValue = 0;
     let totalMedicareBilled = 0;
     let totalRecoverableRevenue = 0;
-    let sumDenialRate = 0;
     let sumSurvival = 0;
     let totalAmbulances = 0;
     let totalFireEngines = 0;
@@ -539,7 +543,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       totalPipelineValue += a.zollOpportunity.projectedPipelineValue;
       totalMedicareBilled += a.cmsData.medicareBilledAnnual;
       totalRecoverableRevenue += a.cmsData.estimatedRecoverableRevenue;
-      sumDenialRate += a.cmsData.claimDenialRate;
       sumSurvival += a.utsteinSurvivalRate;
       totalAmbulances += a.totalAmbulances;
       totalFireEngines += a.totalFireEngines;
@@ -559,7 +562,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       totalPipelineValue,
       totalMedicareBilled,
       totalRecoverableRevenue,
-      avgClaimDenialRate: +(sumDenialRate / count).toFixed(1),
       avgUtsteinSurvival: +(sumSurvival / count).toFixed(1),
       totalAmbulances,
       totalFireEngines,
@@ -972,16 +974,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isHovered = hoveredMapStateCode === st.code;
-                    const isHighDenial = st.avgMedicareDenialRate >= 19.5;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
 
                     const fillColor = isHovered
                       ? '#1E3A8A'
                       : !isInRegion
                         ? '#F1F5F9'
-                        : isHighDenial
-                          ? '#DBEAFE'
-                          : '#E2E8F0';
+                        : '#E2E8F0';
 
                     const strokeColor = isHovered
                       ? '#0F172A'
@@ -1143,7 +1142,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">{cCount} Counties</span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-slate-700 dark:text-slate-300">Medicare Denials: <strong className="text-rose-700 dark:text-rose-400 font-semibold tabular-nums">{hSt.avgMedicareDenialRate}%</strong> <span className="text-[10px] text-slate-400">(CMS PUF)</span></span>
+                        <span className="text-slate-700 dark:text-slate-300">County ambulance denials: <strong className="font-semibold">Not published</strong></span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="text-slate-700 dark:text-slate-300">FEMA Grants: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">${(hSt.totalAfgAwardsYtd / 1000000).toFixed(1)}M</strong></span>
                       </div>
@@ -1157,7 +1156,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     </span>
                     <span className="flex items-center gap-1.5 tabular-nums">
                       <span className="w-3 h-3 rounded-xs bg-[#DBEAFE] border border-[#60A5FA] inline-block" />
-                      <span>Elevated Claim Denial (&ge;19.5% · CMS PUF)</span>
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
@@ -1562,14 +1560,37 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">MCR Denial</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Medicare ambulance denial rate</span>
                           <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {countyDenialRatePct !== null ? `${countyDenialRatePct}%` : 'Not available'}
+                            {countyDenialRatePct !== null ? `${countyDenialRatePct}%` : 'Not published'}
                           </span>
-                          {countyDenialRatePct === null && (
+                          {countyDenialRatePct !== null && c.medicareDenialSource && c.medicareDenialSourceUrl && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              CMS Geographic Variation county data does not include ambulance claim denials
+                              {c.medicareDenialReportingPeriod || 'Period not listed'} ·{' '}
+                              <a
+                                className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                href={c.medicareDenialSourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={event => event.stopPropagation()}
+                              >
+                                {c.medicareDenialSource}
+                              </a>
                             </span>
+                          )}
+                          {countyDenialRatePct === null && (
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                              Requires denied ÷ adjudicated ambulance claims with the same claim scope and reporting period
+                              <a
+                                className="ml-1 underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county"
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={event => event.stopPropagation()}
+                              >
+                                CMS use/spending data, not denials
+                              </a>
+                            </div>
                           )}
                         </div>
                         <div>
@@ -2011,7 +2032,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
+                              ? `${agency.cmsData.claimDenialRate}% Denials`
+                              : 'Denial rate not published'}
                           </span>
                         </div>
 
@@ -2090,7 +2113,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onClick={() => setProviderSortBy('denial')}
                         className="py-2.5 px-3 text-right hidden lg:table-cell cursor-pointer hover:text-[#1E3A8A]"
                       >
-                        Claim Recovery {providerSortBy === 'denial' ? '↓' : ''}
+                        Claim Denial Rate {providerSortBy === 'denial' ? '↓' : ''}
                       </th>
                       <th className="py-2.5 px-3 text-right hidden xl:table-cell">Runs &amp; ROSC</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
@@ -2142,7 +2165,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% Denials` : 'Denial rate not verified'}
+                              {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
+                                ? `${agency.cmsData.claimDenialRate}% Denials`
+                                : 'Denial rate not published'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden xl:table-cell">

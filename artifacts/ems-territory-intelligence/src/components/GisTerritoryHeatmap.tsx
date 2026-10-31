@@ -330,7 +330,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         longTransportCount: 0,
         extremeTransportCount: 0,
         denialDataCount: 0,
-        avgDenialRate: 0,
+        avgDenialRate: null,
         highDenialCount: 0,
         totalRecoverableRevenue: 0,
         recoverableRevenueDataCount: 0,
@@ -359,7 +359,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     let transportDataCount = 0;
     let longTransportCount = 0;
     let extremeTransportCount = 0;
-    let sumDenialRate = 0;
     let denialDataCount = 0;
     let highDenialCount = 0;
     let totalRecoverableRevenue = 0;
@@ -414,7 +413,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         if (vent && vent !== 'Not source-verified' && vent.includes('None')) ventOpportunityCount++;
       }
       if (hasReportedValue(denialRate)) {
-        sumDenialRate += denialRate;
         denialDataCount++;
         if (denialRate >= 19) highDenialCount++;
       }
@@ -436,7 +434,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const avgSurvival = survivalDataCount ? +(sumSurvival / survivalDataCount).toFixed(1) : 0;
     const avgAedDeficit = aedDataCount ? Math.round(sumAedDeficit / aedDataCount) : 0;
     const avgTransportTime = transportDataCount ? +(sumTransportTime / transportDataCount).toFixed(1) : 0;
-    const avgDenialRate = denialDataCount ? +(sumDenialRate / denialDataCount).toFixed(1) : 0;
+    const avgDenialRate = null;
 
     return {
       totalCardiacCalls,
@@ -626,7 +624,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       aedCount: number;
       sumTransport: number;
       transportCount: number;
-      sumDenial: number;
       denialCount: number;
     }> = {};
     for (let i = 0; i < effectiveAgencies.length; i++) {
@@ -636,7 +633,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         stateStats[sc] = {
           totalCardiac: 0, cardiacCount: 0, agencyCount: 0, sumSurvival: 0,
           survivalCount: 0, sumAed: 0, aedCount: 0, sumTransport: 0,
-          transportCount: 0, sumDenial: 0, denialCount: 0
+          transportCount: 0, denialCount: 0
         };
       }
       const st = stateStats[sc];
@@ -658,7 +655,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         st.transportCount++;
       }
       if (hasReportedValue(a.cmsData?.claimDenialRate)) {
-        st.sumDenial += a.cmsData.claimDenialRate;
         st.denialCount++;
       }
     }
@@ -762,26 +758,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           borderColor = basemapTheme === 'dark' ? '#22c55e' : '#16a34a';
         }
       } else {
-        const denial = stats?.denialCount ? +(stats.sumDenial / stats.denialCount).toFixed(1) : 0;
-        metricLabel = 'Medicare Denial Rate';
-        metricValue = stats?.denialCount ? `${denial}%` : 'Not reported';
-        if (stats?.denialCount && denial >= 20.5) {
-          tier = 'critical';
-          fillColor = basemapTheme === 'dark' ? '#881337' : '#ffe4e6';
-          borderColor = basemapTheme === 'dark' ? '#fb7185' : '#be123c';
-        } else if (stats?.denialCount && denial >= 18) {
-          tier = 'high';
-          fillColor = basemapTheme === 'dark' ? '#4c1d95' : '#ede9fe';
-          borderColor = basemapTheme === 'dark' ? '#a78bfa' : '#7c3aed';
-        } else if (stats?.denialCount && denial >= 15) {
-          tier = 'moderate';
-          fillColor = basemapTheme === 'dark' ? '#0c4a6e' : '#e0f2fe';
-          borderColor = basemapTheme === 'dark' ? '#38bdf8' : '#0284c7';
-        } else if (stats?.denialCount) {
-          tier = 'baseline';
-          fillColor = basemapTheme === 'dark' ? '#064e3b' : '#d1fae5';
-          borderColor = basemapTheme === 'dark' ? '#10b981' : '#059669';
-        }
+        metricLabel = 'Agency denial-rate records';
+        metricValue = stats?.denialCount ? `${stats.denialCount} records` : 'Not reported';
       }
 
       result[sc] = {
@@ -2175,7 +2153,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                      selectedLayer === 'cardiac' ? 'Avg Utstein Survival' :
                      selectedLayer === 'aed' ? 'Avg Public Access Deficit' :
                      selectedLayer === 'transport' ? 'Avg Emergency Transit' :
-                     'Avg Claim Denial Rate'}
+                      'Agency Denial Rate Records'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-400 tabular-nums">
@@ -2183,7 +2161,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.survivalDataCount ? `${nemsisTerritoryStats.avgSurvival}%` : 'Not reported')}
                       {selectedLayer === 'aed' && (nemsisTerritoryStats.aedDataCount ? `${nemsisTerritoryStats.avgAedDeficit}%` : 'Not reported')}
                       {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.avgTransportTime} min` : 'Not reported')}
-                      {selectedLayer === 'cms' && (nemsisTerritoryStats.denialDataCount ? `${nemsisTerritoryStats.avgDenialRate}%` : 'Not reported')}
+                      {selectedLayer === 'cms' && (nemsisTerritoryStats.denialDataCount ? `${nemsisTerritoryStats.denialDataCount} records` : 'Not reported')}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
                       {selectedLayer === 'nemsis_cardiac' ? 'OHCA/yr' :

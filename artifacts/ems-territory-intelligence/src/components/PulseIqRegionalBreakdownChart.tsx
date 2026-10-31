@@ -127,7 +127,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       const calls = agency.annualCardiacArrestCalls || Math.round((agency.annual911Transports || 3000) * 0.12);
       const survival = agency.utsteinSurvivalRate || 10.8;
       const survivalGap = Math.max(0, 36.0 - survival);
-      const denial = agency.cmsData?.claimDenialRate || 18.5;
+      const denial = agency.cmsData?.claimDenialRate;
       const defibAge = agency.installedFleet?.defibAgeYears || 7;
       const senior = agency.gisData?.seniorPopulationPct || 16.5;
       const aed = agency.gisData?.publicAccessAedDeficitPct || 42;
@@ -135,7 +135,9 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       return {
         clinicalAcuityPts: Math.min(25, Math.max(8, Math.round(8 + survivalGap * 0.75 + Math.min(6, calls / 50)))),
         fleetObsolescencePts: Math.min(25, Math.max(6, Math.round((defibAge / 10) * 16 + (agency.installedFleet?.defibBrand.includes('ZOLL') ? 0 : 5) + (defibAge >= 8 ? 4 : 0)))),
-        cmsFinancialPts: Math.min(20, Math.max(5, Math.round((denial / 24) * 20))),
+        cmsFinancialPts: typeof denial === 'number'
+          ? Math.min(20, Math.max(5, Math.round((denial / 24) * 20)))
+          : 10,
         demographicVulnerabilityPts: Math.min(15, Math.max(4, Math.round((senior / 24) * 9 + (aed / 60) * 6))),
         budgetGrantReadinessPts: agency.grantStatus?.afgAwarded ? 15 : (agency.grantStatus?.saferGrantActive ? 11 : 7)
       };
@@ -319,7 +321,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
           clinicalAcuity = Math.min(25, Math.max(10, Math.round(10 + (incidents % 12) + (36 - (stateObj?.avgUtsteinSurvival || 26)) * 0.4)));
           fleetObsolescence = Math.min(25, Math.max(12, Math.round(14 + (calls % 9))));
-          cmsRecovery = Math.min(20, Math.max(8, Math.round(((stateObj?.avgMedicareDenialRate || 18) / 24) * 20)));
+          cmsRecovery = 10;
           demographics = Math.min(15, Math.max(6, Math.round((seniorPct / 24) * 9 + 4)));
           budgetGrant = Math.min(15, Math.max(6, Math.round(7 + (incidents % 7))));
           avgScore = Math.min(99, clinicalAcuity + fleetObsolescence + cmsRecovery + demographics + budgetGrant);
@@ -414,7 +416,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
       const cmsRecovery = hasAgencies
         ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).cmsFinancialPts, 0) / agenciesInState.length)
-        : Math.min(20, Math.max(6, Math.round((stateObj.avgMedicareDenialRate / 24) * 20)));
+        : 10;
 
       const demographics = hasAgencies
         ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).demographicVulnerabilityPts, 0) / agenciesInState.length)
@@ -537,7 +539,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     return [
       { pillar: 'Clinical Acuity (Cardiac / ROSC)', score: avgClinical, benchmark: 18, fullMark: 25 },
       { pillar: 'Fleet Obsolescence (LP15 Age)', score: avgFleet, benchmark: 17, fullMark: 25 },
-      { pillar: 'CMS Recovery (Billing Denials)', score: avgCms, benchmark: 14, fullMark: 20 },
+      { pillar: 'CMS claims evidence', score: avgCms, benchmark: 10, fullMark: 20 },
       { pillar: 'Demographic Need (Age 65+)', score: avgDemo, benchmark: 10, fullMark: 15 },
       { pillar: 'Budget / AFG Grant Funding', score: avgGrant, benchmark: 10, fullMark: 15 }
     ];
@@ -683,7 +685,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             </div>
           </div>
           <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            {scopeSubtitle}. Visualizing algorithmic ranking across Clinical Acuity, Rival Fleet Age, CMS Denials, Demographics, and FEMA Grants.
+            {scopeSubtitle}. Visualizing algorithmic ranking across Clinical Acuity, Rival Fleet Age, CMS claims evidence, Demographics, and FEMA Grants. Missing county denial data receives a neutral score contribution.
           </p>
         </div>
 

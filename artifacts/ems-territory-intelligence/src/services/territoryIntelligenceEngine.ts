@@ -535,7 +535,6 @@ class TerritoryIntelligenceService {
       targetProduct = 'ZOLL Billing / AR Boost';
     }
 
-    const denialRate = countyRecord.medicareDenialRatePct || stSummary.avgMedicareDenialRate || 18.2;
     const recoverableRevenue = Math.round(countyRecord.annualEmergencyTransports * 68);
 
     const medicarePayerPct = +(38.0 + (posHash % 14)).toFixed(1);
@@ -604,12 +603,12 @@ class TerritoryIntelligenceService {
         projectedPipelineValue: Math.round(Math.max(2, Math.round(countyRecord.population / 14000)) * 42000),
         clinicalBenefitNarrative: `Deployment of ${targetProduct} enhances chest compression fraction from 71% to 88% and reduces neurological deficit upon discharge.`,
         financialRoiNarrative: `Estimated $${(recoverableRevenue / 1000).toFixed(0)}k annual recoverable revenue via automated clinical documentation and NEMSIS 3.5 compliance.`,
-        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet with ${warrantyStatus.toLowerCase()} warranty. ${denialRate}% Medicare claims denial rate offers $${(recoverableRevenue / 1000).toFixed(0)}k annual recoverable revenue.`,
+        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet with ${warrantyStatus.toLowerCase()} warranty. County-level Medicare ambulance denials are not published for this area.`,
         probabilityPct: 65,
         scoreBreakdown: {
           clinicalAcuityPts: 20,
           fleetObsolescencePts: 22,
-          cmsFinancialPts: 18,
+          cmsFinancialPts: 10,
           demographicVulnerabilityPts: 12,
           budgetGrantReadinessPts: 14
         }
@@ -617,9 +616,6 @@ class TerritoryIntelligenceService {
       cmsData: {
         medicareBilledAnnual: Math.round(countyRecord.annualEmergencyTransports * 540),
         medicareAllowedAnnual: Math.round(countyRecord.annualEmergencyTransports * 390),
-        claimDenialRate: denialRate,
-        topDenialReason: 'CO-16: Lacks Medical Necessity Documentation',
-        topDenialReasonCode: 'CO-16',
         medicaidBilledAnnual: Math.round(countyRecord.annualEmergencyTransports * 210),
         commercialPayerMixPct: commercialPayerMixPct,
         medicarePayerPct: medicarePayerPct,

@@ -94,7 +94,10 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
   // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-  const cmsDenialSub = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
+  const denialRate = agency.cmsData.claimDenialRate;
+  const cmsDenialSub = typeof denialRate === 'number'
+    ? Math.min(100, Math.round((denialRate / 25) * 100))
+    : 50;
   const clinicalSub = Math.min(
     100,
     Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8)
@@ -264,8 +267,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'cmsClaims')
-                    ? `${formatPercent(agency.cmsData.claimDenialRate)} CMS Part B denials`
+                  {hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null
+                    ? `${formatPercent(denialRate)} CMS Part B denials`
                     : 'Agency record does not list claim denial data'}
                 </span>
               </div>
@@ -305,7 +308,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             <div className="space-y-2 text-[11px] tabular-nums">
               {[
                 { label: 'Fleet Replacement Pressure (30%)', val: fleetAgeSub, detail: `${agency.installedFleet.defibAgeYears} yr cycle` },
-                { label: 'Medicare Claim Recovery (25%)', val: cmsDenialSub, detail: `${agency.cmsData.claimDenialRate}% denial rate` },
+                {
+                  label: 'Medicare Claim Recovery (25%)',
+                  val: cmsDenialSub,
+                  detail: denialRate != null ? `${denialRate}% denial rate` : 'No county-matched rate; neutral score'
+                },
                 { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {
                   label: 'FEMA AFG Grant Readiness (20%)',

@@ -105,7 +105,9 @@ export interface CountyHealthRecord {
   /** County-level Medicare denial values only; never populate from ZIP or state averages. */
   medicareDenialRatePct?: number;
   medicareDeniedClaimCount?: number;
+  /** Same finalized ambulance-claim population and reporting period for both counts. */
   medicareAdjudicatedClaimCount?: number;
+  medicareDenialClaimScope?: string;
   medicareDenialReportingPeriod?: string;
   medicareDenialSource?: string;
   medicareDenialSourceUrl?: string;
@@ -210,7 +212,14 @@ export interface Agency {
   cmsData: {
     medicareBilledAnnual: number;
     medicareAllowedAnnual: number;
-    claimDenialRate: number; // percentage (e.g. 19.5%)
+    claimDenialRate?: number | null; // County/provider rate only when supported by a direct source
+    medicareDeniedClaimCount?: number;
+    medicareAdjudicatedClaimCount?: number;
+    medicareDeniedAmountAnnual?: number;
+    medicareDenialClaimScope?: string;
+    medicareDenialReportingPeriod?: string;
+    medicareDenialSource?: string;
+    medicareDenialSourceUrl?: string;
     topDenialReason?: string;
     topDenialReasonCode?: string;
     medicaidBilledAnnual: number;

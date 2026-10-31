@@ -335,7 +335,13 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       if (sortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (sortBy === 'calls') return (b.annualCallVolume || b.annual911Transports) - (a.annualCallVolume || a.annual911Transports);
       if (sortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
-      if (sortBy === 'denial') return b.cmsData.claimDenialRate - a.cmsData.claimDenialRate;
+      if (sortBy === 'denial') {
+        const aRate = a.cmsData.claimDenialRate;
+        const bRate = b.cmsData.claimDenialRate;
+        if (aRate == null) return bRate == null ? 0 : 1;
+        if (bRate == null) return -1;
+        return bRate - aRate;
+      }
       return 0;
     });
   }, [geographicScopePool, selectedCategory, quickSegment, selectedState, selectedCounty, selectedCity, availableCounties, agencies, sortBy]);
@@ -795,7 +801,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             // Compute 5-pillar sub-scores for micro-bar visualization
             const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8));
             const p2Fleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-            const p3Cms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 26) * 100));
+            const p3Cms = agency.cmsData.claimDenialRate == null
+              ? 50
+              : Math.min(100, Math.round((agency.cmsData.claimDenialRate / 26) * 100));
             const p4Demo = Math.min(100, Math.round(Math.log10(Math.max(1000, agency.populationServed || 25000)) * 18));
             const p5Grant = agency.grantStatus.afgAwarded ? 95 : 62;
             const pillarBars = [
@@ -939,7 +947,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
-                        {hasAgencyFactEvidence(agency, 'cmsClaims') ? ` · ${formatPercent(agency.cmsData.claimDenialRate)} denial` : ''}
+                        {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
+                          ? ` · ${formatPercent(agency.cmsData.claimDenialRate)} denial`
+                          : ''}
                       </div>
                     </div>
                   </div>
@@ -962,7 +972,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claims denial rate</span>
                           <div className="font-semibold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `${agency.cmsData.claimDenialRate}% denied` : 'Not source-verified'}
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
+                              ? `${agency.cmsData.claimDenialRate}% denied`
+                              : 'Not published'}
                           </div>
                         </div>
                         <div className="p-2.5 bg-white dark:bg-slate-900">
@@ -1295,7 +1307,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
                   const pClinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 200) / 8));
                   const pFleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-                  const pCms = Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
+                  const pCms = agency.cmsData.claimDenialRate == null
+                    ? 50
+                    : Math.min(100, Math.round((agency.cmsData.claimDenialRate / 25) * 100));
                   const pDemo = Math.min(100, Math.round(((agency.gisData?.seniorPopulationPct || 16) / 28) * 100));
                   const pGrant = agency.grantStatus.afgAwarded ? 100 : 45;
 
@@ -1397,14 +1411,16 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       {/* CMS Denial Rate & Payer Mix */}
                       <td className="py-2.5 px-3 text-right hidden xl:table-cell">
                         <div className={`font-semibold tabular-nums ${
-                          agency.cmsData.claimDenialRate > 18 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'
+                          agency.cmsData.claimDenialRate != null && agency.cmsData.claimDenialRate > 18
+                            ? 'text-rose-700 dark:text-rose-400'
+                            : 'text-slate-900 dark:text-white'
                         }`}>
                           {hasAgencyFactEvidence(agency, 'cmsClaims')
                             ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
                             : 'Not source-verified'}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {hasAgencyFactEvidence(agency, 'cmsClaims')
+                          {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.claimDenialRate != null
                             ? `${formatPercent(agency.cmsData.claimDenialRate)} denial · MCR ${agency.cmsData.medicarePayerPct ?? 42}%`
                             : 'Claim data not source-verified'}
                         </div>

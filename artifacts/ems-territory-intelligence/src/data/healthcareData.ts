@@ -8,7 +8,7 @@ import { Agency, TerritoryCluster } from '../types';
 export interface NationalBenchmark {
   totalAnnual911Calls: number;
   totalAmbulanceTransports: number;
-  averageMedicareDenialRate: number;
+  nationalAmbulanceImproperPaymentRate: number;
   averageUtsteinSurvivalRate: number;
   totalAfgFundingAllocated: number;
   activeEmsAgenciesCount: number;
@@ -25,7 +25,7 @@ export interface NationalBenchmark {
 export const NATIONAL_BENCHMARKS: NationalBenchmark = {
   totalAnnual911Calls: 36800000,
   totalAmbulanceTransports: 22400000,
-  averageMedicareDenialRate: 16.8, // 16.8% national average Medicare Part B denial rate
+  nationalAmbulanceImproperPaymentRate: 13.2, // CMS 2024 national ambulance improper-payment rate; not a claim-denial rate
   averageUtsteinSurvivalRate: 29.7, // CARES report national benchmark
   totalAfgFundingAllocated: 360000000, // $360M FEMA AFG
   activeEmsAgenciesCount: 21450,

@@ -280,7 +280,6 @@ class NationalProviderDatabaseService {
     ];
     const dispatchCadVendor = cadVendors[posHash % cadVendors.length];
 
-    const denialRate = c.medicareDenialRatePct || stSummary.avgMedicareDenialRate || 18.2;
     const recoverableRevenue = Math.round(emsTransports * (isFire ? 34 : 68));
 
     const medicarePayerPct = +(38.0 + (posHash % 14)).toFixed(1);
@@ -330,9 +329,9 @@ class NationalProviderDatabaseService {
     )));
 
     // Pillar 3: CMS Billing Denial & Financial Recovery (max 20 pts)
-    const cmsFinancialPts = Math.min(20, Math.max(5, Math.round(
-      (denialRate / 24) * 20
-    )));
+    // No county- or provider-matched denial data is available for these generated
+    // prospect records, so use a neutral score contribution rather than a state proxy.
+    const cmsFinancialPts = 10;
 
     // Pillar 4: Demographic Need & Public Health Vulnerability (max 15 pts)
     const demographicVulnerabilityPts = Math.min(15, Math.max(4, Math.round(
@@ -433,9 +432,6 @@ class NationalProviderDatabaseService {
       cmsData: {
         medicareBilledAnnual: Math.round(emsTransports * (isFire ? 310 : 540)),
         medicareAllowedAnnual: Math.round(emsTransports * (isFire ? 225 : 390)),
-        claimDenialRate: denialRate,
-        topDenialReason: 'CO-16: Lacks Medical Necessity Documentation',
-        topDenialReasonCode: 'CO-16',
         medicaidBilledAnnual: Math.round(emsTransports * (isFire ? 130 : 210)),
         commercialPayerMixPct: commercialPayerMixPct,
         medicarePayerPct: medicarePayerPct,
@@ -473,7 +469,7 @@ class NationalProviderDatabaseService {
         projectedPipelineValue: Math.round(Math.max(2, Math.round(popServed / 13000)) * 42000),
         clinicalBenefitNarrative: `Deployment of ${targetProduct} elevates chest compression fraction to >85% and improves neurological survival.`,
         financialRoiNarrative: `Estimated $${(recoverableRevenue / 1000).toFixed(0)}k annual recoverable revenue via automated NEMSIS 3.5 billing scrubbing.`,
-        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet across ${cityName} (${c.countyName}). ${denialRate}% Medicare claims denial rate.`,
+        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet across ${cityName} (${c.countyName}). County-level Medicare ambulance denials are not published for this area.`,
         probabilityPct: 68,
         salesStage: (posHash % 4 === 0) ? 'Clinical Evaluation Trial' : (posHash % 3 === 0) ? 'Demo Scheduled' : 'Target Lead',
         scoreBreakdown: {

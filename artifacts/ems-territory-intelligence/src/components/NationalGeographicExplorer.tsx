@@ -1479,6 +1479,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
                 const countyDenialRatePct = getCountyMedicareDenialRatePct(c);
+                const countyZipDenialProfiles = NATIONAL_ZIP_CITY_REGISTRY
+                  .filter(
+                    record =>
+                      record.fipsCounty === c.countyFips &&
+                      typeof record.medicareDenialRate === 'number' &&
+                      Number.isFinite(record.medicareDenialRate),
+                  )
+                  .sort((a, b) => a.zipCode.localeCompare(b.zipCode));
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1590,6 +1598,25 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               >
                                 CMS use/spending data, not denials
                               </a>
+                            </div>
+                          )}
+                          {countyZipDenialProfiles.length > 0 && (
+                            <div
+                              data-testid={`county-zip-denial-profiles-${c.countyFips}`}
+                              className="mt-1 space-y-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400"
+                            >
+                              <span className="block font-medium">Matched ZIP-profile values:</span>
+                              {countyZipDenialProfiles.map(record => (
+                                <span
+                                  key={`${record.fipsCounty}-${record.zipCode}`}
+                                  className="block tabular-nums"
+                                >
+                                  {record.city} · {record.zipCode}: {record.medicareDenialRate}%
+                                </span>
+                              ))}
+                              <span className="block">
+                                Profile entries only; not a county claims rate.
+                              </span>
                             </div>
                           )}
                         </div>

@@ -27,6 +27,7 @@ import {
   Building2
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
+import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
@@ -172,6 +173,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       grantFunds: grants
     };
   }, [scopedAgencies, displayStateCode, activeStateSummary]);
+
+  const stateZipDenialProfiles = useMemo(
+    () =>
+      NATIONAL_ZIP_CITY_REGISTRY.filter(
+        (record) =>
+          record.stateCode === displayStateCode &&
+          typeof record.medicareDenialRate === 'number' &&
+          Number.isFinite(record.medicareDenialRate),
+      ),
+    [displayStateCode],
+  );
 
   const handleStateClick = (code: string) => {
     setSelectedStateCode(code);
@@ -550,6 +562,40 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {stateZipDenialProfiles.length > 0 && (
+                <div
+                  data-testid={`zip-denial-profile-values-${displayStateCode}`}
+                  className="rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] p-3 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">
+                      Existing ZIP-profile denial values
+                    </span>
+                    <span className="text-[10px] text-[#53657B] dark:text-slate-400">
+                      {stateZipDenialProfiles.length} entries
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {stateZipDenialProfiles.slice(0, 8).map((record) => (
+                      <span
+                        key={`${record.fipsCounty}-${record.zipCode}`}
+                        className="rounded-md bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[10px] text-[#53657B] dark:text-slate-300 tabular-nums"
+                      >
+                        {record.county} · {record.zipCode} · {record.medicareDenialRate}%
+                      </span>
+                    ))}
+                    {stateZipDenialProfiles.length > 8 && (
+                      <span className="px-1 py-1 text-[10px] text-[#53657B] dark:text-slate-400">
+                        +{stateZipDenialProfiles.length - 8} more
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                    These are ZIP-profile entries in the app, not a county claims aggregate. They have no denied/adjudicated claim counts.
+                  </p>
+                </div>
+              )}
 
               {/* Apparatus Fleet & Grant Funding Overview */}
               <div className="space-y-2 text-xs border-t border-[#DFE6EF] dark:border-[#1E2D42] pt-3">

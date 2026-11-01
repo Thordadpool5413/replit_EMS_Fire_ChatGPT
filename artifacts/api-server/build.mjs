@@ -22,12 +22,20 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
-    // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
-    // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
+    // Keep runtime dependencies external so Node resolves their installed packages
+    // instead of embedding entire dependency trees in the API entry bundle.
+    // Some packages below may not be imported or installed, but are kept external
+    // in case they are added later.
     // Examples of unbundleable packages:
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      "@google/genai",
+      "cookie-parser",
+      "cors",
+      "drizzle-orm",
+      "express",
+      "pino-http",
       "*.node",
       "sharp",
       "better-sqlite3",

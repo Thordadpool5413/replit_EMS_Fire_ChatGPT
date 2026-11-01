@@ -39,6 +39,7 @@ import {
   MEDICARE_DENIAL_IMPORT_EVENT,
 } from '../services/medicareDenialImportService';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
+import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
@@ -541,6 +542,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           )}
         </div>
       </section>
+
+      <NationalAmbulanceReference />
 
       {/* ====================================================================
           2. INTERACTIVE U.S. TERRITORY MAP WITH STATE INTELLIGENCE DOSSIER

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 import {
   Agency,
   LeadStage,
@@ -2240,6 +2241,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <h3 className="text-xs font-bold text-slate-600">
                   Claims Denials &amp; Annual Recoverable Revenue Analysis
                 </h3>
+
+                <NationalAmbulanceReference />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">

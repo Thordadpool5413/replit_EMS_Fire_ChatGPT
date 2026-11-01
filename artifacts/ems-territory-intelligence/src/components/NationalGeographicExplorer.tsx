@@ -13,6 +13,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
+import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 import {
   getCountyDenialDisplay,
   getCountyZipDenialProfiles,
@@ -796,6 +797,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
   return (
     <div className="workspace-section-grid">
+      <NationalAmbulanceReference />
       
       {/* Contextual Drill-Down Breadcrumb Bar (Only shown when drilled into a State, County, or City) */}
       {activeFocusLevel !== 'states' && (

@@ -152,6 +152,7 @@ Provider-wide percentages cannot be assigned to counties without the pickup-coun
 
 - Completed: repeatable bundled-input audit, investigation of additional official/public sources including full-text Alachua and Fairfax billing audits, specific remittance API documentation and join requirements, source eligibility inventory, and recording the user's public-only acquisition scope.
 - Already implemented separately: aggregate count calculations and exact-key display path.
+- A separate national RSNAT claim-line reference is now calculated from published CMS counts and displayed with its scope, period, and citation. See the [national source review](national-ambulance-denial-data-2026-11-01.md). It does not populate local claim rates.
 - **Not completed:** acquisition of real complete denied/adjudicated counts; authorized provider enrollment; complete billing-NPI-to-operating-agency corroboration; pickup-county linkage; population of real state/county/provider percentages.
 - No public source inspected warrants inserting a new actual denial percentage into the app. No substitute or fabricated percentage was inserted.
 - No private billing connection will be pursued under the current scope. The public-only review has not established complete Florida county/state counts or actual individual-provider claim rates.

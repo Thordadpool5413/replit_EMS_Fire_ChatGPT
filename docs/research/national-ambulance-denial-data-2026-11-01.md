@@ -1,6 +1,6 @@
 # National public ambulance denial-data review
 
-Checked November 1, 2026. Public sources only. This review does not change app metrics, contact agencies, or submit additional records requests.
+Checked November 1, 2026. Public sources only. The subsequent app integration displays the calculated national program reference separately from local claim metrics. No additional agencies were contacted or records requests submitted for this integration.
 
 ## Newly established national metric
 
@@ -91,4 +91,5 @@ A targeted search for FY2025 statistics did not establish a newer RSNAT program-
 1. A separate national **RSNAT claim-line** reference can be supported with a fixed 4.12% value, exact counts, dates, and the source page.
 2. This reference must not replace state, county, or agency percentages or be called the national all-ambulance claim-denial rate.
 3. No national public feed with complete matched provider-NPI and pickup-county denied/adjudicated claim counts was established by the sources inspected.
-4. No runtime app data or UI was modified. The missing local rates remain unresolved pending usable counts; the national finding does not complete that task.
+4. The app now calculates and displays the national program reference on the home map, geographic explorer, and provider billing section, including the counts, period, source link, and expandable calculation/coverage details. Local claim selectors and county/state count aggregation remain separate and do not fall back to this reference.
+5. The missing local rates remain unresolved pending usable counts; the national finding does not complete that task.

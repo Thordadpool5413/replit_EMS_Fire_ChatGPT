@@ -1,0 +1,306 @@
+[
+  {
+    "key": "usfa-nfdr",
+    "title": "Download Departments — National Fire Department Registry",
+    "url": "https://apps.usfa.fema.gov/registry/download",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/agency-identity-01-usfa-registry-download.md"
+  },
+  {
+    "key": "cms-nppes-api",
+    "title": "NPPES NPI Registry API",
+    "url": "https://npiregistry.cms.hhs.gov/api-page",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/agency-identity-02-nppes-api.md"
+  },
+  {
+    "key": "neris-public",
+    "title": "NERIS Public",
+    "url": "https://www.usfa.fema.gov/neris/public/",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/ems-volume-acuity-nemsis-03-neris-public.md"
+  },
+  {
+    "key": "neris-layer-stations",
+    "title": "NERIS Public Fire Departments — station layer metadata",
+    "url": "https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/1?f=pjson",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/neris-05-station-layer-schema.md"
+  },
+  {
+    "key": "neris-layer-departments",
+    "title": "NERIS Public Fire Departments — department layer metadata",
+    "url": "https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/0?f=pjson",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/neris-06-department-layer-schema.md"
+  },
+  {
+    "key": "neris-launch",
+    "title": "NERIS Public — A New Era of Timely, Transparent Fire Incident Data",
+    "url": "https://www.usfa.fema.gov/blog/neris-public-transparent-fire-incident-data",
+    "publishedDate": "2026-08-11",
+    "tier": 1,
+    "evidencePath": "research/sources/neris-04-usfa-launch.md"
+  },
+  {
+    "key": "nemsis-public-release",
+    "title": "Request Research Data — NEMSIS",
+    "url": "https://nemsis.org/using-ems-data/request-research-data",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/ems-volume-acuity-nemsis-01-nemsis-public-release.md"
+  },
+  {
+    "key": "nemsis-public-dashboards",
+    "title": "NEMSIS Public Dashboards",
+    "url": "https://nemsis.org/view-reports/public-reports/version-3-public-dashboards",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/ems-volume-acuity-nemsis-snippets.md"
+  },
+  {
+    "key": "nemsis-end-year-report",
+    "title": "NEMSIS End-of-Year Report 2024",
+    "url": "https://nemsis.org/wp-content/uploads/2025/09/NEMSIS-End-of-Year-Report-2024-9-24-25.pdf",
+    "publishedDate": "2025-09-24",
+    "tier": 1,
+    "evidencePath": "research/sources/ems-volume-acuity-nemsis-snippets.md"
+  },
+  {
+    "key": "florida-emstars-privacy",
+    "title": "EMS Data Reports & Research — Florida Department of Health",
+    "url": "https://www.floridahealth.gov/statistics-data/emergency-medical-services-ems-data-systems/ems-data-reports-research",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/florida-01-ems-data-reports.md"
+  },
+  {
+    "key": "florida-ems-license",
+    "title": "EMS Service Provider — Florida Department of Health",
+    "url": "https://www.floridahealth.gov/licensing-regulations/emergency-medical-services-system/ems-service-provider",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/florida-02-ems-provider-license.md"
+  },
+  {
+    "key": "florida-ems-roster",
+    "title": "Licensed EMS Providers — Florida Department of Health roster",
+    "url": "https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf",
+    "publishedDate": "2020-10-23",
+    "tier": 1,
+    "evidencePath": "research/sources/florida-06-licensed-provider-roster.md"
+  },
+  {
+    "key": "florida-trauma",
+    "title": "Florida's Trauma System — Florida Department of Health",
+    "url": "https://www.floridahealth.gov/licensing-regulations/trauma-system",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/florida-03-trauma-system.md"
+  },
+  {
+    "key": "florida-emstars-dashboards",
+    "title": "Public Dashboards — Florida EMSTARS",
+    "url": "https://www.floridaemstars.com/public-dashboards.htm",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/florida-04-emstars-public-dashboards.md"
+  },
+  {
+    "key": "florida-ems-aggregate-portal",
+    "title": "Florida EMS Aggregate Portal",
+    "url": "https://emsaggregate.floridahealth.gov/",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/florida-05-ems-aggregate-portal.md"
+  },
+  {
+    "key": "cms-psps",
+    "title": "Physician/Supplier Procedure Summary",
+    "url": "https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary",
+    "publishedDate": "2026-08-11",
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-01-psps.md"
+  },
+  {
+    "key": "cms-psps-record-layout",
+    "title": "Physician/Supplier Procedure Summary on IDR File Layout",
+    "url": "https://www.cms.gov/research-statistics-data-and-systems/files-for-order/nonidentifiabledatafiles/downloads/pspsrecordlayoutaugust2010.pdf",
+    "publishedDate": "2015-08-05",
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-11-psps-record-layout.md"
+  },
+  {
+    "key": "cms-psps-limited-data-set",
+    "title": "Physician/Supplier Procedure Summary Limited Data Set",
+    "url": "https://www.cms.gov/data-research/cms-data/limited-data-set-lds-files/physician/supplier-procedure-summary-psps",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-snippets.md"
+  },
+  {
+    "key": "cms-psps-methodology",
+    "title": "Physician/Supplier Procedure Summary Methodology",
+    "url": "https://data.cms.gov/resources/physician-supplier-procedure-summary-methodology",
+    "publishedDate": "2024-10-30",
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-snippets.md"
+  },
+  {
+    "key": "cms-provider-service",
+    "title": "Medicare Physician & Other Practitioners by Provider & Service",
+    "url": "https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners/medicare-physician-other-practitioners-by-provider-and-service",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-04-provider-utilization.md"
+  },
+  {
+    "key": "cms-gadcs-faq",
+    "title": "Medicare Ground Ambulance Data Collection System Frequently Asked Questions",
+    "url": "https://www.cms.gov/medicare/medicare-fee-for-service-payment/ambulancefeeschedule/downloads/medicare-ground-ambulance-faqs.pdf",
+    "publishedDate": "2023-11-02",
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-03-gadcs-faq.md"
+  },
+  {
+    "key": "cms-gadcs-report",
+    "title": "GADCS Report Appendix: Year 1–Year 4 Cohort Analysis",
+    "url": "https://www.cms.gov/files/document/medicare-ground-ambulance-data-collection-system-gadcs-report-appendix-year-1-year-4-cohort-analysis.pdf",
+    "publishedDate": "2025-12",
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-09-gadcs-cohort-report.md"
+  },
+  {
+    "key": "cms-geographic-variation",
+    "title": "National, State & County Medicare Geographic Data",
+    "url": "https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/cms-ambulance-claims-06-geographic-variation.md"
+  },
+  {
+    "key": "cms-hospital-general",
+    "title": "Hospital General Information",
+    "url": "https://data.cms.gov/provider-data/dataset/xubh-q36u",
+    "publishedDate": "2026-08-13",
+    "tier": 1,
+    "evidencePath": "research/sources/receiving-hospitals-01-cms-hospital-general-information.md"
+  },
+  {
+    "key": "fcc-psap",
+    "title": "911 Master PSAP Registry",
+    "url": "https://www.fcc.gov/general/9-1-1-master-psap-registry",
+    "publishedDate": "2026-10-30",
+    "tier": 1,
+    "evidencePath": "research/sources/receiving-hospitals-02-fcc-master-psap-registry.md"
+  },
+  {
+    "key": "openfema-afg",
+    "title": "Non-Disaster and Assistance to Firefighter Grants — v1",
+    "url": "https://www.fema.gov/openfema-data-page/non-disaster-and-assistance-firefighter-grants-v1",
+    "publishedDate": "2026-06-04",
+    "tier": 1,
+    "evidencePath": "research/sources/afg-procurement-census-04-openfema-current.md"
+  },
+  {
+    "key": "usaspending-api",
+    "title": "USAspending API Endpoints",
+    "url": "https://api.usaspending.gov/docs/endpoints",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/afg-procurement-census-02-usaspending-api.md"
+  },
+  {
+    "key": "sam-contract-data",
+    "title": "Contract Data — SAM.gov",
+    "url": "https://sam.gov/contract-data",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/afg-procurement-census-snippets.md"
+  },
+  {
+    "key": "local-cad-procurement-example",
+    "title": "RFP24-56 Integrated Public Safety System — Los Alamos County",
+    "url": "https://www.losalamosnm.gov/Government/Departments-offices/Administrative-Services-Department/Procurement/RFP24-56-CAD-Mobile-RMS-JMS-CMRJ-INTEGRATED-PUBLIC-SAFETY-SYSTEM",
+    "publishedDate": "2024-03-19",
+    "tier": 1,
+    "evidencePath": "research/sources/receiving-hospitals-03-los-alamos-cad-procurement.md"
+  },
+  {
+    "key": "census-tigerline",
+    "title": "TIGER/Line Shapefiles",
+    "url": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+    "publishedDate": "2026-10-14",
+    "tier": 1,
+    "evidencePath": "research/sources/afg-procurement-census-03-census-tigerline.md"
+  },
+  {
+    "key": "census-acs-release",
+    "title": "2025 ACS 1-Year Estimates Release Updates",
+    "url": "https://www.census.gov/programs-surveys/acs/news/updates.html",
+    "publishedDate": "2026-10-29",
+    "tier": 1,
+    "evidencePath": "research/sources/census-04-acs-updates.md"
+  },
+  {
+    "key": "census-acs-5year",
+    "title": "American Community Survey 5-Year Data",
+    "url": "https://www.census.gov/data/developers/data-sets/acs-5year.html",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/context-03-census-acs-5year.md"
+  },
+  {
+    "key": "cdc-places",
+    "title": "About PLACES: Local Data for Better Health",
+    "url": "https://www.cdc.gov/places/about/",
+    "publishedDate": "2025-12-07",
+    "tier": 1,
+    "evidencePath": "research/sources/context-01-cdc-places.md"
+  },
+  {
+    "key": "cdc-svi",
+    "title": "SVI Data & Documentation Download",
+    "url": "https://www.atsdr.cdc.gov/place-health/php/svi/svi-data-documentation-download.html",
+    "publishedDate": "2026-05-11",
+    "tier": 1,
+    "evidencePath": "research/sources/context-02-cdc-svi.md"
+  },
+  {
+    "key": "google-places-api",
+    "title": "Places API (New) Overview",
+    "url": "https://developers.google.com/maps/documentation/places/web-service/overview",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/google-maps-01-places-api.md"
+  },
+  {
+    "key": "google-routes-api",
+    "title": "Routes API",
+    "url": "https://developers.google.com/maps/documentation/routes",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/google-maps-02-routes-api.md"
+  },
+  {
+    "key": "google-geocoding-api",
+    "title": "Geocoding API Overview",
+    "url": "https://developers.google.com/maps/documentation/geocoding/overview",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/google-maps-04-geocoding-api.md"
+  },
+  {
+    "key": "google-boundaries",
+    "title": "Data-Driven Styling for Boundaries",
+    "url": "https://developers.google.com/maps/documentation/javascript/dds-boundaries/overview",
+    "publishedDate": null,
+    "tier": 1,
+    "evidencePath": "research/sources/google-maps-03-data-driven-boundaries.md"
+  }
+]

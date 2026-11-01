@@ -1,0 +1,888 @@
+Source: https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/0?f=pjson
+Title: 
+Fetched: 2026-11-01T05:16:21.464Z
+
+```json
+{
+  "currentVersion" : 12, 
+  "id" : 0, 
+  "name" : "Department", 
+  "inDedicatedHosting" : true, 
+  "preferredHost" : "lpbcyjocolyzmvo6.svcs5.arcgis.com", 
+  "type" : "Feature Layer", 
+  "serviceItemId" : "0ac459746be44023a1b33ba00bb5f628", 
+  "cacheMaxAge" : 30, 
+  "isView" : true, 
+  "isUpdatableView" : true, 
+  "sourceSchemaChangesAllowed" : true, 
+  "displayField" : "", 
+  "description" : "", 
+  "copyrightText" : "", 
+  "defaultVisibility" : true, 
+  "editingInfo" : {
+    "lastEditDate" : 1793502467775, 
+    "schemaLastEditDate" : 1793502467775, 
+    "dataLastEditDate" : 1793502467775
+  }, 
+  "relationships" : [
+    {
+      "id" : 0, 
+      "name" : "Department_Station", 
+      "relatedTableId" : 1, 
+      "cardinality" : "esriRelCardinalityOneToMany", 
+      "role" : "esriRelRoleOrigin", 
+      "keyField" : "neris_id", 
+      "composite" : false
+    }, 
+    {
+      "id" : 2, 
+      "name" : "Department_Unit", 
+      "relatedTableId" : 3, 
+      "cardinality" : "esriRelCardinalityOneToMany", 
+      "role" : "esriRelRoleOrigin", 
+      "keyField" : "neris_id", 
+      "composite" : false
+    }, 
+    {
+      "id" : 3, 
+      "name" : "Department_DepartmentJurisdiction", 
+      "relatedTableId" : 2, 
+      "cardinality" : "esriRelCardinalityOneToMany", 
+      "role" : "esriRelRoleOrigin", 
+      "keyField" : "neris_id", 
+      "composite" : false
+    }
+  ], 
+  "isDataVersioned" : false, 
+  "hasContingentValuesDefinition" : false, 
+  "supportsAppend" : true, 
+  "supportsCalculate" : true, 
+  "supportsASyncCalculate" : true, 
+  "supportsTruncate" : false, 
+  "supportsAttachmentsByUploadId" : true, 
+  "supportsAttachmentsResizing" : true, 
+  "supportsRollbackOnFailureParameter" : true, 
+  "supportsStatistics" : true, 
+  "supportsExceedsLimitStatistics" : true, 
+  "supportsAdvancedQueries" : true, 
+  "supportsValidateSql" : true, 
+  "supportsCoordinatesQuantization" : true, 
+  "supportsLayerOverrides" : true, 
+  "supportsTilesAndBasicQueriesMode" : true, 
+  "supportsFieldDescriptionProperty" : true, 
+  "supportsQuantizationEditMode" : true, 
+  "supportsColumnStoreIndex" : true, 
+  "supportsApplyEditsWithGlobalIds" : false, 
+  "supportsReturningQueryGeometry" : true, 
+  "enableNullGeometry" : false, 
+  "advancedQueryCapabilities" : {
+    "supportsPagination" : true, 
+    "supportsPaginationOnAggregatedQueries" : true, 
+    "supportsQueryRelatedPagination" : true, 
+    "supportsQueryWithDistance" : true, 
+    "supportsOutDistance" : true, 
+    "supportsReturningQueryExtent" : true, 
+    "supportsStatistics" : true, 
+    "supportsOrderBy" : true, 
+    "supportsDistinct" : true, 
+    "supportsQueryWithResultType" : true, 
+    "supportsSqlExpression" : true, 
+    "supportsTimeRelation" : true, 
+    "supportsAdvancedQueryRelated" : true, 
+    "supportsCountDistinct" : true, 
+    "supportsPercentileStatistics" : true, 
+    "supportsApproxPercentileStatistics" : true, 
+    "supportsSpatialAggregationStatistics" : true, 
+    "supportedSpatialAggregationStatistics" : [
+      "EnvelopeAggregate", 
+      "CentroidAggregate", 
+      "ConvexHullAggregate"
+    ], 
+    "supportsLod" : true, 
+    "supportsQueryWithLodSR" : false, 
+    "supportedLodTypes" : [
+      "geohash"
+    ], 
+    "supportsReturningGeometryCentroid" : false, 
+    "supportsReturningGeometryEnvelope" : false, 
+    "supportsQueryWithDatumTransformation" : true, 
+    "supportsCurrentUserQueries" : true, 
+    "supportsHavingClause" : true, 
+    "supportsOutFieldSQLExpression" : true, 
+    "supportsMaxRecordCountFactor" : true, 
+    "supportsTopFeaturesQuery" : true, 
+    "supportsDisjointSpatialRel" : true, 
+    "supportsQueryWithCacheHint" : true, 
+    "supportedOperationsWithCacheHint" : [
+      "query", 
+      "queryTopFilter", 
+      "queryAnalytics", 
+      "queryAttachments", 
+      "queryRelated", 
+      "queryBins", 
+      "queryPivot"
+    ], 
+    "supportsQueryAnalytic" : true, 
+    "supportsQueryPivot" : true, 
+    "supportsQueryBins" : true, 
+    "supportsDefaultSR" : true, 
+    "supportsTranslations" : false, 
+    "supportsAggIds" : true, 
+    "supportsQueryWithCollation" : true, 
+    "supportsISODOW" : true, 
+    "supportsISOWeek" : true, 
+    "supportsFullTextSearch" : true, 
+    "fullTextSearchCapabilities" : {
+      "supportsAccentSensitivity" : true, 
+      "supportsStopWords" : true, 
+      "supportsSearchOperator" : true, 
+      "supportsOperator" : true
+    }
+  }, 
+  "advancedQueryAnalyticCapabilities" : {
+    "supportsLinearRegression" : true, 
+    "supportsTrendlineRegression" : true, 
+    "supportsAsync" : true, 
+    "supportsPercentileAnalytic" : true
+  }, 
+  "queryBinsCapabilities" : {
+    "supportsAsync" : true, 
+    "supportsAutoIntervalBin" : true, 
+    "supportsFixedIntervalBin" : true, 
+    "supportsFixedBoundariesBin" : true, 
+    "supportsDateBin" : true, 
+    "supportsClassificationBin" : true, 
+    "supportsStackBy" : true, 
+    "supportsSplitBy" : true, 
+    "supportsFirstDayOfWeek" : true, 
+    "supportsSnapToData" : true, 
+    "supportsReturnFullIntervalBin" : true, 
+    "supportsReturnStackValueRange" : true, 
+    "supportsNormalization" : true, 
+    "supportedStatisticTypes" : [
+      "COUNT", 
+      "SUM", 
+      "AVG", 
+      "VAR", 
+      "STDDEV", 
+      "MIN", 
+      "MAX", 
+      "PERCENTILE_CONT", 
+      "PERCENTILE_DISC", 
+      "APPROX_PERCENTILE_CONT", 
+      "APPROX_PERCENTILE_DISC", 
+      "CentroidAggregate", 
+      "EnvelopeAggregate", 
+      "ConvexHullAggregate"
+    ], 
+    "supportedNormalizationTypes" : [
+      "boxCox", 
+      "field", 
+      "inverse", 
+      "log", 
+      "naturalLog", 
+      "percentOfTotal", 
+      "squareRoot"
+    ]
+  }, 
+  "supportedOperationsWithCollation" : "query,addField,updateField", 
+  "advancedEditingCapabilities" : {
+    "supportedSqlFormatsInCalculate" : [
+      "standard"
+    ], 
+    "supportsAsyncApplyEdits" : true, 
+    "supportsReturnEditResults" : true, 
+    "supportsApplyEditsbyUploadID" : true, 
+    "supportedApplyEditsUploadIDFormats" : "JSON,PBF", 
+    "supportsTranslation" : false, 
+    "supportsMaxTranslations" : 10
+  }, 
+  "infoInEstimates" : [
+    "extent", 
+    "count"
+  ], 
+  "useStandardizedQueries" : true, 
+  "geometryType" : "esriGeometryPoint", 
+  "minScale" : 0, 
+  "maxScale" : 0, 
+  "extent" : {
+    "xmin" : -19378426.3807359, 
+    "ymin" : -1030.8184892329984, 
+    "xmax" : 18672516.539046478, 
+    "ymax" : 11505266.17830734, 
+    "spatialReference" : {
+      "wkid" : 102100, 
+      "latestWkid" : 3857
+    }
+  }, 
+  "spatialReference" : {
+    "wkid" : 102100, 
+    "latestWkid" : 3857
+  }, 
+  "drawingInfo":{"renderer":{"type":"simple","symbol":{"type":"esriPMS","url":"RedSphere.png","imageData":"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","contentType":"image/png","width":15,"height":15}}}, 
+  "allowGeometryUpdates" : true, 
+  "hasAttachments" : false, 
+  "viewSourceHasAttachments" : false, 
+  "htmlPopupType" : "esriServerHTMLPopupTypeNone", 
+  "hasMetadata" : true, 
+  "hasM" : false, 
+  "hasZ" : false, 
+  "objectIdField" : "OBJECTID", 
+  "uniqueIdField" : 
+  {
+    "name" : "OBJECTID", 
+    "isSystemMaintained" : true
+  }, 
+  "globalIdField" : "", 
+  "typeIdField" : "", 
+  "collation" : {
+    "locale" : "neutral", 
+    "caseSensitive" : false, 
+    "accentSensitive" : true
+  }, 
+  "fields" : [
+    {
+      "name" : "OBJECTID", 
+      "type" : "esriFieldTypeOID", 
+      "alias" : "OBJECTID", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : false, 
+      "editable" : false, 
+      "domain" : null, 
+      "defaultValue" : "", 
+      "required" : true
+    }, 
+    {
+      "name" : "neris_id", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "neris_id", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 10, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "name", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "name", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "address_line_1", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "address_line_1", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "address_line_2", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "address_line_2", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "city", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "city", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "state", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "state", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 2, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "zip_code", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "zip_code", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 10, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "time_zone", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "time_zone", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "station_count", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "station_count", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "unit_count", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "unit_count", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "internal_id", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "internal_id", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "entity_type", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "entity_type", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "department_type", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "department_type", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "continue_edu", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "continue_edu", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "mail_address_line_1", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "mail_address_line_1", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "mail_address_line_2", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "mail_address_line_2", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "mail_city", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "mail_city", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "mail_state", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "mail_state", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 2, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "mail_zip_code", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "mail_zip_code", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 10, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "website", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "website", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "avl_usage", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "avl_usage", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "psap_type", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "psap_type", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "protocol_med", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "protocol_med", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "protocol_fire", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "protocol_fire", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "psap_capability", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "psap_capability", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "psap_discipline", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "psap_discipline", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "psap_jurisdiction", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "psap_jurisdiction", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "population_source", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "population_source", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 255, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "population_protected", 
+      "type" : "esriFieldTypeInteger", 
+      "alias" : "population_protected", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "ems_only_career_ft", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "ems_only_career_ft", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "ems_only_career_pt", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "ems_only_career_pt", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "ems_only_volunteer", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "ems_only_volunteer", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "civilians_career_ft", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "civilians_career_ft", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "civilians_career_pt", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "civilians_career_pt", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "civilians_volunteer", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "civilians_volunteer", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "firefighters_career_ft", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "firefighters_career_ft", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "firefighters_career_pt", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "firefighters_career_pt", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "firefighters_volunteer", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "firefighters_volunteer", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "assessment_caas_accredited", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "assessment_caas_accredited", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "assessment_cpse_accredited", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "assessment_cpse_accredited", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "shift_count", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "shift_count", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "shift_duration", 
+      "type" : "esriFieldTypeSmallInteger", 
+      "alias" : "shift_duration", 
+      "sqlType" : "sqlTypeOther", 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "fire_services", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "fire_services", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 1000, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "ems_services", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "ems_services", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 1000, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "investigation_services", 
+      "type" : "esriFieldTypeString", 
+      "alias" : "investigation_services", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 1000, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : ""
+    }, 
+    {
+      "name" : "export_date", 
+      "type" : "esriFieldTypeDate", 
+      "alias" : "export_date", 
+      "sqlType" : "sqlTypeOther", 
+      "length" : 8, 
+      "nullable" : true, 
+      "editable" : true, 
+      "domain" : null, 
+      "defaultValue" : "", 
+      "precision" : 1
+    }
+  ], 
+  "indexes" : [
+    {
+      "name" : "GDB_3_neris_id", 
+      "fields" : "neris_id", 
+      "isAscending" : true, 
+      "isUnique" : false, 
+      "description" : "", 
+      "indexType" : "Attribute"
+    }, 
+    {
+      "name" : "PK__NERIS_PU__F4B70D85AF7343F5", 
+      "fields" : "OBJECTID", 
+      "isAscending" : true, 
+      "isUnique" : true, 
+      "description" : "clustered, unique, primary key", 
+      "indexType" : "Attribute"
+    }, 
+    {
+      "name" : "user_88350.NERIS_PUBLIC_FIRE_DEPARTMENTS_A_DEPARTMENT2_Shape_sidx", 
+      "fields" : "Shape", 
+      "isAscending" : true, 
+      "isUnique" : false, 
+      "description" : "Shape Index", 
+      "indexType" : "Spatial"
+    }, 
+    {
+      "name" : "user_88350.NERIS_PUBLIC_FIRE_DEPARTMENTS_A_DEPARTMENT2_department_type_idx", 
+      "fields" : "department_type", 
+      "isAscending" : true, 
+      "isUnique" : false, 
+      "description" : "department_type_Index", 
+      "indexType" : "Attribute"
+    }, 
+    {
+      "name" : "user_88350.NERIS_PUBLIC_FIRE_DEPARTMENTS_A_DEPARTMENT2_state_idx", 
+      "fields" : "state", 
+      "isAscending" : true, 
+      "isUnique" : false, 
+      "description" : "Layer settings", 
+      "indexType" : "Attribute"
+    }
+  ], 
+  "dateFieldsTimeReference" : {
+    "timeZone" : "UTC", 
+    "timeZoneIANA" : "Etc/UTC", 
+    "respectsDaylightSaving" : false
+  }, 
+  "preferredTimeReference" : null, 
+  "types" : [], 
+  "templates" : [
+    {
+      "name" : "New Feature", 
+      "description" : "", 
+      "drawingTool" : "esriFeatureEditToolPoint", 
+      "prototype" : {
+        "attributes" : {
+          "neris_id" : null, 
+          "name" : null, 
+          "address_line_1" : null, 
+          "address_line_2" : null, 
+          "city" : null, 
+          "state" : null, 
+          "zip_code" : null, 
+          "time_zone" : null, 
+          "station_count" : null, 
+          "unit_count" : null, 
+          "internal_id" : null, 
+          "entity_type" : null, 
+          "department_type" : null, 
+          "continue_edu" : null, 
+          "mail_address_line_1" : null, 
+          "mail_address_line_2" : null, 
+          "mail_city" : null, 
+          "mail_state" : null, 
+          "mail_zip_code" : null, 
+          "website" : null, 
+          "avl_usage" : null, 
+          "psap_type" : null, 
+          "protocol_med" : null, 
+          "protocol_fire" : null, 
+          "psap_capability" : null, 
+          "psap_discipline" : null, 
+          "psap_jurisdiction" : null, 
+          "population_source" : null, 
+          "population_protected" : null, 
+          "ems_only_career_ft" : null, 
+          "ems_only_career_pt" : null, 
+          "ems_only_volunteer" : null, 
+          "civilians_career_ft" : null, 
+          "civilians_career_pt" : null, 
+          "civilians_volunteer" : null, 
+          "firefighters_career_ft" : null, 
+          "firefighters_career_pt" : null, 
+          "firefighters_volunteer" : null, 
+          "assessment_caas_accredited" : null, 
+          "assessment_cpse_accredited" : null, 
+          "shift_count" : null, 
+          "shift_duration" : null, 
+          "fire_services" : null, 
+          "ems_services" : null, 
+          "investigation_services" : null, 
+          "export_date" : null
+        }
+      }
+    }
+  ], 
+  "supportedQueryFormats" : "JSON, geoJSON, PBF", 
+  "supportedAppendFormats" : "sqlite,geoPackage,shapefile,filegdb,featureCollection,geojson,csv,excel,jsonl,featureService,pbf", 
+  "supportedAppendSourceFilterFormats" : "sqlite,geoPackage,shapefile,filegdb,featureService", 
+  "supportedExportFormats" : "csv,shapefile,sqlite,geoPackage,filegdb,featureCollection,geojson,kml,excel,parquet", 
+  "supportedConvertFileFormats" : "JSON,PBF,Parquet", 
+  "supportedConvertContentFormats" : "LayerEditCollection,FeatureCollection", 
+  "supportedSpatialRelationships" : [
+    "esriSpatialRelIntersects", 
+    "esriSpatialRelContains", 
+    "esriSpatialRelCrosses", 
+    "esriSpatialRelEnvelopeIntersects", 
+    "esriSpatialRelIndexIntersects", 
+    "esriSpatialRelOverlaps", 
+    "esriSpatialRelTouches", 
+    "esriSpatialRelWithin", 
+    "esriSpatialRelDisjoint", 
+    "esriSpatialRelRelation"
+  ], 
+  "guidFormat" : "", 
+  "supportsContingentValues" : true, 
+  "supportsEditingContingentValues" : true, 
+  "supportedContingentValuesFormats" : "JSON, PBF", 
+  "supportsFieldGroups" : true, 
+  "supportedSyncDataOptions" : 260, 
+  "hasStaticData" : false, 
+  "maxRecordCount" : 1000, 
+  "standardMaxRecordCount" : 16000, 
+  "maxIdsCount" : 1000000, 
+  "standardMaxRecordCountNoGeometry" : 32000, 
+  "tileMaxRecordCount" : 8000, 
+  "maxRecordCountFactor" : 1, 
+  "capabilities" : "Query,Extract", 
+  "layerOverrides" : [
+    "capabilities"
+  ]
+}
+```

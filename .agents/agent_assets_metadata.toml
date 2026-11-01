@@ -28,3 +28,17 @@ mtime_ms = 1793509638598
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/b6847ef8-0bfc-4ad2-bddd-b47df7443169/c130d594-9606-4322-8bcc-1153c33fa2e3"
 storage_version_token = "1793509643159779"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "6urTlySA8pJnr36H2NANo"
+uri = "file://research/ems-fire-data-sources.md"
+type = "text"
+title = "EMS & Fire Data Source Research"
+description = "38 cited official sources covering API and open-data options, agency matching, Medicare denial limits, Florida access, mapping, and implementation priorities."
+logical_id = "0060c534-5ba8-4851-8937-84d5bff55164"
+content_hash = "sha256:3be9f1d276c2f0adac9a2af4e8bad27433ba0db5c0eb77f64eaf25d3a430b3b3"
+size = 31204
+mtime_ms = 1793510657738
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/0060c534-5ba8-4851-8937-84d5bff55164/76d92254-a63a-4f3e-9745-3dcfff29451e"
+storage_version_token = "1793510692492352"
+content_type = "text/markdown"

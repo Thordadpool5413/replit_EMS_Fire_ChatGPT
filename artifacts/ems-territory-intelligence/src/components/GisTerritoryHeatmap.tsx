@@ -10,7 +10,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
+import { getAgencyMedicareDenialMetricForDisplay as getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 import {
   classifyOhcaRate,
   FLEET_AGE_BANDS,
@@ -1210,7 +1210,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         selectedLayer === 'aed' ? (hasReportedValue(topAgency.gisData?.publicAccessAedDeficitPct) ? `${topAgency.gisData.publicAccessAedDeficitPct}% peak AED deficit` : 'Not reported') :
         selectedLayer === 'transport' ? (hasReportedValue(topAgency.gisData?.avgTransportTimeMinutes) ? `${topAgency.gisData.avgTransportTimeMinutes} min peak transit` : 'Not reported') :
         (getAgencyMedicareDenialMetric(topAgency)
-          ? `${getAgencyMedicareDenialMetric(topAgency)!.ratePct}% peak CMS denial`
+          ? `${getAgencyMedicareDenialMetric(topAgency)!.ratePct}% peak Medicare denial`
           : 'Not reported');
 
       cells.push({
@@ -1526,7 +1526,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     }
 
     // CMS Denial Zones layer
-    const denial = getAgencyMedicareDenialMetric(agency)?.ratePct ?? 0;
+    const denialMetric = getAgencyMedicareDenialMetric(agency);
+    const denial = denialMetric?.ratePct ?? 0;
+    const importLabel = denialMetric?.sourceType === 'local-import' ? ' · local import; verify report' : '';
     const recoverable = agency.cmsData.estimatedRecoverableRevenue;
     if (denial >= 21) {
       return {
@@ -1538,10 +1540,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         markerStroke: '#ffe4e6',
         markerRadius: 6.5,
         heatRadius: Math.min(70, 32 + denial * 1.6),
-        tierLabel: 'Severe Denials (≥21%)',
+        tierLabel: 'Severe denial rate',
         metricDisplay: hasReportedValue(recoverable)
-          ? `${denial}% Medicare denials · recovery estimate method unavailable`
-          : `${denial}% Medicare denials`
+          ? `${denial}% Medicare denials${importLabel} · recovery estimate method unavailable`
+          : `${denial}% Medicare denials${importLabel}`
       };
     }
     if (denial >= 18) {
@@ -1554,10 +1556,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         markerStroke: '#ede9fe',
         markerRadius: 5.5,
         heatRadius: Math.min(52, 24 + denial * 1.3),
-        tierLabel: 'High Denials (18–20.9%)',
+        tierLabel: 'High denial rate',
         metricDisplay: hasReportedValue(recoverable)
-          ? `${denial}% Medicare denials · recovery estimate method unavailable`
-          : `${denial}% Medicare denials`
+          ? `${denial}% Medicare denials${importLabel} · recovery estimate method unavailable`
+          : `${denial}% Medicare denials${importLabel}`
       };
     }
     if (denial >= 14) {
@@ -1570,12 +1572,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         markerStroke: '#e0f2fe',
         markerRadius: 4.5,
         heatRadius: 30,
-        tierLabel: 'Moderate Denials (14–17.9%)',
-        metricDisplay: `${denial}% Medicare denials`
+        tierLabel: 'Elevated denial rate',
+        metricDisplay: `${denial}% Medicare denials${importLabel}`
       };
     }
     return {
-      gradientId: 'cms-baseline-gradient',
+        gradientId: 'cms-baseline-gradient',
       ringColor: '#059669',
       ringOpacity: 0.3,
       isCritical: false,
@@ -1583,8 +1585,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       markerStroke: '#d1fae5',
       markerRadius: 4,
       heatRadius: 18,
-      tierLabel: 'Compliant Claims (<14%)',
-      metricDisplay: `${denial}% Medicare denials`
+      tierLabel: 'Lower denial rate',
+      metricDisplay: `${denial}% Medicare denials${importLabel}`
     };
   };
 
@@ -2176,7 +2178,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         }`}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                        <span className="tabular-nums">≥18% High</span>
+                        <span>High rate</span>
                       </button>
                       <button
                         onClick={() => setLayerThresholdFilter('critical')}
@@ -2187,7 +2189,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         }`}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
-                        <span className="tabular-nums">≥21% Severe</span>
+                        <span>Severe rate</span>
                       </button>
                     </>
                   )}
@@ -3221,19 +3223,19 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     )}
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
-                      <span className="font-semibold text-slate-100">≥21%</span>
+                      <span className="font-semibold text-slate-100">Severe</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                      <span className="text-slate-300">18–20.9%</span>
+                      <span className="text-slate-300">High</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
-                      <span className="text-slate-400">14–17.9%</span>
+                      <span className="text-slate-400">Elevated</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      <span className="text-slate-400">&lt;14%</span>
+                      <span className="text-slate-400">Lower</span>
                     </div>
                   </div>
                 )}
@@ -3895,11 +3897,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
           <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-4 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] min-w-0">
             <div className="font-semibold text-sm text-[#14283F] dark:text-white flex items-center justify-between">
-              <span>3. CMS Recovery</span>
+              <span>3. Medicare Claims</span>
               <span className="text-[#285EE8] font-semibold tabular-nums">20 pts</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-400 mt-1.5 leading-relaxed">
-              CMS Medicare Part B claim denial rate (&gt;15%), GADCS penalty risk, and addressable cash recovery via ZOLL Billing.
+              Medicare Part B claim denial rate (&gt;15%), GADCS penalty risk, and addressable cash recovery via ZOLL Billing.
             </p>
           </div>
 

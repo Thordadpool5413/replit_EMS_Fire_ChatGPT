@@ -3,11 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NATIONAL_BENCHMARKS, STATE_SUMMARIES } from '../data/healthcareData';
 import { Agency } from '../types';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { getStateZipDenialProfileSummary } from '../services/countyDenialProfileService';
+import { MedicareDenialImportPanel } from './MedicareDenialImportPanel';
+import {
+  getImportedProviderDenialMetric,
+  MEDICARE_DENIAL_IMPORT_EVENT,
+} from '../services/medicareDenialImportService';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 import { 
   Building2, 
   TrendingDown, 
@@ -27,6 +33,7 @@ import {
   Siren
 } from 'lucide-react';
 interface PublicHealthcareExplorerProps {
+  agencies?: Agency[];
   onSelectStateFilter: (stateCode: string) => void;
   onNavigateToQueue: () => void;
   globalState?: string;
@@ -37,11 +44,26 @@ interface PublicHealthcareExplorerProps {
 }
 
 export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> = ({
+  agencies = [],
   onSelectStateFilter,
   onNavigateToQueue,
   activeAccount
 }) => {
   const [selectedPlaybook, setSelectedPlaybook] = useState<'cms' | 'rosc' | 'fleet' | 'afg' | 'nemsqa' | 'et3'>('cms');
+  const [denialImportRevision, setDenialImportRevision] = useState(0);
+  useEffect(() => {
+    const refreshImportedDenials = () => setDenialImportRevision((revision) => revision + 1);
+    window.addEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
+    return () => window.removeEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
+  }, []);
+  const localDenialMetric = useMemo(
+    () => getImportedProviderDenialMetric(activeAccount?.npiNumber),
+    [activeAccount?.npiNumber, denialImportRevision],
+  );
+  const sourceDenialMetric = useMemo(
+    () => activeAccount ? getAgencyMedicareDenialMetric(activeAccount) : null,
+    [activeAccount],
+  );
   const hasDecisionGradeInputs = activeAccount &&
     hasAgencyFactEvidence(activeAccount, 'frontlineApparatusStations') &&
     hasAgencyFactEvidence(activeAccount, 'annualEmergencyVolume') &&
@@ -82,9 +104,11 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Agency Medicare denial rate</span>
                 <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
-                  {typeof activeAccount.cmsData.claimDenialRate === 'number'
-                    ? `${activeAccount.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(activeAccount, 'cmsClaims') ? 'CMS' : 'profile'}`
-                    : 'Not published'}
+                  {localDenialMetric
+                    ? `${localDenialMetric.ratePct?.toFixed(1) ?? '—'}% · local import`
+                    : sourceDenialMetric
+                      ? `${sourceDenialMetric.ratePct.toFixed(1)}% · source-backed`
+                      : 'Not published'}
                 </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
@@ -118,6 +142,8 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
         </div>
       )}
+
+      <MedicareDenialImportPanel agencies={agencies} />
 
       {/* Strategic Consultant Executive Briefing */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">

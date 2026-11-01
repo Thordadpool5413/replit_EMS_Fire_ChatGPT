@@ -1622,15 +1622,25 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               FIPS {countyDenialDisplay.countyFips} · denied {countyDenialDisplay.deniedClaimCount} /{' '}
                               adjudicated {countyDenialDisplay.adjudicatedClaimCount} · {countyDenialDisplay.claimScope} ·{' '}
                               {countyDenialDisplay.reportingPeriod} ·{' '}
-                              <a
-                                className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
-                                href={countyDenialDisplay.sourceUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={event => event.stopPropagation()}
-                              >
-                                {countyDenialDisplay.source}
-                              </a>
+                              {countyDenialDisplay.sourceUrl ? (
+                                <a
+                                  className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                  href={countyDenialDisplay.sourceUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={event => event.stopPropagation()}
+                                >
+                                  {countyDenialDisplay.source}
+                                </a>
+                              ) : (
+                                <span>
+                                  {countyDenialDisplay.source}
+                                  {countyDenialDisplay.sourceReference ? ` · report ${countyDenialDisplay.sourceReference}` : ''}
+                                </span>
+                              )}
+                              {countyDenialDisplay.sourceType === 'local-import'
+                                ? ' · local import; verify the report directly'
+                                : ' · source-linked'}
                             </span>
                           )}
                           {countyDenialDisplay.kind === 'unavailable' && (

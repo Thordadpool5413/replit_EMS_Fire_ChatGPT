@@ -1013,6 +1013,7 @@ export default function App() {
         {activeTab === 'claims' && (
           <div className="workspace-view-container min-w-0 w-full">
             <PublicHealthcareExplorer
+              agencies={agencies}
               onSelectStateFilter={(stateCode) => {
                 setGlobalState(stateCode);
                 setActiveTab('queue');

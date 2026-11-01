@@ -14,7 +14,9 @@ export type CountyDenialDisplay =
       claimScope: string;
       reportingPeriod: string;
       source: string;
-      sourceUrl: string;
+      sourceUrl?: string;
+      sourceReference?: string;
+      sourceType: 'source-backed' | 'local-import';
     }
   | {
       kind: 'zip-profile';

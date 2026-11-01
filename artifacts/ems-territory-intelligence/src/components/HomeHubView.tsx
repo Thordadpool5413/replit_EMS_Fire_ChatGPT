@@ -390,13 +390,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div>
       {/* ====================================================================
           1. COMPACT PREMIUM HEADER WITH DISCIPLINE FILTER & SEARCH
          ==================================================================== */}
       <section
         aria-label="Daily Territory Intelligence Briefing Header"
-        className="pi-surface p-4 sm:p-5 space-y-4"
+        className="hidden"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -542,8 +542,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           )}
         </div>
       </section>
-
-      <NationalAmbulanceReference />
 
       {/* ====================================================================
           2. INTERACTIVE U.S. TERRITORY MAP WITH STATE INTELLIGENCE DOSSIER
@@ -1184,7 +1182,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
          ==================================================================== */}
       <section
         aria-label="Specialized Geospatial Tools & Intelligence Resources"
-        className="pi-surface p-5 sm:p-6 space-y-4"
+        className="hidden"
       >
         <div className="flex items-center justify-between pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
           <div>

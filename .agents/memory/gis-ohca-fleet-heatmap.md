@@ -10,3 +10,9 @@ Render every agency in the active geography/provider filter for heat and hex agg
 **Why:** The user wants available information visible for end users to verify with the agency; calculations must preserve the reporting denominator and distinguish missing data from zero.
 
 **How to apply:** Preserve paired-input coverage, weighted aggregate rates, national-relative tier labels, age-band labels, and a no-data state in future GIS changes.
+
+On the home map, keep the full U.S. overview visible at the initial mobile zoom. Zoom should enlarge the SVG so users can pan the overflow; only recenter on a selected state after the user changes selection or zoom.
+
+**Why:** Centering the default selected state hid the national map on phones, and cropping the SVG viewBox made zoomed regions difficult to pan.
+
+**How to apply:** Start at 100% with the whole map in view; scale the SVG dimensions for zoom and keep the selected-state focus independent of the metric color.

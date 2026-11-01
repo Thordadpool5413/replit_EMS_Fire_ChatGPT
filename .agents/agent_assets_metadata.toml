@@ -14,3 +14,17 @@ mtime_ms = 1793508428294
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/402c6067-f3f1-43fa-a76f-fc8314490fa6/564f3be1-7124-4419-9b68-5eb44104a4a9"
 storage_version_token = "1793508438281732"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "dmm-nZT7TH1G7kQ2-WfIM"
+uri = "file://research/notes.md"
+type = "text"
+title = "EMS & Fire Data Research Notes"
+description = "Research scope, coverage checklist, and findings log for the data-source analysis."
+logical_id = "b6847ef8-0bfc-4ad2-bddd-b47df7443169"
+content_hash = "sha256:32ec0955758e7e4b3f71d994604d70f547303d724f7e470cc06806b279a7b443"
+size = 1963
+mtime_ms = 1793509638598
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/b6847ef8-0bfc-4ad2-bddd-b47df7443169/c130d594-9606-4322-8bcc-1153c33fa2e3"
+storage_version_token = "1793509643159779"
+content_type = "text/markdown"

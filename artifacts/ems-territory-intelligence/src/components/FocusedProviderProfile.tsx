@@ -2966,6 +2966,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <li key={`${link.level}-${link.sourceGeographyId ?? link.label}-${index}`} className="text-[10px] text-slate-700 dark:text-slate-200">
                           <span className="font-semibold capitalize">{link.level}</span>: {link.label}
                           {link.sourceGeographyId ? ` · ID ${link.sourceGeographyId}` : ''}
+                          {link.geographyVintage ? ` · ${link.geographyVintage}` : ''}
                           <span className="text-slate-500"> · {
                             link.matchBasis === 'source-id'
                               ? 'source ID'

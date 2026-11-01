@@ -4,6 +4,10 @@ const COUNTY_FIPS_PATTERN = /^\d{5}$/;
 const STATE_FIPS_PATTERN = /^\d{2}$/;
 const PLACE_GEOID_PATTERN = /^\d{7}$/;
 const TRACT_GEOID_PATTERN = /^\d{11}$/;
+const CT_LEGACY_COUNTY_FIPS = new Set([
+  '09001', '09003', '09005', '09007',
+  '09009', '09011', '09013', '09015',
+]);
 
 /**
  * Creates only location relationships supported by identifiers already on the
@@ -37,15 +41,27 @@ export function getAgencyGeographicLinks(agency: Agency): AgencyGeographicLink[]
   ];
 
   if (agency.county || agency.countyFips) {
+    const isLegacyCtCounty =
+      agency.stateCode.toUpperCase() === 'CT' &&
+      Boolean(agency.countyFips && CT_LEGACY_COUNTY_FIPS.has(agency.countyFips));
     links.push({
       relationship: 'located-at',
       level: 'county',
       label: agency.county || agency.countyFips || 'County',
       sourceGeographyId: hasValidCountyFips ? agency.countyFips : undefined,
       matchBasis: hasValidCountyFips ? 'source-id' : 'name-state-candidate',
-      sourceName: hasValidCountyFips ? 'U.S. Census Bureau county FIPS' : undefined,
-      sourceUrl: hasValidCountyFips
-        ? 'https://www.census.gov/library/reference/code-lists/ansi.html'
+      sourceName: isLegacyCtCounty
+        ? 'U.S. Census legacy county FIPS'
+        : hasValidCountyFips
+          ? 'U.S. Census Bureau county FIPS'
+          : undefined,
+      sourceUrl: isLegacyCtCounty
+        ? 'https://www2.census.gov/geo/pdfs/reference/ct_county_equiv_change.pdf'
+        : hasValidCountyFips
+          ? 'https://www.census.gov/library/reference/code-lists/ansi.html'
+          : undefined,
+      geographyVintage: isLegacyCtCounty
+        ? 'Legacy county geography; not a current county-equivalent FIPS'
         : undefined,
     });
   }

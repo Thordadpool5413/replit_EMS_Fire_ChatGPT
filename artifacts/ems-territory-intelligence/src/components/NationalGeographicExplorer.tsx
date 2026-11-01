@@ -339,39 +339,46 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     },
   });
   const stateNriSummaryByCode = useMemo(() => {
-    const byState = new Map<string, Map<string, NriCountyContextRecord>>();
+    const byState = new Map<string, NriCountyContextRecord[]>();
     for (const record of nriNationalQuery.data?.records ?? []) {
-      if (!byState.has(record.stateCode)) byState.set(record.stateCode, new Map());
-      byState.get(record.stateCode)!.set(record.countyFips, record);
+      if (!byState.has(record.stateCode)) byState.set(record.stateCode, []);
+      byState.get(record.stateCode)!.push(record);
     }
     const summary = new Map<string, {
       totalExpectedAnnualLoss: number | null;
-      availableCounties: number;
-      expectedCounties: number;
+      availableRecords: number;
+      sourceRecordCount: number;
       coverageComplete: boolean;
+      duplicateFips: boolean;
+      invalidFips: boolean;
     }>();
     for (const state of Object.values(ALL_50_STATES_SUMMARIES)) {
-      const expectedFips = territoryEngine.getCountiesForState(state.code)
-        .map((county) => county.countyFips)
-        .filter((fips) => /^\d{5}$/.test(fips));
-      const uniqueExpectedFips = [...new Set(expectedFips)];
       const rows = byState.get(state.code);
-      const availableCounties = uniqueExpectedFips.filter((fips) => rows?.has(fips)).length;
+      const sourceRows = rows ?? [];
+      const uniqueFips = new Set(sourceRows.map((record) => record.countyFips));
+      const duplicateFips = uniqueFips.size !== sourceRows.length;
+      const invalidFips = sourceRows.some((record) => !/^\d{5}$/.test(record.countyFips));
+      const availableRecords = sourceRows.filter(
+        (record) => Number.isFinite(record.expectedAnnualLoss),
+      ).length;
       const coverageComplete =
-        uniqueExpectedFips.length > 0 &&
-        availableCounties === uniqueExpectedFips.length &&
-        uniqueExpectedFips.every((fips) => rows?.get(fips)?.expectedAnnualLoss != null);
+        sourceRows.length > 0 &&
+        !duplicateFips &&
+        !invalidFips &&
+        availableRecords === sourceRows.length;
       const totalExpectedAnnualLoss = coverageComplete
-        ? uniqueExpectedFips.reduce(
-            (total, fips) => total + (rows!.get(fips)!.expectedAnnualLoss ?? 0),
+        ? sourceRows.reduce(
+            (total, record) => total + (record.expectedAnnualLoss ?? 0),
             0,
           )
         : null;
       summary.set(state.code, {
         totalExpectedAnnualLoss,
-        availableCounties,
-        expectedCounties: uniqueExpectedFips.length,
+        availableRecords,
+        sourceRecordCount: sourceRows.length,
         coverageComplete,
+        duplicateFips,
+        invalidFips,
       });
     }
     return summary;
@@ -1074,6 +1081,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isHovered = hoveredMapStateCode === st.code;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
+                    const countyScopeLabel = st.code === 'CT' ? 'legacy county polygons' : 'counties';
 
                     const nriSummary = stateNriSummaryByCode.get(st.code);
                     const hasMapValue = stateMapLayer === 'fema-loss'
@@ -1109,9 +1117,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       >
                         <title>{`${st.state} (${st.code}) · ${stateMapLayer === 'fema-loss'
                           ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
-                            ? `Sum of county expected annual loss: $${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}; ${nriSummary.availableCounties}/${nriSummary.expectedCounties} counties; ${nriNationalQuery.data?.sourceVersion ?? 'FEMA NRI'}`
-                            : `State total not shown; FEMA county coverage ${nriSummary?.availableCounties ?? 0}/${nriSummary?.expectedCounties ?? countyCount}`
-                          : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} Counties`}</title>
+                            ? `Sum of published NRI county-equivalent expected annual loss: $${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}; ${nriSummary.availableRecords}/${nriSummary.sourceRecordCount} source records; ${nriNationalQuery.data?.sourceVersion ?? 'FEMA NRI'}`
+                            : `State total not shown; ${nriSummary?.availableRecords ?? 0}/${nriSummary?.sourceRecordCount ?? 0} NRI source records with values${nriSummary?.duplicateFips ? ' · duplicate FIPS' : ''}${nriSummary?.invalidFips ? ' · malformed FIPS' : ''}`
+                          : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
                       </path>
                     );
                   })}
@@ -1227,7 +1235,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         >
                           {st.code} · {countyCount}c
                         </text>
-                        <title>{`${st.state} (${st.code}) — Click to inspect ${countyCount} Counties`}</title>
+                        <title>{`${st.state} (${st.code}) — Click to inspect ${countyCount} ${st.code === 'CT' ? 'legacy county polygons' : 'counties'}`}</title>
                       </g>
                     );
                   })}
@@ -1249,18 +1257,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </span>
                         <strong className="text-slate-900 dark:text-white text-sm font-semibold tracking-[-0.01em]">{hSt.state}</strong>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">{cCount} Counties</span>
+                        <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
+                          {hSt.code === 'CT' ? `${cCount} legacy county polygons` : `${cCount} counties`}
+                        </span>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         {stateMapLayer === 'fema-loss' ? (
                           <span className="text-slate-700 dark:text-slate-300">
-                            Sum of county expected annual loss:{' '}
+                            Sum of published NRI county-equivalent expected annual loss:{' '}
                             <strong className="font-semibold">
                               {nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
-                                ? `$${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                                ? `$${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 : 'Not shown'}
                             </strong>
                             <span className="ml-1 text-[10px] text-slate-500">
-                              ({nriSummary?.availableCounties ?? 0}/{nriSummary?.expectedCounties ?? cCount} counties matched; totals require full county coverage)
+                              ({nriSummary?.availableRecords ?? 0}/{nriSummary?.sourceRecordCount ?? 0} source records have values; invalid/duplicate FIPS or missing values block the sum)
                             </span>
                           </span>
                         ) : (

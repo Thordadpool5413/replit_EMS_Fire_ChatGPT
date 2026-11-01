@@ -64,6 +64,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     if (!stateCode || stateCode === 'all') return null;
     return hierarchy.statesByCode[stateCode.toUpperCase()] || null;
   }, [hierarchy, stateCode]);
+  const unmatchedNriRecords = useMemo(() => {
+    const appBoundaryFips = new Set(
+      stateNode?.countiesList.map((county) => county.countyFips) ?? [],
+    );
+    return (nriQuery.data?.records ?? []).filter(
+      (record) => !appBoundaryFips.has(record.countyFips),
+    );
+  }, [nriQuery.data?.records, stateNode]);
 
   useEffect(() => {
     if (!stateCode || stateCode === 'all') return;
@@ -151,12 +159,12 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <div className="flex items-center gap-2 text-xs font-semibold text-[#1E3A8A]">
             <Compass className="w-4 h-4 text-[#1E3A8A]" />
             <a
-              href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html"
+              href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-[#1E3A8A] hover:underline"
             >
-              U.S. Census TIGERweb county boundaries
+              Bundled U.S. Census TIGER/Line boundaries · vintage not stated
               <ExternalLink className="h-3 w-3" />
             </a>
             <span className="text-slate-300" aria-hidden="true">·</span>
@@ -164,7 +172,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
           <h3 className="text-base font-bold text-[#0F172A] mt-0.5">
             {activeCountyNode
-              ? `${activeCountyNode.countyName} (${stateNode.stateName}) — Real-World Boundary & Mapped Cities`
+              ? `${activeCountyNode.countyName} (${stateNode.stateName}) — Census boundary & city/place reference labels`
               : `${stateNode.stateName} (${stateNode.stateCode}) — ${stateNode.countiesList.length} Census county boundaries & ${stateNode.totalCitiesCount} city/place reference labels`}
           </h3>
         </div>
@@ -212,10 +220,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         {countyMapLayer === 'nri-risk' && (
           <div className="text-[11px] text-slate-600" role="status">
             {nriQuery.isLoading
-              ? `Loading FEMA county records for ${stateNode.stateCode}…`
+              ? `Loading FEMA county-equivalent records for ${stateNode.stateCode}…`
               : nriQuery.isError
                 ? 'FEMA county risk layer could not be loaded.'
-                : `${nriByCountyFips.size} county records · ${nriQuery.data?.sourceVersion ?? 'version not stated'} · `}
+                : `${nriByCountyFips.size} county-equivalent source records · ${nriQuery.data?.sourceVersion ?? 'version not stated'} · `}
             {!nriQuery.isLoading && !nriQuery.isError && nriQuery.data?.sourceUrl && (
               <a
                 href={nriQuery.data.sourceUrl}
@@ -229,6 +237,57 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
         )}
       </div>
+
+      {countyMapLayer === 'nri-risk' && unmatchedNriRecords.length > 0 && (
+        <section
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3.5 text-amber-950"
+          aria-label="FEMA source geographies that do not match the app map"
+        >
+          <h4 className="text-xs font-bold">
+            FEMA county-equivalent records not matched to these map boundaries
+          </h4>
+          <p className="mt-1 text-[10px] leading-relaxed">
+            These source records have their own FIPS IDs and exact values. They are listed below, not shaded onto a different app boundary.
+            {stateNode.stateCode === 'CT' && (
+              <>
+                {' '}For Connecticut, the app boundary file still contains 8 legacy counties, while current Census statistical geography uses 9 planning-region county-equivalents since 2022.
+                {' '}
+                <a
+                  href="https://www2.census.gov/geo/pdfs/reference/ct_county_equiv_change.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Census change notice
+                </a>
+                .
+              </>
+            )}
+          </p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {unmatchedNriRecords.map((record) => (
+              <li key={record.countyFips} className="rounded-md border border-amber-200 bg-white/80 p-2 text-[10px]">
+                <div className="font-semibold">
+                  {record.countyName} · FIPS {record.countyFips}
+                </div>
+                <div className="mt-0.5">
+                  {record.riskRating ?? 'Risk rating not stated'} · risk score {record.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss {record.expectedAnnualLoss == null
+                    ? 'not stated'
+                    : `$${record.expectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </div>
+                <a
+                  href={record.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-0.5 inline-block font-medium text-blue-800 underline underline-offset-2"
+                >
+                  FEMA NRI source · {record.sourceVersion}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Mode A: Statewide County Boundary Choropleth + Hierarchy Inspector */}
       {!activeCountyNode && (
@@ -282,7 +341,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
+                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
                           </title>
                         </path>
                       );
@@ -304,7 +363,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     ))}
                     <span className="flex items-center gap-1.5">
                       <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400 bg-slate-200" />
-                      <span>No county NRI record</span>
+                      <span>No matching NRI FIPS</span>
                     </span>
                   </>
                 ) : (
@@ -451,7 +510,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 </div>
                 {inspectedNri && (
                   <p className="text-[10px] leading-relaxed text-slate-500">
-                    FEMA National Risk Index county context · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'} · {inspectedNri.sourceVersion}. These county-level measures are context only; they are not values for the city or an individual agency.
+                    FEMA National Risk Index county context · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'} · {inspectedNri.sourceVersion}. These county-level measures are context only; they are not values for the city or an individual agency.
                   </p>
                 )}
 

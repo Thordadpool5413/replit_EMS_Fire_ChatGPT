@@ -5,3 +5,4 @@
 - [Compressed Vite assets](vite-gzip-assets.md) — browser fetch may transparently decompress `.gz` URLs in development; detect gzip magic before inflating.
 - [USFA registry feed latency](usfa-registry-feed-latency.md) — national CSV downloads are slow; load them in the background and surface NERIS matches independently.
 - [EMS public-source limits](ems-public-source-limits.md) — NPPES is an identity candidate, NEMSIS public dashboards are aggregated, and Florida publishes a separate license roster.
+- [Geographic identity and vintage](geographic-joins.md) — keep agency location, service area, and source geography distinct; only join compatible native IDs.

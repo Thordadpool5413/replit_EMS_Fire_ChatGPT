@@ -18,7 +18,7 @@ export interface DataRegistrySource {
   schemaSpecification: string;
   primaryFieldsIngested: string[];
   verificationMethod: string;
-  appConnection: 'live-feed' | 'catalog-only';
+  appConnection: 'live-feed' | 'bundled-asset' | 'catalog-only';
   sourceUrl?: string;
 }
 
@@ -148,20 +148,20 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     verificationMethod: 'Federally attested provider identity database with active Medicare billing enrollment.'
   },
   {
-    id: 'census_tigerweb',
-    name: 'U.S. Census Bureau TIGERweb / TIGER-Line',
-    acronym: 'Census TIGER',
-    appConnection: 'live-feed',
-    sourceUrl: 'https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html',
+    id: 'census_tigerline_bundle',
+    name: 'Census TIGER/Line County Boundary Asset',
+    acronym: 'Census TIGER/Line',
+    appConnection: 'bundled-asset',
+    sourceUrl: 'https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html',
     governingBody: 'U.S. Census Bureau',
-    updateCadence: 'Boundary products are updated by Census release; use the layer or file vintage for the selected geometry.',
-    legalAuthority: 'U.S. Census Bureau geographic reference products',
-    schemaSpecification: 'State and county GEOIDs/FIPS and county boundary geometries',
+    updateCadence: 'Bundled geometry asset; source vintage is not attached in the app.',
+    legalAuthority: 'U.S. Census Bureau geographic boundary products',
+    schemaSpecification: 'Bundled GeoJSON with state/county FIPS, GEOID, NAD83 geometry, area, and centroid fields',
     primaryFieldsIngested: [
-      'State and county boundary polygons',
-      'State FIPS and county GEOID identifiers',
+      'County polygons and state/county FIPS',
+      'County area, centroid, and display labels',
     ],
-    verificationMethod: 'Boundary identity is joined by Census GEOID/FIPS. City, ZIP, or agency presence inside a county boundary does not establish an operating service area.',
+    verificationMethod: 'The app serves a bundled boundary file and does not refresh it from Census at runtime. The file vintage is not recorded; Connecticut still has legacy county polygons.',
   },
   {
     id: 'fema_nri_counties',

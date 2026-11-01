@@ -139,6 +139,7 @@ export interface AgencyGeographicLink {
   sourceGeographyId?: string;
   sourceName?: string;
   sourceUrl?: string;
+  geographyVintage?: string;
   matchBasis: 'source-id' | 'user-confirmed' | 'name-state-candidate' | 'display-label';
   reportingPeriod?: string;
 }

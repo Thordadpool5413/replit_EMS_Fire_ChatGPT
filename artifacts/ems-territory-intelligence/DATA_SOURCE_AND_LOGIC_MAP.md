@@ -7,7 +7,7 @@
 
 The app contains five materially different kinds of information:
 
-1. **Live public registry and geography results:** CMS NPPES identity lookups, OpenFEMA AFG award records, USFA/NERIS fire registry candidates, FEMA National Risk Index county context, and selected Census boundary geometries.
+1. **Live public data feeds:** CMS NPPES identity lookups, OpenFEMA AFG award records, USFA/NERIS fire registry candidates, and FEMA NRI county-equivalent context. Map geometry is a separate bundled Census TIGER/Line asset.
 2. **Bundled reference data:** county geography, ZIP/city records, state summaries, and selected agency-directory entries.
 3. **Saved agency records:** Firestore records when configured, plus browser-local saved verification patches and notes.
 4. **User-imported claim summaries:** aggregate claim counts entered through the Medicare denial import flow; currently stored in this browser's `localStorage`, not shared across users or devices.
@@ -31,6 +31,8 @@ A source being listed in the app's lineage catalog does not mean the app current
 | **Firestore** | `utils/firebase.ts` defines `agencies`, `counties`, `field_notes`, and `user_preferences` collections. Agency records can be read and written; writes add `_updatedAt` or `_syncedAt`. | App agency ID and the record's state/county fields; `_updatedAt`/`_syncedAt` are storage timestamps, not source dates. Field-specific `AgencyFactEvidence` can hold a source URL, source record ID, reporting period, review status, and review date. | A cloud-synced record is not automatically externally verified. Storage timestamps do not show when the underlying fact was true. Access/sharing depends on Firebase configuration and rules, which this code audit does not verify. |
 | **Browser storage** | Verification patches and some user-entered data are saved in browser storage. The denial import summary is stored in `localStorage`. | Browser profile/device, not an authoritative agency identifier. | It is not workspace-wide sharing. Imported claim summaries do not become visible to other users or devices through this implementation. |
 | **Google Maps Platform MCP** | A Maps MCP integration is available in the workspace, but no app ingestion path was found that uses MCP results as the agency data feed. | Not applicable to persisted agency records. | Its presence in the workspace is not evidence that an agency field was obtained or verified through MCP. |
+
+**Correction to the source rows above:** Census geometry in this app is a bundled TIGER/Line file, not a live TIGERweb feed. State NRI totals use the FEMA source's native county-equivalent rows; they do not require FIPS to match the app's legacy county directory. The total is shown only when source FIPS are valid and unique and each returned source record has a non-null expected annual loss; it is a sum of published NRI EAL values, not a FEMA state rating.
 
 ### Runtime check during this audit
 
@@ -86,7 +88,8 @@ The count totals must refer to the same claim population, period, and definition
 - Each source observation keeps its native geography and reporting period. A county statistic may be shown as county context on a city/provider screen, but must not be renamed as that city's or provider's statistic.
 - Sum aggregatable amounts/counts only when records share a compatible measure, definition, and reporting period and the geographic key set is complete. For rates, sum compatible numerators and denominators, then divide; never average percentages. For ordinal ratings or composite scores, use the source's published roll-up if one exists; do not average categories.
 - Report coverage alongside derived totals. When expected geography IDs are missing, show observed coverage and leave the total unavailable instead of presenting a partial sum as complete.
-- Census TIGERweb geometries supply county boundaries; the app's city/ZIP reference labels do not establish legal boundaries, dispatch responsibility, or actual EMS/fire service areas.
+- County boundaries come from a bundled Census TIGER/Line asset, not a live TIGERweb request; its release vintage is not recorded. The app's city/ZIP reference labels do not establish legal boundaries, dispatch responsibility, or actual EMS/fire service areas.
+- Connecticut is a known vintage mismatch: the app's bundled directory has eight legacy counties, while current Census/FEMA statistical data uses nine planning-region county-equivalents. FEMA values are not shaded onto those legacy polygons. The state total sums distinct FEMA source records with valid FIPS and non-null EAL; unmatched county-equivalent records are listed separately for user review. [Census change notice](https://www2.census.gov/geo/pdfs/reference/ct_county_equiv_change.pdf)
 
 ## Bundled reference data and generated prospect logic
 

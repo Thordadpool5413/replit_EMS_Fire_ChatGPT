@@ -84,3 +84,17 @@ mtime_ms = 1793568351637
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/bcdd7429-5c99-4ec3-9c00-0058f27c48a1/9c3102e5-cc82-47db-a949-04c83a30109a"
 storage_version_token = "1793568415108984"
 content_type = "text/csv"
+
+[[outputs]]
+id = "czhySkth1QzbAY2rI8wRO"
+uri = "file://reports/national-ambulance-rsnat-fy2024-public-metrics.csv"
+type = "table"
+title = "National ambulance program metrics — CMS FY2024"
+description = "Verified national RSNAT claim-line outcomes: 4.12%. Separate selected-review and authorization metrics are included with explicit scope labels. None is a state, county, provider, or all-ambulance denial rate."
+logical_id = "7319d5da-50ba-43e5-8977-5a3178aa57f8"
+content_hash = "sha256:a7bc458c86a1c5cc915bd6ce5a38cd0839db2a44b7c632dccd38dca2d20470e8"
+size = 1339
+mtime_ms = 1793569366237
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/7319d5da-50ba-43e5-8977-5a3178aa57f8/a88933b2-db04-405b-b657-773ef7d248d8"
+storage_version_token = "1793569409884057"
+content_type = "text/csv"

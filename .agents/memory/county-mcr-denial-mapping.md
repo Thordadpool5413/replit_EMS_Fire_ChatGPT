@@ -37,6 +37,12 @@ Targeted medical-review classifications and error rates must not backfill popula
 
 **How to apply:** Keep targeted-review findings as review context only; require the actual population claim counts and geographic/provider identifiers for a geographic rate.
 
+National RSNAT claim-line outcomes may support a separately labeled program reference, never a substitute for an all-ambulance or local claim-denial rate.
+
+**Why:** The CMS program report places claim-line outcomes, selected prepayment-review outcomes, and prior-authorization request decisions on the same page. Their denominators and coverage differ; the report also mixes “claims” and “claim lines” in its headings.
+
+**How to apply:** Preserve the source's counting unit and cohort. Use explicitly labeled paid-plus-denied line counts for a line-outcome percentage, keep authorization and selected-review measures separate, and do not infer state/county/NPI results or a final post-appeal rate.
+
 **Why:** CMS PSPS publishes denied service-unit counts by carrier/locality, HCPCS, specialty, and place of service, but the public release suppresses cells under 11 and has no NPI or county FIPS; it cannot provide complete state, county, or individual-provider claim-denial rates. CMS Geographic Variation and Market Saturation & Utilization are use/spending or paid-claim datasets, not denial counts. The user also wants available profile values shown for their direct review rather than blocked by missing source metadata, and declined sign-in for sharing imported claim summaries.
 
 **How to apply:** Show a true county rate only from same-scope, same-period claim counts assigned to pickup-county FIPS. A state claim rate requires complete state coverage and summed denied/adjudicated counts. Keep ZIP-profile averages and CMS service-unit statistics separately labeled; never substitute them for claim rates. Calculate financial recovery only from reported denied-dollar amounts, not a count-based rate. Keep imported counts browser-local unless the user later approves authentication and protected workspace storage.

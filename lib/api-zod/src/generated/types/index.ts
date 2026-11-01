@@ -8,6 +8,12 @@
 
 export * from './afgGrant';
 export * from './afgGrantsResponse';
+export * from './emsRegistryAddress';
+export * from './emsRegistryCandidate';
+export * from './emsRegistryMatchesResponse';
+export * from './emsRegistryMatchesResponseSearchScope';
+export * from './emsRegistryMatchesResponseStatus';
+export * from './emsRegistryTaxonomy';
 export * from './fireRegistryCandidate';
 export * from './fireRegistryCandidateMatchLevel';
 export * from './fireRegistryCandidateSource';
@@ -18,6 +24,7 @@ export * from './fireRegistrySourceStatusStatus';
 export * from './fireRegistryStation';
 export * from './fireRegistryStationSource';
 export * from './getAfgGrantsParams';
+export * from './getEmsRegistryMatchesParams';
 export * from './getFireRegistryMatchesParams';
 export * from './healthStatus';
 export * from './placesResearchInput';

@@ -21,6 +21,7 @@ import {
   hasMappedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
 import { FireRegistryLookup } from './FireRegistryLookup';
+import { EmsRegistryLookup } from './EmsRegistryLookup';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -449,6 +450,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               city={agency.city}
               stateCode={agency.stateCode}
               fdid={agency.fdid}
+            />
+          )}
+          {!isFire && (
+            <EmsRegistryLookup
+              agencyName={agency.name}
+              city={agency.city}
+              stateCode={agency.stateCode}
             />
           )}
 

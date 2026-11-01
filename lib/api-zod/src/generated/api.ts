@@ -153,6 +153,57 @@ export const GetFireRegistryMatchesResponse = zod.object({
 
 
 /**
+ * Returns Type 2 NPI records as separate candidates; it does not verify EMS licensing or operations.
+ * @summary Search CMS NPPES organization records for an EMS agency
+ */
+export const getEmsRegistryMatchesQueryAgencyNameMin = 2;
+export const getEmsRegistryMatchesQueryAgencyNameMax = 180;
+
+export const getEmsRegistryMatchesQueryCityMax = 120;
+
+export const getEmsRegistryMatchesQueryStateCodeRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
+export const GetEmsRegistryMatchesQueryParams = zod.object({
+  "agencyName": zod.coerce.string().min(getEmsRegistryMatchesQueryAgencyNameMin).max(getEmsRegistryMatchesQueryAgencyNameMax),
+  "city": zod.coerce.string().max(getEmsRegistryMatchesQueryCityMax).optional(),
+  "stateCode": zod.coerce.string().regex(getEmsRegistryMatchesQueryStateCodeRegExp)
+})
+
+export const GetEmsRegistryMatchesResponse = zod.object({
+  "status": zod.enum(['available', 'unavailable']),
+  "sourceUrl": zod.string().url(),
+  "fetchedAt": zod.coerce.date(),
+  "searchScope": zod.enum(['name_city_state', 'name_state']),
+  "recordCount": zod.number().int(),
+  "totalResults": zod.number().int(),
+  "resultsTruncated": zod.boolean(),
+  "errorMessage": zod.string().nullable(),
+  "records": zod.array(zod.object({
+  "npi": zod.string(),
+  "organizationName": zod.string(),
+  "enumerationType": zod.string(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "registryUrl": zod.string().url(),
+  "addresses": zod.array(zod.object({
+  "purpose": zod.string().nullable(),
+  "line1": zod.string().nullable(),
+  "line2": zod.string().nullable(),
+  "city": zod.string().nullable(),
+  "stateCode": zod.string().nullable(),
+  "postalCode": zod.string().nullable()
+})),
+  "taxonomies": zod.array(zod.object({
+  "code": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "primary": zod.boolean(),
+  "stateCode": zod.string().nullable()
+}))
+}))
+})
+
+
+/**
  * @summary Ask Gemini a territory research question
  */
 export const SendTerritoryResearchMessageBody = zod.object({

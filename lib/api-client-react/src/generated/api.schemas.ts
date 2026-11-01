@@ -189,6 +189,71 @@ export interface FireRegistryMatchesResponse {
   records: FireRegistryCandidate[];
 }
 
+export interface EmsRegistryAddress {
+  /** @nullable */
+  purpose: string | null;
+  /** @nullable */
+  line1: string | null;
+  /** @nullable */
+  line2: string | null;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  stateCode: string | null;
+  /** @nullable */
+  postalCode: string | null;
+}
+
+export interface EmsRegistryTaxonomy {
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  description: string | null;
+  primary: boolean;
+  /** @nullable */
+  stateCode: string | null;
+}
+
+export interface EmsRegistryCandidate {
+  npi: string;
+  organizationName: string;
+  enumerationType: string;
+  /** @nullable */
+  updatedAt: string | null;
+  registryUrl: string;
+  addresses: EmsRegistryAddress[];
+  taxonomies: EmsRegistryTaxonomy[];
+}
+
+export type EmsRegistryMatchesResponseStatus = typeof EmsRegistryMatchesResponseStatus[keyof typeof EmsRegistryMatchesResponseStatus];
+
+
+export const EmsRegistryMatchesResponseStatus = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
+export type EmsRegistryMatchesResponseSearchScope = typeof EmsRegistryMatchesResponseSearchScope[keyof typeof EmsRegistryMatchesResponseSearchScope];
+
+
+export const EmsRegistryMatchesResponseSearchScope = {
+  name_city_state: 'name_city_state',
+  name_state: 'name_state',
+} as const;
+
+export interface EmsRegistryMatchesResponse {
+  status: EmsRegistryMatchesResponseStatus;
+  sourceUrl: string;
+  fetchedAt: string;
+  searchScope: EmsRegistryMatchesResponseSearchScope;
+  recordCount: number;
+  totalResults: number;
+  resultsTruncated: boolean;
+  /** @nullable */
+  errorMessage: string | null;
+  records: EmsRegistryCandidate[];
+}
+
 export type TerritoryResearchMessageRole = typeof TerritoryResearchMessageRole[keyof typeof TerritoryResearchMessageRole];
 
 
@@ -261,5 +326,21 @@ stateCode: string;
  * @maxLength 20
  */
 fdid?: string;
+};
+
+export type GetEmsRegistryMatchesParams = {
+/**
+ * @minLength 2
+ * @maxLength 180
+ */
+agencyName: string;
+/**
+ * @maxLength 120
+ */
+city?: string;
+/**
+ * @pattern ^[A-Za-z]{2}$
+ */
+stateCode: string;
 };
 

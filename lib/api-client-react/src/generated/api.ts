@@ -21,8 +21,10 @@ import type {
 
 import type {
   AfgGrantsResponse,
+  EmsRegistryMatchesResponse,
   FireRegistryMatchesResponse,
   GetAfgGrantsParams,
+  GetEmsRegistryMatchesParams,
   GetFireRegistryMatchesParams,
   HealthStatus,
   PlacesResearchInput,
@@ -461,6 +463,91 @@ export function useGetFireRegistryMatches<TData = Awaited<ReturnType<typeof getF
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetFireRegistryMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmsRegistryMatchesUrl = (params: GetEmsRegistryMatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/ems-registry/matches?${stringifiedParams}` : `/api/ems-registry/matches`
+}
+
+/**
+ * Returns Type 2 NPI records as separate candidates; it does not verify EMS licensing or operations.
+ * @summary Search CMS NPPES organization records for an EMS agency
+ */
+export const getEmsRegistryMatches = async (params: GetEmsRegistryMatchesParams, options?: Parameters<typeof customFetch>[1]): Promise<EmsRegistryMatchesResponse> => {
+
+  return customFetch<EmsRegistryMatchesResponse>(getGetEmsRegistryMatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmsRegistryMatchesQueryKey = (params?: GetEmsRegistryMatchesParams,) => {
+    return [
+    `/api/ems-registry/matches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEmsRegistryMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getEmsRegistryMatches>>, TError = ErrorType<void>>(params: GetEmsRegistryMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmsRegistryMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmsRegistryMatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmsRegistryMatches>>> = ({ signal }) => getEmsRegistryMatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmsRegistryMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmsRegistryMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getEmsRegistryMatches>>>
+export type GetEmsRegistryMatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search CMS NPPES organization records for an EMS agency
+ */
+
+export function useGetEmsRegistryMatches<TData = Awaited<ReturnType<typeof getEmsRegistryMatches>>, TError = ErrorType<void>>(
+ params: GetEmsRegistryMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmsRegistryMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmsRegistryMatchesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

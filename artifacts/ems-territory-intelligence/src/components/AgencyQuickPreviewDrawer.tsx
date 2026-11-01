@@ -20,6 +20,7 @@ import {
   hasAgencyFactEvidence,
   hasMappedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
+import { FireRegistryLookup } from './FireRegistryLookup';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -441,6 +442,15 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               <p className="text-[11px] text-slate-500 dark:text-slate-400">No field-specific sources are mapped to this agency record yet.</p>
             )}
           </section>
+
+          {isFire && (
+            <FireRegistryLookup
+              agencyName={agency.name}
+              city={agency.city}
+              stateCode={agency.stateCode}
+              fdid={agency.fdid}
+            />
+          )}
 
           {/* Quick Field Note Logger */}
           {onAddFieldNote && (

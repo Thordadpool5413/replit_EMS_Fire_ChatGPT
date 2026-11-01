@@ -8,7 +8,17 @@
 
 export * from './afgGrant';
 export * from './afgGrantsResponse';
+export * from './fireRegistryCandidate';
+export * from './fireRegistryCandidateMatchLevel';
+export * from './fireRegistryCandidateSource';
+export * from './fireRegistryMatchesResponse';
+export * from './fireRegistrySourceStatus';
+export * from './fireRegistrySourceStatusSource';
+export * from './fireRegistrySourceStatusStatus';
+export * from './fireRegistryStation';
+export * from './fireRegistryStationSource';
 export * from './getAfgGrantsParams';
+export * from './getFireRegistryMatchesParams';
 export * from './healthStatus';
 export * from './placesResearchInput';
 export * from './placesResearchResponse';

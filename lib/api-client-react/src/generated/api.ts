@@ -21,7 +21,9 @@ import type {
 
 import type {
   AfgGrantsResponse,
+  FireRegistryMatchesResponse,
   GetAfgGrantsParams,
+  GetFireRegistryMatchesParams,
   HealthStatus,
   PlacesResearchInput,
   PlacesResearchResponse,
@@ -385,6 +387,91 @@ export const useVerifyProviderLive = <TError = ErrorType<void>,
       > => {
       return useMutation(getVerifyProviderLiveMutationOptions(options));
     }
+
+export const getGetFireRegistryMatchesUrl = (params: GetFireRegistryMatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fire-registry/matches?${stringifiedParams}` : `/api/fire-registry/matches`
+}
+
+/**
+ * Returns separate source records and possible name/location matches; it never updates an app agency record.
+ * @summary Find public USFA and NERIS fire department records
+ */
+export const getFireRegistryMatches = async (params: GetFireRegistryMatchesParams, options?: Parameters<typeof customFetch>[1]): Promise<FireRegistryMatchesResponse> => {
+
+  return customFetch<FireRegistryMatchesResponse>(getGetFireRegistryMatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFireRegistryMatchesQueryKey = (params?: GetFireRegistryMatchesParams,) => {
+    return [
+    `/api/fire-registry/matches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFireRegistryMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getFireRegistryMatches>>, TError = ErrorType<void>>(params: GetFireRegistryMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFireRegistryMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFireRegistryMatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFireRegistryMatches>>> = ({ signal }) => getFireRegistryMatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFireRegistryMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFireRegistryMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getFireRegistryMatches>>>
+export type GetFireRegistryMatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Find public USFA and NERIS fire department records
+ */
+
+export function useGetFireRegistryMatches<TData = Awaited<ReturnType<typeof getFireRegistryMatches>>, TError = ErrorType<void>>(
+ params: GetFireRegistryMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFireRegistryMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFireRegistryMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getSendTerritoryResearchMessageUrl = () => {
 

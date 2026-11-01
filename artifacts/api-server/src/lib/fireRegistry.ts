@@ -1,0 +1,921 @@
+import type {
+  FireRegistryCandidate,
+  FireRegistryMatchesResponse,
+  FireRegistrySourceStatus,
+  FireRegistryStation,
+} from "@workspace/api-zod";
+
+const USFA_DOWNLOAD_PAGE = "https://apps.usfa.fema.gov/registry/download";
+const USFA_DOWNLOAD_BASE = "https://apps.usfa.fema.gov/registry/api/download";
+const NERIS_FEATURE_SERVER =
+  "https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer";
+const NERIS_PUBLIC_PAGE = NERIS_FEATURE_SERVER;
+
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const ARC_GIS_PAGE_SIZE = 1000;
+const MAX_STATE_FEATURES = 12000;
+const MAX_STATIONS_PER_RECORD = 100;
+
+type SearchInput = {
+  agencyName: string;
+  city?: string;
+  stateCode: string;
+  fdid?: string;
+};
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  fetchedAt: string;
+  state: "loading" | "ready";
+  data?: T;
+  promise: Promise<T>;
+};
+
+type CsvTable = {
+  rows: string[][];
+  headerIndex: Map<string, number>;
+};
+
+type UsfaDepartment = {
+  fdid: string;
+  name: string;
+  stateCode: string;
+  city: string | null;
+  county: string | null;
+  headquartersAddress: string | null;
+  departmentType: string | null;
+  organizationType: string | null;
+  stationCount: number | null;
+};
+
+type UsfaStation = {
+  fdid: string;
+  stateCode: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  postalCode: string | null;
+};
+
+type NerisFeature = {
+  attributes?: Record<string, unknown>;
+};
+
+type NerisDepartment = {
+  nerisId: string;
+  name: string;
+  stateCode: string;
+  city: string | null;
+  headquartersAddress: string | null;
+  departmentType: string | null;
+  entityType: string | null;
+  stationCount: number | null;
+  unitCount: number | null;
+  exportDate: Date | null;
+};
+
+type NerisStation = {
+  nerisId: string | null;
+  departmentNerisId: string;
+  name: string;
+  stateCode: string;
+  city: string | null;
+  address: string | null;
+  postalCode: string | null;
+  unitCount: number | null;
+  exportDate: Date | null;
+};
+
+type MatchCandidate = {
+  record: FireRegistryCandidate;
+  score: number;
+};
+
+const cache = new Map<string, CacheEntry<unknown>>();
+const sourceFailures = new Map<
+  string,
+  { message: string; retryAfter: number }
+>();
+
+async function loadCached<T>(
+  key: string,
+  load: () => Promise<T>,
+  failureMessage: string,
+): Promise<{ data: T; fetchedAt: string }> {
+  const current = cache.get(key) as CacheEntry<T> | undefined;
+  if (current && current.expiresAt > Date.now()) {
+    return { data: await current.promise, fetchedAt: current.fetchedAt };
+  }
+
+  const entry: CacheEntry<T> = {
+    expiresAt: Date.now() + CACHE_TTL_MS,
+    fetchedAt: new Date().toISOString(),
+    state: "loading",
+    promise: Promise.resolve(undefined as T),
+  };
+  entry.promise = load()
+    .then((data) => {
+      entry.state = "ready";
+      entry.data = data;
+      sourceFailures.delete(key);
+      return data;
+    })
+    .catch((error: unknown) => {
+      if (cache.get(key) === entry) cache.delete(key);
+      sourceFailures.set(key, {
+        message: failureMessage,
+        retryAfter: Date.now() + 30000,
+      });
+      throw error;
+    });
+  cache.set(key, entry as CacheEntry<unknown>);
+
+  try {
+    return { data: await entry.promise, fetchedAt: entry.fetchedAt };
+  } catch (error) {
+    throw error;
+  }
+}
+
+function getCachedValue<T>(
+  key: string,
+): { data: T; fetchedAt: string } | null {
+  const entry = cache.get(key) as CacheEntry<T> | undefined;
+  if (
+    !entry ||
+    entry.state !== "ready" ||
+    entry.expiresAt <= Date.now() ||
+    entry.data === undefined
+  ) {
+    return null;
+  }
+  return { data: entry.data, fetchedAt: entry.fetchedAt };
+}
+
+function getSourceFailure(key: string): string | null {
+  const failure = sourceFailures.get(key);
+  if (!failure) return null;
+  if (failure.retryAfter <= Date.now()) {
+    sourceFailures.delete(key);
+    return null;
+  }
+  return failure.message;
+}
+
+function startCachedLoad(
+  key: string,
+  load: () => Promise<unknown>,
+): void {
+  const entry = cache.get(key);
+  if (entry && entry.expiresAt > Date.now()) return;
+  if (getSourceFailure(key)) return;
+  void load().catch(() => undefined);
+}
+
+function normalizeHeader(header: string): string {
+  return header.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseCsvRows(content: string): string[][] {
+  const text = content.replace(/^\uFEFF/, "");
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = "";
+  let quoted = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (quoted) {
+      if (character === '"' && text[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      } else {
+        value += character;
+      }
+      continue;
+    }
+
+    if (character === '"' && value.length === 0) {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(value);
+      value = "";
+    } else if (character === "\n" || character === "\r") {
+      if (character === "\r" && text[index + 1] === "\n") index += 1;
+      row.push(value);
+      value = "";
+      if (row.some((cell) => cell.trim().length > 0)) rows.push(row);
+      row = [];
+    } else {
+      value += character;
+    }
+  }
+
+  row.push(value);
+  if (row.some((cell) => cell.trim().length > 0)) rows.push(row);
+  return rows;
+}
+
+function parseCsvTable(content: string, requiredHeaders: string[]): CsvTable {
+  const rows = parseCsvRows(content);
+  const headers = rows.shift();
+  if (!headers) throw new Error("The USFA download was empty.");
+
+  const headerIndex = new Map(
+    headers.map((header, index) => [normalizeHeader(header), index]),
+  );
+  const missingHeaders = requiredHeaders.filter(
+    (header) => !headerIndex.has(normalizeHeader(header)),
+  );
+  if (missingHeaders.length > 0) {
+    throw new Error("The USFA download format did not contain expected fields.");
+  }
+
+  return { rows, headerIndex };
+}
+
+function csvValue(
+  table: CsvTable,
+  row: string[],
+  header: string,
+): string {
+  const index = table.headerIndex.get(normalizeHeader(header));
+  return index === undefined ? "" : (row[index] ?? "").trim();
+}
+
+function optionalText(value: string | null | undefined): string | null {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : null;
+}
+
+function numberOrNull(value: string | number | null | undefined): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Number(value.replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildAddress(parts: Array<string | null | undefined>): string | null {
+  const cleaned = parts.map((part) => part?.trim()).filter(Boolean);
+  return cleaned.length > 0 ? cleaned.join(", ") : null;
+}
+
+async function fetchUsfaCsv(
+  listName: "national" | "station",
+): Promise<string> {
+  const url = new URL(`${USFA_DOWNLOAD_BASE}/${listName}`);
+  // The official download page appends a cache key; changing it daily allows
+  // the app's own 12-hour cache to reuse the same upstream copy.
+  url.searchParams.set("cacheKey", String(Math.floor(Date.now() / 86_400_000)));
+  const response = await fetch(url, {
+    headers: { Accept: "text/csv" },
+    signal: AbortSignal.timeout(120000),
+  });
+  if (!response.ok) {
+    throw new Error(`USFA returned HTTP ${response.status}.`);
+  }
+  return response.text();
+}
+
+async function getUsfaDepartments(): Promise<{
+  data: UsfaDepartment[];
+  fetchedAt: string;
+}> {
+  const result = await loadCached("usfa:departments", async () => {
+    const content = await fetchUsfaCsv("national");
+    const table = parseCsvTable(content, [
+      "FDID",
+      "Fire dept name",
+      "HQ state",
+      "HQ city",
+    ]);
+    return table.rows.flatMap((row) => {
+      const fdid = csvValue(table, row, "FDID");
+      const name = csvValue(table, row, "Fire dept name");
+      const stateCode = csvValue(table, row, "HQ state").toUpperCase();
+      if (!fdid || !name || !/^[A-Z]{2}$/.test(stateCode)) return [];
+
+      return [{
+        fdid,
+        name,
+        stateCode,
+        city: optionalText(csvValue(table, row, "HQ city")),
+        county: optionalText(csvValue(table, row, "County")),
+        headquartersAddress: buildAddress([
+          csvValue(table, row, "HQ addr1"),
+          csvValue(table, row, "HQ addr2"),
+          csvValue(table, row, "HQ city"),
+          stateCode,
+          csvValue(table, row, "HQ zip"),
+        ]),
+        departmentType: optionalText(csvValue(table, row, "Dept Type")),
+        organizationType: optionalText(
+          csvValue(table, row, "Organization Type"),
+        ),
+        stationCount: numberOrNull(
+          csvValue(table, row, "Number Of Stations"),
+        ),
+      }];
+    });
+  }, "USFA department records could not be loaded.");
+  return { data: result.data, fetchedAt: result.fetchedAt };
+}
+
+async function getUsfaStations(): Promise<{
+  data: UsfaStation[];
+  fetchedAt: string;
+}> {
+  const result = await loadCached("usfa:stations", async () => {
+    const content = await fetchUsfaCsv("station");
+    const table = parseCsvTable(content, [
+      "FDID",
+      "HQ State",
+      "Station Name",
+      "Station State",
+    ]);
+    return table.rows.flatMap((row) => {
+      const fdid = csvValue(table, row, "FDID");
+      const stateCode =
+        csvValue(table, row, "HQ State").toUpperCase() ||
+        csvValue(table, row, "Station State").toUpperCase();
+      if (!fdid || !/^[A-Z]{2}$/.test(stateCode)) return [];
+
+      const name =
+        optionalText(csvValue(table, row, "Station Name")) ?? "Station record";
+      return [{
+        fdid,
+        stateCode,
+        name,
+        address: buildAddress([
+          csvValue(table, row, "Station Addr1"),
+          csvValue(table, row, "Station Addr2"),
+        ]),
+        city: optionalText(csvValue(table, row, "Station City")),
+        postalCode: optionalText(csvValue(table, row, "Station Zip")),
+      }];
+    });
+  }, "USFA station address rows could not be loaded.");
+  return { data: result.data, fetchedAt: result.fetchedAt };
+}
+
+function nerisLayerUrl(layerId: 0 | 1): string {
+  return `${NERIS_FEATURE_SERVER}/${layerId}`;
+}
+
+function toIsoDate(value: unknown): Date | null {
+  const milliseconds =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : Number.NaN;
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) return null;
+  const date = new Date(milliseconds);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function queryNerisLayer(
+  stateCode: string,
+  layerId: 0 | 1,
+  outFields: string[],
+): Promise<NerisFeature[]> {
+  const features: NerisFeature[] = [];
+  const layerUrl = `${nerisLayerUrl(layerId)}/query`;
+  let offset = 0;
+
+  while (offset < MAX_STATE_FEATURES) {
+    const url = new URL(layerUrl);
+    url.searchParams.set("where", `state='${stateCode}'`);
+    url.searchParams.set("outFields", outFields.join(","));
+    url.searchParams.set("returnGeometry", "false");
+    url.searchParams.set("orderByFields", "OBJECTID ASC");
+    url.searchParams.set("resultRecordCount", String(ARC_GIS_PAGE_SIZE));
+    url.searchParams.set("resultOffset", String(offset));
+    url.searchParams.set("f", "json");
+
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) {
+      throw new Error(`NERIS returned HTTP ${response.status}.`);
+    }
+
+    const payload = (await response.json()) as {
+      error?: { message?: string };
+      features?: NerisFeature[];
+      exceededTransferLimit?: boolean;
+    };
+    if (payload.error) {
+      throw new Error(payload.error.message || "NERIS returned an error.");
+    }
+
+    const page = Array.isArray(payload.features) ? payload.features : [];
+    features.push(...page);
+    if (page.length < ARC_GIS_PAGE_SIZE || !payload.exceededTransferLimit) {
+      break;
+    }
+    offset += page.length;
+  }
+
+  if (offset >= MAX_STATE_FEATURES) {
+    throw new Error("NERIS state results exceeded the safe retrieval limit.");
+  }
+  return features;
+}
+
+async function getNerisDepartments(stateCode: string): Promise<{
+  data: NerisDepartment[];
+  fetchedAt: string;
+}> {
+  const result = await loadCached(
+    `neris:departments:${stateCode}`,
+    async () => {
+      const features = await queryNerisLayer(stateCode, 0, [
+        "neris_id",
+        "name",
+        "address_line_1",
+        "address_line_2",
+        "city",
+        "state",
+        "station_count",
+        "unit_count",
+        "entity_type",
+        "department_type",
+        "export_date",
+      ]);
+
+      return features.flatMap((feature) => {
+        const attributes = feature.attributes ?? {};
+        const nerisId = String(attributes.neris_id ?? "").trim();
+        const name = String(attributes.name ?? "").trim();
+        const sourceState = String(attributes.state ?? "").toUpperCase();
+        if (!nerisId || !name || sourceState !== stateCode) return [];
+        return [{
+          nerisId,
+          name,
+          stateCode: sourceState,
+          city: optionalText(String(attributes.city ?? "")),
+          headquartersAddress: buildAddress([
+            String(attributes.address_line_1 ?? ""),
+            String(attributes.address_line_2 ?? ""),
+            String(attributes.city ?? ""),
+            sourceState,
+          ]),
+          departmentType: optionalText(
+            String(attributes.department_type ?? ""),
+          ),
+          entityType: optionalText(String(attributes.entity_type ?? "")),
+          stationCount: numberOrNull(
+            attributes.station_count as string | number | null | undefined,
+          ),
+          unitCount: numberOrNull(
+            attributes.unit_count as string | number | null | undefined,
+          ),
+          exportDate: toIsoDate(attributes.export_date),
+        }];
+      });
+    },
+    "NERIS department records could not be loaded.",
+  );
+  return { data: result.data, fetchedAt: result.fetchedAt };
+}
+
+async function getNerisStations(stateCode: string): Promise<{
+  data: NerisStation[];
+  fetchedAt: string;
+}> {
+  const result = await loadCached(
+    `neris:stations:${stateCode}`,
+    async () => {
+      const features = await queryNerisLayer(stateCode, 1, [
+        "neris_id",
+        "station_name",
+        "address_line_1",
+        "address_line_2",
+        "city",
+        "state",
+        "zip_code",
+        "unit_count",
+        "department_neris_id",
+        "export_date",
+      ]);
+
+      return features.flatMap((feature) => {
+        const attributes = feature.attributes ?? {};
+        const stationId = optionalText(String(attributes.neris_id ?? ""));
+        const departmentNerisId = String(
+          attributes.department_neris_id ?? "",
+        ).trim();
+        const name = String(attributes.station_name ?? "").trim();
+        const sourceState = String(attributes.state ?? "").toUpperCase();
+        if (!departmentNerisId || !name || sourceState !== stateCode) return [];
+        return [{
+          nerisId: stationId,
+          departmentNerisId,
+          name,
+          stateCode: sourceState,
+          city: optionalText(String(attributes.city ?? "")),
+          address: buildAddress([
+            String(attributes.address_line_1 ?? ""),
+            String(attributes.address_line_2 ?? ""),
+          ]),
+          postalCode: optionalText(String(attributes.zip_code ?? "")),
+          unitCount: numberOrNull(
+            attributes.unit_count as string | number | null | undefined,
+          ),
+          exportDate: toIsoDate(attributes.export_date),
+        }];
+      });
+    },
+    "NERIS station records could not be loaded.",
+  );
+  return { data: result.data, fetchedAt: result.fetchedAt };
+}
+
+function normalizeName(value: string): string {
+  const tokens = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const generic = new Set([
+    "and",
+    "city",
+    "county",
+    "department",
+    "dept",
+    "district",
+    "emergency",
+    "fire",
+    "inc",
+    "incorporated",
+    "of",
+    "rescue",
+    "service",
+    "services",
+    "the",
+    "township",
+    "volunteer",
+  ]);
+  const meaningful = tokens.filter((token) => !generic.has(token));
+  return (meaningful.length > 0 ? meaningful : tokens).sort().join(" ");
+}
+
+function nameSimilarity(left: string, right: string): number {
+  const leftTokens = new Set(normalizeName(left).split(/\s+/).filter(Boolean));
+  const rightTokens = new Set(normalizeName(right).split(/\s+/).filter(Boolean));
+  if (leftTokens.size === 0 || rightTokens.size === 0) return 0;
+  const intersection = [...leftTokens].filter((token) => rightTokens.has(token));
+  const union = new Set([...leftTokens, ...rightTokens]);
+  return intersection.length / union.size;
+}
+
+function stationRecordUrl(
+  layerId: 0 | 1,
+  fieldName: "neris_id" | "department_neris_id",
+  value: string,
+): string {
+  const url = new URL(`${nerisLayerUrl(layerId)}/query`);
+  const escapedValue = value.replace(/'/g, "''");
+  url.searchParams.set("where", `${fieldName}='${escapedValue}'`);
+  url.searchParams.set("outFields", "*");
+  url.searchParams.set("returnGeometry", "false");
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
+
+function makeMatch(
+  input: SearchInput,
+  fields: {
+    source: "USFA NFDR" | "NERIS";
+    sourceRecordId: string;
+    sourceUrl: string;
+    agencyName: string;
+    stateCode: string;
+    city: string | null;
+    county: string | null;
+    headquartersAddress: string | null;
+    fdid: string | null;
+    nerisId: string | null;
+    departmentType: string | null;
+    organizationType: string | null;
+    entityType: string | null;
+    stationCount: number | null;
+    unitCount: number | null;
+    exportDate: Date | null;
+    stations: FireRegistryStation[];
+    stationsTruncated: boolean;
+  },
+): MatchCandidate | null {
+  const stateMatch = fields.stateCode.toUpperCase() === input.stateCode;
+  if (!stateMatch) return null;
+
+  const appName = normalizeName(input.agencyName);
+  const sourceName = normalizeName(fields.agencyName);
+  const exactName = appName.length > 0 && appName === sourceName;
+  const similarity = nameSimilarity(input.agencyName, fields.agencyName);
+  const cityMatch =
+    Boolean(input.city?.trim()) &&
+    normalizeName(input.city ?? "") === normalizeName(fields.city ?? "");
+  const appFdid = input.fdid?.trim().toUpperCase() ?? "";
+  const sourceFdid = fields.fdid?.trim().toUpperCase() ?? "";
+  const fdidMatch = Boolean(appFdid && sourceFdid && appFdid === sourceFdid);
+  const fdidConflict = Boolean(appFdid && sourceFdid && appFdid !== sourceFdid);
+
+  let score = 25;
+  const matchReasons = ["Same state"];
+  if (exactName) {
+    score += 55;
+    matchReasons.push("Agency names match after normalization");
+  } else if (similarity >= 0.55) {
+    score += similarity >= 0.75 ? 40 : 28;
+    matchReasons.push("Agency names share key terms");
+  }
+  if (cityMatch) {
+    score += 20;
+    matchReasons.push("Same city");
+  }
+  if (fdidMatch) {
+    score += 35;
+    matchReasons.push("State-scoped FDID matches");
+  } else if (fdidConflict) {
+    score -= 30;
+    matchReasons.push("App FDID differs from this registry record");
+  }
+  if (score < 60) return null;
+
+  const strongNameLocationCandidate =
+    exactName && cityMatch && !fdidConflict;
+  const record: FireRegistryCandidate = {
+    source: fields.source,
+    sourceRecordId: fields.sourceRecordId,
+    sourceUrl: fields.sourceUrl,
+    agencyName: fields.agencyName,
+    stateCode: fields.stateCode,
+    city: fields.city,
+    county: fields.county,
+    headquartersAddress: fields.headquartersAddress,
+    fdid: fields.fdid,
+    nerisId: fields.nerisId,
+    departmentType: fields.departmentType,
+    organizationType: fields.organizationType,
+    entityType: fields.entityType,
+    stationCount: fields.stationCount,
+    unitCount: fields.unitCount,
+    exportDate: fields.exportDate,
+    matchLevel: strongNameLocationCandidate
+      ? "strong_candidate"
+      : "possible_candidate",
+    matchReasons,
+    stations: fields.stations,
+    stationsTruncated: fields.stationsTruncated,
+  };
+  return { record, score };
+}
+
+function toUsfaStation(
+  station: UsfaStation,
+): FireRegistryStation {
+  return {
+    source: "USFA NFDR",
+    sourceRecordId: null,
+    sourceUrl: USFA_DOWNLOAD_PAGE,
+    name: station.name,
+    address: station.address,
+    city: station.city,
+    stateCode: station.stateCode,
+    postalCode: station.postalCode,
+    unitCount: null,
+    exportDate: null,
+  };
+}
+
+function toNerisStation(station: NerisStation): FireRegistryStation {
+  const sourceUrl = station.nerisId
+    ? stationRecordUrl(1, "neris_id", station.nerisId)
+    : stationRecordUrl(1, "department_neris_id", station.departmentNerisId);
+  return {
+    source: "NERIS",
+    sourceRecordId: station.nerisId,
+    sourceUrl,
+    name: station.name,
+    address: station.address,
+    city: station.city,
+    stateCode: station.stateCode,
+    postalCode: station.postalCode,
+    unitCount: station.unitCount,
+    exportDate: station.exportDate,
+  };
+}
+
+function boundedStations(
+  stations: FireRegistryStation[],
+): { stations: FireRegistryStation[]; stationsTruncated: boolean } {
+  return {
+    stations: stations.slice(0, MAX_STATIONS_PER_RECORD),
+    stationsTruncated: stations.length > MAX_STATIONS_PER_RECORD,
+  };
+}
+
+function usfaCandidates(
+  input: SearchInput,
+  departments: UsfaDepartment[],
+  stationRows: UsfaStation[],
+): MatchCandidate[] {
+  const stateDepartments = departments.filter(
+    (department) => department.stateCode === input.stateCode,
+  );
+  return stateDepartments.flatMap((department) => {
+    const stationDetails = stationRows
+      .filter(
+        (station) =>
+          station.stateCode === department.stateCode &&
+          station.fdid === department.fdid,
+      )
+      .map(toUsfaStation);
+    const bounded = boundedStations(stationDetails);
+    const candidate = makeMatch(input, {
+      source: "USFA NFDR",
+      sourceRecordId: `${department.stateCode}:${department.fdid}`,
+      sourceUrl: USFA_DOWNLOAD_PAGE,
+      agencyName: department.name,
+      stateCode: department.stateCode,
+      city: department.city,
+      county: department.county,
+      headquartersAddress: department.headquartersAddress,
+      fdid: department.fdid,
+      nerisId: null,
+      departmentType: department.departmentType,
+      organizationType: department.organizationType,
+      entityType: null,
+      stationCount: department.stationCount,
+      unitCount: null,
+      exportDate: null,
+      stations: bounded.stations,
+      stationsTruncated: bounded.stationsTruncated,
+    });
+    return candidate ? [candidate] : [];
+  });
+}
+
+function nerisCandidates(
+  input: SearchInput,
+  departments: NerisDepartment[],
+  stationRows: NerisStation[],
+): MatchCandidate[] {
+  return departments.flatMap((department) => {
+    const stationDetails = stationRows
+      .filter((station) => station.departmentNerisId === department.nerisId)
+      .map(toNerisStation);
+    const bounded = boundedStations(stationDetails);
+    const candidate = makeMatch(input, {
+      source: "NERIS",
+      sourceRecordId: department.nerisId,
+      sourceUrl: stationRecordUrl(0, "neris_id", department.nerisId),
+      agencyName: department.name,
+      stateCode: department.stateCode,
+      city: department.city,
+      county: null,
+      headquartersAddress: department.headquartersAddress,
+      fdid: null,
+      nerisId: department.nerisId,
+      departmentType: department.departmentType,
+      organizationType: null,
+      entityType: department.entityType,
+      stationCount: department.stationCount,
+      unitCount: department.unitCount,
+      exportDate: department.exportDate,
+      stations: bounded.stations,
+      stationsTruncated: bounded.stationsTruncated,
+    });
+    return candidate ? [candidate] : [];
+  });
+}
+
+function sourceStatus(
+  source: "USFA NFDR" | "NERIS",
+  sourceUrl: string,
+  status: "available" | "loading" | "unavailable",
+  fetchedAt: string | null,
+  recordCount: number,
+  errorMessage: string | null,
+): FireRegistrySourceStatus {
+  return {
+    source,
+    status,
+    sourceUrl,
+    fetchedAt: fetchedAt ? new Date(fetchedAt) : null,
+    recordCount,
+    errorMessage,
+  };
+}
+
+export async function searchFireRegistryMatches(
+  input: SearchInput,
+): Promise<FireRegistryMatchesResponse> {
+  const stateCode = input.stateCode.toUpperCase();
+  const normalizedInput = { ...input, stateCode };
+
+  startCachedLoad("usfa:departments", getUsfaDepartments);
+  startCachedLoad("usfa:stations", getUsfaStations);
+
+  const usfaDepartments = getCachedValue<UsfaDepartment[]>("usfa:departments");
+  const usfaStations = getCachedValue<UsfaStation[]>("usfa:stations");
+
+  const [nerisDepartmentsResult, nerisStationsResult] = await Promise.allSettled([
+    getNerisDepartments(stateCode),
+    getNerisStations(stateCode),
+  ]);
+
+  const nerisDepartments =
+    nerisDepartmentsResult.status === "fulfilled"
+      ? nerisDepartmentsResult.value
+      : null;
+  const nerisStations =
+    nerisStationsResult.status === "fulfilled"
+      ? nerisStationsResult.value
+      : null;
+
+  const usfaDepartmentFailure = getSourceFailure("usfa:departments");
+  const usfaStationFailure = getSourceFailure("usfa:stations");
+  const usfaStatus = usfaDepartments
+    ? "available"
+    : usfaDepartmentFailure
+      ? "unavailable"
+      : "loading";
+  const usfaError = usfaDepartments
+    ? usfaStations
+      ? null
+      : usfaStationFailure ??
+        "USFA department records loaded; station address rows are still loading."
+    : usfaDepartmentFailure ??
+      "USFA national department data is loading; NERIS results are shown first.";
+  const nerisError =
+    !nerisDepartments
+      ? "NERIS department records could not be loaded."
+      : !nerisStations
+        ? "NERIS department records loaded, but station records could not be loaded."
+        : null;
+
+  const records: MatchCandidate[] = [];
+  if (usfaDepartments) {
+    records.push(
+      ...usfaCandidates(
+        normalizedInput,
+        usfaDepartments.data,
+        usfaStations?.data ?? [],
+      ),
+    );
+  }
+  if (nerisDepartments) {
+    records.push(
+      ...nerisCandidates(
+        normalizedInput,
+        nerisDepartments.data,
+        nerisStations?.data ?? [],
+      ),
+    );
+  }
+
+  records.sort((left, right) => right.score - left.score);
+
+  const usfaStateRecordCount =
+    usfaDepartments?.data.filter(
+      (record) => record.stateCode === stateCode,
+    ).length ?? 0;
+  const nerisStateRecordCount =
+    nerisDepartments?.data.length ?? 0;
+
+  const sourceStatuses = [
+    sourceStatus(
+      "USFA NFDR",
+      USFA_DOWNLOAD_PAGE,
+      usfaStatus,
+      usfaDepartments?.fetchedAt ?? null,
+      usfaStateRecordCount,
+      usfaError,
+    ),
+    sourceStatus(
+      "NERIS",
+      NERIS_PUBLIC_PAGE,
+      nerisDepartments ? "available" : "unavailable",
+      nerisDepartments?.fetchedAt ?? null,
+      nerisStateRecordCount,
+      nerisError,
+    ),
+  ];
+
+  return {
+    fetchedAt: new Date(),
+    sourceStatuses,
+    records: records.slice(0, 10).map(({ record }) => record),
+  };
+}

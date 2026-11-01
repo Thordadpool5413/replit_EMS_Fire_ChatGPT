@@ -3,3 +3,4 @@
 - [GIS OHCA rates and fleet aging](gis-ohca-fleet-heatmap.md) — use paired call/transport data, weighted ratios, national relative tiers, and explicit unknown fleet age.
 - [Vite dev banner under artifact paths](vite-dev-banner-basepath.md) — a root-absolute banner script can 404 behind a path-prefixed artifact even when the app is healthy.
 - [Compressed Vite assets](vite-gzip-assets.md) — browser fetch may transparently decompress `.gz` URLs in development; detect gzip magic before inflating.
+- [USFA registry feed latency](usfa-registry-feed-latency.md) — national CSV downloads are slow; load them in the background and surface NERIS matches independently.

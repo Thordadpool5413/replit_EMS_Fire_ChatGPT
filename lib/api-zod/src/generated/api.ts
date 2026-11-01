@@ -87,6 +87,72 @@ export const VerifyProviderLiveResponse = zod.object({
 
 
 /**
+ * Returns separate source records and possible name/location matches; it never updates an app agency record.
+ * @summary Find public USFA and NERIS fire department records
+ */
+export const getFireRegistryMatchesQueryAgencyNameMax = 180;
+
+export const getFireRegistryMatchesQueryCityMax = 120;
+
+export const getFireRegistryMatchesQueryStateCodeRegExp = new RegExp('^[A-Za-z]{2}$');
+export const getFireRegistryMatchesQueryFdidMax = 20;
+
+
+
+export const GetFireRegistryMatchesQueryParams = zod.object({
+  "agencyName": zod.coerce.string().min(1).max(getFireRegistryMatchesQueryAgencyNameMax),
+  "city": zod.coerce.string().max(getFireRegistryMatchesQueryCityMax).optional(),
+  "stateCode": zod.coerce.string().regex(getFireRegistryMatchesQueryStateCodeRegExp),
+  "fdid": zod.coerce.string().max(getFireRegistryMatchesQueryFdidMax).optional()
+})
+
+export const GetFireRegistryMatchesResponse = zod.object({
+  "fetchedAt": zod.coerce.date(),
+  "sourceStatuses": zod.array(zod.object({
+  "source": zod.enum(['USFA NFDR', 'NERIS']),
+  "status": zod.enum(['available', 'loading', 'unavailable']),
+  "sourceUrl": zod.string().url(),
+  "fetchedAt": zod.coerce.date().nullable(),
+  "recordCount": zod.number().int(),
+  "errorMessage": zod.string().nullable()
+})),
+  "records": zod.array(zod.object({
+  "source": zod.enum(['USFA NFDR', 'NERIS']),
+  "sourceRecordId": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "agencyName": zod.string(),
+  "stateCode": zod.string(),
+  "city": zod.string().nullable(),
+  "county": zod.string().nullable(),
+  "headquartersAddress": zod.string().nullable(),
+  "fdid": zod.string().nullable(),
+  "nerisId": zod.string().nullable(),
+  "departmentType": zod.string().nullable(),
+  "organizationType": zod.string().nullable(),
+  "entityType": zod.string().nullable(),
+  "stationCount": zod.number().int().nullable(),
+  "unitCount": zod.number().int().nullable(),
+  "exportDate": zod.coerce.date().nullable(),
+  "matchLevel": zod.enum(['strong_candidate', 'possible_candidate']),
+  "matchReasons": zod.array(zod.string()),
+  "stations": zod.array(zod.object({
+  "source": zod.enum(['USFA NFDR', 'NERIS']),
+  "sourceRecordId": zod.string().nullable(),
+  "sourceUrl": zod.string().url(),
+  "name": zod.string(),
+  "address": zod.string().nullable(),
+  "city": zod.string().nullable(),
+  "stateCode": zod.string(),
+  "postalCode": zod.string().nullable(),
+  "unitCount": zod.number().int().nullable(),
+  "exportDate": zod.coerce.date().nullable()
+})),
+  "stationsTruncated": zod.boolean()
+}))
+})
+
+
+/**
  * @summary Ask Gemini a territory research question
  */
 export const SendTerritoryResearchMessageBody = zod.object({

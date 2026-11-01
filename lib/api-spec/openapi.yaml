@@ -90,6 +90,45 @@ paths:
                 $ref: "#/components/schemas/ProviderVerificationResponse"
         "400":
           description: Invalid verification request
+  /fire-registry/matches:
+    get:
+      operationId: getFireRegistryMatches
+      tags: [territory]
+      summary: Find public USFA and NERIS fire department records
+      description: Returns separate source records and possible name/location matches; it never updates an app agency record.
+      parameters:
+        - in: query
+          name: agencyName
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 180
+        - in: query
+          name: city
+          schema:
+            type: string
+            maxLength: 120
+        - in: query
+          name: stateCode
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z]{2}$"
+        - in: query
+          name: fdid
+          schema:
+            type: string
+            maxLength: 20
+      responses:
+        "200":
+          description: Public registry candidates, station rows, and source freshness
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FireRegistryMatchesResponse"
+        "400":
+          description: Invalid search parameters
   /gemini/chat:
     post:
       operationId: sendTerritoryResearchMessage
@@ -228,6 +267,156 @@ components:
           items:
             type: object
             additionalProperties: true
+    FireRegistryStation:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [USFA NFDR, NERIS]
+        sourceRecordId:
+          type: ["string", "null"]
+        sourceUrl:
+          type: string
+          format: uri
+        name:
+          type: string
+        address:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        stateCode:
+          type: string
+        postalCode:
+          type: ["string", "null"]
+        unitCount:
+          type: ["integer", "null"]
+        exportDate:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - source
+        - sourceRecordId
+        - sourceUrl
+        - name
+        - address
+        - city
+        - stateCode
+        - postalCode
+        - unitCount
+        - exportDate
+    FireRegistrySourceStatus:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [USFA NFDR, NERIS]
+        status:
+          type: string
+          enum: [available, loading, unavailable]
+        sourceUrl:
+          type: string
+          format: uri
+        fetchedAt:
+          type: ["string", "null"]
+          format: date-time
+        recordCount:
+          type: integer
+        errorMessage:
+          type: ["string", "null"]
+      required:
+        - source
+        - status
+        - sourceUrl
+        - fetchedAt
+        - recordCount
+        - errorMessage
+    FireRegistryCandidate:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [USFA NFDR, NERIS]
+        sourceRecordId:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        agencyName:
+          type: string
+        stateCode:
+          type: string
+        city:
+          type: ["string", "null"]
+        county:
+          type: ["string", "null"]
+        headquartersAddress:
+          type: ["string", "null"]
+        fdid:
+          type: ["string", "null"]
+        nerisId:
+          type: ["string", "null"]
+        departmentType:
+          type: ["string", "null"]
+        organizationType:
+          type: ["string", "null"]
+        entityType:
+          type: ["string", "null"]
+        stationCount:
+          type: ["integer", "null"]
+        unitCount:
+          type: ["integer", "null"]
+        exportDate:
+          type: ["string", "null"]
+          format: date-time
+        matchLevel:
+          type: string
+          enum: [strong_candidate, possible_candidate]
+        matchReasons:
+          type: array
+          items:
+            type: string
+        stations:
+          type: array
+          items:
+            $ref: "#/components/schemas/FireRegistryStation"
+        stationsTruncated:
+          type: boolean
+      required:
+        - source
+        - sourceRecordId
+        - sourceUrl
+        - agencyName
+        - stateCode
+        - city
+        - county
+        - headquartersAddress
+        - fdid
+        - nerisId
+        - departmentType
+        - organizationType
+        - entityType
+        - stationCount
+        - unitCount
+        - exportDate
+        - matchLevel
+        - matchReasons
+        - stations
+        - stationsTruncated
+    FireRegistryMatchesResponse:
+      type: object
+      properties:
+        fetchedAt:
+          type: string
+          format: date-time
+        sourceStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/FireRegistrySourceStatus"
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/FireRegistryCandidate"
+      required: [fetchedAt, sourceStatuses, records]
     TerritoryResearchMessage:
       type: object
       properties:

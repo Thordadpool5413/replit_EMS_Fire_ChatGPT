@@ -78,6 +78,117 @@ export interface ProviderVerificationResponse {
   allCityNpiProviders?: ProviderVerificationResponseAllCityNpiProvidersItem[];
 }
 
+export type FireRegistryStationSource = typeof FireRegistryStationSource[keyof typeof FireRegistryStationSource];
+
+
+export const FireRegistryStationSource = {
+  USFA_NFDR: 'USFA NFDR',
+  NERIS: 'NERIS',
+} as const;
+
+export interface FireRegistryStation {
+  source: FireRegistryStationSource;
+  /** @nullable */
+  sourceRecordId: string | null;
+  sourceUrl: string;
+  name: string;
+  /** @nullable */
+  address: string | null;
+  /** @nullable */
+  city: string | null;
+  stateCode: string;
+  /** @nullable */
+  postalCode: string | null;
+  /** @nullable */
+  unitCount: number | null;
+  /** @nullable */
+  exportDate: string | null;
+}
+
+export type FireRegistrySourceStatusSource = typeof FireRegistrySourceStatusSource[keyof typeof FireRegistrySourceStatusSource];
+
+
+export const FireRegistrySourceStatusSource = {
+  USFA_NFDR: 'USFA NFDR',
+  NERIS: 'NERIS',
+} as const;
+
+export type FireRegistrySourceStatusStatus = typeof FireRegistrySourceStatusStatus[keyof typeof FireRegistrySourceStatusStatus];
+
+
+export const FireRegistrySourceStatusStatus = {
+  available: 'available',
+  loading: 'loading',
+  unavailable: 'unavailable',
+} as const;
+
+export interface FireRegistrySourceStatus {
+  source: FireRegistrySourceStatusSource;
+  status: FireRegistrySourceStatusStatus;
+  sourceUrl: string;
+  /** @nullable */
+  fetchedAt: string | null;
+  recordCount: number;
+  /** @nullable */
+  errorMessage: string | null;
+}
+
+export type FireRegistryCandidateSource = typeof FireRegistryCandidateSource[keyof typeof FireRegistryCandidateSource];
+
+
+export const FireRegistryCandidateSource = {
+  USFA_NFDR: 'USFA NFDR',
+  NERIS: 'NERIS',
+} as const;
+
+export type FireRegistryCandidateMatchLevel = typeof FireRegistryCandidateMatchLevel[keyof typeof FireRegistryCandidateMatchLevel];
+
+
+export const FireRegistryCandidateMatchLevel = {
+  strong_candidate: 'strong_candidate',
+  possible_candidate: 'possible_candidate',
+} as const;
+
+export interface FireRegistryCandidate {
+  source: FireRegistryCandidateSource;
+  sourceRecordId: string;
+  sourceUrl: string;
+  agencyName: string;
+  stateCode: string;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  county: string | null;
+  /** @nullable */
+  headquartersAddress: string | null;
+  /** @nullable */
+  fdid: string | null;
+  /** @nullable */
+  nerisId: string | null;
+  /** @nullable */
+  departmentType: string | null;
+  /** @nullable */
+  organizationType: string | null;
+  /** @nullable */
+  entityType: string | null;
+  /** @nullable */
+  stationCount: number | null;
+  /** @nullable */
+  unitCount: number | null;
+  /** @nullable */
+  exportDate: string | null;
+  matchLevel: FireRegistryCandidateMatchLevel;
+  matchReasons: string[];
+  stations: FireRegistryStation[];
+  stationsTruncated: boolean;
+}
+
+export interface FireRegistryMatchesResponse {
+  fetchedAt: string;
+  sourceStatuses: FireRegistrySourceStatus[];
+  records: FireRegistryCandidate[];
+}
+
 export type TerritoryResearchMessageRole = typeof TerritoryResearchMessageRole[keyof typeof TerritoryResearchMessageRole];
 
 
@@ -130,5 +241,25 @@ recipientName?: string;
  * @maximum 100
  */
 limit?: number;
+};
+
+export type GetFireRegistryMatchesParams = {
+/**
+ * @minLength 1
+ * @maxLength 180
+ */
+agencyName: string;
+/**
+ * @maxLength 120
+ */
+city?: string;
+/**
+ * @pattern ^[A-Za-z]{2}$
+ */
+stateCode: string;
+/**
+ * @maxLength 20
+ */
+fdid?: string;
 };
 

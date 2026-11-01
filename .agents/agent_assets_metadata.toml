@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "mLHHFZgMbDGTqXa7U_WQG"
+uri = "file://artifacts/ems-territory-intelligence/DATA_SOURCE_AND_LOGIC_MAP.md"
+type = "text"
+title = "EMS & Fire data source and logic map"
+description = "Field-by-field audit of live APIs, bundled datasets, generated values, joins, denial-rate math, storage, and accuracy risks."
+logical_id = "402c6067-f3f1-43fa-a76f-fc8314490fa6"
+content_hash = "sha256:6bfc7046878f90e5aba4d380f02cb4f0a1eca343d53d5d18a67cbda021d21cbd"
+size = 20346
+mtime_ms = 1793508428294
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/402c6067-f3f1-43fa-a76f-fc8314490fa6/564f3be1-7124-4419-9b68-5eb44104a4a9"
+storage_version_token = "1793508438281732"
+content_type = "text/markdown"

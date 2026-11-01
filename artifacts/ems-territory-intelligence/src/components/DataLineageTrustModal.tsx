@@ -507,13 +507,17 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : repo.appConnection === 'bundled-asset'
                               ? 'bg-violet-50 text-violet-700 border border-violet-200'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : repo.appConnection === 'manual-reference'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}>
                           {repo.appConnection === 'live-feed'
                             ? 'Live feed used in app'
                             : repo.appConnection === 'bundled-asset'
                               ? 'Bundled dataset · not auto-refreshed'
-                              : 'Catalog only · not connected here'}
+                              : repo.appConnection === 'manual-reference'
+                                ? 'Manual source link · no records ingested'
+                                : 'Catalog only · not connected here'}
                         </span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-400 shrink-0">

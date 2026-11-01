@@ -18,7 +18,7 @@ export interface DataRegistrySource {
   schemaSpecification: string;
   primaryFieldsIngested: string[];
   verificationMethod: string;
-  appConnection: 'live-feed' | 'bundled-asset' | 'catalog-only';
+  appConnection: 'live-feed' | 'bundled-asset' | 'manual-reference' | 'catalog-only';
   sourceUrl?: string;
 }
 
@@ -148,6 +148,38 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     verificationMethod: 'Federally attested provider identity database with active Medicare billing enrollment.'
   },
   {
+    id: 'state_ems_office_directory',
+    name: 'State EMS Office Discovery Directory',
+    acronym: 'EMS State Offices',
+    appConnection: 'manual-reference',
+    sourceUrl: 'https://www.ems.gov/issues/state-ems-systems/',
+    governingBody: 'NHTSA Office of EMS; EMS.gov links to the National Registry of EMTs State EMS Agency Map',
+    updateCadence: 'Directory pages do not expose a uniform state-by-state update date; check the linked office',
+    legalAuthority: 'State and territorial EMS offices administer jurisdiction-specific EMS systems',
+    schemaSpecification: 'Office/contact discovery route; not a provider registry or structured dataset',
+    primaryFieldsIngested: [
+      'State and territory EMS office discovery link',
+      'No provider, license, leadership, or operational fields are ingested',
+    ],
+    verificationMethod: 'The app links to the official EMS.gov state-system page and its NREMT office map. A directory route is not proof of a state license record or of a connected state dataset.',
+  },
+  {
+    id: 'florida_ems_license_search',
+    name: 'Florida DOH EMS Provider Licensing and MQA Search',
+    acronym: 'Florida EMS License',
+    appConnection: 'manual-reference',
+    sourceUrl: 'https://mqa-internet.doh.state.fl.us/MQASearchServices/healthcareproviders',
+    governingBody: 'Florida Department of Health, Emergency Medical Services Program / Medical Quality Assurance',
+    updateCadence: 'Use the record-level “Data As Of,” issue date, and expiration date shown in the linked search',
+    legalAuthority: 'Chapter 401, Florida Statutes; Rule 64J-1, Florida Administrative Code',
+    schemaSpecification: 'Interactive EMS provider license search; provider name, license identifier/type, license status, address of record, and expiration where listed',
+    primaryFieldsIngested: [
+      'Official Florida license-search route is linked for end-user lookup',
+      'No Florida license record is currently ingested or automatically matched to an app agency',
+    ],
+    verificationMethod: 'Open the official MQA result and compare exact license number, provider name, status, address, type, and record date. A license does not prove operating territory, current fleet, or call volume.',
+  },
+  {
     id: 'census_tigerline_bundle',
     name: 'Census TIGER/Line County Boundary Asset',
     acronym: 'Census TIGER/Line',
@@ -180,7 +212,7 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
       'SOVI_SCORE and RESL_SCORE',
       'NRI_VER',
     ],
-    verificationMethod: 'Direct county FIPS match to FEMA NRI county records. State expected-annual-loss totals are derived by summing county EAL_VALT only when every app county GEOID has a non-null source value; county scores and ratings are not averaged.',
+    verificationMethod: 'Direct match to valid, unique FEMA source-native county-equivalent FIPS. State expected-annual-loss totals sum the source-native county-equivalent EAL_VALT records; county scores and ratings are not averaged.',
   },
   {
     id: 'gpo_procurement',

@@ -4,6 +4,7 @@ import {
   useGetEmsRegistryMatches,
 } from "@workspace/api-client-react";
 import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
+import { getEmsJurisdictionSourceCoverage } from "../data/stateEmsSourceCoverage";
 
 type EmsRegistryLookupProps = {
   agencyName: string;
@@ -11,8 +12,6 @@ type EmsRegistryLookupProps = {
   stateCode: string;
 };
 
-const FLORIDA_PROVIDER_SOURCE =
-  "https://www.floridahealth.gov/licensing-regulations/emergency-medical-services-system/ems-service-provider";
 const CMS_ENROLLMENT_SOURCE =
   "https://data.cms.gov/provider-characteristics/medicare-provider-supplier-enrollment/medicare-fee-for-service-public-provider-enrollment";
 const NEMSIS_PUBLIC_SOURCE =
@@ -63,7 +62,9 @@ export function EmsRegistryLookup({
   });
   const data = query.data;
   const records = data?.records ?? [];
-  const isFlorida = stateCode.toUpperCase() === "FL";
+  const jurisdictionSource = getEmsJurisdictionSourceCoverage(stateCode);
+  const isFloridaLicenseReference =
+    jurisdictionSource?.coverageStatus === "official-license-reference";
 
   return (
     <section
@@ -99,32 +100,58 @@ export function EmsRegistryLookup({
         </button>
       </div>
 
-      {isFlorida && (
+      {jurisdictionSource && (
         <div
           className="border-b border-slate-100 bg-blue-50/70 px-3.5 py-3 dark:border-slate-800 dark:bg-blue-950/20"
-          data-testid="source-florida-ems-roster"
+          data-testid={`source-ems-jurisdiction-${jurisdictionSource.code.toLowerCase()}`}
         >
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">
-                Florida DOH licensed-provider roster
+                {jurisdictionSource.name}: {jurisdictionSource.sourceName}
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">
-                The state page links its current roster PDF with provider,
-                county, license, provider type, and expiration fields. The PDF
-                is not automatically matched to this agency yet.
+                {jurisdictionSource.sourceScope}{" "}
+                {jurisdictionSource.appConnection}
               </p>
+              {isFloridaLicenseReference && (
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Search using the state license number or provider name. The
+                  license record includes its own data-as-of date; it does not
+                  establish this agency’s service area or active equipment.
+                </p>
+              )}
             </div>
             <a
-              href={FLORIDA_PROVIDER_SOURCE}
+              href={jurisdictionSource.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-blue-700 hover:underline dark:text-blue-300"
-              data-testid="link-florida-ems-roster"
+              data-testid={`link-ems-jurisdiction-source-${jurisdictionSource.code.toLowerCase()}`}
             >
-              Open roster <ExternalLink className="h-3 w-3" />
+              {isFloridaLicenseReference ? "Search license" : "Open office map"}{" "}
+              <ExternalLink className="h-3 w-3" />
             </a>
           </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+            <a
+              href={jurisdictionSource.directoryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline dark:text-blue-300"
+            >
+              {isFloridaLicenseReference
+                ? "Florida DOH program and roster"
+                : "EMS.gov state-system information"}{" "}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <span className="text-slate-500 dark:text-slate-400">
+              {jurisdictionSource.periodAndFreshness}
+            </span>
+          </div>
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+            {jurisdictionSource.limitations}
+          </p>
         </div>
       )}
 
@@ -360,13 +387,13 @@ export function EmsRegistryLookup({
             href={NEMSIS_PUBLIC_SOURCE}
             note="Public operational and performance measures are aggregated; these dashboards are not an agency-by-agency licensing registry."
           />
-          {!isFlorida && (
+          {!isFloridaLicenseReference && jurisdictionSource && (
             <p
               className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-400"
-              data-testid="status-ems-state-source-not-mapped"
+              data-testid="status-ems-state-license-feed-not-connected"
             >
-              State EMS licensing is maintained by individual state agencies.
-              The state-specific licensing link in this first pass is Florida.
+              This is a state-office discovery route, not a connected license
+              roster. No state-level provider records were matched by this app.
             </p>
           )}
         </div>

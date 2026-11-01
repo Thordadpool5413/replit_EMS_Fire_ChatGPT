@@ -120,7 +120,11 @@ export interface PlacesResearchResponse {
 
 export type GetAfgGrantsParams = {
 stateCode?: string;
-city?: string;
+/**
+ * Text to match in the OpenFEMA grantee name; this is not a geographic city match.
+ * @maxLength 180
+ */
+recipientName?: string;
 /**
  * @minimum 1
  * @maximum 100

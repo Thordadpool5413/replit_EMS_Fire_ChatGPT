@@ -129,16 +129,16 @@ router.get(
     }
 
     const limit = Math.min(parsed.data.limit ?? 30, 100);
-    const cleanCity = (parsed.data.city ?? "")
-      .replace(/[^a-zA-Z\s]/g, "")
+    const cleanRecipientName = (parsed.data.recipientName ?? "")
+      .replace(/[^a-zA-Z0-9\s]/g, "")
       .trim()
-      .slice(0, 80)
+      .slice(0, 180)
       .toUpperCase();
-    const makeUrl = (includeCity: boolean) => {
+    const makeUrl = () => {
       const filters = ["startswith(programName,'Assistance to Firefighters')"];
       if (stateCode) filters.push(`vendorState eq '${stateCode}'`);
-      if (includeCity && cleanCity) {
-        filters.push(`contains(vendorName,'${cleanCity}')`);
+      if (cleanRecipientName) {
+        filters.push(`contains(vendorName,'${cleanRecipientName}')`);
       }
       const url = new URL(FEMA_URL);
       url.searchParams.set("$top", String(limit));
@@ -148,7 +148,7 @@ router.get(
     };
 
     try {
-      let response = await fetch(makeUrl(true), {
+      const response = await fetch(makeUrl(), {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
       });
@@ -158,36 +158,14 @@ router.get(
         });
         return;
       }
-      let payload = (await response.json()) as {
+      const payload = (await response.json()) as {
         NonDisasterAssistanceFirefighterGrants?: Array<Record<string, unknown>>;
       };
-      let sourceRecords = Array.isArray(
+      const sourceRecords = Array.isArray(
         payload.NonDisasterAssistanceFirefighterGrants,
       )
         ? payload.NonDisasterAssistanceFirefighterGrants
         : [];
-      if (sourceRecords.length === 0 && cleanCity) {
-        response = await fetch(makeUrl(false), {
-          headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(15000),
-        });
-        if (!response.ok) {
-          res.status(502).json({
-            error: `OpenFEMA returned HTTP ${response.status}.`,
-          });
-          return;
-        }
-        payload = (await response.json()) as {
-          NonDisasterAssistanceFirefighterGrants?: Array<
-            Record<string, unknown>
-          >;
-        };
-        sourceRecords = Array.isArray(
-          payload.NonDisasterAssistanceFirefighterGrants,
-        )
-          ? payload.NonDisasterAssistanceFirefighterGrants
-          : [];
-      }
 
       const awards = sourceRecords.map((record, index) => ({
         id: String(record.id ?? record.awardNumber ?? `fema-record-${index}`),

@@ -9,6 +9,15 @@ import * as zod from 'zod';
 
 
 /**
+ * Returns server health status at the API base path
+ * @summary API root health check
+ */
+export const ApiRootResponse = zod.object({
+  "status": zod.string()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -20,13 +29,15 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Search public FEMA AFG grant records
  */
+export const getAfgGrantsQueryRecipientNameMax = 180;
+
 export const getAfgGrantsQueryLimitMax = 100;
 
 
 
 export const GetAfgGrantsQueryParams = zod.object({
   "stateCode": zod.coerce.string().optional(),
-  "city": zod.coerce.string().optional(),
+  "recipientName": zod.coerce.string().max(getAfgGrantsQueryRecipientNameMax).optional().describe('Text to match in the OpenFEMA grantee name; this is not a geographic city match.'),
   "limit": zod.coerce.number().int().min(1).max(getAfgGrantsQueryLimitMax).optional()
 })
 

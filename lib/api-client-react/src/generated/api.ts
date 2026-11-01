@@ -58,6 +58,84 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
+export const getApiRootUrl = () => {
+
+
+
+
+  return `/api/`
+}
+
+/**
+ * Returns server health status at the API base path
+ * @summary API root health check
+ */
+export const apiRoot = async ( options?: Parameters<typeof customFetch>[1]): Promise<HealthStatus> => {
+
+  return customFetch<HealthStatus>(getApiRootUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getApiRootQueryKey = () => {
+    return [
+    `/api/`
+    ] as const;
+    }
+
+
+export const getApiRootQueryOptions = <TData = Awaited<ReturnType<typeof apiRoot>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof apiRoot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getApiRootQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof apiRoot>>> = ({ signal }) => apiRoot({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof apiRoot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ApiRootQueryResult = NonNullable<Awaited<ReturnType<typeof apiRoot>>>
+export type ApiRootQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary API root health check
+ */
+
+export function useApiRoot<TData = Awaited<ReturnType<typeof apiRoot>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof apiRoot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getApiRootQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getHealthCheckUrl = () => {
 
 

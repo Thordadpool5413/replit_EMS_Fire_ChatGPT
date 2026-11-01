@@ -15,6 +15,19 @@ tags:
   - name: research
     description: Gemini-backed territory research
 paths:
+  /:
+    get:
+      operationId: apiRoot
+      tags: [health]
+      summary: API root health check
+      description: Returns server health status at the API base path
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
   /healthz:
     get:
       operationId: healthCheck
@@ -39,9 +52,11 @@ paths:
           schema:
             type: string
         - in: query
-          name: city
+          name: recipientName
+          description: Text to match in the OpenFEMA grantee name; this is not a geographic city match.
           schema:
             type: string
+            maxLength: 180
         - in: query
           name: limit
           schema:

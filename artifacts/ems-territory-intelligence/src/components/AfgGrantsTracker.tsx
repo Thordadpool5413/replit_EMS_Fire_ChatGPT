@@ -50,9 +50,12 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'ems' | 'fire'>(globalCategory || 'all');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [femaQueryState, setFemaQueryState] = useState<string>(
-    globalState && globalState !== 'all' ? globalState : 'TX'
+    globalState && globalState !== 'all' ? globalState : 'all'
   );
-  const afgQuery = useGetAfgGrants({ stateCode: femaQueryState === 'all' ? 'TX' : femaQueryState, limit: 20 });
+  const afgQuery = useGetAfgGrants({
+    stateCode: femaQueryState === 'all' ? undefined : femaQueryState,
+    limit: 20
+  });
   const rawAwardRows = useMemo(() => {
     const response = afgQuery.data as unknown as { awards?: unknown[]; grants?: unknown[] } | undefined;
     return response?.awards ?? response?.grants ?? [];
@@ -72,7 +75,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
       awardNumber: getText('awardNumber', 'award', 'grantNumber') || 'Award number not provided',
       grantee: getText('grantee', 'recipient', 'organizationName', 'organization') || 'Recipient name not provided',
       city: getText('city', 'recipientCity'),
-      stateCode: getText('stateCode', 'state') || femaQueryState,
+      stateCode: getText('stateCode', 'state') || (femaQueryState === 'all' ? 'Not provided' : femaQueryState),
       programActivity: getText('programActivity', 'activity', 'program') || 'Program detail not provided',
       federalShareAwarded: Number.isFinite(amount) ? amount : 0,
       awardDate: getText('awardDate', 'dateAwarded', 'date') || 'Date not provided',
@@ -86,7 +89,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
   useEffect(() => {
     if (globalState !== undefined) {
       setSelectedState(globalState);
-      if (globalState !== 'all') setFemaQueryState(globalState);
+      setFemaQueryState(globalState);
       setCurrentPage(1);
     }
   }, [globalState]);
@@ -158,10 +161,10 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1.5 tracking-tight">
-              Verified grant allocations &amp; cooperative purchasing
+              AFG awards &amp; cooperative purchasing context
             </h1>
             <p className="text-[13px] text-slate-600 dark:text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Live queries to DHS OpenFEMA AFG v2 award records paired with territory capital equipment liquidity forecasts and pre-competed purchasing vehicles.
+              Live OpenFEMA award records are shown separately from modeled territory forecasts and purchasing-vehicle references.
             </p>
           </div>
 
@@ -211,7 +214,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
             <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-              OpenFEMA direct federal grant records ({femaQueryState})
+              OpenFEMA direct federal grant records ({femaQueryState === 'all' ? 'Nationwide' : femaQueryState})
             </h2>
             <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-200 dark:border-emerald-700">
               Direct API
@@ -224,6 +227,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               onChange={e => setFemaQueryState(e.target.value)}
               className="h-7 px-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-800 dark:text-white"
             >
+              <option value="all">All states · newest 20</option>
               {Object.keys(ALL_50_STATES_SUMMARIES).sort().map(st => (
                 <option key={st} value={st}>State: {st}</option>
               ))}
@@ -238,6 +242,14 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
             </button>
           </div>
         </div>
+
+        <p className="px-4 py-2 text-[11px] text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+          {femaQueryState === 'all'
+            ? 'Nationwide query; showing up to 20 recent fiscal-year records.'
+            : `State ${femaQueryState} query; showing up to 20 recent fiscal-year records.`}
+          {(selectedCounty !== 'all' || selectedCity !== 'all') &&
+            ' County and city filters do not apply to these federal award records.'}
+        </p>
 
         <div className="overflow-x-auto max-h-64">
           <table className="w-full text-left text-xs border-collapse">

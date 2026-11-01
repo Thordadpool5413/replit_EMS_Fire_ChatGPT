@@ -12,6 +12,7 @@ import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodes
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
+import { ProviderDenialDetails } from './ProviderDenialDetails';
 import {
   getCountyDenialDisplay,
   getCountyZipDenialProfiles,
@@ -1784,7 +1785,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                               FIPS {countyDenialDisplay.countyFips} · denied {countyDenialDisplay.deniedClaimCount} /{' '}
                               adjudicated {countyDenialDisplay.adjudicatedClaimCount} · {countyDenialDisplay.claimScope} ·{' '}
-                              {countyDenialDisplay.reportingPeriod} ·{' '}
+                              {countyDenialDisplay.reportingPeriod} · {countyDenialDisplay.denialDefinition} ·{' '}
                               {countyDenialDisplay.sourceUrl ? (
                                 <a
                                   className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
@@ -2306,6 +2307,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
                               : 'Denial rate not published'}
                           </span>
+                          {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
@@ -2440,6 +2442,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
                                 : 'Denial rate not published'}
                             </div>
+                            {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
                           </td>
                           <td className="py-2.5 px-3 text-right hidden xl:table-cell">
                             <div className="font-semibold text-slate-900 dark:text-white tabular-nums">

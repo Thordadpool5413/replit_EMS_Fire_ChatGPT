@@ -746,7 +746,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       category: 'Medicare & resuscitation impact',
       primaryFact: medicareDenialMetric
         ? `${medicareDenialMetric.ratePct.toFixed(1)}% Medicare ambulance claim denials (${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${medicareDenialMetric.reportingPeriod})`
-        : 'Medicare ambulance claim denial rate not published for this verified billing NPI.',
+        : 'No complete, exact billing-NPI Medicare ambulance claim rate is available.',
       secondaryFact: actuarialForecast.hasRecoveryInputs
         ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported denied-claim dollars × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
         : 'Recovery estimate not calculated: same-scope reported denied-claim dollars and reporting period are required.',
@@ -2250,10 +2250,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         ? `${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · ${medicareDenialMetric.reportingPeriod} · ${medicareDenialMetric.claimScope} · ${medicareDenialMetric.denialDefinition}`
                         : 'No complete, exact-NPI claim counts are available.'}
                     </div>
-                    {medicareDenialMetric?.sourceUrl && (
+                    {medicareDenialMetric?.sourceUrl ? (
                       <a href={medicareDenialMetric.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-700 underline underline-offset-2">
                         Source: {medicareDenialMetric.source}{medicareDenialMetric.sourceReference ? ` · ${medicareDenialMetric.sourceReference}` : ''}
                       </a>
+                    ) : medicareDenialMetric && (
+                      <p className="text-[11px] text-slate-600">
+                        Source: {medicareDenialMetric.source}{medicareDenialMetric.sourceReference ? ` · ${medicareDenialMetric.sourceReference}` : ''}
+                      </p>
                     )}
                   </div>
 

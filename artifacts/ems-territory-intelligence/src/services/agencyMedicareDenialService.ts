@@ -47,7 +47,7 @@ export function getAgencyMedicareDenialMetric(
 
   if (
     !/^\d{10}$/.test(npi) ||
-    !validateNpiCheckDigit(npi) ||
+    !validateNpiCheckDigit(npi).isValid ||
     !claimScope ||
     !denialDefinition ||
     !reportingPeriod ||
@@ -92,17 +92,38 @@ export function getAgencyMedicareDenialMetric(
  * Adds browser-local, explicitly coverage-attested imports for UI display only.
  * Keep the strict source-backed helper above in sanitization and cloud-write paths.
  */
-export function getAgencyMedicareDenialMetricForDisplay(
-  agency: Pick<Agency, 'npiNumber' | 'cmsData' | 'isVerifiedRecord' | 'lastVerifiedAt' | 'nppesRegistryUrl'>,
-): AgencyMedicareDenialDisplayMetric | null {
+export function getVerifiedAgencyNpi(
+  agency: Pick<Agency, 'npiNumber' | 'isVerifiedRecord' | 'lastVerifiedAt' | 'nppesRegistryUrl' | 'operatingRelationship'>,
+): string | null {
   const npi = agency.npiNumber?.trim() ?? '';
+  let exactRegistryUrl = false;
+  try {
+    const url = new URL(agency.nppesRegistryUrl ?? '');
+    exactRegistryUrl = url.origin === 'https://npiregistry.cms.hhs.gov' &&
+      url.pathname.replace(/\/$/, '') === `/provider-view/${npi}`;
+  } catch {
+    // A missing or unrelated registry link cannot establish this NPI's identity.
+  }
+  const relationship = agency.operatingRelationship?.trim().toUpperCase() ?? '';
+  // Legacy verified records may omit this field. An explicit relationship must
+  // confirm the operating agency, not merely a registry entity or related biller.
+  const confirmedOperatingAgency = !relationship ||
+    ['DIRECT_OPERATING_AGENCY', 'OPERATING_RELATIONSHIP_CONFIRMED'].includes(relationship);
   const hasVerifiedNpiIdentity =
     agency.isVerifiedRecord === true &&
-    Boolean(agency.lastVerifiedAt) &&
-    Boolean(agency.nppesRegistryUrl) &&
+    Boolean(agency.lastVerifiedAt && !Number.isNaN(Date.parse(agency.lastVerifiedAt))) &&
+    exactRegistryUrl &&
     /^\d{10}$/.test(npi) &&
-    validateNpiCheckDigit(npi);
-  if (!hasVerifiedNpiIdentity) return null;
+    validateNpiCheckDigit(npi).isValid &&
+    confirmedOperatingAgency;
+  return hasVerifiedNpiIdentity ? npi : null;
+}
+
+export function getAgencyMedicareDenialMetricForDisplay(
+  agency: Pick<Agency, 'npiNumber' | 'cmsData' | 'isVerifiedRecord' | 'lastVerifiedAt' | 'nppesRegistryUrl' | 'operatingRelationship'>,
+): AgencyMedicareDenialDisplayMetric | null {
+  const npi = getVerifiedAgencyNpi(agency);
+  if (!npi) return null;
 
   const sourceMetric = getAgencyMedicareDenialMetric(agency);
   if (sourceMetric) return { ...sourceMetric, sourceType: 'source-backed' };
@@ -114,7 +135,7 @@ export function getAgencyMedicareDenialMetricForDisplay(
     ratePct: imported.ratePct,
     deniedClaimCount: imported.deniedClaims,
     adjudicatedClaimCount: imported.adjudicatedClaims,
-    claimScope: `${imported.claimScope}; ${imported.denialDefinition === 'any_service_line_denied' ? 'any service line denied' : 'entire claim denied'}`,
+    claimScope: imported.claimScope,
     denialDefinition: imported.denialDefinition === 'any_service_line_denied' ? 'Any service line denied' : 'Entire claim denied',
     reportingPeriod: imported.reportingPeriod,
     source: imported.sourceName,

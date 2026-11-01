@@ -82,7 +82,9 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     : 'Not calculated: no positive reported defibrillator unit count.';
   const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-  const denialRate = denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published';
+  const denialRate = denialMetric
+    ? `${denialMetric.ratePct.toFixed(1)}% (billing NPI ${denialMetric.npi}; ${denialMetric.deniedClaimCount.toLocaleString()} denied / ${denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${denialMetric.reportingPeriod}; ${denialMetric.claimScope}; ${denialMetric.denialDefinition}; source: ${denialMetric.source}${denialMetric.sourceReference ? `, ${denialMetric.sourceReference}` : ''}${denialMetric.sourceUrl ? `, ${denialMetric.sourceUrl}` : ''})`
+    : 'Not published';
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
   const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);
   const grantFiscalYear = reportMetric(agency.grantStatus?.afgFiscalYear);

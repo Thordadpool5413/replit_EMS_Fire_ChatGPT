@@ -83,7 +83,7 @@ interface StateMapMetricDatum {
 }
 
 const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
-  if (value === null) return 'Not reported';
+  if (value === null) return metric === 'state-claims-denial' ? 'Not published' : 'Not reported';
   if (metric === 'zip-denial' || metric === 'state-claims-denial') return `${value.toFixed(1)}%`;
   if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
   return formatInteger(value);
@@ -301,7 +301,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             sourceAction: 'agency-records',
           },
           'state-claims-denial': (() => {
-            const metric = getImportedStateDenialMetric(state.code);
+            const metric = getImportedStateDenialMetric(
+              state.code,
+              territoryEngine.getCountiesForState(state.code).map((county) => county.countyFips),
+            );
             return {
               value: metric?.ratePct ?? null,
               coverage: metric
@@ -655,7 +658,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           Source: {mapReadoutMetric.source}
                         </a>
                       ) : (
-                        <p>Source: {mapReadoutMetric.source} · report reference {mapReadoutMetric.sourceReference}</p>
+                        <p>Source: {mapReadoutMetric.source}</p>
                       )}
                     </div>
                   )}
@@ -901,7 +904,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         </a>
                       ) : (
                         <p>
-                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source} · report reference {stateMapMetricsByCode[displayStateCode][mapMetric].sourceReference}
+                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source}
                         </p>
                       )}
                     </div>
@@ -967,6 +970,25 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
                     Period: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].period}
                   </span>
+                  {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].value !== null && (
+                    <details className="mt-1 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                      <summary className="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Scope &amp; source</summary>
+                      <p>Scope: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].claimScope}</p>
+                      <p>Definition: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].denialDefinition}</p>
+                      {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].sourceUrl ? (
+                        <a
+                          href={stateMapMetricsByCode[displayStateCode]['state-claims-denial'].sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2"
+                        >
+                          {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].source}
+                        </a>
+                      ) : (
+                        <p>Source: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].source}</p>
+                      )}
+                    </details>
+                  )}
                   {stateZipDenialSummary && (
                     <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
                       ZIP-profile average: {stateZipDenialSummary.ratePct.toFixed(1)}% · not a state claims rate

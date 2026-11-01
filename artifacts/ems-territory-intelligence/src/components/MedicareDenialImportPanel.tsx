@@ -15,6 +15,7 @@ import {
   type MedicareDenialImportRow,
 } from '../services/medicareDenialImportService';
 import type { Agency } from '../types';
+import { getVerifiedAgencyNpi } from '../services/agencyMedicareDenialService';
 
 const initialCoverage = {
   completeProviderGroups: false,
@@ -104,7 +105,7 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
   const report = useMemo(() => dataset ? getMedicareDenialImportReport(dataset) : null, [dataset]);
   const agencyByNpi = useMemo(
     () => new Map(agencies.flatMap((agency) => {
-      const npi = agency.npiNumber?.trim();
+      const npi = getVerifiedAgencyNpi(agency);
       return npi ? [[npi, agency.name] as const] : [];
     })),
     [agencies],

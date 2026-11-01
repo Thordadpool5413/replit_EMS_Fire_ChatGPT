@@ -81,6 +81,7 @@ import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
+import { ProviderDenialDetails } from './ProviderDenialDetails';
 
 export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   agencies,
@@ -978,6 +979,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               ? `${medicareDenialMetric.ratePct.toFixed(1)}% · ${medicareDenialMetric.reportingPeriod}`
                               : 'Not published'}
                           </div>
+                          {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}
                         </div>
                         <div className="p-2.5 bg-white dark:bg-slate-900">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Utstein survival</span>
@@ -1427,6 +1429,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             ? `${formatPercent(medicareDenialMetric.ratePct)} Medicare ambulance denial`
                             : 'Claim data not source-verified'}
                         </div>
+                        {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}
                       </td>
 
                       {/* AFG Grant */}

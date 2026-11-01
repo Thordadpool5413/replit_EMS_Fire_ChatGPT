@@ -103,8 +103,19 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 </span>
                 {denialMetric && (
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                    {denialMetric.deniedClaimCount.toLocaleString()} / {denialMetric.adjudicatedClaimCount.toLocaleString()} · {denialMetric.reportingPeriod} · {denialMetric.denialDefinition}
+                    {denialMetric.deniedClaimCount.toLocaleString()} denied / {denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · {denialMetric.reportingPeriod} · {denialMetric.claimScope} · {denialMetric.denialDefinition}
                   </span>
+                )}
+                {denialMetric && (
+                  denialMetric.sourceUrl ? (
+                    <a href={denialMetric.sourceUrl} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-blue-700 dark:text-blue-300 underline">
+                      {denialMetric.source}{denialMetric.sourceReference ? ` · ${denialMetric.sourceReference}` : ''}
+                    </a>
+                  ) : (
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      Source: {denialMetric.source}{denialMetric.sourceReference ? ` · ${denialMetric.sourceReference}` : ''}
+                    </span>
+                  )
                 )}
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">

@@ -57,6 +57,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const documentRef = useRef<HTMLDivElement>(null);
+  const denialMetric = agency ? getAgencyMedicareDenialMetricForDisplay(agency) : null;
 
   // Support closing with Escape key
   useEffect(() => {
@@ -481,7 +482,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     Estimate unavailable
                   </div>
                   <div className="text-xs text-emerald-800 mt-1.5 tabular-nums">
-                    Denials {getAgencyMedicareDenialMetricForDisplay(agency)?.ratePct.toFixed(1) ?? 'Not published'}{getAgencyMedicareDenialMetricForDisplay(agency) ? '%' : ''} &middot; Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
+                    Denials {denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published'} &middot; Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
                   </div>
                   <div className="text-[10px] text-emerald-900 mt-1">No estimate shown without its inputs and method.</div>
                 </div>
@@ -703,8 +704,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     CMS reimbursement &amp; revenue recovery analytics
                   </span>
                   <h4 className="text-base font-semibold text-slate-900 mt-0.5">
-                    Medicare denial rate: {getAgencyMedicareDenialMetricForDisplay(agency)?.ratePct.toFixed(1) ?? 'Not published'}{getAgencyMedicareDenialMetricForDisplay(agency) ? '%' : ''}
+                    Medicare denial rate: {denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published'}
                   </h4>
+                  {denialMetric && (
+                    <p className="mt-1 text-xs text-slate-600">
+                      NPI {denialMetric.npi} · {denialMetric.deniedClaimCount.toLocaleString()} denied / {denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · {denialMetric.reportingPeriod} · {denialMetric.claimScope} · {denialMetric.denialDefinition}. Source: {denialMetric.source}{denialMetric.sourceReference ? ` · ${denialMetric.sourceReference}` : ''}{denialMetric.sourceUrl ? ` · ${denialMetric.sourceUrl}` : ''}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-600 font-medium">Estimated annual recoverable cash:</span>

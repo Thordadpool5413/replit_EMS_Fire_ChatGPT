@@ -30,6 +30,7 @@ import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
+import { ProviderDenialDetails } from './ProviderDenialDetails';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -286,9 +287,10 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {typeof denialRate === 'number'
-                    ? `${formatPercent(denialRate)} ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS Part B denials' : 'provider profile value'}`
-                    : 'Agency record does not list claim denial data'}
+                    ? `${formatPercent(denialRate)} Medicare ambulance claim denials`
+                    : 'Not published'}
                 </span>
+                {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
@@ -329,7 +331,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {
                   label: 'Medicare Claim Recovery (25%)',
                   val: cmsDenialSub,
-                  detail: denialRate != null ? `${denialRate}% denial rate` : 'No county-matched rate; neutral score'
+                  detail: denialRate != null ? `${denialRate.toFixed(1)}% billing-NPI denial rate` : 'No exact billing-NPI rate; neutral score'
                 },
                 { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {

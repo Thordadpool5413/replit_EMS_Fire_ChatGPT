@@ -92,7 +92,7 @@ export function getCountyMedicareDenialMetric(
     ratePct: imported.ratePct,
     deniedClaimCount: imported.deniedClaims,
     adjudicatedClaimCount: imported.adjudicatedClaims,
-    claimScope: `${imported.claimScope}; ${imported.denialDefinition === 'any_service_line_denied' ? 'any service line denied' : 'entire claim denied'}`,
+    claimScope: imported.claimScope,
     denialDefinition: imported.denialDefinition === 'any_service_line_denied' ? 'Any service line denied' : 'Entire claim denied',
     reportingPeriod: imported.reportingPeriod,
     source: `${imported.sourceName} · ${imported.sourceReference}`,

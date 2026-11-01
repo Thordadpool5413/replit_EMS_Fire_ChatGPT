@@ -77,6 +77,14 @@ const STATE_FIPS_TO_CODE = new Map<string, string>([
   ['56', 'WY'],
 ]);
 let countyReferencePromise: Promise<Map<string, string>> | null = null;
+let cachedSerializedImport: string | null | undefined;
+let cachedImport: MedicareDenialImportDataset | null = null;
+const reportCache = new WeakMap<MedicareDenialImportDataset, MedicareDenialImportReport>();
+const metricIndexCache = new WeakMap<MedicareDenialImportReport, {
+  providers: Map<string, MedicareDenialImportReport['providerMetrics'][number]>;
+  counties: Map<string, MedicareDenialImportReport['countyMetrics'][number]>;
+  states: Map<string, MedicareDenialImportReport['stateMetrics'][number]>;
+}>();
 
 function stateCodeForCountyFips(countyFips: string): string | null {
   return STATE_FIPS_TO_CODE.get(countyFips.slice(0, 2)) ?? null;
@@ -153,7 +161,7 @@ export function parseMedicareDenialCsv(text: string): MedicareDenialImportRow[] 
     const deniedText = record[column.denied_claims].trim();
     const adjudicatedText = record[column.adjudicated_claims].trim();
 
-    if (!/^\d{10}$/.test(npi) || !validateNpiCheckDigit(npi)) {
+    if (!/^\d{10}$/.test(npi) || !validateNpiCheckDigit(npi).isValid) {
       throw new Error(`Row ${recordIndex + 1} has an invalid 10-digit NPI.`);
     }
     if (!/^\d{5}$/.test(countyFips)) {
@@ -367,7 +375,7 @@ function isStoredMedicareDenialImport(
     if (
       typeof npi !== 'string' ||
       !/^\d{10}$/.test(npi) ||
-      !validateNpiCheckDigit(npi) ||
+      !validateNpiCheckDigit(npi).isValid ||
       typeof countyFips !== 'string' ||
       !/^\d{5}$/.test(countyFips) ||
       typeof stateCode !== 'string' ||
@@ -450,6 +458,8 @@ function metricForRows(
 }
 
 export function getMedicareDenialImportReport(dataset: MedicareDenialImportDataset): MedicareDenialImportReport {
+  const cached = reportCache.get(dataset);
+  if (cached) return cached;
   const groupBy = <T,>(keyOf: (row: MedicareDenialImportRow) => string) => {
     const groups = new Map<string, MedicareDenialImportRow[]>();
     for (const row of dataset.rows) {
@@ -488,16 +498,38 @@ export function getMedicareDenialImportReport(dataset: MedicareDenialImportDatas
       }))
     : [];
 
-  return { providerCountyMetrics, providerMetrics, countyMetrics, stateMetrics };
+  const report = { providerCountyMetrics, providerMetrics, countyMetrics, stateMetrics };
+  reportCache.set(dataset, report);
+  return report;
+}
+
+function indexedMetrics(dataset: MedicareDenialImportDataset) {
+  const report = getMedicareDenialImportReport(dataset);
+  let indexed = metricIndexCache.get(report);
+  if (!indexed) {
+    indexed = {
+      providers: new Map(report.providerMetrics.map((metric) => [metric.npi, metric])),
+      counties: new Map(report.countyMetrics.map((metric) => [metric.countyFips, metric])),
+      states: new Map(report.stateMetrics.map((metric) => [metric.stateCode, metric])),
+    };
+    metricIndexCache.set(report, indexed);
+  }
+  return indexed;
 }
 
 export function getLocalMedicareDenialImport(): MedicareDenialImportDataset | null {
   if (typeof window === 'undefined') return null;
   try {
     const serialized = window.localStorage.getItem(STORAGE_KEY);
+    if (serialized === cachedSerializedImport) return cachedImport;
+    cachedSerializedImport = serialized;
+    cachedImport = null;
     if (!serialized) return null;
     const dataset: unknown = JSON.parse(serialized);
-    return isStoredMedicareDenialImport(dataset) ? dataset : null;
+    if (!isStoredMedicareDenialImport(dataset)) return null;
+    getMedicareDenialImportReport(dataset);
+    cachedImport = dataset;
+    return cachedImport;
   } catch {
     return null;
   }
@@ -508,6 +540,7 @@ export function saveLocalMedicareDenialImport(dataset: MedicareDenialImportDatas
   if (!isStoredMedicareDenialImport(dataset)) {
     throw new Error('The claim summary is not valid for local storage.');
   }
+  getMedicareDenialImportReport(dataset);
   const serialized = JSON.stringify(dataset);
   if (serialized.length > MAX_STORED_CHARACTERS) {
     throw new Error('This summary exceeds the browser storage limit. Import a smaller state or county subset.');
@@ -528,10 +561,10 @@ export function clearLocalMedicareDenialImport(): void {
 
 export function getImportedProviderDenialMetric(npiValue: string | undefined): ImportedDenialMetric | null {
   const npi = npiValue?.trim() ?? '';
-  if (!/^\d{10}$/.test(npi) || !validateNpiCheckDigit(npi)) return null;
+  if (!/^\d{10}$/.test(npi) || !validateNpiCheckDigit(npi).isValid) return null;
   const dataset = getLocalMedicareDenialImport();
   if (!dataset?.coverage.completeProviderTotals) return null;
-  const metric = getMedicareDenialImportReport(dataset).providerMetrics.find((item) => item.npi === npi) ?? null;
+  const metric = indexedMetrics(dataset).providers.get(npi) ?? null;
   return metric?.ratePct === null ? null : metric;
 }
 
@@ -540,15 +573,22 @@ export function getImportedCountyDenialMetric(countyFips: string): (ImportedDeni
   if (!/^\d{5}$/.test(fips)) return null;
   const dataset = getLocalMedicareDenialImport();
   if (!dataset?.coverage.completeCountyTotals) return null;
-  const metric = getMedicareDenialImportReport(dataset).countyMetrics.find((item) => item.countyFips === fips) ?? null;
+  const metric = indexedMetrics(dataset).counties.get(fips) ?? null;
   return metric?.ratePct === null ? null : metric;
 }
 
-export function getImportedStateDenialMetric(stateCode: string): (ImportedDenialMetric & { stateCode: string }) | null {
+export function getImportedStateDenialMetric(
+  stateCode: string,
+  expectedCountyFips: readonly string[],
+): (ImportedDenialMetric & { stateCode: string }) | null {
   const code = stateCode.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(code)) return null;
   const dataset = getLocalMedicareDenialImport();
-  if (!dataset?.coverage.completeStateTotals) return null;
-  const metric = getMedicareDenialImportReport(dataset).stateMetrics.find((item) => item.stateCode === code) ?? null;
+  if (!dataset?.coverage.completeStateTotals || !dataset.coverage.completeCountyTotals) return null;
+  const expected = new Set(expectedCountyFips);
+  if (expected.size === 0 || [...expected].some((fips) => stateCodeForCountyFips(fips) !== code)) return null;
+  const actual = new Set(dataset.rows.filter((row) => row.stateCode === code).map((row) => row.countyFips));
+  if (actual.size !== expected.size || [...expected].some((fips) => !actual.has(fips))) return null;
+  const metric = indexedMetrics(dataset).states.get(code) ?? null;
   return metric?.ratePct === null ? null : metric;
 }

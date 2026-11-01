@@ -3,6 +3,12 @@ name: County Medicare denial matching
 description: Source and calculation rules for displaying Medicare claim-denial metrics by county.
 ---
 
+For this denial-rate data-acquisition effort: **“Public sources only.”**
+
+**Why:** The user selected public sources only when choosing the data-access route.
+
+**How to apply:** Research open APIs and public reports; do not request private billing-system credentials or provider authorization for this effort. Do not substitute private API integration or unsupported estimated rates for public evidence.
+
 For an actual county Medicare claim-denial rate, use a direct county-level report matched by the canonical five-digit county FIPS. Assign ambulance claims by pickup/service county, not the provider's billing or headquarters address. Define the unit (unique claims or claim lines) and decision point (initial or final after adjustment/appeal); keep those measures separate and use the same unit in numerator and denominator. For final claim-level rates, deduplicate adjustment/reversal transactions to one final disposition per claim. When raw counts are available, calculate denied claims divided by adjudicated claims for the same claim scope and reporting period. For any claim-count rollup, sum denied counts and divide by summed adjudicated counts only when scope, period, and coverage match; never average percentages into a state or county claims rate.
 
 The user wants available ZIP-profile values displayed for end users to verify, even when external URLs or reporting periods are absent. Show the exact value as a ZIP-profile value, label missing periods "Not stated," and do not imply it is an official state or county claim rate. Open a mapped source link when one exists; do not invent citations or dates.

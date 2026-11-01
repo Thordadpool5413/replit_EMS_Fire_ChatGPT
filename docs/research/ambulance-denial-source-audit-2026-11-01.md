@@ -2,6 +2,10 @@
 
 Checked: November 1, 2026.
 
+## Active access scope
+
+The user selected **public sources only**. Private billing connections, credential requests, provider enrollment, and authorized remittance ingestion are not part of the active acquisition route. The Stedi assessment below is retained as an evaluated but excluded candidate, not a recommended next connection. Existing local aggregate-import functionality was not removed.
+
 ## Result
 
 No source examined in this audit supplies complete Medicare ambulance denied/adjudicated claim counts by both billing NPI and pickup county. No actual state, county, or individual-provider claim rates were populated by this research. Do not describe this report or the existing importer as completing population of those rates.
@@ -73,7 +77,7 @@ Paths above are relative to `artifacts/ems-territory-intelligence/`. This inspec
 - Public billing charges and their effective dates are not denial reporting periods or claim-denial counts. The billing office's mailing address is not the pickup location.
 - Do not attribute Sunstar billing outcomes to every Pinellas fire department or count the same Sunstar transport again under a responding department.
 
-### 7. Stedi remittance and claim APIs — viable authorized-data candidate
+### 7. Stedi remittance and claim APIs — excluded by public-only scope
 
 - ERA endpoint documentation: https://www.stedi.com/docs/healthcare/api-reference/get-healthcare-reports-835
 - Correlation/workflow documentation: https://www.stedi.com/docs/healthcare/receive-claim-responses
@@ -84,6 +88,25 @@ Paths above are relative to `artifacts/ems-territory-intelligence/`. This inspec
 - Its correlation documentation joins an original 837 claim to an 835 using the patient control number. Original claims or an authorized billing/ePCR linkage are still needed for pickup geography.
 - A key alone cannot authorize access to unrelated agencies or supply complete county/state coverage.
 - No connection, enrollment, PHI processing, or secret request was performed in this audit.
+
+### 8. Alachua County Fire Rescue operational audit — additional public report
+
+- Official report dated November 30, 2023: https://alachuacounty.us/Depts/OMB/Audits/Operational%20Performance%20Audit%20Report%20for%20Alachua%20County%20Fire%20Rescue%20-%2011-30-23.pdf
+- Full PDF text was searched for Medicare, billing, claims, denial, and denied; the relevant billing passages were read.
+- PDF page 11 states that Alachua Fire Rescue's Revenue and Collections Section also performs medical billing for Bradford County EMS. Relevant county FIPS are Alachua `12001` and Bradford `12007`.
+- This is historical public evidence of shared billing administration, not proof of a shared NPI, current contract, pickup county, or department-level denial rate.
+- PDF page 246 documents Respond Billing (Central Square/TriTech) and ESO-related systems/contracts as of the report. These are not public claim-outcome APIs.
+- The report explicitly excludes evaluation of the Revenue and Collections Section from its project scope. It does not establish the required Medicare denied/adjudicated count pair.
+- This source is useful for identifying a public billing-data custodian and checking the agency/biller relationship. Do not roll Bradford claims into Alachua merely because Alachua administers billing.
+
+### 9. Fairfax County EMS billing follow-up — additional public comparison
+
+- Official-hosted draft, April 2, 2025: https://www.fairfaxcounty.gov/boardofsupervisors/sites/boardofsupervisors/files/Assets/documents/Fairfax-County-EMS-Billing-Follow-Up-Study-DRAFT-April-2-2025.pdf
+- Full PDF text was searched for claims, Medicare, denial, denied, and collection rates; billing-analysis passages were read.
+- PDF pages 9–10 discuss a Digitech billing analysis of 43,394 billed transports from February 19–December 31, 2024, with backlog exclusions and data as of February 25, 2025.
+- It reports charges, adjustments, receipts, amounts due, and collection percentages. Those are monetary/collections measures, not denied/adjudicated Medicare claim counts.
+- The report discusses contractual adjustments and patient waivers. Neither an unpaid balance nor `100% - collection_percentage` is a claim-denial rate.
+- This provides another public-report route to billing operations, but cannot populate the app's actual Medicare claim-denial metric.
 
 ## Required source contract and joins
 
@@ -114,7 +137,8 @@ Provider-wide percentages cannot be assigned to counties without the pickup-coun
 
 ## What is and is not completed
 
-- Completed: repeatable bundled-input audit, investigation of additional official/public sources, specific remittance API documentation and join requirements, source eligibility inventory.
+- Completed: repeatable bundled-input audit, investigation of additional official/public sources including full-text Alachua and Fairfax billing audits, specific remittance API documentation and join requirements, source eligibility inventory, and recording the user's public-only acquisition scope.
 - Already implemented separately: aggregate count calculations and exact-key display path.
 - **Not completed:** acquisition of real complete denied/adjudicated counts; authorized provider enrollment; complete billing-NPI-to-operating-agency corroboration; pickup-county linkage; population of real state/county/provider percentages.
 - No public source inspected warrants inserting a new actual denial percentage into the app. No substitute or fabricated percentage was inserted.
+- No private billing connection will be pursued under the current scope. The public-only review has not established complete Florida county/state counts or actual individual-provider claim rates.

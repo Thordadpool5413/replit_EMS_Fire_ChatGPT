@@ -19,6 +19,12 @@ The user expects populated state, county, and individual-provider denial percent
 
 **How to apply:** Separate calculation correctness from source-data availability in both work and completion reports. State explicitly which real geographic rates were populated and which remain unavailable.
 
+Targeted medical-review classifications and error rates must not backfill population-level agency, county, or state claim-denial rates.
+
+**Why:** First Coast's ambulance TPE publication reports minor/moderate/major classifications for selected reviews, not a complete geographically attributed claims denominator. Its ambulance-specific percentages can otherwise look like usable Florida denial rates in search results.
+
+**How to apply:** Keep targeted-review findings as review context only; require the actual population claim counts and geographic/provider identifiers for a geographic rate.
+
 **Why:** CMS PSPS publishes denied service-unit counts by carrier/locality, HCPCS, specialty, and place of service, but the public release suppresses cells under 11 and has no NPI or county FIPS; it cannot provide complete state, county, or individual-provider claim-denial rates. CMS Geographic Variation and Market Saturation & Utilization are use/spending or paid-claim datasets, not denial counts. The user also wants available profile values shown for their direct review rather than blocked by missing source metadata, and declined sign-in for sharing imported claim summaries.
 
 **How to apply:** Show a true county rate only from same-scope, same-period claim counts assigned to pickup-county FIPS. A state claim rate requires complete state coverage and summed denied/adjudicated counts. Keep ZIP-profile averages and CMS service-unit statistics separately labeled; never substitute them for claim rates. Calculate financial recovery only from reported denied-dollar amounts, not a count-based rate. Keep imported counts browser-local unless the user later approves authentication and protected workspace storage.

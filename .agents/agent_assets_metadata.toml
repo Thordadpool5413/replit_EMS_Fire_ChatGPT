@@ -42,3 +42,17 @@ mtime_ms = 1793510657738
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/0060c534-5ba8-4851-8937-84d5bff55164/76d92254-a63a-4f3e-9745-3dcfff29451e"
 storage_version_token = "1793510692492352"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "E3HEwES-ALfcVU6XR-153"
+uri = "file://reports/ambulance-denial-source-inventory.csv"
+type = "table"
+title = "Ambulance denial source inventory"
+description = "Nine source/documentation entries showing available fields, access requirements, and whether each can support actual provider or county claim-denial rates. This is a source audit, not a populated denial-rate dataset."
+logical_id = "816640f2-eb19-4dd3-afdb-8eff42953ac4"
+content_hash = "sha256:1c351ab907c33d967d2618a2954278d96263058118c1bd60bd70459b5f3fee37"
+size = 3047
+mtime_ms = 1793567063039
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/816640f2-eb19-4dd3-afdb-8eff42953ac4/fc5fb155-d96a-4a44-b43f-3796cb22b735"
+storage_version_token = "1793567177337798"
+content_type = "text/csv"

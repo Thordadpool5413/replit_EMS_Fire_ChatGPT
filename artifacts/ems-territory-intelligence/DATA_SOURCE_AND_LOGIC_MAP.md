@@ -93,6 +93,8 @@ National source coverage remains field-specific: NPPES provides live provider-id
 
 ## Medicare denial calculation and import rules
 
+The [November 1, 2026 source audit](../../docs/research/ambulance-denial-source-audit-2026-11-01.md) distinguishes the legacy scalar inputs, actual count availability, public review statistics, and authorized remittance API candidates. Reproduce the bundled-input inventory with `node scripts/audit-ambulance-denial-inputs.mjs` from the workspace root. The audit is not a claim that real geographic denial percentages have been populated.
+
 The import flow in `services/medicareDenialImportService.ts` accepts **aggregate counts**, not raw claims, EOBs, or 835 files. Its core fields are:
 
 - `npi`
@@ -155,7 +157,7 @@ These outputs are useful as **prospect hypotheses** for end users to investigate
 
 1. **Generated values can look exact.** Keep the values available, but display “generated prospect estimate” adjacent to exact-looking names, counts, vendors, and percentages.
 2. **NPI presence can overstate provenance.** `dataSanitizationService.ts` classifies an agency with any `npiNumber` as `live_federal_registry`, although the stricter lineage checks require a valid NPI, a verification timestamp/URL, and relationship evidence. The badge should reflect a successful live match, not just a populated NPI field.
-3. **Some denial screens read raw values.** The sanitizer replaces unsupported `cmsData.claimDenialRate` with a strict imported metric, but direct reads remain in `ExecutiveBriefingDossier.tsx`, `PredictiveLeadQueue.tsx`, `AgencyQuickPreviewDrawer.tsx`, `FocusedProviderProfile.tsx`, and `PulseIqScoreExplainerHub.tsx`. These paths should use the same strict service to avoid displaying static/profile values as claims rates.
+3. **Count-based denial displays are wired, but source population is incomplete.** The agency display paths now use the shared count-based denial selector rather than treating raw `cmsData.claimDenialRate` seed scalars as source-backed claims rates. A registry identity alone is insufficient: an explicit confirmed direct operating-agency relationship is required before assigning an NPI's rate to an agency. This calculation/matching work does not supply missing claim counts or complete provider/county/state coverage.
 4. **AFG records are not city- or agency-verified.** The API supports state filters and grantee-name text matching, not a reliable city or agency-ID match. The UI now labels nationwide results and the 20-record limit, and does not imply that county/city filters apply to the federal records.
 5. **A source period can be a placeholder.** The lineage manifest sometimes supplies a fixed year/report name when evidence is absent. Use the source record's actual period where available; otherwise say “period not stated.”
 6. **Workspace sharing for imports is not implemented.** The chosen workspace-shared claim-summary storage is currently browser-local. Implementing shared storage requires an authenticated/authorized server-side store or an explicitly scoped shared Firestore design.

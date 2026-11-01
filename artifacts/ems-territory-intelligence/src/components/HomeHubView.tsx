@@ -52,6 +52,8 @@ const STATE_MAP_METRICS = [
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
   { key: 'pulseiq', label: 'Modeled average PulseIQ' },
+  { key: 'cardiac-survival', label: 'Cardiac survival estimate (%)' },
+  { key: 'scene-transit', label: 'EMS transit estimate (minutes)' },
 ] as const;
 
 type StateMapMetricKey =
@@ -77,7 +79,7 @@ interface StateMapMetricDatum {
   value: number | null;
   coverage: string;
   period: string;
-  sourceAction: 'agency-records' | 'zip-profiles' | 'claims-import';
+  sourceAction: 'agency-records' | 'zip-profiles' | 'claims-import' | 'reference-estimate';
   deniedClaims?: number;
   adjudicatedClaims?: number;
   claimScope?: string;
@@ -90,19 +92,38 @@ interface StateMapMetricDatum {
 const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
   if (value === null) return metric === 'state-claims-denial' ? 'Not published' : 'Not reported';
   if (metric === 'zip-denial' || metric === 'state-claims-denial') return `${value.toFixed(1)}%`;
+  if (metric === 'cardiac-survival') return `${value.toFixed(1)}%`;
+  if (metric === 'scene-transit') return `${value.toFixed(1)} min`;
   if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
   return formatInteger(value);
 };
 
-const interpolateStateFill = (value: number, min: number, max: number) => {
+const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabel: string }> = {
+  'agency-records': { stops: ['#E7F0F7', '#8CB3CC', '#24577A'], lowLabel: 'Fewer', highLabel: 'More' },
+  ambulances: { stops: ['#E7F0F7', '#8CB3CC', '#24577A'], lowLabel: 'Fewer', highLabel: 'More' },
+  'fire-engines': { stops: ['#E7F0F7', '#8CB3CC', '#24577A'], lowLabel: 'Fewer', highLabel: 'More' },
+  pulseiq: { stops: ['#E8F2F0', '#6BA99B', '#176456'], lowLabel: 'Lower', highLabel: 'Higher' },
+  'cardiac-survival': { stops: ['#F1E7E2', '#8DBDB0', '#16715E'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
+  'scene-transit': { stops: ['#D9ECE8', '#E8C27D', '#B94D38'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+};
+
+const hexToRgb = (hex: string) =>
+  hex.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [0, 0, 0];
+
+const interpolateStateFill = (metric: StateMapMetricKey, value: number, min: number, max: number) => {
   const t = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const start = [159, 190, 231];
-  const end = [20, 58, 120];
-  const channels = start.map((channel, index) =>
-    Math.round(channel + (end[index] - channel) * t),
-  );
+  const stops = MAP_PALETTES[metric]?.stops ?? MAP_PALETTES['agency-records'].stops;
+  const scaled = t * (stops.length - 1);
+  const stopIndex = Math.min(stops.length - 2, Math.floor(scaled));
+  const localT = scaled - stopIndex;
+  const start = hexToRgb(stops[stopIndex]);
+  const end = hexToRgb(stops[stopIndex + 1]);
+  const channels = start.map((channel, index) => Math.round(channel + (end[index] - channel) * localT));
   return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 };
+
+const getMapGradient = (metric: StateMapMetricKey) =>
+  `linear-gradient(to right, ${(MAP_PALETTES[metric]?.stops ?? MAP_PALETTES['agency-records'].stops).join(', ')})`;
 
 const readableTextForFill = (hexColor: string) => {
   const channels = hexColor.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [219, 234, 254];
@@ -307,6 +328,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             period: 'Modeled from current agency profile inputs; source periods are not standardized.',
             sourceAction: 'agency-records',
           },
+          'cardiac-survival': {
+            value: state.avgUtsteinSurvival,
+            coverage: 'State-level cardiac survival estimate from the app’s reference profile.',
+            period: 'Reporting period is not stated.',
+            sourceAction: 'reference-estimate',
+          },
+          'scene-transit': {
+            value: state.avgTransportMinutes,
+            coverage: 'State-level EMS transit estimate from the app’s reference profile.',
+            period: 'Reporting period is not stated.',
+            sourceAction: 'reference-estimate',
+          },
           'state-claims-denial': {
             value: null,
             coverage: '',
@@ -331,6 +364,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMin = mapMetricValues.length ? Math.min(...mapMetricValues) : 0;
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
+  const activeMapPalette = MAP_PALETTES[mapMetric] ?? MAP_PALETTES['agency-records'];
   const mapReadoutMetric = stateMapMetricsByCode[hoverReadoutStateCode][mapMetric];
   const mapReadoutState = ALL_50_STATES_SUMMARIES[hoverReadoutStateCode];
 
@@ -596,6 +630,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   Shade states by
                   <select
                     id="home-state-map-metric"
+                    data-testid="select-state-map-metric"
                     value={mapMetric}
                     onChange={(event) => setMapMetric(event.target.value as StateMapMetricKey)}
                     className="min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#9AABC0] dark:border-[#425875] bg-white dark:bg-[#111C2D] px-3 text-sm font-semibold text-[#14283F] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -646,14 +681,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <div className="flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white/90 dark:bg-[#111C2D]/90 border border-[#C7D3E1] dark:border-[#30445F] px-3.5 py-2.5">
                 <span className="shrink-0 text-[11px] font-bold text-[#14283F] dark:text-slate-100">{activeMapMetric.label}</span>
                 <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
-                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'}</span>
-                  <span className="h-3 w-24 rounded-full border border-[#29496F] bg-gradient-to-r from-[#9FBEE7] to-[#143A78]" aria-hidden="true" />
-                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'}</span>
+                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
+                  <span className="h-3 w-24 rounded-full border border-[#526A7F]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
+                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
-                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
-                  <span className="inline-block h-4 w-4 rounded-sm border border-[#29496F]" style={{ backgroundColor: interpolateStateFill(0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
-                  Reported 0
-                </span>
+                {mapMetricValues.some((value) => value === 0) && (
+                  <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
+                    <span className="inline-block h-4 w-4 rounded-sm border border-[#526A7F]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
+                    Reported 0
+                  </span>
+                )}
                 <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
                   <span className="inline-block h-4 w-4 rounded-sm border border-[#667B94] bg-[repeating-linear-gradient(135deg,#d9e2ec_0px,#d9e2ec_3px,#71849a_3px,#71849a_4px)] dark:bg-[repeating-linear-gradient(135deg,#25364b_0px,#25364b_3px,#8da0b7_3px,#8da0b7_4px)]" aria-hidden="true" />
                   Not reported
@@ -681,7 +718,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}
                   </p>
                 </div>
-                <button
+                {mapReadoutMetric.sourceAction !== 'reference-estimate' && <button
                   type="button"
                   onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
                   className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50 dark:bg-blue-950/40 px-3 text-[11px] font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -691,7 +728,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     : mapReadoutMetric.sourceAction === 'claims-import'
                       ? 'Open claim summary'
                       : 'Review agency records'}
-                </button>
+                </button>}
               </div>
 
               <div className="order-1 sm:order-2 space-y-3">
@@ -739,7 +776,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const fillColor = hasReportedValue(datum.value)
-                      ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
+                      ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax)
                       : 'url(#home-map-missing-data)';
                     const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
@@ -850,7 +887,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   const isSelected = selectedStateCode === c.code;
                   const datum = stateMapMetricsByCode[c.code][mapMetric];
                   const chipFill = hasReportedValue(datum.value)
-                    ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
+                    ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax)
                     : '#E2E8F0';
                   return (
                     <button

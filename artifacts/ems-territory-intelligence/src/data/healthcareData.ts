@@ -46,7 +46,7 @@ export interface StateSummary {
   state: string;
   code: string;
   totalAgencies: number;
-  avgMedicareDenialRate: number;
+  avgMedicareDenialRate: number | null;
   avgUtsteinSurvival: number;
   totalAfgAwardsYtd: number;
   medicaidExpansion: boolean;

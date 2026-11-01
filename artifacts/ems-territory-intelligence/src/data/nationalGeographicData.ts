@@ -65,6 +65,11 @@ export const ALL_50_STATES_SUMMARIES: Record<string, StateSummary & { fips: stri
   'WY': { state: 'Wyoming', code: 'WY', fips: '56', region: 'West', totalAgencies: 110, avgMedicareDenialRate: 17.2, avgUtsteinSurvival: 26.9, totalAfgAwardsYtd: 2800000, medicaidExpansion: false, highPriorityLeadsCount: 4, avgTransportMinutes: 36.2, seniorPopPct: 17.8, majorCounties: ['Laramie', 'Natrona', 'Campbell', 'Sweetwater', 'Fremont'], primaryZipPrefixes: ['820', '824', '826', '828', '830'] }
 };
 
+// These values were not derived from source-backed denied/adjudicated claim counts.
+for (const summary of Object.values(ALL_50_STATES_SUMMARIES)) {
+  summary.avgMedicareDenialRate = null;
+}
+
 import type { CountyHealthRecord } from '../types';
 export type { CountyHealthRecord };
 

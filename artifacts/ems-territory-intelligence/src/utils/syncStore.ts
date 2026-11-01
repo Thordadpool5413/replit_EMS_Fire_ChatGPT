@@ -5,6 +5,7 @@
 
 import { Agency, SyncOutboxItem, PredictiveWeights, LeadStage } from '../types';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 
 const STORAGE_KEY_CUSTOM_AGENCIES = 'zoll_pulseiq_custom_agencies_v8';
 const LEGACY_AGENCY_KEYS = [
@@ -100,7 +101,7 @@ export function calculateScore(agency: Agency, weights: PredictiveWeights = DEFA
   }
 
   // 2. CMS Denial Component (0-100)
-  const denial = agency.cmsData?.claimDenialRate;
+  const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
   const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
   let cmsScore = 50;
   if (hasDenialRate) {
@@ -184,7 +185,7 @@ export function explainAgencyScore(
   const fleetPts = +((fleetScore * wFleet) / totalWeight).toFixed(1);
 
   // 2. CMS Denial Component
-  const denial = agency.cmsData?.claimDenialRate;
+  const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
   const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
   let cmsScore = 50;
   if (hasDenialRate) {

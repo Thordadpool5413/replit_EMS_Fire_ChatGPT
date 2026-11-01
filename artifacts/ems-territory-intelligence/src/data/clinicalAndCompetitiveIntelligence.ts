@@ -4,6 +4,7 @@
  */
 
 import { Agency } from '../types';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 
 export interface CompetitorHardwareIntel {
   id: string;
@@ -363,7 +364,7 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
   };
 } | null {
   const annualTransports = agency.annual911Transports;
-  const claimDenialRatePct = agency.cmsData?.claimDenialRate;
+  const claimDenialRatePct = getAgencyMedicareDenialMetric(agency)?.ratePct;
   const medicarePayerPct =
     agency.cmsData?.medicarePayerPct ??
     agency.cmsData?.payerMix?.medicare;

@@ -613,7 +613,7 @@ class NationalProviderDatabaseService {
       const stSummary = ALL_50_STATES_SUMMARIES[sc] || {
         state: c.stateName,
         code: sc,
-        avgMedicareDenialRate: 18.5,
+        avgMedicareDenialRate: null,
         avgUtsteinSurvival: 26.5,
         totalAfgAwardsYtd: 8400000,
         medicaidExpansion: true,

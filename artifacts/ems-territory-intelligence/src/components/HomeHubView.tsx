@@ -918,9 +918,25 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 ) : (
                   <>
                     <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                      No source-backed ZIP denial percentages are available in the app records. CMS publishes ambulance payment geography by ZIP and paid-claim utilization by state/county, not ZIP-level denied and adjudicated claim counts.
+                      No complete state or county ambulance claim-denial totals are available from the public CMS files. CMS&apos;s PSPS file has denied service counts by carrier/locality and HCPCS, but suppresses cells under 11 and has no NPI or county FIPS; it cannot produce complete state, county, or provider claim rates.
                     </p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                      <a
+                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                      >
+                        CMS PSPS denied-service dataset
+                      </a>
+                      <a
+                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary/api-docs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                      >
+                        CMS PSPS API
+                      </a>
                       <a
                         href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files"
                         target="_blank"
@@ -978,7 +994,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   {formatInteger(stateStats.medicareAllowedDataCount)} of {formatInteger(stateStats.count)} agency records
                 </div>
                 <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  These CMS links describe ZIP payment geography and state/county paid utilization; neither is a source for ambulance denial percentages. No state or ZIP rate is substituted.
+                  CMS PSPS contains aggregate denied-service counts, not unique provider claims; public cells under 11 are masked. It has no NPI or county FIPS, so it cannot support complete state, county, or individual-provider claim rates.
                 </p>
               </div>
 

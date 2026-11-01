@@ -4,6 +4,7 @@
  */
 
 import { Agency } from '../types';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 
 export interface NationwideIngestState {
   stateCode: string;
@@ -87,7 +88,10 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
  * Computes real-time state-level aggregations directly from the active, sanitized Agency dataset
  * (zero hardcoded sample tables).
  */
-export function computeNationwideStateAggregations(agencies: Agency[]): NationwideIngestState[] {
+export function computeNationwideStateAggregations(
+  agencies: Agency[],
+  options: { completeStateCoverageCodes?: ReadonlySet<string> } = {},
+): NationwideIngestState[] {
   const byState = new Map<string, Agency[]>();
   for (const agency of agencies) {
     const code = (agency.stateCode || 'US').toUpperCase();
@@ -104,22 +108,13 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
     const cloudSyncedAgencies = list.filter(a => a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced').length;
     const medicareClaimsRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareClaimsVolume));
     const billedVolumeRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareBilledAnnual));
-    const denialRateRecords = list.filter(a => {
-      const denied = a.cmsData?.medicareDeniedClaimCount;
-      const adjudicated = a.cmsData?.medicareAdjudicatedClaimCount;
-      return Number.isInteger(denied) &&
-        Number.isInteger(adjudicated) &&
-        adjudicated! > 0 &&
-        denied! >= 0 &&
-        denied! <= adjudicated! &&
-        Boolean(a.cmsData?.medicareDenialClaimScope?.trim()) &&
-        Boolean(a.cmsData?.medicareDenialReportingPeriod?.trim()) &&
-        Boolean(a.cmsData?.medicareDenialSource?.trim()) &&
-        Boolean(a.cmsData?.medicareDenialSourceUrl?.trim());
-    });
+    const denialMetrics = list
+      .map(agency => getAgencyMedicareDenialMetric(agency))
+      .filter((metric): metric is NonNullable<typeof metric> => metric !== null);
+    const denialRateRecords = list.filter(agency => getAgencyMedicareDenialMetric(agency) !== null);
     const denialCohorts = new Set(
-      denialRateRecords.map(a =>
-        `${a.cmsData.medicareDenialClaimScope!.trim().toLowerCase()}|${a.cmsData.medicareDenialReportingPeriod!.trim().toLowerCase()}`
+      denialMetrics.map(metric =>
+        `${metric.claimScope.toLowerCase()}|${metric.reportingPeriod.toLowerCase()}`
       )
     );
     const recoverableRevenueRecords = list.filter(a => hasReportedValue(a.cmsData?.estimatedRecoverableRevenue));
@@ -134,12 +129,18 @@ export function computeNationwideStateAggregations(agencies: Agency[]): Nationwi
       (sum, a) => sum + a.cmsData.medicareBilledAnnual,
       0
     );
-    const canAggregateDenials = denialRateRecords.length > 0 && denialCohorts.size === 1;
+    // A state percentage is only valid when every record in the state cohort is present,
+    // all counts share the same scope/period, and a trusted source confirms complete state coverage.
+    const canAggregateDenials =
+      options.completeStateCoverageCodes?.has(stateCode) === true &&
+      denialRateRecords.length === list.length &&
+      denialRateRecords.length > 0 &&
+      denialCohorts.size === 1;
     const totalDeniedClaims = canAggregateDenials
-      ? denialRateRecords.reduce((sum, a) => sum + a.cmsData.medicareDeniedClaimCount!, 0)
+      ? denialMetrics.reduce((sum, metric) => sum + metric.deniedClaimCount, 0)
       : 0;
     const totalAdjudicatedDenialClaims = canAggregateDenials
-      ? denialRateRecords.reduce((sum, a) => sum + a.cmsData.medicareAdjudicatedClaimCount!, 0)
+      ? denialMetrics.reduce((sum, metric) => sum + metric.adjudicatedClaimCount, 0)
       : 0;
     const weightedClaimDenialRatePct = totalAdjudicatedDenialClaims > 0
       ? +((totalDeniedClaims / totalAdjudicatedDenialClaims) * 100).toFixed(1)

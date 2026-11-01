@@ -28,7 +28,7 @@ export interface CmsEnrollmentRecord {
   partBClaimsSummary: {
     annualAllowedTransports: number;
     totalMedicareAllowedAmount: number;
-    denialRatePct: number;
+    denialRatePct: number | null;
     topDenialReasonCode: string;
     topDenialDescription: string;
     averageAllowedPerA0427Als1: number;
@@ -67,7 +67,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 51200,
       totalMedicareAllowedAmount: 18450000,
-      denialRatePct: 14.2,
+      denialRatePct: null,
       topDenialReasonCode: 'CO-16',
       topDenialDescription: 'Claim lacks information which is needed for adjudication (Medical Necessity documentation for ALS-1 vs BLS)',
       averageAllowedPerA0427Als1: 542.80,
@@ -103,7 +103,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 89400,
       totalMedicareAllowedAmount: 29800000,
-      denialRatePct: 24.8,
+      denialRatePct: null,
       topDenialReasonCode: 'PR-204',
       topDenialDescription: 'This service/equipment is not covered under patient benefit plan (Signature on File missing / Physician Certification Statement unsigned)',
       averageAllowedPerA0427Als1: 588.40,
@@ -139,7 +139,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 142000,
       totalMedicareAllowedAmount: 48900000,
-      denialRatePct: 15.6,
+      denialRatePct: null,
       topDenialReasonCode: 'CO-97',
       topDenialDescription: 'The benefit for this service is included in the payment/allowance for another service/procedure that has already been adjudicated',
       averageAllowedPerA0427Als1: 612.30,
@@ -175,7 +175,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 1420,
       totalMedicareAllowedAmount: 680000,
-      denialRatePct: 11.2,
+      denialRatePct: null,
       topDenialReasonCode: 'CO-16',
       topDenialDescription: 'Rural mileage calculation discrepancy or missing odometer reading on transport ticket',
       averageAllowedPerA0427Als1: 672.40, // Super rural bonus rate
@@ -211,7 +211,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 44200,
       totalMedicareAllowedAmount: 14200000,
-      denialRatePct: 22.4,
+      denialRatePct: null,
       topDenialReasonCode: 'CO-50',
       topDenialDescription: 'These are non-covered services because this is not deemed a medical necessity by the payer (Repetitive dialysis non-emergent transport lacking prior-auth approval)',
       averageAllowedPerA0427Als1: 524.10,
@@ -247,7 +247,7 @@ export const CMS_ENROLLMENT_DATABASE: Record<string, CmsEnrollmentRecord> = {
     partBClaimsSummary: {
       annualAllowedTransports: 78500,
       totalMedicareAllowedAmount: 26100000,
-      denialRatePct: 18.2,
+      denialRatePct: null,
       topDenialReasonCode: 'PR-16',
       topDenialDescription: 'Claim lacks information which is needed for adjudication (Dispatch CAD emergency response priority code discrepancy)',
       averageAllowedPerA0427Als1: 562.90,

@@ -1635,15 +1635,26 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           )}
                           {countyDenialDisplay.kind === 'unavailable' && (
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              Requires denied ÷ adjudicated ambulance claims with the same claim scope and reporting period
+                              Requires denied ÷ adjudicated ambulance claims for this county and the same scope and period. CMS PSPS has locality-level service counts, masks cells under 11, and has no county FIPS.
+                              {' '}
                               <a
                                 className="ml-1 underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary"
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={event => event.stopPropagation()}
+                              >
+                                CMS PSPS
+                              </a>
+                              {' · '}
+                              <a
+                                className="underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400"
                                 href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county"
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={event => event.stopPropagation()}
                               >
-                                CMS use/spending data, not denials
+                                CMS use/spending data
                               </a>
                             </div>
                           )}

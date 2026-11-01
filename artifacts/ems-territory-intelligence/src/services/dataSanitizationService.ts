@@ -6,6 +6,7 @@
 import { Agency, FieldNote, KeyContact, PredictiveWeights } from '../types';
 import { calculateScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
 import { CMS_ENROLLMENT_DATABASE } from '../data/cmsEnrollmentData';
+import { getAgencyMedicareDenialMetric } from './agencyMedicareDenialService';
 
 /**
  * Valid 50 US State + DC postal codes for jurisdiction verification
@@ -567,7 +568,7 @@ class DataSanitizationService {
       ? (age >= 9 ? 25 : age >= 7 ? 21 : age >= 5 ? 16 : 10)
       : (age >= 7 ? 19 : 8);
 
-    const denial = agency.cmsData?.claimDenialRate;
+    const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
     const cmsPts = typeof denial === 'number' && Number.isFinite(denial)
       ? (denial >= 22 ? 20 : denial >= 18 ? 17 : denial >= 15 ? 13 : 8)
       : 10;
@@ -697,11 +698,29 @@ class DataSanitizationService {
     const { sanitized: cleanContacts, scrubbedCount } = this.sanitizeKeyContacts(agency.keyContacts);
     this.unverifiedContactsScrubbedCount += scrubbedCount;
 
-    // 3. Recalculate and verify mathematical PulseIQ score
-    const verifiedOpportunity = this.verifyAndRecalculatePulseIq(agency, weights);
+    // 3. Remove unsupported denial percentages before scores and views can consume them.
+    const denialMetric = getAgencyMedicareDenialMetric(agency);
+    const sourceBackedAgency: Agency = {
+      ...agency,
+      cmsData: {
+        ...agency.cmsData,
+        claimDenialRate: denialMetric?.ratePct ?? null,
+        medicareDeniedClaimCount: denialMetric?.deniedClaimCount,
+        medicareAdjudicatedClaimCount: denialMetric?.adjudicatedClaimCount,
+        medicareDenialClaimScope: denialMetric?.claimScope,
+        medicareDenialReportingPeriod: denialMetric?.reportingPeriod,
+        medicareDenialSource: denialMetric?.source,
+        medicareDenialSourceUrl: denialMetric?.sourceUrl,
+        topDenialReason: denialMetric ? agency.cmsData.topDenialReason : undefined,
+        topDenialReasonCode: denialMetric ? agency.cmsData.topDenialReasonCode : undefined,
+      },
+    };
+
+    // 4. Recalculate and verify mathematical PulseIQ score from sanitized inputs.
+    const verifiedOpportunity = this.verifyAndRecalculatePulseIq(sourceBackedAgency, weights);
     this.pulseIqVerifiedCount++;
 
-    // 4. Determine provenance tier
+    // 5. Determine provenance tier
     const isCloud =
       Boolean(agency._syncedAt) ||
       Boolean(agency._updatedAt) ||
@@ -713,7 +732,7 @@ class DataSanitizationService {
     }
 
     const sanitizedRecord: Agency = {
-      ...agency,
+      ...sourceBackedAgency,
       headquartersPhone: '',
       keyContacts: cleanContacts,
       fieldNotes: cleanNotes,

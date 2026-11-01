@@ -10,6 +10,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 import {
   classifyOhcaRate,
   FLEET_AGE_BANDS,
@@ -286,7 +287,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         } else if (selectedLayer === 'transport') {
           if (!hasReportedValue(a.gisData?.avgTransportTimeMinutes) || a.gisData!.avgTransportTimeMinutes! < 20) return false;
         } else if (selectedLayer === 'cms') {
-          if (!hasReportedValue(a.cmsData?.claimDenialRate) || a.cmsData.claimDenialRate < 18) return false;
+          const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
+          if (denialRate == null || denialRate < 18) return false;
         }
       } else if (layerThresholdFilter === 'critical') {
         if (selectedLayer === 'cardiac') {
@@ -296,7 +298,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         } else if (selectedLayer === 'transport') {
           if (!hasReportedValue(a.gisData?.avgTransportTimeMinutes) || a.gisData!.avgTransportTimeMinutes! < 28) return false;
         } else if (selectedLayer === 'cms') {
-          if (!hasReportedValue(a.cmsData?.claimDenialRate) || a.cmsData.claimDenialRate < 21) return false;
+          const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
+          if (denialRate == null || denialRate < 21) return false;
         }
       }
 
@@ -328,7 +331,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     }
     if (layer === 'cms') {
       // CMS Denial Zones: high Medicare claim denial rate & recoverable revenue
-      return a.cmsData?.claimDenialRate ?? 0;
+      return getAgencyMedicareDenialMetric(a)?.ratePct ?? 0;
     }
     return a.zollOpportunity?.pulseIqScore ?? 0;
   };
@@ -409,7 +412,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const defibAge = a.installedFleet?.defibAgeYears;
       const aedDeficit = a.gisData?.publicAccessAedDeficitPct;
       const transportTime = a.gisData?.avgTransportTimeMinutes;
-      const denialRate = a.cmsData?.claimDenialRate;
+      const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
       const recoverableRev = a.cmsData?.estimatedRecoverableRevenue;
       const mechCpr = a.installedFleet?.mechanicalCPR;
       const vent = a.installedFleet?.transportVentilator;
@@ -545,11 +548,19 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   // Use every filtered agency. KDE and hexbin aggregate the complete filtered set;
   // pins remain available when the full marker layer is too visually dense.
-  const mapRenderedAgencies = useMemo(() => filteredAgencies, [filteredAgencies]);
+  const mapRenderedAgencies = useMemo(
+    () => selectedLayer === 'cms'
+      ? filteredAgencies.filter(a => getAgencyMedicareDenialMetric(a) !== null)
+      : filteredAgencies,
+    [filteredAgencies, selectedLayer],
+  );
 
   // Ranked hotspots for the active layer
   const topCardiacEpicenters = useMemo(() => {
-    return [...filteredAgencies]
+    const agenciesWithLayerData = selectedLayer === 'cms'
+      ? filteredAgencies.filter(a => getAgencyMedicareDenialMetric(a) !== null)
+      : filteredAgencies;
+    return [...agenciesWithLayerData]
       .sort((a, b) => getLayerMetric(b, selectedLayer) - getLayerMetric(a, selectedLayer))
       .slice(0, 8);
   }, [filteredAgencies, selectedLayer]);
@@ -732,7 +743,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         st.sumTransport += a.gisData!.avgTransportTimeMinutes!;
         st.transportCount++;
       }
-      if (hasReportedValue(a.cmsData?.claimDenialRate)) {
+      if (getAgencyMedicareDenialMetric(a)) {
         st.denialCount++;
       }
     }
@@ -1198,7 +1209,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         selectedLayer === 'cardiac' ? (survivalDataCount ? `${avgSurvival}% avg Utstein survival` : 'Not reported') :
         selectedLayer === 'aed' ? (hasReportedValue(topAgency.gisData?.publicAccessAedDeficitPct) ? `${topAgency.gisData.publicAccessAedDeficitPct}% peak AED deficit` : 'Not reported') :
         selectedLayer === 'transport' ? (hasReportedValue(topAgency.gisData?.avgTransportTimeMinutes) ? `${topAgency.gisData.avgTransportTimeMinutes} min peak transit` : 'Not reported') :
-        (hasReportedValue(topAgency.cmsData?.claimDenialRate) ? `${topAgency.cmsData.claimDenialRate}% peak CMS denial` : 'Not reported');
+        (getAgencyMedicareDenialMetric(topAgency)
+          ? `${getAgencyMedicareDenialMetric(topAgency)!.ratePct}% peak CMS denial`
+          : 'Not reported');
 
       cells.push({
         id: `hex-${key}`,
@@ -1255,7 +1268,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       layer === 'cardiac' ? hasReportedValue(agency.utsteinSurvivalRate) :
       layer === 'aed' ? hasReportedValue(agency.gisData?.publicAccessAedDeficitPct) :
       layer === 'transport' ? hasReportedValue(agency.gisData?.avgTransportTimeMinutes) :
-      hasReportedValue(agency.cmsData?.claimDenialRate);
+      getAgencyMedicareDenialMetric(agency) !== null;
 
     if (!hasMetric) {
       return {
@@ -1513,7 +1526,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     }
 
     // CMS Denial Zones layer
-    const denial = agency.cmsData.claimDenialRate!;
+    const denial = getAgencyMedicareDenialMetric(agency)?.ratePct ?? 0;
     const recoverable = agency.cmsData.estimatedRecoverableRevenue;
     if (denial >= 21) {
       return {
@@ -1977,7 +1990,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     {selectedLayer === 'cardiac' && `Identifying severe survival deficits (<26% Utstein survival rate) where ZOLL AutoPulse and ResQCPR generate highest clinical resuscitation impact.`}
                     {selectedLayer === 'aed' && `Mapping public access AED deficits and age 65+ demographic vulnerability to deploy ZOLL AED 3 community networks.`}
                     {selectedLayer === 'transport' && `Long transport corridors (>20 min) requiring EMV+ mechanical transport ventilators and uninterrupted patient monitoring.`}
-                    {selectedLayer === 'cms' && `Medicare Part B claim denials (>18%) addressable through ZOLL RescueNet Billing and AR Boost automated revenue recovery.`}
+                    {selectedLayer === 'cms' && (mapRenderedAgencies.length === 0
+                      ? 'No source-backed provider claim denial rates are available to map. CMS PSPS contains locality-level service counts, masks cells under 11, and does not identify NPIs. Missing data is not a 0% rate.'
+                      : 'Provider percentages use denied claims ÷ adjudicated claims for the same claim scope and period. Hover for the source-backed rate; the map does not infer missing values.')}
                   </p>
                 </div>
               </div>
@@ -3199,21 +3214,26 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
                 {selectedLayer === 'cms' && (
                   <div className="space-y-1.5 text-xs">
+                    {mapRenderedAgencies.length === 0 && (
+                      <p className="text-slate-400">
+                        No source-backed rates are mapped; missing data is not 0%.
+                      </p>
+                    )}
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
-                      <span className="font-semibold text-slate-100">≥21% Denials (Severe)</span>
+                      <span className="font-semibold text-slate-100">≥21%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                      <span className="text-slate-300">18–20.9% Denials (High)</span>
+                      <span className="text-slate-300">18–20.9%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
-                      <span className="text-slate-400">14–17.9% Denials (Moderate)</span>
+                      <span className="text-slate-400">14–17.9%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      <span className="text-slate-400">&lt;14% Denials (Compliant)</span>
+                      <span className="text-slate-400">&lt;14%</span>
                     </div>
                   </div>
                 )}

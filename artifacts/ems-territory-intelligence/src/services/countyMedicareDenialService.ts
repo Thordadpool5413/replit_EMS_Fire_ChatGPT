@@ -35,7 +35,7 @@ function hasCountyDenialProvenance(county: CountyDenialInput): boolean {
 
   try {
     const url = new URL(county.medicareDenialSourceUrl);
-    return url.protocol === 'https:' || url.protocol === 'http:';
+    return url.protocol === 'https:';
   } catch {
     return false;
   }

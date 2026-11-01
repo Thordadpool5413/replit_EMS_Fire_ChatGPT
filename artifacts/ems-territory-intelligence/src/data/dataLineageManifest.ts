@@ -5,6 +5,7 @@
 
 import { Agency } from '../types';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
+import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 import { hasReviewedAgencyFactEvidence as hasAgencyFactEvidence } from './agencyFactEvidence';
 
 export interface DataRegistrySource {
@@ -39,19 +40,19 @@ export interface FieldLineageRecord {
 export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
   {
     id: 'cms_part_b',
-    name: 'CMS Medicare Part B Ground Ambulance Claims Public Use File (PUF)',
-    acronym: 'CMS PUF',
+    name: 'CMS Physician/Supplier Procedure Summary (PSPS)',
+    acronym: 'CMS PSPS',
     governingBody: 'Centers for Medicare & Medicaid Services (U.S. Dept of Health & Human Services)',
-    updateCadence: 'Annual Release with Quarterly Cost Data Adjustments',
-    legalAuthority: 'Social Security Act § 1834(l) & 42 CFR § 414.610',
-    schemaSpecification: 'HCPCS Ambulance Service Coding (A0425–A0434) & Remittance Advice Remark Codes (RARC)',
+    updateCadence: 'Annual public-use statistical release; check the CMS dataset release date',
+    legalAuthority: 'CMS public-use Medicare Part B statistical dataset',
+    schemaSpecification: 'Carrier/locality, HCPCS/modifiers, provider specialty, place of service, and service-unit counts',
     primaryFieldsIngested: [
-      'Medicare Billed & Allowed Amounts',
-      'HCPCS A0427 (ALS-1 Emergency) & A0429 (BLS Emergency) Volumes',
-      'Claim Denial Rates & Primary Denial Reason Codes (e.g. CO-16, PR-204)',
-      'GADCS Cost-to-Charge Ratios'
+      'PSPS_SUBMITTED_SERVICE_CNT',
+      'PSPS_DENIED_SERVICES_CNT',
+      'HCPCS_CD and PROVIDER_SPEC_CD',
+      'PLACE_OF_SERVICE_CD, CARRIER_NUM, and LOCALITY_CD'
     ],
-    verificationMethod: 'Census of Medicare fee-for-service claims adjudicated through regional Medicare Administrative Contractors (MACs).'
+    verificationMethod: 'CMS dataset documentation and data dictionary. Public cells under 11 are suppressed; records contain service units, not unique claims, and omit NPI and county FIPS.'
   },
   {
     id: 'nemsis_v3',
@@ -286,11 +287,12 @@ export function auditAgencyDataLineage(
     agency.cmsData?.isVerifiedCmsClaims &&
     hasAgencyFactEvidence(agency, 'cmsClaims')
   );
+  const cmsDenialMetric = getAgencyMedicareDenialMetric(agency);
+  const hasSourceBackedCmsDenials = cmsDenialMetric !== null;
   const hasVerifiedCmsDenials = Boolean(
     agency.cmsData?.isVerifiedCmsClaims &&
     hasAgencyFactEvidence(agency, 'cmsClaims') &&
-    agency.cmsData?.claimDenialRate !== undefined &&
-    agency.cmsData?.claimDenialRate !== null
+    hasSourceBackedCmsDenials
   );
 
   const hasVerifiedAfgGrant = Boolean(
@@ -689,32 +691,41 @@ export function auditAgencyDataLineage(
       fieldValue: hasVerifiedCmsBilled && agency.cmsData?.medicareBilledAnnual
         ? `$${(agency.cmsData.medicareBilledAnnual / 1000).toFixed(0)}K billed`
         : '—',
-      sourceRegistry: hasVerifiedCmsBilled ? 'CMS Medicare Part B Ground Ambulance Claims PUF' : 'Fee-for-Service Ambulance Billing Model',
-      schemaIdentifier: 'Form CMS-1500 Fee-for-Service Census',
+      sourceRegistry: hasVerifiedCmsBilled ? 'Provider-specific Medicare claims source' : 'Fee-for-Service Ambulance Billing Model',
+      schemaIdentifier: 'Provider-specific Medicare billed and allowed amounts',
       verificationStatus: hasVerifiedCmsBilled ? 'Verified Official' : 'Model / Estimate',
-      reportingPeriod: hasVerifiedCmsBilled ? (agency.cmsData?.cmsClaimPufYear || 'CMS Part B PUF CY2024') : 'Modeled Baseline',
+      reportingPeriod: hasVerifiedCmsBilled ? (agency.cmsData?.cmsClaimPufYear || 'Not stated') : 'Modeled Baseline',
       documentationQuote: hasVerifiedCmsBilled
-        ? 'Ingested from CMS Part B Ground Ambulance Public Use File for primary NPI/MAC jurisdiction.'
-        : 'Modeled billing volume; CMS Part B Provider Public Use File record not corroborated.',
-      evidenceBasis: hasVerifiedCmsBilled ? 'Adjudicated CMS Part B claims fee-for-service file.' : 'Estimated billing census.',
+        ? 'Recorded from the provider-specific Medicare claims source and matched to its billing NPI.'
+        : 'Modeled billing volume; no provider-specific source record corroborated.',
+      evidenceBasis: hasVerifiedCmsBilled ? 'Provider-specific Medicare claims record.' : 'Estimated billing census.',
       evidenceScope: hasVerifiedCmsBilled ? 'FIELD_VERIFIED' : 'MODELED_ESTIMATE',
       isFieldVerified: hasVerifiedCmsBilled
     },
     {
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Medicare Claim Denial Rate',
-      fieldValue: hasVerifiedCmsDenials && agency.cmsData?.claimDenialRate !== undefined && agency.cmsData?.claimDenialRate !== null
-        ? `${agency.cmsData.claimDenialRate}%`
+      fieldValue: hasSourceBackedCmsDenials && cmsDenialMetric
+        ? `${cmsDenialMetric.ratePct}%`
         : 'Not available',
-      sourceRegistry: hasVerifiedCmsDenials ? 'CMS Remittance Advice Remark Code (RARC) Feed' : 'Medicare Administrative Contractor (MAC) Summary',
-      schemaIdentifier: 'Claim Status Reason Code (CARC/RARC)',
-      verificationStatus: hasVerifiedCmsDenials ? 'Verified Official' : 'Geographic Benchmark',
-      reportingPeriod: hasVerifiedCmsDenials ? (agency.cmsData?.cmsPufReportingPeriod || 'CY2024') : 'MAC Jurisdiction Baseline',
-      documentationQuote: hasVerifiedCmsDenials
-        ? `Documented claim denial rate based on ${agency.cmsData?.topDenialReason || 'prior authorization / medical necessity'} exceptions.`
-        : 'Individual agency or county Medicare Part B claims record not observed. Denial rates are adjudicated at MAC jurisdiction level.',
-      evidenceBasis: hasVerifiedCmsDenials ? 'Adjudicated CMS claims remittance ledger.' : 'Unobserved provider rate; MAC benchmark only.',
-      evidenceScope: hasVerifiedCmsDenials ? 'FIELD_VERIFIED' : 'REGIONAL_BENCHMARK',
+      sourceRegistry: hasSourceBackedCmsDenials ? 'Provider-specific Medicare claims source' : 'No eligible provider-level claim source',
+      schemaIdentifier: hasSourceBackedCmsDenials ? 'Unique adjudicated ambulance claims with final denial status' : 'CMS PSPS denied service units; not claim counts',
+      verificationStatus: hasVerifiedCmsDenials
+        ? 'Verified Official'
+        : hasSourceBackedCmsDenials
+          ? 'Unverified Baseline'
+          : 'Sourcing Required',
+      sourceUrlOrCitation: hasSourceBackedCmsDenials
+        ? agency.cmsData?.medicareDenialSourceUrl
+        : 'https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary',
+      reportingPeriod: hasSourceBackedCmsDenials ? (cmsDenialMetric?.reportingPeriod || 'Not stated') : 'No complete provider-level period',
+      documentationQuote: hasSourceBackedCmsDenials
+        ? `Calculated from ${cmsDenialMetric?.deniedClaimCount} denied and ${cmsDenialMetric?.adjudicatedClaimCount} adjudicated claims. Verify the source, period, and scope directly.`
+        : 'Public PSPS reports service counts by locality and procedure, masks cells under 11, and does not identify NPI or county FIPS.',
+      evidenceBasis: hasSourceBackedCmsDenials
+        ? 'Source-linked provider-specific claim counts; not independently verified by this app.'
+        : 'No eligible provider-specific final-action claim counts.',
+      evidenceScope: hasVerifiedCmsDenials ? 'FIELD_VERIFIED' : 'UNVERIFIED',
       isFieldVerified: hasVerifiedCmsDenials
     },
     {

@@ -469,7 +469,7 @@ class TerritoryIntelligenceService {
     const stSummary = ALL_50_STATES_SUMMARIES[sc] || {
       state: countyRecord.stateName,
       code: sc,
-      avgMedicareDenialRate: 18.5,
+      avgMedicareDenialRate: null,
       avgUtsteinSurvival: 26.4,
       totalAfgAwardsYtd: 8500000,
       medicaidExpansion: true,

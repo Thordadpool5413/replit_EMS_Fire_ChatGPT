@@ -289,8 +289,17 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       </span>
                     ) : inspectedCountyDenialDisplay?.kind === 'unavailable' ? (
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
-                        No source-backed denied/adjudicated ambulance claim counts are loaded for this county. The rate requires denied ÷ adjudicated claims for the same FIPS, claim scope, and reporting period.
+                        No source-backed denied/adjudicated ambulance claim counts are loaded for this county. CMS PSPS reports service counts by carrier/locality, not county claim totals, and masks cells under 11. A county rate needs counts for this FIPS, claim scope, and period.
                         {' '}
+                        <a
+                          href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline"
+                        >
+                          CMS PSPS limits
+                        </a>
+                        {' · '}
                         <a
                           href={CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL}
                           target="_blank"

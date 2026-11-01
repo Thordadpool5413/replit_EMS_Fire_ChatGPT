@@ -1,6 +1,18 @@
 # National public ambulance denial-data review
 
-Checked November 1, 2026. Public sources only. The subsequent app integration displays the calculated national program reference separately from local claim metrics. No additional agencies were contacted or records requests submitted for this integration.
+## State-specific follow-through
+
+The user reiterated that the requirement is a percentage for **each state**, not merely a national reference. The national reference does not fulfill that requirement.
+
+An additional state-focused review checked the FY2024 RSNAT table, the PSPS field definitions, and the [September 2020 RSNAT second interim evaluation](https://www.cms.gov/priorities/innovation/data-and-reports/2020/rsnat-secondintevalrpt). The FY2024 table remains a national table; the older evaluation explicitly says it does not examine the impact on individual states. PSPS identifies carrier and pricing-locality dimensions and counts denied submitted services, not the required per-state unique-claim/pickup-geography count pair. These checks did not establish actual claim-denial rates for every state.
+
+On November 1, 2026 at 22:05:48 UTC, Outlook accepted a public-data inquiry to `AmbulancePA@cms.hhs.gov`, the contact verified on the official CMS RSNAT program page. Subject: **Public data inquiry: Medicare ambulance denial counts for all 50 states and DC**.
+
+The inquiry asks for existing state-level paid/denied line counts underlying the national RSNAT report and, separately, any broader public all-ground-ambulance unique-claim outcome report. It requests native geography definitions, periods, as-of dates, denial/appeal definitions, coverage, exclusions, and public API/download links. It preserves the distinction between RSNAT-only lines and all-ambulance claims. It authorizes no fees, requests no patient-level information, and asks for the appropriate records channel if one is needed.
+
+A non-draft sent copy with the expected recipient was verified. Acceptance for sending and the sent copy are not confirmed delivery, a CMS acknowledgment, a formal FOIA tracking number, or receipt of usable state counts. No new state percentages were populated. No automatic reply monitoring has been configured.
+
+Checked November 1, 2026. Public sources only. The original app integration displays the calculated national program reference separately from local claim metrics. That integration did not contact agencies; the later state-specific inquiry is recorded above.
 
 ## Newly established national metric
 

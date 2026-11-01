@@ -19,7 +19,7 @@ A claim-count denial percentage is not a denied-dollar percentage. Do not estima
 
 For locally imported claim summaries, accept aggregate NPI × pickup-county counts only; do not upload raw 835/EOB or patient-level files. The user declined sign-in for shared claim data, so imported summaries stay in this browser and must not sync to Firestore. Require source name/reference, period, claim scope, and the report's denial definition; a public URL is optional for a user-supplied local report.
 
-The user expects populated state, county, and individual-provider denial percentages. Do not describe a formula, importer, or display path alone as fixing missing percentages.
+The user expects populated state, county, and individual-provider denial percentages, including a percentage for each state. A national reference does not fulfill the per-state requirement. Do not describe a formula, importer, or display path alone as fixing missing percentages.
 
 **Why:** The user repeatedly clarified that the remaining “Not published” output was not resolved by those changes.
 

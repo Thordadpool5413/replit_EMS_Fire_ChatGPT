@@ -25,6 +25,12 @@ The user expects populated state, county, and individual-provider denial percent
 
 **How to apply:** Separate calculation correctness from source-data availability in both work and completion reports. State explicitly which real geographic rates were populated and which remain unavailable.
 
+A county government's billing report is not automatically an all-provider county report.
+
+**Why:** A county billing office can administer another county's EMS billing, while an individual county ambulance operation need not include independent providers serving that county.
+
+**How to apply:** Validate the covered operating agencies, billing relationships, and pickup geography before accepting a public-records response as complete county coverage. Do not promote an operation-specific report to a county/state population rate.
+
 Targeted medical-review classifications and error rates must not backfill population-level agency, county, or state claim-denial rates.
 
 **Why:** First Coast's ambulance TPE publication reports minor/moderate/major classifications for selected reviews, not a complete geographically attributed claims denominator. Its ambulance-specific percentages can otherwise look like usable Florida denial rates in search results.

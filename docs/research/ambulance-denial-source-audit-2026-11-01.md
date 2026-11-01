@@ -2,6 +2,19 @@
 
 Checked: November 1, 2026.
 
+## Public-records acquisition follow-through
+
+Official channels were checked against the Alachua county records page, Bradford's ambulance billing page, and Pinellas's records page/portal.
+
+- Alachua: a request for existing 2024–2025 aggregate Medicare FFS ground-ambulance claim outcome reports was accepted by the authorized Outlook connection for sending on November 1, 2026 at 21:24:53 UTC. A non-draft sent copy with the expected recipient was verified.
+- Bradford: the corresponding county-specific request was accepted for sending at 21:24:54 UTC, and its non-draft sent copy was verified.
+- Neither provider acceptance nor a sent copy establishes recipient delivery, county acknowledgment, or availability/public releasability of the requested counts.
+- Pinellas: official records portal verified; request text prepared, but submission was **not completed**. No direct public-records intake email was verified, so no recipient was guessed.
+- The requests seek existing aggregate records and accompanying definitions, not patient data or custom analysis. No fee, deposit, or chargeable work is authorized. No automatic inbox monitoring or ingestion has been configured.
+- The requests cover identified county ambulance operations, not all providers in those counties and not complete Florida coverage. A county/state population rate still requires compatible complete coverage.
+
+Deliverables: [request packet](../../reports/ambulance-denial-public-records-request-packet.html) and [submission register](../../reports/ambulance-denial-public-records-register.csv). The packet includes the common request text, county-specific routing, official links, and explicit sent-versus-unsent status.
+
 ## Active access scope
 
 The user selected **public sources only**. Private billing connections, credential requests, provider enrollment, and authorized remittance ingestion are not part of the active acquisition route. The Stedi assessment below is retained as an evaluated but excluded candidate, not a recommended next connection. Existing local aggregate-import functionality was not removed.

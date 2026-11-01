@@ -56,3 +56,31 @@ mtime_ms = 1793567707544
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/816640f2-eb19-4dd3-afdb-8eff42953ac4/6008f488-a88e-45db-a1b3-a251c1313938"
 storage_version_token = "1793567727591446"
 content_type = "text/csv"
+
+[[outputs]]
+id = "lZWjLq6RBqulaPjmbsAwk"
+uri = "file://reports/ambulance-denial-public-records-request-packet.html"
+type = "html"
+title = "Florida public-records request packet"
+description = "Verified official channels, request text, and status: Alachua and Bradford sent copies verified; Pinellas prepared but not submitted. No patient records or fees authorized."
+logical_id = "b2bf7b8e-2ba7-4484-a3b9-e535192a3f32"
+content_hash = "sha256:a05464c3f857f31fe732466da1c9bf35d6fa322b7f51286d28765d4af3507340"
+size = 9173
+mtime_ms = 1793568368037
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/b2bf7b8e-2ba7-4484-a3b9-e535192a3f32/2176c7af-92d5-4928-99d1-21ad7c0dda3c"
+storage_version_token = "1793568414531101"
+content_type = "text/html"
+
+[[outputs]]
+id = "_YIZod8qzfw4fy1nlKlaT"
+uri = "file://reports/ambulance-denial-public-records-register.csv"
+type = "table"
+title = "Public-records submission register"
+description = "Three county operations tracked, with separate submission, delivery, acknowledgment, and fee-authorization status. No claim counts have been received or denial rates populated."
+logical_id = "bcdd7429-5c99-4ec3-9c00-0058f27c48a1"
+content_hash = "sha256:56b7527c50ff179514147dfa663801812cab7c87bd316c243e7c88877a06e025"
+size = 1318
+mtime_ms = 1793568351637
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/bcdd7429-5c99-4ec3-9c00-0058f27c48a1/9c3102e5-cc82-47db-a949-04c83a30109a"
+storage_version_token = "1793568415108984"
+content_type = "text/csv"

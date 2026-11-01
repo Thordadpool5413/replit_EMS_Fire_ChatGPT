@@ -1,4 +1,3 @@
-import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { validateNpiCheckDigit } from './npiVerificationService';
 
 export const MEDICARE_DENIAL_IMPORT_EVENT = 'medicare-denial-import-updated';
@@ -62,10 +61,21 @@ export interface MedicareDenialImportReport {
   stateMetrics: Array<ImportedDenialMetric & { stateCode: string }>;
 }
 
-const STATE_FIPS_TO_CODE = new Map(
-  Object.values(ALL_50_STATES_SUMMARIES as Record<string, { code: string; fips: string }>)
-    .map(({ code, fips }) => [fips.padStart(2, '0'), code.toUpperCase()] as const),
-);
+// County FIPS begins with the Census state FIPS; keep this lookup independent of
+// the full compressed map bundle so claims validation does not load geography data.
+const STATE_FIPS_TO_CODE = new Map<string, string>([
+  ['01', 'AL'], ['02', 'AK'], ['04', 'AZ'], ['05', 'AR'], ['06', 'CA'],
+  ['08', 'CO'], ['09', 'CT'], ['10', 'DE'], ['11', 'DC'], ['12', 'FL'],
+  ['13', 'GA'], ['15', 'HI'], ['16', 'ID'], ['17', 'IL'], ['18', 'IN'],
+  ['19', 'IA'], ['20', 'KS'], ['21', 'KY'], ['22', 'LA'], ['23', 'ME'],
+  ['24', 'MD'], ['25', 'MA'], ['26', 'MI'], ['27', 'MN'], ['28', 'MS'],
+  ['29', 'MO'], ['30', 'MT'], ['31', 'NE'], ['32', 'NV'], ['33', 'NH'],
+  ['34', 'NJ'], ['35', 'NM'], ['36', 'NY'], ['37', 'NC'], ['38', 'ND'],
+  ['39', 'OH'], ['40', 'OK'], ['41', 'OR'], ['42', 'PA'], ['44', 'RI'],
+  ['45', 'SC'], ['46', 'SD'], ['47', 'TN'], ['48', 'TX'], ['49', 'UT'],
+  ['50', 'VT'], ['51', 'VA'], ['53', 'WA'], ['54', 'WV'], ['55', 'WI'],
+  ['56', 'WY'],
+]);
 let countyReferencePromise: Promise<Map<string, string>> | null = null;
 
 function stateCodeForCountyFips(countyFips: string): string | null {
@@ -271,6 +281,129 @@ function validateMetadata(metadata: MedicareDenialImportMetadata): void {
   }
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  allowedKeys: string[],
+): boolean {
+  return Object.keys(value).every((key) => allowedKeys.includes(key));
+}
+
+function isStoredMedicareDenialImport(
+  value: unknown,
+): value is MedicareDenialImportDataset {
+  if (!isPlainRecord(value)) return false;
+  const datasetKeys = [
+    'schemaVersion',
+    'importedAt',
+    'fileName',
+    'claimScope',
+    'reportingPeriod',
+    'denialDefinition',
+    'sourceName',
+    'sourceReference',
+    'sourceUrl',
+    'coverage',
+    'rows',
+  ];
+  if (!hasOnlyKeys(value, datasetKeys)) return false;
+  if (
+    value.schemaVersion !== 1 ||
+    typeof value.importedAt !== 'string' ||
+    Number.isNaN(Date.parse(value.importedAt)) ||
+    typeof value.fileName !== 'string' ||
+    value.fileName.length > 180 ||
+    typeof value.claimScope !== 'string' ||
+    typeof value.reportingPeriod !== 'string' ||
+    (value.denialDefinition !== 'any_service_line_denied' &&
+      value.denialDefinition !== 'fully_denied_claim') ||
+    typeof value.sourceName !== 'string' ||
+    typeof value.sourceReference !== 'string' ||
+    (value.sourceUrl !== undefined && typeof value.sourceUrl !== 'string') ||
+    !isPlainRecord(value.coverage) ||
+    !Array.isArray(value.rows) ||
+    value.rows.length === 0 ||
+    value.rows.length > MAX_IMPORT_ROWS
+  ) {
+    return false;
+  }
+
+  const coverage = value.coverage;
+  const coverageKeys = [
+    'completeProviderGroups',
+    'completeProviderTotals',
+    'completeCountyTotals',
+    'completeStateTotals',
+  ];
+  if (
+    !hasOnlyKeys(coverage, coverageKeys) ||
+    coverageKeys.some((key) => typeof coverage[key] !== 'boolean') ||
+    coverage.completeProviderGroups !== true ||
+    (coverage.completeStateTotals === true &&
+      coverage.completeCountyTotals !== true)
+  ) {
+    return false;
+  }
+
+  const seenGroups = new Set<string>();
+  for (const rowValue of value.rows) {
+    if (!isPlainRecord(rowValue)) return false;
+    if (
+      !hasOnlyKeys(rowValue, [
+        'npi',
+        'countyFips',
+        'stateCode',
+        'deniedClaims',
+        'adjudicatedClaims',
+      ])
+    ) {
+      return false;
+    }
+    const { npi, countyFips, stateCode, deniedClaims, adjudicatedClaims } =
+      rowValue;
+    if (
+      typeof npi !== 'string' ||
+      !/^\d{10}$/.test(npi) ||
+      !validateNpiCheckDigit(npi) ||
+      typeof countyFips !== 'string' ||
+      !/^\d{5}$/.test(countyFips) ||
+      typeof stateCode !== 'string' ||
+      stateCodeForCountyFips(countyFips) !== stateCode ||
+      typeof deniedClaims !== 'number' ||
+      !Number.isSafeInteger(deniedClaims) ||
+      typeof adjudicatedClaims !== 'number' ||
+      !Number.isSafeInteger(adjudicatedClaims) ||
+      deniedClaims < 0 ||
+      adjudicatedClaims < 0 ||
+      deniedClaims > adjudicatedClaims ||
+      (adjudicatedClaims === 0 && deniedClaims !== 0)
+    ) {
+      return false;
+    }
+    const groupKey = `${npi}|${countyFips}`;
+    if (seenGroups.has(groupKey)) return false;
+    seenGroups.add(groupKey);
+  }
+
+  try {
+    validateMetadata({
+      claimScope: value.claimScope,
+      reportingPeriod: value.reportingPeriod,
+      denialDefinition: value.denialDefinition,
+      sourceName: value.sourceName,
+      sourceReference: value.sourceReference,
+      sourceUrl: value.sourceUrl,
+      coverage: coverage as MedicareDenialImportDataset['coverage'],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function createMedicareDenialImport(
   rows: MedicareDenialImportRow[],
   metadata: MedicareDenialImportMetadata,
@@ -363,17 +496,8 @@ export function getLocalMedicareDenialImport(): MedicareDenialImportDataset | nu
   try {
     const serialized = window.localStorage.getItem(STORAGE_KEY);
     if (!serialized) return null;
-    const dataset = JSON.parse(serialized) as MedicareDenialImportDataset;
-    if (
-      dataset.schemaVersion !== 1 ||
-      !Array.isArray(dataset.rows) ||
-      !dataset.coverage ||
-      typeof dataset.claimScope !== 'string' ||
-      typeof dataset.reportingPeriod !== 'string'
-    ) {
-      return null;
-    }
-    return dataset;
+    const dataset: unknown = JSON.parse(serialized);
+    return isStoredMedicareDenialImport(dataset) ? dataset : null;
   } catch {
     return null;
   }
@@ -381,6 +505,9 @@ export function getLocalMedicareDenialImport(): MedicareDenialImportDataset | nu
 
 export function saveLocalMedicareDenialImport(dataset: MedicareDenialImportDataset): void {
   if (typeof window === 'undefined') throw new Error('Local browser storage is unavailable.');
+  if (!isStoredMedicareDenialImport(dataset)) {
+    throw new Error('The claim summary is not valid for local storage.');
+  }
   const serialized = JSON.stringify(dataset);
   if (serialized.length > MAX_STORED_CHARACTERS) {
     throw new Error('This summary exceeds the browser storage limit. Import a smaller state or county subset.');

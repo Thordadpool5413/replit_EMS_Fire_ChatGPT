@@ -107,7 +107,7 @@ denial_rate_pct = 100 * sum(denied_claims) / sum(adjudicated_claims)
 
 The count totals must refer to the same claim population, period, and definition. A provider result groups by NPI; a county result groups by pickup-county FIPS; a state result aggregates compatible counts and requires complete state coverage in the import. Percentages are never averaged. No imported rows means no computed rate; it does not mean 0%.
 
-**Storage limitation:** despite the earlier choice to share summaries across the workspace, the current import implementation stores summaries in browser `localStorage`. Because no sign-in was requested, it does not upload or share the data across users/devices. Do not import PHI or raw claims through this flow.
+**Storage/access limitation:** imported summaries remain in the current browser profile's `localStorage`; they are not encrypted by this app and are not shared across browsers/devices. No claim-summary API exists in the app, no authenticated workspace identity is available to the client, and Firestore rules are not present in the workspace for review. Since sign-in was declined and workspace-only access cannot be verified, the app does not publish these summaries to Firestore or another shared endpoint. The import UI explains this limit and the safe alternatives. Do not import PHI or raw claims through this flow.
 
 ## Geographic join and roll-up rules
 

@@ -242,13 +242,27 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
         </button>
       </div>
 
-      <div className="mt-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          Import aggregate counts only—never upload raw 835 files, patient-level rows, beneficiary IDs, dates of service, or other PHI.
-          The CSV is read in your browser and discarded after parsing. Only the validated summary is saved in this browser, not Firestore
-          or another shared account.
-        </p>
+      <div className="mt-4 space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
+        <div className="flex gap-2">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Import aggregate counts only—never upload raw 835 files, patient-level rows, beneficiary IDs, dates of service, or other PHI.
+            The CSV is read in your browser and discarded after parsing. The summary is saved in this browser profile's local storage,
+            which is not encrypted by this app; other browsers and devices will not receive it.
+          </p>
+        </div>
+        <div className="border-t border-amber-300/70 pt-2 dark:border-amber-800/70">
+          <p className="font-semibold">Workspace sharing is disabled for now.</p>
+          <p>
+            This app has no authenticated workspace identity, and its Firestore access rules are not available here to verify.
+            Publishing imports to a shared endpoint could expose them outside the intended workspace, so this flow does not upload or
+            fetch claim summaries from Firestore or the API server.
+          </p>
+          <p className="mt-1">
+            For safe sharing, keep this local-only, or later enable a verified workspace-only access rule or sign-in before adding
+            shared storage. No sign-in has been added.
+          </p>
+        </div>
       </div>
 
       {dataset && report && (

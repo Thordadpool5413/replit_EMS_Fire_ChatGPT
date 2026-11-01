@@ -7,3 +7,4 @@
 - [EMS public-source limits](ems-public-source-limits.md) — NPPES is an identity candidate, NEMSIS public dashboards are aggregated, and Florida publishes a separate license roster.
 - [Geographic identity and vintage](geographic-joins.md) — keep agency location, service area, and source geography distinct; only join compatible native IDs.
 - [Florida EMS roster date mismatch](florida-ems-roster-date.md) — the DOH PDF's embedded processed date conflicts with its upload-path vintage; use each MQA record's own date.
+- [Claim summary sharing boundary](claim-summary-sharing-boundary.md) — keep imported Medicare summaries local until workspace-only access can be verified; sign-in was declined.

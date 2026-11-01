@@ -3,12 +3,15 @@ import { readFile, readdir } from "node:fs/promises";
 import { test } from "node:test";
 import {
   createMedicareDenialImport,
+  getImportedStateDenialMetric,
   getLocalMedicareDenialImport,
   MEDICARE_DENIAL_CSV_HEADERS,
   parseMedicareDenialCsv,
   saveLocalMedicareDenialImport,
+  validateMedicareDenialImportCoverage,
   type MedicareDenialImportDataset,
 } from "./medicareDenialImportService";
+import { getAgencyMedicareDenialMetricForDisplay } from "./agencyMedicareDenialService";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -77,6 +80,29 @@ test("validated aggregate claim summaries persist only in the current browser pr
       getLocalMedicareDenialImport(),
       JSON.parse(JSON.stringify(dataset)),
     );
+    const unverifiedAgency = {
+      npiNumber: "1234567893",
+      cmsData: {},
+      isVerifiedRecord: false,
+      lastVerifiedAt: undefined,
+      nppesRegistryUrl: undefined,
+    } as Parameters<typeof getAgencyMedicareDenialMetricForDisplay>[0];
+    assert.equal(
+      getAgencyMedicareDenialMetricForDisplay(unverifiedAgency),
+      null,
+      "an imported NPI total must not be attached to an unverified agency",
+    );
+    const verifiedAgency = {
+      ...unverifiedAgency,
+      isVerifiedRecord: true,
+      lastVerifiedAt: "2026-10-01T00:00:00.000Z",
+      nppesRegistryUrl: "https://npiregistry.cms.hhs.gov/provider-view/1234567893",
+    };
+    assert.equal(
+      getAgencyMedicareDenialMetricForDisplay(verifiedAgency)?.ratePct,
+      12,
+      "the exact verified NPI can use its imported total",
+    );
     assert.equal(getEventCount(), 1, "local import should notify the current app");
 
     setBrowserStorage(profileB);
@@ -107,6 +133,72 @@ test("validated aggregate claim summaries persist only in the current browser pr
         ),
       /not valid for local storage/,
     );
+  } finally {
+    if (originalWindow) {
+      Object.defineProperty(globalThis, "window", originalWindow);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
+  }
+});
+
+test("state denial rates sum counts, require complete county coverage, and reject zero denominators", async () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const storage = new MemoryStorage();
+  try {
+    setBrowserStorage(storage);
+    const { ALL_NATIONWIDE_COUNTIES } = await import("../data/allCountiesDatabase");
+    const floridaFips = ALL_NATIONWIDE_COUNTIES
+      .map((county) => county.countyFips)
+      .filter((fips) => fips.startsWith("12"));
+    assert.ok(floridaFips.length > 0, "the reference must include Florida counties");
+
+    const rows = floridaFips.map((countyFips, index) => ({
+      npi: "1234567893",
+      countyFips,
+      stateCode: "FL",
+      deniedClaims: index === 0 ? 10 : index === 1 ? 80 : 0,
+      adjudicatedClaims: index === 0 ? 100 : index === 1 ? 400 : 0,
+    }));
+    const dataset = createMedicareDenialImport(
+      rows,
+      {
+        claimScope: "Medicare FFS ground ambulance",
+        reportingPeriod: "2025",
+        denialDefinition: "fully_denied_claim",
+        sourceName: "Billing summary",
+        sourceReference: "Report 2025",
+        coverage: {
+          completeProviderGroups: true,
+          completeProviderTotals: true,
+          completeCountyTotals: true,
+          completeStateTotals: true,
+        },
+      },
+      "summary.csv",
+    );
+    await validateMedicareDenialImportCoverage(dataset);
+    saveLocalMedicareDenialImport(dataset);
+
+    const floridaMetric = getImportedStateDenialMetric("fl");
+    assert.equal(floridaMetric?.deniedClaims, 90);
+    assert.equal(floridaMetric?.adjudicatedClaims, 500);
+    assert.equal(floridaMetric?.ratePct, 18);
+    assert.equal(getImportedStateDenialMetric("CA"), null);
+
+    const incompleteStateDataset = {
+      ...dataset,
+      coverage: { ...dataset.coverage, completeStateTotals: false },
+    };
+    saveLocalMedicareDenialImport(incompleteStateDataset);
+    assert.equal(getImportedStateDenialMetric("FL"), null);
+
+    const zeroDenominatorDataset = {
+      ...dataset,
+      rows: rows.map((row) => ({ ...row, deniedClaims: 0, adjudicatedClaims: 0 })),
+    };
+    saveLocalMedicareDenialImport(zeroDenominatorDataset);
+    assert.equal(getImportedStateDenialMetric("FL"), null);
   } finally {
     if (originalWindow) {
       Object.defineProperty(globalThis, "window", originalWindow);

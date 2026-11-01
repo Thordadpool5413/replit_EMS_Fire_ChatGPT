@@ -108,6 +108,7 @@ export interface CountyHealthRecord {
   /** Same finalized ambulance-claim population and reporting period for both counts. */
   medicareAdjudicatedClaimCount?: number;
   medicareDenialClaimScope?: string;
+  medicareDenialDefinition?: string;
   medicareDenialReportingPeriod?: string;
   medicareDenialSource?: string;
   medicareDenialSourceUrl?: string;
@@ -256,6 +257,7 @@ export interface Agency {
     medicareAdjudicatedClaimCount?: number;
     medicareDeniedAmountAnnual?: number;
     medicareDenialClaimScope?: string;
+    medicareDenialDefinition?: string;
     medicareDenialReportingPeriod?: string;
     medicareDenialSource?: string;
     medicareDenialSourceUrl?: string;

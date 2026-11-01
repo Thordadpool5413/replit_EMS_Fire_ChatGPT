@@ -8,6 +8,7 @@ type CountyDenialInput = Pick<
   | 'medicareDeniedClaimCount'
   | 'medicareAdjudicatedClaimCount'
   | 'medicareDenialClaimScope'
+  | 'medicareDenialDefinition'
   | 'medicareDenialReportingPeriod'
   | 'medicareDenialSource'
   | 'medicareDenialSourceUrl'
@@ -19,6 +20,7 @@ export interface CountyMedicareDenialMetric {
   deniedClaimCount: number;
   adjudicatedClaimCount: number;
   claimScope: string;
+  denialDefinition: string;
   reportingPeriod: string;
   source: string;
   sourceUrl?: string;
@@ -29,6 +31,7 @@ export interface CountyMedicareDenialMetric {
 function hasCountyDenialProvenance(county: CountyDenialInput): boolean {
   if (
     !county.medicareDenialClaimScope?.trim() ||
+    !county.medicareDenialDefinition?.trim() ||
     !county.medicareDenialReportingPeriod?.trim() ||
     !county.medicareDenialSource?.trim() ||
     !county.medicareDenialSourceUrl?.trim()
@@ -74,6 +77,7 @@ export function getCountyMedicareDenialMetric(
       deniedClaimCount: denied,
       adjudicatedClaimCount: adjudicated,
       claimScope: county.medicareDenialClaimScope!.trim(),
+      denialDefinition: county.medicareDenialDefinition!.trim(),
       reportingPeriod: county.medicareDenialReportingPeriod!.trim(),
       source: county.medicareDenialSource!.trim(),
       sourceUrl: county.medicareDenialSourceUrl!.trim(),
@@ -89,6 +93,7 @@ export function getCountyMedicareDenialMetric(
     deniedClaimCount: imported.deniedClaims,
     adjudicatedClaimCount: imported.adjudicatedClaims,
     claimScope: `${imported.claimScope}; ${imported.denialDefinition === 'any_service_line_denied' ? 'any service line denied' : 'entire claim denied'}`,
+    denialDefinition: imported.denialDefinition === 'any_service_line_denied' ? 'Any service line denied' : 'Entire claim denied',
     reportingPeriod: imported.reportingPeriod,
     source: `${imported.sourceName} · ${imported.sourceReference}`,
     sourceUrl: imported.sourceUrl,

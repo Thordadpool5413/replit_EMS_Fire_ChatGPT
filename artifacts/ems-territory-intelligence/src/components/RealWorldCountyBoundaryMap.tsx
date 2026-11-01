@@ -341,7 +341,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
+                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · definition: ${denialDisplay.denialDefinition} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
                           </title>
                         </path>
                       );
@@ -469,16 +469,20 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       <span className="text-[10px] text-slate-500 block mt-0.5 leading-tight font-sans">
                         FIPS {inspectedCountyDenialDisplay?.countyFips} · denied{' '}
                         {inspectedCountyDenialDisplay?.deniedClaimCount} / adjudicated{' '}
-                        {inspectedCountyDenialDisplay?.adjudicatedClaimCount} · {inspectedCountyDenialDisplay?.claimScope} ·{' '}
+                        {inspectedCountyDenialDisplay?.adjudicatedClaimCount} · {inspectedCountyDenialDisplay?.claimScope} · definition: {inspectedCountyDenialDisplay?.denialDefinition} ·{' '}
                         {inspectedCountyDenialDisplay?.reportingPeriod} ·{' '}
-                        <a
-                          href={inspectedCountyDenialDisplay?.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 hover:underline"
-                        >
-                          {inspectedCountyDenialDisplay?.source}
-                        </a>
+                        {inspectedCountyDenialDisplay?.sourceUrl ? (
+                          <a
+                            href={inspectedCountyDenialDisplay.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-700 hover:underline"
+                          >
+                            {inspectedCountyDenialDisplay.source}
+                          </a>
+                        ) : (
+                          <>Source: {inspectedCountyDenialDisplay?.source}</>
+                        )}
                       </span>
                     )}
                   </div>

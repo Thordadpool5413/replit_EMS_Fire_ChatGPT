@@ -24,6 +24,7 @@ import {
   Cell
 } from 'recharts';
 import { Agency, ScoreBreakdown } from '../types';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
@@ -127,7 +128,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       const calls = agency.annualCardiacArrestCalls || Math.round((agency.annual911Transports || 3000) * 0.12);
       const survival = agency.utsteinSurvivalRate || 10.8;
       const survivalGap = Math.max(0, 36.0 - survival);
-      const denial = agency.cmsData?.claimDenialRate;
+      const denial = getAgencyMedicareDenialMetricForDisplay(agency)?.ratePct;
       const defibAge = agency.installedFleet?.defibAgeYears || 7;
       const senior = agency.gisData?.seniorPopulationPct || 16.5;
       const aed = agency.gisData?.publicAccessAedDeficitPct || 42;

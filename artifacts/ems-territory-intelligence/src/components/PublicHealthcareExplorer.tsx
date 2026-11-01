@@ -9,11 +9,8 @@ import { Agency } from '../types';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { getStateZipDenialProfileSummary } from '../services/countyDenialProfileService';
 import { MedicareDenialImportPanel } from './MedicareDenialImportPanel';
-import {
-  getImportedProviderDenialMetric,
-  MEDICARE_DENIAL_IMPORT_EVENT,
-} from '../services/medicareDenialImportService';
-import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
+import { MEDICARE_DENIAL_IMPORT_EVENT } from '../services/medicareDenialImportService';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { 
   Building2, 
   TrendingDown, 
@@ -56,13 +53,9 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
     window.addEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
     return () => window.removeEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
   }, []);
-  const localDenialMetric = useMemo(
-    () => getImportedProviderDenialMetric(activeAccount?.npiNumber),
-    [activeAccount?.npiNumber, denialImportRevision],
-  );
-  const sourceDenialMetric = useMemo(
-    () => activeAccount ? getAgencyMedicareDenialMetric(activeAccount) : null,
-    [activeAccount],
+  const denialMetric = useMemo(
+    () => activeAccount ? getAgencyMedicareDenialMetricForDisplay(activeAccount) : null,
+    [activeAccount, denialImportRevision],
   );
   const hasDecisionGradeInputs = activeAccount &&
     hasAgencyFactEvidence(activeAccount, 'frontlineApparatusStations') &&
@@ -104,12 +97,15 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Agency Medicare denial rate</span>
                 <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
-                  {localDenialMetric
-                    ? `${localDenialMetric.ratePct?.toFixed(1) ?? '—'}% · local import`
-                    : sourceDenialMetric
-                      ? `${sourceDenialMetric.ratePct.toFixed(1)}% · source-backed`
+                  {denialMetric
+                    ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.sourceType === 'local-import' ? 'local import' : 'source-backed'}`
                       : 'Not published'}
                 </span>
+                {denialMetric && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                    {denialMetric.deniedClaimCount.toLocaleString()} / {denialMetric.adjudicatedClaimCount.toLocaleString()} · {denialMetric.reportingPeriod} · {denialMetric.denialDefinition}
+                  </span>
+                )}
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">

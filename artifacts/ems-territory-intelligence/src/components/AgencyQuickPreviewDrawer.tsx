@@ -29,6 +29,7 @@ import { FireRegistryLookup } from './FireRegistryLookup';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -110,7 +111,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
   // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-  const denialRate = agency.cmsData.claimDenialRate;
+  const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
+  const denialRate = denialMetric?.ratePct ?? null;
   const cmsDenialSub = typeof denialRate === 'number'
     ? Math.min(100, Math.round((denialRate / 25) * 100))
     : 50;

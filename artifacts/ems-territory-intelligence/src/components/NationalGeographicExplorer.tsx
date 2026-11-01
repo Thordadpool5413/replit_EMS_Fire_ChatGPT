@@ -11,6 +11,7 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import {
   getCountyDenialDisplay,
   getCountyZipDenialProfiles,
@@ -575,8 +576,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       if (providerSortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (providerSortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
       if (providerSortBy === 'denial') {
-        const aRate = a.cmsData.claimDenialRate;
-        const bRate = b.cmsData.claimDenialRate;
+        const aRate = getAgencyMedicareDenialMetricForDisplay(a)?.ratePct ?? null;
+        const bRate = getAgencyMedicareDenialMetricForDisplay(b)?.ratePct ?? null;
         if (aRate == null) return bRate == null ? 0 : 1;
         if (bRate == null) return -1;
         return bRate - aRate;
@@ -2151,6 +2152,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ) : providerViewMode === 'cards' ? (
             <div className="workspace-cards-grid">
               {paginatedAgencies.map(agency => {
+                const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
                 const isFire = agency.agencyType.toLowerCase().includes('fire');
                 const primaryContact = agency.keyContacts[0];
                 const hasVerifiedModel = hasVerifiedModelInputs(agency);
@@ -2300,8 +2302,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {typeof agency.cmsData.claimDenialRate === 'number'
-                              ? `${agency.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS denials' : 'profile value'}`
+                            {denialMetric
+                              ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
                               : 'Denial rate not published'}
                           </span>
                         </div>
@@ -2389,6 +2391,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   </thead>
                   <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                     {paginatedAgencies.map((agency) => {
+                      const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
                       const isFire = agency.agencyType.toLowerCase().includes('fire');
                       const hasVerifiedModel = hasVerifiedModelInputs(agency);
                       return (
@@ -2433,8 +2436,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {typeof agency.cmsData.claimDenialRate === 'number'
-                                ? `${agency.cmsData.claimDenialRate.toFixed(1)}% ${hasAgencyFactEvidence(agency, 'cmsClaims') ? 'CMS denials' : 'profile value'}`
+                              {denialMetric
+                                ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
                                 : 'Denial rate not published'}
                             </div>
                           </td>

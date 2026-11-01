@@ -60,6 +60,7 @@ import {
   getAgencyClinicalProtocolAlignment
 } from '../data/clinicalAndCompetitiveIntelligence';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
 import { ResuscitationSurvivalFunnel } from './ResuscitationSurvivalFunnel';
 import { TcoCumulativeSavingsChart } from './TcoCumulativeSavingsChart';
@@ -447,6 +448,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     agency.lastVerifiedAt &&
     agency.nppesRegistryUrl
   );
+  const medicareDenialMetric = hasVerifiedNppesIdentity
+    ? getAgencyMedicareDenialMetricForDisplay(agency)
+    : null;
   const actuarialForecast = useMemo(() => {
     const reportedUnitCount = agency.installedFleet.defibUnitsCount ?? agency.totalAmbulances;
     const hasUnitCount = hasReportedValue(reportedUnitCount);
@@ -740,14 +744,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     {
       id: 'intel-clinical-cms',
       category: 'Medicare & resuscitation impact',
-      primaryFact: `${reportMetric(agency.cmsData.claimDenialRate, '%')} CMS claim denials (${agency.cmsData.topDenialReasonCode || 'Not reported'})`,
+      primaryFact: medicareDenialMetric
+        ? `${medicareDenialMetric.ratePct.toFixed(1)}% Medicare ambulance claim denials (${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${medicareDenialMetric.reportingPeriod})`
+        : 'Medicare ambulance claim denial rate not published for this verified billing NPI.',
       secondaryFact: actuarialForecast.hasRecoveryInputs
         ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported denied-claim dollars × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
         : 'Recovery estimate not calculated: same-scope reported denied-claim dollars and reporting period are required.',
       whyItMatters: 'Review billing and documentation workflows; no agency-specific recovery amount is attributed to product features without verified inputs.',
       nextActionLabel: 'Inspect Medicare',
       targetTopic: 'medicare' as ProfileSection,
-      sourceBadge: 'CMS Part B PUF & NEMSIS'
+      sourceBadge: medicareDenialMetric?.source ?? 'Medicare claim summary'
     }
   ];
 
@@ -759,7 +765,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     const defibBrand = agency.installedFleet?.defibBrand || 'Not reported';
     const defibAge = agency.installedFleet?.defibAgeYears;
     const contractEnd = agency.competitorContract?.contractEndDate || 'Not reported';
-    const denialRate = agency.cmsData?.claimDenialRate;
+    const denialRate = medicareDenialMetric?.ratePct ?? null;
     const hasNotes = Array.isArray(agency.fieldNotes) && agency.fieldNotes.length > 0;
     const topNote = hasNotes ? agency.fieldNotes[0] : null;
 
@@ -802,8 +808,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     if (hasAgencyFactEvidence(agency, 'maintenanceContracts') && (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon')) {
       developmentsThatMatter.push(`Incumbent service contract renewal window: Contract ends ${contractEnd}. Opportunity to avoid multi-year maintenance cost locks via cooperative purchasing.`);
     }
-    if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null && denialRate >= 18) {
-      developmentsThatMatter.push(`Elevated Medicare Part B claim denial exposure: ${denialRate}% denials (${agency.cmsData?.topDenialReasonCode || 'Not reported'}). Recovery estimate inputs and method are unavailable.`);
+    if (denialRate !== null && denialRate >= 18) {
+      developmentsThatMatter.push(`Medicare ambulance claim denial rate: ${denialRate.toFixed(1)}% (${medicareDenialMetric?.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric?.adjudicatedClaimCount.toLocaleString()} adjudicated; ${medicareDenialMetric?.reportingPeriod}). Recovery estimate inputs and method are unavailable.`);
     }
     if (developmentsThatMatter.length === 0) {
       developmentsThatMatter.push('No current operational or procurement development is listed in this agency record.');
@@ -841,7 +847,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveWhy = `Present 5-year fixed biomedical service cost caps to prevent automatic renewal of legacy T&M service contracts.`;
       primaryMoveEvidence = `Competitor Contract Ledger · Renewal Notice Window`;
       primaryMoveNextStep = 'Review Purchasing';
-    } else if (hasAgencyFactEvidence(agency, 'cmsClaims') && denialRate != null && denialRate >= 18) {
+    } else if (denialRate !== null && denialRate >= 18) {
       primaryMoveAction = `Present Medicare Denial Recovery & NEMSIS Documentation Strategy`;
       primaryMoveWhy = `Review ${agency.cmsData?.topDenialReasonCode || 'reported denial reasons'} and obtain source-backed billing inputs before estimating recovery.`;
       primaryMoveEvidence = `CMS Part B Ground Ambulance PUF (Calendar Year Census)`;
@@ -859,7 +865,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         nextStep: primaryMoveNextStep
       }
     };
-  }, [agency, primaryContact]);
+  }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
     <div className="fixed inset-0 md:left-64 z-45 bg-[#F5F7FA] dark:bg-[#0B1320] overflow-y-auto">
@@ -1766,7 +1772,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Medicare claim denials</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{`${reportMetric(agency.cmsData.claimDenialRate, '%')} denied`}</strong>
+                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}% denied` : 'Not published'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Lost claim revenue</span>
@@ -2238,10 +2244,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
                     <div className="text-xs font-semibold text-slate-600">Active Claims Denial Rate</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{reportMetric(agency.cmsData.claimDenialRate, '%')}</div>
+                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'}</div>
                     <div className="text-[11px] text-slate-600">
-                      Primary Denial Code: <strong className="font-mono text-[#0F172A]">{agency.cmsData.topDenialReasonCode || 'Not reported'}</strong>
+                      {medicareDenialMetric
+                        ? `${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · ${medicareDenialMetric.reportingPeriod} · ${medicareDenialMetric.claimScope} · ${medicareDenialMetric.denialDefinition}`
+                        : 'No complete, exact-NPI claim counts are available.'}
                     </div>
+                    {medicareDenialMetric?.sourceUrl && (
+                      <a href={medicareDenialMetric.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-700 underline underline-offset-2">
+                        Source: {medicareDenialMetric.source}{medicareDenialMetric.sourceReference ? ` · ${medicareDenialMetric.sourceReference}` : ''}
+                      </a>
+                    )}
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
@@ -2560,7 +2573,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Revenue Cycle &amp; Claims Billing</td>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</td>
                       <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.annual911Transports)} Claims / yr</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.cmsData.claimDenialRate, '%')} Current Denial Rate</td>
+                      <td className="py-3 px-4 font-mono tabular-nums">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'} Current Denial Rate</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.billingSupplier}</td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
                         Estimate not shown; required inputs and method are unavailable.
@@ -2630,7 +2643,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <tr>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">Revenue Cycle &amp; Claims Recovery</td>
                       <td className="py-3 px-4 text-slate-700">
-                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> ({reportMetric(agency.cmsData.claimDenialRate, '%')} Denials)<br />
+                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> ({medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'} Denials)<br />
                         <span className="text-slate-500">Supplier: {suppliers.billingSupplier}</span>
                       </td>
                       <td className="py-3 px-4 font-bold text-[#1E3A8A] bg-slate-50">

@@ -543,3 +543,12 @@ export function getImportedCountyDenialMetric(countyFips: string): (ImportedDeni
   const metric = getMedicareDenialImportReport(dataset).countyMetrics.find((item) => item.countyFips === fips) ?? null;
   return metric?.ratePct === null ? null : metric;
 }
+
+export function getImportedStateDenialMetric(stateCode: string): (ImportedDenialMetric & { stateCode: string }) | null {
+  const code = stateCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return null;
+  const dataset = getLocalMedicareDenialImport();
+  if (!dataset?.coverage.completeStateTotals) return null;
+  const metric = getMedicareDenialImportReport(dataset).stateMetrics.find((item) => item.stateCode === code) ?? null;
+  return metric?.ratePct === null ? null : metric;
+}

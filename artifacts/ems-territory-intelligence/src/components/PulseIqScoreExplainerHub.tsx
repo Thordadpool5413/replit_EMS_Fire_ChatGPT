@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { Agency, PredictiveWeights } from '../types';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { explainAgencyScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
 import { 
   Activity, 
@@ -253,8 +254,8 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
         </div>
         <p className="text-slate-700 dark:text-slate-300">
           Because <strong>Fleet Age (+{explanation.factors[0]?.pointsContributed} pts)</strong> and <strong>Claim Denials (+{explanation.factors[1]?.pointsContributed} pts)</strong> are score inputs, lead with the <strong>Sourcewell Cooperative Contract</strong> to eliminate the RFP cycle, and present the <strong>Real BVM Help & 12-Lead ePCR Billing integration</strong>
-          {agency.cmsData?.claimDenialRate != null
-            ? ` to address the reported ${agency.cmsData.claimDenialRate}% Medicare denial rate.`
+          {getAgencyMedicareDenialMetricForDisplay(agency)
+            ? ` to address the reported ${getAgencyMedicareDenialMetricForDisplay(agency)!.ratePct.toFixed(1)}% Medicare ambulance denial rate.`
             : ' while noting the county-matched Medicare denial rate is not published.'}
         </p>
       </div>

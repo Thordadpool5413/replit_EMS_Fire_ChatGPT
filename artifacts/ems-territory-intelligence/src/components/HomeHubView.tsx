@@ -34,6 +34,10 @@ import {
   getStateZipDenialProfileSummary,
   getStateZipDenialProfiles,
 } from '../services/countyDenialProfileService';
+import {
+  getImportedStateDenialMetric,
+  MEDICARE_DENIAL_IMPORT_EVENT,
+} from '../services/medicareDenialImportService';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
@@ -44,6 +48,7 @@ const STATE_MAP_METRICS = [
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
   { key: 'pulseiq', label: 'Modeled average PulseIQ' },
+  { key: 'state-claims-denial', label: 'State Medicare ambulance claim denial rate' },
   { key: 'zip-denial', label: 'ZIP-profile denial average' },
 ] as const;
 
@@ -67,12 +72,19 @@ interface StateMapMetricDatum {
   value: number | null;
   coverage: string;
   period: string;
-  sourceAction: 'agency-records' | 'zip-profiles';
+  sourceAction: 'agency-records' | 'zip-profiles' | 'claims-import';
+  deniedClaims?: number;
+  adjudicatedClaims?: number;
+  claimScope?: string;
+  denialDefinition?: string;
+  source?: string;
+  sourceUrl?: string;
+  sourceReference?: string;
 }
 
 const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
   if (value === null) return 'Not reported';
-  if (metric === 'zip-denial') return `${value.toFixed(1)}%`;
+  if (metric === 'zip-denial' || metric === 'state-claims-denial') return `${value.toFixed(1)}%`;
   if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
   return formatInteger(value);
 };
@@ -130,7 +142,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
   const [mapMetric, setMapMetric] = useState<StateMapMetricKey>('agency-records');
+  const [denialImportRevision, setDenialImportRevision] = useState(0);
   const mapViewportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const refreshImportedDenials = () => setDenialImportRevision((revision) => revision + 1);
+    window.addEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
+    window.addEventListener('storage', refreshImportedDenials);
+    return () => {
+      window.removeEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
+      window.removeEventListener('storage', refreshImportedDenials);
+    };
+  }, []);
 
   // Filter agencies by global category (All / EMS / Fire)
   const scopedAgencies = useMemo(() => {
@@ -277,6 +300,28 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             period: 'Modeled from current agency profile inputs; source periods are not standardized.',
             sourceAction: 'agency-records',
           },
+          'state-claims-denial': (() => {
+            const metric = getImportedStateDenialMetric(state.code);
+            return {
+              value: metric?.ratePct ?? null,
+              coverage: metric
+                ? `Complete county pickup-FIPS coverage · ${metric.deniedClaims.toLocaleString()} denied / ${metric.adjudicatedClaims.toLocaleString()} adjudicated claims.`
+                : 'No complete state aggregate claim summary is available in this browser.',
+              period: metric?.reportingPeriod ?? 'Not available',
+              sourceAction: 'claims-import',
+              deniedClaims: metric?.deniedClaims,
+              adjudicatedClaims: metric?.adjudicatedClaims,
+              claimScope: metric?.claimScope,
+              denialDefinition: metric?.denialDefinition === 'any_service_line_denied'
+                ? 'Any service line denied'
+                : metric?.denialDefinition === 'fully_denied_claim'
+                  ? 'Entire claim denied'
+                  : undefined,
+              source: metric ? `${metric.sourceName} · ${metric.sourceReference}` : undefined,
+              sourceReference: metric?.sourceReference,
+              sourceUrl: metric?.sourceUrl,
+            };
+          })(),
           'zip-denial': {
             value: zipDenialSummary?.ratePct ?? null,
             coverage: zipDenialSummary
@@ -289,7 +334,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         return [state.code, metricData];
       }),
     ) as Record<string, Record<StateMapMetricKey, StateMapMetricDatum>>;
-  }, [providerScopeLabel, stateStatsByCode]);
+  }, [providerScopeLabel, stateStatsByCode, denialImportRevision]);
 
   const mapMetricValues = Object.values(stateMapMetricsByCode)
     .map((metrics) => metrics[mapMetric].value)
@@ -330,6 +375,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           block: 'center',
         });
       });
+      return;
+    }
+    if (sourceAction === 'claims-import') {
+      setSelectedStateCode(stateCode);
+      onNavigateTab('claims');
       return;
     }
     handleStateClick(stateCode);
@@ -592,13 +642,34 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <p className="mt-0.5 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
                     {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}
                   </p>
+                  {mapMetric === 'state-claims-denial' && mapReadoutMetric.value !== null && (
+                    <div className="mt-1 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                      <p>Scope: {mapReadoutMetric.claimScope} · Definition: {mapReadoutMetric.denialDefinition}</p>
+                      {mapReadoutMetric.sourceUrl ? (
+                        <a
+                          href={mapReadoutMetric.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                        >
+                          Source: {mapReadoutMetric.source}
+                        </a>
+                      ) : (
+                        <p>Source: {mapReadoutMetric.source} · report reference {mapReadoutMetric.sourceReference}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
                   onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
                   className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50 dark:bg-blue-950/40 px-3 text-[11px] font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {mapReadoutMetric.sourceAction === 'zip-profiles' ? 'View ZIP profile records' : 'Review agency records'}
+                  {mapReadoutMetric.sourceAction === 'zip-profiles'
+                    ? 'View ZIP profile records'
+                    : mapReadoutMetric.sourceAction === 'claims-import'
+                      ? 'Open claim summary'
+                      : 'Review agency records'}
                 </button>
               </div>
 
@@ -648,7 +719,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const fillColor = hasReportedValue(datum.value)
                       ? interpolateStateFill(datum.value, mapMetricMin, mapMetricMax)
                       : 'url(#home-map-missing-data)';
-                    const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}`;
+                    const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
                     return (
                       <g key={`home-poly-${st.code}`} opacity={isInRegion ? 1 : 0.36}>
@@ -683,7 +754,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
                           className="cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#F59E0B] focus:stroke-[3px]"
                         >
-                          <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${countyCount} counties`}</title>
+                          <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${datum.coverage} · Period ${datum.period}${datum.claimScope ? ` · ${datum.claimScope} · ${datum.denialDefinition}` : ''}${datum.source ? ` · ${datum.source}` : ''} · ${countyCount} counties`}</title>
                         </path>
                       </g>
                     );
@@ -814,6 +885,27 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
                     Period: {stateMapMetricsByCode[displayStateCode][mapMetric].period}
                   </p>
+                  {mapMetric === 'state-claims-denial' && stateMapMetricsByCode[displayStateCode][mapMetric].value !== null && (
+                    <div className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                      <p>
+                        Scope: {stateMapMetricsByCode[displayStateCode][mapMetric].claimScope} · Definition: {stateMapMetricsByCode[displayStateCode][mapMetric].denialDefinition}
+                      </p>
+                      {stateMapMetricsByCode[displayStateCode][mapMetric].sourceUrl ? (
+                        <a
+                          href={stateMapMetricsByCode[displayStateCode][mapMetric].sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
+                        >
+                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source}
+                        </a>
+                      ) : (
+                        <p>
+                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source} · report reference {stateMapMetricsByCode[displayStateCode][mapMetric].sourceReference}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleMapSourceAction(
@@ -824,7 +916,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   >
                     {stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction === 'zip-profiles'
                       ? 'View ZIP profile records'
-                      : 'Review agency records'}
+                      : stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction === 'claims-import'
+                        ? 'Open claim summary'
+                        : 'Review agency records'}
                   </button>
                 </div>
 
@@ -859,16 +953,23 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
                   <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    {stateZipDenialSummary ? 'State ZIP-profile average' : 'Ambulance denial rate'}
+                    State ambulance claim denial rate
                   </span>
                   <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card tabular-nums">
-                    {stateZipDenialSummary
-                      ? `${stateZipDenialSummary.ratePct.toFixed(1)}%`
-                      : 'Not published'}
+                    {formatStateMapValue(
+                      'state-claims-denial',
+                      stateMapMetricsByCode[displayStateCode]['state-claims-denial'].value,
+                    )}
+                  </span>
+                  <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
+                    {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].coverage}
+                  </span>
+                  <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
+                    Period: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].period}
                   </span>
                   {stateZipDenialSummary && (
                     <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                      Unweighted mean · {stateZipDenialSummary.profileCount} ZIP profiles
+                      ZIP-profile average: {stateZipDenialSummary.ratePct.toFixed(1)}% · not a state claims rate
                     </span>
                   )}
                 </div>

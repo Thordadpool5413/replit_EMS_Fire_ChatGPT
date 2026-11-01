@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
+import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { 
   calculateAgencyFleetTco, 
   COOPERATIVE_CONTRACTS 
@@ -80,7 +81,8 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     ? `Inputs: ${reportMetric(tco.unitCount)} reported defibrillator units; five years; benchmark ${tco.incumbentModel} vs ${tco.zollModel}; per-unit annual service ${reportCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs ${reportCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${reportCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${reportCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption ${reportCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: operating cost difference plus trade-in; modeled values, not an agency quote.`
     : 'Not calculated: no positive reported defibrillator unit count.';
   const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
-  const denialRate = reportMetric(agency.cmsData?.claimDenialRate, '%');
+  const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
+  const denialRate = denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published';
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
   const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);
   const grantFiscalYear = reportMetric(agency.grantStatus?.afgFiscalYear);

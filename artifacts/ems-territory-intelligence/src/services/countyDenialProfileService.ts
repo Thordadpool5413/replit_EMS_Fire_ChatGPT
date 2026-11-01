@@ -12,6 +12,7 @@ export type CountyDenialDisplay =
       deniedClaimCount: number;
       adjudicatedClaimCount: number;
       claimScope: string;
+      denialDefinition: string;
       reportingPeriod: string;
       source: string;
       sourceUrl?: string;

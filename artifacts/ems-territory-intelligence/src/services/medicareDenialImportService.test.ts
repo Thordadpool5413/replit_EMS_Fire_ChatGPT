@@ -100,7 +100,13 @@ test("validated aggregate claim summaries persist only in the current browser pr
       isVerifiedRecord: true,
       lastVerifiedAt: "2026-10-01T00:00:00.000Z",
       nppesRegistryUrl: "https://npiregistry.cms.hhs.gov/provider-view/1234567893",
+      operatingRelationship: "OPERATING_RELATIONSHIP_CONFIRMED",
     };
+    assert.equal(
+      getAgencyMedicareDenialMetricForDisplay({ ...verifiedAgency, operatingRelationship: undefined }),
+      null,
+      "verified NPPES registry identity without a confirmed operating relationship must not receive an agency rate",
+    );
     assert.equal(
       getAgencyMedicareDenialMetricForDisplay(verifiedAgency)?.ratePct,
       12,

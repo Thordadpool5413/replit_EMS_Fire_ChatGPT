@@ -105,9 +105,9 @@ export function getVerifiedAgencyNpi(
     // A missing or unrelated registry link cannot establish this NPI's identity.
   }
   const relationship = agency.operatingRelationship?.trim().toUpperCase() ?? '';
-  // Legacy verified records may omit this field. An explicit relationship must
-  // confirm the operating agency, not merely a registry entity or related biller.
-  const confirmedOperatingAgency = !relationship ||
+  // Registry identity alone does not establish that this NPI belongs to the
+  // operating agency. Missing relationships must not imply confirmation.
+  const confirmedOperatingAgency =
     ['DIRECT_OPERATING_AGENCY', 'OPERATING_RELATIONSHIP_CONFIRMED'].includes(relationship);
   const hasVerifiedNpiIdentity =
     agency.isVerifiedRecord === true &&

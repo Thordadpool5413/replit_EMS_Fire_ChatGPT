@@ -13,6 +13,12 @@ A claim-count denial percentage is not a denied-dollar percentage. Do not estima
 
 For locally imported claim summaries, accept aggregate NPI × pickup-county counts only; do not upload raw 835/EOB or patient-level files. The user declined sign-in for shared claim data, so imported summaries stay in this browser and must not sync to Firestore. Require source name/reference, period, claim scope, and the report's denial definition; a public URL is optional for a user-supplied local report.
 
+The user expects populated state, county, and individual-provider denial percentages. Do not describe a formula, importer, or display path alone as fixing missing percentages.
+
+**Why:** The user repeatedly clarified that the remaining “Not published” output was not resolved by those changes.
+
+**How to apply:** Separate calculation correctness from source-data availability in both work and completion reports. State explicitly which real geographic rates were populated and which remain unavailable.
+
 **Why:** CMS PSPS publishes denied service-unit counts by carrier/locality, HCPCS, specialty, and place of service, but the public release suppresses cells under 11 and has no NPI or county FIPS; it cannot provide complete state, county, or individual-provider claim-denial rates. CMS Geographic Variation and Market Saturation & Utilization are use/spending or paid-claim datasets, not denial counts. The user also wants available profile values shown for their direct review rather than blocked by missing source metadata, and declined sign-in for sharing imported claim summaries.
 
 **How to apply:** Show a true county rate only from same-scope, same-period claim counts assigned to pickup-county FIPS. A state claim rate requires complete state coverage and summed denied/adjudicated counts. Keep ZIP-profile averages and CMS service-unit statistics separately labeled; never substitute them for claim rates. Calculate financial recovery only from reported denied-dollar amounts, not a count-based rate. Keep imported counts browser-local unless the user later approves authentication and protected workspace storage.

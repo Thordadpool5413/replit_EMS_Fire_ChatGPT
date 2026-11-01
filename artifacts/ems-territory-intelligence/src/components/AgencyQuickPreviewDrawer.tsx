@@ -287,8 +287,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {typeof denialRate === 'number'
-                    ? `${formatPercent(denialRate)} Medicare ambulance claim denials`
-                    : 'Not published'}
+                    ? 'Medicare claim records available'
+                    : 'Claim rate details are not shown'}
                 </span>
                 {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
               </div>
@@ -331,7 +331,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {
                   label: 'Medicare Claim Recovery (25%)',
                   val: cmsDenialSub,
-                  detail: denialRate != null ? `${denialRate.toFixed(1)}% billing-NPI denial rate` : 'No exact billing-NPI rate; neutral score'
+                  detail: 'Agency denial-rate details are not displayed'
                 },
                 { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {

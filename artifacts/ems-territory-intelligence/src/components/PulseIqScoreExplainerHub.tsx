@@ -256,8 +256,8 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
         <p className="text-slate-700 dark:text-slate-300">
           Because <strong>Fleet Age (+{explanation.factors[0]?.pointsContributed} pts)</strong> and <strong>Claim Denials (+{explanation.factors[1]?.pointsContributed} pts)</strong> are score inputs, lead with the <strong>Sourcewell Cooperative Contract</strong> to eliminate the RFP cycle, and present the <strong>Real BVM Help & 12-Lead ePCR Billing integration</strong>
           {getAgencyMedicareDenialMetricForDisplay(agency)
-            ? ` to address the reported ${getAgencyMedicareDenialMetricForDisplay(agency)!.ratePct.toFixed(1)}% Medicare ambulance denial rate.`
-            : ' while noting the exact billing-NPI Medicare denial rate is not published.'}
+            ? ' to review the agency’s Medicare billing documentation.'
+            : ' while reviewing the agency’s Medicare billing documentation.'}
         </p>
         {getAgencyMedicareDenialMetricForDisplay(agency) && (
           <ProviderDenialDetails metric={getAgencyMedicareDenialMetricForDisplay(agency)!} />

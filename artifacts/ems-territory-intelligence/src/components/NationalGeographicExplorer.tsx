@@ -127,7 +127,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const [debouncedCountyFilter, setDebouncedCountyFilter] = useState<string>('');
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
   const [showCityPillsDrawer, setShowCityPillsDrawer] = useState<boolean>(false);
-  const [providerSortBy, setProviderSortBy] = useState<'pulseIq' | 'fleetAge' | 'value' | 'denial'>('pulseIq');
+  const [providerSortBy, setProviderSortBy] = useState<'pulseIq' | 'fleetAge' | 'value'>('pulseIq');
   const [stateMapLayer, setStateMapLayer] = useState<'agency-records' | 'fema-loss'>('agency-records');
 
   const [providerViewMode, setProviderViewModeState] = useState<'cards' | 'table'>(() => {
@@ -577,13 +577,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       if (providerSortBy === 'pulseIq') return (b.zollOpportunity.pulseIqScore || 0) - (a.zollOpportunity.pulseIqScore || 0);
       if (providerSortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (providerSortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
-      if (providerSortBy === 'denial') {
-        const aRate = getAgencyMedicareDenialMetricForDisplay(a)?.ratePct ?? null;
-        const bRate = getAgencyMedicareDenialMetricForDisplay(b)?.ratePct ?? null;
-        if (aRate == null) return bRate == null ? 0 : 1;
-        if (bRate == null) return -1;
-        return bRate - aRate;
-      }
       return 0;
     });
   }, [jurisdictionBaseAgencies, agencyCategoryFilter, providerSortBy]);
@@ -1295,7 +1288,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </a>
                         )}
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="text-slate-700 dark:text-slate-300">
+                        <span className="hidden">
                           State ZIP-profile average: <strong className="font-semibold">
                             {denialProfileSummary ? `${denialProfileSummary.ratePct.toFixed(1)}%` : 'Not published'}
                           </strong>
@@ -1758,7 +1751,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Population</span>
                           <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
                         </div>
-                        <div>
+                        <div className="hidden">
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
                             {countyDenialDisplay.kind === 'county-claims-rate'
                               ? 'Medicare ambulance claim denial rate'
@@ -1837,7 +1830,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           {countyZipDenialProfiles.length > 0 && (
                             <div
                               data-testid={`county-zip-denial-profiles-${c.countyFips}`}
-                              className="mt-1 space-y-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400"
+                              className="hidden"
                             >
                               <span className="block font-medium">Matched ZIP-profile values:</span>
                                {countyZipDenialProfiles.map(record => (
@@ -2304,12 +2297,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
                             {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {denialMetric
-                              ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
-                              : 'Denial rate not published'}
-                          </span>
-                          {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
@@ -2383,12 +2370,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       >
                         Upgrade Value {providerSortBy === 'value' ? '↓' : ''}
                       </th>
-                      <th
-                        onClick={() => setProviderSortBy('denial')}
-                        className="py-2.5 px-3 text-right hidden lg:table-cell cursor-pointer hover:text-[#1E3A8A]"
-                      >
-                        Claim Denial Rate {providerSortBy === 'denial' ? '↓' : ''}
-                      </th>
+                      <th className="py-2.5 px-3 text-right hidden lg:table-cell">Claim Recovery</th>
                       <th className="py-2.5 px-3 text-right hidden xl:table-cell">Runs &amp; ROSC</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
@@ -2439,12 +2421,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
                             </div>
-                            <div className="text-[10px] text-slate-500 tabular-nums">
-                              {denialMetric
-                                ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.deniedClaimCount.toLocaleString()} / ${denialMetric.adjudicatedClaimCount.toLocaleString()} · ${denialMetric.reportingPeriod}`
-                                : 'Denial rate not published'}
-                            </div>
-                            {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
                           </td>
                           <td className="py-2.5 px-3 text-right hidden xl:table-cell">
                             <div className="font-semibold text-slate-900 dark:text-white tabular-nums">

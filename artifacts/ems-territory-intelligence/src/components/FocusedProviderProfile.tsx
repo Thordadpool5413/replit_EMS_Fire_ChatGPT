@@ -746,8 +746,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       id: 'intel-clinical-cms',
       category: 'Medicare & resuscitation impact',
       primaryFact: medicareDenialMetric
-        ? `${medicareDenialMetric.ratePct.toFixed(1)}% Medicare ambulance claim denials (${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${medicareDenialMetric.reportingPeriod})`
-        : 'No complete, exact billing-NPI Medicare ambulance claim rate is available.',
+        ? 'Medicare claim records available'
+        : 'Medicare claim records are not shown in this view.',
       secondaryFact: actuarialForecast.hasRecoveryInputs
         ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported denied-claim dollars × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
         : 'Recovery estimate not calculated: same-scope reported denied-claim dollars and reporting period are required.',
@@ -808,9 +808,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     }
     if (hasAgencyFactEvidence(agency, 'maintenanceContracts') && (defibAge >= 7.5 || agency.competitorContract?.status === 'Expiring Soon')) {
       developmentsThatMatter.push(`Incumbent service contract renewal window: Contract ends ${contractEnd}. Opportunity to avoid multi-year maintenance cost locks via cooperative purchasing.`);
-    }
-    if (denialRate !== null && denialRate >= 18) {
-      developmentsThatMatter.push(`Medicare ambulance claim denial rate: ${denialRate.toFixed(1)}% (${medicareDenialMetric?.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric?.adjudicatedClaimCount.toLocaleString()} adjudicated; ${medicareDenialMetric?.reportingPeriod}). Recovery estimate inputs and method are unavailable.`);
     }
     if (developmentsThatMatter.length === 0) {
       developmentsThatMatter.push('No current operational or procurement development is listed in this agency record.');
@@ -1456,7 +1453,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       PulseIQ ({reportMetric(agency.zollOpportunity.pulseIqScore)}/100) = Fleet ({reportMetric(agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts)}/25) + CMS denials ({reportMetric(agency.zollOpportunity.scoreBreakdown.cmsFinancialPts)}/20) + Acuity ({reportMetric(agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts)}/20) + Grants ({reportMetric(agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts)}/20) + Software ({reportMetric(agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts)}/15)
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      Scenario method: unit count × selected MSRP less selected trade-in credit, with low/high scenarios at ±15%. Five-year savings use reported unit count × benchmark service, battery, and consumables savings plus trade-in credit. Recovery uses reported Medicare billings × reported denial rate × selected capture rate, with low/high scenarios at ±18%; no result is shown when required agency inputs are missing.
+                      Scenario method: unit count × selected MSRP less selected trade-in credit, with low/high scenarios at ±15%. Five-year savings use reported unit count × benchmark service, battery, and consumables savings plus trade-in credit. Recovery scenarios are not displayed without the required agency-specific inputs and method.
                     </div>
                   </div>
                 </div>
@@ -1770,10 +1767,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Contract status</span>
                       <strong className="text-slate-900 dark:text-white">{agency.competitorContract.status || 'Not reported'}</strong>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[#53657B] dark:text-slate-400">Medicare claim denials</span>
-                      <strong className="text-amber-700 dark:text-amber-400 tabular-nums">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}% denied` : 'Not published'}</strong>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/70 dark:border-slate-800">
                       <span className="text-[#53657B] dark:text-slate-400">Lost claim revenue</span>
@@ -2150,7 +2143,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         {/* SECTION: INSURANCE OUTCOMES (MEDICARE, MEDICAID, COMMERCIAL, SELF-PAY) & DENIALS / RECOVERABLE */}
         {showSection('billing') && !hasAgencyFactEvidence(agency, 'cmsClaims') ? (
           <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-            CMS claims, payer mix, denial rates, and revenue estimates are not listed in this account record. Available financial fields remain listed in the operational baseline above.
+            CMS claim and revenue fields are not listed in this account record. Available financial fields remain listed in the operational baseline above.
           </div>
         ) : showSection('billing') && (
           <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-6">
@@ -2239,13 +2232,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {/* Right 6 Cols: Claims Denials & Recoverable Revenue Breakdown */}
               <div className="lg:col-span-6 space-y-4">
                 <h3 className="text-xs font-bold text-slate-600">
-                  Claims Denials &amp; Annual Recoverable Revenue Analysis
+                  Medicare Billing &amp; Revenue Cycle Analysis
                 </h3>
 
-                <NationalAmbulanceReference />
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="hidden">
                     <div className="text-xs font-semibold text-slate-600">Active Claims Denial Rate</div>
                     <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'}</div>
                     <div className="text-[11px] text-slate-600">
@@ -2300,11 +2291,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     Procedure-Level HCPCS Ambulance Fee Schedule &amp; CMS GADCS 10% Penalty Exposure
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {hcpcsModel?.gadcs.cohortWave ?? 'Not calculated'} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel?.gadcs.reportingReadinessStatus ?? 'Not calculated'}</strong> · {hcpcsModel?.gadcs.keyComplianceGap ?? 'Reported annual transports, denial rate, and Medicare payer share are required.'}
+                    {hcpcsModel?.gadcs.cohortWave ?? 'Not calculated'} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel?.gadcs.reportingReadinessStatus ?? 'Not calculated'}</strong> · {hcpcsModel?.gadcs.keyComplianceGap ?? 'Reported annual transports and Medicare payer share are required.'}
                   </p>
                   <p className="text-xs text-slate-500">
                     Modeled estimate inputs: {hcpcsModel
-                      ? `${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports, ${hcpcsModel.inputs.claimDenialRatePct}% denial rate, and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
+                      ? `${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
                       : 'not calculated because required reported inputs are missing.'}
                   </p>
                 </div>
@@ -2580,7 +2571,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <td className="py-3 px-4 font-semibold text-[#0F172A]">Revenue Cycle &amp; Claims Billing</td>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</td>
                       <td className="py-3 px-4 font-mono tabular-nums">{reportMetric(agency.annual911Transports)} Claims / yr</td>
-                      <td className="py-3 px-4 font-mono tabular-nums">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'} Current Denial Rate</td>
+                      <td className="hidden" />
                       <td className="py-3 px-4 font-medium text-slate-800">{suppliers.billingSupplier}</td>
                       <td className="py-3 px-4 text-slate-600 font-mono tabular-nums">
                         Estimate not shown; required inputs and method are unavailable.
@@ -2650,7 +2641,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <tr>
                       <td className="py-3 px-4 font-bold text-[#0F172A]">Revenue Cycle &amp; Claims Recovery</td>
                       <td className="py-3 px-4 text-slate-700">
-                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> ({medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'} Denials)<br />
+                        <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong><br />
                         <span className="text-slate-500">Supplier: {suppliers.billingSupplier}</span>
                       </td>
                       <td className="py-3 px-4 font-bold text-[#1E3A8A] bg-slate-50">
@@ -3641,7 +3632,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   3. Modeled vs. Empirical Disclosure
                 </div>
                 <p className="text-[#53657B] dark:text-slate-400 leading-relaxed">
-                  5-year TCO savings (+${(actuarialForecast.fiveYrTcoBase / 1000).toFixed(0)}K) and claim-recovery scenarios use reported denied-claim dollar amounts only; a claim-count denial rate is not converted into dollars.
+                  5-year TCO savings (+${(actuarialForecast.fiveYrTcoBase / 1000).toFixed(0)}K) and claim-recovery scenarios use reported denied-claim dollar amounts only; no estimate is inferred from claim counts.
                 </p>
               </div>
             </div>

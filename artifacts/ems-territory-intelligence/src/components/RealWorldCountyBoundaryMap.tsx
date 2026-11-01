@@ -42,7 +42,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
   const [hoveredCityName, setHoveredCityName] = useState<string | null>(null);
-  const [countyMapLayer, setCountyMapLayer] = useState<'denial' | 'nri-risk'>('denial');
+  const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
   const nriParams = useMemo(
     () => stateCode && stateCode !== 'all' ? { stateCode } : undefined,
     [stateCode],
@@ -204,18 +204,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <Layers className="h-4 w-4 shrink-0 text-[#1E3A8A]" />
-          <label htmlFor="county-map-layer" className="text-xs font-semibold text-slate-700">
-            County map layer
-          </label>
-          <select
-            id="county-map-layer"
-            value={countyMapLayer}
-            onChange={(event) => setCountyMapLayer(event.target.value as 'denial' | 'nri-risk')}
-            className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800"
-          >
-            <option value="denial">Medicare denial profiles</option>
-            <option value="nri-risk">FEMA National Risk Index</option>
-          </select>
+          <span className="text-xs font-semibold text-slate-700">
+            FEMA National Risk Index
+          </span>
         </div>
         {countyMapLayer === 'nri-risk' && (
           <div className="text-[11px] text-slate-600" role="status">
@@ -417,7 +408,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       Source/vintage not attached
                     </span>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
+                  <div className="hidden">
                     <span className="text-[11px] font-sans text-slate-500 block">
                       {inspectedCountyDenialDisplay?.kind === 'county-claims-rate'
                         ? 'Medicare ambulance claim denial rate'

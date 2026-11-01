@@ -398,7 +398,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                         {s.billedVolumeDataCount ? `$${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M` : 'Not reported'}
                         <span className="block text-[10px] font-normal text-slate-400">{s.billedVolumeDataCount} records</span>
                       </td>
-                      <td data-testid={`text-denial-coverage-${s.stateCode}`} className="py-3 px-4 text-right text-amber-700 dark:text-amber-400">
+                      <td data-testid={`text-denial-coverage-${s.stateCode}`} className="hidden">
                         {s.weightedClaimDenialRatePct != null
                           ? `${s.weightedClaimDenialRatePct}%`
                           : s.denialRateDataCount

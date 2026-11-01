@@ -49,11 +49,12 @@ const STATE_MAP_METRICS = [
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
   { key: 'pulseiq', label: 'Modeled average PulseIQ' },
-  { key: 'state-claims-denial', label: 'State Medicare ambulance claim denial rate' },
-  { key: 'zip-denial', label: 'ZIP-profile denial average' },
 ] as const;
 
-type StateMapMetricKey = (typeof STATE_MAP_METRICS)[number]['key'];
+type StateMapMetricKey =
+  | (typeof STATE_MAP_METRICS)[number]['key']
+  | 'state-claims-denial'
+  | 'zip-denial';
 
 interface StateStats {
   count: number;
@@ -301,38 +302,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             period: 'Modeled from current agency profile inputs; source periods are not standardized.',
             sourceAction: 'agency-records',
           },
-          'state-claims-denial': (() => {
-            const metric = getImportedStateDenialMetric(
-              state.code,
-              territoryEngine.getCountiesForState(state.code).map((county) => county.countyFips),
-            );
-            return {
-              value: metric?.ratePct ?? null,
-              coverage: metric
-                ? `Complete county pickup-FIPS coverage · ${metric.deniedClaims.toLocaleString()} denied / ${metric.adjudicatedClaims.toLocaleString()} adjudicated claims.`
-                : 'No complete state aggregate claim summary is available in this browser.',
-              period: metric?.reportingPeriod ?? 'Not available',
-              sourceAction: 'claims-import',
-              deniedClaims: metric?.deniedClaims,
-              adjudicatedClaims: metric?.adjudicatedClaims,
-              claimScope: metric?.claimScope,
-              denialDefinition: metric?.denialDefinition === 'any_service_line_denied'
-                ? 'Any service line denied'
-                : metric?.denialDefinition === 'fully_denied_claim'
-                  ? 'Entire claim denied'
-                  : undefined,
-              source: metric ? `${metric.sourceName} · ${metric.sourceReference}` : undefined,
-              sourceReference: metric?.sourceReference,
-              sourceUrl: metric?.sourceUrl,
-            };
-          })(),
+          'state-claims-denial': {
+            value: null,
+            coverage: '',
+            period: '',
+            sourceAction: 'agency-records',
+          },
           'zip-denial': {
-            value: zipDenialSummary?.ratePct ?? null,
-            coverage: zipDenialSummary
-              ? `Unweighted mean of ${formatInteger(zipDenialSummary.profileCount)} ZIP-profile percentages.`
-              : `${formatInteger(zipProfiles.length)} source-backed ZIP-profile denial records available.`,
-            period: zipDenialSummary?.reportingPeriod ?? 'No source-backed reporting period is available.',
-            sourceAction: 'zip-profiles',
+            value: null,
+            coverage: '',
+            period: '',
+            sourceAction: 'agency-records',
           },
         };
         return [state.code, metricData];

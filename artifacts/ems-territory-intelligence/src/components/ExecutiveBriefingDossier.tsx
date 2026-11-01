@@ -482,7 +482,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     Estimate unavailable
                   </div>
                   <div className="text-xs text-emerald-800 mt-1.5 tabular-nums">
-                    Denials {denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published'} &middot; Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
+                    Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
                   </div>
                   <div className="text-[10px] text-emerald-900 mt-1">No estimate shown without its inputs and method.</div>
                 </div>
@@ -704,7 +704,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     CMS reimbursement &amp; revenue recovery analytics
                   </span>
                   <h4 className="text-base font-semibold text-slate-900 mt-0.5">
-                    Medicare denial rate: {denialMetric ? `${denialMetric.ratePct.toFixed(1)}%` : 'Not published'}
+                    Medicare billing claim details
                   </h4>
                   {denialMetric && (
                     <p className="mt-1 text-xs text-slate-600">
@@ -932,8 +932,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
               <p className="text-xs text-slate-500">
                 {hcpcsModel
-                  ? `Estimate inputs: ${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports, ${hcpcsModel.inputs.claimDenialRatePct}% denial rate, and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
-                  : 'Not calculated: reported annual transports, denial rate, and Medicare payer share are required.'}
+                  ? `Estimate inputs: ${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
+                  : 'Not calculated: reported annual transports and Medicare payer share are required.'}
               </p>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">

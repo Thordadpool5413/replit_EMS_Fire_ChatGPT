@@ -100,7 +100,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     const tcoSentence = hasTcoInputs
       ? ` Illustrative 5-year estimate for ${defibCount} reported defibrillator units: ${fiveYrSavings} operating savings plus ${tradeIn} trade-in credit. ${tcoMethod}`
       : ` A 5-year fleet estimate is not calculated because a positive reported defibrillator unit count is unavailable. ${tcoMethod}`;
-    return `${leaderName} at ${agency.name}: Recorded defibrillator details are ${defibCount} units, ${defibBrand} brand, age ${defibAge}, and warranty status ${warranty}.${tcoSentence} Medicare denial rate: ${denialRate}; recoverable revenue: ${recoverableEstimate}${grantSentence} Cooperative purchasing option listed: ${coopContract.contractName} (${coopContract.contractNumber}); local eligibility and requirements need confirmation.`;
+    return `${leaderName} at ${agency.name}: Recorded defibrillator details are ${defibCount} units, ${defibBrand} brand, age ${defibAge}, and warranty status ${warranty}.${tcoSentence} Medicare claim records can be reviewed in the account; recoverable revenue: ${recoverableEstimate}${grantSentence} Cooperative purchasing option listed: ${coopContract.contractName} (${coopContract.contractNumber}); local eligibility and requirements need confirmation.`;
   }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, hasTcoInputs, fiveYrSavings, tradeIn, tcoMethod, denialRate, recoverableEstimate, hasGrant, grantAmt, grantFiscalYear, coopContract]);
 
   // Tailored Discovery Questions (3+ for different command roles)

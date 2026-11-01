@@ -8,3 +8,4 @@
 - [Geographic identity and vintage](geographic-joins.md) — keep agency location, service area, and source geography distinct; only join compatible native IDs.
 - [Florida EMS roster date mismatch](florida-ems-roster-date.md) — the DOH PDF's embedded processed date conflicts with its upload-path vintage; use each MQA record's own date.
 - [Browser-local data boundary](claim-summary-sharing-boundary.md) — keep claims and agency source evidence local until workspace-only access is verified; do not infer a blanket sign-in refusal.
+- [Local denial-rate visibility](local-denial-rate-visibility.md) — do not display local ambulance denial percentages at state, county, or provider scope; retain claim-source records.

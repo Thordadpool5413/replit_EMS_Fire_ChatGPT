@@ -1665,7 +1665,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedLayer('cms')}
-                className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
+                className={`hidden ${
                   selectedLayer === 'cms' ? 'bg-white dark:bg-[#111C2D] text-emerald-800 dark:text-emerald-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
                 }`}
               >
@@ -4020,7 +4020,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               </button>
               <button
                 onClick={() => setSelectedLayer('cms')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`hidden ${
                   selectedLayer === 'cms' ? 'bg-emerald-700 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >

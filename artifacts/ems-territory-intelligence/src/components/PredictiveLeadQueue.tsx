@@ -527,7 +527,6 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               <option value="fleetAge">Sort: Oldest Fleet</option>
               <option value="calls">Sort: 911 Call Volume</option>
               <option value="value">Sort: Est. Project Value</option>
-              <option value="denial">Sort: Medicare Denials</option>
             </select>
 
             {/* Collapsible More Filters Trigger */}
@@ -950,9 +949,6 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
-                        {medicareDenialMetric
-                          ? ` · ${formatPercent(medicareDenialMetric.ratePct)} Medicare ambulance denial`
-                          : ''}
                       </div>
                     </div>
                   </div>
@@ -972,7 +968,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               : 'Exact apparatus breakdown not source-verified'}
                           </div>
                         </div>
-                        <div className="p-2.5 bg-white dark:bg-slate-900">
+                        <div className="hidden">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claims denial rate</span>
                           <div className="font-semibold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
                             {medicareDenialMetric
@@ -1284,13 +1280,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   >
                     Frontline fleet {sortBy === 'fleetAge' ? '↓' : ''}
                   </th>
-                  <th
-                    onClick={() => setSortBy('denial')}
-                    className="py-2.5 px-3 text-right hidden xl:table-cell cursor-pointer hover:text-[#1E3A8A]"
-                    title="Sort by Medicare Denial Rate"
-                  >
-                    CMS recovery {sortBy === 'denial' ? '↓' : ''}
-                  </th>
+                  <th className="py-2.5 px-3 text-right hidden xl:table-cell">CMS recovery</th>
                   <th className="py-2.5 px-3 text-right hidden lg:table-cell">AFG grant</th>
                   <th
                     onClick={() => setSortBy('value')}
@@ -1423,11 +1413,6 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           {hasAgencyFactEvidence(agency, 'cmsClaims')
                             ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
                             : 'Not source-verified'}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                          {medicareDenialMetric
-                            ? `${formatPercent(medicareDenialMetric.ratePct)} Medicare ambulance denial`
-                            : 'Claim data not source-verified'}
                         </div>
                         {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}
                       </td>

@@ -229,7 +229,7 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-white">Import Medicare ambulance claim summaries</h2>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600 dark:text-slate-300">
-              Calculate fixed denial percentages from aggregate denied and adjudicated claim counts. Use the template; extra columns are rejected.
+              Import aggregate denied and adjudicated claim counts with their source details. Use the template; extra columns are rejected.
             </p>
           </div>
         </div>

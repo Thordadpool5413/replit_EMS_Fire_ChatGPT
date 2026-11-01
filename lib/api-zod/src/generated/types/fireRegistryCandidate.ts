@@ -7,7 +7,9 @@
  */
 import type { FireRegistryCandidateMatchLevel } from './fireRegistryCandidateMatchLevel';
 import type { FireRegistryCandidateSource } from './fireRegistryCandidateSource';
+import type { FireRegistryJurisdiction } from './fireRegistryJurisdiction';
 import type { FireRegistryStation } from './fireRegistryStation';
+import type { FireRegistryUnit } from './fireRegistryUnit';
 
 export interface FireRegistryCandidate {
   source: FireRegistryCandidateSource;
@@ -41,4 +43,8 @@ export interface FireRegistryCandidate {
   matchReasons: string[];
   stations: FireRegistryStation[];
   stationsTruncated: boolean;
+  units: FireRegistryUnit[];
+  unitsTruncated: boolean;
+  jurisdictions: FireRegistryJurisdiction[];
+  jurisdictionsTruncated: boolean;
 }

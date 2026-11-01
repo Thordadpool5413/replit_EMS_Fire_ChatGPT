@@ -18,6 +18,8 @@ export interface DataRegistrySource {
   schemaSpecification: string;
   primaryFieldsIngested: string[];
   verificationMethod: string;
+  appConnection: 'live-feed' | 'catalog-only';
+  sourceUrl?: string;
 }
 
 export interface FieldLineageRecord {
@@ -42,6 +44,8 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     id: 'cms_part_b',
     name: 'CMS Physician/Supplier Procedure Summary (PSPS)',
     acronym: 'CMS PSPS',
+    appConnection: 'catalog-only',
+    sourceUrl: 'https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary',
     governingBody: 'Centers for Medicare & Medicaid Services (U.S. Dept of Health & Human Services)',
     updateCadence: 'Annual public-use statistical release; check the CMS dataset release date',
     legalAuthority: 'CMS public-use Medicare Part B statistical dataset',
@@ -58,6 +62,8 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     id: 'nemsis_v3',
     name: 'National Emergency Medical Services Information System (NEMSIS)',
     acronym: 'NEMSIS v3.5',
+    appConnection: 'catalog-only',
+    sourceUrl: 'https://nemsis.org/technical-resources/version-3/version-3-data-dictionaries/',
     governingBody: 'NHTSA Office of EMS (U.S. Dept of Transportation) & Technical Assistance Center (TAC)',
     updateCadence: 'Continuous State-Level Aggregation / National Benchmark Annual Release',
     legalAuthority: 'Highway Safety Act of 1966 (23 U.S.C. 403) & NHTSA Emergency Medical Services Mandate',
@@ -73,23 +79,44 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
   {
     id: 'usfa_registry',
     name: 'U.S. Fire Administration National Fire Department Registry',
-    acronym: 'USFA NFIRS',
+    acronym: 'USFA NFDR',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://apps.usfa.fema.gov/registry/download',
     governingBody: 'Federal Emergency Management Agency (DHS)',
-    updateCadence: 'Monthly Official Census Dissemination',
+    updateCadence: 'Use the release date on the published registry export.',
     legalAuthority: 'Federal Fire Prevention and Control Act of 1974 (Public Law 93-498)',
     schemaSpecification: 'NFIRS 5.0 Complete Specification & USFA Department Master Record',
     primaryFieldsIngested: [
-      'Department FDID (5-Digit State-Unique Identifier)',
-      'Active Stations, Frontline Apparatus Engines, Ladders, and Ambulances',
-      'Career, Volunteer, and Paid-Per-Call Active Fire/EMS Staffing Headcount',
-      'Primary Physical Station Address & Municipal Authority Type'
+      'Department name and state-scoped FDID',
+      'Department city/county and classification where present',
+      'Station name and address rows where present'
     ],
-    verificationMethod: 'State Fire Marshal attestation and USFA Registry validation.'
+    verificationMethod: 'The app searches the published registry exports. Registry presence does not prove current staffing, apparatus inventory, operating status, or service coverage.'
+  },
+  {
+    id: 'neris_public',
+    name: 'NERIS Public Fire Department Feature Service',
+    acronym: 'NERIS',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer',
+    governingBody: 'U.S. Fire Administration / FEMA',
+    updateCadence: 'Record export date is returned by the public feature layers; check each matched record.',
+    legalAuthority: 'USFA National Emergency Response Information System public data release',
+    schemaSpecification: 'ArcGIS FeatureServer: departments (0), stations (1), department jurisdictions (2), and units table (3)',
+    primaryFieldsIngested: [
+      'NERIS department and station identifiers',
+      'Station address and reported station/unit counts',
+      'Unit type, CAD designations, staffing, and station relationship',
+      'Department-jurisdiction boundary record and export date',
+    ],
+    verificationMethod: 'Rows remain separate source candidates matched by state/name/location. Unit rows are not proof of current frontline deployment; jurisdiction geometry is linked at the source and is not inferred from location.',
   },
   {
     id: 'fema_afg',
     name: 'FEMA Assistance to Firefighters Grant (AFG) & SAFER Awards Ledger',
     acronym: 'FEMA AFG / OpenFEMA',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://www.fema.gov/openfema-data-page/assistance-firefighters-grants-v5',
     governingBody: 'U.S. Department of Homeland Security (DHS) / FEMA Grant Programs Directorate',
     updateCadence: 'Weekly Federal Award Obligation Feed',
     legalAuthority: 'Federal Funding Accountability and Transparency Act (FFATA) & FEMA GPD Title 44 CFR',
@@ -106,6 +133,8 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     id: 'nppes_npi',
     name: 'CMS National Plan and Provider Enumeration System (NPPES)',
     acronym: 'NPPES NPI Registry',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://npiregistry.cms.hhs.gov/',
     governingBody: 'Centers for Medicare & Medicaid Services (HHS)',
     updateCadence: 'Daily NPI Registry Dissemination Feed',
     legalAuthority: 'HIPAA Administrative Simplification (45 CFR Part 162)',
@@ -119,9 +148,46 @@ export const DATA_REGISTRY_SOURCES: DataRegistrySource[] = [
     verificationMethod: 'Federally attested provider identity database with active Medicare billing enrollment.'
   },
   {
+    id: 'census_tigerweb',
+    name: 'U.S. Census Bureau TIGERweb / TIGER-Line',
+    acronym: 'Census TIGER',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html',
+    governingBody: 'U.S. Census Bureau',
+    updateCadence: 'Boundary products are updated by Census release; use the layer or file vintage for the selected geometry.',
+    legalAuthority: 'U.S. Census Bureau geographic reference products',
+    schemaSpecification: 'State and county GEOIDs/FIPS and county boundary geometries',
+    primaryFieldsIngested: [
+      'State and county boundary polygons',
+      'State FIPS and county GEOID identifiers',
+    ],
+    verificationMethod: 'Boundary identity is joined by Census GEOID/FIPS. City, ZIP, or agency presence inside a county boundary does not establish an operating service area.',
+  },
+  {
+    id: 'fema_nri_counties',
+    name: 'FEMA National Risk Index — Counties',
+    acronym: 'FEMA NRI',
+    appConnection: 'live-feed',
+    sourceUrl: 'https://www.fema.gov/about/reports-and-data/openfema/nri',
+    governingBody: 'Federal Emergency Management Agency (DHS)',
+    updateCadence: 'Versioned public dataset release; the currently returned record version is shown with the value.',
+    legalAuthority: 'FEMA National Risk Index public risk-assessment dataset',
+    schemaSpecification: 'County STCOFIPS with composite risk, expected annual loss, social vulnerability, and community resilience fields',
+    primaryFieldsIngested: [
+      'STCOFIPS and county/state names',
+      'RISK_SCORE and RISK_RATNG',
+      'EAL_VALT and EAL_SCORE',
+      'SOVI_SCORE and RESL_SCORE',
+      'NRI_VER',
+    ],
+    verificationMethod: 'Direct county FIPS match to FEMA NRI county records. State expected-annual-loss totals are derived by summing county EAL_VALT only when every app county GEOID has a non-null source value; county scores and ratings are not averaged.',
+  },
+  {
     id: 'gpo_procurement',
     name: 'National Cooperative Procurement Contracts (Sourcewell, NPPGov, HGACBuy)',
     acronym: 'GPO Contracts',
+    appConnection: 'catalog-only',
+    sourceUrl: 'https://www.sourcewell-mn.gov/cooperative-purchasing',
     governingBody: 'Public Safety Purchasing Cooperatives & National Joint Powers Alliance',
     updateCadence: 'Master Contract Term Schedules & Published GSA/Cooperative Price Catalogs',
     legalAuthority: 'Uniform Municipal Joint Powers Act & State Intergovernmental Cooperation Statutes',

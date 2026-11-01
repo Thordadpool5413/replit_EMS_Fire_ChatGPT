@@ -147,7 +147,31 @@ export const GetFireRegistryMatchesResponse = zod.object({
   "unitCount": zod.number().int().nullable(),
   "exportDate": zod.coerce.date().nullable()
 })),
-  "stationsTruncated": zod.boolean()
+  "stationsTruncated": zod.boolean(),
+  "units": zod.array(zod.object({
+  "sourceRecordId": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "departmentNerisId": zod.string(),
+  "stationNerisId": zod.string().nullable(),
+  "stationName": zod.string().nullable(),
+  "unitType": zod.string().nullable(),
+  "cadDesignation1": zod.string().nullable(),
+  "cadDesignation2": zod.string().nullable(),
+  "dedicatedStaffing": zod.string().nullable(),
+  "exportDate": zod.coerce.date().nullable()
+})),
+  "unitsTruncated": zod.boolean(),
+  "jurisdictions": zod.array(zod.object({
+  "sourceRecordId": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "name": zod.string().nullable(),
+  "regionType": zod.string().nullable(),
+  "entityType": zod.string().nullable(),
+  "departmentType": zod.string().nullable(),
+  "exportDate": zod.coerce.date().nullable(),
+  "boundaryAvailableAtSource": zod.boolean()
+})),
+  "jurisdictionsTruncated": zod.boolean()
 }))
 })
 
@@ -199,6 +223,46 @@ export const GetEmsRegistryMatchesResponse = zod.object({
   "primary": zod.boolean(),
   "stateCode": zod.string().nullable()
 }))
+}))
+})
+
+
+/**
+ * Returns county-level FEMA risk context. A stateCode limits the response to one state; without it, all available counties are returned. State totals are derived by summing county expected annual loss values only when county coverage is complete.
+ * @summary Retrieve FEMA National Risk Index county records
+ */
+export const getNriCountyContextQueryStateCodeRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
+export const GetNriCountyContextQueryParams = zod.object({
+  "stateCode": zod.coerce.string().regex(getNriCountyContextQueryStateCodeRegExp).optional()
+})
+
+export const getNriCountyContextResponseRecordsItemCountyFipsRegExp = new RegExp('^[0-9]{5}$');
+export const getNriCountyContextResponseRecordsItemStateCodeRegExp = new RegExp('^[A-Z]{2}$');
+
+
+export const GetNriCountyContextResponse = zod.object({
+  "fetchedAt": zod.coerce.date(),
+  "stateCode": zod.string().nullable(),
+  "sourceUrl": zod.string().url(),
+  "sourceVersion": zod.string(),
+  "records": zod.array(zod.object({
+  "countyFips": zod.string().regex(getNriCountyContextResponseRecordsItemCountyFipsRegExp),
+  "countyName": zod.string(),
+  "stateCode": zod.string().regex(getNriCountyContextResponseRecordsItemStateCodeRegExp),
+  "population": zod.number().nullable(),
+  "riskScore": zod.number().nullable(),
+  "riskRating": zod.string().nullable(),
+  "expectedAnnualLoss": zod.number().nullable(),
+  "expectedAnnualLossScore": zod.number().nullable(),
+  "expectedAnnualLossRating": zod.string().nullable(),
+  "socialVulnerabilityScore": zod.number().nullable(),
+  "socialVulnerabilityRating": zod.string().nullable(),
+  "communityResilienceScore": zod.number().nullable(),
+  "communityResilienceRating": zod.string().nullable(),
+  "sourceVersion": zod.string(),
+  "sourceUrl": zod.string().url()
 }))
 })
 

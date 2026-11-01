@@ -163,6 +163,29 @@ paths:
                 $ref: "#/components/schemas/EmsRegistryMatchesResponse"
         "400":
           description: Invalid search parameters
+  /geography/nri-county-context:
+    get:
+      operationId: getNriCountyContext
+      tags: [territory]
+      summary: Retrieve FEMA National Risk Index county records
+      description: Returns county-level FEMA risk context. A stateCode limits the response to one state; without it, all available counties are returned. State totals are derived by summing county expected annual loss values only when county coverage is complete.
+      parameters:
+        - in: query
+          name: stateCode
+          schema:
+            type: string
+            pattern: "^[A-Za-z]{2}$"
+      responses:
+        "200":
+          description: County risk values with source, version, and retrieval metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NriCountyContextResponse"
+        "400":
+          description: Invalid state code
+        "502":
+          description: FEMA risk records are temporarily unavailable
   /gemini/chat:
     post:
       operationId: sendTerritoryResearchMessage
@@ -338,6 +361,142 @@ components:
         - postalCode
         - unitCount
         - exportDate
+    FireRegistryUnit:
+      type: object
+      properties:
+        sourceRecordId:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        departmentNerisId:
+          type: string
+        stationNerisId:
+          type: ["string", "null"]
+        stationName:
+          type: ["string", "null"]
+        unitType:
+          type: ["string", "null"]
+        cadDesignation1:
+          type: ["string", "null"]
+        cadDesignation2:
+          type: ["string", "null"]
+        dedicatedStaffing:
+          type: ["string", "null"]
+        exportDate:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - sourceRecordId
+        - sourceUrl
+        - departmentNerisId
+        - stationNerisId
+        - stationName
+        - unitType
+        - cadDesignation1
+        - cadDesignation2
+        - dedicatedStaffing
+        - exportDate
+    FireRegistryJurisdiction:
+      type: object
+      properties:
+        sourceRecordId:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        name:
+          type: ["string", "null"]
+        regionType:
+          type: ["string", "null"]
+        entityType:
+          type: ["string", "null"]
+        departmentType:
+          type: ["string", "null"]
+        exportDate:
+          type: ["string", "null"]
+          format: date-time
+        boundaryAvailableAtSource:
+          type: boolean
+      required:
+        - sourceRecordId
+        - sourceUrl
+        - name
+        - regionType
+        - entityType
+        - departmentType
+        - exportDate
+        - boundaryAvailableAtSource
+    NriCountyContextRecord:
+      type: object
+      properties:
+        countyFips:
+          type: string
+          pattern: "^[0-9]{5}$"
+        countyName:
+          type: string
+        stateCode:
+          type: string
+          pattern: "^[A-Z]{2}$"
+        population:
+          type: ["number", "null"]
+        riskScore:
+          type: ["number", "null"]
+        riskRating:
+          type: ["string", "null"]
+        expectedAnnualLoss:
+          type: ["number", "null"]
+        expectedAnnualLossScore:
+          type: ["number", "null"]
+        expectedAnnualLossRating:
+          type: ["string", "null"]
+        socialVulnerabilityScore:
+          type: ["number", "null"]
+        socialVulnerabilityRating:
+          type: ["string", "null"]
+        communityResilienceScore:
+          type: ["number", "null"]
+        communityResilienceRating:
+          type: ["string", "null"]
+        sourceVersion:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+      required:
+        - countyFips
+        - countyName
+        - stateCode
+        - population
+        - riskScore
+        - riskRating
+        - expectedAnnualLoss
+        - expectedAnnualLossScore
+        - expectedAnnualLossRating
+        - socialVulnerabilityScore
+        - socialVulnerabilityRating
+        - communityResilienceScore
+        - communityResilienceRating
+        - sourceVersion
+        - sourceUrl
+    NriCountyContextResponse:
+      type: object
+      properties:
+        fetchedAt:
+          type: string
+          format: date-time
+        stateCode:
+          type: ["string", "null"]
+        sourceUrl:
+          type: string
+          format: uri
+        sourceVersion:
+          type: string
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/NriCountyContextRecord"
+      required: [fetchedAt, stateCode, sourceUrl, sourceVersion, records]
     FireRegistrySourceStatus:
       type: object
       properties:
@@ -415,6 +574,18 @@ components:
             $ref: "#/components/schemas/FireRegistryStation"
         stationsTruncated:
           type: boolean
+        units:
+          type: array
+          items:
+            $ref: "#/components/schemas/FireRegistryUnit"
+        unitsTruncated:
+          type: boolean
+        jurisdictions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FireRegistryJurisdiction"
+        jurisdictionsTruncated:
+          type: boolean
       required:
         - source
         - sourceRecordId
@@ -436,6 +607,10 @@ components:
         - matchReasons
         - stations
         - stationsTruncated
+        - units
+        - unitsTruncated
+        - jurisdictions
+        - jurisdictionsTruncated
     FireRegistryMatchesResponse:
       type: object
       properties:

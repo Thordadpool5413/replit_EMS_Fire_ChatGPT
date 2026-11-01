@@ -105,6 +105,81 @@ export interface FireRegistryStation {
   exportDate: string | null;
 }
 
+export interface FireRegistryUnit {
+  sourceRecordId: string;
+  sourceUrl: string;
+  departmentNerisId: string;
+  /** @nullable */
+  stationNerisId: string | null;
+  /** @nullable */
+  stationName: string | null;
+  /** @nullable */
+  unitType: string | null;
+  /** @nullable */
+  cadDesignation1: string | null;
+  /** @nullable */
+  cadDesignation2: string | null;
+  /** @nullable */
+  dedicatedStaffing: string | null;
+  /** @nullable */
+  exportDate: string | null;
+}
+
+export interface FireRegistryJurisdiction {
+  sourceRecordId: string;
+  sourceUrl: string;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  regionType: string | null;
+  /** @nullable */
+  entityType: string | null;
+  /** @nullable */
+  departmentType: string | null;
+  /** @nullable */
+  exportDate: string | null;
+  boundaryAvailableAtSource: boolean;
+}
+
+export interface NriCountyContextRecord {
+  /** @pattern ^[0-9]{5}$ */
+  countyFips: string;
+  countyName: string;
+  /** @pattern ^[A-Z]{2}$ */
+  stateCode: string;
+  /** @nullable */
+  population: number | null;
+  /** @nullable */
+  riskScore: number | null;
+  /** @nullable */
+  riskRating: string | null;
+  /** @nullable */
+  expectedAnnualLoss: number | null;
+  /** @nullable */
+  expectedAnnualLossScore: number | null;
+  /** @nullable */
+  expectedAnnualLossRating: string | null;
+  /** @nullable */
+  socialVulnerabilityScore: number | null;
+  /** @nullable */
+  socialVulnerabilityRating: string | null;
+  /** @nullable */
+  communityResilienceScore: number | null;
+  /** @nullable */
+  communityResilienceRating: string | null;
+  sourceVersion: string;
+  sourceUrl: string;
+}
+
+export interface NriCountyContextResponse {
+  fetchedAt: string;
+  /** @nullable */
+  stateCode: string | null;
+  sourceUrl: string;
+  sourceVersion: string;
+  records: NriCountyContextRecord[];
+}
+
 export type FireRegistrySourceStatusSource = typeof FireRegistrySourceStatusSource[keyof typeof FireRegistrySourceStatusSource];
 
 
@@ -181,6 +256,10 @@ export interface FireRegistryCandidate {
   matchReasons: string[];
   stations: FireRegistryStation[];
   stationsTruncated: boolean;
+  units: FireRegistryUnit[];
+  unitsTruncated: boolean;
+  jurisdictions: FireRegistryJurisdiction[];
+  jurisdictionsTruncated: boolean;
 }
 
 export interface FireRegistryMatchesResponse {
@@ -342,5 +421,12 @@ city?: string;
  * @pattern ^[A-Za-z]{2}$
  */
 stateCode: string;
+};
+
+export type GetNriCountyContextParams = {
+/**
+ * @pattern ^[A-Za-z]{2}$
+ */
+stateCode?: string;
 };
 

@@ -53,6 +53,7 @@ import {
   getAgencyClinicalProtocolAlignment
 } from '../data/clinicalAndCompetitiveIntelligence';
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
+import { getAgencyGeographicLinks } from '../services/geographicMappingService';
 import { ResuscitationSurvivalFunnel } from './ResuscitationSurvivalFunnel';
 import { TcoCumulativeSavingsChart } from './TcoCumulativeSavingsChart';
 import { QualityScorecard } from './QualityScorecard';
@@ -384,6 +385,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     [rawAgency, livePatch]
   );
   const suppliers = useMemo(() => resolveEquipmentSuppliers(agency), [agency]);
+  const geographicLinks = useMemo(
+    () => getAgencyGeographicLinks(agency),
+    [agency],
+  );
+  const locationGeographicLinks = geographicLinks.filter(
+    (link) => link.relationship === 'located-at' || link.relationship === 'headquartered-in',
+  );
+  const serviceGeographicLinks = geographicLinks.filter(
+    (link) => link.relationship === 'serves',
+  );
+  const stationGeographicLinks = geographicLinks.filter(
+    (link) => link.relationship === 'operates-station-in',
+  );
   const tcoModel = useMemo(() => {
     const reportedDefibCount = agency.installedFleet.defibUnitsCount;
     if (!hasReportedValue(reportedDefibCount) || reportedDefibCount <= 0) return null;
@@ -2935,6 +2949,70 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatPercent(agency.gisData.povertyRate)}</dd>
                 </div>
               </dl>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-800/50">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">
+                  Geography links and relationship basis
+                </h3>
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">
+                  Location is kept separate from operating coverage. A county or city label is not treated as a service-area boundary.
+                </p>
+                <div className="mt-2 grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Location labels
+                    </p>
+                    <ul className="mt-1 space-y-1.5">
+                      {locationGeographicLinks.map((link, index) => (
+                        <li key={`${link.level}-${link.sourceGeographyId ?? link.label}-${index}`} className="text-[10px] text-slate-700 dark:text-slate-200">
+                          <span className="font-semibold capitalize">{link.level}</span>: {link.label}
+                          {link.sourceGeographyId ? ` · ID ${link.sourceGeographyId}` : ''}
+                          <span className="text-slate-500"> · {
+                            link.matchBasis === 'source-id'
+                              ? 'source ID'
+                              : link.matchBasis === 'name-state-candidate'
+                                ? 'name/state candidate'
+                                : link.matchBasis === 'user-confirmed'
+                                  ? 'user-confirmed'
+                                  : 'display label only'
+                          }</span>
+                          {link.sourceUrl && (
+                            <a href={link.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-700 hover:underline dark:text-blue-300">
+                              {link.sourceName || 'source'}
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Explicit operating relationships
+                    </p>
+                    {serviceGeographicLinks.length || stationGeographicLinks.length ? (
+                      <ul className="mt-1 space-y-1.5">
+                        {[...serviceGeographicLinks, ...stationGeographicLinks].map((link, index) => (
+                          <li key={`${link.relationship}-${link.sourceGeographyId ?? link.label}-${index}`} className="text-[10px] text-slate-700 dark:text-slate-200">
+                            <span className="font-semibold">{link.relationship}</span>: {link.label}
+                            {link.sourceGeographyId ? ` · ID ${link.sourceGeographyId}` : ''}
+                            {link.sourceUrl && (
+                              <a href={link.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-700 hover:underline dark:text-blue-300">
+                                {link.sourceName || 'source record'}
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-[10px] text-slate-600 dark:text-slate-300">
+                        No explicit service-area geography or station-to-area relationship is attached to this agency record.
+                      </p>
+                    )}
+                    <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+                      NERIS boundary and unit records are separate source candidates. They do not replace these agency-specific relationships.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
 
             {/* Pre-Competed Cooperative Purchasing Contracts & Grant Vehicles */}

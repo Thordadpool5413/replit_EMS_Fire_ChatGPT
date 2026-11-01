@@ -487,7 +487,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   <span>Federal, State & Clinical Data Ingestion Framework</span>
                 </h3>
                 <p className="text-xs text-sky-800/90 leading-relaxed">
-                  These are possible authoritative source systems, not proof that each displayed value was ingested or verified. Check the field-level evidence ledger before relying on a record.
+                  Status shows whether this app currently requests a source. A live connection does not prove a candidate matches the account or that every displayed fact came from that source; check the linked record and field-level evidence.
                 </p>
               </div>
 
@@ -502,6 +502,15 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <h4 className="font-bold text-slate-900 text-xs mt-1 leading-snug">
                           {repo.name}
                         </h4>
+                        <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[9px] font-semibold ${
+                          repo.appConnection === 'live-feed'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}>
+                          {repo.appConnection === 'live-feed'
+                            ? 'Live feed used in app'
+                            : 'Catalog only · not connected here'}
+                        </span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-400 shrink-0">
                         {repo.updateCadence}
@@ -525,6 +534,16 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <span className="text-slate-400 font-semibold block">Verification Method:</span>
                         <span className="text-slate-600">{repo.verificationMethod}</span>
                       </div>
+                      {repo.sourceUrl && (
+                        <a
+                          href={repo.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex text-[10px] font-semibold text-blue-700 hover:underline"
+                        >
+                          Open source documentation ↗
+                        </a>
+                      )}
                     </div>
 
                     <div className="pt-2 border-t border-slate-100">

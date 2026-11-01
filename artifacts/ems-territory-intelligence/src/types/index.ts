@@ -113,6 +113,36 @@ export interface CountyHealthRecord {
   medicareDenialSourceUrl?: string;
 }
 
+export type GeographicLevel =
+  | 'national'
+  | 'state'
+  | 'county'
+  | 'place'
+  | 'zip'
+  | 'tract'
+  | 'service-area'
+  | 'station'
+  | 'agency';
+
+export type GeographicRelationship =
+  | 'located-at'
+  | 'headquartered-in'
+  | 'serves'
+  | 'operates-station-in'
+  | 'candidate-match';
+
+export interface AgencyGeographicLink {
+  relationship: GeographicRelationship;
+  level: GeographicLevel;
+  label: string;
+  /** Native identifier from the geography source, not an app-generated ID. */
+  sourceGeographyId?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  matchBasis: 'source-id' | 'user-confirmed' | 'name-state-candidate' | 'display-label';
+  reportingPeriod?: string;
+}
+
 export interface GisAndDemographics {
   populationDensityPerSqMile: number;
   medianHouseholdIncome: number;
@@ -179,6 +209,14 @@ export interface Agency {
   address: string;
   latitude: number;
   longitude: number;
+  /** Optional source-native identifiers; never infer these from a name or point alone. */
+  stateFips?: string;
+  countyFips?: string;
+  placeGeoid?: string;
+  tractGeoid?: string;
+  /** Explicitly confirmed service-area geography IDs; each should also have its source attached in geographicLinks. */
+  serviceAreaGeographyIds?: string[];
+  geographicLinks?: AgencyGeographicLink[];
 
   // Operational metrics (NEMSIS & USFA)
   populationServed: number;
@@ -455,6 +493,10 @@ export interface AgencyFactEvidence {
   sourceRecordId: string;
   reviewedAt?: string;
   reportingPeriod?: string;
+  geographicLevel?: GeographicLevel;
+  geographicId?: string;
+  geographicRelationship?: GeographicRelationship;
+  geographicMatchBasis?: AgencyGeographicLink['matchBasis'];
   note?: string;
 }
 

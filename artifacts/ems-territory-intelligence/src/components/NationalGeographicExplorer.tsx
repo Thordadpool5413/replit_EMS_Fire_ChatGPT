@@ -53,10 +53,17 @@ import {
 import { PulseIqRegionalBreakdownChart } from './PulseIqRegionalBreakdownChart';
 import { RealWorldCountyBoundaryMap } from './RealWorldCountyBoundaryMap';
 import { countyBoundaryHierarchy } from '../services/countyBoundaryHierarchyService';
+import {
+  getGetNriCountyContextQueryKey,
+  useGetNriCountyContext,
+  type NriCountyContextRecord,
+} from '@workspace/api-client-react';
 import { PulseIqScoreTooltip } from './PulseIqScoreTooltip';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
+
+const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -118,6 +125,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
   const [showCityPillsDrawer, setShowCityPillsDrawer] = useState<boolean>(false);
   const [providerSortBy, setProviderSortBy] = useState<'pulseIq' | 'fleetAge' | 'value' | 'denial'>('pulseIq');
+  const [stateMapLayer, setStateMapLayer] = useState<'agency-records' | 'fema-loss'>('agency-records');
 
   const [providerViewMode, setProviderViewModeState] = useState<'cards' | 'table'>(() => {
     try {
@@ -323,6 +331,68 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
     return map;
   }, [agencies]);
+  const nriNationalQuery = useGetNriCountyContext(undefined, {
+    query: {
+      enabled: stateMapLayer === 'fema-loss',
+      queryKey: getGetNriCountyContextQueryKey(undefined),
+      staleTime: 6 * 60 * 60 * 1000,
+    },
+  });
+  const stateNriSummaryByCode = useMemo(() => {
+    const byState = new Map<string, Map<string, NriCountyContextRecord>>();
+    for (const record of nriNationalQuery.data?.records ?? []) {
+      if (!byState.has(record.stateCode)) byState.set(record.stateCode, new Map());
+      byState.get(record.stateCode)!.set(record.countyFips, record);
+    }
+    const summary = new Map<string, {
+      totalExpectedAnnualLoss: number | null;
+      availableCounties: number;
+      expectedCounties: number;
+      coverageComplete: boolean;
+    }>();
+    for (const state of Object.values(ALL_50_STATES_SUMMARIES)) {
+      const expectedFips = territoryEngine.getCountiesForState(state.code)
+        .map((county) => county.countyFips)
+        .filter((fips) => /^\d{5}$/.test(fips));
+      const uniqueExpectedFips = [...new Set(expectedFips)];
+      const rows = byState.get(state.code);
+      const availableCounties = uniqueExpectedFips.filter((fips) => rows?.has(fips)).length;
+      const coverageComplete =
+        uniqueExpectedFips.length > 0 &&
+        availableCounties === uniqueExpectedFips.length &&
+        uniqueExpectedFips.every((fips) => rows?.get(fips)?.expectedAnnualLoss != null);
+      const totalExpectedAnnualLoss = coverageComplete
+        ? uniqueExpectedFips.reduce(
+            (total, fips) => total + (rows!.get(fips)!.expectedAnnualLoss ?? 0),
+            0,
+          )
+        : null;
+      summary.set(state.code, {
+        totalExpectedAnnualLoss,
+        availableCounties,
+        expectedCounties: uniqueExpectedFips.length,
+        coverageComplete,
+      });
+    }
+    return summary;
+  }, [nriNationalQuery.data?.records]);
+  const stateMapColorByCode = useMemo(() => {
+    const selectedValues = stateMapLayer === 'fema-loss'
+      ? [...stateNriSummaryByCode.entries()]
+          .filter(([, value]) => value.coverageComplete && value.totalExpectedAnnualLoss != null)
+          .map(([code, value]) => ({ code, value: value.totalExpectedAnnualLoss! }))
+      : Object.keys(ALL_50_STATES_SUMMARIES).map((code) => ({
+          code,
+          value: stateAgencyCounts.get(code) ?? 0,
+        }));
+    selectedValues.sort((a, b) => a.value - b.value);
+    const colors = new Map<string, string>();
+    selectedValues.forEach((item, index) => {
+      const bucket = Math.min(STATE_MAP_PALETTE.length - 1, Math.floor(index * STATE_MAP_PALETTE.length / Math.max(selectedValues.length, 1)));
+      colors.set(item.code, STATE_MAP_PALETTE[bucket]);
+    });
+    return colors;
+  }, [stateMapLayer, stateNriSummaryByCode, stateAgencyCounts]);
 
   // Available cities for selected state & county with rich metadata across all 50 states
   const availableCities = useMemo(() => {
@@ -948,6 +1018,31 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
             {/* Interactive SVG U.S. State Boundary Choropleth Map Canvas */}
             <div className="relative bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden p-3">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="us-state-map-layer" className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    Map data
+                  </label>
+                  <select
+                    id="us-state-map-layer"
+                    value={stateMapLayer}
+                    onChange={(event) => setStateMapLayer(event.target.value as 'agency-records' | 'fema-loss')}
+                    className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    <option value="agency-records">Agency records in this app</option>
+                    <option value="fema-loss">FEMA county expected annual loss</option>
+                  </select>
+                </div>
+                {stateMapLayer === 'fema-loss' && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400" role="status">
+                    {nriNationalQuery.isLoading
+                      ? 'Loading FEMA county records…'
+                      : nriNationalQuery.isError
+                        ? 'FEMA risk layer unavailable'
+                        : `${nriNationalQuery.data?.records.length.toLocaleString() ?? 0} county records · ${nriNationalQuery.data?.sourceVersion ?? 'version not stated'}`}
+                  </span>
+                )}
+              </div>
               <svg
                 viewBox="0 0 920 500"
                 className="w-full h-[380px] sm:h-[440px] select-none"
@@ -980,13 +1075,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     const isHovered = hoveredMapStateCode === st.code;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
 
-                    const fillColor = isHovered
-                      ? '#1E3A8A'
-                      : !isInRegion
-                        ? '#F1F5F9'
-                        : '#E2E8F0';
+                    const nriSummary = stateNriSummaryByCode.get(st.code);
+                    const hasMapValue = stateMapLayer === 'fema-loss'
+                      ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
+                      : true;
+                    const fillColor = !isInRegion
+                      ? '#F1F5F9'
+                      : hasMapValue
+                        ? stateMapColorByCode.get(st.code) ?? '#E2E8F0'
+                        : '#CBD5E1';
 
-                    const strokeColor = isHovered
+                    const strokeColor = isHovered || selectedStateCode === st.code
                       ? '#0F172A'
                       : !isInRegion
                         ? '#CBD5E1'
@@ -998,7 +1097,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         d={boundary.d}
                         fill={fillColor}
                         stroke={strokeColor}
-                        strokeWidth={isHovered ? 2 : 1}
+                        strokeWidth={isHovered || selectedStateCode === st.code ? 2.5 : 1}
                         opacity={isInRegion ? 1 : 0.45}
                         onClick={() => {
                           handleSelectState(st.code);
@@ -1008,7 +1107,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onMouseLeave={() => setHoveredMapStateCode(null)}
                         className="cursor-pointer transition-colors duration-150"
                       >
-                        <title>{`${st.state} (${st.code}) — Click to inspect ${countyCount} Counties`}</title>
+                        <title>{`${st.state} (${st.code}) · ${stateMapLayer === 'fema-loss'
+                          ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
+                            ? `Sum of county expected annual loss: $${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}; ${nriSummary.availableCounties}/${nriSummary.expectedCounties} counties; ${nriNationalQuery.data?.sourceVersion ?? 'FEMA NRI'}`
+                            : `State total not shown; FEMA county coverage ${nriSummary?.availableCounties ?? 0}/${nriSummary?.expectedCounties ?? countyCount}`
+                          : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} Counties`}</title>
                       </path>
                     );
                   })}
@@ -1138,6 +1241,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     const hSt = ALL_50_STATES_SUMMARIES[hoveredMapStateCode];
                     const cCount = territoryEngine.getCountiesForState(hSt.code).length;
                     const denialProfileSummary = getStateZipDenialProfileSummary(hSt.code);
+                    const nriSummary = stateNriSummaryByCode.get(hSt.code);
                     return (
                       <div className="flex flex-wrap items-center gap-2.5 tabular-nums">
                         <span className="px-2 py-0.5 rounded bg-[#1E3A8A] text-white font-semibold">
@@ -1146,6 +1250,36 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <strong className="text-slate-900 dark:text-white text-sm font-semibold tracking-[-0.01em]">{hSt.state}</strong>
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">{cCount} Counties</span>
+                        <span className="text-slate-300 dark:text-slate-700">·</span>
+                        {stateMapLayer === 'fema-loss' ? (
+                          <span className="text-slate-700 dark:text-slate-300">
+                            Sum of county expected annual loss:{' '}
+                            <strong className="font-semibold">
+                              {nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
+                                ? `$${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                                : 'Not shown'}
+                            </strong>
+                            <span className="ml-1 text-[10px] text-slate-500">
+                              ({nriSummary?.availableCounties ?? 0}/{nriSummary?.expectedCounties ?? cCount} counties matched; totals require full county coverage)
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-700 dark:text-slate-300">
+                            App agency records: <strong className="font-semibold">{stateAgencyCounts.get(hSt.code) ?? 0}</strong>
+                            <span className="ml-1 text-[10px] text-slate-500">(directory entries; not a count of all operating agencies)</span>
+                          </span>
+                        )}
+                        {stateMapLayer === 'fema-loss' && nriSummary?.coverageComplete && nriNationalQuery.data?.sourceUrl && (
+                          <a
+                            href={nriNationalQuery.data.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={event => event.stopPropagation()}
+                            className="text-[10px] text-blue-700 dark:text-blue-300 underline underline-offset-2"
+                          >
+                            FEMA NRI source · {nriNationalQuery.data.sourceVersion}
+                          </a>
+                        )}
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="text-slate-700 dark:text-slate-300">
                           State ZIP-profile average: <strong className="font-semibold">
@@ -1182,12 +1316,30 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <MapPin className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-blue-400 shrink-0" />
                       <span>Click any State boundary or East Coast callout badge to inspect its Counties</span>
                     </span>
-                    <span className="flex items-center gap-1.5 tabular-nums">
-                      <span className="w-3 h-3 rounded-xs bg-[#DBEAFE] border border-[#60A5FA] inline-block" />
-                    </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-xs bg-[#E2E8F0] border border-[#64748B] inline-block" />
-                      <span>Standard Territory</span>
+                      <span className="flex items-center gap-1">
+                        {STATE_MAP_PALETTE.map((color, index) => (
+                          <span
+                            key={color}
+                            className="inline-flex h-4 min-w-5 items-center justify-center rounded-sm border border-emerald-700/40 px-0.5 text-[8px] font-semibold text-slate-700"
+                            style={{ backgroundColor: color }}
+                            title={`Quantile ${index + 1}`}
+                          >
+                            Q{index + 1}
+                          </span>
+                        ))}
+                      </span>
+                      <span>
+                        {stateMapLayer === 'fema-loss'
+                          ? 'Lower to higher state sum of county expected annual loss'
+                          : 'Lower to higher app agency-record count'}
+                      </span>
+                      {stateMapLayer === 'fema-loss' && (
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-3 w-3 rounded-xs border border-slate-500 bg-slate-300" />
+                          <span>Missing or incomplete county coverage</span>
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}

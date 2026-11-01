@@ -3,6 +3,8 @@ import type {
   FireRegistryMatchesResponse,
   FireRegistrySourceStatus,
   FireRegistryStation,
+  FireRegistryUnit,
+  FireRegistryJurisdiction,
 } from "@workspace/api-zod";
 
 const USFA_DOWNLOAD_PAGE = "https://apps.usfa.fema.gov/registry/download";
@@ -361,7 +363,7 @@ async function getUsfaStations(): Promise<{
   return { data: result.data, fetchedAt: result.fetchedAt };
 }
 
-function nerisLayerUrl(layerId: 0 | 1): string {
+function nerisLayerUrl(layerId: 0 | 1 | 2 | 3): string {
   return `${NERIS_FEATURE_SERVER}/${layerId}`;
 }
 
@@ -592,6 +594,141 @@ function stationRecordUrl(
   return url.toString();
 }
 
+function nerisDepartmentDetailsUrl(
+  layerId: 2 | 3,
+  fieldName: "neris_id" | "department_neris_id",
+  value: string,
+  returnGeometry = false,
+): string {
+  const url = new URL(`${nerisLayerUrl(layerId)}/query`);
+  url.searchParams.set("where", `${fieldName}='${value.replace(/'/g, "''")}'`);
+  url.searchParams.set("outFields", "*");
+  url.searchParams.set("returnGeometry", String(returnGeometry));
+  url.searchParams.set("f", "json");
+  return url.toString();
+}
+
+async function queryNerisDepartmentLayer(
+  layerId: 2 | 3,
+  fieldName: "neris_id" | "department_neris_id",
+  departmentNerisId: string,
+  outFields: string[],
+): Promise<NerisFeature[]> {
+  const features: NerisFeature[] = [];
+  let offset = 0;
+  while (offset < MAX_STATE_FEATURES) {
+    const url = new URL(`${nerisLayerUrl(layerId)}/query`);
+    url.searchParams.set(
+      "where",
+      `${fieldName}='${departmentNerisId.replace(/'/g, "''")}'`,
+    );
+    url.searchParams.set("outFields", outFields.join(","));
+    url.searchParams.set("returnGeometry", "false");
+    url.searchParams.set("orderByFields", "OBJECTID ASC");
+    url.searchParams.set("resultRecordCount", String(ARC_GIS_PAGE_SIZE));
+    url.searchParams.set("resultOffset", String(offset));
+    url.searchParams.set("f", "json");
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) throw new Error(`NERIS returned HTTP ${response.status}.`);
+    const payload = (await response.json()) as {
+      error?: { message?: string };
+      features?: NerisFeature[];
+    };
+    if (payload.error) {
+      throw new Error(payload.error.message || "NERIS returned an error.");
+    }
+    const page = Array.isArray(payload.features) ? payload.features : [];
+    features.push(...page);
+    if (page.length < ARC_GIS_PAGE_SIZE) break;
+    offset += page.length;
+  }
+  if (offset >= MAX_STATE_FEATURES) {
+    throw new Error("NERIS department details exceeded the safe retrieval limit.");
+  }
+  return features;
+}
+
+async function getNerisDepartmentDetails(
+  departmentNerisId: string,
+): Promise<{ units: FireRegistryUnit[]; jurisdictions: FireRegistryJurisdiction[] }> {
+  const result = await loadCached(
+    `neris:department-details:${departmentNerisId}`,
+    async () => {
+      const [unitFeatures, jurisdictionFeatures] = await Promise.all([
+        queryNerisDepartmentLayer(3, "department_neris_id", departmentNerisId, [
+          "neris_id",
+          "cad_designation_1",
+          "cad_designation_2",
+          "type",
+          "dedicated_staffing",
+          "station_neris_id",
+          "station_name",
+          "department_neris_id",
+          "export_date",
+        ]),
+        queryNerisDepartmentLayer(2, "neris_id", departmentNerisId, [
+          "neris_id",
+          "name",
+          "region_type",
+          "entity_type",
+          "department_type",
+          "export_date",
+        ]),
+      ]);
+      const units = unitFeatures.flatMap((feature) => {
+        const attrs = feature.attributes ?? {};
+        const sourceRecordId = optionalText(String(attrs.neris_id ?? ""));
+        const linkedDepartmentId = optionalText(
+          String(attrs.department_neris_id ?? ""),
+        );
+        if (!sourceRecordId || linkedDepartmentId !== departmentNerisId) return [];
+        return [{
+          sourceRecordId,
+          sourceUrl: nerisDepartmentDetailsUrl(
+            3,
+            "department_neris_id",
+            departmentNerisId,
+          ),
+          departmentNerisId,
+          stationNerisId: optionalText(String(attrs.station_neris_id ?? "")),
+          stationName: optionalText(String(attrs.station_name ?? "")),
+          unitType: optionalText(String(attrs.type ?? "")),
+          cadDesignation1: optionalText(String(attrs.cad_designation_1 ?? "")),
+          cadDesignation2: optionalText(String(attrs.cad_designation_2 ?? "")),
+          dedicatedStaffing: optionalText(String(attrs.dedicated_staffing ?? "")),
+          exportDate: toIsoDate(attrs.export_date),
+        }];
+      });
+      const jurisdictions = jurisdictionFeatures.flatMap((feature) => {
+        const attrs = feature.attributes ?? {};
+        const sourceRecordId = optionalText(String(attrs.neris_id ?? ""));
+        if (!sourceRecordId) return [];
+        return [{
+          sourceRecordId,
+          sourceUrl: nerisDepartmentDetailsUrl(
+            2,
+            "neris_id",
+            departmentNerisId,
+            true,
+          ),
+          name: optionalText(String(attrs.name ?? "")),
+          regionType: optionalText(String(attrs.region_type ?? "")),
+          entityType: optionalText(String(attrs.entity_type ?? "")),
+          departmentType: optionalText(String(attrs.department_type ?? "")),
+          exportDate: toIsoDate(attrs.export_date),
+          boundaryAvailableAtSource: true,
+        }];
+      });
+      return { units, jurisdictions };
+    },
+    "NERIS unit or jurisdiction details could not be loaded.",
+  );
+  return result.data;
+}
+
 function makeMatch(
   input: SearchInput,
   fields: {
@@ -677,6 +814,10 @@ function makeMatch(
     matchReasons,
     stations: fields.stations,
     stationsTruncated: fields.stationsTruncated,
+    units: [],
+    unitsTruncated: false,
+    jurisdictions: [],
+    jurisdictionsTruncated: false,
   };
   return { record, score };
 }
@@ -886,6 +1027,22 @@ export async function searchFireRegistryMatches(
   }
 
   records.sort((left, right) => right.score - left.score);
+  const topRecords = records.slice(0, 10);
+  let nerisDetailsUnavailable = false;
+  await Promise.all(
+    topRecords.map(async ({ record }) => {
+      if (record.source !== "NERIS" || !record.nerisId) return;
+      try {
+        const details = await getNerisDepartmentDetails(record.nerisId);
+        record.units = details.units.slice(0, 200);
+        record.unitsTruncated = details.units.length > 200;
+        record.jurisdictions = details.jurisdictions.slice(0, 50);
+        record.jurisdictionsTruncated = details.jurisdictions.length > 50;
+      } catch {
+        nerisDetailsUnavailable = true;
+      }
+    }),
+  );
 
   const usfaStateRecordCount =
     usfaDepartments?.data.filter(
@@ -909,13 +1066,16 @@ export async function searchFireRegistryMatches(
       nerisDepartments ? "available" : "unavailable",
       nerisDepartments?.fetchedAt ?? null,
       nerisStateRecordCount,
-      nerisError,
+      nerisError ??
+        (nerisDetailsUnavailable
+          ? "Matching department records loaded, but some unit or jurisdiction details could not be loaded."
+          : null),
     ),
   ];
 
   return {
     fetchedAt: new Date(),
     sourceStatuses,
-    records: records.slice(0, 10).map(({ record }) => record),
+    records: topRecords.map(({ record }) => record),
   };
 }

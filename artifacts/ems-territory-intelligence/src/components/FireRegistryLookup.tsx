@@ -398,6 +398,120 @@ export function FireRegistryLookup({
                     )}
                   </div>
 
+                  {record.source === "NERIS" && (
+                    <>
+                      <div className="mt-2.5 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                        <div className="mb-1.5 flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+                            NERIS unit-table records ({record.units.length})
+                          </span>
+                          {record.unitsTruncated && (
+                            <span className="text-[9px] text-amber-700 dark:text-amber-300">
+                              First 200 shown
+                            </span>
+                          )}
+                        </div>
+                        <p className="mb-1.5 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400">
+                          These are unit-table entries from the cited NERIS export, not confirmation that each unit is currently active or in frontline service.
+                        </p>
+                        {record.units.length > 0 ? (
+                          <ul className="max-h-40 space-y-1.5 overflow-y-auto">
+                            {record.units.map((unit, unitIndex) => (
+                              <li
+                                key={`${unit.sourceRecordId}-${unitIndex}`}
+                                className="rounded bg-slate-50 px-2 py-1.5 text-[10px] dark:bg-slate-800/70"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-slate-800 dark:text-slate-100">
+                                      {unit.unitType || "Unit type not stated"}
+                                      {unit.stationName ? ` · ${unit.stationName}` : ""}
+                                    </p>
+                                    <p className="mt-0.5 text-slate-500 dark:text-slate-400">
+                                      {[
+                                        unit.cadDesignation1,
+                                        unit.cadDesignation2,
+                                        unit.dedicatedStaffing
+                                          ? `Staffing: ${unit.dedicatedStaffing}`
+                                          : null,
+                                      ].filter(Boolean).join(" · ") || "No CAD designation or staffing value listed"}
+                                    </p>
+                                    <p className="mt-0.5 text-[9px] text-slate-500 dark:text-slate-400">
+                                      Unit NERIS ID {unit.sourceRecordId} · export {displayDate(unit.exportDate)}
+                                    </p>
+                                  </div>
+                                  <a
+                                    href={unit.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`Open NERIS source for unit ${unit.sourceRecordId}`}
+                                    className="shrink-0 text-blue-700 hover:underline dark:text-blue-300"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            No unit-table rows were returned for this department.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-2.5 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                        <div className="mb-1.5 flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+                            NERIS department-jurisdiction boundary records ({record.jurisdictions.length})
+                          </span>
+                          {record.jurisdictionsTruncated && (
+                            <span className="text-[9px] text-amber-700 dark:text-amber-300">
+                              First 50 shown
+                            </span>
+                          )}
+                        </div>
+                        <p className="mb-1.5 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400">
+                          Boundary geometry remains at the NERIS source; the app does not infer service coverage from an address or nearby station.
+                        </p>
+                        {record.jurisdictions.length > 0 ? (
+                          <ul className="space-y-1.5">
+                            {record.jurisdictions.map((jurisdiction, jurisdictionIndex) => (
+                              <li
+                                key={`${jurisdiction.sourceRecordId}-${jurisdictionIndex}`}
+                                className="flex items-start justify-between gap-2 rounded bg-slate-50 px-2 py-1.5 text-[10px] dark:bg-slate-800/70"
+                              >
+                                <div>
+                                  <p className="font-medium text-slate-800 dark:text-slate-100">
+                                    {jurisdiction.name || "Jurisdiction name not stated"}
+                                  </p>
+                                  <p className="mt-0.5 text-slate-500 dark:text-slate-400">
+                                    {[jurisdiction.regionType, jurisdiction.entityType, jurisdiction.departmentType]
+                                      .filter(Boolean).join(" · ") || "Classification not stated"}
+                                    {" · "}Export {displayDate(jurisdiction.exportDate)}
+                                  </p>
+                                </div>
+                                <a
+                                  href={jurisdiction.sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`Open NERIS jurisdiction boundary for ${jurisdiction.name || record.agencyName}`}
+                                  className="shrink-0 text-blue-700 hover:underline dark:text-blue-300"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            No jurisdiction boundary record was returned for this department.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                   <p className="mt-2 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
                     Match basis: {record.matchReasons.join(" · ")}. This is a
                     candidate for account review, not a confirmed agency

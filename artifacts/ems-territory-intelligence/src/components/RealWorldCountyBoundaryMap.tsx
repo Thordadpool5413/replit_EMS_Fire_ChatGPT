@@ -12,6 +12,10 @@ import {
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
 import { getCountyDenialDisplay } from '../services/countyDenialProfileService';
+import {
+  getGetNriCountyContextQueryKey,
+  useGetNriCountyContext,
+} from '@workspace/api-client-react';
 import { Compass, Layers, MapPin, Building2, CheckCircle2, ExternalLink } from 'lucide-react';
 
 const CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL =
@@ -38,6 +42,22 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
   const [hoveredCityName, setHoveredCityName] = useState<string | null>(null);
+  const [countyMapLayer, setCountyMapLayer] = useState<'denial' | 'nri-risk'>('denial');
+  const nriParams = useMemo(
+    () => stateCode && stateCode !== 'all' ? { stateCode } : undefined,
+    [stateCode],
+  );
+  const nriQuery = useGetNriCountyContext(nriParams, {
+    query: {
+      enabled: Boolean(nriParams),
+      queryKey: getGetNriCountyContextQueryKey(nriParams),
+      staleTime: 6 * 60 * 60 * 1000,
+    },
+  });
+  const nriByCountyFips = useMemo(
+    () => new Map((nriQuery.data?.records ?? []).map((record) => [record.countyFips, record])),
+    [nriQuery.data?.records],
+  );
 
   const hierarchy = useMemo(() => countyBoundaryHierarchy.getHierarchy(agencies), [agencies]);
   const stateNode: StateHierarchyNode | null = useMemo(() => {
@@ -106,6 +126,20 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       county.medicareDenialRatePct !== null ||
       getCountyDenialDisplay(county.node.countyRecord).kind === 'zip-profile',
   );
+  const inspectedNri = inspectedCounty
+    ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
+    : null;
+  const nriRatingColors: Record<string, string> = {
+    'Very Low': '#D1FAE5',
+    'Relatively Low': '#A7F3D0',
+    'Relatively Moderate': '#FDE68A',
+    'Relatively High': '#FDBA74',
+    'Very High': '#FCA5A5',
+  };
+  const nriColorFor = (fips: string) => {
+    const rating = nriByCountyFips.get(fips)?.riskRating;
+    return rating ? nriRatingColors[rating] ?? '#E2E8F0' : '#E2E8F0';
+  };
 
   if (!stateNode) return null;
 
@@ -116,14 +150,22 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#1E3A8A]">
             <Compass className="w-4 h-4 text-[#1E3A8A]" />
-            <span>U.S. Census Bureau TIGER/Line Real-World County Boundary Hierarchy</span>
+            <a
+              href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[#1E3A8A] hover:underline"
+            >
+              U.S. Census TIGERweb county boundaries
+              <ExternalLink className="h-3 w-3" />
+            </a>
             <span className="text-slate-300" aria-hidden="true">·</span>
             <span className="font-mono text-slate-600 tabular-nums">State FIPS {stateNode.stateFips}</span>
           </div>
           <h3 className="text-base font-bold text-[#0F172A] mt-0.5">
             {activeCountyNode
               ? `${activeCountyNode.countyName} (${stateNode.stateName}) — Real-World Boundary & Mapped Cities`
-              : `${stateNode.stateName} (${stateNode.stateCode}) — ${stateNode.countiesList.length} Real-World County Boundaries & ${stateNode.totalCitiesCount} Cities`}
+              : `${stateNode.stateName} (${stateNode.stateCode}) — ${stateNode.countiesList.length} Census county boundaries & ${stateNode.totalCitiesCount} city/place reference labels`}
           </h3>
         </div>
 
@@ -146,9 +188,46 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <span className="text-slate-300" aria-hidden="true">·</span>
           <div className="flex items-center gap-1 text-emerald-700 font-sans font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>100% Verified Census GEOIDs</span>
+            <span>Census TIGER FIPS/GEOID join</span>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Layers className="h-4 w-4 shrink-0 text-[#1E3A8A]" />
+          <label htmlFor="county-map-layer" className="text-xs font-semibold text-slate-700">
+            County map layer
+          </label>
+          <select
+            id="county-map-layer"
+            value={countyMapLayer}
+            onChange={(event) => setCountyMapLayer(event.target.value as 'denial' | 'nri-risk')}
+            className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800"
+          >
+            <option value="denial">Medicare denial profiles</option>
+            <option value="nri-risk">FEMA National Risk Index</option>
+          </select>
+        </div>
+        {countyMapLayer === 'nri-risk' && (
+          <div className="text-[11px] text-slate-600" role="status">
+            {nriQuery.isLoading
+              ? `Loading FEMA county records for ${stateNode.stateCode}…`
+              : nriQuery.isError
+                ? 'FEMA county risk layer could not be loaded.'
+                : `${nriByCountyFips.size} county records · ${nriQuery.data?.sourceVersion ?? 'version not stated'} · `}
+            {!nriQuery.isLoading && !nriQuery.isError && nriQuery.data?.sourceUrl && (
+              <a
+                href={nriQuery.data.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-blue-700 hover:underline"
+              >
+                FEMA source
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Mode A: Statewide County Boundary Choropleth + Hierarchy Inspector */}
@@ -182,11 +261,13 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       const denialRate =
                         denialDisplay.kind === 'unavailable' ? null : denialDisplay.ratePct;
                       const hasDenialValue = denialDisplay.kind !== 'unavailable';
-                      const fillColor = isHovered
-                        ? '#1E3A8A'
-                        : hasDenialValue
-                          ? '#DBEAFE'
-                          : '#F1F5F9';
+                      const fillColor = countyMapLayer === 'nri-risk'
+                        ? nriColorFor(pc.countyFips)
+                        : isHovered
+                          ? '#1E3A8A'
+                          : hasDenialValue
+                            ? '#DBEAFE'
+                            : '#F1F5F9';
                       const strokeColor = isHovered ? '#0F172A' : '#94A3B8';
 
                       return (
@@ -201,7 +282,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
+                             {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `County Medicare ambulance claim denial rate: ${denialRate!.toFixed(1)}% · denied ${denialDisplay.deniedClaimCount} / adjudicated ${denialDisplay.adjudicatedClaimCount} · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}${denialDisplay.sourceType === 'local-import' ? ' · local import; verify the report directly' : ''}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} profile: ${denialRate!.toFixed(1)}% · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}; not a county claims rate` : 'No county claims rate or source-backed ZIP profile'}`}
                           </title>
                         </path>
                       );
@@ -212,23 +293,36 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
             )}
 
             <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
-                    <span>No rate profile</span>
-                </span>
-                {hasDenialProfileData ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
-                    <span>Rate profile available</span>
-                  </span>
+              <div className="flex flex-wrap items-center gap-3">
+                {countyMapLayer === 'nri-risk' ? (
+                  <>
+                    {Object.entries(nriRatingColors).map(([rating, color]) => (
+                      <span key={rating} className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400" style={{ backgroundColor: color }} />
+                        <span>{rating}</span>
+                      </span>
+                    ))}
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400 bg-slate-200" />
+                      <span>No county NRI record</span>
+                    </span>
+                  </>
                 ) : (
-                  <span>No mapped rate profiles in this state</span>
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
+                      <span>No rate profile</span>
+                    </span>
+                    {hasDenialProfileData ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
+                        <span>Rate profile available</span>
+                      </span>
+                    ) : (
+                      <span>No mapped rate profiles in this state</span>
+                    )}
+                  </>
                 )}
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-[#1E3A8A] inline-block" />
-                  <span>Active / Hovered County</span>
-                </span>
               </div>
               <span className="font-mono">NAD83 / WGS84 Projection</span>
             </div>
@@ -254,11 +348,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 </div>
 
                 {/* Boundary & Clinical KPIs */}
-                <div className="grid grid-cols-3 gap-3 text-xs font-mono tabular-nums">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono tabular-nums">
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-sans text-slate-500 block">Population</span>
+                    <span className="text-[11px] font-sans text-slate-500 block">App population reference</span>
                     <span className="text-sm font-bold text-[#0F172A] mt-0.5 block">
                       {inspectedCounty.population.toLocaleString()}
+                    </span>
+                    <span className="mt-0.5 block font-sans text-[9px] text-slate-500">
+                      Source/vintage not attached
                     </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
@@ -332,13 +429,37 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       {inspectedCounty.averageTransportMinutes} min
                     </span>
                   </div>
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200/70">
+                    <span className="text-[11px] font-sans text-slate-600 block">FEMA county risk rating</span>
+                    <span className="text-sm font-bold text-slate-900 mt-0.5 block">
+                      {inspectedNri?.riskRating ?? 'No NRI record'}
+                    </span>
+                    <span className="text-[10px] font-sans text-slate-600 mt-0.5 block">
+                      {inspectedNri?.riskScore != null ? `Score ${inspectedNri.riskScore.toFixed(2)} · ${inspectedNri.sourceVersion}` : 'No value reported for this county'}
+                    </span>
+                    {inspectedNri?.sourceUrl && (
+                      <a
+                        href={inspectedNri.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 inline-block text-[10px] font-sans text-blue-700 hover:underline"
+                      >
+                        Open FEMA county record
+                      </a>
+                    )}
+                  </div>
                 </div>
+                {inspectedNri && (
+                  <p className="text-[10px] leading-relaxed text-slate-500">
+                    FEMA National Risk Index county context · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'} · {inspectedNri.sourceVersion}. These county-level measures are context only; they are not values for the city or an individual agency.
+                  </p>
+                )}
 
                 {/* Mapped Real-World Cities in this County Node */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#0F172A]">
-                      Mapped US Census / USPS Cities ({inspectedCounty.node.citiesList.length})
+                      City/place reference labels ({inspectedCounty.node.citiesList.length})
                     </span>
                     <span className="font-mono text-[11px] text-slate-500">
                       ZIPs: {inspectedCounty.node.primaryZipCodes.slice(0, 4).join(', ')}
@@ -541,7 +662,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 mt-3">
               <span>
-                Verified USPS ZIP Codes: <strong className="font-mono text-slate-700">{activeCountyNode.primaryZipCodes.join(', ')}</strong>
+                ZIP reference values: <strong className="font-mono text-slate-700">{activeCountyNode.primaryZipCodes.join(', ')}</strong>
               </span>
               <a
                 href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${activeCountyNode.countyName}, ${stateNode.stateName}`)}`}

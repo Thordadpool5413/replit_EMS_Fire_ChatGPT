@@ -582,10 +582,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
         </div>
 
-        {/* 12-Column Layout: Map stays primary, with a compact state intelligence summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
-          {/* Map Canvas Column (8 Cols on LG, 9 Cols on XL) */}
-          <div className="lg:col-span-8 xl:col-span-9 min-w-0 space-y-3">
+        {/* The Home screen keeps the interactive map as its only main content. */}
+        <div className="grid grid-cols-1 gap-4 items-start">
+          <div className="min-w-0 space-y-3">
             <div
               className="relative bg-[#EEF3F8] dark:bg-[#0B1728] rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] overflow-hidden p-3 sm:p-4 space-y-3"
               onMouseLeave={() => setHoveredStateCode(null)}
@@ -854,8 +853,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </div>
           </div>
 
-          {/* State Intelligence Dossier Column (4 Cols on LG, 3 Cols on XL) */}
-          <div className="lg:col-span-4 xl:col-span-3 min-w-0 space-y-3">
+          <div className="hidden">
             <div className="p-4 sm:p-5 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-3">
               <div className="flex items-center justify-between border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <div className="min-w-0">

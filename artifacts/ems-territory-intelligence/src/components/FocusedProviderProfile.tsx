@@ -4,7 +4,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Agency, LeadStage, FieldNote, KeyContact, AgencyFactEvidenceKey } from '../types';
+import {
+  Agency,
+  LeadStage,
+  FieldNote,
+  KeyContact,
+  AgencyFactEvidenceKey,
+  AgencySourceRecordAssociation,
+} from '../types';
 import {
   getAgencyFactEvidenceStatus,
   hasAgencyFactEvidence,
@@ -57,6 +64,10 @@ import { getAgencyGeographicLinks } from '../services/geographicMappingService';
 import { ResuscitationSurvivalFunnel } from './ResuscitationSurvivalFunnel';
 import { TcoCumulativeSavingsChart } from './TcoCumulativeSavingsChart';
 import { QualityScorecard } from './QualityScorecard';
+import { EmsRegistryLookup } from './EmsRegistryLookup';
+import { FireRegistryLookup } from './FireRegistryLookup';
+import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
+import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
   formatEquipmentDisplay,
@@ -76,6 +87,11 @@ interface FocusedProviderProfileProps {
   onAddFieldNote: (agencyId: string, note: Omit<FieldNote, 'id'>) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
   onOpenDataLineage?: (agency: Agency) => void;
+  onSaveAgencySourceData: (agencyId: string, data: AgencySourceRecordData) => boolean;
+  onDecideAgencySourceRecord: (
+    agencyId: string,
+    association: AgencySourceRecordAssociation,
+  ) => void;
 }
 
 const FactVerificationTag: React.FC<{
@@ -359,7 +375,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   onToggleBookmark,
   onAddFieldNote,
   onOpenRfpGenerator,
-  onOpenDataLineage
+  onOpenDataLineage,
+  onSaveAgencySourceData,
+  onDecideAgencySourceRecord
 }) => {
   const verifyProviderMutation = useVerifyProviderLive();
   const [livePatch, setLivePatch] = useState<Partial<Agency>>({});
@@ -3389,6 +3407,34 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </tbody>
               </table>
             </div>
+            {isFire ? (
+              <FireRegistryLookup
+                agencyName={agency.name}
+                city={agency.city}
+                stateCode={agency.stateCode}
+                fdid={agency.fdid}
+                agencyId={agency.id}
+                sourceRecordAssociations={agency.sourceRecordAssociations ?? []}
+                onDecideSourceRecord={(association) =>
+                  onDecideAgencySourceRecord(agency.id, association)
+                }
+              />
+            ) : (
+              <EmsRegistryLookup
+                agencyName={agency.name}
+                city={agency.city}
+                stateCode={agency.stateCode}
+                agencyId={agency.id}
+                sourceRecordAssociations={agency.sourceRecordAssociations ?? []}
+                onDecideSourceRecord={(association) =>
+                  onDecideAgencySourceRecord(agency.id, association)
+                }
+              />
+            )}
+            <AgencySourceRecordWorkspace
+              agency={agency}
+              onSave={(data) => onSaveAgencySourceData(agency.id, data)}
+            />
           </section>
         )}
 

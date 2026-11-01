@@ -11,8 +11,10 @@ import {
   SyncOutboxItem, 
   PushAlert, 
   UserRole, 
-  PredictiveWeights 
+  PredictiveWeights,
+  AgencySourceRecordAssociation
 } from './types';
+import type { AgencySourceRecordData } from './services/agencySourceRecordStore';
 import { 
   saveAgencies, 
   loadStoredOutbox, 
@@ -22,6 +24,10 @@ import {
   createOutboxItem, 
   calculateScore 
 } from './utils/syncStore';
+import {
+  replaceAgencySourceRecordAssociation,
+  saveAgencySourceRecordData,
+} from './services/agencySourceRecordStore';
 import { 
   loadStoredNotifications, 
   saveStoredNotifications, 
@@ -228,6 +234,56 @@ export default function App() {
       if (refreshedActive) setActiveAccount(refreshedActive);
     }
   }, [selectedAgency, activeAccount, setAgenciesState]);
+
+  const handleSaveAgencySourceData = useCallback((
+    agencyId: string,
+    sourceData: AgencySourceRecordData
+  ): boolean => {
+    const currentAgency = agencies.find((agency) => agency.id === agencyId);
+    if (!currentAgency) {
+      showToast('Could not find this agency in the current territory records.', 'error');
+      return false;
+    }
+
+    const saved = saveAgencySourceRecordData(agencyId, sourceData);
+    if (!saved.ok) {
+      showToast(saved.reason, 'error');
+      return false;
+    }
+
+    const updatedAgency: Agency = {
+      ...currentAgency,
+      sourceRecordAssociations: sourceData.sourceRecordAssociations,
+      sourceFacts: sourceData.sourceFacts,
+    };
+    updateAgenciesState(
+      agencies.map((agency) =>
+        agency.id === agencyId ? updatedAgency : agency,
+      ),
+    );
+    if (previewAgency?.id === agencyId) setPreviewAgency(updatedAgency);
+    showToast('Saved to this browser only; it was not shared with other users.', 'success');
+    return true;
+  }, [agencies, updateAgenciesState, previewAgency, showToast]);
+
+  const handleDecideAgencySourceRecord = useCallback((
+    agencyId: string,
+    association: AgencySourceRecordAssociation
+  ) => {
+    const currentAgency = agencies.find((agency) => agency.id === agencyId);
+    if (!currentAgency) {
+      showToast('Could not find this agency in the current territory records.', 'error');
+      return;
+    }
+    const nextAssociations = replaceAgencySourceRecordAssociation(
+      currentAgency.sourceRecordAssociations ?? [],
+      association,
+    );
+    handleSaveAgencySourceData(agencyId, {
+      sourceRecordAssociations: nextAssociations,
+      sourceFacts: currentAgency.sourceFacts ?? [],
+    });
+  }, [agencies, handleSaveAgencySourceData, showToast]);
 
   const handleSaveWeights = useCallback((newWeights: PredictiveWeights) => {
     setWeights(newWeights);
@@ -1192,6 +1248,8 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onAddFieldNote={handleAddFieldNote}
         onOpenRfpGenerator={(a) => setRfpAgency(a)}
+        onSaveAgencySourceData={handleSaveAgencySourceData}
+        onDecideAgencySourceRecord={handleDecideAgencySourceRecord}
       />}
 
       {/* Full Actuarial Department Dossier */}
@@ -1217,6 +1275,8 @@ export default function App() {
           onAddFieldNote={handleAddFieldNote}
           onOpenRfpGenerator={(a) => setRfpAgency(a)}
           onOpenDataLineage={() => setIsDataLineageOpen(true)}
+          onSaveAgencySourceData={handleSaveAgencySourceData}
+          onDecideAgencySourceRecord={handleDecideAgencySourceRecord}
         />
       )}
 

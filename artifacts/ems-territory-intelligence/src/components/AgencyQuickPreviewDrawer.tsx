@@ -4,7 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Agency, LeadStage, FieldNote } from '../types';
+import {
+  Agency,
+  LeadStage,
+  FieldNote,
+  AgencySourceRecordAssociation,
+} from '../types';
 import {
   X,
   Bookmark,
@@ -22,6 +27,8 @@ import {
 } from '../data/agencyFactEvidence';
 import { FireRegistryLookup } from './FireRegistryLookup';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
+import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
+import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -32,6 +39,11 @@ interface AgencyQuickPreviewDrawerProps {
   onToggleBookmark: (agencyId: string) => void;
   onAddFieldNote?: (agencyId: string, note: Omit<FieldNote, 'id'>) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
+  onSaveAgencySourceData: (agencyId: string, data: AgencySourceRecordData) => boolean;
+  onDecideAgencySourceRecord: (
+    agencyId: string,
+    association: AgencySourceRecordAssociation,
+  ) => void;
 }
 
 const STAGES: LeadStage[] = [
@@ -51,7 +63,9 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
   onToggleRoute,
   onToggleBookmark,
   onAddFieldNote,
-  onOpenRfpGenerator
+  onOpenRfpGenerator,
+  onSaveAgencySourceData,
+  onDecideAgencySourceRecord
 }) => {
   const [quickNote, setQuickNote] = useState('');
 
@@ -450,6 +464,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               city={agency.city}
               stateCode={agency.stateCode}
               fdid={agency.fdid}
+              agencyId={agency.id}
+              sourceRecordAssociations={agency.sourceRecordAssociations ?? []}
+              onDecideSourceRecord={(association) =>
+                onDecideAgencySourceRecord(agency.id, association)
+              }
             />
           )}
           {!isFire && (
@@ -457,8 +476,17 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               agencyName={agency.name}
               city={agency.city}
               stateCode={agency.stateCode}
+              agencyId={agency.id}
+              sourceRecordAssociations={agency.sourceRecordAssociations ?? []}
+              onDecideSourceRecord={(association) =>
+                onDecideAgencySourceRecord(agency.id, association)
+              }
             />
           )}
+          <AgencySourceRecordWorkspace
+            agency={agency}
+            onSave={(data) => onSaveAgencySourceData(agency.id, data)}
+          />
 
           {/* Quick Field Note Logger */}
           {onAddFieldNote && (

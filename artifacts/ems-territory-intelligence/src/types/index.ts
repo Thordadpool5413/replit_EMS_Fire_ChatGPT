@@ -390,6 +390,10 @@ export interface Agency {
    * operational, clinical, fleet, hospital, contract, or leadership fields.
    */
   factEvidence?: Partial<Record<AgencyFactEvidenceKey, AgencyFactEvidence>>;
+  /** User-decided public-source matches. These are local review records, not proof of operations. */
+  sourceRecordAssociations?: AgencySourceRecordAssociation[];
+  /** Source-backed values entered for this agency without overwriting the modeled baseline. */
+  sourceFacts?: AgencySourceFact[];
 
   // Granular Apparatus Vehicle Fleet Breakdown
   apparatusFleet?: {
@@ -499,6 +503,42 @@ export interface AgencyFactEvidence {
   geographicRelationship?: GeographicRelationship;
   geographicMatchBasis?: AgencyGeographicLink['matchBasis'];
   note?: string;
+}
+
+export interface AgencySourceRecordAssociation {
+  id: string;
+  sourceName: string;
+  sourceRecordId: string;
+  sourceUrl: string;
+  decision: 'confirmed' | 'rejected';
+  matchBasis: string;
+  sourceDate?: string | null;
+  retrievedAt: string;
+  decidedAt: string;
+  sourceFields: Record<string, unknown>;
+}
+
+export type AgencySourceFactBasis =
+  | 'source-reported'
+  | 'user-entered'
+  | 'calculated';
+
+export interface AgencySourceFact {
+  id: string;
+  fieldKey: AgencyFactEvidenceKey;
+  value: string;
+  unit?: string;
+  sourceName: string;
+  sourceRecordId: string;
+  sourceUrl?: string;
+  reportingPeriod?: string;
+  effectivePeriod?: string;
+  geographicLevel: GeographicLevel;
+  geographicId: string;
+  geographicRelationship?: GeographicRelationship;
+  basis: AgencySourceFactBasis;
+  note?: string;
+  enteredAt: string;
 }
 
 export interface TerritoryCluster {

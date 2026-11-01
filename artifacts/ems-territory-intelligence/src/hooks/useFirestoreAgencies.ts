@@ -14,6 +14,10 @@ import {
 import { saveAgencies, loadStoredAgencies } from '../utils/syncStore';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { dataSanitizationService } from '../services/dataSanitizationService';
+import {
+  applyAgencySourceRecordData,
+  loadAgencySourceRecordData,
+} from '../services/agencySourceRecordStore';
 
 interface UseFirestoreAgenciesOptions {
   globalState?: string;
@@ -94,6 +98,7 @@ export function useFirestoreAgencies({
     try {
       unsubscribe = subscribeToFirestoreAgencies((rawCloudAgencies) => {
         if (rawCloudAgencies.length > 0) {
+          const localSourceData = loadAgencySourceRecordData();
           // Strip any mock or test-generated records coming from Firestore
           const validCloudAgencies = dataSanitizationService.sanitizeAgenciesList(
             rawCloudAgencies.map(ca => ({
@@ -127,7 +132,13 @@ export function useFirestoreAgencies({
                 dataProvenanceTier: 'firestore_cloud_synced'
               } as Agency);
               if (mergedRecord) {
-                agencyMap.set(ca.id, mergedRecord);
+                agencyMap.set(
+                  ca.id,
+                  applyAgencySourceRecordData(
+                    mergedRecord,
+                    localSourceData[ca.id],
+                  ),
+                );
               }
             }
             const merged = Array.from(agencyMap.values());

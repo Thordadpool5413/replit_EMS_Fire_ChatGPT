@@ -4,12 +4,17 @@ import {
   useGetFireRegistryMatches,
 } from "@workspace/api-client-react";
 import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
+import type { AgencySourceRecordAssociation } from "../types";
+import { findAgencySourceRecordAssociation } from "../services/agencySourceRecordStore";
 
 type FireRegistryLookupProps = {
   agencyName: string;
   city?: string;
   stateCode: string;
   fdid?: string;
+  agencyId: string;
+  sourceRecordAssociations: AgencySourceRecordAssociation[];
+  onDecideSourceRecord: (association: AgencySourceRecordAssociation) => void;
 };
 
 function displayDate(value: Date | string | null | undefined): string {
@@ -42,6 +47,9 @@ export function FireRegistryLookup({
   city = "",
   stateCode,
   fdid = "",
+  agencyId,
+  sourceRecordAssociations,
+  onDecideSourceRecord,
 }: FireRegistryLookupProps) {
   const params = useMemo(
     () => ({
@@ -213,7 +221,50 @@ export function FireRegistryLookup({
             </p>
           ) : (
             <div className="space-y-2.5">
-              {records.map((record, recordIndex) => (
+              {records.map((record, recordIndex) => {
+                const savedDecision = findAgencySourceRecordAssociation(
+                  sourceRecordAssociations,
+                  record.source,
+                  record.sourceRecordId,
+                );
+                const saveDecision = (
+                  decision: AgencySourceRecordAssociation["decision"],
+                ) => {
+                  onDecideSourceRecord({
+                    id: `${record.source}:${record.sourceRecordId}`,
+                    sourceName: record.source,
+                    sourceRecordId: record.sourceRecordId,
+                    sourceUrl: record.sourceUrl,
+                    decision,
+                    matchBasis: `${record.matchReasons.join("; ")}. User ${decision === "confirmed" ? "associated" : "rejected"} the candidate for agency ${agencyId}.`,
+                    sourceDate: record.exportDate,
+                    retrievedAt:
+                      query.data?.fetchedAt || new Date().toISOString(),
+                    decidedAt: new Date().toISOString(),
+                    sourceFields: {
+                      agencyName: record.agencyName,
+                      stateCode: record.stateCode,
+                      city: record.city,
+                      county: record.county,
+                      headquartersAddress: record.headquartersAddress,
+                      fdid: record.fdid,
+                      nerisId: record.nerisId,
+                      departmentType: record.departmentType,
+                      organizationType: record.organizationType,
+                      entityType: record.entityType,
+                      stationCount: record.stationCount,
+                      unitCount: record.unitCount,
+                      exportDate: record.exportDate,
+                      stations: record.stations,
+                      units: record.units,
+                      jurisdictions: record.jurisdictions,
+                      stationsTruncated: record.stationsTruncated,
+                      unitsTruncated: record.unitsTruncated,
+                      jurisdictionsTruncated: record.jurisdictionsTruncated,
+                    },
+                  });
+                };
+                return (
                 <article
                   key={`${record.source}-${record.sourceRecordId}`}
                   className="rounded-md border border-slate-200 p-3 dark:border-slate-700"
@@ -517,8 +568,40 @@ export function FireRegistryLookup({
                     candidate for account review, not a confirmed agency
                     identity.
                   </p>
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-300">
+                      {savedDecision?.decision === "confirmed"
+                        ? "You associated this source record with this agency."
+                        : savedDecision?.decision === "rejected"
+                          ? "You rejected this source record for this agency."
+                          : "This source candidate is not linked until you decide."}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => saveDecision("confirmed")}
+                        className="h-7 rounded border border-emerald-200 px-2 text-[10px] font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                        data-testid={`button-confirm-fire-source-${record.source.toLowerCase().replace(/\s+/g, "-")}-${record.sourceRecordId}`}
+                      >
+                        {savedDecision?.decision === "confirmed"
+                          ? "Associated"
+                          : "Associate record"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => saveDecision("rejected")}
+                        className="h-7 rounded border border-slate-200 px-2 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        data-testid={`button-reject-fire-source-${record.source.toLowerCase().replace(/\s+/g, "-")}-${record.sourceRecordId}`}
+                      >
+                        {savedDecision?.decision === "rejected"
+                          ? "Rejected"
+                          : "Not this agency"}
+                      </button>
+                    </div>
+                  </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

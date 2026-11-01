@@ -5,11 +5,16 @@ import {
 } from "@workspace/api-client-react";
 import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import { getEmsJurisdictionSourceCoverage } from "../data/stateEmsSourceCoverage";
+import type { AgencySourceRecordAssociation } from "../types";
+import { findAgencySourceRecordAssociation } from "../services/agencySourceRecordStore";
 
 type EmsRegistryLookupProps = {
   agencyName: string;
   city?: string;
   stateCode: string;
+  agencyId: string;
+  sourceRecordAssociations: AgencySourceRecordAssociation[];
+  onDecideSourceRecord: (association: AgencySourceRecordAssociation) => void;
 };
 
 const CMS_ENROLLMENT_SOURCE =
@@ -42,6 +47,9 @@ export function EmsRegistryLookup({
   agencyName,
   city = "",
   stateCode,
+  agencyId,
+  sourceRecordAssociations,
+  onDecideSourceRecord,
 }: EmsRegistryLookupProps) {
   const params = useMemo(
     () => ({
@@ -249,6 +257,36 @@ export function EmsRegistryLookup({
               </p>
 
               {records.map((record, recordIndex) => {
+                const savedDecision = findAgencySourceRecordAssociation(
+                  sourceRecordAssociations,
+                  "CMS NPPES",
+                  record.npi,
+                );
+                const saveDecision = (
+                  decision: AgencySourceRecordAssociation["decision"],
+                ) => {
+                  const retrievedAt = data?.fetchedAt || new Date().toISOString();
+                  onDecideSourceRecord({
+                    id: `CMS NPPES:${record.npi}`,
+                    sourceName: "CMS NPPES",
+                    sourceRecordId: record.npi,
+                    sourceUrl: record.registryUrl,
+                    decision,
+                    matchBasis:
+                      `Name/state candidate search (${data?.searchScope === "name_state" ? "agency name + state" : "agency name + city + state"}); user ${decision === "confirmed" ? "associated" : "rejected"} it for agency ${agencyId}.`,
+                    sourceDate: record.updatedAt,
+                    retrievedAt,
+                    decidedAt: new Date().toISOString(),
+                    sourceFields: {
+                      organizationName: record.organizationName,
+                      npi: record.npi,
+                      enumerationType: record.enumerationType,
+                      addresses: record.addresses,
+                      taxonomies: record.taxonomies,
+                      updatedAt: record.updatedAt,
+                    },
+                  });
+                };
                 const ambulanceTaxonomies = record.taxonomies.filter(
                   (taxonomy) =>
                     taxonomy.code?.startsWith("3416") ||
@@ -357,6 +395,38 @@ export function EmsRegistryLookup({
                         </ul>
                       </div>
                     )}
+
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-600 dark:text-slate-300">
+                        {savedDecision?.decision === "confirmed"
+                          ? "You associated this NPI record with this agency."
+                          : savedDecision?.decision === "rejected"
+                            ? "You rejected this NPI record for this agency."
+                            : "This search result is not linked until you decide."}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => saveDecision("confirmed")}
+                          className="h-7 rounded border border-emerald-200 px-2 text-[10px] font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                          data-testid={`button-confirm-ems-source-${record.npi}`}
+                        >
+                          {savedDecision?.decision === "confirmed"
+                            ? "Associated"
+                            : "Associate record"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveDecision("rejected")}
+                          className="h-7 rounded border border-slate-200 px-2 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          data-testid={`button-reject-ems-source-${record.npi}`}
+                        >
+                          {savedDecision?.decision === "rejected"
+                            ? "Rejected"
+                            : "Not this agency"}
+                        </button>
+                      </div>
+                    </div>
                   </article>
                 );
               })}

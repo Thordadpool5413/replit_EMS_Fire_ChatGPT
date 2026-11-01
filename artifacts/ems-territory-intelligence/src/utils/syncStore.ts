@@ -6,6 +6,10 @@
 import { Agency, SyncOutboxItem, PredictiveWeights, LeadStage } from '../types';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
+import {
+  applyAgencySourceRecordData,
+  loadAgencySourceRecordData,
+} from '../services/agencySourceRecordStore';
 
 const STORAGE_KEY_CUSTOM_AGENCIES = 'zoll_pulseiq_custom_agencies_v8';
 const LEGACY_AGENCY_KEYS = [
@@ -308,18 +312,26 @@ export function loadStoredAgencies(): Agency[] {
   try {
     const baseline = nationalProviderDb.getInitialBaselineAgencies();
     getBaselineSignatures(baseline);
+    const sourceData = loadAgencySourceRecordData();
 
     const rawCustom = localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES);
-    if (!rawCustom) return baseline;
+    if (!rawCustom) {
+      return baseline.map((agency) =>
+        applyAgencySourceRecordData(agency, sourceData[agency.id]),
+      );
+    }
 
     const customEntries: [string, CompactAgencyDelta][] = JSON.parse(rawCustom);
-    if (!Array.isArray(customEntries) || customEntries.length === 0) return baseline;
+    if (!Array.isArray(customEntries) || customEntries.length === 0) {
+      return baseline.map((agency) =>
+        applyAgencySourceRecordData(agency, sourceData[agency.id]),
+      );
+    }
 
     const customMap = new Map<string, CompactAgencyDelta>(customEntries);
     return baseline.map(agency => {
       const custom = customMap.get(agency.id);
-      if (!custom) return agency;
-      return {
+      const restored = !custom ? agency : {
         ...agency,
         isBookmarked: custom.isBookmarked ?? agency.isBookmarked,
         inDayRoute: custom.inDayRoute ?? agency.inDayRoute,
@@ -332,6 +344,7 @@ export function loadStoredAgencies(): Agency[] {
           salesStage: custom.salesStage ?? agency.zollOpportunity.salesStage
         }
       };
+      return applyAgencySourceRecordData(restored, sourceData[agency.id]);
     });
   } catch {
     return nationalProviderDb.getInitialBaselineAgencies();

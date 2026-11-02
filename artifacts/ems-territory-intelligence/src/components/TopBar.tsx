@@ -17,7 +17,6 @@ import {
   TrendingUp,
   Globe,
   Briefcase,
-  Layers,
   Scale,
   DollarSign,
   Box,
@@ -27,10 +26,9 @@ import {
   Sparkles,
   SlidersHorizontal,
   MapPin,
-  RefreshCw,
-  Check
+  RefreshCw
 } from 'lucide-react';
-import { Agency, UserRole } from '../types';
+import { Agency } from '../types';
 import { MobileQuickProviderBar } from './MobileQuickProviderBar';
 
 interface TopBarProps {
@@ -46,8 +44,6 @@ interface TopBarProps {
   triggerManualSync: () => void;
   unreadAlertCount: number;
   openNotifications: () => void;
-  currentRole: UserRole;
-  setCurrentRole: (role: UserRole) => void;
   openQuickVisitModal: () => void;
   openCommandPalette?: () => void;
   openDataLineageModal?: () => void;
@@ -82,8 +78,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   triggerManualSync,
   unreadAlertCount,
   openNotifications,
-  currentRole,
-  setCurrentRole,
   openQuickVisitModal,
   openCommandPalette,
   openDataLineageModal,
@@ -113,12 +107,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
 
-  const roles: { id: UserRole; description: string }[] = [
-    { id: 'EMS', description: 'EMS provider accounts' },
-    { id: 'Fire', description: 'Fire department accounts' },
-    { id: 'Territory', description: 'All providers and territory maps' }
-  ];
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (utilityRef.current && !utilityRef.current.contains(event.target as Node)) {
@@ -137,8 +125,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isMyWorkActive = ['field', 'tm_dashboard'].includes(activeTab) && !activeAccountName;
 
   const advancedTools = [
-    { id: 'knowledge', label: 'Clinical & lifecycle cost', icon: Scale },
-    { id: 'claims', label: 'Medicare utilization', icon: DollarSign },
+    { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
+    { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
     { id: '3d_studio', label: '3D equipment viewer', icon: Box },
     { id: 'gateway', label: 'Federal data sources', icon: Database },
     { id: 'data_health', label: 'Data status & sync', icon: Activity },
@@ -167,7 +155,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (activeTab === 'field') return 'My Work · Field Route & Activity';
     if (activeTab === 'tm_dashboard') return 'My Work · Mobile Command';
     const foundAdv = advancedTools.find(t => t.id === activeTab);
-    if (foundAdv) return `Advanced Intelligence · ${foundAdv.label}`;
+    if (foundAdv) return `Specialist tools · ${foundAdv.label}`;
     return 'Workspace';
   };
 
@@ -488,7 +476,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               className="w-full flex items-center justify-between text-xs font-medium text-slate-400 hover:text-slate-200 px-2.5 mb-1.5 cursor-pointer"
               aria-expanded={isAdvancedExpanded}
             >
-              <span>More tools</span>
+              <span>Specialist tools</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform ${isAdvancedExpanded ? 'rotate-0' : '-rotate-90'}`}
               />
@@ -520,22 +508,8 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </nav>
 
-        {/* Bottom Sidebar Footer: Provenance & System State */}
+  {/* Bottom Sidebar Footer: Data State */}
         <div className="p-3 border-t border-[#172D49] bg-[#091322] space-y-2 shrink-0">
-          {openChatbot && (
-            <button
-              type="button"
-              onClick={openChatbot}
-              className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-[#172D49] hover:bg-[#1E3A5F] text-xs font-medium text-slate-200 transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                <span>Strategy &amp; RFP Desk</span>
-              </span>
-              <span className="text-[10px] font-mono text-slate-400">Open</span>
-            </button>
-          )}
-
           <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
             <button
               type="button"
@@ -719,49 +693,24 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
 
-            {/* Role & Workspace Preferences Menu */}
+            {/* Help and source utilities */}
             <div className="relative" ref={utilityRef}>
               <button
                 type="button"
                 onClick={() => setIsUtilityMenuOpen(prev => !prev)}
                 className="h-9 px-2.5 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#14283F] dark:text-slate-200 flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer"
-                title="Role View & System Utilities"
+                title="Help and source tools"
+                aria-expanded={isUtilityMenuOpen}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-[#53657B] dark:text-slate-400" />
-                <span className="hidden xl:inline max-w-[120px] truncate">{currentRole}</span>
+                <span className="hidden sm:inline">Tools</span>
                 <ChevronDown className="w-3 h-3 text-[#53657B]" />
               </button>
 
               {isUtilityMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] shadow-lg py-2 z-50 text-xs">
-                  <div className="px-3 py-1.5 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
-                      Active View Role
-                    </div>
-                    <div className="mt-1 space-y-0.5">
-                      {roles.map(({ id, description }) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => {
-                            setCurrentRole(id);
-                            setIsUtilityMenuOpen(false);
-                          }}
-                          aria-pressed={currentRole === id}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left transition-colors cursor-pointer ${
-                            currentRole === id
-                              ? 'bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold'
-                              : 'text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          <span className="min-w-0">
-                            <span className="block">{id}</span>
-                            <span className="block text-[10px] font-normal opacity-70">{description}</span>
-                          </span>
-                          {currentRole === id && <Check className="w-3.5 h-3.5 shrink-0" />}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
+                    Help &amp; sources
                   </div>
 
                   <div className="px-2 pt-1.5 space-y-0.5">

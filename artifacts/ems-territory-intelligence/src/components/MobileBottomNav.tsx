@@ -3,23 +3,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Home,
+  Activity,
+  Box,
+  Briefcase,
   Building2,
-  TrendingUp,
+  Database,
+  DollarSign,
   Globe,
-  Briefcase
+  Home,
+  MoreHorizontal,
+  Scale,
+  ShieldCheck,
+  TrendingUp,
+  X
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onGoHome?: () => void;
-  openNotifications: () => void;
-  unreadAlertCount: number;
   dayRouteCount: number;
 }
+
+const specialistTools = [
+  { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
+  { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
+  { id: '3d_studio', label: 'Equipment viewer', icon: Box },
+  { id: 'gateway', label: 'Federal data sources', icon: Database },
+  { id: 'data_health', label: 'Data status & sync', icon: Activity },
+  { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
+] as const;
+
+const specialistToolIds = specialistTools.map((tool) => tool.id);
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
@@ -27,86 +44,168 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onGoHome,
   dayRouteCount
 }) => {
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const isHome = activeTab === 'home';
   const isAccounts = activeTab === 'queue';
-  const isOpportunities = ['contracts', 'grants', 'pulseiq', 'knowledge', 'claims'].includes(activeTab);
+  const isOpportunities = ['contracts', 'grants', 'pulseiq'].includes(activeTab);
   const isTerritory = ['states_directory', 'geo', 'gis', 'map', 'google_maps'].includes(activeTab);
-  const isMyWork = ['field', 'tm_dashboard', '3d_studio'].includes(activeTab);
+  const isMyWork = ['field', 'tm_dashboard'].includes(activeTab);
+  const isMoreActive = specialistToolIds.includes(activeTab as (typeof specialistToolIds)[number]);
+
+  useEffect(() => {
+    setIsMoreOpen(false);
+  }, [activeTab]);
+
+  const navigate = (tab: string) => {
+    setIsMoreOpen(false);
+    setActiveTab(tab);
+  };
 
   return (
-    <nav
-      aria-label="Mobile Primary Workspaces"
-      className="pi-mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B1728] text-slate-300 border-t border-[#172D49] shadow-lg"
-    >
-      <div className="grid grid-cols-5 items-center h-16 px-1">
-        {/* 1. Home */}
-        <button
-          type="button"
-          onClick={() => {
-            if (onGoHome) onGoHome();
-            else setActiveTab('home');
-          }}
-          className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isHome ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Home className={`w-4 h-4 ${isHome ? 'text-[#285EE8]' : ''}`} />
-          <span className="text-[10px] tracking-tight mt-1">Home</span>
-        </button>
+    <>
+      {isMoreOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close specialist tools menu"
+            onClick={() => setIsMoreOpen(false)}
+            className="fixed inset-0 bottom-16 z-40 bg-slate-950/35 md:hidden"
+          />
+          <section
+            id="mobile-specialist-tools"
+            aria-label="Specialist tools"
+            className="fixed left-3 right-3 bottom-[4.75rem] z-50 mx-auto max-w-md rounded-2xl border border-[#DFE6EF] bg-white p-4 shadow-2xl dark:border-[#1E2D42] dark:bg-[#111C2D] md:hidden"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-[#14283F] dark:text-white">Specialist tools</h2>
+                <p className="mt-0.5 text-[11px] text-[#53657B] dark:text-slate-400">Research, data, and system tools</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMoreOpen(false)}
+                aria-label="Close specialist tools"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#53657B] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-[#16243A]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {specialistTools.map(({ id, label, icon: Icon }) => {
+                const active = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => navigate(id)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                      active
+                        ? 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200'
+                        : 'border-[#DFE6EF] bg-white text-[#14283F] hover:bg-[#F5F7FA] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-200 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
 
-        {/* 2. Accounts */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('queue')}
-          className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isAccounts ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Building2 className={`w-4 h-4 ${isAccounts ? 'text-[#285EE8]' : ''}`} />
-          <span className="text-[10px] tracking-tight mt-1">Accounts</span>
-        </button>
+      <nav
+        aria-label="Mobile primary workspaces"
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setIsMoreOpen(false);
+        }}
+        className="pi-mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B1728] text-slate-300 border-t border-[#172D49] shadow-lg"
+      >
+        <div className="grid grid-cols-6 items-center h-16 px-1">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen(false);
+              if (onGoHome) onGoHome();
+              else setActiveTab('home');
+            }}
+            aria-current={isHome ? 'page' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+              isHome ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Home className={`w-4 h-4 ${isHome ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">Home</span>
+          </button>
 
-        {/* 3. Opportunities */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('contracts')}
-          className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isOpportunities ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <TrendingUp className={`w-4 h-4 ${isOpportunities ? 'text-[#285EE8]' : ''}`} />
-          <span className="text-[10px] tracking-tight mt-1">Opportunities</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => navigate('queue')}
+            aria-current={isAccounts ? 'page' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+              isAccounts ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Building2 className={`w-4 h-4 ${isAccounts ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">Accounts</span>
+          </button>
 
-        {/* 4. Territory */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('states_directory')}
-          className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isTerritory ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Globe className={`w-4 h-4 ${isTerritory ? 'text-[#285EE8]' : ''}`} />
-          <span className="text-[10px] tracking-tight mt-1">Territory</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => navigate('contracts')}
+            aria-current={isOpportunities ? 'page' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+              isOpportunities ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TrendingUp className={`w-4 h-4 ${isOpportunities ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">Opportunities</span>
+          </button>
 
-        {/* 5. My Work */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('field')}
-          className={`min-h-[48px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
-            isMyWork ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Briefcase className={`w-4 h-4 ${isMyWork ? 'text-[#285EE8]' : ''}`} />
-          <span className="text-[10px] tracking-tight mt-1">My Work</span>
-          {dayRouteCount > 0 && (
-            <span className="absolute top-1.5 right-3 w-4 h-4 rounded-full bg-[#285EE8] text-white pi-data-number text-[9px] font-bold flex items-center justify-center">
-              {dayRouteCount}
-            </span>
-          )}
-        </button>
-      </div>
-    </nav>
+          <button
+            type="button"
+            onClick={() => navigate('states_directory')}
+            aria-current={isTerritory ? 'page' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+              isTerritory ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Globe className={`w-4 h-4 ${isTerritory ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">Territory</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('field')}
+            aria-current={isMyWork ? 'page' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
+              isMyWork ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Briefcase className={`w-4 h-4 ${isMyWork ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">My work</span>
+            {dayRouteCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[9px] font-bold flex items-center justify-center">
+                {dayRouteCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMoreOpen((open) => !open)}
+            aria-expanded={isMoreOpen}
+            aria-controls={isMoreOpen ? 'mobile-specialist-tools' : undefined}
+            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+              isMoreActive || isMoreOpen ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <MoreHorizontal className={`w-4 h-4 ${isMoreActive || isMoreOpen ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">More</span>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 };

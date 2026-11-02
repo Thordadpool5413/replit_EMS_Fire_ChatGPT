@@ -10,7 +10,6 @@ import {
   FieldNote, 
   SyncOutboxItem, 
   PushAlert, 
-  UserRole, 
   PredictiveWeights,
   AgencySourceRecordAssociation
 } from './types';
@@ -108,7 +107,6 @@ export default function App() {
   const [outbox, setOutbox] = useState<SyncOutboxItem[]>(loadStoredOutbox);
   const [alerts, setAlerts] = useState<PushAlert[]>(loadStoredNotifications);
   const [weights, setWeights] = useState<PredictiveWeights>(loadStoredWeights);
-  const [currentRole, setCurrentRole] = useState<UserRole>('Territory');
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const isSyncing = false;
   const [showWorkflowGuide, setShowWorkflowGuide] = useState<boolean>(() => {
@@ -506,21 +504,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const handleRoleChange = useCallback((role: UserRole) => {
-    setCurrentRole(role);
-    if (role === 'EMS') {
-      setGlobalCategory('ems');
-      handleNavigateTab('queue');
-    } else if (role === 'Fire') {
-      setGlobalCategory('fire');
-      handleNavigateTab('queue');
-    } else {
-      setGlobalCategory('all');
-      handleNavigateTab('home');
-    }
-    showToast(`Switched workspace to ${role}`, 'info');
-  }, [handleNavigateTab, showToast]);
-
   return (
     <div className={`pi-app-shell min-h-screen w-full max-w-full overflow-x-hidden ${isDarkMode ? 'dark bg-[#0B1320] text-slate-100' : 'bg-[#F5F7FA] text-[#14283F]'} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
 
@@ -557,8 +540,6 @@ export default function App() {
         triggerManualSync={handleManualSync}
         unreadAlertCount={unreadAlertCount}
         openNotifications={() => setIsNotificationsOpen(true)}
-        currentRole={currentRole}
-        setCurrentRole={handleRoleChange}
         openQuickVisitModal={() => setIsQuickVisitOpen(true)}
         openCommandPalette={() => setIsCommandPaletteOpen(true)}
         openDataLineageModal={() => setIsDataLineageOpen(true)}
@@ -584,17 +565,17 @@ export default function App() {
       <div className="md:pl-64 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
         
-        {/* Workspace Sub-Navigation Strip for Opportunities, Territory, My Work, and Advanced Intelligence */}
+        {/* Mobile-only secondary navigation; desktop navigation lives in the sidebar. */}
         {!currentActive && ['contracts', 'grants', 'pulseiq'].includes(activeTab) && (
           <nav
             aria-label="Opportunities Workspace Navigation"
-            className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
           >
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
               {[
-                { id: 'contracts', label: 'Procurement & Contract Windows' },
-                { id: 'grants', label: 'FEMA AFG & SAFER Grants' },
-                { id: 'pulseiq', label: 'PulseIQ Regional Scoring' }
+                { id: 'contracts', label: 'Contracts' },
+                { id: 'grants', label: 'Grants' },
+                { id: 'pulseiq', label: 'Regional priority' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -610,26 +591,19 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setIsWeightsModalOpen(true)}
-              className="whitespace-nowrap shrink-0 self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold text-[#285EE8] dark:text-blue-400 hover:bg-[#EEF3FE] dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
-            >
-              Calibrate Scoring Weights
-            </button>
           </nav>
         )}
 
         {!currentActive && ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab) && (
           <nav
             aria-label="Territory Workspace Navigation"
-            className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
           >
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
               {[
-                { id: 'states_directory', label: 'Geographic Directory (State → County → City → ZIP)', active: activeTab === 'states_directory' || activeTab === 'geo' },
-                { id: 'google_maps', label: 'Google Maps Live Explorer', active: activeTab === 'google_maps' },
-                { id: 'map', label: 'GIS Fleet & Acuity Heatmap', active: activeTab === 'map' || activeTab === 'gis' }
+                { id: 'states_directory', label: 'Directory', active: activeTab === 'states_directory' || activeTab === 'geo' },
+                { id: 'google_maps', label: 'Agency locations', active: activeTab === 'google_maps' },
+                { id: 'map', label: 'Fleet & response map', active: activeTab === 'map' || activeTab === 'gis' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -645,25 +619,18 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => handleNavigateTab('queue')}
-              className="whitespace-nowrap shrink-0 self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold text-[#285EE8] dark:text-blue-400 hover:bg-[#EEF3FE] dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
-            >
-              Open Accounts List &rarr;
-            </button>
           </nav>
         )}
 
         {!currentActive && ['field', 'tm_dashboard'].includes(activeTab) && (
           <nav
             aria-label="My Work Workspace Navigation"
-            className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
           >
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
               {[
-                { id: 'field', label: `Routes, Saved Accounts & Field Notes (${dayRouteCount} in route · ${bookmarkedCount} saved)` },
-                { id: 'tm_dashboard', label: 'Mobile Field Command Cockpit' }
+                { id: 'field', label: `Routes & notes (${dayRouteCount} in route · ${bookmarkedCount} saved)` },
+                { id: 'tm_dashboard', label: 'Field dashboard' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -679,28 +646,21 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setIsQuickVisitOpen(true)}
-              className="whitespace-nowrap shrink-0 self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] text-white hover:bg-[#194BC8] transition-colors cursor-pointer"
-            >
-              + Log Station Visit
-            </button>
           </nav>
         )}
 
         {!currentActive && ['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab) && (
           <nav
-            aria-label="Advanced Intelligence Navigation"
-            className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full shadow-2xs"
+            aria-label="Specialist Tools Navigation"
+            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full shadow-2xs"
           >
             {[
-              { id: 'knowledge', label: 'Clinical & Competitive Hub' },
-              { id: 'claims', label: 'Medicare & Public Healthcare' },
-              { id: '3d_studio', label: '3D Apparatus Studio' },
-              { id: 'gateway', label: 'Federal Data Gateway' },
-              { id: 'data_health', label: 'Data Health & Cloud Sync' },
-              { id: 'resilience', label: 'Cloud Backup & Resilience' }
+              { id: 'knowledge', label: 'Clinical & competitive' },
+              { id: 'claims', label: 'Medicare & public health' },
+              { id: '3d_studio', label: 'Equipment viewer' },
+              { id: 'gateway', label: 'Federal sources' },
+              { id: 'data_health', label: 'Data status' },
+              { id: 'resilience', label: 'Backup & restore' }
             ].map((item) => (
               <button
                 key={item.id}
@@ -1353,8 +1313,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={handleNavigateTab}
         onGoHome={handleGoHome}
-        openNotifications={() => setIsNotificationsOpen(true)}
-        unreadAlertCount={unreadAlertCount}
         dayRouteCount={dayRouteCount}
       />
 

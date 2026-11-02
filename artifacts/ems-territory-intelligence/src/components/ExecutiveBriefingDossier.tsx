@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
-import { explainAgencyScore } from '../utils/syncStore';
+import { explainAgencyScore } from '../utils/pulseIqExplanation';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;

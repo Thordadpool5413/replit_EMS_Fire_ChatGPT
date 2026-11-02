@@ -6,8 +6,8 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { Agency, PredictiveWeights } from '../types';
-import { explainAgencyScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
-import { getPulseIqFormula } from '../utils/pulseIqScoring';
+import { explainAgencyScore, type PulseIqScoreExplanation } from '../utils/pulseIqExplanation';
+import { DEFAULT_WEIGHTS, getPulseIqFormula } from '../utils/pulseIqScoring';
 import { HelpCircle, X, ShieldAlert, Sparkles, Activity, FileCheck2, Cpu, ArrowUpRight } from 'lucide-react';
 
 interface PulseIqScoreTooltipProps {
@@ -17,6 +17,75 @@ interface PulseIqScoreTooltipProps {
   className?: string;
   showLabel?: boolean;
 }
+
+export const PulseIqTooltipFactorDetails: React.FC<{
+  explanation: PulseIqScoreExplanation;
+  score: number;
+  weights: PredictiveWeights;
+}> = ({ explanation, score, weights }) => {
+  const getBarColor = (componentScore: number) => {
+    if (componentScore >= 85) return 'bg-[#1E3A8A]';
+    if (componentScore >= 65) return 'bg-amber-600';
+    return 'bg-emerald-600';
+  };
+
+  return (
+    <>
+      <div className="p-2.5 rounded-lg bg-slate-900 text-slate-100 font-mono text-[10px] leading-relaxed space-y-1">
+        <div className="text-blue-300 font-bold uppercase tracking-wider">
+          PulseIQ estimate formula
+        </div>
+        <div>{getPulseIqFormula(weights)}</div>
+      </div>
+
+      <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+        {explanation.factors.map((factor) => {
+          const maxPossible = factor.weightPct;
+          const contributed = factor.pointsContributed;
+          const pctOfMax = maxPossible > 0
+            ? Math.min(100, Math.round((contributed / maxPossible) * 100))
+            : 0;
+
+          return (
+            <div key={factor.id} className="p-2.5 rounded-lg bg-[#F8F7F4] border border-[#E5E4DF] space-y-1.5 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-semibold text-[#111827] leading-tight">{factor.name}</div>
+                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                    PulseIQ active factor
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="font-semibold text-xs tabular-nums text-[#1E3A8A]">
+                    +{contributed.toFixed(1)} pts
+                  </span>
+                  <span className="text-[10px] text-[#6B7280] block font-medium tabular-nums">
+                    (Raw {factor.componentScore}/100 × {factor.weightPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              <div className="w-full bg-[#E5E4DF] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${getBarColor(factor.componentScore)}`}
+                  style={{ width: `${pctOfMax}%` }}
+                />
+              </div>
+              <div className="text-[11px] font-medium text-[#374151] pt-0.5 tabular-nums">
+                {factor.agencyMetricValue}
+              </div>
+              <p className="text-[11px] text-[#6B7280] leading-snug">{factor.clinicalImpactSummary}</p>
+              <p className="text-[10px] text-[#6B7280] leading-snug">Scoring rule: {factor.method}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="pt-2 border-t border-[#E5E4DF] flex items-center justify-between text-[11px] text-[#6B7280]">
+        <span>Deterministic four-factor weighted estimate</span>
+        <span className="font-semibold text-[#1E3A8A] tabular-nums">Total: {score} / 100</span>
+      </div>
+    </>
+  );
+};
 
 export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
   agency,
@@ -44,12 +113,6 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
     if (val >= 88) return 'text-[#1E3A8A]';
     if (val >= 78) return 'text-emerald-700';
     return 'text-[#111827]';
-  };
-
-  const getBarColor = (score: number) => {
-    if (score >= 85) return 'bg-[#1E3A8A]';
-    if (score >= 65) return 'bg-amber-600';
-    return 'bg-emerald-600';
   };
 
   return (
@@ -151,78 +214,11 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
             </button>
           </div>
 
-          {/* Explicit Actuarial Formula Disclosure */}
-          <div className="p-2.5 rounded-lg bg-slate-900 text-slate-100 font-mono text-[10px] leading-relaxed space-y-1">
-            <div className="text-blue-300 font-bold uppercase tracking-wider">
-              PulseIQ estimate formula
-            </div>
-            <div>
-              {getPulseIqFormula(weights)}
-            </div>
-          </div>
-
-          {/* Active weighted factor rows */}
-          <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-            {explanation.factors.map(factor => {
-              const maxPossible = factor.weightPct;
-              const contributed = factor.pointsContributed;
-              const pctOfMax = maxPossible > 0
-                ? Math.min(100, Math.round((contributed / maxPossible) * 100))
-                : 0;
-
-              return (
-                <div key={factor.id} className="p-2.5 rounded-lg bg-[#F8F7F4] border border-[#E5E4DF] space-y-1.5 text-xs">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold text-[#111827] leading-tight">
-                        {factor.name}
-                      </div>
-                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-                        PulseIQ active factor
-                      </span>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-semibold text-xs tabular-nums text-[#1E3A8A]">
-                        +{contributed.toFixed(1)} pts
-                      </span>
-                      <span className="text-[10px] text-[#6B7280] block font-medium tabular-nums">
-                        (Raw {factor.componentScore}/100 × {factor.weightPct}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Visual Progress Contribution Bar */}
-                  <div className="w-full bg-[#E5E4DF] h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${getBarColor(factor.componentScore)}`}
-                      style={{ width: `${pctOfMax}%` }}
-                    />
-                  </div>
-
-                  {/* Real Specific Agency Metric */}
-                  <div className="text-[11px] font-medium text-[#374151] pt-0.5 tabular-nums">
-                    {factor.agencyMetricValue}
-                  </div>
-
-                  {/* Plain-English Impact Context */}
-                  <p className="text-[11px] text-[#6B7280] leading-snug">
-                    {factor.clinicalImpactSummary}
-                  </p>
-                  <p className="text-[10px] text-[#6B7280] leading-snug">
-                    Scoring rule: {factor.method}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer Note */}
-          <div className="pt-2 border-t border-[#E5E4DF] flex items-center justify-between text-[11px] text-[#6B7280]">
-            <span>Deterministic four-factor weighted estimate</span>
-            <span className="font-semibold text-[#1E3A8A] tabular-nums">
-              Total: {score} / 100
-            </span>
-          </div>
+          <PulseIqTooltipFactorDetails
+            explanation={explanation}
+            score={score}
+            weights={weights}
+          />
         </div>
       )}
     </div>

@@ -26,6 +26,7 @@ import {
 import { Agency, PredictiveWeights, ScoreBreakdown } from '../types';
 import { calculatePulseIqContributions, calculateScore, DEFAULT_WEIGHTS, getPulseIqFormula, getPulseIqWeightDetails } from '../utils/pulseIqScoring';
 import { rankByPulseIqScore } from '../utils/pulseIqRanking';
+import { PulseIqRegionalTooltipFactors } from './PulseIqRegionalTooltipFactors';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
@@ -641,27 +642,12 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
           {/* PulseIQ score contribution details */}
           <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-1 tabular-nums text-[10px]">
-            <div className="flex items-center justify-between text-slate-900 dark:text-slate-100">
-              <span>● Clinical Acuity (NEMSIS):</span>
-              <span className="font-bold tabular-nums">{item.clinicalAcuity} pts</span>
-            </div>
-            <div className="flex items-center justify-between text-[#1E3A8A] dark:text-blue-400">
-              <span>◐ Fleet Obsolescence (Cycle):</span>
-              <span className="font-bold tabular-nums">{item.fleetObsolescence} pts</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-              <span>● Software / Billing Whitespace:</span>
-              <span className="font-bold tabular-nums">{item.softwareWhitespace} pts</span>
-            </div>
-            <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-              <span>● FEMA Grant Readiness (AFG):</span>
-              <span className="font-bold tabular-nums">{item.budgetGrant} pts</span>
-            </div>
+            <PulseIqRegionalTooltipFactors
+              values={item}
+              weights={weights}
+            />
             <div className="pt-1 text-slate-500 dark:text-slate-400">
               Local claim data is excluded from PulseIQ.
-            </div>
-            <div className="pt-1 text-slate-500 dark:text-slate-400">
-              Formula: {getPulseIqFormula(weights)}
             </div>
           </div>
 

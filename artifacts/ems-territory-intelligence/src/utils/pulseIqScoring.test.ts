@@ -5,6 +5,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
+import { PulseIqProfileFactorDetails } from '../components/PulseIqProfileFactorDetails';
+import { PulseIqTooltipFactorDetails } from '../components/PulseIqScoreTooltip';
+import { PulseIqRegionalTooltipFactors } from '../components/PulseIqRegionalTooltipFactors';
+import { PulseIqMethodologyFactors } from '../components/UnderstandingPulseIqModal';
+import { explainAgencyScore } from './pulseIqExplanation';
 import {
   calculatePulseIqContributions,
   calculateScore,
@@ -142,6 +147,84 @@ test('custom weights use the same four active factors in score details and formu
     calculateScore(record, weights)
   );
   assert.equal(getPulseIqFormula(weights), '(F_fleet × 10 + F_clinical × 50 + F_grant × 30 + F_software × 10) ÷ 100');
+});
+
+test('custom PulseIQ weights stay aligned in profile, tooltip, regional, and methodology views', () => {
+  const record = agency(82, 750000);
+  const weights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 10,
+    cardiacVolumeWeight: 50,
+    grantAwardWeight: 30,
+    softwareWhitespaceWeight: 10,
+    cmsDenialWeight: 500
+  };
+  const factors = evaluatePulseIqFactors(record, weights);
+  const explanation = explainAgencyScore(record, weights);
+  const formula = getPulseIqFormula(weights);
+  const expectedKeys = ['fleet', 'clinical', 'grant', 'software'];
+
+  assert.deepEqual(factors.map((factor) => factor.key), expectedKeys);
+  assert.deepEqual(explanation.factors.map((factor) => factor.id), expectedKeys);
+  assert.equal(explanation.totalScore, calculateScore(record, weights));
+
+  const profileMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqProfileFactorDetails, {
+      explanation,
+      weights,
+      variant: 'full'
+    })
+  );
+  const tooltipMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqTooltipFactorDetails, {
+      explanation,
+      score: explanation.totalScore,
+      weights
+    })
+  );
+  const contributions = calculatePulseIqContributions(record, weights);
+  const regionalMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqRegionalTooltipFactors, {
+      weights,
+      values: {
+        clinicalAcuity: contributions.clinicalAcuityPts,
+        fleetObsolescence: contributions.fleetObsolescencePts,
+        budgetGrant: contributions.budgetGrantReadinessPts,
+        softwareWhitespace: contributions.softwareWhitespacePts
+      }
+    })
+  );
+  const methodologyMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqMethodologyFactors, { weights })
+  );
+
+  for (const markup of [profileMarkup, tooltipMarkup, regionalMarkup, methodologyMarkup]) {
+    assert.ok(markup.includes(formula), 'view should show the active PulseIQ formula');
+    for (const factor of factors) {
+      assert.ok(markup.includes(factor.label), `${factor.key} should be visible`);
+      assert.ok(
+        markup.includes(`${factor.weightPct.toFixed(1)}%`),
+        `${factor.key} should show the normalized active weight`
+      );
+    }
+    assert.doesNotMatch(markup, /claims? factor|CMS denial factor/i);
+  }
+
+  for (let index = 0; index < factors.length; index++) {
+    const factor = factors[index];
+    const profileContribution = `+${factor.contributionPts} Points`;
+    const tooltipContribution = `+${factor.contributionPts.toFixed(1)} pts`;
+    const regionalContribution = `+${factor.contributionPts} pts`;
+    assert.ok(profileMarkup.includes(profileContribution), `${factor.key} profile contribution should match`);
+    assert.ok(tooltipMarkup.includes(tooltipContribution), `${factor.key} tooltip contribution should match`);
+    assert.ok(regionalMarkup.includes(regionalContribution), `${factor.key} regional contribution should match`);
+    assert.equal(explanation.factors[index].pointsContributed, factor.contributionPts);
+  }
+
+  assert.ok(methodologyMarkup.includes('Active weight: 10'));
+  assert.ok(methodologyMarkup.includes('Active weight: 50'));
+  assert.ok(methodologyMarkup.includes('Active weight: 30'));
+  assert.ok(methodologyMarkup.includes('Medicare claim records'));
 });
 
 test('missing score inputs are shown as model fallbacks instead of implied source facts', () => {

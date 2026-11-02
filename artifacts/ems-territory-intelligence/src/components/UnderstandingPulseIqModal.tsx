@@ -31,6 +31,42 @@ interface UnderstandingPulseIqModalProps {
   weights?: PredictiveWeights;
 }
 
+export const PulseIqMethodologyFactors: React.FC<{ weights: PredictiveWeights }> = ({ weights }) => {
+  const weightDetails = getPulseIqWeightDetails(weights);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-slate-400">
+        PulseIQ uses the active factors and weights below. Weights are normalized by their active total, and the displayed formula follows the same calculation used for each score:
+      </p>
+      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-cyan-300">
+        PulseIQ estimate = {getPulseIqFormula(weights)}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {weightDetails.factors.map((factor, index) => (
+          <article key={factor.key} className="p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="text-sm font-bold text-white">{index + 1}. {factor.label}</h4>
+              <span className="shrink-0 px-2 py-1 text-xs font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-md">
+                {factor.weightPct.toFixed(1)}% weight
+              </span>
+            </div>
+            <p className="mt-3 text-xs text-slate-300 leading-relaxed">
+              {PULSE_IQ_FACTOR_RULES[factor.key]}
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Active weight: {factor.weight} · Total active weight: {weightDetails.totalWeight}
+            </p>
+          </article>
+        ))}
+      </div>
+      <p className="text-xs text-slate-400">
+        Medicare claim records and local denial rates are excluded from the scored factors and remain available separately for review.
+      </p>
+    </div>
+  );
+};
+
 export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps> = ({
   isOpen,
   onClose,
@@ -40,8 +76,6 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'pillars' | 'playbook' | 'provenance'>('overview');
   const handleOpenCalibration = onOpenCalibration || onOpenWeightsModal;
-  const weightDetails = getPulseIqWeightDetails(weights);
-
   if (!isOpen) return null;
 
   return (
@@ -254,35 +288,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
 
           {/* TAB: PILLARS */}
           {activeTab === 'pillars' && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-400">
-                PulseIQ uses the active factors and weights below. Weights are normalized by their active total, and the displayed formula follows the same calculation used for each score:
-              </p>
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-cyan-300">
-                PulseIQ estimate = {getPulseIqFormula(weights)}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {weightDetails.factors.map((factor, index) => (
-                  <article key={factor.key} className="p-4 rounded-xl border border-slate-800 bg-slate-950/40">
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="text-sm font-bold text-white">{index + 1}. {factor.label}</h4>
-                      <span className="shrink-0 px-2 py-1 text-xs font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-md">
-                        {factor.weightPct.toFixed(1)}% weight
-                      </span>
-                    </div>
-                    <p className="mt-3 text-xs text-slate-300 leading-relaxed">
-                      {PULSE_IQ_FACTOR_RULES[factor.key]}
-                    </p>
-                    <p className="mt-2 text-[11px] text-slate-500">
-                      Active weight: {factor.weight} · Total active weight: {weightDetails.totalWeight}
-                    </p>
-                  </article>
-                ))}
-              </div>
-              <p className="text-xs text-slate-400">
-                Medicare claim records and local denial rates are excluded from the scored factors and remain available separately for review.
-              </p>
-            </div>
+            <PulseIqMethodologyFactors weights={weights} />
           )}
 
           {/* TAB: PLAYBOOK */}

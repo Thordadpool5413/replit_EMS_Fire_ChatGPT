@@ -99,12 +99,12 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
 };
 
 const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabel: string }> = {
-  'agency-records': { stops: ['#00B86B', '#9BE564', '#FFD166', '#FF6B35', '#D81B3A'], lowLabel: 'Fewer', highLabel: 'More' },
-  ambulances: { stops: ['#00B86B', '#9BE564', '#FFD166', '#FF6B35', '#D81B3A'], lowLabel: 'Fewer', highLabel: 'More' },
-  'fire-engines': { stops: ['#00B86B', '#9BE564', '#FFD166', '#FF6B35', '#D81B3A'], lowLabel: 'Fewer', highLabel: 'More' },
-  pulseiq: { stops: ['#00B86B', '#9BE564', '#FFD166', '#FF6B35', '#D81B3A'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
-  'cardiac-survival': { stops: ['#D81B3A', '#FF6B35', '#FFD166', '#9BE564', '#00B86B'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
-  'scene-transit': { stops: ['#00B86B', '#9BE564', '#FFD166', '#FF6B35', '#D81B3A'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+  'agency-records': { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
+  ambulances: { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
+  'fire-engines': { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
+  pulseiq: { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
+  'cardiac-survival': { stops: ['#74323A', '#A94B47', '#B78A50', '#7DA66A', '#39B985'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
+  'scene-transit': { stops: ['#39B985', '#7DA66A', '#B78A50', '#A94B47', '#74323A'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
 };
 
 const hexToRgb = (hex: string) =>
@@ -131,7 +131,7 @@ const readableTextForFill = (hexColor: string) => {
     const normalized = channel / 255;
     return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.45 ? '#10233A' : '#FFFFFF';
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.2 ? '#10233A' : '#FFFFFF';
 };
 
 interface HomeHubViewProps {
@@ -617,7 +617,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="grid grid-cols-1 gap-4 items-start">
           <div className="min-w-0 space-y-3">
             <div
-              className="relative bg-[#E6EDF5] dark:bg-[#0B1728] rounded-xl border border-[#C5D2E1] dark:border-[#30445F] overflow-hidden p-3 sm:p-4 space-y-3"
+              className="relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
               onMouseLeave={() => setHoveredStateCode(null)}
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -626,21 +626,21 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold text-[#53657B] dark:text-slate-300">
+                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   Shade states by
                   <select
                     id="home-state-map-metric"
                     data-testid="select-state-map-metric"
                     value={mapMetric}
                     onChange={(event) => setMapMetric(event.target.value as StateMapMetricKey)}
-                    className="min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#9AABC0] dark:border-[#425875] bg-white dark:bg-[#111C2D] px-3 text-sm font-semibold text-[#14283F] dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                   >
                     {STATE_MAP_METRICS.map((metric) => (
                       <option key={metric.key} value={metric.key}>{metric.label}</option>
                     ))}
                   </select>
                 </label>
-                <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-[#B7C6D8] dark:border-[#334A68] bg-white/85 dark:bg-[#111C2D]/90 p-1" role="group" aria-label="Map zoom controls">
+                <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-[#304A61] bg-[#101F30] p-1" role="group" aria-label="Map zoom controls">
                   <button
                     type="button"
                     data-testid="button-map-zoom-in"
@@ -648,11 +648,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     disabled={mapZoom >= 1.8}
                     aria-label="Zoom in on map"
                     title="Zoom in"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#203A5A] dark:text-slate-100 hover:bg-[#EAF0F7] dark:hover:bg-[#20334D] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
                   >
                     <ZoomIn className="h-4 w-4" aria-hidden="true" />
                   </button>
-                  <span className="min-w-12 text-center font-mono text-[11px] font-bold tabular-nums text-[#334B68] dark:text-slate-300" aria-live="polite">{Math.round(mapZoom * 100)}%</span>
+                  <span className="min-w-12 text-center font-mono text-[11px] font-bold tabular-nums text-[#9CB1C7]" aria-live="polite">{Math.round(mapZoom * 100)}%</span>
                   <button
                     type="button"
                     data-testid="button-map-zoom-out"
@@ -660,7 +660,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     disabled={mapZoom <= 1}
                     aria-label="Zoom out on map"
                     title="Zoom out"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#203A5A] dark:text-slate-100 hover:bg-[#EAF0F7] dark:hover:bg-[#20334D] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
                   >
                     <ZoomOut className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -671,57 +671,57 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     disabled={mapZoom === 1}
                     aria-label="Reset map zoom"
                     title="Reset zoom"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#203A5A] dark:text-slate-100 hover:bg-[#EAF0F7] dark:hover:bg-[#20334D] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white/90 dark:bg-[#111C2D]/90 border border-[#C7D3E1] dark:border-[#30445F] px-3.5 py-2.5">
-                <span className="shrink-0 text-[11px] font-bold text-[#14283F] dark:text-slate-100">{activeMapMetric.label}</span>
-                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
+              <div className="flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+                <span className="shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
+                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
-                  <span className="h-3 w-24 rounded-full border border-[#526A7F]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
+                  <span className="h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
                   <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
                 {mapMetricValues.some((value) => value === 0) && (
-                  <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
-                    <span className="inline-block h-4 w-4 rounded-sm border border-[#526A7F]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
+                  <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                    <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
                     Reported 0
                   </span>
                 )}
-                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#334B68] dark:text-slate-300">
-                  <span className="inline-block h-4 w-4 rounded-sm border border-[#667B94] bg-[repeating-linear-gradient(135deg,#d9e2ec_0px,#d9e2ec_3px,#71849a_3px,#71849a_4px)] dark:bg-[repeating-linear-gradient(135deg,#25364b_0px,#25364b_3px,#8da0b7_3px,#8da0b7_4px)]" aria-hidden="true" />
+                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                  <span className="inline-block h-4 w-4 rounded-sm border border-[#7890A8] bg-[repeating-linear-gradient(135deg,#172A3D_0px,#172A3D_3px,#7890A8_3px,#7890A8_4px)]" aria-hidden="true" />
                   Not reported
                 </span>
-                <span className="shrink-0 text-[10px] text-[#53657B] dark:text-slate-400">Hatch = missing</span>
+                <span className="shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
               </div>
 
               <div className="flex flex-col gap-3">
               <div
-                className="order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] px-3.5 py-3"
+                className="order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-[#101F30] border border-[#294158] px-3.5 py-3"
                 aria-live="polite"
                 aria-atomic="true"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="text-xs font-bold text-[#14283F] dark:text-white">
+                    <span className="text-xs font-bold text-[#E4EEF8]">
                       {mapReadoutState.state} ({mapReadoutState.code})
                     </span>
-                    <span className="text-[10px] font-medium text-[#53657B] dark:text-slate-400">{activeMapMetric.label}</span>
-                    <span className="text-sm font-bold tabular-nums text-[#1D4ED8] dark:text-blue-300">
+                    <span className="text-[10px] font-medium text-[#9CB1C7]">{activeMapMetric.label}</span>
+                    <span className="text-sm font-bold tabular-nums text-[#67D6CE]">
                       {formatStateMapValue(mapMetric, mapReadoutMetric.value)}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
+                  <p className="mt-0.5 text-[10px] leading-4 text-[#91A6BB]">
                     {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}
                   </p>
                 </div>
                 {mapReadoutMetric.sourceAction !== 'reference-estimate' && <button
                   type="button"
                   onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
-                  className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50 dark:bg-blue-950/40 px-3 text-[11px] font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-[#3D6577] bg-[#142D3D] px-3 text-[11px] font-semibold text-[#9AE6DE] hover:bg-[#1B3A4D] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                 >
                   {mapReadoutMetric.sourceAction === 'zip-profiles'
                     ? 'View ZIP profile records'
@@ -732,11 +732,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               <div className="order-1 sm:order-2 space-y-3">
-              <p className="text-[10px] text-[#334B68] dark:text-slate-300 sm:hidden">
+              <p className="text-[10px] text-[#A2B5C8] sm:hidden">
                 Zoom in to inspect a state, then swipe to pan.
               </p>
 
-              <div ref={mapViewportRef} className="overflow-auto overscroll-contain rounded-lg border border-[#46637E] dark:border-[#2A4560] bg-gradient-to-br from-[#17354C] via-[#0B2033] to-[#071523] dark:from-[#0B1826] dark:via-[#060F1B] dark:to-[#02070C]">
+              <div ref={mapViewportRef} className="overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]">
               <svg
                 viewBox="0 0 920 500"
                 className="block h-auto select-none"
@@ -746,22 +746,22 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               >
                 <defs>
                   <pattern id="home-map-grid" width="46" height="46" patternUnits="userSpaceOnUse">
-                    <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(125, 211, 252, 0.12)" strokeWidth="1" />
+                    <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(113, 155, 185, 0.10)" strokeWidth="1" />
                   </pattern>
                   <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-                    <rect width="7" height="7" fill="#D9E2EC" className="dark:fill-[#25364B]" />
-                    <path d="M 0 0 L 0 7" stroke="#71849A" strokeWidth="2" className="dark:stroke-[#8DA0B7]" />
+                    <rect width="7" height="7" fill="#172A3D" />
+                    <path d="M 0 0 L 0 7" stroke="#8299AF" strokeWidth="2" />
                   </pattern>
                 </defs>
                 <rect width="920" height="500" fill="url(#home-map-grid)" />
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#0D2238" fillOpacity="0.96" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
-                  <text x="24" y="373" fill="#BDD0E2" fontSize="10" fontWeight="800" fontFamily="monospace">ALASKA (AK)</text>
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#0C1B2A" fillOpacity="0.98" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <text x="24" y="373" fill="#C3D3E2" fontSize="10" fontWeight="800" fontFamily="monospace">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#0D2238" fillOpacity="0.96" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
-                  <text x="206" y="413" fill="#BDD0E2" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#0C1B2A" fillOpacity="0.98" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <text x="206" y="413" fill="#C3D3E2" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
@@ -786,7 +786,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <path
                             d={boundary.d}
                             fill="none"
-                            stroke="#F8FAFC"
+                            stroke="#67D6CE"
                             strokeWidth="7"
                             strokeLinejoin="round"
                             pointerEvents="none"
@@ -796,8 +796,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <path
                             d={boundary.d}
                             fill="none"
-                            stroke="#D97706"
-                            strokeWidth="4"
+                            stroke="#F4C86A"
+                            strokeWidth="3.5"
                             strokeLinejoin="round"
                             pointerEvents="none"
                           />
@@ -805,8 +805,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          stroke={isSelected || isHovered ? '#10263C' : '#42627F'}
-                          strokeWidth={isSelected ? 2.4 : isHovered ? 2 : 1.35}
+                          stroke={isSelected ? '#F4C86A' : isHovered ? '#B6F1E8' : '#152A3D'}
+                          strokeWidth={isSelected ? 2.3 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
                           onClick={() => handleStateClick(st.code)}
                           onMouseEnter={() => setHoveredStateCode(st.code)}
@@ -821,7 +821,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           role="button"
                           aria-pressed={isSelected}
                           aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
-                          className="cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#F59E0B] focus:stroke-[3px]"
+                          className="cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#67D6CE] focus:stroke-[3px]"
                         >
                           <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${datum.coverage} · Period ${datum.period}${datum.claimScope ? ` · ${datum.claimScope} · ${datum.denialDefinition}` : ''}${datum.source ? ` · ${datum.source}` : ''} · ${countyCount} counties`}</title>
                         </path>
@@ -856,15 +856,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           width="26"
                           height="18"
                           rx="5"
-                          fill={isSelected ? '#FDE68A' : '#F8FAFC'}
+                          fill={isSelected ? '#F4C86A' : '#102235'}
                           fillOpacity="0.98"
-                          stroke={isSelected ? '#9A4D08' : isHovered ? '#203A5A' : '#405A78'}
-                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.2}
+                          stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#7590A8'}
+                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
                         />
                         <text
                           textAnchor="middle"
                           dy="3.5"
-                          fill={isSelected ? '#422006' : '#14283F'}
+                          fill={isSelected ? '#17202A' : '#E1EDF7'}
                           fontSize="10"
                           fontWeight="800"
                           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
@@ -879,8 +879,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               {/* East Coast Compact Callout Buttons */}
-              <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="text-[11px] font-semibold text-[#53657B] dark:text-slate-400 mr-1">
+              <div className="pt-2 border-t border-[#294158] flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-[11px] font-semibold text-[#91A6BB] mr-1">
                   Small-state shortcuts:
                 </span>
                 {EAST_COAST_CALLOUT_STATES.map((c) => {
@@ -888,7 +888,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   const datum = stateMapMetricsByCode[c.code][mapMetric];
                   const chipFill = hasReportedValue(datum.value)
                     ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax)
-                    : '#E2E8F0';
+                    : '#172A3D';
                   return (
                     <button
                       key={c.code}
@@ -900,11 +900,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${formatStateMapValue(mapMetric, datum.value)}`}
                       style={{
                         backgroundColor: chipFill,
-                        color: hasReportedValue(datum.value) ? readableTextForFill(chipFill) : '#334155',
-                        outline: isSelected ? '2px solid #D97706' : undefined,
+                        color: hasReportedValue(datum.value) ? readableTextForFill(chipFill) : '#C3D3E2',
+                        outline: isSelected ? '2px solid #F4C86A' : undefined,
                         outlineOffset: isSelected ? '1px' : undefined,
                       }}
-                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#344F70] dark:border-[#8298B2] text-[12px] font-bold font-mono transition-[outline,filter] hover:brightness-95 focus:outline focus:outline-2 focus:outline-amber-500"
+                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#7890A8] text-[12px] font-bold font-mono transition-[outline,filter] hover:brightness-110 focus:outline focus:outline-2 focus:outline-[#67D6CE]"
                     >
                       {c.code}
                     </button>

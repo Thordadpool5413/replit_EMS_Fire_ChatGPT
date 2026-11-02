@@ -163,7 +163,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
-            <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
+            <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
               {!logoFailed ? (
                 <img
                   src={logoSrc}
@@ -175,7 +175,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }}
                 />
               ) : (
-                <span className="font-display font-bold text-lg text-white">NF</span>
+                <span className="font-display font-bold text-2xl text-white">NF</span>
               )}
             </div>
           </button>
@@ -408,7 +408,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               title="Return to Territory Intelligence Home"
               aria-label="Return to Territory Intelligence Home"
             >
-              <div className="w-12 h-12 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
                 <img
                   src={logoSrc}
                   alt="EMS and Fire logo"

@@ -13,3 +13,4 @@
 - [Territory visual hierarchy](territory-visual-hierarchy.md) — favor high-contrast map-led screens and readable summaries; tuck technical details away but keep sources accessible.
 - [App-wide visual density](app-wide-visual-density.md) — keep screens compact and scannable; reduce oversized cards and chrome without making text or controls too small.
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.
+- [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.

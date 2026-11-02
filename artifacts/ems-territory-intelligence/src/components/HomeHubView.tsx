@@ -15,7 +15,6 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
-import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 import { HomeMapPulseIqReadout } from './PulseIqSurfaceDisplays';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>

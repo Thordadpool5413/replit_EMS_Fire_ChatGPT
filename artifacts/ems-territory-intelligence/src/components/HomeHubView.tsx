@@ -736,7 +736,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 Zoom in to inspect a state, then swipe to pan.
               </p>
 
-              <div ref={mapViewportRef} className="overflow-auto overscroll-contain rounded-lg border border-[#BCCBDB] dark:border-[#30445F] bg-[#EAF0F6] dark:bg-[#0C192B]">
+              <div ref={mapViewportRef} className="overflow-auto overscroll-contain rounded-lg border border-[#46637E] dark:border-[#2A4560] bg-gradient-to-br from-[#17354C] via-[#0B2033] to-[#071523] dark:from-[#0B1826] dark:via-[#060F1B] dark:to-[#02070C]">
               <svg
                 viewBox="0 0 920 500"
                 className="block h-auto select-none"
@@ -746,7 +746,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               >
                 <defs>
                   <pattern id="home-map-grid" width="46" height="46" patternUnits="userSpaceOnUse">
-                    <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
+                    <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(125, 211, 252, 0.12)" strokeWidth="1" />
                   </pattern>
                   <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                     <rect width="7" height="7" fill="#D9E2EC" className="dark:fill-[#25364B]" />
@@ -757,11 +757,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#FFFFFF" fillOpacity="0.85" stroke="#CBD5E1" strokeWidth="1.25" strokeDasharray="4 4" className="dark:fill-[#111C2D] dark:stroke-[#1E2D42]" />
-                  <text x="24" y="373" fill="#64748B" fontSize="10" fontWeight="800" fontFamily="monospace">ALASKA (AK)</text>
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#0D2238" fillOpacity="0.96" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <text x="24" y="373" fill="#BDD0E2" fontSize="10" fontWeight="800" fontFamily="monospace">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#FFFFFF" fillOpacity="0.85" stroke="#CBD5E1" strokeWidth="1.25" strokeDasharray="4 4" className="dark:fill-[#111C2D] dark:stroke-[#1E2D42]" />
-                  <text x="206" y="413" fill="#64748B" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#0D2238" fillOpacity="0.96" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <text x="206" y="413" fill="#BDD0E2" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
@@ -805,7 +805,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          stroke={isSelected || isHovered ? '#14283F' : '#405A78'}
+                          stroke={isSelected || isHovered ? '#10263C' : '#42627F'}
                           strokeWidth={isSelected ? 2.4 : isHovered ? 2 : 1.35}
                           strokeLinejoin="round"
                           onClick={() => handleStateClick(st.code)}

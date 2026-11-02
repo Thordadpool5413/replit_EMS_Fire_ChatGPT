@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { ArrowUpRight, Building2, ClipboardList, MapPin, Shield, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDownToLine, ArrowUpRight, Building2, ClipboardList, MapPin, Shield, X } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey, AgencySourceFact } from '../types';
 
 type AgencyComparisonPanelProps = {
@@ -22,6 +22,8 @@ type ComparisonSection = {
   icon: typeof Building2;
   rows: ComparisonRow[];
 };
+
+type ComparisonFilter = 'all' | 'shared' | 'different';
 
 const sections: ComparisonSection[] = [
   {
@@ -127,6 +129,89 @@ const displayValue = (value: unknown): string => {
   return String(value);
 };
 
+const normalizedValue = (value: unknown) => {
+  const formatted = displayValue(value);
+  return formatted === 'Not reported' ? null : formatted.trim().toLocaleLowerCase();
+};
+
+function rowMatchesFilter(row: ComparisonRow, agencies: Agency[], filter: ComparisonFilter) {
+  if (filter === 'all') return true;
+  const values = agencies.map((agency) => normalizedValue(row.getValue(agency)));
+  const reportedValues = values.filter((value): value is string => value !== null);
+  if (filter === 'shared') {
+    return agencies.length > 1 && reportedValues.length === agencies.length && new Set(reportedValues).size === 1;
+  }
+  return reportedValues.length > 0 && (reportedValues.length !== agencies.length || new Set(reportedValues).size > 1);
+}
+
+function csvCell(value: unknown) {
+  const raw = String(value ?? '');
+  const text = /^[\s]*[=+\-@]|^[\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function getSourceDetails(agency: Agency, factKey: string) {
+  const evidence = agency.factEvidence?.[factKey as AgencyFactEvidenceKey];
+  const sourceFacts = (agency.sourceFacts ?? []).filter((fact) => fact.fieldKey === factKey);
+  return [
+    ...(evidence ? [{
+      type: 'attached reference',
+      source: evidence.sourceName,
+      recordId: evidence.sourceRecordId,
+      url: evidence.sourceUrl,
+      reportingPeriod: evidence.reportingPeriod,
+      geography: [evidence.geographicLevel, evidence.geographicId, evidence.geographicRelationship, evidence.geographicMatchBasis].filter(Boolean).join(' · '),
+      basis: undefined,
+      note: evidence.note,
+    }] : []),
+    ...sourceFacts.map((fact) => ({
+      type: 'source fact',
+      source: fact.sourceName,
+      recordId: fact.sourceRecordId,
+      url: fact.sourceUrl,
+      reportingPeriod: fact.reportingPeriod,
+      effectivePeriod: fact.effectivePeriod,
+      geography: [fact.geographicLevel, fact.geographicId, fact.geographicRelationship].filter(Boolean).join(' · '),
+      basis: fact.basis,
+      note: fact.note,
+    })),
+  ];
+}
+
+function downloadComparisonCsv(agencies: Agency[], selectedSections: ComparisonSection[], filter: ComparisonFilter) {
+  const columns = [
+    'Agency',
+    'Agency ID',
+    'Agency type',
+    'Section',
+    'Field',
+    'Value',
+    'Unit',
+    'Attached source details (JSON)',
+  ];
+  const rows = selectedSections.flatMap((section) => section.rows.flatMap((row) => agencies.map((agency) => [
+    agency.name,
+    agency.id,
+    agency.agencyType,
+    section.title,
+    row.label,
+    displayValue(row.getValue(agency)),
+    row.unit ?? '',
+    JSON.stringify(getSourceDetails(agency, row.key)),
+  ])));
+  const csv = [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `agency-comparison-${filter}-${date}.csv`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 const safeExternalUrl = (url?: string) => {
   if (!url) return null;
   try {
@@ -204,9 +289,15 @@ function ValueCell({ agency, row }: { agency: Agency; row: ComparisonRow }) {
 
 export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpenProfile }: AgencyComparisonPanelProps) {
   const agencyCount = agencies.length;
+  const [comparisonFilter, setComparisonFilter] = useState<ComparisonFilter>('all');
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const columnStyle = useMemo(() => ({ gridTemplateColumns: `minmax(132px, 0.84fr) repeat(${Math.max(agencyCount, 1)}, minmax(210px, 1fr))` }), [agencyCount]);
+  const visibleSections = useMemo(
+    () => sections.map((section) => ({ ...section, rows: section.rows.filter((row) => rowMatchesFilter(row, agencies, comparisonFilter)) })).filter((section) => section.rows.length > 0),
+    [agencies, comparisonFilter],
+  );
+  const visibleFieldCount = visibleSections.reduce((total, section) => total + section.rows.length, 0);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -274,6 +365,52 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
           </div>
         ) : (
           <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold text-[#30465C] dark:text-slate-200">Show fields</p>
+                <p className="mt-0.5 text-[11px] text-[#718398] dark:text-slate-400">
+                  {comparisonFilter === 'shared' ? 'Same reported value for every selected agency' : comparisonFilter === 'different' ? 'Values differ, or are reported for only some agencies' : 'All available comparison fields'}
+                  {' · '}{visibleFieldCount} {visibleFieldCount === 1 ? 'field' : 'fields'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-lg border border-[#D5DFE8] bg-[#F8FAFB] p-1 dark:border-[#2B3F5C] dark:bg-[#111C2D]" role="group" aria-label="Filter comparison fields">
+                  {([
+                    ['all', 'All fields'],
+                    ['shared', 'Shared values'],
+                    ['different', 'Different values'],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setComparisonFilter(value)}
+                      aria-pressed={comparisonFilter === value}
+                      disabled={value !== 'all' && agencyCount < 2}
+                      className={`rounded-md px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 sm:px-3 ${comparisonFilter === value ? 'bg-[#176568] text-white shadow-sm' : 'text-[#586D82] hover:bg-white dark:text-slate-300 dark:hover:bg-[#1B2C44]'}`}
+                      data-testid={`comparison-filter-${value}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => downloadComparisonCsv(agencies, visibleSections, comparisonFilter)}
+                  disabled={visibleFieldCount === 0}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D]"
+                  data-testid="button-export-comparison"
+                >
+                  <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+            {visibleFieldCount === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#C8D4DF] bg-[#F8FAFB] px-5 py-12 text-center dark:border-[#2B3F5C] dark:bg-[#111C2D]" data-testid="comparison-no-matching-fields">
+                <h2 className="text-sm font-bold text-[#30465C] dark:text-slate-100">No fields match this view</h2>
+                <p className="mt-1 text-xs text-[#718398] dark:text-slate-400">Choose “All fields” or select more agencies to compare.</p>
+              </div>
+            ) : <>
             <div className="hidden overflow-x-auto rounded-xl border border-[#D5DFE8] bg-[#F9FBFC] shadow-[0_8px_24px_-20px_rgba(22,45,66,0.45)] dark:border-[#263951] dark:bg-[#111C2D] md:block">
               <div className="sticky top-0 z-20 grid border-b border-[#D5DFE8] bg-[#F5F8FA] dark:border-[#263951] dark:bg-[#142238]" style={columnStyle}>
                 <div className="flex items-end px-4 py-4 text-[10px] font-bold uppercase tracking-[0.13em] text-[#728398] dark:text-slate-400">Comparable field</div>
@@ -292,7 +429,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                   </div>
                 ))}
               </div>
-              {sections.map((section) => {
+              {visibleSections.map((section) => {
                 const SectionIcon = section.icon;
                 return (
                   <section key={section.title} aria-label={section.title}>
@@ -325,7 +462,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                     </div>
                     <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#738498] dark:text-slate-400">{agency.agencyType} <span className="mx-1">/</span> FDID {displayValue(agency.fdid)}</p>
                   </div>
-                  {sections.map((section) => (
+                  {visibleSections.map((section) => (
                     <section key={section.title} aria-label={`${agency.name} ${section.title}`}>
                       <h2 className="border-b border-[#DCE4EA] bg-[#EDF2F5] px-4 py-2 text-xs font-bold text-[#30465C] dark:border-[#263951] dark:bg-[#16243A] dark:text-slate-100">{section.title}</h2>
                       {section.rows.map((row) => (
@@ -339,6 +476,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                 </article>
               ))}
             </div>
+            </>}
           </div>
         )}
       </div>

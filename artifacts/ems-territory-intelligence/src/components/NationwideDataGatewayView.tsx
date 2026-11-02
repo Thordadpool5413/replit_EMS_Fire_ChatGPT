@@ -376,7 +376,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                     <th className="py-2.5 px-4 text-right">Cloud Synced</th>
                     <th className="py-2.5 px-4 text-right">Medicare Claims</th>
                     <th className="py-2.5 px-4 text-right">Billed Volume</th>
-                    <th className="py-2.5 px-4 text-right">Avg Denial %</th>
+                    <th className="py-2.5 px-4 text-right">Claim records</th>
                     <th className="py-2.5 px-4 text-right">Recoverable Rev</th>
                     <th className="py-2.5 px-4">Data Provenance</th>
                   </tr>
@@ -398,15 +398,8 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                         {s.billedVolumeDataCount ? `$${(s.totalBilledVolumeDollars / 1_000_000).toFixed(2)}M` : 'Not reported'}
                         <span className="block text-[10px] font-normal text-slate-400">{s.billedVolumeDataCount} records</span>
                       </td>
-                      <td data-testid={`text-denial-coverage-${s.stateCode}`} className="hidden">
-                        {s.weightedClaimDenialRatePct != null
-                          ? `${s.weightedClaimDenialRatePct}%`
-                          : s.denialRateDataCount
-                            ? 'Not comparable'
-                            : 'Not reported'}
-                        <span className="block text-[10px] text-slate-400">
-                          {s.denialRateDataCount} matched-count records
-                        </span>
+                      <td data-testid={`text-denial-coverage-${s.stateCode}`} className="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
+                        {s.denialRateDataCount ? `${s.denialRateDataCount} matched-count records` : 'No matched-count records'}
                       </td>
                       <td data-testid={`text-recovery-coverage-${s.stateCode}`} className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">
                         {s.recoverableRevenueDataCount ? `+$${(s.totalRecoverableDollars / 1000).toFixed(0)}K` : 'Not reported'}

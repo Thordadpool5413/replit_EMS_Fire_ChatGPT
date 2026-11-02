@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Agency } from '../types';
-import { calculatePulseIqContributions, calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
+import {
+  calculatePulseIqContributions,
+  calculateScore,
+  DEFAULT_WEIGHTS,
+  evaluatePulseIqFactors
+} from './pulseIqScoring';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -36,4 +41,48 @@ test('legacy CMS weight cannot change PulseIQ', () => {
     Math.round(Object.values(calculatePulseIqContributions(record)).reduce((sum, points) => sum + points, 0)),
     calculateScore(record)
   );
+});
+
+test('PulseIQ factor detail exposes the values, weights, rules, and source fields used', () => {
+  const record = agency(35, 500000);
+  const factors = evaluatePulseIqFactors(record);
+
+  assert.deepEqual(factors.map((factor) => factor.key), ['fleet', 'clinical', 'grant', 'software']);
+  const clinical = factors.find((factor) => factor.key === 'clinical')!;
+  assert.equal(clinical.baseScore, 70);
+  assert.equal(clinical.weightPct, 27);
+  assert.equal(clinical.contributionPts, 18.9);
+  assert.equal(clinical.inputs[0].valueUsed, '700 calls/year');
+  assert.equal(clinical.inputs[0].sourceKey, 'clinicalOutcomes');
+  assert.match(clinical.method, /1,800\+/);
+  assert.equal(
+    Math.round(factors.reduce((sum, factor) => sum + factor.contributionPts, 0)),
+    calculateScore(record)
+  );
+});
+
+test('missing score inputs are shown as model fallbacks instead of implied source facts', () => {
+  const record = {
+    ...agency(35, 500000),
+    annualCardiacArrestCalls: undefined,
+    installedFleet: {
+      defibBrand: '',
+      defibAgeYears: undefined,
+      billingSoftware: '',
+      epcrCadSoftware: ''
+    }
+  } as unknown as Agency;
+
+  const factors = evaluatePulseIqFactors(record);
+  const fleet = factors.find((factor) => factor.key === 'fleet')!;
+  const clinical = factors.find((factor) => factor.key === 'clinical')!;
+  const software = factors.find((factor) => factor.key === 'software')!;
+
+  assert.equal(fleet.inputs[0].valueUsed, '7 years');
+  assert.equal(fleet.inputs[0].usedDefault, true);
+  assert.equal(clinical.inputs[0].valueUsed, '600 calls/year');
+  assert.equal(clinical.inputs[0].usedDefault, true);
+  assert.equal(software.inputs[0].valueUsed, 'Not listed');
+  assert.equal(software.inputs[0].usedDefault, true);
+  assert.match(software.method, /missing software names currently count as no ZOLL match/i);
 });

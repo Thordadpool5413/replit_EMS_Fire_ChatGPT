@@ -129,11 +129,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     () => inspectedCounty ? getCountyDenialDisplay(inspectedCounty.node.countyRecord) : null,
     [inspectedCounty],
   );
-  const hasDenialProfileData = projectedState.projectedCounties.some(
-    (county) =>
-      county.medicareDenialRatePct !== null ||
-      getCountyDenialDisplay(county.node.countyRecord).kind === 'zip-profile',
-  );
   const inspectedNri = inspectedCounty
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
     : null;
@@ -307,12 +302,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <g>
                     {projectedState.projectedCounties.map((pc) => {
                       const isHovered = hoveredCountyFips === pc.countyFips;
-                      const denialDisplay = getCountyDenialDisplay(pc.node.countyRecord);
-                      const fillColor = countyMapLayer === 'nri-risk'
-                        ? nriColorFor(pc.countyFips)
-                        : isHovered
-                          ? '#1E3A8A'
-                          : '#F1F5F9';
+                      const fillColor = nriColorFor(pc.countyFips);
                       const strokeColor = isHovered ? '#0F172A' : '#94A3B8';
 
                       return (
@@ -327,7 +317,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
                         >
                           <title>
-                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · ${countyMapLayer === 'nri-risk' ? `FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}` : denialDisplay.kind === 'county-claims-rate' ? `Claim summary: ${denialDisplay.deniedClaimCount.toLocaleString()} denied / ${denialDisplay.adjudicatedClaimCount.toLocaleString()} adjudicated · FIPS ${denialDisplay.countyFips} · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.source}` : denialDisplay.kind === 'zip-profile' ? `ZIP ${denialDisplay.zipCode} source profile · ${denialDisplay.claimScope} · ${denialDisplay.reportingPeriod} · ${denialDisplay.sourceUrl}` : 'No claim source record attached'}`}
+                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}`}
                           </title>
                         </path>
                       );
@@ -339,35 +329,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
             <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
               <div className="flex flex-wrap items-center gap-3">
-                {countyMapLayer === 'nri-risk' ? (
-                  <>
-                    {Object.entries(nriRatingColors).map(([rating, color]) => (
-                      <span key={rating} className="flex items-center gap-1.5">
-                        <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400" style={{ backgroundColor: color }} />
-                        <span>{rating}</span>
-                      </span>
-                    ))}
-                    <span className="flex items-center gap-1.5">
-                      <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400 bg-slate-200" />
-                      <span>No matching NRI FIPS</span>
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-[#F1F5F9] border border-slate-400 inline-block" />
-                      <span>No rate profile</span>
-                    </span>
-                    {hasDenialProfileData ? (
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-xs bg-[#DBEAFE] border border-slate-400 inline-block" />
-                        <span>Rate profile available</span>
-                      </span>
-                    ) : (
-                      <span>No mapped rate profiles in this state</span>
-                    )}
-                  </>
-                )}
+                {Object.entries(nriRatingColors).map(([rating, color]) => (
+                  <span key={rating} className="flex items-center gap-1.5">
+                    <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400" style={{ backgroundColor: color }} />
+                    <span>{rating}</span>
+                  </span>
+                ))}
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-xs border border-slate-400 bg-slate-200" />
+                  <span>No matching NRI FIPS</span>
+                </span>
               </div>
               <span className="font-mono">NAD83 / WGS84 Projection</span>
             </div>

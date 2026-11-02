@@ -28,6 +28,15 @@ const statusLabel = (agency: Agency, key: PulseIqFactorEvaluation['inputs'][numb
   return 'No source mapped';
 };
 
+const getSafeSourceUrl = (url?: string): string | null => {
+  try {
+    const parsed = new URL(url || '');
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
 export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
   agency,
   compact = false
@@ -81,6 +90,7 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
                   const status = statusLabel(agency, input.sourceKey);
                   const reviewed = hasReviewedAgencyFactEvidence(agency, input.sourceKey);
                   const mapped = hasMappedAgencyFactEvidence(agency, input.sourceKey);
+                  const sourceUrl = getSafeSourceUrl(evidence?.sourceUrl);
 
                   return (
                     <div key={`${factor.key}-${input.label}`} className="border-t border-slate-200/80 pt-2 dark:border-slate-800">
@@ -94,10 +104,11 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
                         </span>
                         {input.usedDefault && <span>· model fallback used</span>}
                         {evidence?.sourceName && <span>· {evidence.sourceName}</span>}
+                        {evidence?.sourceRecordId && <span>· record {evidence.sourceRecordId}</span>}
                         {evidence?.reportingPeriod && <span>· {evidence.reportingPeriod}</span>}
-                        {evidence?.sourceUrl && (
+                        {sourceUrl && (
                           <a
-                            href={evidence.sourceUrl}
+                            href={sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-medium text-blue-700 hover:underline dark:text-blue-300"

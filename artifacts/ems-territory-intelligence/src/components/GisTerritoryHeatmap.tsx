@@ -1472,6 +1472,18 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       };
     }
 
+    return {
+      gradientId: 'unreported-gradient',
+      ringColor: '#64748b',
+      ringOpacity: 0,
+      isCritical: false,
+      markerFill: '#64748b',
+      markerStroke: '#cbd5e1',
+      markerRadius: 4,
+      heatRadius: 0,
+      tierLabel: 'No layer-specific data',
+      metricDisplay: 'Not reported'
+    };
   };
 
   return (

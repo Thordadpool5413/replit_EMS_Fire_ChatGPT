@@ -5,7 +5,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
-import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { 
   calculateAgencyFleetTco, 
   COOPERATIVE_CONTRACTS 
@@ -81,10 +80,6 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     ? `Inputs: ${reportMetric(tco.unitCount)} reported defibrillator units; five years; benchmark ${tco.incumbentModel} vs ${tco.zollModel}; per-unit annual service ${reportCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs ${reportCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${reportCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${reportCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption ${reportCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: operating cost difference plus trade-in; modeled values, not an agency quote.`
     : 'Not calculated: no positive reported defibrillator unit count.';
   const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
-  const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-  const denialRate = denialMetric
-    ? `Claim summary (billing NPI ${denialMetric.npi}): ${denialMetric.deniedClaimCount.toLocaleString()} denied / ${denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${denialMetric.reportingPeriod}; ${denialMetric.claimScope}; ${denialMetric.denialDefinition}; source: ${denialMetric.source}${denialMetric.sourceReference ? `, ${denialMetric.sourceReference}` : ''}${denialMetric.sourceUrl ? `, ${denialMetric.sourceUrl}` : ''}`
-    : 'Not published';
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
   const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);
   const grantFiscalYear = reportMetric(agency.grantStatus?.afgFiscalYear);
@@ -101,7 +96,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       ? ` Illustrative 5-year estimate for ${defibCount} reported defibrillator units: ${fiveYrSavings} operating savings plus ${tradeIn} trade-in credit. ${tcoMethod}`
       : ` A 5-year fleet estimate is not calculated because a positive reported defibrillator unit count is unavailable. ${tcoMethod}`;
     return `${leaderName} at ${agency.name}: Recorded defibrillator details are ${defibCount} units, ${defibBrand} brand, age ${defibAge}, and warranty status ${warranty}.${tcoSentence} Medicare claim records can be reviewed in the account; recoverable revenue: ${recoverableEstimate}${grantSentence} Cooperative purchasing option listed: ${coopContract.contractName} (${coopContract.contractNumber}); local eligibility and requirements need confirmation.`;
-  }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, hasTcoInputs, fiveYrSavings, tradeIn, tcoMethod, denialRate, recoverableEstimate, hasGrant, grantAmt, grantFiscalYear, coopContract]);
+  }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, hasTcoInputs, fiveYrSavings, tradeIn, tcoMethod, recoverableEstimate, hasGrant, grantAmt, grantFiscalYear, coopContract]);
 
   // Tailored Discovery Questions (3+ for different command roles)
   const discoveryQuestions = useMemo(() => [

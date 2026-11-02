@@ -580,11 +580,7 @@ export interface SyncOutboxItem {
   status: 'PENDING' | 'SYNCED' | 'FAILED';
 }
 
-export type UserRole = 
-  | 'Territory Manager'
-  | 'Regional Sales Director'
-  | 'Clinical Deployment Specialist'
-  | 'Sales Operations Admin';
+export type UserRole = 'EMS' | 'Fire' | 'Territory';
 
 export interface PredictiveWeights {
   fleetAgeWeight: number; // e.g. 25

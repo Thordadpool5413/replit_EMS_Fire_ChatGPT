@@ -108,7 +108,7 @@ export default function App() {
   const [outbox, setOutbox] = useState<SyncOutboxItem[]>(loadStoredOutbox);
   const [alerts, setAlerts] = useState<PushAlert[]>(loadStoredNotifications);
   const [weights, setWeights] = useState<PredictiveWeights>(loadStoredWeights);
-  const [currentRole, setCurrentRole] = useState<UserRole>('Territory Manager');
+  const [currentRole, setCurrentRole] = useState<UserRole>('Territory');
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const isSyncing = false;
   const [showWorkflowGuide, setShowWorkflowGuide] = useState<boolean>(() => {
@@ -506,6 +506,21 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const handleRoleChange = useCallback((role: UserRole) => {
+    setCurrentRole(role);
+    if (role === 'EMS') {
+      setGlobalCategory('ems');
+      handleNavigateTab('queue');
+    } else if (role === 'Fire') {
+      setGlobalCategory('fire');
+      handleNavigateTab('queue');
+    } else {
+      setGlobalCategory('all');
+      handleNavigateTab('home');
+    }
+    showToast(`Switched workspace to ${role}`, 'info');
+  }, [handleNavigateTab, showToast]);
+
   return (
     <div className={`pi-app-shell min-h-screen w-full max-w-full overflow-x-hidden ${isDarkMode ? 'dark bg-[#0B1320] text-slate-100' : 'bg-[#F5F7FA] text-[#14283F]'} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
 
@@ -543,10 +558,7 @@ export default function App() {
         unreadAlertCount={unreadAlertCount}
         openNotifications={() => setIsNotificationsOpen(true)}
         currentRole={currentRole}
-        setCurrentRole={(r) => {
-          setCurrentRole(r);
-          showToast(`Switched active view role to: ${r}`, 'info');
-        }}
+        setCurrentRole={handleRoleChange}
         openQuickVisitModal={() => setIsQuickVisitOpen(true)}
         openCommandPalette={() => setIsCommandPaletteOpen(true)}
         openDataLineageModal={() => setIsDataLineageOpen(true)}

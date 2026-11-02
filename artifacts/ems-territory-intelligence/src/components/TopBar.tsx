@@ -113,11 +113,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
 
-  const roles: UserRole[] = [
-    'Territory Manager',
-    'Regional Sales Director',
-    'Clinical Deployment Specialist',
-    'Sales Operations Admin'
+  const roles: { id: UserRole; description: string }[] = [
+    { id: 'EMS', description: 'EMS provider accounts' },
+    { id: 'Fire', description: 'Fire department accounts' },
+    { id: 'Territory', description: 'All providers and territory maps' }
   ];
 
   useEffect(() => {
@@ -740,22 +739,26 @@ export const TopBar: React.FC<TopBarProps> = ({
                       Active View Role
                     </div>
                     <div className="mt-1 space-y-0.5">
-                      {roles.map((r) => (
+                      {roles.map(({ id, description }) => (
                         <button
-                          key={r}
+                          key={id}
                           type="button"
                           onClick={() => {
-                            setCurrentRole(r);
+                            setCurrentRole(id);
                             setIsUtilityMenuOpen(false);
                           }}
+                          aria-pressed={currentRole === id}
                           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left transition-colors cursor-pointer ${
-                            currentRole === r
+                            currentRole === id
                               ? 'bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold'
                               : 'text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                           }`}
                         >
-                          <span>{r}</span>
-                          {currentRole === r && <Check className="w-3.5 h-3.5" />}
+                          <span className="min-w-0">
+                            <span className="block">{id}</span>
+                            <span className="block text-[10px] font-normal opacity-70">{description}</span>
+                          </span>
+                          {currentRole === id && <Check className="w-3.5 h-3.5 shrink-0" />}
                         </button>
                       ))}
                     </div>

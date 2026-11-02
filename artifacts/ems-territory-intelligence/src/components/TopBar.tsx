@@ -60,7 +60,6 @@ interface TopBarProps {
   onClearGeography?: () => void;
   activeAccountName?: string | null;
   dayRouteCount?: number;
-  bookmarkedCount?: number;
   agencies?: Agency[];
   onOpenProviderFinder?: () => void;
 }
@@ -102,7 +101,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
   const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState<boolean>(false);
-  const [isMyWorkExpanded, setIsMyWorkExpanded] = useState<boolean>(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
 
@@ -122,7 +120,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isOpportunitiesActive = ['contracts', 'grants', 'pulseiq'].includes(activeTab) && !activeAccountName;
   const isTerritoryTab = ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab);
   const isTerritoryActive = isTerritoryTab && !activeAccountName;
-  const isMyWorkActive = ['field', 'tm_dashboard'].includes(activeTab) && !activeAccountName;
+  const isMyWorkTab = ['field', 'tm_dashboard'].includes(activeTab);
+  const isMyWorkActive = isMyWorkTab && !activeAccountName;
 
   const advancedTools = [
     { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
@@ -137,7 +136,6 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   useEffect(() => {
     setIsOpportunitiesExpanded(['contracts', 'grants', 'pulseiq'].includes(activeTab));
-    setIsMyWorkExpanded(['field', 'tm_dashboard'].includes(activeTab));
     setIsAdvancedExpanded(['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab));
   }, [activeTab]);
 
@@ -149,8 +147,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (activeTab === 'grants') return 'Opportunities · FEMA AFG & SAFER Grants';
     if (activeTab === 'pulseiq') return 'Opportunities · PulseIQ Regional Scoring';
     if (['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab)) return 'Territory Explorer';
-    if (activeTab === 'field') return 'My Work · Field Route & Activity';
-    if (activeTab === 'tm_dashboard') return 'My Work · Mobile Command';
+    if (isMyWorkTab) return 'Field Work';
     const foundAdv = advancedTools.find(t => t.id === activeTab);
     if (foundAdv) return `Specialist tools · ${foundAdv.label}`;
     return 'Workspace';
@@ -352,65 +349,26 @@ export const TopBar: React.FC<TopBarProps> = ({
                 )}
               </div>
 
-              {/* 5. My Work */}
-              <div className="space-y-0.5">
-                <div
-                  className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
-                    isMyWorkActive
-                      ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                      : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                  }`}
+              {/* 5. Field Work */}
+              <div
+                className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
+                  isMyWorkActive
+                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
+                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(isMyWorkTab ? activeTab : 'field')}
+                  className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(isMyWorkActive ? activeTab : 'field');
-                      setIsMyWorkExpanded(true);
-                    }}
-                    className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
-                  >
-                    <Briefcase className="w-4 h-4 shrink-0" />
-                    <span className="truncate">My Work</span>
-                  </button>
-                  <div className="flex items-center gap-1 pr-1.5 shrink-0">
-                    {dayRouteCount > 0 && (
-                      <span aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`} className="text-xs font-semibold pi-data-number px-1.5 py-0.5 rounded bg-[#172D49] text-slate-200">
-                        {dayRouteCount}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setIsMyWorkExpanded(prev => !prev)}
-                      className="p-1.5 hover:text-white text-slate-400 cursor-pointer shrink-0"
-                      title="Toggle My Work Sub-Navigation"
-                      aria-label="Toggle My Work Sub-Navigation"
-                      aria-expanded={isMyWorkExpanded}
-                    >
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMyWorkExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                    </button>
-                  </div>
-                </div>
-
-                {isMyWorkExpanded && (
-                  <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
-                    {[
-                      { id: 'field', label: 'Routes, visits & notes' },
-                      { id: 'tm_dashboard', label: 'Mobile field workspace' }
-                    ].map((sub) => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => setActiveTab(sub.id)}
-                        className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                          activeTab === sub.id
-                            ? 'text-white font-semibold bg-[#172D49]'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {sub.label}
-                      </button>
-                    ))}
-                  </div>
+                  <Briefcase className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Field Work</span>
+                </button>
+                {dayRouteCount > 0 && (
+                  <span aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`} className="text-xs font-semibold pi-data-number px-1.5 py-0.5 mr-2 rounded bg-[#172D49] text-slate-200">
+                    {dayRouteCount}
+                  </span>
                 )}
               </div>
             </div>

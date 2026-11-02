@@ -177,14 +177,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
           <button
             type="button"
-            onClick={() => navigate('field')}
+            onClick={() => navigate(isMyWork ? activeTab : 'field')}
             aria-current={isMyWork ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
               isMyWork ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Briefcase className={`w-4 h-4 ${isMyWork ? 'text-[#285EE8]' : ''}`} />
-            <span className="text-[9px] tracking-tight mt-1">My work</span>
+            <span className="text-[9px] tracking-tight mt-1">Field work</span>
             {dayRouteCount > 0 && (
               <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[9px] font-bold flex items-center justify-center">
                 {dayRouteCount}

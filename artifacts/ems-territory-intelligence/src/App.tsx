@@ -556,7 +556,6 @@ export default function App() {
         onClearGeography={handleClearGeography}
         activeAccountName={currentActive?.name || null}
         dayRouteCount={dayRouteCount}
-        bookmarkedCount={bookmarkedCount}
         agencies={agencies}
         onOpenProviderFinder={() => setIsMobileProviderFinderOpen(true)}
       />
@@ -623,28 +622,34 @@ export default function App() {
 
         {!currentActive && ['field', 'tm_dashboard'].includes(activeTab) && (
           <nav
-            aria-label="My Work Workspace Navigation"
-            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            aria-label="Field Work views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-              {[
-                { id: 'field', label: `Routes & notes (${dayRouteCount} in route · ${bookmarkedCount} saved)` },
-                { id: 'tm_dashboard', label: 'Field dashboard' }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleNavigateTab(item.id)}
-                  className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    activeTab === item.id
-                      ? 'bg-[#285EE8] text-white'
-                      : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            {[
+              {
+                id: 'field',
+                label: 'Routes & notes',
+                detail: [dayRouteCount > 0 ? `${dayRouteCount} in route` : '', bookmarkedCount > 0 ? `${bookmarkedCount} saved` : ''].filter(Boolean).join(' · '),
+                active: activeTab === 'field'
+              },
+              { id: 'tm_dashboard', label: 'Field dashboard', detail: '', active: activeTab === 'tm_dashboard' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.detail ? `${item.label}; ${item.detail}` : item.label}
+                aria-current={item.active ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-2 ${
+                  item.active
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+                {item.detail && <span className="text-[10px] font-medium opacity-80">{item.detail}</span>}
+              </button>
+            ))}
           </nav>
         )}
 

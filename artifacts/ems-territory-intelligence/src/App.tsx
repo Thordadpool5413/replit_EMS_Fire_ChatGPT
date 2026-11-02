@@ -652,7 +652,7 @@ export default function App() {
           </nav>
         )}
 
-        {!currentActive && ['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab) && (
+        {!currentActive && ['knowledge', 'claims', '3d_studio', 'gateway'].includes(activeTab) && (
           <nav
             aria-label="Specialist tool views"
             className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
@@ -661,8 +661,32 @@ export default function App() {
               { id: 'knowledge', label: 'Clinical & competitive' },
               { id: 'claims', label: 'Medicare & public health' },
               { id: '3d_studio', label: 'Equipment viewer' },
-              { id: 'gateway', label: 'Federal sources' },
-              { id: 'data_health', label: 'Data status' },
+              { id: 'gateway', label: 'Federal sources' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={activeTab === item.id ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === item.id
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {!currentActive && ['data_health', 'resilience'].includes(activeTab) && (
+          <nav
+            aria-label="Data and system views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+          >
+            {[
+              { id: 'data_health', label: 'Data health & sync' },
               { id: 'resilience', label: 'Backup & restore' }
             ].map((item) => (
               <button
@@ -699,7 +723,18 @@ export default function App() {
                 className="inline-flex items-center gap-2 text-[#14283F] dark:text-slate-200 hover:text-[#285EE8] dark:hover:text-blue-400 font-medium transition-colors cursor-pointer"
               >
                 <span className="w-5 h-5 rounded-full bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold text-xs tabular-nums flex items-center justify-center shrink-0">1</span>
-                <span>Search Territory or NPI (⌘K)</span>
+                <span>Search for an agency or NPI (⌘K)</span>
+              </button>
+
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline" aria-hidden="true">&rarr;</span>
+
+              <button
+                type="button"
+                onClick={() => handleNavigateTab('queue')}
+                className="inline-flex items-center gap-2 text-[#14283F] dark:text-slate-200 hover:text-[#285EE8] dark:hover:text-blue-400 font-medium transition-colors cursor-pointer"
+              >
+                <span className="w-5 h-5 rounded-full bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold text-xs tabular-nums flex items-center justify-center shrink-0">2</span>
+                <span>Choose an agency to inspect</span>
               </button>
 
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline" aria-hidden="true">&rarr;</span>
@@ -707,27 +742,17 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  const topAccount = agencies[0];
-                  if (topAccount) {
-                    setSelectedAgency(topAccount);
-                    setActiveAccount(topAccount);
+                  if (currentActive) {
+                    setRfpAgency(currentActive);
+                    return;
                   }
+                  showToast('Choose an agency before generating a quote.', 'info');
+                  handleNavigateTab('queue');
                 }}
                 className="inline-flex items-center gap-2 text-[#14283F] dark:text-slate-200 hover:text-[#285EE8] dark:hover:text-blue-400 font-medium transition-colors cursor-pointer"
               >
-                <span className="w-5 h-5 rounded-full bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold text-xs tabular-nums flex items-center justify-center shrink-0">2</span>
-                <span>Inspect Account 360 &amp; Evidence</span>
-              </button>
-
-              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline" aria-hidden="true">&rarr;</span>
-
-              <button
-                type="button"
-                onClick={() => setRfpAgency(activeAccount || agencies[0])}
-                className="inline-flex items-center gap-2 text-[#14283F] dark:text-slate-200 hover:text-[#285EE8] dark:hover:text-blue-400 font-medium transition-colors cursor-pointer"
-              >
                 <span className="w-5 h-5 rounded-full bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 font-semibold text-xs tabular-nums flex items-center justify-center shrink-0">3</span>
-                <span>Generate Co-Op Quote or Log Visit</span>
+                <span>{currentActive ? 'Generate quote for selected agency' : 'Choose an agency for a quote'}</span>
               </button>
             </div>
 

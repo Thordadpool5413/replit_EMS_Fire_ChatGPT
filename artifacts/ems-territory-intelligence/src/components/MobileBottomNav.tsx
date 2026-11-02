@@ -31,12 +31,15 @@ const specialistTools = [
   { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
   { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
   { id: '3d_studio', label: 'Equipment viewer', icon: Box },
-  { id: 'gateway', label: 'Federal data sources', icon: Database },
+  { id: 'gateway', label: 'Federal data sources', icon: Database }
+] as const;
+
+const systemTools = [
   { id: 'data_health', label: 'Data status & sync', icon: Activity },
   { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
 ] as const;
 
-const specialistToolIds = specialistTools.map((tool) => tool.id);
+const moreToolIds = [...specialistTools, ...systemTools].map((tool) => tool.id);
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
@@ -50,7 +53,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const isOpportunities = ['contracts', 'grants', 'pulseiq'].includes(activeTab);
   const isTerritory = ['states_directory', 'geo', 'gis', 'map', 'google_maps'].includes(activeTab);
   const isMyWork = ['field', 'tm_dashboard'].includes(activeTab);
-  const isMoreActive = specialistToolIds.includes(activeTab as (typeof specialistToolIds)[number]);
+  const isMoreActive = moreToolIds.includes(activeTab as (typeof moreToolIds)[number]);
 
   useEffect(() => {
     setIsMoreOpen(false);
@@ -67,49 +70,61 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         <>
           <button
             type="button"
-            aria-label="Close specialist tools menu"
+            aria-label="Close more tools menu"
             onClick={() => setIsMoreOpen(false)}
             className="fixed inset-0 bottom-16 z-40 bg-slate-950/35 md:hidden"
           />
           <section
-            id="mobile-specialist-tools"
-            aria-label="Specialist tools"
+            id="mobile-more-tools"
+            aria-label="More tools"
             className="fixed left-3 right-3 bottom-[4.75rem] z-50 mx-auto max-w-md rounded-2xl border border-[#DFE6EF] bg-white p-4 shadow-2xl dark:border-[#1E2D42] dark:bg-[#111C2D] md:hidden"
           >
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-[#14283F] dark:text-white">Specialist tools</h2>
-                <p className="mt-0.5 text-[11px] text-[#53657B] dark:text-slate-400">Research, data, and system tools</p>
+                <h2 className="text-sm font-semibold text-[#14283F] dark:text-white">More tools</h2>
+                <p className="mt-0.5 text-[11px] text-[#53657B] dark:text-slate-400">Research and system tools</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsMoreOpen(false)}
-                aria-label="Close specialist tools"
+                aria-label="Close more tools"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#53657B] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-[#16243A]"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {specialistTools.map(({ id, label, icon: Icon }) => {
-                const active = activeTab === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => navigate(id)}
-                    aria-current={active ? 'page' : undefined}
-                    className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors ${
-                      active
-                        ? 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200'
-                        : 'border-[#DFE6EF] bg-white text-[#14283F] hover:bg-[#F5F7FA] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-200 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span>{label}</span>
-                  </button>
-                );
-              })}
+            <div className="space-y-3">
+              {[
+                { title: 'Specialist', tools: specialistTools },
+                { title: 'Data & system', tools: systemTools }
+              ].map(({ title, tools }) => (
+                <div key={title}>
+                  <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#53657B] dark:text-slate-400">
+                    {title}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {tools.map(({ id, label, icon: Icon }) => {
+                      const active = activeTab === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => navigate(id)}
+                          aria-current={active ? 'page' : undefined}
+                          className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                            active
+                              ? 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200'
+                              : 'border-[#DFE6EF] bg-white text-[#14283F] hover:bg-[#F5F7FA] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-200 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          <span>{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </>
@@ -196,7 +211,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             type="button"
             onClick={() => setIsMoreOpen((open) => !open)}
             aria-expanded={isMoreOpen}
-            aria-controls={isMoreOpen ? 'mobile-specialist-tools' : undefined}
+            aria-controls={isMoreOpen ? 'mobile-more-tools' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isMoreActive || isMoreOpen ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}

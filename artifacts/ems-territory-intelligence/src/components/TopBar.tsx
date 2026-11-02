@@ -122,17 +122,22 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isMyWorkTab = ['field', 'tm_dashboard'].includes(activeTab);
   const isMyWorkActive = isMyWorkTab && !activeAccountName;
 
-  const advancedTools = [
+  const specialistTools = [
     { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
     { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
     { id: '3d_studio', label: '3D equipment viewer', icon: Box },
-    { id: 'gateway', label: 'Federal data sources', icon: Database },
+    { id: 'gateway', label: 'Federal data sources', icon: Database }
+  ];
+
+  const systemTools = [
     { id: 'data_health', label: 'Data status & sync', icon: Activity },
     { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
   ];
 
-  const isAdvancedTab = advancedTools.some(t => t.id === activeTab);
-  const isAdvancedActive = isAdvancedTab && !activeAccountName;
+  const isSpecialistTab = specialistTools.some((tool) => tool.id === activeTab);
+  const isSpecialistActive = isSpecialistTab && !activeAccountName;
+  const isSystemTab = systemTools.some((tool) => tool.id === activeTab);
+  const isSystemActive = isSystemTab && !activeAccountName;
 
   const getWorkspaceTitle = () => {
     if (activeAccountName) return `Accounts / ${activeAccountName}`;
@@ -141,7 +146,8 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (isOpportunitiesTab) return 'Opportunities';
     if (['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab)) return 'Territory Explorer';
     if (isMyWorkTab) return 'Field Work';
-    if (isAdvancedActive) return 'Specialist tools';
+    if (isSystemActive) return 'Data & system';
+    if (isSpecialistActive) return 'Specialist tools';
     return 'Workspace';
   };
 
@@ -323,13 +329,17 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
           </div>
 
-          {/* Specialist tools have one entry point; the view tabs live with the content. */}
+          {/* Lower-frequency specialist and system tools stay separate from daily workspaces. */}
           <div>
+            <div className="text-xs font-medium text-slate-400 px-2.5 mb-1.5">
+              Tools
+            </div>
+            <div className="space-y-0.5">
             <button
               type="button"
-              onClick={() => setActiveTab(isAdvancedTab ? activeTab : 'knowledge')}
+              onClick={() => setActiveTab(isSpecialistTab ? activeTab : 'knowledge')}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                isAdvancedActive
+                isSpecialistActive
                   ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
                   : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
               }`}
@@ -337,6 +347,19 @@ export const TopBar: React.FC<TopBarProps> = ({
               <Database className="w-4 h-4 shrink-0" />
               <span className="truncate">Specialist tools</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab(isSystemTab ? activeTab : 'data_health')}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
+                isSystemActive
+                  ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
+                  : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span className="truncate">Data &amp; system</span>
+            </button>
+            </div>
           </div>
         </nav>
 

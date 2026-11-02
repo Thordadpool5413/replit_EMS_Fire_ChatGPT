@@ -551,7 +551,7 @@ export default function App() {
       : isFieldWorkTab(activeTab)
         ? 'Back to Field Work'
         : activeTab === 'queue'
-          ? 'Back to Accounts'
+          ? 'Back to Agencies'
           : 'Back to Workspace';
   const comparisonAgencies = comparisonAgencyIds
     .map((id) => agencies.find((agency) => agency.id === id))

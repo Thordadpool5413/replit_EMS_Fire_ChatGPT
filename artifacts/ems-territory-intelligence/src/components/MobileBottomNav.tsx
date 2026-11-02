@@ -68,7 +68,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const isHome = activeTab === 'home';
-  const isAccounts = activeTab === 'queue';
+  const isAgencies = activeTab === 'queue';
   const isOpportunities = isOpportunitiesTab(activeTab);
   const isTerritory = isTerritoryTab(activeTab);
   const isMyWork = isFieldWorkTab(activeTab);
@@ -176,13 +176,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             type="button"
             onClick={() => navigate('queue')}
-            aria-current={isAccounts ? 'page' : undefined}
+            aria-current={isAgencies ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
-              isAccounts ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+              isAgencies ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Building2 className={`w-4 h-4 ${isAccounts ? 'text-[#285EE8]' : ''}`} />
-            <span className="text-[9px] tracking-tight mt-1">Accounts</span>
+            <Building2 className={`w-4 h-4 ${isAgencies ? 'text-[#285EE8]' : ''}`} />
+            <span className="text-[9px] tracking-tight mt-1">Agencies</span>
           </button>
 
           <button

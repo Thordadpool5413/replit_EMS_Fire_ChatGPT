@@ -24,7 +24,7 @@ import {
   Activity,
   ShieldCheck,
   Sparkles,
-  SlidersHorizontal,
+  CircleHelp,
   MapPin,
   RefreshCw
 } from 'lucide-react';
@@ -134,9 +134,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isSystemActive = isSystem && !activeAccountName;
 
   const getWorkspaceTitle = () => {
-    if (activeAccountName) return `Accounts / ${activeAccountName}`;
+    if (activeAccountName) return `Agencies / ${activeAccountName}`;
     if (activeTab === 'home') return 'Home';
-    if (activeTab === 'queue') return 'Accounts Discovery';
+    if (activeTab === 'queue') return 'Agencies';
     if (isOpportunities) return 'Opportunities';
     if (isTerritory) return 'Territory Explorer';
     if (isMyWorkTab) return 'Field Work';
@@ -163,7 +163,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
-            <div className="w-[144px] h-[144px] rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
+            <div className="pi-sidebar-logo w-[144px] h-[144px] rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
               {!logoFailed ? (
                 <img
                   src={logoSrc}
@@ -234,7 +234,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 </span>
               </button>
 
-              {/* 2. Accounts */}
+              {/* 2. Agencies */}
               <button
                 type="button"
                 onClick={() => setActiveTab('queue')}
@@ -246,7 +246,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               >
                 <span className="flex items-center gap-2.5">
                   <Building2 className="w-4 h-4 shrink-0" />
-                  <span>Accounts</span>
+                  <span>Agencies</span>
                 </span>
                 {activeAccountName && (
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white">
@@ -397,7 +397,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       </aside>
 
       {/* Stable top toolbar */}
-      <header className="pi-command-header sticky top-0 z-40 h-24 md:h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
+      <header className="pi-command-header sticky top-0 z-40 h-16 md:h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}
           <div className="flex items-center gap-3 min-w-0">
@@ -408,7 +408,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               title="Return to Territory Intelligence Home"
               aria-label="Return to Territory Intelligence Home"
             >
-              <div className="w-24 h-24 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
+              <div className="pi-mobile-logo w-12 h-12 sm:w-14 sm:h-14 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
                 <img
                   src={logoSrc}
                   alt="EMS and Fire logo"
@@ -447,7 +447,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
 
           {/* Center/Right: Universal Search Trigger + Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="pi-header-actions flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Universal Agency & Territory Search (⌘K) */}
             {openCommandPalette && (
               <button
@@ -472,7 +472,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                 type="button"
                 onClick={triggerManualSync}
                 disabled={!isOnline || isSyncing}
-                className="h-9 px-2.5 rounded-lg text-xs tabular-nums font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                aria-label={`${pendingSyncCount} pending sync items${!isOnline ? ', offline' : ''}`}
+                className="pi-pending-sync h-9 px-2.5 rounded-lg text-xs tabular-nums font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>{pendingSyncCount} pending</span>
@@ -537,12 +538,13 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsUtilityMenuOpen(prev => !prev)}
-                className="h-9 px-2.5 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#14283F] dark:text-slate-200 flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer"
-                title="Help and source tools"
+                className="h-9 w-9 sm:w-auto sm:px-2.5 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#14283F] dark:text-slate-200 flex items-center justify-center sm:justify-start gap-1.5 text-xs font-medium transition-colors cursor-pointer"
+                title="Help and sources"
+                aria-label="Help and sources"
                 aria-expanded={isUtilityMenuOpen}
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#53657B] dark:text-slate-400" />
-                <span className="hidden sm:inline">Tools</span>
+                <CircleHelp className="w-4 h-4 text-[#53657B] dark:text-slate-400" />
+                <span className="hidden sm:inline">Help</span>
                 <ChevronDown className="w-3 h-3 text-[#53657B]" />
               </button>
 

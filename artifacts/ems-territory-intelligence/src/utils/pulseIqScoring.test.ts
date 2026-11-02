@@ -20,7 +20,7 @@ import {
   getPulseIqFormula,
   getPulseIqWeightDetails
 } from './pulseIqScoring';
-import { getPulseIqTerritoryRank, rankByPulseIqScore } from './pulseIqRanking';
+import { getPulseIqTerritoryRank, getPulseIqTerritoryRanks, rankByPulseIqScore } from './pulseIqRanking';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -488,6 +488,37 @@ test('PulseIQ territory rank shares ties and uses the ranking zero fallback for 
     getPulseIqTerritoryRank(missingScore, (row) => row.score, (row) => row.id === 'missing'),
     { rank: 1, total: 2, tiedCount: 1, topPercent: 50 }
   );
+});
+
+test('regional PulseIQ ranks share tie-aware top percentages across the full peer set', () => {
+  const regions = [
+    { id: 'first', score: 90 },
+    { id: 'tied', score: 90 },
+    { id: 'third', score: 70 },
+    { id: 'missing', score: Number.NaN }
+  ];
+  const ranks = getPulseIqTerritoryRanks(regions, (region) => region.score);
+
+  assert.deepEqual(ranks.get(regions[0]), {
+    rank: 1,
+    total: 4,
+    tiedCount: 2,
+    topPercent: 50
+  });
+  assert.deepEqual(ranks.get(regions[1]), ranks.get(regions[0]));
+  assert.deepEqual(ranks.get(regions[2]), {
+    rank: 3,
+    total: 4,
+    tiedCount: 1,
+    topPercent: 75
+  });
+  assert.deepEqual(ranks.get(regions[3]), {
+    rank: 4,
+    total: 4,
+    tiedCount: 1,
+    topPercent: 100
+  });
+  assert.equal(getPulseIqTerritoryRanks([], () => 1).size, 0);
 });
 
 test('compact PulseIQ explainer ranks against current agencies and recalibrated weights', () => {

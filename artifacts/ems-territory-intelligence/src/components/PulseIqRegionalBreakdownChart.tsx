@@ -25,7 +25,7 @@ import {
 } from 'recharts';
 import { Agency, PredictiveWeights, ScoreBreakdown } from '../types';
 import { calculatePulseIqContributions, calculateScore, DEFAULT_WEIGHTS, getPulseIqFormula, getPulseIqWeightDetails } from '../utils/pulseIqScoring';
-import { rankByPulseIqScore } from '../utils/pulseIqRanking';
+import { getPulseIqTerritoryRanks, rankByPulseIqScore, type PulseIqTerritoryRank } from '../utils/pulseIqRanking';
 import { PulseIqRegionalTooltipFactors } from './PulseIqRegionalTooltipFactors';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
@@ -68,12 +68,20 @@ interface PulseIqRegionalBreakdownChartProps {
 type ChartMode = 'stacked_breakdown' | 'benchmark' | 'radar' | 'pipeline';
 
 type RegionalScoreRow = {
+  id: string;
   score: number;
   pipelineValue: number;
   fleetAge: number;
   name: string;
   hasAgencies?: boolean;
+  territoryRank?: PulseIqTerritoryRank;
 };
+
+function addTerritoryRanks<T extends RegionalScoreRow>(rows: readonly T[]): T[] {
+  if (rows.length < 2) return [...rows];
+  const ranks = getPulseIqTerritoryRanks(rows, (row) => row.score);
+  return rows.map((row) => ({ ...row, territoryRank: ranks.get(row) }));
+}
 
 function sortRegionalRows<T extends RegionalScoreRow>(
   rows: readonly T[],
@@ -238,7 +246,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       });
 
       // Sort
-      const sortedData = sortRegionalRows(data, sortBy);
+      const sortedData = sortRegionalRows(addTerritoryRanks(data), sortBy);
 
       const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
       const avgScore = data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.score, 0) / data.length) : 0;
@@ -388,7 +396,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       });
 
       // Sort counties dynamically
-      const sortedData = sortRegionalRows(data, sortBy);
+      const sortedData = sortRegionalRows(addTerritoryRanks(data), sortBy);
 
       const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
       const avgScore = data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.score, 0) / data.length) : 0;
@@ -526,7 +534,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     });
 
     // Sort states dynamically
-    const sortedData = sortRegionalRows(data, sortBy);
+    const sortedData = sortRegionalRows(addTerritoryRanks(data), sortBy);
 
     const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
     const avgScore = data.length > 0 ? +(data.reduce((acc, d) => acc + d.score, 0) / data.length).toFixed(1) : 0;
@@ -631,6 +639,12 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             {item.hasAgencies === false && (
               <div className="mb-1 text-amber-700 dark:text-amber-300">
                 No matched accounts; this row uses the model&apos;s documented default inputs.
+              </div>
+            )}
+            {item.territoryRank && (
+              <div className="font-semibold text-sky-800 dark:text-sky-300">
+                Territory rank: #{item.territoryRank.rank} of {item.territoryRank.total} · Top {item.territoryRank.topPercent}%
+                {item.territoryRank.tiedCount > 1 && ` · Tied with ${item.territoryRank.tiedCount - 1}`}
               </div>
             )}
             {item.city && <div><strong>City:</strong> {item.city}, {item.stateCode}</div>}

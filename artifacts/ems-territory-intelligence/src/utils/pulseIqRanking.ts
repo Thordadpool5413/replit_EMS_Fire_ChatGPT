@@ -28,6 +28,50 @@ export interface PulseIqTerritoryRank {
 }
 
 /**
+ * Return tie-aware ranks for every item in one territory comparison set.
+ * Non-finite scores match rankByPulseIqScore's zero fallback.
+ */
+export function getPulseIqTerritoryRanks<T>(
+  items: readonly T[],
+  scoreOf: (item: T) => number
+): Map<T, PulseIqTerritoryRank> {
+  if (items.length === 0) return new Map();
+
+  const ranked = items
+    .map((item, originalIndex) => {
+      const rawScore = scoreOf(item);
+      return {
+        item,
+        originalIndex,
+        score: Number.isFinite(rawScore) ? rawScore : 0
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex);
+
+  const ranks = new Map<T, PulseIqTerritoryRank>();
+  let groupStart = 0;
+  while (groupStart < ranked.length) {
+    let groupEnd = groupStart + 1;
+    while (groupEnd < ranked.length && ranked[groupEnd].score === ranked[groupStart].score) {
+      groupEnd += 1;
+    }
+
+    const rank: PulseIqTerritoryRank = {
+      rank: groupStart + 1,
+      total: ranked.length,
+      tiedCount: groupEnd - groupStart,
+      topPercent: Math.round((groupEnd / ranked.length) * 10_000) / 100
+    };
+    for (let index = groupStart; index < groupEnd; index += 1) {
+      ranks.set(ranked[index].item, rank);
+    }
+    groupStart = groupEnd;
+  }
+
+  return ranks;
+}
+
+/**
  * Return a competition rank and the share of the territory covered by that
  * score's tie group. Non-finite scores match rankByPulseIqScore's zero fallback.
  */

@@ -19,6 +19,15 @@ import {
   TrendingUp,
   X
 } from 'lucide-react';
+import {
+  isFieldWorkTab,
+  isOpportunitiesTab,
+  isSpecialistTab,
+  isSystemTab,
+  isTerritoryTab,
+  SPECIALIST_WORKSPACE_TABS,
+  SYSTEM_WORKSPACE_TABS
+} from '../navigation/workspaceNavigation';
 
 interface MobileBottomNavProps {
   activeTab: string;
@@ -27,19 +36,29 @@ interface MobileBottomNavProps {
   dayRouteCount: number;
 }
 
-const specialistTools = [
-  { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
-  { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
-  { id: '3d_studio', label: 'Equipment viewer', icon: Box },
-  { id: 'gateway', label: 'Federal data sources', icon: Database }
-] as const;
+const specialistIcons = {
+  knowledge: Scale,
+  claims: DollarSign,
+  '3d_studio': Box,
+  gateway: Database
+} as const;
 
-const systemTools = [
-  { id: 'data_health', label: 'Data status & sync', icon: Activity },
-  { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
-] as const;
+const specialistTools = SPECIALIST_WORKSPACE_TABS.map(({ id, label }) => ({
+  id,
+  label: id === 'gateway' ? 'Federal data sources' : label,
+  icon: specialistIcons[id]
+}));
 
-const moreToolIds = [...specialistTools, ...systemTools].map((tool) => tool.id);
+const systemIcons = {
+  data_health: Activity,
+  resilience: ShieldCheck
+} as const;
+
+const systemTools = SYSTEM_WORKSPACE_TABS.map(({ id, label }) => ({
+  id,
+  label: id === 'data_health' ? 'Data status & sync' : label,
+  icon: systemIcons[id]
+}));
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
@@ -50,10 +69,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const isHome = activeTab === 'home';
   const isAccounts = activeTab === 'queue';
-  const isOpportunities = ['contracts', 'grants', 'pulseiq'].includes(activeTab);
-  const isTerritory = ['states_directory', 'geo', 'gis', 'map', 'google_maps'].includes(activeTab);
-  const isMyWork = ['field', 'tm_dashboard'].includes(activeTab);
-  const isMoreActive = moreToolIds.includes(activeTab as (typeof moreToolIds)[number]);
+  const isOpportunities = isOpportunitiesTab(activeTab);
+  const isTerritory = isTerritoryTab(activeTab);
+  const isMyWork = isFieldWorkTab(activeTab);
+  const isMoreActive = isSpecialistTab(activeTab) || isSystemTab(activeTab);
 
   useEffect(() => {
     setIsMoreOpen(false);

@@ -30,6 +30,13 @@ import {
 } from 'lucide-react';
 import { Agency } from '../types';
 import { MobileQuickProviderBar } from './MobileQuickProviderBar';
+import {
+  isFieldWorkTab,
+  isOpportunitiesTab as isOpportunitiesWorkspaceTab,
+  isSpecialistTab as isSpecialistWorkspaceTab,
+  isSystemTab as isSystemWorkspaceTab,
+  isTerritoryTab as isTerritoryWorkspaceTab
+} from '../navigation/workspaceNavigation';
 
 interface TopBarProps {
   activeTab: string;
@@ -115,36 +122,23 @@ export const TopBar: React.FC<TopBarProps> = ({
   // Workspace active detection
   const isHomeActive = activeTab === 'home' && !activeAccountName;
   const isAccountsActive = activeTab === 'queue' || Boolean(activeAccountName);
-  const isOpportunitiesTab = ['contracts', 'grants', 'pulseiq'].includes(activeTab);
-  const isOpportunitiesActive = isOpportunitiesTab && !activeAccountName;
-  const isTerritoryTab = ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab);
-  const isTerritoryActive = isTerritoryTab && !activeAccountName;
-  const isMyWorkTab = ['field', 'tm_dashboard'].includes(activeTab);
+  const isOpportunities = isOpportunitiesWorkspaceTab(activeTab);
+  const isOpportunitiesActive = isOpportunities && !activeAccountName;
+  const isTerritory = isTerritoryWorkspaceTab(activeTab);
+  const isTerritoryActive = isTerritory && !activeAccountName;
+  const isMyWorkTab = isFieldWorkTab(activeTab);
   const isMyWorkActive = isMyWorkTab && !activeAccountName;
-
-  const specialistTools = [
-    { id: 'knowledge', label: 'Clinical & competitive', icon: Scale },
-    { id: 'claims', label: 'Medicare & public health', icon: DollarSign },
-    { id: '3d_studio', label: '3D equipment viewer', icon: Box },
-    { id: 'gateway', label: 'Federal data sources', icon: Database }
-  ];
-
-  const systemTools = [
-    { id: 'data_health', label: 'Data status & sync', icon: Activity },
-    { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
-  ];
-
-  const isSpecialistTab = specialistTools.some((tool) => tool.id === activeTab);
-  const isSpecialistActive = isSpecialistTab && !activeAccountName;
-  const isSystemTab = systemTools.some((tool) => tool.id === activeTab);
-  const isSystemActive = isSystemTab && !activeAccountName;
+  const isSpecialist = isSpecialistWorkspaceTab(activeTab);
+  const isSpecialistActive = isSpecialist && !activeAccountName;
+  const isSystem = isSystemWorkspaceTab(activeTab);
+  const isSystemActive = isSystem && !activeAccountName;
 
   const getWorkspaceTitle = () => {
     if (activeAccountName) return `Accounts / ${activeAccountName}`;
     if (activeTab === 'home') return 'Home';
     if (activeTab === 'queue') return 'Accounts Discovery';
-    if (isOpportunitiesTab) return 'Opportunities';
-    if (['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab)) return 'Territory Explorer';
+    if (isOpportunities) return 'Opportunities';
+    if (isTerritory) return 'Territory Explorer';
     if (isMyWorkTab) return 'Field Work';
     if (isSystemActive) return 'Data & system';
     if (isSpecialistActive) return 'Specialist tools';
@@ -155,9 +149,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <>
-      {/* ====================================================================
-          PRIMARY LEFT SIDEBAR (256px, #0B1728) — DESKTOP
-         ==================================================================== */}
+      {/* Primary left sidebar — desktop */}
       <aside
         aria-label="Primary Workspace Navigation"
         className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
@@ -270,7 +262,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               {/* 3. Opportunities */}
               <button
                 type="button"
-                onClick={() => setActiveTab(isOpportunitiesTab ? activeTab : 'contracts')}
+                onClick={() => setActiveTab(isOpportunities ? activeTab : 'contracts')}
+                aria-current={isOpportunitiesActive ? 'page' : undefined}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                   isOpportunitiesActive
                     ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
@@ -291,7 +284,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               >
                 <button
                   type="button"
-                  onClick={() => setActiveTab(isTerritoryTab ? activeTab : 'states_directory')}
+                  onClick={() => setActiveTab(isTerritory ? activeTab : 'states_directory')}
+                  aria-current={isTerritoryActive ? 'page' : undefined}
                   className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
                 >
                   <Globe className="w-4 h-4 shrink-0" />
@@ -315,6 +309,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab(isMyWorkTab ? activeTab : 'field')}
+                  aria-current={isMyWorkActive ? 'page' : undefined}
                   className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
                 >
                   <Briefcase className="w-4 h-4 shrink-0" />
@@ -337,7 +332,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="space-y-0.5">
             <button
               type="button"
-              onClick={() => setActiveTab(isSpecialistTab ? activeTab : 'knowledge')}
+              onClick={() => setActiveTab(isSpecialist ? activeTab : 'knowledge')}
+              aria-current={isSpecialistActive ? 'page' : undefined}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                 isSpecialistActive
                   ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
@@ -349,7 +345,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab(isSystemTab ? activeTab : 'data_health')}
+              onClick={() => setActiveTab(isSystem ? activeTab : 'data_health')}
+              aria-current={isSystemActive ? 'page' : undefined}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                 isSystemActive
                   ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
@@ -403,9 +400,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </aside>
 
-      {/* ====================================================================
-          STABLE TOP TOOLBAR (~64px)
-         ==================================================================== */}
+      {/* Stable top toolbar */}
       <header className="pi-command-header sticky top-0 z-40 h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}

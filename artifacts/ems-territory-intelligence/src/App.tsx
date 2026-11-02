@@ -38,6 +38,19 @@ import { TopBar } from './components/TopBar';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
+import {
+  FIELD_WORKSPACE_TABS,
+  isFieldWorkTab,
+  isOpportunitiesTab,
+  isSpecialistTab,
+  isSystemTab,
+  isTerritoryTab,
+  isTerritoryViewSelected,
+  OPPORTUNITIES_WORKSPACE_TABS,
+  SPECIALIST_WORKSPACE_TABS,
+  SYSTEM_WORKSPACE_TABS,
+  TERRITORY_WORKSPACE_TABS
+} from './navigation/workspaceNavigation';
 import { CheckCircle2, AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
 
 const PredictiveLeadQueue = React.lazy(() => import('./components/PredictiveLeadQueue').then((module) => ({ default: module.PredictiveLeadQueue })));
@@ -568,104 +581,12 @@ export default function App() {
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
         
         {/* Secondary workspace tabs are consistent across desktop and mobile. */}
-        {!currentActive && ['contracts', 'grants', 'pulseiq'].includes(activeTab) && (
+        {!currentActive && isOpportunitiesTab(activeTab) && (
           <nav
             aria-label="Opportunities views"
             className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
-            {[
-              { id: 'contracts', label: 'Contracts', active: activeTab === 'contracts' },
-              { id: 'grants', label: 'Fire grants', active: activeTab === 'grants' },
-              { id: 'pulseiq', label: 'Regional priority', active: activeTab === 'pulseiq' }
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-current={item.active ? 'page' : undefined}
-                onClick={() => handleNavigateTab(item.id)}
-                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  item.active
-                    ? 'bg-[#285EE8] text-white'
-                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        {!currentActive && ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab) && (
-          <nav
-            aria-label="Territory views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
-          >
-            {[
-              { id: 'states_directory', label: 'Directory', active: activeTab === 'states_directory' || activeTab === 'geo' },
-              { id: 'google_maps', label: 'Agency locations', active: activeTab === 'google_maps' },
-              { id: 'map', label: 'Fleet & response map', active: activeTab === 'map' || activeTab === 'gis' }
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-current={item.active ? 'page' : undefined}
-                onClick={() => handleNavigateTab(item.id)}
-                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  item.active
-                    ? 'bg-[#285EE8] text-white'
-                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        {!currentActive && ['field', 'tm_dashboard'].includes(activeTab) && (
-          <nav
-            aria-label="Field Work views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
-          >
-            {[
-              {
-                id: 'field',
-                label: 'Routes & notes',
-                detail: [dayRouteCount > 0 ? `${dayRouteCount} in route` : '', bookmarkedCount > 0 ? `${bookmarkedCount} saved` : ''].filter(Boolean).join(' · '),
-                active: activeTab === 'field'
-              },
-              { id: 'tm_dashboard', label: 'Field dashboard', detail: '', active: activeTab === 'tm_dashboard' }
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-label={item.detail ? `${item.label}; ${item.detail}` : item.label}
-                aria-current={item.active ? 'page' : undefined}
-                onClick={() => handleNavigateTab(item.id)}
-                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-2 ${
-                  item.active
-                    ? 'bg-[#285EE8] text-white'
-                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                }`}
-              >
-                {item.label}
-                {item.detail && <span className="text-[10px] font-medium opacity-80">{item.detail}</span>}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        {!currentActive && ['knowledge', 'claims', '3d_studio', 'gateway'].includes(activeTab) && (
-          <nav
-            aria-label="Specialist tool views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
-          >
-            {[
-              { id: 'knowledge', label: 'Clinical & competitive' },
-              { id: 'claims', label: 'Medicare & public health' },
-              { id: '3d_studio', label: 'Equipment viewer' },
-              { id: 'gateway', label: 'Federal sources' }
-            ].map((item) => (
+            {OPPORTUNITIES_WORKSPACE_TABS.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -683,15 +604,89 @@ export default function App() {
           </nav>
         )}
 
-        {!currentActive && ['data_health', 'resilience'].includes(activeTab) && (
+        {!currentActive && isTerritoryTab(activeTab) && (
+          <nav
+            aria-label="Territory views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+          >
+            {TERRITORY_WORKSPACE_TABS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={isTerritoryViewSelected(item.id, activeTab) ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  isTerritoryViewSelected(item.id, activeTab)
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {!currentActive && isFieldWorkTab(activeTab) && (
+          <nav
+            aria-label="Field Work views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+          >
+            {FIELD_WORKSPACE_TABS.map((item) => {
+              const detail = item.id === 'field'
+                ? [dayRouteCount > 0 ? `${dayRouteCount} in route` : '', bookmarkedCount > 0 ? `${bookmarkedCount} saved` : ''].filter(Boolean).join(' · ')
+                : '';
+              const active = activeTab === item.id;
+              return (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={detail ? `${item.label}; ${detail}` : item.label}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-2 ${
+                  active
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+                {detail && <span className="text-[10px] font-medium opacity-80">{detail}</span>}
+              </button>
+              );
+            })}
+          </nav>
+        )}
+
+        {!currentActive && isSpecialistTab(activeTab) && (
+          <nav
+            aria-label="Specialist tool views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+          >
+            {SPECIALIST_WORKSPACE_TABS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={activeTab === item.id ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === item.id
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {!currentActive && isSystemTab(activeTab) && (
           <nav
             aria-label="Data and system views"
             className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
-            {[
-              { id: 'data_health', label: 'Data health & sync' },
-              { id: 'resilience', label: 'Backup & restore' }
-            ].map((item) => (
+            {SYSTEM_WORKSPACE_TABS.map((item) => (
               <button
                 key={item.id}
                 type="button"

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Agency } from '../types';
 import {
   countyBoundaryHierarchy,
@@ -42,6 +42,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
   const [hoveredCityName, setHoveredCityName] = useState<string | null>(null);
+  const [countyMapViewBox, setCountyMapViewBox] = useState('0 0 720 400');
+  const countyMapPathsRef = useRef<SVGGElement>(null);
   const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
   const nriParams = useMemo(
     () => stateCode && stateCode !== 'all' ? { stateCode } : undefined,
@@ -101,6 +103,30 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     if (!stateCode || stateCode === 'all') return { projectedCounties: [], bbox: [-98, 38, -97, 39] as [number, number, number, number] };
     return countyBoundaryHierarchy.projectStateCountiesToSvg(stateCode, 720, 400, 22);
   }, [stateCode, boundaryVersion]);
+
+  useLayoutEffect(() => {
+    const mapGroup = countyMapPathsRef.current;
+    if (!mapGroup || projectedState.projectedCounties.length === 0) {
+      setCountyMapViewBox('0 0 720 400');
+      return;
+    }
+
+    try {
+      const bounds = mapGroup.getBBox();
+      if (bounds.width <= 0 || bounds.height <= 0) return;
+      const padX = Math.max(10, bounds.width * 0.045);
+      const padY = Math.max(10, bounds.height * 0.045);
+      const nextViewBox = [
+        bounds.x - padX,
+        bounds.y - padY,
+        bounds.width + padX * 2,
+        bounds.height + padY * 2,
+      ].map((value) => Number(value.toFixed(1))).join(' ');
+      setCountyMapViewBox(nextViewBox);
+    } catch {
+      setCountyMapViewBox('0 0 720 400');
+    }
+  }, [projectedState.projectedCounties]);
 
   const activeCountyNode: CountyBoundaryNode | null = useMemo(() => {
     if (!stateNode || !selectedCountyName || selectedCountyName === 'all') return null;
@@ -278,7 +304,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
       {/* Mode A: Statewide County Boundary Choropleth + Hierarchy Inspector */}
       {!activeCountyNode && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div className="county-state-map-grid grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left 7 Cols: Interactive SVG County Boundary Map */}
           <div className="county-state-map-panel relative isolate overflow-hidden rounded-2xl border border-[#243751] bg-[#0A1526] p-4 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 lg:col-span-7 flex min-h-[400px] flex-col justify-between">
             <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
@@ -294,14 +320,15 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 Loading U.S. Census TIGER/Line county boundary polygons for {stateNode.stateName}...
               </div>
             ) : (
-              <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden">
+              <div className="county-state-map-viewport relative flex w-full min-h-0 flex-1 items-center justify-center overflow-hidden">
                 <svg
-                  viewBox="0 0 720 400"
-                  className="county-state-map-svg h-auto max-h-[390px] w-full select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
+                  viewBox={countyMapViewBox}
+                  preserveAspectRatio="xMidYMid meet"
+                  className="county-state-map-svg h-full max-h-[390px] w-full min-h-0 select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
                   role="img"
                   aria-label={`${stateNode.stateName} County Boundaries Map`}
                 >
-                  <g>
+                  <g ref={countyMapPathsRef}>
                     {projectedState.projectedCounties.map((pc) => {
                       const isHovered = hoveredCountyFips === pc.countyFips;
                       const isSelected =

@@ -7,4 +7,4 @@ For territory exploration, make the map and selected-area summary the visual foc
 
 **Why:** The user repeatedly said the territory and county screens did not feel visually impressive or professional.
 
-**How to apply:** Use this hierarchy across the Territory workspace while preserving all available data, citations, and actions. Stack the map and its control rail on narrow screens, and keep map zoom/pan behavior usable at every breakpoint.
+**How to apply:** On short laptop screens, reduce surrounding chrome and keep map controls on one compact row before shrinking readable text. Fit the boundary crop to the data, balance the map and summary widths, and verify the phone layout stacks without horizontal overflow. Preserve available data, citations, actions, and usable map controls.

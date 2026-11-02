@@ -1581,7 +1581,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
       {activeFocusLevel === 'counties' && (
-        <div className="grid min-w-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_45px_-36px_rgba(15,23,42,0.5)] sm:p-6">
+        <div className="county-drilldown-shell grid min-w-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_45px_-36px_rgba(15,23,42,0.5)] sm:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800 min-w-0">
             <div>
               <div className="text-xs font-semibold text-[#1E3A8A] dark:text-blue-400">

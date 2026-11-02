@@ -962,7 +962,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                               className="flex-1 py-1.5 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
-                              <span>Open Account 360</span>
+                              <span>Open agency profile</span>
                             </button>
 
                             <a

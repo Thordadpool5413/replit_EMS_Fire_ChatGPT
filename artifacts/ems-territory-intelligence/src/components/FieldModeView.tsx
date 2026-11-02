@@ -330,9 +330,10 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
 
                       <button
                         onClick={() => onSelectAgency(agency)}
+                        title={`Open agency profile for ${agency.name}`}
                         className="min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 transition-colors shadow-sm cursor-pointer"
                       >
-                        Dossier
+                        Open agency profile
                       </button>
                     </div>
                   </div>

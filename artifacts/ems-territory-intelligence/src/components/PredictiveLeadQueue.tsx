@@ -1111,7 +1111,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       onClick={() => onSelectAgency(agency)}
                       className="h-8 px-3.5 rounded-lg text-xs font-semibold bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors whitespace-nowrap cursor-pointer shrink-0"
                     >
-                      Full Dossier &rarr;
+                      Open agency profile &rarr;
                     </button>
                   </div>
                 </div>
@@ -1466,9 +1466,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             type="button"
                             onClick={() => onSelectAgency(agency)}
                             className="h-7 px-2.5 rounded-lg text-[11px] font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Open Full Actuarial Dossier"
+                            title="Open agency profile"
                           >
-                            <span>Dossier</span>
+                            <span>Open agency profile</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>

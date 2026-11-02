@@ -489,7 +489,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             }}
             className="h-9 flex-1 px-4 rounded-lg bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <span>Open Full Actuarial Dossier</span>
+            <span>Open agency profile</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

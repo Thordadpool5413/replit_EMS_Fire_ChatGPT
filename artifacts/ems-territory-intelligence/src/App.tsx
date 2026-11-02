@@ -432,14 +432,28 @@ export default function App() {
   }, [addFieldNoteInCloud, selectedAgency, activeAccount, previewAgency, isOnline, agencies, showToast]);
 
 
-  const handleSelectAlertAgency = useCallback((agencyId: string) => {
-    const target = agencies.find(a => a.id === agencyId);
-    if (target) {
-      setSelectedAgency(target);
-      setActiveAccount(target);
-      setIsNotificationsOpen(false);
-    }
+  const handleOpenAgencyProfile = useCallback((agency: Agency) => {
+    const profileAgency = agencies.find((candidate) => candidate.id === agency.id) ?? agency;
+    const isFireAgency =
+      profileAgency.providerCategory === 'FIRE' ||
+      profileAgency.agencyType.toLowerCase().includes('fire');
+
+    setPreviewAgency(null);
+    setSelectedAgency(profileAgency);
+    setActiveAccount(profileAgency);
+    setIsCommandPaletteOpen(false);
+    setIsMobileProviderFinderOpen(false);
+    setIsNotificationsOpen(false);
+    setGlobalState(profileAgency.stateCode);
+    setGlobalCounty(profileAgency.county);
+    setGlobalCity(profileAgency.city);
+    setGlobalCategory(isFireAgency ? 'fire' : 'ems');
   }, [agencies]);
+
+  const handleSelectAlertAgency = useCallback((agencyId: string) => {
+    const target = agencies.find((agency) => agency.id === agencyId);
+    if (target) handleOpenAgencyProfile(target);
+  }, [agencies, handleOpenAgencyProfile]);
 
   const handleCheckConnectivity = useCallback(() => {
     const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -456,17 +470,6 @@ export default function App() {
     saveOutbox([]);
     showToast('Local change queue cleared. No cloud write was performed; use Data Health to opt in to Firestore writes.', 'info');
   }, [isOnline, showToast]);
-
-  const handleSelectAccountUnified = useCallback((account: Agency | null) => {
-    setActiveAccount(account);
-    setSelectedAgency(account);
-    if (account) {
-      setGlobalState(account.stateCode);
-      setGlobalCounty(account.county);
-      setGlobalCity(account.city);
-      setGlobalCategory(account.providerCategory === 'FIRE' ? 'fire' : 'ems');
-    }
-  }, []);
 
   const unreadAlertCount = alerts.filter(a => !a.isRead).length;
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
@@ -791,10 +794,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <ZollMobileDashboard
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onUpdateStage={handleUpdateStage}
               onNavigateTab={(tab) => setActiveTab(tab)}
               isOnline={isOnline}
@@ -812,19 +812,14 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <PredictiveLeadQueue
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setPreviewAgency(null);
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onToggleRoute={handleToggleRoute}
               onToggleBookmark={handleToggleBookmark}
               onUpdateStage={handleUpdateStage}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onOpenDataLineage={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
+                handleOpenAgencyProfile(a);
                 setIsDataLineageOpen(true);
               }}
               onAddAgency={handleAddAgency}
@@ -846,15 +841,11 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <GisTerritoryHeatmap
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onToggleRoute={handleToggleRoute}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onOpenDataLineage={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
+                handleOpenAgencyProfile(a);
                 setIsDataLineageOpen(true);
               }}
               onFilterByCluster={() => {}}
@@ -888,15 +879,11 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <GoogleMapsTerritoryExplorer
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onToggleRoute={handleToggleRoute}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onOpenDataLineage={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
+                handleOpenAgencyProfile(a);
                 setIsDataLineageOpen(true);
               }}
               globalState={globalState}
@@ -968,10 +955,7 @@ export default function App() {
                 setGlobalCounty('all');
                 setGlobalCity('all');
               }}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               globalCategory={globalCategory}
               onOpenWeightsModal={() => setIsWeightsModalOpen(true)}
             />
@@ -997,11 +981,7 @@ export default function App() {
                   setActiveTab('geo');
                 }
               }}
-              onSelectAgency={(a) => {
-                setPreviewAgency(null);
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onNavigateToQueueWithFilter={(stateCode, county, city, zip) => {
                 setSelectedAgency(null);
@@ -1011,10 +991,7 @@ export default function App() {
               }}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onOpenDataLineage={(a) => {
-                if (a) {
-                  setSelectedAgency(a);
-                  setActiveAccount(a);
-                }
+                if (a) handleOpenAgencyProfile(a);
                 setIsDataLineageOpen(true);
               }}
               onAddAgency={handleAddAgency}
@@ -1038,10 +1015,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <ContractExpirationCalendar
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               globalState={globalState}
               globalCounty={globalCounty}
@@ -1057,10 +1031,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <ClinicalCompetitiveKnowledgeHub
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
             />
           </div>
@@ -1090,10 +1061,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <AfgGrantsTracker
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               globalState={globalState}
               globalCounty={globalCounty}
               globalCity={globalCity}
@@ -1115,10 +1083,7 @@ export default function App() {
               onToggleStrictCloudOnlyMode={toggleStrictCloudOnlyMode}
               onHydrateBatchToCloud={hydrateBatchToCloud}
               onSyncSingleAgencyToCloud={(agency: Agency) => updateAgencyInCloud(agency)}
-              onSelectAgency={(a: Agency) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
             />
           </div>
         )}
@@ -1139,10 +1104,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <NationwideDataGatewayView
               agencies={agencies}
-              onSelectAgency={(a: Agency) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               showToast={showToast}
             />
           </div>
@@ -1153,10 +1115,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <FieldModeView
               agencies={agencies}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
+              onSelectAgency={handleOpenAgencyProfile}
               onAddFieldNote={handleAddFieldNote}
               onUpdateStage={handleUpdateStage}
               isOnline={isOnline}
@@ -1239,11 +1198,7 @@ export default function App() {
       {previewAgency && <AgencyQuickPreviewDrawer
         agency={previewAgency}
         onClose={() => setPreviewAgency(null)}
-        onOpenFullDossier={(a) => {
-          setPreviewAgency(null);
-          setSelectedAgency(a);
-          setActiveAccount(a);
-        }}
+        onOpenFullDossier={handleOpenAgencyProfile}
         onUpdateStage={handleUpdateStage}
         onToggleRoute={handleToggleRoute}
         onToggleBookmark={handleToggleBookmark}
@@ -1330,10 +1285,7 @@ export default function App() {
         onClose={() => setIsDataLineageOpen(false)}
         agencies={agencies}
         selectedAgency={selectedAgency || activeAccount}
-        onSelectAgency={(agency) => {
-          setSelectedAgency(agency);
-          setActiveAccount(agency);
-        }}
+        onSelectAgency={handleOpenAgencyProfile}
       />}
 
       {/* Universal Command Palette Search Modal (⌘K) */}
@@ -1341,11 +1293,8 @@ export default function App() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         agencies={agencies}
-        onSelectAgency={(agency) => {
-          setSelectedAgency(agency);
-          setActiveAccount(agency);
-        }}
-        onNavigateTab={(tab) => setActiveTab(tab)}
+        onSelectAgency={handleOpenAgencyProfile}
+        onNavigateTab={handleNavigateTab}
       />}
 
       {/* Interactive PulseIQ weight calibration modal */}
@@ -1362,10 +1311,7 @@ export default function App() {
         onOpen={() => setIsChatbotOpen(true)}
         onClose={() => setIsChatbotOpen(false)}
         activeAgency={currentActive}
-        onSelectAgency={(agency) => {
-          setSelectedAgency(agency);
-          setActiveAccount(agency);
-        }}
+        onSelectAgency={handleOpenAgencyProfile}
       />}
 
       {/* Mobile Provider Quick Finder & Selector Drawer */}
@@ -1373,10 +1319,7 @@ export default function App() {
         isOpen={isMobileProviderFinderOpen}
         onClose={() => setIsMobileProviderFinderOpen(false)}
         agencies={agencies}
-        onSelectAgency={(agency) => {
-          setSelectedAgency(agency);
-          setActiveAccount(agency);
-        }}
+        onSelectAgency={handleOpenAgencyProfile}
         onToggleBookmark={handleToggleBookmark}
         onToggleRoute={handleToggleRoute}
         activeCategory={globalCategory}

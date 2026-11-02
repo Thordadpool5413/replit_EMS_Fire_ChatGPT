@@ -2324,7 +2324,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           onClick={() => onSelectAgency(agency)}
                           className="h-8 px-3.5 rounded-lg text-xs font-bold text-white bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors whitespace-nowrap cursor-pointer"
                         >
-                          Full Dossier &rarr;
+                          Open agency profile &rarr;
                         </button>
                       </div>
                     </div>
@@ -2438,7 +2438,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 onClick={() => onSelectAgency(agency)}
                                 className="h-7 px-2.5 rounded-lg text-[11px] font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
                               >
-                                <span>Dossier</span>
+                                <span>Open agency profile</span>
                                 <ChevronRight className="w-3 h-3" />
                               </button>
                             </div>

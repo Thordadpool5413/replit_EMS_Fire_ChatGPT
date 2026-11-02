@@ -357,7 +357,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                     onClick={() => onSelectAgency(urgentLead)}
                     className="px-3 py-1.5 rounded-lg bg-[#111827] dark:bg-slate-800 text-white text-xs font-semibold hover:bg-[#1E3A8A] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <span>Open Full Profile</span>
+                    <span>Open agency profile</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
 
@@ -900,7 +900,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                         className="h-10 px-3.5 rounded-xl ml-auto bg-[#F8F7F4] dark:bg-slate-800 hover:bg-[#E5E4DF] dark:hover:bg-slate-700 text-[#111827] dark:text-slate-100 text-xs font-bold border border-[#E5E4DF] dark:border-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
                         title="Open complete clinical, financial & TCO dossier"
                       >
-                        <span>Full Dossier</span>
+                        <span>Open agency profile</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
 

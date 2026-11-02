@@ -1,6 +1,6 @@
 ---
-name: GIS OHCA rates and fleet aging
-description: Calculation and display rules for the EMS territory map's OHCA rate and defibrillator-age layers.
+name: EMS territory map metrics
+description: Calculation, missing-data, and color-direction rules for EMS territory and state maps.
 ---
 
 The OHCA GIS metric is annual reported OHCA calls divided by annual reported 911 transports, multiplied by 1,000. Only agencies with both nonnegative values and a positive transport denominator qualify. State and territory rates use the ratio of summed matched calls to summed matched transports, not the simple average of agency rates. Relative tiers use national percentiles and must not be described as clinical acuity. Fleet age uses 0–4, 5–6, 7–9, and 10+ year bands; missing ages remain explicitly unreported.
@@ -16,3 +16,9 @@ On the home map, keep the full U.S. overview visible at the initial mobile zoom.
 **Why:** Centering the default selected state hid the national map on phones, and cropping the SVG viewBox made zoomed regions difficult to pan.
 
 **How to apply:** Start at 100% with the whole map in view; scale the SVG dimensions for zoom and keep the selected-state focus independent of the metric color.
+
+For the home map's Shade states by layers, use vivid traffic-light shading with metric-specific direction: green for favorable values (such as stronger cardiac-survival estimates or shorter transit), red for higher inventory/priority values or unfavorable values (such as longer transit), and a visible yellow/orange transition. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline.
+
+**Why:** The user wants bright red-for-high and green-for-good shading, without implying that neutral counts are performance measures.
+
+**How to apply:** Recheck palette direction against the metric meaning whenever a map layer is added or its values are redefined.

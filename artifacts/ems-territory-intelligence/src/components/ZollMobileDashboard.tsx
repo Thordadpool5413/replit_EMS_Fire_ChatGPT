@@ -857,7 +857,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                           <CompetitiveBattlecardView agency={agency} variant="compact" onOpenFullProfile={onSelectAgency} />
                         )}
                         {mobileClarityDrawer[agency.id] === 'score_explainer' && (
-                          <PulseIqScoreExplainerHub agency={agency} weights={weights} variant="compact" onOpenFullProfile={onSelectAgency} />
+                          <PulseIqScoreExplainerHub agency={agency} agencies={agencies} weights={weights} variant="compact" onOpenFullProfile={onSelectAgency} />
                         )}
                       </div>
                     )}

@@ -6,6 +6,7 @@ import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
 import { PulseIqProfileFactorDetails } from '../components/PulseIqProfileFactorDetails';
+import { PulseIqScoreExplainerHub } from '../components/PulseIqScoreExplainerHub';
 import { PulseIqTooltipFactorDetails } from '../components/PulseIqScoreTooltip';
 import { PulseIqRegionalTooltipFactors } from '../components/PulseIqRegionalTooltipFactors';
 import { PulseIqMethodologyFactors } from '../components/UnderstandingPulseIqModal';
@@ -18,7 +19,7 @@ import {
   getPulseIqFormula,
   getPulseIqWeightDetails
 } from './pulseIqScoring';
-import { rankByPulseIqScore } from './pulseIqRanking';
+import { getPulseIqTerritoryRank, rankByPulseIqScore } from './pulseIqRanking';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -343,4 +344,90 @@ test('regional average PulseIQ ranking is unchanged by imported claim-record cha
 test('PulseIQ score ranking preserves original order for ties', () => {
   const tied = [{ id: 'first', score: 80 }, { id: 'second', score: 80 }];
   assert.deepEqual(rankByPulseIqScore(tied, (row) => row.score), tied);
+});
+
+test('PulseIQ territory rank shares ties and uses the ranking zero fallback for missing scores', () => {
+  const tied = [
+    { id: 'first', score: 90 },
+    { id: 'second', score: 90 },
+    { id: 'third', score: 40 }
+  ];
+  assert.deepEqual(
+    getPulseIqTerritoryRank(tied, (row) => row.score, (row) => row.id === 'second'),
+    { rank: 1, total: 3, tiedCount: 2, topPercent: 66.67 }
+  );
+
+  const missingScore = [
+    { id: 'missing', score: Number.NaN },
+    { id: 'negative', score: -1 }
+  ];
+  assert.deepEqual(
+    getPulseIqTerritoryRank(missingScore, (row) => row.score, (row) => row.id === 'missing'),
+    { rank: 1, total: 2, tiedCount: 1, topPercent: 50 }
+  );
+});
+
+test('compact PulseIQ explainer ranks against current agencies and recalibrated weights', () => {
+  const target = {
+    ...agency(0, 0),
+    id: 'target',
+    annualCardiacArrestCalls: 100,
+    installedFleet: { ...agency(0, 0).installedFleet, defibAgeYears: 8 }
+  } as Agency;
+  const competitorA = {
+    ...agency(0, 0),
+    id: 'competitor-a',
+    annualCardiacArrestCalls: 1800,
+    installedFleet: { ...agency(0, 0).installedFleet, defibAgeYears: 4 }
+  } as Agency;
+  const competitorB = { ...competitorA, id: 'competitor-b' } as Agency;
+  const higherCompetitor = {
+    ...competitorA,
+    id: 'higher-competitor',
+    installedFleet: { ...competitorA.installedFleet, defibAgeYears: 9 }
+  } as Agency;
+  const agencies = [target, competitorA, competitorB];
+  const fleetWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 100,
+    cardiacVolumeWeight: 0,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+  const clinicalWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 0,
+    cardiacVolumeWeight: 100,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+
+  const markupWithFleetWeights = renderToStaticMarkup(
+    React.createElement(PulseIqScoreExplainerHub, {
+      agency: target,
+      agencies,
+      weights: fleetWeights,
+      variant: 'compact'
+    })
+  );
+  const markupWithClinicalWeights = renderToStaticMarkup(
+    React.createElement(PulseIqScoreExplainerHub, {
+      agency: target,
+      agencies,
+      weights: clinicalWeights,
+      variant: 'compact'
+    })
+  );
+  const markupWithExpandedAgencySet = renderToStaticMarkup(
+    React.createElement(PulseIqScoreExplainerHub, {
+      agency: target,
+      agencies: [...agencies, higherCompetitor],
+      weights: fleetWeights,
+      variant: 'compact'
+    })
+  );
+
+  assert.match(markupWithFleetWeights, /Territory rank: #1 of 3 · Top 33\.33%/);
+  assert.match(markupWithClinicalWeights, /Territory rank: #3 of 3 · Top 100%/);
+  assert.match(markupWithExpandedAgencySet, /Territory rank: #2 of 4 · Top 50%/);
 });

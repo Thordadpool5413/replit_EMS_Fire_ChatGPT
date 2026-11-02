@@ -8,7 +8,8 @@ import { Agency, PredictiveWeights } from '../types';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
 import { explainAgencyScore } from '../utils/pulseIqExplanation';
-import { DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
+import { calculateScore, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
+import { getPulseIqTerritoryRank } from '../utils/pulseIqRanking';
 import { PulseIqProfileFactorDetails } from './PulseIqProfileFactorDetails';
 import { 
   Activity, 
@@ -26,6 +27,7 @@ import {
 
 interface PulseIqScoreExplainerHubProps {
   agency: Agency;
+  agencies: Agency[];
   weights?: PredictiveWeights;
   variant?: 'compact' | 'full';
   onOpenFullProfile?: (agency: Agency) => void;
@@ -34,6 +36,7 @@ interface PulseIqScoreExplainerHubProps {
 
 export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> = ({
   agency,
+  agencies,
   weights = DEFAULT_WEIGHTS,
   variant = 'compact',
   onOpenFullProfile,
@@ -44,6 +47,16 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
   }, [agency, weights]);
 
   const score = explanation.totalScore;
+  const territoryRank = useMemo(() => {
+    const territory = agencies.some((candidate) => candidate.id === agency.id)
+      ? agencies
+      : [...agencies, agency];
+    return getPulseIqTerritoryRank(
+      territory,
+      (candidate) => calculateScore(candidate, weights),
+      (candidate) => candidate.id === agency.id
+    );
+  }, [agency, agencies, weights]);
 
   const getScoreColor = (val: number) => {
     if (val >= 88) return 'text-[#1E3A8A] dark:text-blue-400';
@@ -65,7 +78,10 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
                 PulseIQ Predictive Score Explainer
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Transparent factor attribution · Territory percentile: Top {score >= 88 ? '5%' : '15%'}
+                Transparent factor attribution ·{' '}
+                {territoryRank
+                  ? `Territory rank: #${territoryRank.rank} of ${territoryRank.total} · Top ${territoryRank.topPercent}%`
+                  : 'Territory rank unavailable'}
               </p>
             </div>
           </div>

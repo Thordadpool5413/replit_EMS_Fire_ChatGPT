@@ -48,6 +48,7 @@ import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } 
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { rankByPulseIqScore } from '../utils/pulseIqRanking';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { calculateScore } from '../utils/pulseIqScoring';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -312,7 +313,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         if (!agency.agencyType.toLowerCase().includes('fire')) return false;
       }
 
-      if (quickSegment === 'high_priority' && (agency.zollOpportunity.pulseIqScore || 0) < 80) return false;
+      if (quickSegment === 'high_priority' && calculateScore(agency, weights) < 80) return false;
       if (quickSegment === 'afg' && !agency.grantStatus.afgAwarded) return false;
       if (quickSegment === 'bookmarked' && !agency.isBookmarked) return false;
 
@@ -339,7 +340,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     }
 
     if (sortBy === 'pulseIq') {
-      return rankByPulseIqScore(result, (agency) => agency.zollOpportunity?.pulseIqScore ?? 0);
+      return rankByPulseIqScore(result, (agency) => calculateScore(agency, weights));
     }
 
     return [...result].sort((a, b) => {
@@ -353,7 +354,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       }
       return 0;
     });
-  }, [geographicScopePool, selectedCategory, quickSegment, selectedState, selectedCounty, selectedCity, availableCounties, agencies, sortBy]);
+  }, [geographicScopePool, selectedCategory, quickSegment, selectedState, selectedCounty, selectedCity, availableCounties, agencies, sortBy, weights]);
 
   const [liveVerifiedVersion, setLiveVerifiedVersion] = useState<number>(0);
 

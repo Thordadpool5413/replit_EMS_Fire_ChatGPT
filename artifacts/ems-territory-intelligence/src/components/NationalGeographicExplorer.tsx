@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Agency } from '../types';
+import { AgencyCompareButton } from './AgencyCompareButton';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -93,6 +94,8 @@ interface NationalGeographicExplorerProps {
   globalCategory?: 'all' | 'ems' | 'fire';
   activeAccount?: Agency | null;
   onSyncGlobalGeography?: (state: string, county: string, city: string, category?: 'all' | 'ems' | 'fire') => void;
+  comparedAgencyIds?: string[];
+  onToggleAgencyComparison?: (agency: Agency) => void;
 }
 
 export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProps> = ({
@@ -110,7 +113,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   globalCity,
   globalCategory,
   activeAccount,
-  onSyncGlobalGeography
+  onSyncGlobalGeography,
+  comparedAgencyIds = [],
+  onToggleAgencyComparison
 }) => {
   // Navigation / Drill-down state
   const [selectedStateCode, setSelectedStateCode] = useState<string>(globalState || 'all');
@@ -2312,6 +2317,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </span>
 
                       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {onToggleAgencyComparison && (
+                          <AgencyCompareButton
+                            agency={agency}
+                            selected={comparedAgencyIds.includes(agency.id)}
+                            limitReached={comparedAgencyIds.length >= 3}
+                            onToggle={onToggleAgencyComparison}
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
@@ -2426,6 +2439,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </td>
                           <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1.5">
+                              {onToggleAgencyComparison && (
+                                <AgencyCompareButton
+                                  agency={agency}
+                                  selected={comparedAgencyIds.includes(agency.id)}
+                                  limitReached={comparedAgencyIds.length >= 3}
+                                  onToggle={onToggleAgencyComparison}
+                                />
+                              )}
                               <button
                                 type="button"
                                 onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}

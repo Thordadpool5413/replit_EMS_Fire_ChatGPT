@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Agency, LeadStage, ZollProductLine, PredictiveWeights } from '../types';
+import { AgencyCompareButton } from './AgencyCompareButton';
 import { 
   Search, 
   Filter, 
@@ -74,6 +75,8 @@ interface PredictiveLeadQueueProps {
   activeAccount?: Agency | null;
   weights?: PredictiveWeights;
   onOpenWeightsModal?: () => void;
+  comparedAgencyIds?: string[];
+  onToggleAgencyComparison?: (agency: Agency) => void;
 }
 
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY } from '../data/nationalGeographicData';
@@ -101,7 +104,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   globalCategory,
   activeAccount,
   weights,
-  onOpenWeightsModal
+  onOpenWeightsModal,
+  comparedAgencyIds = [],
+  onToggleAgencyComparison
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -1084,6 +1089,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
                   {/* Action Group */}
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end">
+                    {onToggleAgencyComparison && (
+                      <AgencyCompareButton
+                        agency={agency}
+                        selected={comparedAgencyIds.includes(agency.id)}
+                        limitReached={comparedAgencyIds.length >= 3}
+                        onToggle={onToggleAgencyComparison}
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
@@ -1453,6 +1466,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       {/* Row Actions */}
                       <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
+                          {onToggleAgencyComparison && (
+                            <AgencyCompareButton
+                              agency={agency}
+                              selected={comparedAgencyIds.includes(agency.id)}
+                              limitReached={comparedAgencyIds.length >= 3}
+                              onToggle={onToggleAgencyComparison}
+                            />
+                          )}
                           <button
                             type="button"
                             onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}

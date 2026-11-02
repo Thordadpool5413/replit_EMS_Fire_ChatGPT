@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Agency, SyncOutboxItem, FieldNote, LeadStage } from '../types';
+import { AgencyCompareButton } from './AgencyCompareButton';
 import { ZOLL_PRODUCTS } from '../data/zollProducts';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { 
@@ -44,6 +45,8 @@ interface FieldModeViewProps {
   globalCity?: string;
   globalCategory?: 'all' | 'ems' | 'fire';
   onNavigateTab?: (tab: string) => void;
+  comparedAgencyIds?: string[];
+  onToggleAgencyComparison?: (agency: Agency) => void;
 }
 
 export const FieldModeView: React.FC<FieldModeViewProps> = ({
@@ -57,7 +60,9 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
   triggerManualSync,
   isSyncing,
   activeAccount,
-  onNavigateTab
+  onNavigateTab,
+  comparedAgencyIds = [],
+  onToggleAgencyComparison
 }) => {
   const [quickNoteAgencyId, setQuickNoteAgencyId] = useState<string | null>(null);
   const [quickNoteText, setQuickNoteText] = useState('');
@@ -316,6 +321,14 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center">
+                      {onToggleAgencyComparison && (
+                        <AgencyCompareButton
+                          agency={agency}
+                          selected={comparedAgencyIds.includes(agency.id)}
+                          limitReached={comparedAgencyIds.length >= 3}
+                          onToggle={onToggleAgencyComparison}
+                        />
+                      )}
                       <button
                         onClick={() => setQuickNoteAgencyId(isLogging ? null : agency.id)}
                         className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${

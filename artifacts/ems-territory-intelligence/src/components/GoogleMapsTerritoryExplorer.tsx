@@ -16,6 +16,7 @@ import {
   ControlPosition
 } from '@vis.gl/react-google-maps';
 import { Agency, PriorityTier } from '../types';
+import { AgencyCompareButton } from './AgencyCompareButton';
 import { 
   MapPin, 
   Navigation, 
@@ -64,6 +65,8 @@ interface GoogleMapsTerritoryExplorerProps {
   onSelectCity?: (city: string) => void;
   onSelectCategory?: (category: 'all' | 'ems' | 'fire') => void;
   onSwitchToTacticalGis?: () => void;
+  comparedAgencyIds?: string[];
+  onToggleAgencyComparison?: (agency: Agency) => void;
 }
 
 const TIER_COLORS: Record<PriorityTier, { bg: string; border: string; glyph: string; badge: string }> = {
@@ -159,7 +162,9 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   onSelectCounty,
   onSelectCity,
   onSelectCategory,
-  onSwitchToTacticalGis
+  onSwitchToTacticalGis,
+  comparedAgencyIds = [],
+  onToggleAgencyComparison
 }) => {
   // Resolve Google Maps API Key from environment or localStorage
   const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -956,6 +961,15 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                           </div>
 
                           <div className="flex items-center gap-1.5 pt-1">
+                            {onToggleAgencyComparison && (
+                              <AgencyCompareButton
+                                agency={selectedAgencyForInfo}
+                                selected={comparedAgencyIds.includes(selectedAgencyForInfo.id)}
+                                limitReached={comparedAgencyIds.length >= 3}
+                                onToggle={onToggleAgencyComparison}
+                                className="min-h-8"
+                              />
+                            )}
                             <button
                               type="button"
                               onClick={() => onSelectAgency(selectedAgencyForInfo)}

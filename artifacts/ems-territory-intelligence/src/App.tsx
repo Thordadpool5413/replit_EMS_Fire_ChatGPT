@@ -79,6 +79,7 @@ const HomeHubView = React.lazy(() => import('./components/HomeHubView').then((mo
 const GoogleMapsTerritoryExplorer = React.lazy(() => import('./components/GoogleMapsTerritoryExplorer').then((module) => ({ default: module.GoogleMapsTerritoryExplorer })));
 const DataHealthDashboard = React.lazy(() => import('./components/DataHealthDashboard').then((module) => ({ default: module.DataHealthDashboard })));
 const MobileProviderSelectorDrawer = React.lazy(() => import('./components/MobileProviderSelectorDrawer').then((module) => ({ default: module.MobileProviderSelectorDrawer })));
+const AgencyComparisonPanel = React.lazy(() => import('./components/AgencyComparisonPanel').then((module) => ({ default: module.AgencyComparisonPanel })));
 
 export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' | 'error' } | null>(null);
@@ -176,6 +177,8 @@ export default function App() {
   // Navigation & Modals - Open with Central Home & Guided Onboarding Hub by default
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
+  const [comparisonAgencyIds, setComparisonAgencyIds] = useState<string[]>([]);
+  const [isAgencyComparisonOpen, setIsAgencyComparisonOpen] = useState(false);
   const [previewAgency, setPreviewAgency] = useState<Agency | null>(null);
   const [rfpAgency, setRfpAgency] = useState<Agency | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
@@ -452,6 +455,7 @@ export default function App() {
       profileAgency.agencyType.toLowerCase().includes('fire');
 
     setPreviewAgency(null);
+    setIsAgencyComparisonOpen(false);
     setSelectedAgency(profileAgency);
     setActiveAccount(profileAgency);
     setIsCommandPaletteOpen(false);
@@ -462,6 +466,28 @@ export default function App() {
     setGlobalCity(profileAgency.city);
     setGlobalCategory(isFireAgency ? 'fire' : 'ems');
   }, [agencies]);
+
+  const handleToggleAgencyComparison = useCallback((agency: Agency) => {
+    setComparisonAgencyIds((current) => {
+      if (current.includes(agency.id)) return current.filter((id) => id !== agency.id);
+      if (current.length >= 3) return current;
+      return [...current, agency.id];
+    });
+  }, []);
+
+  const handleRemoveComparedAgency = useCallback((agencyId: string) => {
+    if (comparisonAgencyIds.length <= 2) setIsAgencyComparisonOpen(false);
+    setComparisonAgencyIds((current) => current.filter((id) => id !== agencyId));
+  }, [comparisonAgencyIds.length]);
+
+  const handleCloseAgencyComparison = useCallback(() => {
+    setIsAgencyComparisonOpen(false);
+  }, []);
+
+  const handleClearAgencyComparison = useCallback(() => {
+    setComparisonAgencyIds([]);
+    setIsAgencyComparisonOpen(false);
+  }, []);
 
   const handleSelectAlertAgency = useCallback((agencyId: string) => {
     const target = agencies.find((agency) => agency.id === agencyId);
@@ -488,10 +514,14 @@ export default function App() {
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const currentActive = activeAccount || selectedAgency;
+  const comparisonAgencies = comparisonAgencyIds
+    .map((id) => agencies.find((agency) => agency.id === id))
+    .filter((agency): agency is Agency => Boolean(agency));
 
   const handleGoHome = useCallback(() => {
     setSelectedAgency(null);
     setActiveAccount(null);
+    setIsAgencyComparisonOpen(false);
     setRfpAgency(null);
     setIsQuickVisitOpen(false);
     setIsCommandPaletteOpen(false);
@@ -515,6 +545,7 @@ export default function App() {
   const handleNavigateTab = useCallback((tab: string) => {
     setSelectedAgency(null);
     setActiveAccount(null);
+    setIsAgencyComparisonOpen(false);
     setPreviewAgency(null);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -827,6 +858,8 @@ export default function App() {
               activeAccount={currentActive}
               weights={weights}
               onOpenWeightsModal={() => setIsWeightsModalOpen(true)}
+              comparedAgencyIds={comparisonAgencyIds}
+              onToggleAgencyComparison={handleToggleAgencyComparison}
             />
           </div>
         )}
@@ -902,6 +935,8 @@ export default function App() {
                 setGlobalCategory(cat);
               }}
               onSwitchToTacticalGis={() => setActiveTab('gis')}
+              comparedAgencyIds={comparisonAgencyIds}
+              onToggleAgencyComparison={handleToggleAgencyComparison}
             />
           </div>
         )}
@@ -1001,6 +1036,8 @@ export default function App() {
                 if (city !== undefined) setGlobalCity(city);
                 if (cat !== undefined) setGlobalCategory(cat);
               }}
+              comparedAgencyIds={comparisonAgencyIds}
+              onToggleAgencyComparison={handleToggleAgencyComparison}
             />
           </div>
         )}
@@ -1124,6 +1161,8 @@ export default function App() {
               globalCity={globalCity}
               globalCategory={globalCategory}
               onNavigateTab={(tab) => setActiveTab(tab)}
+              comparedAgencyIds={comparisonAgencyIds}
+              onToggleAgencyComparison={handleToggleAgencyComparison}
             />
           </div>
         )}
@@ -1324,6 +1363,14 @@ export default function App() {
         selectedCounty={globalCounty}
         onSelectCounty={(co) => setGlobalCounty(co)}
       />}
+      {isAgencyComparisonOpen && (
+        <AgencyComparisonPanel
+          agencies={comparisonAgencies}
+          onClose={handleCloseAgencyComparison}
+          onRemoveAgency={handleRemoveComparedAgency}
+          onOpenProfile={handleOpenAgencyProfile}
+        />
+      )}
       </React.Suspense>
 
       {/* Toast Notification Pill */}
@@ -1343,6 +1390,39 @@ export default function App() {
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      {comparisonAgencies.length > 0 && activeTab !== 'home' && !currentActive && !isAgencyComparisonOpen && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[4.25rem] z-40 px-3 md:bottom-4 md:left-64">
+          <div className="pointer-events-auto mx-auto flex max-w-4xl items-center gap-2 rounded-xl border border-teal-200 bg-white/95 p-2.5 shadow-lg shadow-slate-900/10 backdrop-blur dark:border-teal-900 dark:bg-[#101D2C]/95 sm:gap-3 sm:px-4">
+            <div className="min-w-0 flex-1" aria-live="polite">
+              <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Compare agencies <span className="ml-1 font-semibold text-teal-700 dark:text-teal-300">{comparisonAgencies.length}/3</span></p>
+              <p className="truncate text-[11px] text-slate-600 dark:text-slate-300" title={comparisonAgencies.map((agency) => agency.name).join(' · ')}>
+                {comparisonAgencies.length < 2
+                  ? 'Select one more agency to compare'
+                  : comparisonAgencies.map((agency) => agency.name).join(' · ')}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={comparisonAgencies.length < 2}
+              onClick={() => setIsAgencyComparisonOpen(true)}
+              aria-label={`Compare ${comparisonAgencies.length} selected agencies`}
+              className="min-h-9 shrink-0 rounded-lg bg-teal-700 px-3 text-xs font-bold text-white transition-colors hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+              data-testid="button-open-agency-comparison"
+            >
+              Compare
+            </button>
+            <button
+              type="button"
+              onClick={handleClearAgencyComparison}
+              className="min-h-9 shrink-0 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              data-testid="button-clear-agency-comparison"
+            >
+              Clear
+            </button>
           </div>
         </div>
       )}

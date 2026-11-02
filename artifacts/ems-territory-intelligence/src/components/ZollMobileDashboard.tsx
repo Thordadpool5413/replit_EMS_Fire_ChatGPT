@@ -5,10 +5,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Agency, 
-  LeadStage, 
-  FieldNote, 
+import {
+  Agency,
+  LeadStage,
   SyncOutboxItem, 
   PushAlert 
 } from '../types';
@@ -29,7 +28,6 @@ import {
   Radio, 
   Wifi, 
   WifiOff, 
-  Send, 
   ExternalLink, 
   SlidersHorizontal,
   Flame,
@@ -39,7 +37,6 @@ import {
   Layers,
   ArrowUpRight,
   RotateCcw,
-  Plus,
   Scale,
   Activity
 } from 'lucide-react';
@@ -52,10 +49,6 @@ interface ZollMobileDashboardProps {
   agencies: Agency[];
   onSelectAgency: (agency: Agency) => void;
   onUpdateStage: (agencyId: string, stage: LeadStage) => void;
-  onToggleRoute: (agencyId: string) => void;
-  onToggleBookmark: (agencyId: string) => void;
-  onAddFieldNote: (agencyId: string, note: Omit<FieldNote, 'id'>) => void;
-  onOpenRfpGenerator?: (agency: Agency) => void;
   onNavigateTab: (tab: string) => void;
   isOnline: boolean;
   toggleNetwork: () => void;
@@ -63,16 +56,12 @@ interface ZollMobileDashboardProps {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   alerts?: PushAlert[];
-  globalState: string;
-  globalCounty: string;
 }
 
 export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
   agencies,
   onSelectAgency,
   onUpdateStage,
-  onToggleRoute,
-  onAddFieldNote,
   onNavigateTab,
   isOnline,
   toggleNetwork,
@@ -83,10 +72,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'critical' | 'high_priority' | 'day_route' | 'ems' | 'fire'>('all');
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
-  const [quickNoteText, setQuickNoteText] = useState('');
-  const [quickNoteMeetingType, setQuickNoteMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
-  const [quickNextAction, setQuickNextAction] = useState('Schedule clinical demo with Medical Director');
   const [activeGeoTab, setActiveGeoTab] = useState<'cluster' | 'market_share' | 'transit'>('cluster');
   const [criticalAlertDismissed, setCriticalAlertDismissed] = useState<boolean>(false);
   const [mobileClarityDrawer, setMobileClarityDrawer] = useState<Record<string, 'deal_story' | 'battlecard' | 'score_explainer' | null>>({});
@@ -178,33 +163,10 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
       .sort((a, b) => (b?.zollOpportunity?.pulseIqScore ?? 50) - (a?.zollOpportunity?.pulseIqScore ?? 50));
   }, [agencies, searchQuery, filterMode]);
 
-  // Today's Day Route Multi-Stop OpenStreetMap Launcher
-  const dayRouteAgencies = useMemo(() => agencies.filter(a => a?.inDayRoute), [agencies]);
-  const openMapRouteUrl = useMemo(() => {
-    if (dayRouteAgencies.length === 0) return '';
-    const first = dayRouteAgencies[0];
-    return `https://www.openstreetmap.org/search?query=${encodeURIComponent([first.name, first.address, first.city, first.stateCode].filter(Boolean).join(', '))}`;
-  }, [dayRouteAgencies]);
-
   // Urgent Critical Updates
   const urgentLead = useMemo(() => {
     return agencies.find(a => (a?.competitorContract?.renewalWindowDays ?? 180) <= 60 && (a?.zollOpportunity?.pulseIqScore ?? 50) >= 85) || agencies[0] || null;
   }, [agencies]);
-
-  // Quick Inline Note Submission
-  const handleSaveQuickNote = (agencyId: string) => {
-    if (!quickNoteText.trim()) return;
-    onAddFieldNote(agencyId, {
-      date: new Date().toISOString().split('T')[0],
-      repName: 'Territory Account Manager',
-      meetingType: quickNoteMeetingType,
-      notes: quickNoteText.trim(),
-      nextAction: quickNextAction,
-      dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
-    });
-    setQuickNoteText('');
-    setExpandedLogId(null);
-  };
 
   // Stage Progression Options
   const stages: LeadStage[] = [
@@ -291,21 +253,20 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
               </AnimatePresence>
             </motion.button>
 
-            {/* OpenStreetMap Multi-Stop Day Route Direct Launcher */}
-            {dayRouteAgencies.length > 0 && (
-              <motion.a
-                whileTap={{ scale: 0.95 }}
-                href={openMapRouteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-9 px-3 rounded-xl bg-[#047857] hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-                title="Search first selected stop. This is not turn-by-turn navigation"
-              >
-                <Navigation className="w-3.5 h-3.5 text-emerald-200" />
-                <span>View First Stop ({dayRouteAgencies.length})</span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
-              </motion.a>
-            )}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              onClick={() => onNavigateTab('field')}
+              className="h-9 px-3 rounded-xl bg-[#047857] hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Car className="w-3.5 h-3.5 text-emerald-200" />
+              <span>
+                {territoryStats.dayRouteCount > 0
+                  ? `Manage route (${territoryStats.dayRouteCount})`
+                  : 'Open Routes & notes'}
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
+            </motion.button>
           </div>
         </div>
 
@@ -398,18 +359,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                   >
                     <span>Open Full Profile</span>
                     <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => onToggleRoute(urgentLead.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-colors cursor-pointer ${
-                      urgentLead.inDayRoute
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-white dark:bg-slate-800 text-[#111827] dark:text-slate-200 border-[#E5E4DF] dark:border-slate-700 hover:bg-[#F8F7F4]'
-                    }`}
-                  >
-                    <Car className="w-3.5 h-3.5" />
-                    <span>{urgentLead.inDayRoute ? 'In Today’s Route' : '+ Add to Route'}</span>
                   </button>
 
                   {urgentLead.keyContacts?.[0]?.phone && (
@@ -726,7 +675,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
             filteredAgencies.slice(0, visibleCardCount).map((agency, index) => {
               const chiefContact = agency.keyContacts.find(c => c.role.toLowerCase().includes('chief')) || agency.keyContacts[0];
               const isUrgent = agency.competitorContract.renewalWindowDays <= 90;
-              const isExpandedLog = expandedLogId === agency.id;
               const pulseScore = agency.zollOpportunity.pulseIqScore;
 
               return (
@@ -946,36 +894,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                         </button>
                       )}
 
-                      {/* 1-Tap Day Route Toggle with Motion Feedback */}
-                      <motion.button
-                        whileTap={{ scale: 0.94 }}
-                        onClick={() => onToggleRoute(agency.id)}
-                        className={`h-10 px-3.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
-                          agency.inDayRoute
-                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                            : 'bg-white dark:bg-slate-800 text-[#111827] dark:text-slate-200 border-[#E5E4DF] dark:border-slate-700 hover:bg-[#F8F7F4] dark:hover:bg-slate-700'
-                        }`}
-                        title={agency.inDayRoute ? 'Remove from today’s driving schedule' : 'Add to today’s driving route'}
-                      >
-                        <Car className="w-4 h-4" />
-                        <span>{agency.inDayRoute ? 'Scheduled' : 'Day Route'}</span>
-                      </motion.button>
-
-                      {/* 1-Tap Inline Quick Note Toggle */}
-                      <button
-                        onClick={() => setExpandedLogId(isExpandedLog ? null : agency.id)}
-                        className={`h-10 px-3.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
-                          isExpandedLog
-                            ? 'bg-[#111827] dark:bg-blue-600 text-white border-[#111827] dark:border-blue-600'
-                            : 'bg-white dark:bg-slate-800 text-[#111827] dark:text-slate-200 border-[#E5E4DF] dark:border-slate-700 hover:bg-[#F8F7F4] dark:hover:bg-slate-700'
-                        }`}
-                        title="Log an on-site visit or meeting note in seconds"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Quick Note</span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpandedLog ? 'rotate-180' : ''}`} />
-                      </button>
-
                       {/* Full Profile CTA */}
                       <button
                         onClick={() => onSelectAgency(agency)}
@@ -988,90 +906,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
 
                     </div>
                   </div>
-
-                  {/* Inline Quick Field Note Drawer (Animated with AnimatePresence) */}
-                  <AnimatePresence>
-                    {isExpandedLog && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="bg-[#F8F7F4] dark:bg-slate-800/80 border-t border-[#E5E4DF] dark:border-slate-800 p-4"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-[#111827] dark:text-slate-200 flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-blue-400" />
-                              Log Rapid Field Visit Note ({agency.name})
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                              Auto-syncs to central CRM
-                            </span>
-                          </div>
-
-                          {/* Meeting Type & Quick Presets */}
-                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                            {(['On-Site Station Visit', 'Phone Call', 'Virtual Demo', 'Ride-Along'] as const).map(type => (
-                              <button
-                                key={type}
-                                onClick={() => setQuickNoteMeetingType(type)}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
-                                  quickNoteMeetingType === type
-                                    ? 'bg-[#1E3A8A] dark:bg-blue-600 text-white'
-                                    : 'bg-white dark:bg-slate-700 text-[#374151] dark:text-slate-300 border border-[#E5E4DF] dark:border-slate-600'
-                                }`}
-                              >
-                                {type}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Quick Textarea */}
-                          <textarea
-                            rows={2}
-                            value={quickNoteText}
-                            onChange={(e) => setQuickNoteText(e.target.value)}
-                            placeholder="e.g., Met with Battalion Chief and EMS Captain. Demonstrated X Series Advanced Real BVM Help. Chief interested in scheduling clinical trial next month..."
-                            className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-700 text-xs text-[#111827] dark:text-slate-100 placeholder-[#9CA3AF] focus:outline-hidden focus:border-[#1E3A8A] dark:focus:border-blue-500"
-                          />
-
-                          {/* Action & Submit Row */}
-                          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                              <span className="text-[11px] font-semibold text-[#6B7280] dark:text-slate-400 whitespace-nowrap">
-                                Next Step:
-                              </span>
-                              <input
-                                type="text"
-                                value={quickNextAction}
-                                onChange={(e) => setQuickNextAction(e.target.value)}
-                                className="flex-1 sm:w-64 px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-700 text-xs text-[#111827] dark:text-slate-100"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-2 self-end sm:self-auto">
-                              <button
-                                onClick={() => setExpandedLogId(null)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#6B7280] hover:text-[#111827] dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleSaveQuickNote(agency.id)}
-                                disabled={!quickNoteText.trim()}
-                                className="px-4 py-1.5 rounded-xl bg-[#047857] hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                                <span>Save Field Log</span>
-                              </button>
-                            </div>
-                          </div>
-
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                 </motion.div>
               );

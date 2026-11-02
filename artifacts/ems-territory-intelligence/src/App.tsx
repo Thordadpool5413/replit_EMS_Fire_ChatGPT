@@ -564,32 +564,31 @@ export default function App() {
       <div className="md:pl-64 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
         
-        {/* Secondary workspace tabs; the sidebar points to the Territory Explorer as one destination. */}
+        {/* Secondary workspace tabs are consistent across desktop and mobile. */}
         {!currentActive && ['contracts', 'grants', 'pulseiq'].includes(activeTab) && (
           <nav
-            aria-label="Opportunities Workspace Navigation"
-            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            aria-label="Opportunities views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-              {[
-                { id: 'contracts', label: 'Contracts' },
-                { id: 'grants', label: 'Grants' },
-                { id: 'pulseiq', label: 'Regional priority' }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleNavigateTab(item.id)}
-                  className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    activeTab === item.id
-                      ? 'bg-[#285EE8] text-white'
-                      : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            {[
+              { id: 'contracts', label: 'Contracts', active: activeTab === 'contracts' },
+              { id: 'grants', label: 'Fire grants', active: activeTab === 'grants' },
+              { id: 'pulseiq', label: 'Regional priority', active: activeTab === 'pulseiq' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={item.active ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  item.active
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
         )}
 
@@ -655,8 +654,8 @@ export default function App() {
 
         {!currentActive && ['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab) && (
           <nav
-            aria-label="Specialist Tools Navigation"
-            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full shadow-2xs"
+            aria-label="Specialist tool views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {[
               { id: 'knowledge', label: 'Clinical & competitive' },
@@ -669,8 +668,9 @@ export default function App() {
               <button
                 key={item.id}
                 type="button"
+                aria-current={activeTab === item.id ? 'page' : undefined}
                 onClick={() => handleNavigateTab(item.id)}
-                className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === item.id
                     ? 'bg-[#285EE8] text-white'
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
@@ -750,22 +750,7 @@ export default function App() {
             <HomeHubView
               agencies={agencies}
               onNavigateTab={handleNavigateTab}
-              onSelectAgency={(a) => {
-                setSelectedAgency(a);
-                setActiveAccount(a);
-              }}
-              onOpenRfpGenerator={(a) => setRfpAgency(a)}
-              onOpenWeightsModal={() => setIsWeightsModalOpen(true)}
-              onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-              onOpenDataLineageModal={() => setIsDataLineageOpen(true)}
-              isOnline={isOnline}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={toggleDarkMode}
-              alerts={alerts}
-              isCloudConnected={isCloudConnected}
-              cloudSyncCount={cloudSyncCount}
               globalCategory={globalCategory}
-              setGlobalCategory={setGlobalCategory}
               onSelectState={(st) => {
                 setGlobalState(st);
                 setGlobalCounty('all');
@@ -786,10 +771,6 @@ export default function App() {
                 setActiveAccount(a);
               }}
               onUpdateStage={handleUpdateStage}
-              onToggleRoute={handleToggleRoute}
-              onToggleBookmark={handleToggleBookmark}
-              onAddFieldNote={handleAddFieldNote}
-              onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onNavigateTab={(tab) => setActiveTab(tab)}
               isOnline={isOnline}
               toggleNetwork={handleCheckConnectivity}
@@ -797,8 +778,6 @@ export default function App() {
               isDarkMode={isDarkMode}
               onToggleDarkMode={toggleDarkMode}
               alerts={alerts}
-              globalState={globalState}
-              globalCounty={globalCounty}
             />
           </div>
         )}

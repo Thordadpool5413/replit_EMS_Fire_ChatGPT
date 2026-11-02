@@ -100,8 +100,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
-  const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState<boolean>(false);
-  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -117,7 +115,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   // Workspace active detection
   const isHomeActive = activeTab === 'home' && !activeAccountName;
   const isAccountsActive = activeTab === 'queue' || Boolean(activeAccountName);
-  const isOpportunitiesActive = ['contracts', 'grants', 'pulseiq'].includes(activeTab) && !activeAccountName;
+  const isOpportunitiesTab = ['contracts', 'grants', 'pulseiq'].includes(activeTab);
+  const isOpportunitiesActive = isOpportunitiesTab && !activeAccountName;
   const isTerritoryTab = ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab);
   const isTerritoryActive = isTerritoryTab && !activeAccountName;
   const isMyWorkTab = ['field', 'tm_dashboard'].includes(activeTab);
@@ -132,24 +131,17 @@ export const TopBar: React.FC<TopBarProps> = ({
     { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
   ];
 
-  const isAdvancedActive = advancedTools.some(t => t.id === activeTab) && !activeAccountName;
-
-  useEffect(() => {
-    setIsOpportunitiesExpanded(['contracts', 'grants', 'pulseiq'].includes(activeTab));
-    setIsAdvancedExpanded(['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab));
-  }, [activeTab]);
+  const isAdvancedTab = advancedTools.some(t => t.id === activeTab);
+  const isAdvancedActive = isAdvancedTab && !activeAccountName;
 
   const getWorkspaceTitle = () => {
     if (activeAccountName) return `Accounts / ${activeAccountName}`;
     if (activeTab === 'home') return 'Home';
     if (activeTab === 'queue') return 'Accounts Discovery';
-    if (activeTab === 'contracts') return 'Opportunities · Procurement & Contracts';
-    if (activeTab === 'grants') return 'Opportunities · FEMA AFG & SAFER Grants';
-    if (activeTab === 'pulseiq') return 'Opportunities · PulseIQ Regional Scoring';
+    if (isOpportunitiesTab) return 'Opportunities';
     if (['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab)) return 'Territory Explorer';
     if (isMyWorkTab) return 'Field Work';
-    const foundAdv = advancedTools.find(t => t.id === activeTab);
-    if (foundAdv) return `Specialist tools · ${foundAdv.label}`;
+    if (isAdvancedActive) return 'Specialist tools';
     return 'Workspace';
   };
 
@@ -270,61 +262,18 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
 
               {/* 3. Opportunities */}
-              <div className="space-y-0.5">
-                <div
-                  className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
-                    isOpportunitiesActive
-                      ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                      : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(isOpportunitiesActive ? activeTab : 'contracts');
-                      setIsOpportunitiesExpanded(true);
-                    }}
-                    className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
-                  >
-                    <TrendingUp className="w-4 h-4 shrink-0" />
-                    <span className="truncate">Opportunities</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsOpportunitiesExpanded(prev => !prev)}
-                    className="p-2 hover:text-white text-slate-400 cursor-pointer shrink-0"
-                    title="Toggle Opportunities Sub-Navigation"
-                    aria-label="Toggle Opportunities Sub-Navigation"
-                    aria-expanded={isOpportunitiesExpanded}
-                  >
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpportunitiesExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                </div>
-
-                {/* Sub-links for Opportunities */}
-                {isOpportunitiesExpanded && (
-                  <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
-                    {[
-                    { id: 'contracts', label: 'Contracts & expirations' },
-                    { id: 'grants', label: 'Fire grants · AFG & SAFER' },
-                    { id: 'pulseiq', label: 'Regional priority scores' }
-                    ].map((sub) => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => setActiveTab(sub.id)}
-                        className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                          activeTab === sub.id
-                            ? 'text-white font-semibold bg-[#172D49]'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {sub.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab(isOpportunitiesTab ? activeTab : 'contracts')}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
+                  isOpportunitiesActive
+                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
+                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 shrink-0" />
+                <span className="truncate">Opportunities</span>
+              </button>
 
               {/* 4. Territory Explorer */}
               <div
@@ -374,43 +323,20 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
           </div>
 
-          {/* Secondary Area: Specialist tools */}
+          {/* Specialist tools have one entry point; the view tabs live with the content. */}
           <div>
             <button
               type="button"
-              onClick={() => setIsAdvancedExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between text-xs font-medium text-slate-400 hover:text-slate-200 px-2.5 mb-1.5 cursor-pointer"
-              aria-expanded={isAdvancedExpanded}
+              onClick={() => setActiveTab(isAdvancedTab ? activeTab : 'knowledge')}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
+                isAdvancedActive
+                  ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
+                  : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
+              }`}
             >
-              <span>Specialist tools</span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform ${isAdvancedExpanded ? 'rotate-0' : '-rotate-90'}`}
-              />
+              <Database className="w-4 h-4 shrink-0" />
+              <span className="truncate">Specialist tools</span>
             </button>
-
-            {isAdvancedExpanded && (
-              <div className="space-y-0.5">
-                {advancedTools.map((tool) => {
-                  const Icon = tool.icon;
-                  const active = activeTab === tool.id && !activeAccountName;
-                  return (
-                    <button
-                      key={tool.id}
-                      type="button"
-                      onClick={() => setActiveTab(tool.id)}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        active
-                          ? 'bg-[#172D49] text-white font-semibold border-l-2 border-[#285EE8]'
-                          : 'text-slate-400 hover:bg-[#172D49]/60 hover:text-slate-200'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{tool.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </nav>
 

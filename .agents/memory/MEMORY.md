@@ -1,7 +1,7 @@
 - [Display available agency data](display-available-agency-data.md) — show available information and let end users verify it directly with the account.
 - [County Medicare denial matching](county-mcr-denial-mapping.md) — use exact county FIPS and same-scope claims counts; CMS county use/spending data is not a denial source.
 - [EMS territory map metrics](gis-ohca-fleet-heatmap.md) — use the selected dark command-center style with vivid semantic shading and distinct missing/selection states.
-- [Home and navigation focus](home-navigation-focus.md) — keep Home map-only, collapse sidebar groups by default, and preserve specialist tools.
+- [Home and navigation focus](home-navigation-focus.md) — keep Home map-only, use one workspace entry with consistent view tabs, and retain specialist tools.
 - [Vite dev banner under artifact paths](vite-dev-banner-basepath.md) — a root-absolute banner script can 404 behind a path-prefixed artifact even when the app is healthy.
 - [Compressed Vite assets](vite-gzip-assets.md) — browser fetch may transparently decompress `.gz` URLs in development; detect gzip magic before inflating.
 - [USFA registry feed latency](usfa-registry-feed-latency.md) — national CSV downloads are slow; load them in the background and surface NERIS matches independently.

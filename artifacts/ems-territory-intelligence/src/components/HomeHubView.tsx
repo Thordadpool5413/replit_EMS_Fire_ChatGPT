@@ -4,28 +4,9 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Agency, PushAlert } from '../types';
+import { Agency } from '../types';
 import {
-  Search,
-  ArrowRight,
   Compass,
-  MapPin,
-  Layers,
-  Activity,
-  DollarSign,
-  Box,
-  Database,
-  Award,
-  Clock,
-  ExternalLink,
-  ChevronRight,
-  ShieldCheck,
-  Siren,
-  Flame,
-  Globe,
-  SlidersHorizontal,
-  Building2,
-  X,
   ZoomIn,
   ZoomOut,
   RotateCcw
@@ -33,8 +14,7 @@ import {
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { getStateZipDenialProfiles } from '../services/countyDenialProfileService';
-import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
+import { formatInteger, formatScore } from '../utils/numberFormatting';
 import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
@@ -54,16 +34,12 @@ type StateMapMetricKey =
 
 interface StateStats {
   count: number;
-  countiesCount: number;
   avgPulseIq: number | null;
   pulseIqDataCount: number;
   totalAmbulances: number | null;
   ambulanceDataCount: number;
   totalFireEngines: number | null;
   fireEngineDataCount: number;
-  medicareAllowed: number | null;
-  medicareAllowedDataCount: number;
-  grantFunds: number;
 }
 
 interface StateMapMetricDatum {
@@ -127,33 +103,16 @@ const readableTextForFill = (hexColor: string) => {
 interface HomeHubViewProps {
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
-  onSelectAgency: (agency: Agency) => void;
-  onOpenRfpGenerator?: (agency: Agency) => void;
-  onOpenWeightsModal?: () => void;
-  onOpenCommandPalette?: () => void;
-  onOpenDataLineageModal?: () => void;
-  isOnline: boolean;
-  isDarkMode: boolean;
-  onToggleDarkMode?: () => void;
-  alerts: PushAlert[];
-  isCloudConnected?: boolean;
-  cloudSyncCount?: number;
   globalCategory: 'all' | 'ems' | 'fire';
-  setGlobalCategory: (cat: 'all' | 'ems' | 'fire') => void;
   onSelectState?: (stateCode: string) => void;
 }
 
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
   agencies,
   onNavigateTab,
-  onSelectAgency,
-  onOpenCommandPalette,
-  onOpenDataLineageModal,
   globalCategory,
-  setGlobalCategory,
   onSelectState
 }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStateCode, setSelectedStateCode] = useState<string>('FL');
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
@@ -176,27 +135,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       ? 'EMS-only'
       : 'fire-only';
 
-  // Instant inline universal search results
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return scopedAgencies
-      .filter((a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.city.toLowerCase().includes(q) ||
-        a.county.toLowerCase().includes(q) ||
-        a.stateCode.toLowerCase().includes(q) ||
-        (a.zipCode && a.zipCode.toLowerCase().includes(q)) ||
-        (a.fdid && a.fdid.toLowerCase().includes(q)) ||
-        (a.npiNumber && a.npiNumber.includes(q))
-      )
-      .slice(0, 8);
-  }, [scopedAgencies, searchQuery]);
-
-  // Keep the selected dossier stable while hovering only updates the map readout.
-  const displayStateCode = selectedStateCode;
   const hoverReadoutStateCode = hoveredStateCode || selectedStateCode;
-  const activeStateSummary = ALL_50_STATES_SUMMARIES[displayStateCode] || ALL_50_STATES_SUMMARIES['FL'];
 
   const stateStatsByCode = useMemo(() => {
     const agenciesByState = new Map<string, Agency[]>();
@@ -215,15 +154,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         let ambulanceDataCount = 0;
         let fireEngines = 0;
         let fireEngineDataCount = 0;
-        let medicare = 0;
-        let medicareAllowedDataCount = 0;
-        let grants = 0;
 
         for (const agency of stateAgencies) {
           const pulseIq = agency.zollOpportunity?.pulseIqScore;
           const ambulanceCount = agency.totalAmbulances;
           const fireEngineCount = agency.totalFireEngines;
-          const medicareAllowed = agency.cmsData?.medicareAllowedAnnual;
 
           if (hasReportedValue(pulseIq)) {
             sumPulseIq += pulseIq;
@@ -237,40 +172,22 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             fireEngines += fireEngineCount;
             fireEngineDataCount++;
           }
-          if (hasReportedValue(medicareAllowed)) {
-            medicare += medicareAllowed;
-            medicareAllowedDataCount++;
-          }
-          const grantAmount = agency.grantStatus?.afgAwardAmount;
-          if (agency.grantStatus?.afgAwarded && hasReportedValue(grantAmount)) {
-            grants += grantAmount;
-          }
         }
 
         const stats: StateStats = {
           count: stateAgencies.length,
-          countiesCount: territoryEngine.getCountiesForState(state.code).length,
           avgPulseIq: pulseIqDataCount ? Math.round(sumPulseIq / pulseIqDataCount) : null,
           pulseIqDataCount,
           totalAmbulances: ambulanceDataCount ? ambulances : null,
           ambulanceDataCount,
           totalFireEngines: fireEngineDataCount ? fireEngines : null,
           fireEngineDataCount,
-          medicareAllowed: medicareAllowedDataCount ? medicare : null,
-          medicareAllowedDataCount,
-          grantFunds: grants,
         };
         return [state.code, stats];
       }),
     ) as Record<string, StateStats>;
   }, [scopedAgencies]);
 
-  const stateStats = stateStatsByCode[displayStateCode];
-
-  const stateZipDenialProfiles = useMemo(
-    () => getStateZipDenialProfiles(displayStateCode),
-    [displayStateCode],
-  );
   const stateMapMetricsByCode = useMemo(() => {
     return Object.fromEntries(
       Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
@@ -383,159 +300,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   return (
     <div>
       {/* ====================================================================
-          1. COMPACT PREMIUM HEADER WITH DISCIPLINE FILTER & SEARCH
-         ==================================================================== */}
-      <section
-        aria-label="Daily Territory Intelligence Briefing Header"
-        className="hidden"
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="pi-page-title">
-              EMS &amp; Fire territory, at a glance
-            </h1>
-            <p className="pi-supporting">
-              Explore agency records, locations, fleet details, and operational signals in one workspace.
-            </p>
-          </div>
-
-          {/* Provider Scope Filter: All / EMS / Fire */}
-          <div
-            className="flex items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42] self-start md:self-auto shrink-0"
-            role="group"
-            aria-label="Provider Discipline Scope"
-          >
-            {(['all', 'ems', 'fire'] as const).map((cat) => {
-              const active = globalCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setGlobalCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    active
-                      ? 'bg-white dark:bg-[#111C2D] text-[#14283F] dark:text-white shadow-2xs font-bold'
-                      : 'text-[#53657B] dark:text-slate-400 hover:text-[#14283F] dark:hover:text-white'
-                  }`}
-                >
-                  {cat === 'ems' && <Siren className="w-3.5 h-3.5 text-[#285EE8]" />}
-                  {cat === 'fire' && <Flame className="w-3.5 h-3.5 text-amber-500" />}
-                  <span>{cat === 'all' ? 'All Providers' : cat === 'ems' ? 'EMS Only' : 'Fire Only'}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Global Quick Search Bar */}
-        <div className="relative">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-[#53657B] dark:text-slate-400 absolute left-3.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search EMS and fire agencies"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Search agencies by name, city, county, ZIP, NPI, or FDID"
-              className="w-full h-11 pl-10 pr-24 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-xs font-semibold text-[#14283F] dark:text-white placeholder-[#53657B] dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#285EE8] focus:bg-white dark:focus:bg-[#111C2D] transition-all"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="Clear agency search"
-                className={`absolute ${onOpenCommandPalette ? 'right-[7.25rem]' : 'right-2'} p-2 rounded-md text-[#53657B] dark:text-slate-400 hover:bg-white dark:hover:bg-[#111C2D] hover:text-[#14283F] dark:hover:text-white transition-colors cursor-pointer`}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {onOpenCommandPalette && (
-              <button
-                type="button"
-                onClick={onOpenCommandPalette}
-                aria-label="Open command palette"
-                className="absolute right-2 px-2.5 py-1 rounded-md text-[11px] font-mono font-medium text-[#53657B] dark:text-slate-400 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] hover:text-[#285EE8] transition-colors cursor-pointer"
-              >
-                ⌘K Palette
-              </button>
-            )}
-          </div>
-
-          {/* Quick Search Dropdown Overlay */}
-          {searchQuery.trim() && (
-            <div
-              role="region"
-              aria-label="Agency search results"
-              aria-live="polite"
-              className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl shadow-xl z-30 divide-y divide-[#DFE6EF] dark:divide-[#1E2D42] max-h-80 overflow-y-auto"
-            >
-              {searchResults.length === 0 && (
-                <div className="px-4 py-5 text-center">
-                  <p className="text-sm font-semibold text-[#14283F] dark:text-slate-100">No matching agencies</p>
-                  <p className="mt-1 text-xs text-[#53657B] dark:text-slate-400">Try a different agency name, location, ZIP, NPI, or FDID.</p>
-                </div>
-              )}
-              {searchResults.map((agency) => (
-                <div
-                  key={agency.id}
-                  className="p-3.5 hover:bg-[#F5F7FA] dark:hover:bg-[#16243A] flex items-center justify-between gap-3 transition-colors text-left"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectAgency(agency);
-                      setSearchQuery('');
-                    }}
-                    className="min-w-0 flex-1 text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire')
-                          ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
-                          : 'bg-blue-50 dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 border border-blue-200 dark:border-blue-800/60'
-                      }`}>
-                        {agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire') ? <Flame className="w-2.5 h-2.5" /> : <Siren className="w-2.5 h-2.5" />}
-                        <span>{agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire') ? 'Fire' : 'EMS'}</span>
-                      </span>
-                      <div className="text-sm font-semibold text-[#14283F] dark:text-white hover:text-[#285EE8] truncate">
-                        {agency.name}
-                      </div>
-                    </div>
-                    <div className="text-xs text-[#53657B] dark:text-slate-400 mt-1">
-                      {agency.city}, {agency.stateCode} · {agency.county}
-                      {agency.zipCode ? ` · ZIP ${agency.zipCode}` : ''}
-                      {agency.npiNumber ? ` · NPI ${agency.npiNumber}` : ' · NPI not reported'}
-                    </div>
-                  </button>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-[#14283F] dark:text-slate-200 pi-data-inline">
-                      PulseIQ <strong className="pi-data-number text-xs">
-                        {hasReportedValue(agency.zollOpportunity?.pulseIqScore) ? formatScore(agency.zollOpportunity.pulseIqScore) : '—'}
-                      </strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSelectAgency(agency);
-                        setSearchQuery('');
-                      }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white cursor-pointer"
-                    >
-                      Open Account 360
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ====================================================================
-          2. INTERACTIVE U.S. TERRITORY MAP WITH STATE INTELLIGENCE DOSSIER
+          1. INTERACTIVE U.S. TERRITORY MAP WITH STATE INTELLIGENCE DOSSIER
          ==================================================================== */}
       <section
         aria-label="Interactive U.S. Territory Map"
@@ -875,376 +640,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
             </div>
           </div>
-
-          <div className="hidden">
-            <div className="p-4 sm:p-5 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-3">
-              <div className="flex items-center justify-between border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-[#285EE8] dark:text-blue-400 block">
-                    {activeStateSummary.region} Region
-                  </span>
-                  <h3 className="font-display font-bold text-lg text-[#14283F] dark:text-white truncate">
-                    {activeStateSummary.state} ({activeStateSummary.code})
-                  </h3>
-                </div>
-                <span className="px-2.5 py-1 rounded-lg text-xs font-bold pi-data-number bg-[#285EE8] text-white shadow-xs">
-                  {displayStateCode}
-                </span>
-              </div>
-
-                <div className="rounded-lg border border-blue-200 dark:border-blue-900/70 bg-blue-50/80 dark:bg-blue-950/30 p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-blue-800 dark:text-blue-300">
-                    Selected map layer
-                  </span>
-                  <div className="mt-0.5 flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 text-xs font-semibold text-[#14283F] dark:text-slate-200">
-                      {activeMapMetric.label}
-                    </span>
-                    <span className="shrink-0 text-lg font-bold tabular-nums text-[#14283F] dark:text-white">
-                      {formatStateMapValue(mapMetric, stateMapMetricsByCode[displayStateCode][mapMetric].value)}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                    {stateMapMetricsByCode[displayStateCode][mapMetric].coverage}
-                  </p>
-                  <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                    Period: {stateMapMetricsByCode[displayStateCode][mapMetric].period}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleMapSourceAction(
-                      displayStateCode,
-                      stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction,
-                    )}
-                    className="mt-1 min-h-8 rounded-md px-1 text-[10px] font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction === 'zip-profiles'
-                      ? 'View ZIP profile records'
-                      : stateMapMetricsByCode[displayStateCode][mapMetric].sourceAction === 'claims-import'
-                        ? 'Open claim summary'
-                        : 'Review agency records'}
-                  </button>
-                </div>
-
-              {/* State Key Statistics */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Counties
-                  </span>
-                  <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card">
-                    {formatInteger(stateStats.countiesCount)}
-                  </span>
-                </div>
-                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Directory records
-                  </span>
-                  <span className="font-semibold text-[#285EE8] dark:text-blue-400 text-base pi-metric-card">
-                    {formatInteger(stateStats.count)} entries
-                  </span>
-                </div>
-                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    Modeled avg PulseIQ
-                  </span>
-                  <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card">
-                    {stateStats.avgPulseIq === null ? 'Not available' : formatScore(stateStats.avgPulseIq)}
-                  </span>
-                  <span data-testid={`text-pulseiq-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                    {formatInteger(stateStats.pulseIqDataCount)} of {formatInteger(stateStats.count)} agency records
-                  </span>
-                </div>
-              </div>
-
-              <div
-                id="state-zip-profile-values"
-                data-testid={`zip-denial-profile-values-${displayStateCode}`}
-                className="rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] p-3 space-y-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">
-                    ZIP-profile source records
-                  </span>
-                  <span className="text-[10px] text-[#53657B] dark:text-slate-400">
-                    {stateZipDenialProfiles.length} source-backed entries
-                  </span>
-                </div>
-                {stateZipDenialProfiles.length > 0 ? (
-                  <>
-                    <div className="space-y-1.5">
-                      {stateZipDenialProfiles.map((record) => (
-                        <div
-                          key={`${record.fipsCounty}-${record.zipCode}`}
-                          className="rounded-md bg-slate-50 dark:bg-slate-800 px-2.5 py-2"
-                        >
-                          <a
-                            href={record.medicareDenialRateSourceUrl!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                          >
-                            {record.county} · ZIP {record.zipCode} · view source record
-                          </a>
-                          <div className="mt-0.5 text-[10px] text-[#53657B] dark:text-slate-400">
-                            {record.medicareDenialRateReportingPeriod} · {record.medicareDenialClaimScope}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                      No ZIP-profile source records are available for this state.
-                    </p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
-                      <a
-                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                      >
-                        CMS PSPS denied-service dataset
-                      </a>
-                      <a
-                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/physiciansupplier-procedure-summary/api-docs"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                      >
-                        CMS PSPS API
-                      </a>
-                      <a
-                        href="https://www.cms.gov/medicare/payment/fee-schedules/ambulance/ambulance-fee-schedule-public-use-files"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                      >
-                        CMS ambulance ZIP/payment files
-                      </a>
-                      <a
-                        href="https://data.cms.gov/summary-statistics-on-use-and-payments/program-integrity-market-saturation-by-type-of-service/market-saturation-utilization-state-county"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                      >
-                        CMS paid-claim county data
-                      </a>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Apparatus Fleet & Grant Funding Overview */}
-              <div className="space-y-2 text-xs border-t border-[#DFE6EF] dark:border-[#1E2D42] pt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated ambulances:</span>
-                  <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {stateStats.totalAmbulances === null
-                      ? 'Not available'
-                      : `${formatInteger(stateStats.totalAmbulances)} units`}
-                  </span>
-                </div>
-                <div data-testid={`text-ambulance-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
-                  {formatInteger(stateStats.ambulanceDataCount)} of {formatInteger(stateStats.count)} agency records
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated fire engines:</span>
-                  <span className="font-medium text-[#14283F] dark:text-white pi-data-number">
-                    {stateStats.totalFireEngines === null
-                      ? 'Not available'
-                      : `${formatInteger(stateStats.totalFireEngines)} apparatus`}
-                  </span>
-                </div>
-                <div data-testid={`text-fire-engine-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
-                  {formatInteger(stateStats.fireEngineDataCount)} of {formatInteger(stateStats.count)} agency records
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#53657B] dark:text-slate-400">Estimated Medicare allowed:</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 pi-data-number">
-                    {stateStats.medicareAllowed === null
-                      ? 'Not available'
-                      : formatCurrency(stateStats.medicareAllowed)}
-                  </span>
-                </div>
-                <div data-testid={`text-medicare-allowed-coverage-${displayStateCode}`} className="text-[10px] text-[#53657B] dark:text-slate-500 text-right">
-                  {formatInteger(stateStats.medicareAllowedDataCount)} of {formatInteger(stateStats.count)} agency records
-                </div>
-                <p className="text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-                  CMS PSPS contains aggregate denied-service counts, not unique provider claims; public cells under 11 are masked. It has no NPI or county FIPS, so it cannot support complete state, county, or individual-provider claim rates.
-                </p>
-              </div>
-
-              {/* Action Buttons: Navigate into State or Accounts */}
-              <div className="space-y-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleStateClick(displayStateCode)}
-                  className="w-full h-10 px-4 rounded-xl bg-[#285EE8] hover:bg-[#194BC8] text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>Explore {activeStateSummary.state} Territory</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onNavigateTab('queue')}
-                  className="w-full h-9 px-4 rounded-xl bg-white dark:bg-[#111C2D] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-[#DFE6EF] dark:border-[#1E2D42] text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Building2 className="w-3.5 h-3.5 text-[#285EE8]" />
-                  <span>View Accounts in Discovery Queue</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Popular Territory Chips */}
-            <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                Popular Jurisdictions
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { code: 'IL', name: 'Illinois' },
-                  { code: 'TX', name: 'Texas' },
-                  { code: 'FL', name: 'Florida' },
-                  { code: 'CA', name: 'California' },
-                  { code: 'OH', name: 'Ohio' },
-                  { code: 'PA', name: 'Pennsylvania' }
-                ].map((st) => (
-                  <button
-                    key={st.code}
-                    type="button"
-                    onClick={() => handleStateClick(st.code)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                      selectedStateCode === st.code
-                        ? 'bg-[#285EE8] text-white shadow-xs'
-                        : 'bg-[#F5F7FA] dark:bg-[#16243A] text-slate-700 dark:text-slate-200 border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8]'
-                    }`}
-                  >
-                    {st.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
+
       </section>
 
-      {/* ====================================================================
-          3. SPECIALIZED GEOSPATIAL TOOLS & INTELLIGENCE RESOURCES (KEPT)
-         ==================================================================== */}
-      <section
-        aria-label="Specialized Geospatial Tools & Intelligence Resources"
-        className="hidden"
-      >
-        <div className="flex items-center justify-between pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
-          <div>
-            <h2 className="pi-section-heading">
-              Specialized Geospatial Tools &amp; Intelligence Resources
-            </h2>
-            <p className="pi-supporting mt-0.5">
-              Direct 1-click launch to GIS heatmaps, live maps, grant registries, clinical TCO, and 3D apparatus studios.
-            </p>
-          </div>
-          {onOpenCommandPalette && (
-            <button
-              type="button"
-              onClick={onOpenCommandPalette}
-              className="text-xs font-semibold text-[#285EE8] dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
-            >
-              <span>Command Palette (⌘K)</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            {
-              id: 'map',
-              title: 'GIS Fleet & Acuity Heatmap',
-              desc: '50-State choropleth, hexbin density, competitor fleet aging & OHCA cardiac resuscitations',
-              icon: Activity,
-              badge: 'Geospatial'
-            },
-            {
-              id: 'google_maps',
-              title: 'Google Maps Live Explorer',
-              desc: 'Interactive live Google Maps with GPS Near Me, hospitals, cath labs & fire stations',
-              icon: MapPin,
-              badge: 'Live Maps'
-            },
-            {
-              id: 'grants',
-              title: 'FEMA AFG & SAFER Grants',
-              desc: 'OpenFEMA API v2 awards tracker, equipment grant payouts & fiscal liquidity',
-              icon: Award,
-              badge: 'Liquidity'
-            },
-            {
-              id: 'contracts',
-              title: 'Contracts & Expirations',
-              desc: 'Competitor defib replacement window calendar and renewal cliff timelines',
-              icon: Clock,
-              badge: 'Procurement'
-            },
-            {
-              id: 'knowledge',
-              title: 'Clinical & TCO Knowledge Hub',
-              desc: '5-Year TCO engine, FDA MAUDE adverse event recalls & cooperative contracts',
-              icon: Layers,
-              badge: 'Clinical'
-            },
-            {
-              id: '3d_studio',
-              title: '3D Apparatus Studio',
-              desc: 'Interactive 3D emergency ambulance & fire pumper apparatus viewer with lighting',
-              icon: Box,
-              badge: 'Three.js'
-            },
-            {
-              id: 'claims',
-              title: 'Medicare Claims & Payer Mix',
-              desc: 'CMS Ground Ambulance Cost Data (GADCS) and Medicare payment references',
-              icon: DollarSign,
-              badge: 'CMS Data'
-            },
-            {
-              id: 'gateway',
-              title: 'Federal Data Gateway',
-              desc: 'Direct CMS NPPES NPI Registry v2.1 & OpenFEMA verification gateway',
-              icon: Database,
-              badge: 'Verified API'
-            }
-          ].map((tool) => {
-            const ToolIcon = tool.icon;
-            return (
-              <button
-                key={tool.id}
-                type="button"
-                onClick={() => onNavigateTab(tool.id)}
-                className="p-3.5 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-white dark:hover:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8] text-left transition-all cursor-pointer group shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="p-1.5 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-slate-700 text-[#285EE8] shadow-2xs">
-                    <ToolIcon className="w-4 h-4" />
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded">
-                    {tool.badge}
-                  </span>
-                </div>
-                <div className="text-xs font-bold text-[#14283F] dark:text-white mt-2.5 group-hover:text-[#285EE8] transition-colors">
-                  {tool.title}
-                </div>
-                <p className="text-[11px] text-[#53657B] dark:text-slate-400 mt-1 leading-snug line-clamp-2">
-                  {tool.desc}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </section>
     </div>
   );
 };

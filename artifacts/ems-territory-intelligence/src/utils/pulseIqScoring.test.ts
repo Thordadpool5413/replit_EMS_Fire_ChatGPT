@@ -7,6 +7,7 @@ import {
   DEFAULT_WEIGHTS,
   evaluatePulseIqFactors
 } from './pulseIqScoring';
+import { rankByPulseIqScore } from './pulseIqRanking';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -85,4 +86,96 @@ test('missing score inputs are shown as model fallbacks instead of implied sourc
   assert.equal(software.inputs[0].valueUsed, 'Not listed');
   assert.equal(software.inputs[0].usedDefault, true);
   assert.match(software.method, /missing software names currently count as no ZOLL match/i);
+});
+
+const rankedAgency = (
+  id: string,
+  stateCode: string,
+  annualCardiacArrestCalls: number,
+  defibAgeYears: number
+): Agency => {
+  const template = agency(0, 0);
+  const record = {
+    ...template,
+    id,
+    stateCode,
+    annualCardiacArrestCalls,
+    installedFleet: {
+      ...template.installedFleet,
+      defibAgeYears
+    }
+  } as Agency;
+  return {
+    ...record,
+    zollOpportunity: { pulseIqScore: calculateScore(record) }
+  } as Agency;
+};
+
+const withChangedClaimRecords = (record: Agency, multiplier: number): Agency => {
+  const updated = {
+    ...record,
+    cmsData: {
+      ...record.cmsData,
+      claimDenialRate: multiplier * 37,
+      estimatedRecoverableRevenue: multiplier * 25_000_000,
+      medicareDeniedClaimCount: multiplier * 1_000_000,
+      medicareAdjudicatedClaimCount: multiplier * 2_000_000,
+      medicareDeniedAmountAnnual: multiplier * 900_000_000
+    }
+  } as Agency;
+  return {
+    ...updated,
+    zollOpportunity: { pulseIqScore: calculateScore(updated) }
+  } as Agency;
+};
+
+test('lead queue PulseIQ score order is unchanged by imported claim-record changes', () => {
+  const agencies = [
+    rankedAgency('wa-large', 'WA', 2400, 11),
+    rankedAgency('wa-small', 'WA', 1200, 8),
+    rankedAgency('tx-large', 'TX', 700, 6),
+    rankedAgency('tx-small', 'TX', 100, 3)
+  ];
+  const updatedClaimAgencies = agencies.map((record, index) =>
+    withChangedClaimRecords(record, index + 1)
+  );
+  const leadOrder = (records: Agency[]) =>
+    rankByPulseIqScore(records, (record) => record.zollOpportunity.pulseIqScore)
+      .map((record) => record.id);
+
+  assert.deepEqual(leadOrder(agencies), leadOrder(updatedClaimAgencies));
+});
+
+test('regional average PulseIQ ranking is unchanged by imported claim-record changes', () => {
+  const agencies = [
+    rankedAgency('wa-large', 'WA', 2400, 11),
+    rankedAgency('wa-small', 'WA', 1200, 8),
+    rankedAgency('tx-large', 'TX', 700, 6),
+    rankedAgency('tx-small', 'TX', 100, 3)
+  ];
+  const updatedClaimAgencies = agencies.map((record, index) =>
+    withChangedClaimRecords(record, index + 1)
+  );
+  const regionalRanks = (records: Agency[]) => {
+    const byState = new Map<string, Agency[]>();
+    for (const record of records) {
+      const region = record.stateCode;
+      byState.set(region, [...(byState.get(region) ?? []), record]);
+    }
+    const rows = [...byState.entries()].map(([stateCode, members]) => ({
+      stateCode,
+      score: Math.round(
+        members.reduce((total, member) => total + member.zollOpportunity.pulseIqScore, 0) /
+          members.length
+      )
+    }));
+    return rankByPulseIqScore(rows, (row) => row.score).map((row) => row.stateCode);
+  };
+
+  assert.deepEqual(regionalRanks(agencies), regionalRanks(updatedClaimAgencies));
+});
+
+test('PulseIQ score ranking preserves original order for ties', () => {
+  const tied = [{ id: 'first', score: 80 }, { id: 'second', score: 80 }];
+  assert.deepEqual(rankByPulseIqScore(tied, (row) => row.score), tied);
 });

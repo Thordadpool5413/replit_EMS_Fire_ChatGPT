@@ -45,6 +45,7 @@ import { InteractiveSparkline } from './InteractiveSparkline';
 import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { rankByPulseIqScore } from '../utils/pulseIqRanking';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -52,7 +53,6 @@ const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
   hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
   hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-  hasAgencyFactEvidence(agency, 'cmsClaims') &&
   hasAgencyFactEvidence(agency, 'federalGrant');
 
 interface PredictiveLeadQueueProps {
@@ -332,8 +332,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       }
     }
 
+    if (sortBy === 'pulseIq') {
+      return rankByPulseIqScore(result, (agency) => agency.zollOpportunity?.pulseIqScore ?? 0);
+    }
+
     return [...result].sort((a, b) => {
-      if (sortBy === 'pulseIq') return (b.zollOpportunity.pulseIqScore || 0) - (a.zollOpportunity.pulseIqScore || 0);
       if (sortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (sortBy === 'calls') return (b.annualCallVolume || b.annual911Transports) - (a.annualCallVolume || a.annual911Transports);
       if (sortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;

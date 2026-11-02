@@ -25,6 +25,7 @@ import {
 } from 'recharts';
 import { Agency, ScoreBreakdown } from '../types';
 import { calculatePulseIqContributions, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
+import { rankByPulseIqScore } from '../utils/pulseIqRanking';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
@@ -63,6 +64,28 @@ interface PulseIqRegionalBreakdownChartProps {
 }
 
 type ChartMode = 'stacked_breakdown' | 'benchmark' | 'radar' | 'pipeline';
+
+type RegionalScoreRow = {
+  score: number;
+  pipelineValue: number;
+  fleetAge: number;
+  name: string;
+};
+
+function sortRegionalRows<T extends RegionalScoreRow>(
+  rows: readonly T[],
+  sortBy: 'score' | 'value' | 'fleetAge' | 'name'
+): T[] {
+  if (sortBy === 'score') {
+    return rankByPulseIqScore(rows, (row) => row.score);
+  }
+
+  return [...rows].sort((a, b) => {
+    if (sortBy === 'value') return b.pipelineValue - a.pipelineValue;
+    if (sortBy === 'fleetAge') return b.fleetAge - a.fleetAge;
+    return a.name.localeCompare(b.name);
+  });
+}
 
 export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownChartProps> = ({
   selectedState,
@@ -205,17 +228,12 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       });
 
       // Sort
-      data.sort((a, b) => {
-        if (sortBy === 'score') return b.score - a.score;
-        if (sortBy === 'value') return b.pipelineValue - a.pipelineValue;
-        if (sortBy === 'fleetAge') return b.fleetAge - a.fleetAge;
-        return a.name.localeCompare(b.name);
-      });
+      const sortedData = sortRegionalRows(data, sortBy);
 
-      const sliced = limitCount === -1 ? data : data.slice(0, limitCount);
+      const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
       const avgScore = data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.score, 0) / data.length) : 0;
       const totalPipeline = data.reduce((acc, d) => acc + d.pipelineValue, 0);
-      const topLead = data[0];
+      const topLead = sortedData[0];
 
       return {
         chartData: sliced,
@@ -303,7 +321,10 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           avgScore = Math.round(totalSc / countyAgencies.length);
           maxScore = Math.max(...countyAgencies.map(a => a.zollOpportunity?.pulseIqScore || 75));
           totalPipeline = countyAgencies.reduce((acc, a) => acc + (a.zollOpportunity?.projectedPipelineValue || 125000), 0);
-          topAccount = countyAgencies.slice().sort((a, b) => (b.zollOpportunity?.pulseIqScore || 0) - (a.zollOpportunity?.pulseIqScore || 0))[0];
+          topAccount = rankByPulseIqScore(
+            countyAgencies,
+            (agency) => agency.zollOpportunity?.pulseIqScore ?? 0
+          )[0];
 
           clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
           fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
@@ -359,17 +380,12 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       });
 
       // Sort counties dynamically
-      data.sort((a, b) => {
-        if (sortBy === 'score') return b.score - a.score;
-        if (sortBy === 'value') return b.pipelineValue - a.pipelineValue;
-        if (sortBy === 'fleetAge') return b.fleetAge - a.fleetAge;
-        return a.name.localeCompare(b.name);
-      });
+      const sortedData = sortRegionalRows(data, sortBy);
 
-      const sliced = limitCount === -1 ? data : data.slice(0, limitCount);
+      const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
       const avgScore = data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.score, 0) / data.length) : 0;
       const totalPipeline = data.reduce((acc, d) => acc + d.pipelineValue, 0);
-      const topLead = data[0];
+      const topLead = sortedData[0];
 
       return {
         chartData: sliced,
@@ -460,7 +476,10 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
       // Top account in state
       const topAccount = hasAgencies
-        ? agenciesInState.slice().sort((a, b) => (b.zollOpportunity?.pulseIqScore || 0) - (a.zollOpportunity?.pulseIqScore || 0))[0]
+        ? rankByPulseIqScore(
+            agenciesInState,
+            (agency) => agency.zollOpportunity?.pulseIqScore ?? 0
+          )[0]
         : undefined;
 
       const topAccountName = topAccount 
@@ -495,19 +514,14 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     });
 
     // Sort states dynamically
-    data.sort((a, b) => {
-      if (sortBy === 'score') return b.score - a.score;
-      if (sortBy === 'value') return b.pipelineValue - a.pipelineValue;
-      if (sortBy === 'fleetAge') return b.fleetAge - a.fleetAge;
-      return a.fullName.localeCompare(b.fullName);
-    });
+    const sortedData = sortRegionalRows(data, sortBy);
 
-    const sliced = limitCount === -1 ? data : data.slice(0, limitCount);
+    const sliced = limitCount === -1 ? sortedData : sortedData.slice(0, limitCount);
     const avgScore = data.length > 0 ? +(data.reduce((acc, d) => acc + d.score, 0) / data.length).toFixed(1) : 0;
     const totalPipeline = data.reduce((acc, d) => acc + d.pipelineValue, 0);
 
     // Identify true highest-scoring priority opportunity
-    const topOpportunity = [...data].sort((a, b) => b.score - a.score)[0];
+    const topOpportunity = rankByPulseIqScore(data, (row) => row.score)[0];
 
     // Primary competitor brand across top-ranking states
     const topBrandCounts: Record<string, number> = {};

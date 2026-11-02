@@ -450,9 +450,6 @@ export default function App() {
 
   const handleOpenAgencyProfile = useCallback((agency: Agency) => {
     const profileAgency = agencies.find((candidate) => candidate.id === agency.id) ?? agency;
-    const isFireAgency =
-      profileAgency.providerCategory === 'FIRE' ||
-      profileAgency.agencyType.toLowerCase().includes('fire');
 
     setPreviewAgency(null);
     setIsAgencyComparisonOpen(false);
@@ -461,10 +458,6 @@ export default function App() {
     setIsCommandPaletteOpen(false);
     setIsMobileProviderFinderOpen(false);
     setIsNotificationsOpen(false);
-    setGlobalState(profileAgency.stateCode);
-    setGlobalCounty(profileAgency.county);
-    setGlobalCity(profileAgency.city);
-    setGlobalCategory(isFireAgency ? 'fire' : 'ems');
   }, [agencies]);
 
   const handleToggleAgencyComparison = useCallback((agency: Agency) => {
@@ -514,6 +507,15 @@ export default function App() {
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const currentActive = activeAccount || selectedAgency;
+  const profileBackLabel = activeTab === 'home'
+    ? 'Back to Map'
+    : ['states_directory', 'geo', 'gis', 'map', 'google_maps'].includes(activeTab)
+      ? 'Back to Territory'
+      : isFieldWorkTab(activeTab)
+        ? 'Back to Field Work'
+        : activeTab === 'queue'
+          ? 'Back to Accounts'
+          : 'Back to Workspace';
   const comparisonAgencies = comparisonAgencyIds
     .map((id) => agencies.find((agency) => agency.id === id))
     .filter((agency): agency is Agency => Boolean(agency));
@@ -528,10 +530,6 @@ export default function App() {
     setIsDataLineageOpen(false);
     setIsChatbotOpen(false);
     setIsNotificationsOpen(false);
-    setGlobalState('all');
-    setGlobalCounty('all');
-    setGlobalCity('all');
-    setGlobalCategory('all');
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -805,6 +803,9 @@ export default function App() {
               agencies={agencies}
               onNavigateTab={handleNavigateTab}
               globalCategory={globalCategory}
+              globalState={globalState}
+              globalCounty={globalCounty}
+              globalCity={globalCity}
               onSelectState={(st) => {
                 setGlobalState(st);
                 setGlobalCounty('all');
@@ -1246,6 +1247,10 @@ export default function App() {
       {currentActive && (
         <FocusedProviderProfile
           agency={currentActive}
+          backLabel={profileBackLabel}
+          comparedAgencyIds={comparisonAgencyIds}
+          onToggleAgencyComparison={handleToggleAgencyComparison}
+          onOpenAgencyComparison={() => setIsAgencyComparisonOpen(true)}
           onBack={() => {
             setSelectedAgency(null);
             setActiveAccount(null);

@@ -70,6 +70,7 @@ import { QualityScorecard } from './QualityScorecard';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { FireRegistryLookup } from './FireRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
+import { AgencyCompareButton } from './AgencyCompareButton';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
@@ -81,6 +82,10 @@ import {
 
 interface FocusedProviderProfileProps {
   agency: Agency;
+  backLabel: string;
+  comparedAgencyIds: string[];
+  onToggleAgencyComparison: (agency: Agency) => void;
+  onOpenAgencyComparison: () => void;
   onBack: () => void;
   onGoHome?: () => void;
   onNavigateGeography?: (state?: string, county?: string, city?: string) => void;
@@ -142,6 +147,16 @@ const reportMetric = (value: number | null | undefined, suffix = '') =>
 
 const reportCurrency = (value: number | null | undefined) =>
   value == null || !Number.isFinite(value) ? 'Not reported' : `$${value.toLocaleString()}`;
+
+const safeExternalUrl = (value?: string) => {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
@@ -371,6 +386,10 @@ function resolveEquipmentSuppliers(agency: Agency) {
 
 export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   agency: rawAgency,
+  backLabel,
+  comparedAgencyIds,
+  onToggleAgencyComparison,
+  onOpenAgencyComparison,
   onBack,
   onGoHome,
   onNavigateGeography,
@@ -674,6 +693,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   };
 
   const primaryContact = agency.keyContacts[0];
+  const topSourceItems = [
+    { label: 'Agency address', sourceName: agency.factEvidence?.providerAddress?.sourceName, period: agency.factEvidence?.providerAddress?.reportingPeriod, url: agency.factEvidence?.providerAddress?.sourceUrl },
+    { label: 'Leadership', sourceName: agency.factEvidence?.agencyLeadership?.sourceName || agency.factEvidence?.decisionMakers?.sourceName, period: agency.factEvidence?.agencyLeadership?.reportingPeriod || agency.factEvidence?.decisionMakers?.reportingPeriod, url: agency.factEvidence?.agencyLeadership?.sourceUrl || agency.factEvidence?.decisionMakers?.sourceUrl },
+    { label: 'Operations', sourceName: agency.factEvidence?.annualEmergencyVolume?.sourceName || agency.factEvidence?.annualCallsReceived?.sourceName, period: agency.factEvidence?.annualEmergencyVolume?.reportingPeriod || agency.factEvidence?.annualCallsReceived?.reportingPeriod, url: agency.factEvidence?.annualEmergencyVolume?.sourceUrl || agency.factEvidence?.annualCallsReceived?.sourceUrl },
+    { label: 'Frontline units', sourceName: agency.factEvidence?.frontlineApparatusStations?.sourceName || agency.factEvidence?.frontlineRescueUnits?.sourceName, period: agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || agency.factEvidence?.frontlineRescueUnits?.reportingPeriod, url: agency.factEvidence?.frontlineApparatusStations?.sourceUrl || agency.factEvidence?.frontlineRescueUnits?.sourceUrl },
+    ...(agency.sourceFacts ?? []).map((fact) => ({
+      label: fact.fieldKey,
+      sourceName: fact.sourceName,
+      period: fact.reportingPeriod || fact.effectivePeriod,
+      url: fact.sourceUrl,
+    })),
+  ].filter((source) => source.sourceName || source.url).slice(0, 4);
 
   const showSection = (
     sec:
@@ -876,18 +907,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur border-b border-[#DFE6EF] dark:border-[#1E2D42] px-4 sm:px-6 lg:px-8 py-2 sm:py-0 min-h-16 flex items-center shadow-2xs">
           <div className="max-w-[1640px] mx-auto w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 min-w-0">
             {/* Back Navigation & Geographic Breadcrumb */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <button
-                type="button"
-                onClick={onBack}
-                className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#14283F] dark:text-slate-100 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-[#DFE6EF] dark:border-[#1E2D42] transition-colors cursor-pointer"
-                title="Return to discovery results (Escape)"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
-                <span>Back to Accounts</span>
-              </button>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  aria-label={backLabel}
+                  className="whitespace-nowrap shrink-0 inline-flex min-h-10 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#14283F] dark:text-slate-100 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-[#DFE6EF] dark:border-[#1E2D42] transition-colors cursor-pointer"
+                  title="Return to the previous workspace"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+                  <span>{backLabel}</span>
+                </button>
 
-              <div className="hidden md:flex items-center gap-1.5 text-xs text-[#53657B] dark:text-slate-400 font-medium truncate">
+                <div className="hidden md:flex items-center gap-1.5 text-xs text-[#53657B] dark:text-slate-400 font-medium truncate">
                 {onNavigateGeography ? (
                   <>
                     <button
@@ -917,11 +950,43 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span className="font-semibold text-[#14283F] dark:text-white truncate">{agency.city}</span>
                   </>
                 )}
+                </div>
+              </div>
+
+              <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-[11px] text-[#53657B] dark:text-slate-400 md:hidden" aria-label="Selected agency area">
+                {onNavigateGeography ? (
+                  <>
+                    <button type="button" onClick={() => onNavigateGeography(agency.stateCode, 'all', 'all')} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.stateCode}</button>
+                    <span aria-hidden="true">›</span>
+                    <button type="button" onClick={() => onNavigateGeography(agency.stateCode, agency.county, 'all')} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.county}</button>
+                    <span aria-hidden="true">›</span>
+                    <span className="truncate font-semibold text-[#14283F] dark:text-slate-200">{agency.city}</span>
+                  </>
+                ) : (
+                  <span className="truncate">{[agency.city, agency.county, agency.stateCode].filter(Boolean).join(' · ')}</span>
+                )}
               </div>
             </div>
 
             {/* Primary Account Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+              <AgencyCompareButton
+                agency={agency}
+                selected={comparedAgencyIds.includes(agency.id)}
+                limitReached={comparedAgencyIds.length >= 3}
+                onToggle={onToggleAgencyComparison}
+                className="min-h-10"
+              />
+              {comparedAgencyIds.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={onOpenAgencyComparison}
+                  className="min-h-10 whitespace-nowrap rounded-lg bg-teal-700 px-3 text-xs font-bold text-white hover:bg-teal-800"
+                  data-testid="button-open-comparison-from-profile"
+                >
+                  Compare {comparedAgencyIds.length}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1007,7 +1072,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             className="pi-surface p-4 sm:p-5 lg:p-6 space-y-5"
           >
             {/* BLOCK 1: AGENCY IDENTITY, OFFICIAL IDENTIFIERS & SOURCE VERIFICATION */}
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42] items-start">
+            <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
               <div className="space-y-3 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
@@ -1106,79 +1171,67 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </p>
                 </div>
 
-                {/* Key Identifiers & Command Strip */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-[#DFE6EF] dark:bg-[#1E2D42] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg overflow-hidden text-xs">
-                  <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
-                    <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Agency leadership
-                    </div>
-                    <div className="font-semibold text-[#14283F] dark:text-white mt-0.5 truncate">
-                      {primaryContact?.name || 'Not reported'}
-                    </div>
-                    <div className="text-xs text-[#53657B] dark:text-slate-400 truncate mt-0.5">
-                      {hasAgencyFactEvidence(agency, 'agencyLeadership')
-                        ? primaryContact?.title || 'Agency leadership'
-                        : 'NPPES administrative officials are not operational command'}
-                    </div>
-                    <FactVerificationTag agency={agency} field="agencyLeadership" />
-                  </div>
-
-                  <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
-                    <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Frontline apparatus &amp; stations
-                    </div>
-                    <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
-                      {`${reportMetric(agency.totalAmbulances)} ambulances${hasReportedValue(agency.totalFireEngines) ? ` · ${reportMetric(agency.totalFireEngines)} engines` : ''}`}
-                    </div>
-                    <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {`${reportMetric(agency.stationsCount)} stations`}
-                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && hasReportedValue(agency.responseUnitCount)
-                        ? ` · ${reportMetric(agency.responseUnitCount)} total rescue, suppression, battalion, and specialty units`
-                        : ''}
-                    </div>
-                    <FactVerificationTag agency={agency} field="stationCount" />
-                    <FactVerificationTag agency={agency} field="frontlineRescueUnits" />
-                    <div className="flex flex-wrap gap-2 text-[10px]">
-                      {hasAgencyFactEvidence(agency, 'stationCount') && (
-                        <a className="text-blue-700 dark:text-blue-300 hover:underline" href={agency.factEvidence?.stationCount?.sourceUrl} target="_blank" rel="noopener noreferrer">
-                          Station-count source
-                        </a>
-                      )}
-                      {hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && (
-                        <a className="text-blue-700 dark:text-blue-300 hover:underline" href={agency.factEvidence?.frontlineRescueUnits?.sourceUrl} target="_blank" rel="noopener noreferrer">
-                          Unit-count source
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-3">
-                      <div className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                      Annual calls in record
-                    </div>
-                    <div className="font-semibold text-[#14283F] dark:text-white mt-0.5">
-                      {`${reportMetric(agency.annualCallVolume)} calls in record`}
-                    </div>
-                    <div className="text-xs text-[#53657B] dark:text-slate-400 mt-0.5">
-                      {`${reportMetric(agency.annual911Transports)} transports / yr · ${reportMetric(agency.annualCardiacArrestCalls)} cardiac calls / yr`}
-                    </div>
-                    <FactVerificationTag agency={agency} field="annualCallsReceived" />
-                    {hasAgencyFactEvidence(agency, 'annualCallsReceived') && (
-                      <a
-                        className="inline-flex text-[10px] text-blue-700 dark:text-blue-300 hover:underline"
-                        href={agency.factEvidence?.annualCallsReceived?.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View annual-volume source
+                {/* Fast-review summary: contact, location, operations, and citations */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
+                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Agency contact</h2>
+                    <p className="mt-1 truncate font-semibold text-[#14283F] dark:text-white">{primaryContact?.name || 'Contact not listed'}</p>
+                    {primaryContact?.title && <p className="truncate text-[#53657B] dark:text-slate-400">{primaryContact.title}</p>}
+                    {(primaryContact?.phone || agency.headquartersPhone) && (
+                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} className="mt-1 inline-flex min-h-8 items-center gap-1.5 font-semibold text-[#285EE8] dark:text-blue-300">
+                        <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {primaryContact?.phone || agency.headquartersPhone}
                       </a>
                     )}
-                  </div>
+                    {primaryContact?.email && (
+                      <a href={`mailto:${primaryContact.email}`} className="flex min-h-8 items-center gap-1.5 break-all text-[#285EE8] dark:text-blue-300">
+                        <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {primaryContact.email}
+                      </a>
+                    )}
+                  </section>
+
+                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency location summary">
+                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Location</h2>
+                    <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white">{agency.address || 'Address not reported'}</p>
+                    <p className="mt-0.5 text-[#53657B] dark:text-slate-400">{[agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ')}</p>
+                    {safeExternalUrl(agency.googleMapsUri) && <a href={safeExternalUrl(agency.googleMapsUri)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-8 items-center gap-1 font-semibold text-[#285EE8] dark:text-blue-300"><MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Open map</a>}
+                  </section>
+
+                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency operations summary">
+                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Operations</h2>
+                    <p className="mt-1 font-semibold text-[#14283F] dark:text-white">{reportMetric(agency.stationsCount)} stations · {reportMetric(agency.totalAmbulances)} ambulances</p>
+                    <p className="text-[#53657B] dark:text-slate-400">{reportMetric(agency.totalFireEngines)} fire engines</p>
+                    <p className="mt-1 font-semibold text-[#14283F] dark:text-white">{reportMetric(agency.annualCallVolume)} annual calls</p>
+                    <p className="text-[#53657B] dark:text-slate-400">{reportMetric(agency.annual911Transports)} transports · {reportMetric(agency.annualCardiacArrestCalls)} cardiac calls</p>
+                  </section>
+
+                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Source references</h2>
+                      <button type="button" onClick={() => setIsSourceDrawerOpen(true)} className="min-h-8 shrink-0 font-semibold text-[#285EE8] hover:underline dark:text-blue-300">Review all</button>
+                    </div>
+                    {topSourceItems.length > 0 ? (
+                      <ul className="mt-1 space-y-1.5">
+                        {topSourceItems.map((source, index) => {
+                          const href = safeExternalUrl(source.url);
+                          return (
+                            <li key={`${source.label}-${source.sourceName}-${index}`} className="min-w-0">
+                              {href ? <a href={href} target="_blank" rel="noopener noreferrer" className="block truncate font-semibold text-[#285EE8] hover:underline dark:text-blue-300">{source.label}: {source.sourceName}</a> : <p className="truncate font-semibold text-[#30465C] dark:text-slate-200">{source.label}: {source.sourceName}</p>}
+                              <p className="truncate text-[10px] text-[#718398] dark:text-slate-400">{source.period || 'Period not stated'}</p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-[#53657B] dark:text-slate-400">Open source records for this agency.</p>
+                    )}
+                  </section>
                 </div>
               </div>
 
-              {/* Right Column: Restrained Opportunity Score & Stage Control */}
-              <div className="xl:pl-6 xl:border-l xl:border-[#DFE6EF] dark:xl:border-[#1E2D42] space-y-3">
+              {/* Less-frequent commercial planning details remain available but collapsed by default. */}
+              <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
+                <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Planning scores and estimates</summary>
+                <div className="mt-3 space-y-3">
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
                     <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {agency.zollOpportunity.priorityTier}
@@ -1235,12 +1288,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <div className="text-xs text-amber-700 dark:text-amber-400">No reviewed opportunity record is attached.</div>
                   )}
                 </div>
-              </div>
+                </div>
+              </details>
             </div>
 
             {/* ================================================================
                 BLOCK 2: ACCOUNT ASSESSMENT (4 EVIDENCE-GROUNDED PILLARS)
                ================================================================ */}
+            <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
+              <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Assessment and planning context</summary>
+              <div className="mt-3 space-y-5">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -1526,6 +1583,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </div>
             )}
+              </div>
+            </details>
           </section>
 
           {/* ================================================================
@@ -1533,9 +1592,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
              ================================================================ */}
           <nav
             aria-label="Account 360 Topic Navigation"
-            className="pi-surface p-1.5 flex items-center justify-between gap-2 sticky top-[104px] md:top-16 z-30 overflow-hidden"
+            className="pi-surface p-1.5 flex items-center justify-between gap-2 sticky top-[132px] md:top-16 z-30 overflow-hidden"
           >
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            <div className="w-full md:hidden">
+              <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
+              <select
+                id="profile-section-select"
+                value={activeSection}
+                onChange={(event) => setActiveSection(event.target.value as ProfileSection)}
+                className="min-h-11 w-full rounded-lg border border-[#DFE6EF] bg-white px-3 text-sm font-semibold text-[#14283F] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-white"
+                data-testid="select-profile-section-mobile"
+              >
+                <option value="overview">Overview</option>
+                <option value="equipment">Equipment &amp; technology</option>
+                <option value="purchasing">Purchasing &amp; grants</option>
+                <option value="decision_makers">Decision makers</option>
+                <option value="operations">Operations</option>
+                <option value="medicare">Medicare &amp; financial</option>
+                <option value="evidence">Evidence &amp; notes</option>
+                <option value="all">All topics</option>
+              </select>
+            </div>
+            <div className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
               {[
                 { id: 'overview', label: '1. Overview' },
                 { id: 'equipment', label: '2. Equipment & Tech' },
@@ -3457,9 +3535,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       {/* Sticky Account Quick-Action Bar aligned with the 256px desktop sidebar */}
       <aside 
         aria-label="Account Action Dock"
-        className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur-md border-t border-[#DFE6EF] dark:border-[#1E2D42] px-3 sm:px-6 py-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden transition-all"
+            className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur-md border-t border-[#DFE6EF] dark:border-[#1E2D42] px-3 sm:px-6 py-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden transition-all"
       >
-        <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-[1600px] mx-auto flex flex-nowrap items-center justify-between gap-3 overflow-x-auto no-scrollbar">
           {/* Left: Department Identity & Quick Pipeline Stage Switcher */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="hidden sm:block min-w-0">
@@ -3487,7 +3565,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </div>
 
           {/* Right: Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex shrink-0 items-center gap-2 flex-nowrap">
+            <AgencyCompareButton
+              agency={agency}
+              selected={comparedAgencyIds.includes(agency.id)}
+              limitReached={comparedAgencyIds.length >= 3}
+              onToggle={onToggleAgencyComparison}
+              className="h-10 px-3"
+            />
+            <button
+              type="button"
+              onClick={onOpenAgencyComparison}
+              disabled={comparedAgencyIds.length < 2}
+              className="h-10 whitespace-nowrap rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="button-open-comparison-from-profile-dock"
+            >
+              Compare {comparedAgencyIds.length}/3
+            </button>
             <button
               onClick={() => onToggleRoute(agency.id)}
               className={`h-10 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${

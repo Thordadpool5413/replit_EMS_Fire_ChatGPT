@@ -32,6 +32,26 @@ const STATE_MAP_METRICS = [
 type StateMapMetricKey =
   (typeof STATE_MAP_METRICS)[number]['key'];
 
+type StateMapRegion = 'All' | 'Northeast' | 'Midwest' | 'South' | 'West';
+
+const readMapPreference = (key: string, fallback: string) => {
+  try {
+    if (typeof window === 'undefined') return fallback;
+    return window.sessionStorage.getItem(`ems-map-${key}`) ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const saveMapPreference = (key: string, value: string) => {
+  try {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(`ems-map-${key}`, value);
+  } catch {
+    // Keep the map usable when browser storage is unavailable.
+  }
+};
+
 interface StateStats {
   count: number;
   avgPulseIq: number | null;
@@ -104,6 +124,9 @@ interface HomeHubViewProps {
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
   globalCategory: 'all' | 'ems' | 'fire';
+  globalState?: string;
+  globalCounty?: string;
+  globalCity?: string;
   onSelectState?: (stateCode: string) => void;
 }
 
@@ -111,13 +134,33 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   agencies,
   onNavigateTab,
   globalCategory,
+  globalState,
+  globalCounty,
+  globalCity,
   onSelectState
 }) => {
-  const [selectedStateCode, setSelectedStateCode] = useState<string>('FL');
+  const [selectedStateCode, setSelectedStateCode] = useState<string>(() => {
+    const code = globalState?.trim().toUpperCase();
+    const saved = readMapPreference('state', 'FL').toUpperCase();
+    return code && code !== 'ALL' && ALL_50_STATES_SUMMARIES[code]
+      ? code
+      : ALL_50_STATES_SUMMARIES[saved]
+        ? saved
+        : 'FL';
+  });
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
-  const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
-  const [mapMetric, setMapMetric] = useState<StateMapMetricKey>('agency-records');
-  const [mapZoom, setMapZoom] = useState(1);
+  const [regionFilter, setRegionFilter] = useState<StateMapRegion>(() => {
+    const saved = readMapPreference('region', 'All');
+    return ['All', 'Northeast', 'Midwest', 'South', 'West'].includes(saved) ? saved as StateMapRegion : 'All';
+  });
+  const [mapMetric, setMapMetric] = useState<StateMapMetricKey>(() => {
+    const saved = readMapPreference('metric', 'agency-records');
+    return STATE_MAP_METRICS.some((metric) => metric.key === saved) ? saved as StateMapMetricKey : 'agency-records';
+  });
+  const [mapZoom, setMapZoom] = useState(() => {
+    const saved = Number(readMapPreference('zoom', '1'));
+    return Number.isFinite(saved) ? Math.max(1, Math.min(1.8, saved)) : 1;
+  });
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const hasInitializedMapRef = useRef(false);
 
@@ -134,6 +177,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     : globalCategory === 'ems'
       ? 'EMS-only'
       : 'fire-only';
+
+  useEffect(() => {
+    const code = globalState?.trim().toUpperCase();
+    if (code && code !== 'ALL' && ALL_50_STATES_SUMMARIES[code]) {
+      setSelectedStateCode(code);
+    }
+  }, [globalState]);
 
   const hoverReadoutStateCode = hoveredStateCode || selectedStateCode;
 
@@ -271,6 +321,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   const handleStateClick = (code: string) => {
     setSelectedStateCode(code);
+    saveMapPreference('state', code);
     if (onSelectState) {
       onSelectState(code);
     } else {
@@ -281,6 +332,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const handleMapSourceAction = (stateCode: string, sourceAction: StateMapMetricDatum['sourceAction']) => {
     if (sourceAction === 'zip-profiles') {
       setSelectedStateCode(stateCode);
+      saveMapPreference('state', stateCode);
+      onSelectState?.(stateCode);
       window.requestAnimationFrame(() => {
         document.getElementById('state-zip-profile-values')?.scrollIntoView({
           behavior: 'smooth',
@@ -291,6 +344,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
     if (sourceAction === 'claims-import') {
       setSelectedStateCode(stateCode);
+      saveMapPreference('state', stateCode);
+      onSelectState?.(stateCode);
       onNavigateTab('claims');
       return;
     }
@@ -312,8 +367,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <Compass className="w-5 h-5 text-[#285EE8] dark:text-blue-400 shrink-0" />
               <span>Interactive U.S. Territory Map</span>
             </h2>
-            <p className="pi-supporting mt-0.5 hidden sm:block">
-              Choose a state or region to review county coverage and available EMS and fire agency records.
+            <p className="pi-supporting mt-0.5">
+              {globalCity && globalCity !== 'all'
+                ? `Current area: ${globalCity}, ${globalCounty && globalCounty !== 'all' ? `${globalCounty}, ` : ''}${globalState && globalState !== 'all' ? globalState : ''}`
+                : globalCounty && globalCounty !== 'all'
+                  ? `Current area: ${globalCounty}, ${globalState && globalState !== 'all' ? globalState : ''}`
+                  : globalState && globalState !== 'all'
+                    ? `Current area: ${ALL_50_STATES_SUMMARIES[globalState]?.state || globalState}`
+                    : 'Choose a state or region to review county coverage and available EMS and fire agency records.'}
             </p>
           </div>
 
@@ -324,7 +385,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 key={reg}
                 type="button"
-                onClick={() => setRegionFilter(reg)}
+                onClick={() => {
+                  setRegionFilter(reg);
+                  saveMapPreference('region', reg);
+                }}
                 className={`min-h-10 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   regionFilter === reg
                     ? 'bg-white dark:bg-[#111C2D] text-[#14283F] dark:text-white shadow-2xs font-bold'
@@ -357,7 +421,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     id="home-state-map-metric"
                     data-testid="select-state-map-metric"
                     value={mapMetric}
-                    onChange={(event) => setMapMetric(event.target.value as StateMapMetricKey)}
+                    onChange={(event) => {
+                      const metric = event.target.value as StateMapMetricKey;
+                      setMapMetric(metric);
+                      saveMapPreference('metric', metric);
+                    }}
                     className="min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                   >
                     {STATE_MAP_METRICS.map((metric) => (
@@ -369,7 +437,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <button
                     type="button"
                     data-testid="button-map-zoom-in"
-                    onClick={() => setMapZoom((zoom) => Math.min(1.8, +(zoom + 0.2).toFixed(1)))}
+                    onClick={() => setMapZoom((zoom) => {
+                      const nextZoom = Math.min(1.8, +(zoom + 0.2).toFixed(1));
+                      saveMapPreference('zoom', String(nextZoom));
+                      return nextZoom;
+                    })}
                     disabled={mapZoom >= 1.8}
                     aria-label="Zoom in on map"
                     title="Zoom in"
@@ -381,7 +453,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <button
                     type="button"
                     data-testid="button-map-zoom-out"
-                    onClick={() => setMapZoom((zoom) => Math.max(1, +(zoom - 0.2).toFixed(1)))}
+                    onClick={() => setMapZoom((zoom) => {
+                      const nextZoom = Math.max(1, +(zoom - 0.2).toFixed(1));
+                      saveMapPreference('zoom', String(nextZoom));
+                      return nextZoom;
+                    })}
                     disabled={mapZoom <= 1}
                     aria-label="Zoom out on map"
                     title="Zoom out"
@@ -392,7 +468,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <button
                     type="button"
                     data-testid="button-map-zoom-reset"
-                    onClick={() => setMapZoom(1)}
+                    onClick={() => {
+                      setMapZoom(1);
+                      saveMapPreference('zoom', '1');
+                    }}
                     disabled={mapZoom === 1}
                     aria-label="Reset map zoom"
                     title="Reset zoom"

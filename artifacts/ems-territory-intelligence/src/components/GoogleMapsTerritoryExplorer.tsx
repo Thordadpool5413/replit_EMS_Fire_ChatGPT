@@ -48,7 +48,7 @@ import {
 import { formatCurrency, formatScore, formatDistanceMiles, formatInteger } from '../utils/numberFormatting';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from './PulseIqEstimateLabel';
 import { TerritoryMapPulseIqScore } from './PulseIqSurfaceDisplays';
 
 interface GoogleMapsTerritoryExplorerProps {
@@ -876,24 +876,32 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                     const tier = agency.zollOpportunity?.priorityTier || 'Maintained Account';
                     const tierStyle = TIER_COLORS[tier] || TIER_COLORS['Maintained Account'];
                     const isSelected = selectedAgencyForInfo?.id === agency.id;
+                    const pulseIqScore = agency.zollOpportunity?.pulseIqScore;
+                    const pulseIqScoreLabel =
+                      typeof pulseIqScore === 'number' && Number.isFinite(pulseIqScore)
+                        ? formatScore(pulseIqScore)
+                        : 'Not reported';
 
                     return (
                       <AdvancedMarker
                         key={agency.id}
                         position={{ lat: agency.latitude, lng: agency.longitude }}
-                        title={`${agency.name} (FDID: ${agency.fdid})`}
+                        title={`${agency.name} (FDID: ${agency.fdid}) · PulseIQ estimate: ${pulseIqScoreLabel}`}
                         onClick={() => {
                           setSelectedAgencyForInfo(agency);
                           onSelectAgency(agency);
                         }}
                         zIndex={isSelected ? 999 : tier === 'Critical Opportunity' ? 500 : 100}
                       >
-                        <Pin
-                          background={tierStyle.bg}
-                          borderColor={tierStyle.border}
-                          glyphColor={tierStyle.glyph}
-                          scale={isSelected ? 1.3 : 1.0}
-                        />
+                        <div className="flex flex-col items-center">
+                          <PulseIqMarkerEstimate agencyId={agency.id} score={pulseIqScore} />
+                          <Pin
+                            background={tierStyle.bg}
+                            borderColor={tierStyle.border}
+                            glyphColor={tierStyle.glyph}
+                            scale={isSelected ? 1.3 : 1.0}
+                          />
+                        </div>
                       </AdvancedMarker>
                     );
                   })}

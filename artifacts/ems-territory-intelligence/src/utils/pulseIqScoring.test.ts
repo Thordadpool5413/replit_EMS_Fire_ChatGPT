@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { AgencyComparisonPanel, buildAgencyComparisonCsv } from '../components/AgencyComparisonPanel';
-import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
+import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from '../components/PulseIqEstimateLabel';
 import {
   HomeMapPulseIqReadout,
   MobileDashboardPulseIqScore,
@@ -134,6 +134,19 @@ test('mobile and map surfaces display a valid zero score and distinguish a missi
     assert.match(detailsMarkup, /PulseIQ estimate/);
     assert.ok(detailsMarkup.includes(expected), `territory map details should show ${expected}`);
   }
+
+  const zeroMarkerMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqMarkerEstimate, { agencyId: 'zero-agency', score: 0 }),
+  );
+  assert.match(zeroMarkerMarkup, /PulseIQ estimate/);
+  assert.match(zeroMarkerMarkup, /aria-label="PulseIQ estimate: 0\/100"/);
+  assert.match(zeroMarkerMarkup, />0\/100</);
+
+  const missingMarkerMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqMarkerEstimate, { agencyId: 'missing-agency', score: undefined }),
+  );
+  assert.match(missingMarkerMarkup, /aria-label="PulseIQ estimate: Not reported"/);
+  assert.match(missingMarkerMarkup, />Not reported</);
 });
 
 test('unmapped factors and changed claim evidence do not hide or change displayed PulseIQ scores', () => {

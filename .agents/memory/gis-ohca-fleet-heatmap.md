@@ -17,8 +17,8 @@ On the home map, keep the full U.S. overview visible at the initial mobile zoom.
 
 **How to apply:** Start at 100% with the whole map in view; scale the SVG dimensions for zoom and keep the selected-state focus independent of the metric color.
 
-For the home map's Shade states by layers, use a cohesive, vivid green–yellow–orange–red ramp, with direction chosen by metric: red for higher inventory/priority values or unfavorable values, and green for favorable values such as stronger cardiac-survival estimates or shorter transit. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline. Avoid full-spectrum rainbow ramps.
+For the home map's Shade states by layers, use the selected dark command-center style: a deep navy canvas, legible state labels and boundaries, and vivid green–lime–yellow–orange–red shading. Direction remains metric-specific: red for higher inventory/priority values or unfavorable values, and green for favorable values such as stronger cardiac-survival estimates or shorter transit. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline. Avoid full-spectrum rainbow ramps.
 
-**Why:** The user wants vibrant red-for-high and green-for-good shading, and rejected a full-spectrum rainbow as visually unimpressive.
+**Why:** The user chose a dark command-center map with vibrant red-for-high and green-for-good shading, and rejected both a full-spectrum rainbow and a muted red-only map.
 
 **How to apply:** Recheck palette direction against the metric meaning whenever a map layer is added or its values are redefined.

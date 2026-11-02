@@ -99,12 +99,12 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
 };
 
 const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabel: string }> = {
-  'agency-records': { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
-  ambulances: { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
-  'fire-engines': { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Fewer', highLabel: 'More' },
-  pulseiq: { stops: ['#4A2630', '#74313A', '#A93D42', '#D4524C', '#F27668'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
-  'cardiac-survival': { stops: ['#74323A', '#A94B47', '#B78A50', '#7DA66A', '#39B985'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
-  'scene-transit': { stops: ['#39B985', '#7DA66A', '#B78A50', '#A94B47', '#74323A'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+  'agency-records': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
+  ambulances: { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
+  'fire-engines': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
+  pulseiq: { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
+  'cardiac-survival': { stops: ['#FF1744', '#FF9100', '#FFEA00', '#AEEA00', '#00E676'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
+  'scene-transit': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
 };
 
 const hexToRgb = (hex: string) =>

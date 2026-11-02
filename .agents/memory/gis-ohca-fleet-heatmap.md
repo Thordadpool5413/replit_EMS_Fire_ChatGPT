@@ -17,8 +17,8 @@ On the home map, keep the full U.S. overview visible at the initial mobile zoom.
 
 **How to apply:** Start at 100% with the whole map in view; scale the SVG dimensions for zoom and keep the selected-state focus independent of the metric color.
 
-For the home map's Shade states by layers, use vivid traffic-light shading with metric-specific direction: green for favorable values (such as stronger cardiac-survival estimates or shorter transit), red for higher inventory/priority values or unfavorable values (such as longer transit), and a visible yellow/orange transition. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline.
+For the home map's Shade states by layers, use saturated, multi-stop, multihue shading with metric-specific direction: red for higher inventory/priority values or unfavorable values, and green for favorable values such as stronger cardiac-survival estimates or shorter transit. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline.
 
-**Why:** The user wants bright red-for-high and green-for-good shading, without implying that neutral counts are performance measures.
+**Why:** The user wants more vibrant, colorful shading with red for high values and green for good values, without implying that neutral counts are performance measures.
 
 **How to apply:** Recheck palette direction against the metric meaning whenever a map layer is added or its values are redefined.

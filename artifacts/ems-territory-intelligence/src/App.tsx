@@ -1416,6 +1416,7 @@ export default function App() {
       {isAgencyComparisonOpen && (
         <AgencyComparisonPanel
           agencies={comparisonAgencies}
+          weights={weights}
           onClose={handleCloseAgencyComparison}
           onRemoveAgency={handleRemoveComparedAgency}
           onOpenProfile={handleOpenAgencyProfile}

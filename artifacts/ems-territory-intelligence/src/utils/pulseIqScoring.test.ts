@@ -286,6 +286,36 @@ test('agency comparisons and CSV keep the PulseIQ estimate label without citatio
   assert.match(csv, /"PulseIQ estimate","0","\/ 100","\[\]"/);
 });
 
+test('comparison CSV includes the active PulseIQ weights and formula', () => {
+  const weights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 10,
+    cardiacVolumeWeight: 50,
+    grantAwardWeight: 30,
+    softwareWhitespaceWeight: 10,
+  };
+  const csv = buildAgencyComparisonCsv([], 'all', weights);
+  const { factors } = getPulseIqWeightDetails(weights);
+  const expectedWeights = JSON.stringify(factors.map(({ key, label, weight, weightPct }) => ({
+    key,
+    factor: label,
+    weight,
+    normalizedWeightPct: weightPct,
+  })));
+
+  assert.match(csv, /"Calibration status","Active weights supplied by the app"/);
+  assert.ok(csv.includes(`"Active factor weights","${expectedWeights.replaceAll('"', '""')}"`));
+  assert.ok(csv.includes(`"Score formula","${getPulseIqFormula(weights)}"`));
+});
+
+test('comparison CSV states when PulseIQ calibration context is missing', () => {
+  const csv = buildAgencyComparisonCsv([], 'all');
+
+  assert.match(csv, /"Calibration status","Not available; active calibration was not supplied"/);
+  assert.match(csv, /"Active factor weights","Not available"/);
+  assert.match(csv, /"Score formula","Not available"/);
+});
+
 test('agency comparison sorts PulseIQ estimates in either direction and keeps missing values last', () => {
   const records = [
     { id: 'missing', name: 'Missing score', zollOpportunity: {} },

@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Building2, ClipboardList, MapPin, Shield, X } from 'lucide-react';
-import type { Agency, AgencyFactEvidenceKey, AgencySourceFact } from '../types';
+import type { Agency, AgencyFactEvidenceKey, AgencySourceFact, PredictiveWeights } from '../types';
+import { getPulseIqFormula, getPulseIqWeightDetails } from '../utils/pulseIqScoring';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 type AgencyComparisonPanelProps = {
   agencies: Agency[];
+  weights?: PredictiveWeights | null;
   onClose: () => void;
   onRemoveAgency: (agencyId: string) => void;
   onOpenProfile: (agency: Agency) => void;
@@ -224,6 +226,7 @@ function getSourceDetails(agency: Agency, factKey: string) {
 export function buildAgencyComparisonCsv(
   agencies: Agency[],
   filter: ComparisonFilter,
+  weights?: PredictiveWeights | null,
 ): string {
   const selectedSections = sections
     .map((section) => ({
@@ -251,11 +254,36 @@ export function buildAgencyComparisonCsv(
     row.unit ?? '',
     JSON.stringify(row.showEvidence === false ? [] : getSourceDetails(agency, row.key)),
   ])));
-  return [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const hasCalibration = weights !== null
+    && weights !== undefined
+    && [weights.fleetAgeWeight, weights.cardiacVolumeWeight, weights.grantAwardWeight, weights.softwareWhitespaceWeight]
+      .every((weight) => typeof weight === 'number' && Number.isFinite(weight))
+    && weights.fleetAgeWeight + weights.cardiacVolumeWeight + weights.grantAwardWeight + weights.softwareWhitespaceWeight !== 0;
+  const calibrationRows: unknown[][] = hasCalibration
+    ? (() => {
+      const { factors } = getPulseIqWeightDetails(weights);
+      return [
+        ['', '', '', 'PulseIQ calibration', 'Calibration status', 'Active weights supplied by the app', '', ''],
+        ['', '', '', 'PulseIQ calibration', 'Active factor weights', JSON.stringify(factors.map(({ key, label, weight, weightPct }) => ({
+          key,
+          factor: label,
+          weight,
+          normalizedWeightPct: weightPct,
+        }))), '', ''],
+        ['', '', '', 'PulseIQ calibration', 'Score formula', getPulseIqFormula(weights), '', ''],
+      ];
+    })()
+    : [
+      ['', '', '', 'PulseIQ calibration', 'Calibration status', 'Not available; active calibration was not supplied', '', ''],
+      ['', '', '', 'PulseIQ calibration', 'Active factor weights', 'Not available', '', ''],
+      ['', '', '', 'PulseIQ calibration', 'Score formula', 'Not available', '', ''],
+    ];
+
+  return [columns, ...calibrationRows, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
 }
 
-function downloadComparisonCsv(agencies: Agency[], filter: ComparisonFilter) {
-  const csv = buildAgencyComparisonCsv(agencies, filter);
+function downloadComparisonCsv(agencies: Agency[], filter: ComparisonFilter, weights?: PredictiveWeights | null) {
+  const csv = buildAgencyComparisonCsv(agencies, filter, weights);
   const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -346,7 +374,7 @@ function ValueCell({ agency, row, compact = false }: { agency: Agency; row: Comp
   );
 }
 
-export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpenProfile }: AgencyComparisonPanelProps) {
+export function AgencyComparisonPanel({ agencies, weights, onClose, onRemoveAgency, onOpenProfile }: AgencyComparisonPanelProps) {
   const agencyCount = agencies.length;
   const [comparisonFilter, setComparisonFilter] = useState<ComparisonFilter>('all');
   const [comparisonSort, setComparisonSort] = useState<ComparisonSort>('selection');
@@ -471,7 +499,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                 </label>
                 <button
                   type="button"
-                  onClick={() => downloadComparisonCsv(orderedAgencies, comparisonFilter)}
+                  onClick={() => downloadComparisonCsv(orderedAgencies, comparisonFilter, weights)}
                   disabled={visibleFieldCount === 0}
                   className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D] sm:w-auto"
                   data-testid="button-export-comparison"

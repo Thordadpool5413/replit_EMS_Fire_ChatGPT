@@ -24,7 +24,7 @@ const STATE_MAP_METRICS = [
   { key: 'agency-records', label: 'Agency directory records' },
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
-  { key: 'pulseiq', label: 'Modeled average PulseIQ' },
+  { key: 'pulseiq', label: 'PulseIQ estimate · modeled average' },
   { key: 'cardiac-survival', label: 'Cardiac survival estimate (%)' },
   { key: 'scene-transit', label: 'EMS transit estimate (minutes)' },
 ] as const;
@@ -264,7 +264,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           pulseiq: {
             value: stats.avgPulseIq,
             coverage: `Mean of available scores from ${formatInteger(stats.pulseIqDataCount)} of ${formatInteger(stats.count)} ${providerScopeLabel} agency records.`,
-            period: 'Modeled from current agency profile inputs; source periods are not standardized.',
+            period: 'Modeled estimate from current agency profile inputs; source periods are not standardized.',
             sourceAction: 'agency-records',
           },
           'cardiac-survival': {

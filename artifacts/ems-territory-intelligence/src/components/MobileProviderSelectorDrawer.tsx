@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 interface MobileProviderSelectorDrawerProps {
   isOpen: boolean;
@@ -323,7 +324,7 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
             >
-              <option value="pulseIq">PulseIQ Score</option>
+              <option value="pulseIq">PulseIQ estimate</option>
               <option value="fleetAge">Oldest Fleet</option>
               <option value="calls">Call Volume</option>
               <option value="name">Name (A-Z)</option>
@@ -353,7 +354,7 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
           ) : (
             filteredAgencies.slice(0, 100).map((agency) => {
               const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
-              const pulseIq = agency.zollOpportunity?.pulseIqScore || 80;
+              const pulseIq = agency.zollOpportunity?.pulseIqScore;
               const fleetAge = agency.installedFleet?.defibAgeYears || 7;
               const units = agency.installedFleet?.defibUnitsCount || 4;
               const brand = agency.installedFleet?.defibBrand || 'Competitor';
@@ -375,8 +376,8 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
                     </span>
 
                     <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums flex items-center gap-1">
-                      <span className="text-[10px] font-normal text-slate-400">PulseIQ</span>
-                      <span className="text-[#285EE8] dark:text-blue-400 font-bold">{pulseIq}</span>
+                      <PulseIqEstimateLabel className="text-[10px] font-normal text-slate-400" />
+                      <span className="text-[#285EE8] dark:text-blue-400 font-bold">{pulseIq ?? '—'}</span>
                       <span className="text-slate-400 font-normal">/100</span>
                     </span>
                   </div>

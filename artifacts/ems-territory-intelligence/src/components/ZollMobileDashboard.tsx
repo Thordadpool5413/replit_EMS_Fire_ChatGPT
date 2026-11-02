@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { formatCurrency } from '../utils/formatters';
 
@@ -344,7 +345,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                     Urgent status: {urgentLead.competitorContract?.renewalWindowDays ?? 60} days remaining
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                    Priority score {urgentLead.zollOpportunity?.pulseIqScore ?? 85}
+                    PulseIQ estimate {urgentLead.zollOpportunity?.pulseIqScore ?? '—'} / 100
                   </span>
                 </div>
                 <h2 className="text-sm font-bold text-[#111827] dark:text-slate-100 mt-1">
@@ -633,7 +634,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
           {[
             { id: 'all', label: 'All Ranked', count: agencies.length },
             { id: 'critical', label: '🚨 Critical (90d Expiry)', count: territoryStats.criticalCount },
-            { id: 'high_priority', label: '⭐ PulseIQ 80+', count: territoryStats.highPriorityCount },
+            { id: 'high_priority', label: '⭐ PulseIQ estimate 80+', count: territoryStats.highPriorityCount },
             { id: 'day_route', label: `🚗 Today's Route (${territoryStats.dayRouteCount})`, count: territoryStats.dayRouteCount },
             { id: 'ems', label: 'EMS Providers', count: agencies.filter(a => a.providerCategory === 'EMS' || !a.agencyType.toLowerCase().includes('fire')).length },
             { id: 'fire', label: 'Fire Departments', count: agencies.filter(a => a.providerCategory === 'FIRE' || a.agencyType.toLowerCase().includes('fire')).length }
@@ -701,9 +702,9 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                       {/* Left: Score Badge & Identity */}
                       <div className="flex items-start gap-3 min-w-0">
                         {/* Polished Executive Score Badge */}
-                        <div className="w-11 h-11 rounded-xl bg-[#0F172A] dark:bg-slate-800 text-white flex flex-col items-center justify-center font-bold shrink-0 border border-slate-700/80 shadow-xs">
+                        <div className="w-14 h-14 rounded-xl bg-[#0F172A] dark:bg-slate-800 text-white flex flex-col items-center justify-center font-bold shrink-0 border border-slate-700/80 shadow-xs">
                           <span className="text-sm font-[650] tabular-nums leading-none">{pulseScore}</span>
-                          <span className="text-[10px] font-medium text-slate-400 mt-0.5">Score</span>
+                          <PulseIqEstimateLabel className="text-[8px] font-medium text-slate-300 mt-0.5 whitespace-nowrap" />
                         </div>
 
                         <div className="min-w-0">

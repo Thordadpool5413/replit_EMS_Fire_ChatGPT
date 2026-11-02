@@ -711,8 +711,8 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                         ${proc.grossAnnualBilling.toLocaleString()}
                       </td>
                       <td className="py-3.5 px-4 text-right tabular-nums text-rose-700 dark:text-rose-400 font-medium">
-                        -${proc.annualRevenueAtRisk.toLocaleString()}
-                        <div className="text-[11px] text-slate-400">Modeled exposure</div>
+                        {proc.annualRevenueAtRisk == null ? 'Not calculated' : `-$${proc.annualRevenueAtRisk.toLocaleString()}`}
+                        <div className="text-[11px] text-slate-400">No local claim-rate input</div>
                       </td>
                       <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 max-w-md">
                         {proc.zollDocumentationMitigation}

@@ -289,7 +289,8 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
         fleetObsolescencePts: raw.zollOpportunity?.scoreBreakdown?.fleetObsolescencePts,
         cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts,
         demographicVulnerabilityPts: raw.zollOpportunity?.scoreBreakdown?.demographicVulnerabilityPts,
-        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts
+        budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts,
+        softwareWhitespacePts: raw.zollOpportunity?.scoreBreakdown?.softwareWhitespacePts ?? 0
       }
     },
     keyContacts: normalizedContacts,
@@ -766,7 +767,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     const defibBrand = agency.installedFleet?.defibBrand || 'Not reported';
     const defibAge = agency.installedFleet?.defibAgeYears;
     const contractEnd = agency.competitorContract?.contractEndDate || 'Not reported';
-    const denialRate = medicareDenialMetric?.ratePct ?? null;
     const hasNotes = Array.isArray(agency.fieldNotes) && agency.fieldNotes.length > 0;
     const topNote = hasNotes ? agency.fieldNotes[0] : null;
 
@@ -845,11 +845,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       primaryMoveWhy = `Present 5-year fixed biomedical service cost caps to prevent automatic renewal of legacy T&M service contracts.`;
       primaryMoveEvidence = `Competitor Contract Ledger · Renewal Notice Window`;
       primaryMoveNextStep = 'Review Purchasing';
-    } else if (denialRate !== null && denialRate >= 18) {
-      primaryMoveAction = `Present Medicare Denial Recovery & NEMSIS Documentation Strategy`;
-      primaryMoveWhy = `Review ${agency.cmsData?.topDenialReasonCode || 'reported denial reasons'} and obtain source-backed billing inputs before estimating recovery.`;
-      primaryMoveEvidence = `CMS Part B Ground Ambulance PUF (Calendar Year Census)`;
-      primaryMoveNextStep = 'Inspect Medicare';
+    } else if (medicareDenialMetric) {
+      primaryMoveAction = 'Review imported Medicare claim summary';
+      primaryMoveWhy = 'Claim counts and their citation are available for direct agency review; local percentages do not affect prioritization or recovery estimates.';
+      primaryMoveEvidence = `${medicareDenialMetric.source} · ${medicareDenialMetric.reportingPeriod}`;
+      primaryMoveNextStep = 'Review claim evidence';
     }
 
     return {
@@ -1450,7 +1450,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Actuarial sensitivity model ({actuarialForecast.hasUnitCount ? actuarialForecast.units : 'Not reported'} frontline units)
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      PulseIQ ({reportMetric(agency.zollOpportunity.pulseIqScore)}/100) = Fleet ({reportMetric(agency.zollOpportunity.scoreBreakdown.fleetObsolescencePts)}/25) + CMS denials ({reportMetric(agency.zollOpportunity.scoreBreakdown.cmsFinancialPts)}/20) + Acuity ({reportMetric(agency.zollOpportunity.scoreBreakdown.clinicalAcuityPts)}/20) + Grants ({reportMetric(agency.zollOpportunity.scoreBreakdown.budgetGrantReadinessPts)}/20) + Software ({reportMetric(agency.zollOpportunity.scoreBreakdown.demographicVulnerabilityPts)}/15)
+                      PulseIQ uses fleet age, clinical volume, grant readiness, and software inputs. Local claim-denial percentages and claim-based recovery estimates are excluded; imported counts and sources remain separate for review.
                     </div>
                     <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
                       Scenario method: unit count × selected MSRP less selected trade-in credit, with low/high scenarios at ±15%. Five-year savings use reported unit count × benchmark service, battery, and consumables savings plus trade-in credit. Recovery scenarios are not displayed without the required agency-specific inputs and method.
@@ -2329,7 +2329,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">{proc.estimatedAnnualClaims.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">${proc.grossAnnualBilling.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums text-rose-700 font-semibold">
-                          -${proc.annualRevenueAtRisk.toLocaleString()}
+                          {proc.annualRevenueAtRisk == null ? 'Not calculated' : `-$${proc.annualRevenueAtRisk.toLocaleString()}`}
                         </td>
                         <td className="py-2.5 px-4 text-slate-600 max-w-md">{proc.zollDocumentationMitigation}</td>
                       </tr>

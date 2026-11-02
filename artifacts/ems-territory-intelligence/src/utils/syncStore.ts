@@ -5,7 +5,8 @@
 
 import { Agency, SyncOutboxItem, PredictiveWeights, LeadStage } from '../types';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
+import { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
+export { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
 import {
   applyAgencySourceRecordData,
   loadAgencySourceRecordData,
@@ -69,80 +70,6 @@ function getBaselineSignatures(baseline: Agency[]) {
   return baselineSignatureMap;
 }
 
-export const DEFAULT_WEIGHTS: PredictiveWeights = {
-  fleetAgeWeight: 30,
-  cmsDenialWeight: 25,
-  cardiacVolumeWeight: 20,
-  grantAwardWeight: 15,
-  softwareWhitespaceWeight: 10
-};
-
-export function calculateScore(agency: Agency, weights: PredictiveWeights = DEFAULT_WEIGHTS): number {
-  if (!agency) return 75;
-
-  const wFleet = typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight;
-  const wCms = typeof weights?.cmsDenialWeight === 'number' ? weights.cmsDenialWeight : DEFAULT_WEIGHTS.cmsDenialWeight;
-  const wCardiac = typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight;
-  const wGrant = typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight;
-  const wSoftware = typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight;
-
-  const totalWeight = (wFleet + wCms + wCardiac + wGrant + wSoftware) || 100;
-
-  // 1. Fleet Age Component (0-100)
-  const age = agency.installedFleet?.defibAgeYears ?? 7;
-  const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-  const isCompetitor = !brand.includes('ZOLL');
-  let fleetScore = 20;
-  if (isCompetitor) {
-    if (age >= 9) fleetScore = 100;
-    else if (age >= 7) fleetScore = 85;
-    else if (age >= 5) fleetScore = 65;
-    else fleetScore = 40;
-  } else {
-    // ZOLL customer tech refresh
-    if (age >= 7) fleetScore = 75;
-    else fleetScore = 30;
-  }
-
-  // 2. CMS Denial Component (0-100)
-  const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
-  const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
-  let cmsScore = 50;
-  if (hasDenialRate) {
-    if (denial >= 22) cmsScore = 100;
-    else if (denial >= 18) cmsScore = 85;
-    else if (denial >= 15) cmsScore = 65;
-    else cmsScore = 40;
-  }
-
-  // 3. Cardiac Volume / Clinical Acuity (0-100)
-  const cardiac = agency.annualCardiacArrestCalls ?? 600;
-  let cardiacScore = 40;
-  if (cardiac >= 1800) cardiacScore = 100;
-  else if (cardiac >= 1000) cardiacScore = 85;
-  else if (cardiac >= 500) cardiacScore = 70;
-  else cardiacScore = 50;
-
-  // 4. Grant Award Component (0-100)
-  const grantScore = agency.grantStatus?.afgAwarded ? 100 : (agency.grantStatus?.saferGrantActive ? 60 : 25);
-
-  // 5. Software Whitespace (0-100)
-  const billingSw = agency.installedFleet?.billingSoftware || '';
-  const epcrSw = agency.installedFleet?.epcrCadSoftware || '';
-  const hasZollSoftware = billingSw.includes('ZOLL') || epcrSw.includes('ZOLL');
-  const softwareScore = hasZollSoftware ? 35 : 95;
-
-  const raw = (
-    fleetScore * wFleet +
-    cmsScore * wCms +
-    cardiacScore * wCardiac +
-    grantScore * wGrant +
-    softwareScore * wSoftware
-  ) / totalWeight;
-
-  return Math.min(99, Math.max(30, Math.round(raw)));
-}
-
 export interface PulseIqFactorBreakdown {
   id: string;
   name: string;
@@ -165,12 +92,11 @@ export function explainAgencyScore(
   weights: PredictiveWeights = DEFAULT_WEIGHTS
 ): PulseIqScoreExplanation {
   const wFleet = typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight;
-  const wCms = typeof weights?.cmsDenialWeight === 'number' ? weights.cmsDenialWeight : DEFAULT_WEIGHTS.cmsDenialWeight;
   const wCardiac = typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight;
   const wGrant = typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight;
   const wSoftware = typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight;
 
-  const totalWeight = (wFleet + wCms + wCardiac + wGrant + wSoftware) || 100;
+  const totalWeight = (wFleet + wCardiac + wGrant + wSoftware) || 100;
 
   // 1. Fleet Age Component
   const age = agency.installedFleet?.defibAgeYears ?? 7;
@@ -188,17 +114,9 @@ export function explainAgencyScore(
   }
   const fleetPts = +((fleetScore * wFleet) / totalWeight).toFixed(1);
 
-  // 2. CMS Denial Component
-  const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
-  const hasDenialRate = typeof denial === 'number' && Number.isFinite(denial);
-  let cmsScore = 50;
-  if (hasDenialRate) {
-    if (denial >= 22) cmsScore = 100;
-    else if (denial >= 18) cmsScore = 85;
-    else if (denial >= 15) cmsScore = 65;
-    else cmsScore = 40;
-  }
-  const cmsPts = +((cmsScore * wCms) / totalWeight).toFixed(1);
+  // Claims remain available as evidence, but local denial percentages do not affect PulseIQ.
+  const cmsScore = 0;
+  const cmsPts = 0;
 
   // 3. Cardiac Volume / Clinical Acuity
   const cardiac = agency.annualCardiacArrestCalls ?? 600;
@@ -225,7 +143,6 @@ export function explainAgencyScore(
   const brandName = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
   const unitsCount = agency.installedFleet?.defibUnitsCount ?? 12;
   const warrantyStatus = agency.installedFleet?.defibWarrantyStatus || 'Expired';
-  const recovRev = agency.cmsData?.estimatedRecoverableRevenue ? Math.round(agency.cmsData.estimatedRecoverableRevenue / 1000) : 45;
   const afgAmount = agency.grantStatus?.afgAwardAmount ? Math.round(agency.grantStatus.afgAwardAmount / 1000) : 0;
   const afgYear = agency.grantStatus?.afgFiscalYear || 2025;
   const epcrName = agency.installedFleet?.epcrCadSoftware || 'Legacy ePCR';
@@ -247,17 +164,13 @@ export function explainAgencyScore(
     },
     {
       id: 'cms',
-      name: 'Medicare Claim Denial Rate',
-      weightPct: Math.round((wCms / totalWeight) * 100),
+      name: 'Local claim rates excluded',
+      weightPct: 0,
       componentScore: cmsScore,
       pointsContributed: cmsPts,
-      agencyMetricValue: hasDenialRate
-        ? `Claim summary present · Code ${agency.cmsData?.topDenialReasonCode || 'Not reported'}`
-        : 'County-matched denial rate not published',
-      clinicalImpactSummary: hasDenialRate
-        ? `Claim summary records are available. Recoverable billing is not calculated from a denial proxy.`
-        : 'No county-matched denied and adjudicated ambulance claim counts are available; a neutral score contribution is used.',
-      urgencyLevel: hasDenialRate && denial >= 20 ? 'Critical' : hasDenialRate && denial >= 16 ? 'Elevated' : 'Moderate'
+      agencyMetricValue: 'Excluded from the score; source records remain available separately',
+      clinicalImpactSummary: 'Imported claim counts and citations are for direct review only. No local percentage or denial-based recovery estimate contributes to PulseIQ.',
+      urgencyLevel: 'Nominal'
     },
     {
       id: 'cardiac',
@@ -426,12 +339,21 @@ export function loadStoredWeights(): PredictiveWeights {
     const raw = localStorage.getItem(STORAGE_KEY_WEIGHTS);
     if (!raw) return DEFAULT_WEIGHTS;
     const parsed = JSON.parse(raw);
+    const fleet = typeof parsed?.fleetAgeWeight === 'number' ? parsed.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight;
+    const cardiac = typeof parsed?.cardiacVolumeWeight === 'number' ? parsed.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight;
+    const grants = typeof parsed?.grantAwardWeight === 'number' ? parsed.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight;
+    const software = typeof parsed?.softwareWhitespaceWeight === 'number' ? parsed.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight;
+    const activeTotal = fleet + cardiac + grants + software;
+    if (!Number.isFinite(activeTotal) || activeTotal <= 0) return DEFAULT_WEIGHTS;
+    const fleetAgeWeight = Math.round((fleet / activeTotal) * 100);
+    const cardiacVolumeWeight = Math.round((cardiac / activeTotal) * 100);
+    const grantAwardWeight = Math.round((grants / activeTotal) * 100);
     return {
-      fleetAgeWeight: typeof parsed?.fleetAgeWeight === 'number' ? parsed.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight,
-      cmsDenialWeight: typeof parsed?.cmsDenialWeight === 'number' ? parsed.cmsDenialWeight : DEFAULT_WEIGHTS.cmsDenialWeight,
-      cardiacVolumeWeight: typeof parsed?.cardiacVolumeWeight === 'number' ? parsed.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight,
-      grantAwardWeight: typeof parsed?.grantAwardWeight === 'number' ? parsed.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight,
-      softwareWhitespaceWeight: typeof parsed?.softwareWhitespaceWeight === 'number' ? parsed.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight
+      fleetAgeWeight,
+      cmsDenialWeight: 0,
+      cardiacVolumeWeight,
+      grantAwardWeight,
+      softwareWhitespaceWeight: 100 - fleetAgeWeight - cardiacVolumeWeight - grantAwardWeight
     };
   } catch {
     return DEFAULT_WEIGHTS;
@@ -440,7 +362,7 @@ export function loadStoredWeights(): PredictiveWeights {
 
 export function saveStoredWeights(weights: PredictiveWeights): void {
   try {
-    localStorage.setItem(STORAGE_KEY_WEIGHTS, JSON.stringify(weights));
+    localStorage.setItem(STORAGE_KEY_WEIGHTS, JSON.stringify({ ...weights, cmsDenialWeight: 0 }));
   } catch {
     // Ignore quota errors
   }

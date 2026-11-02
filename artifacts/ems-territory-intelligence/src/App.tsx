@@ -24,6 +24,7 @@ import {
   createOutboxItem, 
   calculateScore 
 } from './utils/syncStore';
+import { calculatePulseIqContributions } from './utils/pulseIqScoring';
 import {
   replaceAgencySourceRecordAssociation,
   saveAgencySourceRecordData,
@@ -288,13 +289,33 @@ export default function App() {
   const handleSaveWeights = useCallback((newWeights: PredictiveWeights) => {
     setWeights(newWeights);
     saveStoredWeights(newWeights);
-    const recalculated = agencies.map(agency => ({
-      ...agency,
-      zollOpportunity: {
-        ...agency.zollOpportunity,
-        pulseIqScore: calculateScore(agency, newWeights)
-      }
-    }));
+    const recalculated = agencies.map(agency => {
+      const score = calculateScore(agency, newWeights);
+      const factors = calculatePulseIqContributions(agency, newWeights);
+      const priorityTier =
+        score >= 88 ? 'Critical Opportunity'
+          : score >= 78 ? 'High Opportunity'
+            : score >= 65 ? 'Moderate Opportunity'
+              : 'Standard Watchlist';
+
+      return {
+        ...agency,
+        zollOpportunity: {
+          ...agency.zollOpportunity,
+          pulseIqScore: score,
+          priorityTier: priorityTier as Agency['zollOpportunity']['priorityTier'],
+          scoreBreakdown: {
+            ...agency.zollOpportunity.scoreBreakdown,
+            clinicalAcuityPts: factors.clinicalAcuityPts,
+            fleetObsolescencePts: factors.fleetObsolescencePts,
+            cmsFinancialPts: 0,
+            demographicVulnerabilityPts: 0,
+            budgetGrantReadinessPts: factors.budgetGrantReadinessPts,
+            softwareWhitespacePts: factors.softwareWhitespacePts
+          }
+        }
+      };
+    });
     updateAgenciesState(recalculated);
     showToast('PulseIQ scoring weights calibrated. All territory accounts re-ranked.', 'success');
   }, [agencies, updateAgenciesState, showToast]);
@@ -1349,7 +1370,7 @@ export default function App() {
         onNavigateTab={(tab) => setActiveTab(tab)}
       />}
 
-      {/* Interactive 5-Pillar Scoring Weights Calibration Modal */}
+      {/* Interactive PulseIQ weight calibration modal */}
       {isWeightsModalOpen && <PredictiveWeightsModal
         isOpen={isWeightsModalOpen}
         onClose={() => setIsWeightsModalOpen(false)}

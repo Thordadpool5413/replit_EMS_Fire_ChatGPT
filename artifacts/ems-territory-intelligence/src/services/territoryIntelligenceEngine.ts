@@ -7,7 +7,7 @@ import { Agency, ZollProductLine } from '../types';
 import { ALL_NATIONWIDE_COUNTIES, ComprehensiveCountyRecord } from '../data/allCountiesDatabase';
 import { CITIES_BY_STATE_AND_COUNTY, ALL_CITIES_BY_STATE, STATE_GEO_AND_AREA_CODES } from '../data/allCitiesDatabase';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
-import { calculateScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
+import { calculatePulseIqContributions, calculateScore, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { nationalProviderDb } from './nationalProviderDatabase';
 
 /**
@@ -535,8 +535,6 @@ class TerritoryIntelligenceService {
       targetProduct = 'ZOLL Billing / AR Boost';
     }
 
-    const recoverableRevenue = Math.round(countyRecord.annualEmergencyTransports * 68);
-
     const medicarePayerPct = +(38.0 + (posHash % 14)).toFixed(1);
     const medicaidPayerPct = +(21.0 + (posHash % 9)).toFixed(1);
     const commercialPayerMixPct = +(25.0 + (posHash % 10)).toFixed(1);
@@ -602,13 +600,13 @@ class TerritoryIntelligenceService {
         recommendedBundle: [targetProduct, 'Real CPR Help Sensor', 'ZOLL Billing Suite'],
         projectedPipelineValue: Math.round(Math.max(2, Math.round(countyRecord.population / 14000)) * 42000),
         clinicalBenefitNarrative: `Deployment of ${targetProduct} enhances chest compression fraction from 71% to 88% and reduces neurological deficit upon discharge.`,
-        financialRoiNarrative: `Estimated $${(recoverableRevenue / 1000).toFixed(0)}k annual recoverable revenue via automated clinical documentation and NEMSIS 3.5 compliance.`,
-        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet with ${warrantyStatus.toLowerCase()} warranty. County-level Medicare ambulance denials are not published for this area.`,
+        financialRoiNarrative: 'Not calculated: source-backed claim-dollar inputs and a reproducible account-specific method are unavailable.',
+        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet with ${warrantyStatus.toLowerCase()} warranty. Local claim-denial data is excluded from PulseIQ.`,
         probabilityPct: 65,
         scoreBreakdown: {
           clinicalAcuityPts: 20,
           fleetObsolescencePts: 22,
-          cmsFinancialPts: 10,
+          cmsFinancialPts: 0,
           demographicVulnerabilityPts: 12,
           budgetGrantReadinessPts: 14
         }
@@ -622,7 +620,7 @@ class TerritoryIntelligenceService {
         medicaidPayerPct: medicaidPayerPct,
         selfPayPayerPct: selfPayPayerPct,
         gadcsReportingStatus: (posHash % 2 === 0) ? 'Selected - In Progress' : 'Compliant',
-        estimatedRecoverableRevenue: recoverableRevenue
+        estimatedRecoverableRevenue: null
       },
       installedFleet: {
         defibBrand: defibBrand,
@@ -704,13 +702,17 @@ class TerritoryIntelligenceService {
 
     const calculatedScore = calculateScore(dummyAgency, DEFAULT_WEIGHTS);
     dummyAgency.zollOpportunity.pulseIqScore = calculatedScore;
-    dummyAgency.zollOpportunity.priorityTier = calculatedScore >= 90 ? 'Critical Opportunity' : calculatedScore >= 80 ? 'High Value' : 'Mid-Term Pipeline';
+    dummyAgency.zollOpportunity.priorityTier = calculatedScore >= 88
+      ? 'Critical Opportunity'
+      : calculatedScore >= 78 ? 'High Value' : 'Mid-Term Pipeline';
+    const scoreFactors = calculatePulseIqContributions(dummyAgency, DEFAULT_WEIGHTS);
     dummyAgency.zollOpportunity.scoreBreakdown = {
-      clinicalAcuityPts: Math.round(calculatedScore * 0.25),
-      fleetObsolescencePts: Math.round(calculatedScore * 0.30),
-      cmsFinancialPts: Math.round(calculatedScore * 0.20),
-      demographicVulnerabilityPts: Math.round(calculatedScore * 0.15),
-      budgetGrantReadinessPts: Math.round(calculatedScore * 0.10)
+      clinicalAcuityPts: scoreFactors.clinicalAcuityPts,
+      fleetObsolescencePts: scoreFactors.fleetObsolescencePts,
+      cmsFinancialPts: 0,
+      demographicVulnerabilityPts: 0,
+      budgetGrantReadinessPts: scoreFactors.budgetGrantReadinessPts,
+      softwareWhitespacePts: scoreFactors.softwareWhitespacePts
     };
 
     this.synthesizedAgenciesCache.set(cacheKey, dummyAgency);

@@ -15,6 +15,7 @@ import { CITIES_BY_STATE_AND_COUNTY, STATE_GEO_AND_AREA_CODES } from '../data/al
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { INITIAL_AGENCIES } from '../data/healthcareData';
 import { NATIONAL_ZIP_CITY_REGISTRY } from '../data/nationalZipCityRegistry';
+import { calculatePulseIqContributions, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 
 export interface ProviderFilterOptions {
   state?: string;
@@ -280,7 +281,6 @@ class NationalProviderDatabaseService {
     ];
     const dispatchCadVendor = cadVendors[posHash % cadVendors.length];
 
-    const recoverableRevenue = Math.round(emsTransports * (isFire ? 34 : 68));
 
     const medicarePayerPct = +(38.0 + (posHash % 14)).toFixed(1);
     const medicaidPayerPct = +(21.0 + (posHash % 9)).toFixed(1);
@@ -315,36 +315,27 @@ class NationalProviderDatabaseService {
     const isAfgAwarded = posHash % 3 === 0;
     const isSaferActive = posHash % 4 === 0;
 
-    // Authentic 5-Pillar PulseIQ Scoring Engine:
-    // Pillar 1: Clinical Acuity & Resuscitation Deficit (max 25 pts)
-    const survivalGap = Math.max(0, 36.0 - utsteinSurvivalRate);
-    const clinicalAcuityPts = Math.min(25, Math.max(8, Math.round(
-      8 + (survivalGap * 0.75) + Math.min(6, (cardiacCalls / 50))
+    const epcrCadSoftware = (posHash % 2 === 0) ? 'ImageTrend Elite' : 'ESO Solutions';
+    const billingSoftware = (posHash % 3 === 0)
+      ? 'Digitech EMS Billing'
+      : (posHash % 3 === 1) ? 'In-House Municipal Billing' : 'Optum Revenue Cycle';
+    const scoreFactors = calculatePulseIqContributions({
+      installedFleet: { defibBrand, defibAgeYears: defibAge, billingSoftware, epcrCadSoftware },
+      annualCardiacArrestCalls: cardiacCalls,
+      grantStatus: { afgAwarded: isAfgAwarded, saferGrantActive: isSaferActive }
+    } as unknown as Agency, DEFAULT_WEIGHTS);
+    const clinicalAcuityPts = scoreFactors.clinicalAcuityPts;
+    const fleetObsolescencePts = scoreFactors.fleetObsolescencePts;
+    const cmsFinancialPts = 0;
+    const demographicVulnerabilityPts = 0;
+    const budgetGrantReadinessPts = scoreFactors.budgetGrantReadinessPts;
+    const softwareWhitespacePts = scoreFactors.softwareWhitespacePts;
+    const scoreRaw = Math.min(99, Math.max(30, Math.round(
+      clinicalAcuityPts + fleetObsolescencePts + budgetGrantReadinessPts + softwareWhitespacePts
     )));
-
-    // Pillar 2: Competitor Fleet Obsolescence & Service End-of-Life (max 25 pts)
-    const isCompetitorFleet = !defibBrand.includes('ZOLL');
-    const fleetObsolescencePts = Math.min(25, Math.max(6, Math.round(
-      (defibAge / 10) * 16 + (isCompetitorFleet ? 5 : 0) + (defibAge >= 8 ? 4 : defibAge >= 7 ? 2 : 0)
-    )));
-
-    // Pillar 3: CMS Billing Denial & Financial Recovery (max 20 pts)
-    // No county- or provider-matched denial data is available for these generated
-    // prospect records, so use a neutral score contribution rather than a state proxy.
-    const cmsFinancialPts = 10;
-
-    // Pillar 4: Demographic Need & Public Health Vulnerability (max 15 pts)
-    const demographicVulnerabilityPts = Math.min(15, Math.max(4, Math.round(
-      (seniorPop / 24) * 9 + (aedDeficit / 60) * 6
-    )));
-
-    // Pillar 5: Budget & Grant Readiness (max 15 pts)
-    const budgetGrantReadinessPts = isAfgAwarded ? 15 : (isSaferActive ? 11 : 7);
-
-    const scoreRaw = Math.min(99, Math.max(48,
-      clinicalAcuityPts + fleetObsolescencePts + cmsFinancialPts + demographicVulnerabilityPts + budgetGrantReadinessPts
-    ));
-    const tier: PriorityTier = scoreRaw >= 86 ? 'Critical Opportunity' : scoreRaw >= 74 ? 'High Value' : 'Mid-Term Pipeline';
+    const tier: PriorityTier = scoreRaw >= 88
+      ? 'Critical Opportunity'
+      : scoreRaw >= 78 ? 'High Value' : 'Mid-Term Pipeline';
 
     const totalAmbulances = isFire
       ? Math.max(1, Math.round(popServed / 22000))
@@ -438,7 +429,7 @@ class NationalProviderDatabaseService {
         medicaidPayerPct: medicaidPayerPct,
         selfPayPayerPct: selfPayPayerPct,
         gadcsReportingStatus: (posHash % 2 === 0) ? 'Selected - In Progress' : 'Compliant',
-        estimatedRecoverableRevenue: recoverableRevenue
+        estimatedRecoverableRevenue: null
       },
       installedFleet: {
         defibBrand,
@@ -449,9 +440,9 @@ class NationalProviderDatabaseService {
         cprUnitsCount: (posHash % 2 === 0) ? Math.max(1, Math.round(popServed / 24000)) : 0,
         transportVentilator: (posHash % 3 === 0) ? 'Hamilton T1' : 'None / Bag-Valve-Mask Only',
         ventUnitsCount: (posHash % 3 === 0) ? Math.max(1, Math.round(popServed / 32000)) : 0,
-        epcrCadSoftware: (posHash % 2 === 0) ? 'ImageTrend Elite' : 'ESO Solutions',
+        epcrCadSoftware,
         dispatchCadVendor,
-        billingSoftware: (posHash % 3 === 0) ? 'Digitech EMS Billing' : (posHash % 3 === 1) ? 'In-House Municipal Billing' : 'Optum Revenue Cycle'
+        billingSoftware
       },
       grantStatus: {
         afgAwarded: isAfgAwarded,
@@ -468,8 +459,8 @@ class NationalProviderDatabaseService {
         recommendedBundle: [targetProduct, 'Real CPR Help Sensor', 'ZOLL Billing Suite'],
         projectedPipelineValue: Math.round(Math.max(2, Math.round(popServed / 13000)) * 42000),
         clinicalBenefitNarrative: `Deployment of ${targetProduct} elevates chest compression fraction to >85% and improves neurological survival.`,
-        financialRoiNarrative: `Estimated $${(recoverableRevenue / 1000).toFixed(0)}k annual recoverable revenue via automated NEMSIS 3.5 billing scrubbing.`,
-        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet across ${cityName} (${c.countyName}). County-level Medicare ambulance denials are not published for this area.`,
+        financialRoiNarrative: 'Not calculated: source-backed claim-dollar inputs and a reproducible account-specific method are unavailable.',
+        scoreRationale: `${defibAge}-year-old ${defibBrand} fleet across ${cityName} (${c.countyName}). Local claim-denial data is excluded from PulseIQ.`,
         probabilityPct: 68,
         salesStage: (posHash % 4 === 0) ? 'Clinical Evaluation Trial' : (posHash % 3 === 0) ? 'Demo Scheduled' : 'Target Lead',
         scoreBreakdown: {
@@ -477,7 +468,8 @@ class NationalProviderDatabaseService {
           fleetObsolescencePts,
           cmsFinancialPts,
           demographicVulnerabilityPts,
-          budgetGrantReadinessPts
+          budgetGrantReadinessPts,
+          softwareWhitespacePts
         }
       },
       keyContacts: [

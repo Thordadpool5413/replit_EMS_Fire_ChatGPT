@@ -113,14 +113,15 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
   // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-  const cmsDenialSub = denialMetric
-    ? Math.min(100, Math.round((denialMetric.ratePct / 25) * 100))
-    : 50;
   const clinicalSub = Math.min(
     100,
     Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8)
   );
   const grantSub = agency.grantStatus.afgAwarded ? 95 : 62;
+  const hasZollSoftware =
+    agency.installedFleet.billingSoftware.includes('ZOLL') ||
+    agency.installedFleet.epcrCadSoftware.includes('ZOLL');
+  const softwareSub = hasZollSoftware ? 35 : 95;
 
   const handleSaveNote = (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,11 +279,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Annual Medicare recovery</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">Claim-dollar recovery estimate</span>
                 <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'cmsClaims')
+                  {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                     ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                    : 'Not listed'}
+                    : 'Not calculated'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
                   {denialMetric
@@ -326,20 +327,16 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
             <div className="space-y-2 text-[11px] tabular-nums">
               {[
-                { label: 'Fleet Replacement Pressure (30%)', val: fleetAgeSub, detail: `${agency.installedFleet.defibAgeYears} yr cycle` },
+                { label: 'Fleet replacement pressure', val: fleetAgeSub, detail: `${agency.installedFleet.defibAgeYears} yr cycle` },
+                { label: 'Clinical acuity & volume', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {
-                  label: 'Medicare Claim Recovery (25%)',
-                  val: cmsDenialSub,
-                  detail: 'Claim source records are available separately'
-                },
-                { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
-                {
-                  label: 'FEMA AFG Grant Readiness (20%)',
+                  label: 'FEMA AFG grant readiness',
                   val: grantSub,
                   detail: agency.grantStatus.afgAwarded
                     ? `FY${agency.grantStatus.afgFiscalYear} $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K`
                     : 'Eligible'
-                }
+                },
+                { label: 'Software whitespace', val: softwareSub, detail: hasZollSoftware ? 'ZOLL software listed' : 'Non-ZOLL or unlisted software' }
               ].map((row) => (
                 <div key={row.label} className="space-y-1">
                   <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">

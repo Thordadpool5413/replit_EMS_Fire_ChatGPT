@@ -4,7 +4,6 @@
  */
 
 import { Agency } from '../types';
-import { getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 
 export interface CompetitorHardwareIntel {
   id: string;
@@ -50,8 +49,8 @@ export interface HcpcsProcedureLine {
   nationalMedicareBaseRate: number;
   estimatedAnnualClaims: number;
   grossAnnualBilling: number;
-  denialRiskPct: number;
-  annualRevenueAtRisk: number;
+  denialRiskPct: number | null;
+  annualRevenueAtRisk: number | null;
   zollDocumentationMitigation: string;
 }
 
@@ -349,39 +348,35 @@ export function calculateAgencyFleetTco(
 }
 
 /**
- * Computes granular HCPCS procedure-level billing volume, denial exposure, and CMS GADCS 10% penalty risk for an agency.
+ * Estimates HCPCS billing volume and GADCS exposure from operational inputs.
+ * Local claim-denial exposure is deliberately not inferred or estimated.
  */
 export function calculateAgencyHcpcsBreakdown(agency: Agency): {
   procedures: HcpcsProcedureLine[];
   gadcs: AgencyGadcsAssessment;
   totalGrossMedicareAndAlsBilling: number;
-  totalAnnualDenialLoss: number;
+  totalAnnualDenialLoss: null;
   inputs: {
     annualTransports: number;
-    claimDenialRatePct: number;
     medicarePayerPct: number;
     method: string;
   };
 } | null {
   const annualTransports = agency.annual911Transports;
-  const claimDenialRatePct = getAgencyMedicareDenialMetric(agency)?.ratePct;
   const medicarePayerPct =
     agency.cmsData?.medicarePayerPct ??
     agency.cmsData?.payerMix?.medicare;
 
   if (
     annualTransports == null ||
-    claimDenialRatePct == null ||
     medicarePayerPct == null ||
     !Number.isFinite(annualTransports) ||
-    !Number.isFinite(claimDenialRatePct) ||
     !Number.isFinite(medicarePayerPct)
   ) {
     return null;
   }
 
   const transports = annualTransports;
-  const denialRate = claimDenialRatePct / 100;
   const medicarePct = medicarePayerPct / 100;
 
   const als1Count = Math.round(transports * 0.52);
@@ -397,8 +392,8 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
       nationalMedicareBaseRate: 518.40,
       estimatedAnnualClaims: als1Count,
       grossAnnualBilling: Math.round(als1Count * 518.40),
-      denialRiskPct: +(denialRate * 100).toFixed(1),
-      annualRevenueAtRisk: Math.round(als1Count * 518.40 * denialRate * 0.55),
+      denialRiskPct: null,
+      annualRevenueAtRisk: null,
       zollDocumentationMitigation: 'Auto-imports timestamped 12-Lead ECG & EtCO2 waveform trends into NEMSIS v3.5 ePCR to eliminate CO-16 medical necessity denials.'
     },
     {
@@ -408,8 +403,8 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
       nationalMedicareBaseRate: 436.55,
       estimatedAnnualClaims: blsCount,
       grossAnnualBilling: Math.round(blsCount * 436.55),
-      denialRiskPct: +(Math.max(4.5, (denialRate * 100) - 3.2)).toFixed(1),
-      annualRevenueAtRisk: Math.round(blsCount * 436.55 * Math.max(0.045, denialRate - 0.032) * 0.45),
+      denialRiskPct: null,
+      annualRevenueAtRisk: null,
       zollDocumentationMitigation: 'ZOLL Billing AR Boost verifies patient insurance eligibility & PCS signatures prior to claim submission.'
     },
     {
@@ -419,8 +414,8 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
       nationalMedicareBaseRate: 750.30,
       estimatedAnnualClaims: als2Count,
       grossAnnualBilling: Math.round(als2Count * 750.30),
-      denialRiskPct: +(Math.min(28.0, (denialRate * 100) + 4.8)).toFixed(1),
-      annualRevenueAtRisk: Math.round(als2Count * 750.30 * Math.min(0.28, denialRate + 0.048) * 0.68),
+      denialRiskPct: null,
+      annualRevenueAtRisk: null,
       zollDocumentationMitigation: 'Automatically captures X Series shock delivery joules, AutoPulse NXT compression logs, and Real BVM Help airway metrics to substantiate higher $750.30 ALS2 reimbursement.'
     },
     {
@@ -430,15 +425,13 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
       nationalMedicareBaseRate: 9.12,
       estimatedAnnualClaims: loadedMilesCount,
       grossAnnualBilling: Math.round(loadedMilesCount * 9.12),
-      denialRiskPct: 6.2,
-      annualRevenueAtRisk: Math.round(loadedMilesCount * 9.12 * 0.062 * 0.5),
+      denialRiskPct: null,
+      annualRevenueAtRisk: null,
       zollDocumentationMitigation: 'Syncs CAD/AVL GPS odometer telemetry directly to billing claim lines to prevent fractional mileage audits.'
     }
   ];
 
   const totalGrossMedicareAndAlsBilling = procedures.reduce((sum, p) => sum + p.grossAnnualBilling, 0);
-  const totalAnnualDenialLoss = procedures.reduce((sum, p) => sum + p.annualRevenueAtRisk, 0);
-
   const estimatedMedicareAnnualRevenue = Math.round(totalGrossMedicareAndAlsBilling * medicarePct);
   const gadcs10PctPenaltyExposure = Math.round(estimatedMedicareAnnualRevenue * 0.10);
 
@@ -448,9 +441,7 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
     cohortWave: agency.populationServed > 100000 ? 'Cohort 1 (Mandatory)' : 'Cohort 2 (Mandatory)',
     reportingReadinessStatus: isZollBilling
       ? 'Audit Ready'
-      : denialRate > 0.13
-        ? 'High Audit Exposure'
-        : 'Partial Cost Segregation',
+      : 'Partial Cost Segregation',
     estimatedMedicareAnnualRevenue,
     gadcs10PctPenaltyExposure,
     keyComplianceGap: isZollBilling
@@ -463,10 +454,9 @@ export function calculateAgencyHcpcsBreakdown(agency: Agency): {
     procedures,
     gadcs,
     totalGrossMedicareAndAlsBilling,
-    totalAnnualDenialLoss,
+    totalAnnualDenialLoss: null,
     inputs: {
       annualTransports,
-      claimDenialRatePct,
       medicarePayerPct,
       method:
         'Estimated from reported annual transports, the 52% ALS1 / 34% BLS / 14% ALS2 claim mix, 7.8 loaded miles per transport, published example HCPCS rates, reported denial rate, and Medicare payer share.'

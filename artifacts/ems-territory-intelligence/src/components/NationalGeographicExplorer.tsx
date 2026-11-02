@@ -619,7 +619,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       const a = matchingAgencies[i];
       totalPipelineValue += a.zollOpportunity.projectedPipelineValue;
       totalMedicareBilled += a.cmsData.medicareBilledAnnual;
-      totalRecoverableRevenue += a.cmsData.estimatedRecoverableRevenue;
+      if (a.cmsData.estimatedRecoverableRevenue != null && Number.isFinite(a.cmsData.estimatedRecoverableRevenue)) {
+        totalRecoverableRevenue += a.cmsData.estimatedRecoverableRevenue;
+      }
       sumSurvival += a.utsteinSurvivalRate;
       totalAmbulances += a.totalAmbulances;
       totalFireEngines += a.totalFireEngines;
@@ -2277,9 +2279,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
 
                         <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Claim Recovery</span>
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Claim-dollar recovery estimate</span>
                           <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
+                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
+                              ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr`
+                              : 'Not calculated'}
                           </span>
                         </div>
 
@@ -2354,7 +2358,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       >
                         Upgrade Value {providerSortBy === 'value' ? '↓' : ''}
                       </th>
-                      <th className="py-2.5 px-3 text-right hidden lg:table-cell">Claim Recovery</th>
+                      <th className="py-2.5 px-3 text-right hidden lg:table-cell">Claim-dollar recovery estimate</th>
                       <th className="py-2.5 px-3 text-right hidden xl:table-cell">Runs &amp; ROSC</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
@@ -2403,7 +2407,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </td>
                           <td className="py-2.5 px-3 text-right hidden lg:table-cell">
                             <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'cmsClaims') ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr` : 'No claims source mapped'}
+                              {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
+                                ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr`
+                                : 'Not calculated'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden xl:table-cell">

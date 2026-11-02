@@ -90,7 +90,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       ? 'Not calculated'
       : `$${value.toLocaleString()}`;
 
-  // Derived 5-Pillar Algorithmic Score Attribution
+  // Derived operational-factor score attribution
   const scoreExplanation = useMemo(() => {
     if (!agency) return null;
     return explainAgencyScore(agency);
@@ -521,9 +521,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
               </div>
 
-              {/* 5-Pillar Score Breakdown */}
-              <div className="grid grid-cols-5 gap-2 pt-1 border-t border-blue-200/60 text-xs">
-                {scoreExplanation?.factors.map((f) => (
+              {/* Four scored factors; the zero-weight claims explanation is not shown as a pillar. */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-blue-200/60 text-xs">
+                {scoreExplanation?.factors.filter((factor) => factor.weightPct > 0).map((f) => (
                   <div key={f.id} className="text-center p-2 rounded bg-white border border-blue-100">
                     <div className="text-slate-500 text-[11px] truncate">{f.name.split(' ')[0]} {f.name.split(' ')[1]}</div>
                     <div className="font-semibold text-slate-900 text-xs mt-0.5 tabular-nums">
@@ -927,7 +927,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Medicare &amp; insurance reimbursement recovery (HCPCS fee schedule)</span>
                 <span className="text-rose-700 font-medium tabular-nums text-xs">
-                  Annual modeled denial exposure: {hcpcsModel ? `-$${hcpcsModel.totalAnnualDenialLoss.toLocaleString()}/yr` : 'Not calculated'}
+                  Annual denial exposure: Not calculated from local claim percentages
                 </span>
               </div>
               <p className="text-xs text-slate-500">
@@ -954,7 +954,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                         <td className="py-2 px-3 font-medium text-slate-900">{p.descriptor}</td>
                         <td className="py-2 px-3 text-right tabular-nums">{p.estimatedAnnualClaims.toLocaleString()}</td>
                         <td className="py-2 px-3 text-right text-slate-700 tabular-nums">${p.grossAnnualBilling.toLocaleString()}</td>
-                        <td className="py-2 px-3 text-right font-semibold text-rose-700 tabular-nums">-${p.annualRevenueAtRisk.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-semibold text-slate-500 tabular-nums">
+                          {p.annualRevenueAtRisk == null ? 'Not calculated' : `-$${p.annualRevenueAtRisk.toLocaleString()}`}
+                        </td>
                         <td className="py-2 px-3 text-xs text-slate-600 max-w-xs">{p.zollDocumentationMitigation}</td>
                       </tr>
                     ))}

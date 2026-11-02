@@ -753,7 +753,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                   Deterministic Mathematical Scoring Engine
                 </td>
                 <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
-                  PulseIQ opportunity score (0–100), 5-year TCO lease savings &amp; Medicare denial recovery projections
+                  PulseIQ opportunity score (0–100), 5-year TCO lease savings &amp; Medicare claim evidence
                 </td>
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
                   {report.pulseIqVerifiedTotal.toLocaleString()} models
@@ -920,7 +920,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                         {agency.zollOpportunity.pulseIqScore}/100 Calculated
                       </div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
-                        Fleet:{sb.fleetObsolescencePts} · CMS:{sb.cmsFinancialPts} · Acuity:{sb.clinicalAcuityPts}
+                        Fleet:{sb.fleetObsolescencePts} · Clinical:{sb.clinicalAcuityPts} · Grants:{sb.budgetGrantReadinessPts} · Software:{sb.softwareWhitespacePts ?? 0}
                       </div>
                     </td>
 

@@ -25,7 +25,7 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
   // Always derive a guaranteed safe default weights object
   const safeInitialWeights = useMemo(() => ({
     fleetAgeWeight: typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight,
-    cmsDenialWeight: typeof weights?.cmsDenialWeight === 'number' ? weights.cmsDenialWeight : DEFAULT_WEIGHTS.cmsDenialWeight,
+    cmsDenialWeight: 0,
     cardiacVolumeWeight: typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight,
     grantAwardWeight: typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight,
     softwareWhitespaceWeight: typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight
@@ -39,7 +39,7 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
     if (isOpen) {
       setLocalWeights({
         fleetAgeWeight: typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight,
-        cmsDenialWeight: typeof weights?.cmsDenialWeight === 'number' ? weights.cmsDenialWeight : DEFAULT_WEIGHTS.cmsDenialWeight,
+        cmsDenialWeight: 0,
         cardiacVolumeWeight: typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight,
         grantAwardWeight: typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight,
         softwareWhitespaceWeight: typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight
@@ -56,7 +56,6 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
   const totalWeight = useMemo(() => {
     return (
       (localWeights.fleetAgeWeight || 0) +
-      (localWeights.cmsDenialWeight || 0) +
       (localWeights.cardiacVolumeWeight || 0) +
       (localWeights.grantAwardWeight || 0) +
       (localWeights.softwareWhitespaceWeight || 0)
@@ -71,26 +70,26 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
       setLocalWeights(DEFAULT_WEIGHTS);
     } else if (preset === 'hardware') {
       setLocalWeights({
-        fleetAgeWeight: 40,
-        cmsDenialWeight: 10,
-        cardiacVolumeWeight: 35,
-        grantAwardWeight: 10,
-        softwareWhitespaceWeight: 5
+        fleetAgeWeight: 44,
+        cmsDenialWeight: 0,
+        cardiacVolumeWeight: 39,
+        grantAwardWeight: 11,
+        softwareWhitespaceWeight: 6
       });
     } else if (preset === 'software') {
       setLocalWeights({
-        fleetAgeWeight: 10,
-        cmsDenialWeight: 45,
-        cardiacVolumeWeight: 10,
-        grantAwardWeight: 10,
-        softwareWhitespaceWeight: 25
+        fleetAgeWeight: 18,
+        cmsDenialWeight: 0,
+        cardiacVolumeWeight: 18,
+        grantAwardWeight: 18,
+        softwareWhitespaceWeight: 46
       });
     } else if (preset === 'grants') {
       setLocalWeights({
-        fleetAgeWeight: 20,
-        cmsDenialWeight: 15,
-        cardiacVolumeWeight: 15,
-        grantAwardWeight: 45,
+        fleetAgeWeight: 24,
+        cmsDenialWeight: 0,
+        cardiacVolumeWeight: 18,
+        grantAwardWeight: 53,
         softwareWhitespaceWeight: 5
       });
     }
@@ -121,7 +120,7 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
                 <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded">
                   Algorithm tuning
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">5-Pillar model</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Four-factor model</span>
               </div>
               <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white tracking-tight mt-0.5">
                 PulseIQ score adjustment &amp; algorithm weights
@@ -180,8 +179,8 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
               onClick={() => handleApplyPreset('software')}
               className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-sky-400 hover:bg-sky-50/50 dark:hover:bg-slate-800 text-left text-slate-800 dark:text-slate-200 font-medium transition-all cursor-pointer group"
             >
-              <div className="font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-400">ZOLL Billing &amp; denials</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">45% CMS Denials &middot; 25% Software</div>
+              <div className="font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-400">Software &amp; billing workflow</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">46% software · 18% clinical</div>
             </button>
 
             <button
@@ -213,25 +212,6 @@ export const PredictiveWeightsModal: React.FC<PredictiveWeightsModalProps> = ({
               value={localWeights.fleetAgeWeight}
               onChange={(e) => setLocalWeights({ ...localWeights, fleetAgeWeight: Number(e.target.value) })}
               className="w-full accent-rose-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
-            />
-          </div>
-
-          {/* Factor 2: CMS Medicare Denials */}
-          <div className="p-2.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span>CMS Medicare claim summaries &amp; recovery potential</span>
-              </span>
-              <span className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">{localWeights.cmsDenialWeight}%</span>
-            </div>
-            <input
-              type="range"
-              min="5"
-              max="60"
-              value={localWeights.cmsDenialWeight}
-              onChange={(e) => setLocalWeights({ ...localWeights, cmsDenialWeight: Number(e.target.value) })}
-              className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
             />
           </div>
 

@@ -140,7 +140,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     }
   };
 
-  const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'value' | 'denial'>('pulseIq');
+  const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'value' | 'claimEvidence'>('pulseIq');
 
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'ems' | 'fire'>(globalCategory || 'all');
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -337,12 +337,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       if (sortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (sortBy === 'calls') return (b.annualCallVolume || b.annual911Transports) - (a.annualCallVolume || a.annual911Transports);
       if (sortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
-      if (sortBy === 'denial') {
-        const aRate = getAgencyMedicareDenialMetricForDisplay(a)?.ratePct ?? null;
-        const bRate = getAgencyMedicareDenialMetricForDisplay(b)?.ratePct ?? null;
-        if (aRate == null) return bRate == null ? 0 : 1;
-        if (bRate == null) return -1;
-        return bRate - aRate;
+      if (sortBy === 'claimEvidence') {
+        const aHasSummary = getAgencyMedicareDenialMetricForDisplay(a) != null;
+        const bHasSummary = getAgencyMedicareDenialMetricForDisplay(b) != null;
+        return Number(bHasSummary) - Number(aHasSummary);
       }
       return 0;
     });
@@ -527,6 +525,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               <option value="fleetAge">Sort: Oldest Fleet</option>
               <option value="calls">Sort: 911 Call Volume</option>
               <option value="value">Sort: Est. Project Value</option>
+              <option value="claimEvidence">Sort: Claim summary available</option>
             </select>
 
             {/* Collapsible More Filters Trigger */}
@@ -798,22 +797,21 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             const hospitalTransports = hasAgencyFactEvidence(agency, 'receivingHospitalStemi')
               ? agency.gisData.annualHospitalDestinationTransports
               : undefined;
+            const medicareDenialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
 
-            // Compute 5-pillar sub-scores for micro-bar visualization
+            // Show the same four operational factors used by PulseIQ.
             const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8));
             const p2Fleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-            const medicareDenialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-            const p3Cms = medicareDenialMetric == null
-              ? 50
-              : Math.min(100, Math.round((medicareDenialMetric.ratePct / 26) * 100));
-            const p4Demo = Math.min(100, Math.round(Math.log10(Math.max(1000, agency.populationServed || 25000)) * 18));
-            const p5Grant = agency.grantStatus.afgAwarded ? 95 : 62;
+            const hasZollSoftware =
+              agency.installedFleet.billingSoftware.includes('ZOLL') ||
+              agency.installedFleet.epcrCadSoftware.includes('ZOLL');
+            const p3Software = hasZollSoftware ? 35 : 95;
+            const p4Grant = agency.grantStatus.afgAwarded ? 95 : agency.grantStatus.saferGrantActive ? 70 : 45;
             const pillarBars = [
               { label: 'Clinical Acuity (NEMSIS v3.5)', val: p1Clinical, color: 'bg-[#1E3A8A] dark:bg-blue-500' },
               { label: 'Fleet Age (Modeled Cycle)', val: p2Fleet, color: 'bg-amber-500' },
-              { label: 'CMS Recovery (Part B PUF)', val: p3Cms, color: 'bg-blue-500 dark:bg-blue-400' },
-              { label: 'Demographics (Census FIPS)', val: p4Demo, color: 'bg-slate-500 dark:bg-slate-400' },
-              { label: 'AFG Grant (FEMA Ledger)', val: p5Grant, color: 'bg-emerald-600 dark:bg-emerald-500' }
+              { label: 'Software / Billing Whitespace', val: p3Software, color: 'bg-blue-500 dark:bg-blue-400' },
+              { label: 'AFG / SAFER Grant Readiness', val: p4Grant, color: 'bg-emerald-600 dark:bg-emerald-500' }
             ];
 
             return (
@@ -943,9 +941,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         Est. Medicare recovery
                       </div>
                       <div className="font-semibold text-sm text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                        {hasAgencyFactEvidence(agency, 'cmsClaims')
+                        {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                           ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                          : 'Not source-verified'}
+                          : 'Not calculated'}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
@@ -1280,7 +1278,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   >
                     Frontline fleet {sortBy === 'fleetAge' ? '↓' : ''}
                   </th>
-                  <th className="py-2.5 px-3 text-right hidden xl:table-cell">CMS recovery</th>
+                  <th className="py-2.5 px-3 text-right hidden xl:table-cell">Claim summary</th>
                   <th className="py-2.5 px-3 text-right hidden lg:table-cell">AFG grant</th>
                   <th
                     onClick={() => setSortBy('value')}
@@ -1302,11 +1300,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   const pClinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 200) / 8));
                   const pFleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
                   const medicareDenialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-                  const pCms = medicareDenialMetric == null
-                    ? 50
-                    : Math.min(100, Math.round((medicareDenialMetric.ratePct / 25) * 100));
-                  const pDemo = Math.min(100, Math.round(((agency.gisData?.seniorPopulationPct || 16) / 28) * 100));
-                  const pGrant = agency.grantStatus.afgAwarded ? 100 : 45;
+                  const hasZollSoftware =
+                    agency.installedFleet.billingSoftware.includes('ZOLL') ||
+                    agency.installedFleet.epcrCadSoftware.includes('ZOLL');
+                  const pSoftware = hasZollSoftware ? 35 : 95;
+                  const pGrant = agency.grantStatus.afgAwarded ? 100 : agency.grantStatus.saferGrantActive ? 70 : 45;
 
                   return (
                     <tr 
@@ -1335,8 +1333,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             {[
                               { val: pClinical, color: 'bg-rose-500' },
                               { val: pFleet, color: 'bg-amber-500' },
-                              { val: pCms, color: 'bg-emerald-500' },
-                              { val: pDemo, color: 'bg-sky-500' },
+                              { val: pSoftware, color: 'bg-sky-500' },
                               { val: pGrant, color: 'bg-indigo-500' },
                             ].map((seg, idx) => (
                               <div key={idx} className="h-1 bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -1403,16 +1400,12 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         </div>
                       </td>
 
-                      {/* CMS Denial Rate & Payer Mix */}
+                      {/* Imported claim-summary evidence and payer mix */}
                       <td className="py-2.5 px-3 text-right hidden xl:table-cell">
-                        <div className={`font-semibold tabular-nums ${
-                          medicareDenialMetric != null && medicareDenialMetric.ratePct > 18
-                            ? 'text-rose-700 dark:text-rose-400'
-                            : 'text-slate-900 dark:text-white'
-                        }`}>
-                          {hasAgencyFactEvidence(agency, 'cmsClaims')
+                        <div className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+                          {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                             ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                            : 'Not source-verified'}
+                            : 'Not calculated'}
                         </div>
                         {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}
                       </td>

@@ -63,11 +63,12 @@ export interface FieldNote {
 }
 
 export interface ScoreBreakdown {
-  clinicalAcuityPts: number; // 0 to 25 pts (Cardiac volume, survival deficit, transport times)
-  fleetObsolescencePts: number; // 0 to 25 pts (LP15/MRx age, out of warranty, parts shortage)
-  cmsFinancialPts: number; // 0 to 20 pts (Denial rate, GADCS audit risk, recoverable cash)
-  demographicVulnerabilityPts: number; // 0 to 15 pts (Senior 65+ pop, poverty rate, density)
-  budgetGrantReadinessPts: number; // 0 to 15 pts (Active AFG grant, FY end surplus)
+  clinicalAcuityPts: number; // Weighted score contribution
+  fleetObsolescencePts: number; // Weighted score contribution
+  cmsFinancialPts: number; // Deprecated; local claim-denial inputs are excluded from PulseIQ.
+  demographicVulnerabilityPts: number; // Deprecated; not part of the active score.
+  budgetGrantReadinessPts: number; // Weighted score contribution
+  softwareWhitespacePts?: number; // Weighted score contribution
 }
 
 export interface CountyCityRecord {
@@ -269,7 +270,7 @@ export interface Agency {
     medicaidPayerPct?: number;
     selfPayPayerPct?: number;
     gadcsReportingStatus: 'Selected - In Progress' | 'Compliant' | 'Pending Audit' | 'Exempt';
-    estimatedRecoverableRevenue: number;
+    estimatedRecoverableRevenue: number | null;
     medicareClaimsVolume?: number;
     totalMedicareBilled?: number;
     avgMedicarePaymentPerRun?: number;

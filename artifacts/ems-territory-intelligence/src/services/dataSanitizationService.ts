@@ -4,7 +4,7 @@
  */
 
 import { Agency, FieldNote, KeyContact, PredictiveWeights } from '../types';
-import { calculateScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
+import { calculatePulseIqContributions, calculateScore, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { CMS_ENROLLMENT_DATABASE } from '../data/cmsEnrollmentData';
 import { getAgencyMedicareDenialMetric } from './agencyMedicareDenialService';
 
@@ -550,9 +550,7 @@ class DataSanitizationService {
   }
 
   /**
-   * Mathematically recalculates and verifies an agency's PulseIQ™ score and breakdown
-   * directly from authentic underlying agency metrics (fleet age, CMS claim denial rate,
-   * cardiac call volume, FEMA AFG grant status, and software whitespace).
+   * Recalculates PulseIQ from operational inputs. Local claim-denial percentages are excluded.
    */
   public verifyAndRecalculatePulseIq(
     agency: Agency,
@@ -560,30 +558,8 @@ class DataSanitizationService {
   ): Agency['zollOpportunity'] {
     const calculatedScore = calculateScore(agency, weights);
 
-    // Compute exact deterministic component point breakdown (0-100 total)
-    const age = agency.installedFleet?.defibAgeYears ?? 7;
-    const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-    const isCompetitor = !brand.includes('ZOLL');
-    const fleetPts = isCompetitor
-      ? (age >= 9 ? 25 : age >= 7 ? 21 : age >= 5 ? 16 : 10)
-      : (age >= 7 ? 19 : 8);
-
-    const denial = getAgencyMedicareDenialMetric(agency)?.ratePct;
-    const cmsPts = typeof denial === 'number' && Number.isFinite(denial)
-      ? (denial >= 22 ? 20 : denial >= 18 ? 17 : denial >= 15 ? 13 : 8)
-      : 10;
-
-    const cardiac = agency.annualCardiacArrestCalls ?? 600;
-    const clinicalPts = cardiac >= 1800 ? 25 : cardiac >= 1000 ? 21 : cardiac >= 500 ? 18 : 13;
-
-    const seniorPct = agency.gisData?.seniorPopulationPct ?? 16;
-    const demographicPts = seniorPct >= 20 ? 15 : seniorPct >= 16 ? 13 : 10;
-
-    const grantPts = agency.grantStatus?.afgAwarded
-      ? 15
-      : agency.grantStatus?.saferGrantActive
-        ? 11
-        : 7;
+    // Keep the displayed breakdown aligned with the exact same model and weights.
+    const factorPoints = calculatePulseIqContributions(agency, weights);
 
     const priorityTier =
       calculatedScore >= 88
@@ -599,11 +575,12 @@ class DataSanitizationService {
       pulseIqScore: calculatedScore,
       priorityTier: priorityTier as Agency['zollOpportunity']['priorityTier'],
       scoreBreakdown: {
-        clinicalAcuityPts: clinicalPts,
-        fleetObsolescencePts: fleetPts,
-        cmsFinancialPts: cmsPts,
-        demographicVulnerabilityPts: demographicPts,
-        budgetGrantReadinessPts: grantPts
+        clinicalAcuityPts: factorPoints.clinicalAcuityPts,
+        fleetObsolescencePts: factorPoints.fleetObsolescencePts,
+        cmsFinancialPts: 0,
+        demographicVulnerabilityPts: 0,
+        budgetGrantReadinessPts: factorPoints.budgetGrantReadinessPts,
+        softwareWhitespacePts: factorPoints.softwareWhitespacePts
       }
     };
   }
@@ -698,13 +675,22 @@ class DataSanitizationService {
     const { sanitized: cleanContacts, scrubbedCount } = this.sanitizeKeyContacts(agency.keyContacts);
     this.unverifiedContactsScrubbedCount += scrubbedCount;
 
-    // 3. Remove unsupported denial percentages before scores and views can consume them.
+    // 3. Keep claim evidence but exclude local rates and unsupported recovery estimates.
     const denialMetric = getAgencyMedicareDenialMetric(agency);
+    const roiNarrative = agency.zollOpportunity?.financialRoiNarrative ?? '';
+    const safeRoiNarrative = /denial|recover(?:y|able)|billing upside/i.test(roiNarrative)
+      ? 'Not calculated: source-backed claim-dollar inputs and a reproducible account-specific method are unavailable.'
+      : roiNarrative;
     const sourceBackedAgency: Agency = {
       ...agency,
+      zollOpportunity: {
+        ...agency.zollOpportunity,
+        financialRoiNarrative: safeRoiNarrative
+      },
       cmsData: {
         ...agency.cmsData,
-        claimDenialRate: denialMetric?.ratePct ?? null,
+        claimDenialRate: null,
+        estimatedRecoverableRevenue: null,
         medicareDeniedClaimCount: denialMetric?.deniedClaimCount,
         medicareAdjudicatedClaimCount: denialMetric?.adjudicatedClaimCount,
         medicareDenialClaimScope: denialMetric?.claimScope,

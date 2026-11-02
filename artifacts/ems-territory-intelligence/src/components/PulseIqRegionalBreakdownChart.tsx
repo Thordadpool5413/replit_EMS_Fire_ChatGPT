@@ -24,7 +24,7 @@ import {
   Cell
 } from 'recharts';
 import { Agency, ScoreBreakdown } from '../types';
-import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
+import { calculatePulseIqContributions, DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
@@ -120,27 +120,24 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       return true;
     });
 
-    // Helper to calculate score breakdown if missing
+    // Keep the regional chart aligned with the active four-factor score.
     const getBreakdown = (agency: Agency): ScoreBreakdown => {
-      if (agency.zollOpportunity?.scoreBreakdown) {
-        return agency.zollOpportunity.scoreBreakdown;
+      const stored = agency.zollOpportunity?.scoreBreakdown;
+      if (typeof stored?.softwareWhitespacePts === 'number') {
+        return {
+          ...stored,
+          cmsFinancialPts: 0,
+          demographicVulnerabilityPts: 0
+        };
       }
-      const calls = agency.annualCardiacArrestCalls || Math.round((agency.annual911Transports || 3000) * 0.12);
-      const survival = agency.utsteinSurvivalRate || 10.8;
-      const survivalGap = Math.max(0, 36.0 - survival);
-      const denial = getAgencyMedicareDenialMetricForDisplay(agency)?.ratePct;
-      const defibAge = agency.installedFleet?.defibAgeYears || 7;
-      const senior = agency.gisData?.seniorPopulationPct || 16.5;
-      const aed = agency.gisData?.publicAccessAedDeficitPct || 42;
-
+      const contributions = calculatePulseIqContributions(agency, DEFAULT_WEIGHTS);
       return {
-        clinicalAcuityPts: Math.min(25, Math.max(8, Math.round(8 + survivalGap * 0.75 + Math.min(6, calls / 50)))),
-        fleetObsolescencePts: Math.min(25, Math.max(6, Math.round((defibAge / 10) * 16 + (agency.installedFleet?.defibBrand.includes('ZOLL') ? 0 : 5) + (defibAge >= 8 ? 4 : 0)))),
-        cmsFinancialPts: typeof denial === 'number'
-          ? Math.min(20, Math.max(5, Math.round((denial / 24) * 20)))
-          : 10,
-        demographicVulnerabilityPts: Math.min(15, Math.max(4, Math.round((senior / 24) * 9 + (aed / 60) * 6))),
-        budgetGrantReadinessPts: agency.grantStatus?.afgAwarded ? 15 : (agency.grantStatus?.saferGrantActive ? 11 : 7)
+        clinicalAcuityPts: contributions.clinicalAcuityPts,
+        fleetObsolescencePts: contributions.fleetObsolescencePts,
+        cmsFinancialPts: 0,
+        demographicVulnerabilityPts: 0,
+        budgetGrantReadinessPts: contributions.budgetGrantReadinessPts,
+        softwareWhitespacePts: contributions.softwareWhitespacePts
       };
     };
 
@@ -179,7 +176,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       // Group by agency / city jurisdiction
       const data = uniqueAgencies.map(agency => {
         const bd = getBreakdown(agency);
-        const calcScore = Math.min(100, Math.max(0, bd.clinicalAcuityPts + bd.fleetObsolescencePts + bd.cmsFinancialPts + bd.demographicVulnerabilityPts + bd.budgetGrantReadinessPts));
+        const calcScore = Math.min(100, Math.max(0, bd.clinicalAcuityPts + bd.fleetObsolescencePts + bd.budgetGrantReadinessPts + (bd.softwareWhitespacePts ?? 0)));
         const finalScore = agency.zollOpportunity?.pulseIqScore || calcScore;
         return {
           id: agency.id,
@@ -198,8 +195,9 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           fleetAge: agency.installedFleet.defibAgeYears,
           clinicalAcuity: bd.clinicalAcuityPts,
           fleetObsolescence: bd.fleetObsolescencePts,
-          cmsRecovery: bd.cmsFinancialPts,
-          demographics: bd.demographicVulnerabilityPts,
+          cmsRecovery: 0,
+          demographics: 0,
+          softwareWhitespace: bd.softwareWhitespacePts ?? 0,
           budgetGrant: bd.budgetGrantReadinessPts,
           agencyObj: agency,
           type: agency.agencyType
@@ -294,6 +292,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         let fleetObsolescence: number;
         let cmsRecovery: number;
         let demographics: number;
+        let softwareWhitespace: number;
         let budgetGrant: number;
         let topAccount: Agency | undefined;
         let fleetBrand = 'Stryker LIFEPAK 15';
@@ -309,7 +308,8 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           clinicalAcuity = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).clinicalAcuityPts, 0) / countyAgencies.length);
           fleetObsolescence = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).fleetObsolescencePts, 0) / countyAgencies.length);
           cmsRecovery = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).cmsFinancialPts, 0) / countyAgencies.length);
-          demographics = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).demographicVulnerabilityPts, 0) / countyAgencies.length);
+          demographics = 0;
+          softwareWhitespace = Math.round(countyAgencies.reduce((acc, a) => acc + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / countyAgencies.length);
           budgetGrant = Math.round(countyAgencies.reduce((acc, a) => acc + getBreakdown(a).budgetGrantReadinessPts, 0) / countyAgencies.length);
           fleetBrand = topAccount?.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
           fleetAge = topAccount?.installedFleet?.defibAgeYears || 7.5;
@@ -322,10 +322,11 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
           clinicalAcuity = Math.min(25, Math.max(10, Math.round(10 + (incidents % 12) + (36 - (stateObj?.avgUtsteinSurvival || 26)) * 0.4)));
           fleetObsolescence = Math.min(25, Math.max(12, Math.round(14 + (calls % 9))));
-          cmsRecovery = 10;
-          demographics = Math.min(15, Math.max(6, Math.round((seniorPct / 24) * 9 + 4)));
+          cmsRecovery = 0;
+          demographics = 0;
+          softwareWhitespace = Math.round(95 * DEFAULT_WEIGHTS.softwareWhitespaceWeight / 100);
           budgetGrant = Math.min(15, Math.max(6, Math.round(7 + (incidents % 7))));
-          avgScore = Math.min(99, clinicalAcuity + fleetObsolescence + cmsRecovery + demographics + budgetGrant);
+          avgScore = Math.min(99, clinicalAcuity + fleetObsolescence + budgetGrant + softwareWhitespace);
           maxScore = Math.min(99, avgScore + 4);
           totalPipeline = (scMeta?.activeEmsAgencies || 2) * 135000;
         }
@@ -350,6 +351,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           fleetObsolescence,
           cmsRecovery,
           demographics,
+          softwareWhitespace,
           budgetGrant,
           topAccountName: topAccount?.name || `${displayName} Emergency Medical Services`,
           topAccountObj: topAccount
@@ -380,7 +382,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           primaryCompetitor: topLead ? topLead.fleetBrand : 'Competitor'
         },
         scopeTitle: `${stateObj?.state || stUpper} County-by-County PulseIQ Breakdown`,
-        scopeSubtitle: `Comparative 5-pillar prioritization across unique counties in ${stateObj?.state || stUpper}`
+        scopeSubtitle: `Comparative four-factor prioritization across unique counties in ${stateObj?.state || stUpper}`
       };
     }
 
@@ -406,7 +408,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       const agenciesInState = stateMap.get(canonicalCode) || [];
       const hasAgencies = agenciesInState.length > 0;
 
-      // Authentic 5-pillar breakdown averages across all accounts in this state
+      // Active four-factor contributions averaged across accounts in this state
       const clinicalAcuity = hasAgencies
         ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).clinicalAcuityPts, 0) / agenciesInState.length)
         : Math.min(25, Math.max(8, Math.round(8 + ((36.0 - stateObj.avgUtsteinSurvival) * 0.9))));
@@ -417,18 +419,20 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
 
       const cmsRecovery = hasAgencies
         ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).cmsFinancialPts, 0) / agenciesInState.length)
-        : 10;
+        : 0;
 
-      const demographics = hasAgencies
-        ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).demographicVulnerabilityPts, 0) / agenciesInState.length)
-        : Math.min(15, Math.max(5, Math.round((stateObj.seniorPopPct / 24) * 9 + (stateObj.avgTransportMinutes / 40) * 5)));
+      const demographics = 0;
+
+      const softwareWhitespace = hasAgencies
+        ? Math.round(agenciesInState.reduce((sum, a) => sum + (getBreakdown(a).softwareWhitespacePts ?? 0), 0) / agenciesInState.length)
+        : Math.round(95 * DEFAULT_WEIGHTS.softwareWhitespaceWeight / 100);
 
       const budgetGrant = hasAgencies
         ? Math.round(agenciesInState.reduce((sum, a) => sum + getBreakdown(a).budgetGrantReadinessPts, 0) / agenciesInState.length)
         : Math.min(15, Math.max(6, Math.round(7 + (stateObj.totalAfgAwardsYtd / 30000000) * 8)));
 
-      // In stacked bar chart, total score matches the sum of the 5 pillars exactly
-      const avgScore = clinicalAcuity + fleetObsolescence + cmsRecovery + demographics + budgetGrant;
+      // Active factor contributions sum to the displayed score; claim and demographic fields are excluded.
+      const avgScore = clinicalAcuity + fleetObsolescence + budgetGrant + softwareWhitespace;
 
       const peakScore = hasAgencies
         ? Math.max(...agenciesInState.map(a => a.zollOpportunity?.pulseIqScore || 80))
@@ -483,6 +487,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         fleetObsolescence,
         cmsRecovery,
         demographics,
+        softwareWhitespace,
         budgetGrant,
         topAccountName,
         topAccountObj: topAccount
@@ -522,7 +527,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         primaryCompetitor: primaryCompetitorBrand
       },
       scopeTitle: 'Nationwide State-by-State PulseIQ Score Comparison',
-      scopeSubtitle: 'Comparative 5-pillar scoring across high-potential states in the 50-state territory'
+      scopeSubtitle: 'Comparative four-factor scoring across states in the territory'
     };
   }, [effectiveAgencies, normalizedState, normalizedCounty, categoryFilter, limitCount, sortBy]);
 
@@ -533,16 +538,14 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
     // Calculate averages of current dataset
     const avgClinical = Math.round(chartData.reduce((acc, d) => acc + (d.clinicalAcuity || 20), 0) / chartData.length);
     const avgFleet = Math.round(chartData.reduce((acc, d) => acc + (d.fleetObsolescence || 20), 0) / chartData.length);
-    const avgCms = Math.round(chartData.reduce((acc, d) => acc + (d.cmsRecovery || 16), 0) / chartData.length);
-    const avgDemo = Math.round(chartData.reduce((acc, d) => acc + (d.demographics || 12), 0) / chartData.length);
     const avgGrant = Math.round(chartData.reduce((acc, d) => acc + (d.budgetGrant || 11), 0) / chartData.length);
+    const avgSoftware = Math.round(chartData.reduce((acc, d) => acc + (d.softwareWhitespace || 0), 0) / chartData.length);
 
     return [
       { pillar: 'Clinical Acuity (Cardiac / ROSC)', score: avgClinical, benchmark: 18, fullMark: 25 },
       { pillar: 'Fleet Obsolescence (LP15 Age)', score: avgFleet, benchmark: 17, fullMark: 25 },
-      { pillar: 'CMS claims evidence', score: avgCms, benchmark: 10, fullMark: 20 },
-      { pillar: 'Demographic Need (Age 65+)', score: avgDemo, benchmark: 10, fullMark: 15 },
-      { pillar: 'Budget / AFG Grant Funding', score: avgGrant, benchmark: 10, fullMark: 15 }
+      { pillar: 'Budget / AFG Grant Funding', score: avgGrant, benchmark: 10, fullMark: 20 },
+      { pillar: 'Software / billing whitespace', score: avgSoftware, benchmark: 12, fullMark: 15 }
     ];
   }, [chartData]);
 
@@ -603,27 +606,27 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             {item.pipelineFormatted && <div><strong>Projected Pipeline:</strong> <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">{item.pipelineFormatted}</span></div>}
           </div>
 
-          {/* 5-Pillar Score Breakdown Details */}
+          {/* PulseIQ score contribution details */}
           <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-1 tabular-nums text-[10px]">
             <div className="flex items-center justify-between text-slate-900 dark:text-slate-100">
               <span>● Clinical Acuity (NEMSIS):</span>
-              <span className="font-bold tabular-nums">{item.clinicalAcuity} / 25 pts</span>
+              <span className="font-bold tabular-nums">{item.clinicalAcuity} pts</span>
             </div>
             <div className="flex items-center justify-between text-[#1E3A8A] dark:text-blue-400">
               <span>◐ Fleet Obsolescence (Cycle):</span>
-              <span className="font-bold tabular-nums">{item.fleetObsolescence} / 25 pts</span>
+              <span className="font-bold tabular-nums">{item.fleetObsolescence} pts</span>
             </div>
             <div className="flex items-center justify-between text-blue-600 dark:text-blue-300">
-              <span>● CMS Billing Recovery (PUF):</span>
-              <span className="font-bold tabular-nums">{item.cmsRecovery} / 20 pts</span>
+              <span>● Local claim-denial input:</span>
+              <span className="font-bold tabular-nums">Excluded</span>
             </div>
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-              <span>● Demographic Deficit (FIPS):</span>
-              <span className="font-bold tabular-nums">{item.demographics} / 15 pts</span>
+              <span>● Software / Billing Whitespace:</span>
+              <span className="font-bold tabular-nums">{item.softwareWhitespace} pts</span>
             </div>
             <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span>● FEMA Grant Readiness (AFG):</span>
-              <span className="font-bold tabular-nums">{item.budgetGrant} / 15 pts</span>
+              <span className="font-bold tabular-nums">{item.budgetGrant} pts</span>
             </div>
           </div>
 
@@ -686,7 +689,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
             </div>
           </div>
           <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            {scopeSubtitle}. Visualizing algorithmic ranking across Clinical Acuity, Rival Fleet Age, CMS claims evidence, Demographics, and FEMA Grants. Missing county denial data receives a neutral score contribution.
+            {scopeSubtitle}. PulseIQ ranking uses clinical acuity, fleet age, demographic need, grant readiness, and software. Local claim-denial rates are excluded; imported claim evidence remains available separately for review.
           </p>
         </div>
 
@@ -702,10 +705,10 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
                   ? 'bg-[#0F172A] dark:bg-blue-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
-              title="Stacked 5-Pillar Score Breakdown"
+              title="Stacked PulseIQ factor contributions"
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>5-Pillar Breakdown</span>
+              <span>Factor Breakdown</span>
             </button>
 
             <button
@@ -764,7 +767,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
                 type="button"
                 onClick={onOpenWeightsModal}
                 className="px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Calibrate 5-Pillar PulseIQ Scoring Weights"
+                title="Calibrate PulseIQ scoring weights"
               >
                 <Sliders className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>Calibrate Weights</span>
@@ -964,7 +967,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       {/* Main Chart Rendering Container */}
       <div className="w-full min-w-0 overflow-hidden h-[460px] sm:h-[500px] pt-2">
         
-        {/* MODE 1: 5-Pillar Stacked Breakdown Bar Chart */}
+        {/* MODE 1: Active PulseIQ factor breakdown */}
         {chartMode === 'stacked_breakdown' && (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -1005,11 +1008,10 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
               <ReferenceLine y={85} stroke="#1E3A8A" strokeDasharray="4 4" label={{ value: 'Priority Tier (85 pts)', position: 'insideTopRight', fill: '#1E3A8A', fontSize: 10, fontWeight: 'bold' }} />
               
               {/* 5 Stacked Pillars with Harmonious Clinical Palette */}
-              <Bar dataKey="clinicalAcuity" name="Clinical Acuity (25 pts)" stackId="a" fill="#1E3A8A" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="fleetObsolescence" name="Fleet Obsolescence (25 pts)" stackId="a" fill="#2563EB" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="cmsRecovery" name="CMS Billing Recovery (20 pts)" stackId="a" fill="#60A5FA" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="demographics" name="Demographic Need (15 pts)" stackId="a" fill="#93C5FD" radius={[0, 0, 0, 0]} cursor="pointer" />
-              <Bar dataKey="budgetGrant" name="FEMA Grant / Budget (15 pts)" stackId="a" fill="#059669" radius={[4, 4, 0, 0]} cursor="pointer" />
+              <Bar dataKey="clinicalAcuity" name="Clinical acuity (weighted points)" stackId="a" fill="#1E3A8A" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="fleetObsolescence" name="Fleet pressure (weighted points)" stackId="a" fill="#2563EB" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="softwareWhitespace" name="Software whitespace (weighted points)" stackId="a" fill="#60A5FA" radius={[0, 0, 0, 0]} cursor="pointer" />
+              <Bar dataKey="budgetGrant" name="Grant readiness (weighted points)" stackId="a" fill="#059669" radius={[4, 4, 0, 0]} cursor="pointer" />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -1073,7 +1075,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           </ResponsiveContainer>
         )}
 
-        {/* MODE 3: 5-Pillar Radar Diagnostic Comparison */}
+        {/* MODE 3: PulseIQ factor comparison */}
         {chartMode === 'radar' && (
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
@@ -1229,7 +1231,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#60A5FA]"></span>
-            <span>CMS Recovery (20)</span>
+            <span>Software whitespace</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#93C5FD]"></span>

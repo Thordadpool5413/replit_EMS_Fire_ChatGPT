@@ -93,7 +93,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            5-Pillar Methodology
+            Four-factor Methodology
           </button>
           <button
             onClick={() => setActiveTab('playbook')}
@@ -133,7 +133,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                   PulseIQ™ is Nick&apos;s proprietary, transparent actuarial index (0–100) that models capital replacement urgency, reimbursement distress, and procurement readiness across EMS and fire departments.
                 </p>
                 <p className="text-slate-300 text-sm leading-relaxed mt-2">
-                  Unlike black-box AI scores, PulseIQ™ is <strong className="text-white font-semibold">100% deterministic and auditable</strong>: every point is directly traced to public regulatory filings (CMS Part B ambulance carrier reports, FEMA AFG grant awards, state fleet inventories, and CARES cardiac registry telemetry).
+                  PulseIQ™ is a deterministic model based on available fleet, cardiac-volume, grant, and software inputs. Local claim-denial rates and claim-based recovery estimates are excluded from the score; imported claim summaries remain available for separate review.
                 </p>
               </div>
 
@@ -312,7 +312,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                 </div>
                 <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
                   <p>
-                    Tracks CMS Medicare Part B ambulance claims volume, transport revenue, and source-documented billing outcomes. Claim records can identify opportunities for ZOLL Billing and automated ePCR medical necessity validation.
+                    Imported Medicare claim summaries preserve counts, scope, period, and source links for direct review. They do not contribute local denial percentages or recovery estimates to PulseIQ.
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
                     <div className="p-2 rounded bg-slate-900 border border-slate-800">

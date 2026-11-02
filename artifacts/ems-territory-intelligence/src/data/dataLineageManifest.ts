@@ -829,9 +829,7 @@ export function auditAgencyDataLineage(
     {
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Addressable Cash Recovery via Clean Claims',
-      fieldValue: hasVerifiedCmsBilled && agency.cmsData?.estimatedRecoverableRevenue
-        ? `$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K recoverable (Projected)`
-        : '—',
+      fieldValue: 'Not calculated: source-backed claim-dollar inputs and a reproducible account-specific method are unavailable',
       sourceRegistry: 'Actuarial Billing Model Projection (ZOLL AR Boost)',
       schemaIdentifier: 'Actuarial Billing Model Projection',
       verificationStatus: 'Model / Estimate',

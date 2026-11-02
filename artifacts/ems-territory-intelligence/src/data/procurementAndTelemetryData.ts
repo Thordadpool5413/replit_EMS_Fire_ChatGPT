@@ -146,7 +146,7 @@ export function computeNationwideStateAggregations(
       ? +((totalDeniedClaims / totalAdjudicatedDenialClaims) * 100).toFixed(1)
       : null;
     const totalRecoverableDollars = recoverableRevenueRecords.reduce(
-      (sum, a) => sum + a.cmsData.estimatedRecoverableRevenue,
+      (sum, a) => sum + (a.cmsData.estimatedRecoverableRevenue ?? 0),
       0
     );
     const afgGrantRecipients = list.filter(a => a.grantStatus?.afgAwarded).length;

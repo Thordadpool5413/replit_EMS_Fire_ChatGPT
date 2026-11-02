@@ -8,6 +8,7 @@ import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
 export { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
 import {
+  applyAgencySourceRecordDataMap,
   applyAgencySourceRecordData,
   loadAgencySourceRecordData,
 } from '../services/agencySourceRecordStore';
@@ -222,23 +223,22 @@ export function explainAgencyScore(
 
 export function loadStoredAgencies(): Agency[] {
   purgeLegacyStorageKeys();
+  const baseline = nationalProviderDb.getInitialBaselineAgencies();
+  const sourceData = loadAgencySourceRecordData();
+  const restoreBaselineWithLocalSources = () =>
+    applyAgencySourceRecordDataMap(baseline, sourceData);
+
   try {
-    const baseline = nationalProviderDb.getInitialBaselineAgencies();
     getBaselineSignatures(baseline);
-    const sourceData = loadAgencySourceRecordData();
 
     const rawCustom = localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES);
     if (!rawCustom) {
-      return baseline.map((agency) =>
-        applyAgencySourceRecordData(agency, sourceData[agency.id]),
-      );
+      return restoreBaselineWithLocalSources();
     }
 
     const customEntries: [string, CompactAgencyDelta][] = JSON.parse(rawCustom);
     if (!Array.isArray(customEntries) || customEntries.length === 0) {
-      return baseline.map((agency) =>
-        applyAgencySourceRecordData(agency, sourceData[agency.id]),
-      );
+      return restoreBaselineWithLocalSources();
     }
 
     const customMap = new Map<string, CompactAgencyDelta>(customEntries);
@@ -260,7 +260,7 @@ export function loadStoredAgencies(): Agency[] {
       return applyAgencySourceRecordData(restored, sourceData[agency.id]);
     });
   } catch {
-    return nationalProviderDb.getInitialBaselineAgencies();
+    return restoreBaselineWithLocalSources();
   }
 }
 

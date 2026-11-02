@@ -144,6 +144,22 @@ export function applyAgencySourceRecordData(
   };
 }
 
+export function applyAgencySourceRecordDataMap(
+  agencies: Agency[],
+  sourceDataByAgency: AgencySourceRecordDataMap,
+): Agency[] {
+  return agencies.map((agency) =>
+    applyAgencySourceRecordData(agency, sourceDataByAgency[agency.id]),
+  );
+}
+
+export function stripBrowserLocalAgencySourceData(agency: Agency): Agency {
+  const shareableAgency = { ...agency };
+  delete shareableAgency.sourceRecordAssociations;
+  delete shareableAgency.sourceFacts;
+  return shareableAgency;
+}
+
 export function saveAgencySourceRecordData(
   agencyId: string,
   data: AgencySourceRecordData,

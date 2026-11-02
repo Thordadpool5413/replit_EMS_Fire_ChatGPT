@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  applyAgencySourceRecordDataMap,
   findAgencySourceRecordAssociation,
   loadAgencySourceRecordData,
   replaceAgencySourceRecordAssociation,
   saveAgencySourceRecordData,
+  stripBrowserLocalAgencySourceData,
 } from "./agencySourceRecordStore";
 import type {
+  Agency,
   AgencySourceFact,
   AgencySourceRecordAssociation,
 } from "../types";
@@ -71,6 +74,49 @@ test("persists source decisions and scoped facts independently by agency", () =>
     sourceFacts: [fact],
   });
   assert.equal(loadAgencySourceRecordData(storage)["agency-2"], undefined);
+});
+
+test("rehydrates local source evidence onto a refreshed agency record", () => {
+  const storage = memoryStorage();
+  const saved = saveAgencySourceRecordData(
+    "agency-1",
+    {
+      sourceRecordAssociations: [association],
+      sourceFacts: [fact],
+    },
+    storage,
+  );
+  assert.deepEqual(saved, { ok: true });
+
+  const refreshedCloudAgency = stripBrowserLocalAgencySourceData({
+    id: "agency-1",
+    name: "Updated Example Fire Department",
+    sourceRecordAssociations: [],
+    sourceFacts: [],
+  } as Agency);
+  const [restored] = applyAgencySourceRecordDataMap(
+    [refreshedCloudAgency],
+    loadAgencySourceRecordData(storage),
+  );
+
+  assert.equal(restored.name, "Updated Example Fire Department");
+  assert.deepEqual(restored.sourceRecordAssociations, [association]);
+  assert.deepEqual(restored.sourceFacts, [fact]);
+});
+
+test("browser-local source evidence is excluded from shareable agency records", () => {
+  const agency = {
+    id: "agency-1",
+    name: "Example Fire Department",
+    sourceRecordAssociations: [association],
+    sourceFacts: [fact],
+  } as Agency;
+
+  const shareable = stripBrowserLocalAgencySourceData(agency);
+
+  assert.equal(shareable.name, agency.name);
+  assert.equal(shareable.sourceRecordAssociations, undefined);
+  assert.equal(shareable.sourceFacts, undefined);
 });
 
 test("keeps an explicit rejected candidate as a review decision", () => {

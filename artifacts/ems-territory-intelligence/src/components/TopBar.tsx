@@ -155,19 +155,19 @@ export const TopBar: React.FC<TopBarProps> = ({
         className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
       >
         {/* Compact identity keeps the workspace navigation immediately in view. */}
-        <div className="px-4 py-3.5 flex items-center border-b border-[#172D49] shrink-0">
+        <div className="px-4 py-3 flex items-center justify-center border-b border-[#172D49] shrink-0">
           <button
             type="button"
             onClick={onGoHome}
-            className="flex items-center gap-3 group focus:outline-none cursor-pointer text-left min-w-0"
+            className="flex items-center justify-center group focus:outline-none cursor-pointer"
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
-            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#285EE8]/40 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
+            <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
               {!logoFailed ? (
                 <img
                   src={logoSrc}
-                  alt="Territory Intelligence Logo"
+                  alt="EMS and Fire logo"
                   className="w-full h-full object-cover"
                   onError={() => {
                     if (logoSrc !== fallbackLogo) setLogoSrc(fallbackLogo);
@@ -175,13 +175,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }}
                 />
               ) : (
-                <span className="font-display font-bold text-sm text-white">NF</span>
+                <span className="font-display font-bold text-lg text-white">NF</span>
               )}
             </div>
-            <span className="min-w-0">
-              <span className="block text-[13px] leading-tight font-semibold text-white truncate">EMS &amp; Fire</span>
-              <span className="block mt-0.5 text-[10px] leading-tight text-slate-400 truncate">Territory Intelligence</span>
-            </span>
           </button>
         </div>
 
@@ -408,23 +404,16 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               type="button"
               onClick={onGoHome}
-              className="md:hidden flex items-center gap-2.5 text-left cursor-pointer shrink-0"
+              className="md:hidden flex items-center justify-center text-left cursor-pointer shrink-0"
               title="Return to Territory Intelligence Home"
+              aria-label="Return to Territory Intelligence Home"
             >
-              <div className="w-10 h-10 rounded-full ring-1.5 ring-[#285EE8]/40 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
                 <img
                   src={logoSrc}
-                  alt="EMS & Fire Territory Intelligence logo"
+                  alt="EMS and Fire logo"
                   className="w-full h-full object-cover"
                 />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-display font-[650] text-[13px] text-[#14283F] dark:text-white leading-tight truncate">
-                  EMS &amp; Fire
-                </span>
-                <span className="font-sans text-[10px] text-[#53657B] dark:text-slate-400 truncate">
-                  Territory Intelligence
-                </span>
               </div>
             </button>
 

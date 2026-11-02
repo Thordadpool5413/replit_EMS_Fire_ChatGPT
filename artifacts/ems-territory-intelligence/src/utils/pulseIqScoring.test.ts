@@ -5,7 +5,9 @@ import {
   calculatePulseIqContributions,
   calculateScore,
   DEFAULT_WEIGHTS,
-  evaluatePulseIqFactors
+  evaluatePulseIqFactors,
+  getPulseIqFormula,
+  getPulseIqWeightDetails
 } from './pulseIqScoring';
 import { rankByPulseIqScore } from './pulseIqRanking';
 
@@ -60,6 +62,32 @@ test('PulseIQ factor detail exposes the values, weights, rules, and source field
     Math.round(factors.reduce((sum, factor) => sum + factor.contributionPts, 0)),
     calculateScore(record)
   );
+});
+
+test('custom weights use the same four active factors in score details and formula', () => {
+  const record = agency(82, 750000);
+  const weights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 10,
+    cardiacVolumeWeight: 50,
+    grantAwardWeight: 30,
+    softwareWhitespaceWeight: 10,
+    cmsDenialWeight: 500
+  };
+  const evaluatedFactors = evaluatePulseIqFactors(record, weights);
+  const weightDetails = getPulseIqWeightDetails(weights);
+
+  assert.deepEqual(evaluatedFactors.map((factor) => factor.key), ['fleet', 'clinical', 'grant', 'software']);
+  assert.deepEqual(weightDetails.factors.map((factor) => factor.key), evaluatedFactors.map((factor) => factor.key));
+  evaluatedFactors.forEach((factor, index) => {
+    assert.equal(weightDetails.factors[index].weight, factor.weight);
+    assert.equal(weightDetails.factors[index].weightPct, factor.weightPct);
+  });
+  assert.equal(
+    Math.round(evaluatedFactors.reduce((sum, factor) => sum + factor.contributionPts, 0)),
+    calculateScore(record, weights)
+  );
+  assert.equal(getPulseIqFormula(weights), '(F_fleet × 10 + F_clinical × 50 + F_grant × 30 + F_software × 10) ÷ 100');
 });
 
 test('missing score inputs are shown as model fallbacks instead of implied source facts', () => {

@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Agency, TerritoryCluster } from '../types';
+import { Agency, PredictiveWeights, TerritoryCluster } from '../types';
+import { DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { TERRITORY_CLUSTERS } from '../data/healthcareData';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -113,6 +114,7 @@ interface GisTerritoryHeatmapProps {
   onSelectCity?: (city: string) => void;
   onSelectCategory?: (category: 'all' | 'ems' | 'fire') => void;
   onSwitchToGoogleMaps?: () => void;
+  weights?: PredictiveWeights;
 }
 
 export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
@@ -131,7 +133,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   onSelectCounty,
   onSelectCity,
   onSelectCategory,
-  onSwitchToGoogleMaps
+  onSwitchToGoogleMaps,
+  weights = DEFAULT_WEIGHTS
 }) => {
   const [selectedLayer, setSelectedLayer] = useState<'nemsis_cardiac' | 'cardiac' | 'aed' | 'transport'>('nemsis_cardiac');
   const [nemsisAcuityFilter, setNemsisAcuityFilter] = useState<'all' | 'high' | 'critical'>('all');
@@ -3654,6 +3657,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         }}
         onSelectAgency={onSelectAgency}
         globalCategory={selectedCategory}
+        weights={weights}
       />
 
       {/* Transparent Lead Scoring System Architecture */}

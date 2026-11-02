@@ -1,9 +1,8 @@
 import React from 'react';
-import type { Agency } from '../types';
+import type { Agency, AgencyFactEvidenceKey, PredictiveWeights } from '../types';
 import {
+  DEFAULT_WEIGHTS,
   evaluatePulseIqFactors,
-  type PulseIqFactorEvaluation,
-  type PulseIqScoreContributions
 } from '../utils/pulseIqScoring';
 import {
   hasMappedAgencyFactEvidence,
@@ -13,16 +12,10 @@ import {
 interface PulseIqEvidencePanelProps {
   agency: Agency;
   compact?: boolean;
+  weights?: PredictiveWeights;
 }
 
-const contributionFieldMap: Record<PulseIqFactorEvaluation['key'], keyof PulseIqScoreContributions> = {
-  fleet: 'fleetObsolescencePts',
-  clinical: 'clinicalAcuityPts',
-  grant: 'budgetGrantReadinessPts',
-  software: 'softwareWhitespacePts'
-};
-
-const statusLabel = (agency: Agency, key: PulseIqFactorEvaluation['inputs'][number]['sourceKey']) => {
+const statusLabel = (agency: Agency, key: AgencyFactEvidenceKey) => {
   if (hasReviewedAgencyFactEvidence(agency, key)) return 'Source reviewed';
   if (hasMappedAgencyFactEvidence(agency, key)) return 'Source linked';
   return 'Profile estimate';
@@ -39,9 +32,10 @@ const getSafeSourceUrl = (url?: string): string | null => {
 
 export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
   agency,
-  compact = false
+  compact = false,
+  weights = DEFAULT_WEIGHTS
 }) => {
-  const factors = evaluatePulseIqFactors(agency);
+  const factors = evaluatePulseIqFactors(agency, weights);
 
   return (
     <section
@@ -58,14 +52,6 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
 
       <div className="space-y-2.5">
         {factors.map((factor) => {
-          const storedContribution = agency.zollOpportunity?.scoreBreakdown?.[contributionFieldMap[factor.key]];
-          const contribution = typeof storedContribution === 'number' && Number.isFinite(storedContribution)
-            ? storedContribution
-            : factor.contributionPts;
-          const effectiveWeight = factor.baseScore > 0
-            ? contribution / factor.baseScore * 100
-            : factor.weightPct;
-
           return (
             <article
               key={factor.key}
@@ -77,9 +63,9 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
                   <p className="mt-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Factor value: {factor.baseScore}/100
                     <span className="mx-1 text-slate-400">×</span>
-                    {effectiveWeight.toFixed(1)}% weight
+                    {factor.weightPct.toFixed(1)}% weight
                     <span className="mx-1 text-slate-400">=</span>
-                    <strong className="text-blue-700 dark:text-blue-300">+{contribution.toFixed(1)} score points</strong>
+                    <strong className="text-blue-700 dark:text-blue-300">+{factor.contributionPts.toFixed(1)} score points</strong>
                   </p>
                 </div>
               </div>

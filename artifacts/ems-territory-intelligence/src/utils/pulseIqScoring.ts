@@ -26,11 +26,55 @@ export interface PulseIqFactorEvaluation {
   key: 'fleet' | 'clinical' | 'grant' | 'software';
   label: string;
   baseScore: number;
+  weight: number;
   weightPct: number;
   contributionPts: number;
   scoreBreakdownKey: keyof PulseIqScoreContributions;
   method: string;
   inputs: PulseIqFactorInput[];
+}
+
+export interface PulseIqWeightDetail {
+  key: PulseIqFactorEvaluation['key'];
+  label: string;
+  weight: number;
+  weightPct: number;
+}
+
+export const PULSE_IQ_FACTOR_RULES: Record<PulseIqFactorEvaluation['key'], string> = {
+  fleet: 'Competitor monitor: 100 at 9+ years, 85 at 7–8, 65 at 5–6, otherwise 40. ZOLL monitor: 75 at 7+ years, otherwise 30.',
+  clinical: 'Annual cardiac arrests: 100 at 1,800+, 85 at 1,000–1,799, 70 at 500–999, otherwise 50.',
+  grant: 'AFG award: 100. Otherwise active SAFER grant: 60. Neither recorded: 25.',
+  software: 'Any listed ZOLL billing or ePCR software: 35. Otherwise: 95. Missing software names currently count as no ZOLL match.'
+};
+
+const getActiveWeights = (weights: PredictiveWeights = DEFAULT_WEIGHTS) => [
+  { key: 'fleet' as const, label: 'Fleet replacement pressure', weight: typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight },
+  { key: 'clinical' as const, label: 'Clinical call volume', weight: typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight },
+  { key: 'grant' as const, label: 'Grant readiness', weight: typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight },
+  { key: 'software' as const, label: 'Software whitespace', weight: typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight }
+];
+
+export function getPulseIqWeightDetails(weights: PredictiveWeights = DEFAULT_WEIGHTS): {
+  totalWeight: number;
+  factors: PulseIqWeightDetail[];
+} {
+  const activeWeights = getActiveWeights(weights);
+  const totalWeight = activeWeights.reduce((sum, factor) => sum + factor.weight, 0) || 100;
+
+  return {
+    totalWeight,
+    factors: activeWeights.map((factor) => ({
+      ...factor,
+      weightPct: factor.weight / totalWeight * 100
+    }))
+  };
+}
+
+export function getPulseIqFormula(weights: PredictiveWeights = DEFAULT_WEIGHTS): string {
+  const { totalWeight, factors } = getPulseIqWeightDetails(weights);
+  const numerator = factors.map((factor) => `F_${factor.key} × ${factor.weight}`).join(' + ');
+  return `(${numerator}) ÷ ${totalWeight}`;
 }
 
 export function evaluatePulseIqFactors(
@@ -39,11 +83,9 @@ export function evaluatePulseIqFactors(
 ): PulseIqFactorEvaluation[] {
   if (!agency) return [];
 
-  const wFleet = typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight;
-  const wCardiac = typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight;
-  const wGrant = typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight;
-  const wSoftware = typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight;
-  const totalWeight = (wFleet + wCardiac + wGrant + wSoftware) || 100;
+  const { totalWeight, factors: weightDetails } = getPulseIqWeightDetails(weights);
+  const weightByKey = Object.fromEntries(weightDetails.map((factor) => [factor.key, factor.weight])) as Record<PulseIqFactorEvaluation['key'], number>;
+  const labelByKey = Object.fromEntries(weightDetails.map((factor) => [factor.key, factor.label])) as Record<PulseIqFactorEvaluation['key'], string>;
 
   const age = agency.installedFleet?.defibAgeYears ?? 7;
   const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
@@ -75,11 +117,11 @@ export function evaluatePulseIqFactors(
   }> = [
     {
       key: 'fleet',
-      label: 'Fleet replacement pressure',
+      label: labelByKey.fleet,
       baseScore: fleetScore,
-      weight: wFleet,
+      weight: weightByKey.fleet,
       scoreBreakdownKey: 'fleetObsolescencePts',
-      method: 'Competitor monitor: 100 at 9+ years, 85 at 7–8, 65 at 5–6, otherwise 40. ZOLL monitor: 75 at 7+ years, otherwise 30.',
+      method: PULSE_IQ_FACTOR_RULES.fleet,
       inputs: [
         {
           label: 'Defibrillator age',
@@ -97,11 +139,11 @@ export function evaluatePulseIqFactors(
     },
     {
       key: 'clinical',
-      label: 'Clinical call volume',
+      label: labelByKey.clinical,
       baseScore: cardiacScore,
-      weight: wCardiac,
+      weight: weightByKey.clinical,
       scoreBreakdownKey: 'clinicalAcuityPts',
-      method: 'Annual cardiac arrests: 100 at 1,800+, 85 at 1,000–1,799, 70 at 500–999, otherwise 50.',
+      method: PULSE_IQ_FACTOR_RULES.clinical,
       inputs: [{
         label: 'Annual cardiac arrests',
         valueUsed: `${cardiac.toLocaleString()} calls/year`,
@@ -111,11 +153,11 @@ export function evaluatePulseIqFactors(
     },
     {
       key: 'grant',
-      label: 'Grant readiness',
+      label: labelByKey.grant,
       baseScore: grantScore,
-      weight: wGrant,
+      weight: weightByKey.grant,
       scoreBreakdownKey: 'budgetGrantReadinessPts',
-      method: 'AFG award: 100. Otherwise active SAFER grant: 60. Neither recorded: 25.',
+      method: PULSE_IQ_FACTOR_RULES.grant,
       inputs: [{
         label: 'Grant status used',
         valueUsed: `${agency.grantStatus?.afgAwarded ? 'AFG awarded' : 'No AFG award recorded'} · ${agency.grantStatus?.saferGrantActive ? 'SAFER active' : 'No active SAFER grant recorded'}`,
@@ -125,11 +167,11 @@ export function evaluatePulseIqFactors(
     },
     {
       key: 'software',
-      label: 'Software whitespace',
+      label: labelByKey.software,
       baseScore: softwareScore,
-      weight: wSoftware,
+      weight: weightByKey.software,
       scoreBreakdownKey: 'softwareWhitespacePts',
-      method: 'Any listed ZOLL billing or ePCR software: 35. Otherwise: 95. Missing software names currently count as no ZOLL match.',
+      method: PULSE_IQ_FACTOR_RULES.software,
       inputs: [
         {
           label: 'Billing software',
@@ -151,6 +193,7 @@ export function evaluatePulseIqFactors(
     key: factor.key,
     label: factor.label,
     baseScore: factor.baseScore,
+    weight: factor.weight,
     weightPct: factor.weight / totalWeight * 100,
     contributionPts: factor.baseScore * factor.weight / totalWeight,
     scoreBreakdownKey: factor.scoreBreakdownKey,

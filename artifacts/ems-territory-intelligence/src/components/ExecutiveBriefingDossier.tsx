@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Agency } from '../types';
+import { Agency, PredictiveWeights } from '../types';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import {
   Printer,
@@ -41,6 +41,7 @@ import { explainAgencyScore } from '../utils/syncStore';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;
+  weights?: PredictiveWeights;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -50,6 +51,7 @@ const reportNumber = (value: number | null | undefined, suffix = '') =>
 
 export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> = ({
   agency,
+  weights,
   isOpen,
   onClose
 }) => {
@@ -93,8 +95,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   // Derived operational-factor score attribution
   const scoreExplanation = useMemo(() => {
     if (!agency) return null;
-    return explainAgencyScore(agency);
-  }, [agency]);
+    return explainAgencyScore(agency, weights);
+  }, [agency, weights]);
 
   // ALWAYS KEEP ALL HOOKS ABOVE EARLY RETURN
   if (!isOpen || !agency) return null;

@@ -8,6 +8,7 @@ import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 import {
   Agency,
   LeadStage,
+  PredictiveWeights,
   FieldNote,
   KeyContact,
   AgencyFactEvidenceKey,
@@ -82,6 +83,7 @@ import {
 
 interface FocusedProviderProfileProps {
   agency: Agency;
+  weights?: PredictiveWeights;
   backLabel: string;
   comparedAgencyIds: string[];
   onToggleAgencyComparison: (agency: Agency) => void;
@@ -386,6 +388,7 @@ function resolveEquipmentSuppliers(agency: Agency) {
 
 export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   agency: rawAgency,
+  weights,
   backLabel,
   comparedAgencyIds,
   onToggleAgencyComparison,
@@ -1249,7 +1252,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     style={{ width: Number.isFinite(agency.zollOpportunity.pulseIqScore) ? `${agency.zollOpportunity.pulseIqScore}%` : '0%' }}
                   />
                 </div>
-                <PulseIqEvidencePanel agency={agency} compact />
+                <PulseIqEvidencePanel agency={agency} compact weights={weights} />
 
                 <div className="grid grid-cols-2 gap-px bg-[#DFE6EF] dark:bg-[#1E2D42] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg overflow-hidden">
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-2.5">
@@ -3759,6 +3762,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         <React.Suspense fallback={null}>
           <ExecutiveBriefingDossier
             agency={agency}
+            weights={weights}
             isOpen
             onClose={() => setShowDossierModal(false)}
           />

@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Agency } from '../types';
+import { Agency, PredictiveWeights } from '../types';
+import { DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
@@ -96,6 +97,7 @@ interface NationalGeographicExplorerProps {
   onSyncGlobalGeography?: (state: string, county: string, city: string, category?: 'all' | 'ems' | 'fire') => void;
   comparedAgencyIds?: string[];
   onToggleAgencyComparison?: (agency: Agency) => void;
+  weights?: PredictiveWeights;
 }
 
 export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProps> = ({
@@ -115,7 +117,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   activeAccount,
   onSyncGlobalGeography,
   comparedAgencyIds = [],
-  onToggleAgencyComparison
+  onToggleAgencyComparison,
+  weights = DEFAULT_WEIGHTS
 }) => {
   // Navigation / Drill-down state
   const [selectedStateCode, setSelectedStateCode] = useState<string>(globalState || 'all');
@@ -2225,7 +2228,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <PulseIqScoreTooltip agency={agency} size="compact" showLabel={true} />
+                          <PulseIqScoreTooltip agency={agency} weights={weights} size="compact" showLabel={true} />
                         </div>
                       </div>
 
@@ -2520,6 +2523,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             onSelectState={(st) => handleSelectState(st)}
             onSelectAgency={onSelectAgency}
             globalCategory={agencyCategoryFilter}
+            weights={weights}
           />
         </div>
       )}

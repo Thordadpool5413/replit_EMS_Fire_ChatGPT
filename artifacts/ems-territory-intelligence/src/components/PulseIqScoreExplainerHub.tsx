@@ -41,7 +41,7 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
     return explainAgencyScore(agency, weights);
   }, [agency, weights]);
 
-  const score = agency.zollOpportunity?.pulseIqScore ?? explanation.totalScore;
+  const score = explanation.totalScore;
 
   const getScoreColor = (val: number) => {
     if (val >= 88) return 'text-[#1E3A8A] dark:text-blue-400';
@@ -101,7 +101,7 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
                       {factor.name}
                     </span>
                     <span className="text-[10px] text-slate-400 shrink-0">
-                      ({factor.weightPct}% weight)
+                      ({factor.weightPct.toFixed(1)}% weight)
                     </span>
                   </div>
                   <span className="pi-data-number font-bold text-indigo-700 dark:text-indigo-400 text-[11px] shrink-0">
@@ -123,6 +123,9 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
                     {factor.urgencyLevel}
                   </span>
                 </div>
+                <p className="mt-1 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
+                  {factor.method}
+                </p>
               </div>
             );
           })}
@@ -131,7 +134,10 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
         {/* Bottom Callout */}
         <div className="flex items-center justify-between text-[11px] pt-1">
           <span className="text-slate-600 dark:text-slate-400">
-            <strong>Key Driver:</strong> Installed hardware aging past 7-year service lifecycle.
+            <strong>Largest Score Contribution:</strong>{' '}
+            {explanation.factors.reduce((largest, factor) =>
+              factor.pointsContributed > largest.pointsContributed ? factor : largest
+            ).name}
           </span>
           {onOpenFullProfile && (
             <button
@@ -204,7 +210,7 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
                     {factor.name}
                   </h4>
                   <span className="text-xs text-slate-400 pi-data-inline">
-                    (Weight: {factor.weightPct}%)
+                    (Weight: {factor.weightPct.toFixed(1)}%)
                   </span>
                 </div>
 

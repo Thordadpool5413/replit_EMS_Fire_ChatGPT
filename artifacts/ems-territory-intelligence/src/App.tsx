@@ -821,6 +821,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <ZollMobileDashboard
               agencies={agencies}
+              weights={weights}
               onSelectAgency={handleOpenAgencyProfile}
               onUpdateStage={handleUpdateStage}
               onNavigateTab={(tab) => setActiveTab(tab)}
@@ -870,6 +871,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <GisTerritoryHeatmap
               agencies={agencies}
+              weights={weights}
               onSelectAgency={handleOpenAgencyProfile}
               onToggleRoute={handleToggleRoute}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
@@ -977,6 +979,7 @@ export default function App() {
               selectedState={globalState}
               selectedCounty={globalCounty}
               agencies={agencies}
+              weights={weights}
               onSelectCounty={(c) => {
                 setGlobalCounty(c);
                 setGlobalCity('all');
@@ -998,6 +1001,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <NationalGeographicExplorer
               agencies={agencies}
+              weights={weights}
               initialMode={
                 globalCounty !== 'all' || globalCity !== 'all'
                   ? 'cities'
@@ -1232,6 +1236,7 @@ export default function App() {
       <React.Suspense fallback={null}>
       {previewAgency && <AgencyQuickPreviewDrawer
         agency={previewAgency}
+        weights={weights}
         onClose={() => setPreviewAgency(null)}
         onOpenFullDossier={handleOpenAgencyProfile}
         onUpdateStage={handleUpdateStage}
@@ -1247,6 +1252,7 @@ export default function App() {
       {currentActive && (
         <FocusedProviderProfile
           agency={currentActive}
+          weights={weights}
           backLabel={profileBackLabel}
           comparedAgencyIds={comparisonAgencyIds}
           onToggleAgencyComparison={handleToggleAgencyComparison}
@@ -1323,6 +1329,7 @@ export default function App() {
         isOpen={isDataLineageOpen}
         onClose={() => setIsDataLineageOpen(false)}
         agencies={agencies}
+        weights={weights}
         selectedAgency={selectedAgency || activeAccount}
         onSelectAgency={handleOpenAgencyProfile}
       />}

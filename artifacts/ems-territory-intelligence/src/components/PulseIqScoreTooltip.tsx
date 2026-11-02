@@ -7,6 +7,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { Agency, PredictiveWeights } from '../types';
 import { explainAgencyScore, DEFAULT_WEIGHTS } from '../utils/syncStore';
+import { getPulseIqFormula } from '../utils/pulseIqScoring';
 import { HelpCircle, X, ShieldAlert, Sparkles, Activity, FileCheck2, Cpu, ArrowUpRight } from 'lucide-react';
 
 interface PulseIqScoreTooltipProps {
@@ -31,12 +32,7 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
     return explainAgencyScore(agency, weights);
   }, [agency, weights]);
 
-  const score = agency.zollOpportunity?.pulseIqScore ?? explanation.totalScore;
-  const operationalWeightTotal =
-    weights.fleetAgeWeight +
-    weights.cardiacVolumeWeight +
-    weights.grantAwardWeight +
-    weights.softwareWhitespaceWeight || 100;
+  const score = explanation.totalScore;
 
   // Robust click-outside & Escape dismissal
   useClickOutside(containerRef, () => setIsOpen(false), {
@@ -161,16 +157,18 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
               PulseIQ estimate formula
             </div>
             <div>
-              (F_fleet × {weights.fleetAgeWeight} + F_clinical × {weights.cardiacVolumeWeight} + F_grant × {weights.grantAwardWeight} + F_software × {weights.softwareWhitespaceWeight}) ÷ {operationalWeightTotal}
+              {getPulseIqFormula(weights)}
             </div>
           </div>
 
-          {/* 5 Weighted Factor Rows */}
+          {/* Active weighted factor rows */}
           <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
             {explanation.factors.map(factor => {
               const maxPossible = factor.weightPct;
               const contributed = factor.pointsContributed;
-              const pctOfMax = Math.min(100, Math.round((contributed / maxPossible) * 100));
+              const pctOfMax = maxPossible > 0
+                ? Math.min(100, Math.round((contributed / maxPossible) * 100))
+                : 0;
 
               return (
                 <div key={factor.id} className="p-2.5 rounded-lg bg-[#F8F7F4] border border-[#E5E4DF] space-y-1.5 text-xs">
@@ -180,9 +178,7 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
                         {factor.name}
                       </div>
                       <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-                        {factor.id === 'afgGrantFunding' || factor.id === 'cardiacArrestVolume'
-                          ? 'Federal Record + PulseIQ Weight'
-                          : 'PulseIQ Mathematical Index'}
+                        PulseIQ active factor
                       </span>
                     </div>
                     <div className="text-right shrink-0">
@@ -212,6 +208,9 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
                   <p className="text-[11px] text-[#6B7280] leading-snug">
                     {factor.clinicalImpactSummary}
                   </p>
+                  <p className="text-[10px] text-[#6B7280] leading-snug">
+                    Scoring rule: {factor.method}
+                  </p>
                 </div>
               );
             })}
@@ -219,7 +218,7 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
 
           {/* Footer Note */}
           <div className="pt-2 border-t border-[#E5E4DF] flex items-center justify-between text-[11px] text-[#6B7280]">
-            <span>Deterministic 5-Factor Sum (100% Weight)</span>
+            <span>Deterministic four-factor weighted estimate</span>
             <span className="font-semibold text-[#1E3A8A] tabular-nums">
               Total: {score} / 100
             </span>

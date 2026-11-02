@@ -5,7 +5,7 @@
 
 import { Agency, SyncOutboxItem, PredictiveWeights, LeadStage } from '../types';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
+import { calculateScore, DEFAULT_WEIGHTS, evaluatePulseIqFactors } from './pulseIqScoring';
 export { calculateScore, DEFAULT_WEIGHTS } from './pulseIqScoring';
 import {
   applyAgencySourceRecordDataMap,
@@ -80,6 +80,7 @@ export interface PulseIqFactorBreakdown {
   agencyMetricValue: string;
   clinicalImpactSummary: string;
   urgencyLevel: 'Critical' | 'Elevated' | 'Moderate' | 'Nominal';
+  method: string;
 }
 
 export interface PulseIqScoreExplanation {
@@ -92,131 +93,78 @@ export function explainAgencyScore(
   agency: Agency,
   weights: PredictiveWeights = DEFAULT_WEIGHTS
 ): PulseIqScoreExplanation {
-  const wFleet = typeof weights?.fleetAgeWeight === 'number' ? weights.fleetAgeWeight : DEFAULT_WEIGHTS.fleetAgeWeight;
-  const wCardiac = typeof weights?.cardiacVolumeWeight === 'number' ? weights.cardiacVolumeWeight : DEFAULT_WEIGHTS.cardiacVolumeWeight;
-  const wGrant = typeof weights?.grantAwardWeight === 'number' ? weights.grantAwardWeight : DEFAULT_WEIGHTS.grantAwardWeight;
-  const wSoftware = typeof weights?.softwareWhitespaceWeight === 'number' ? weights.softwareWhitespaceWeight : DEFAULT_WEIGHTS.softwareWhitespaceWeight;
-
-  const totalWeight = (wFleet + wCardiac + wGrant + wSoftware) || 100;
-
-  // 1. Fleet Age Component
   const age = agency.installedFleet?.defibAgeYears ?? 7;
   const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-  const isCompetitor = !brand.includes('ZOLL');
-  let fleetScore = 20;
-  if (isCompetitor) {
-    if (age >= 9) fleetScore = 100;
-    else if (age >= 7) fleetScore = 85;
-    else if (age >= 5) fleetScore = 65;
-    else fleetScore = 40;
-  } else {
-    if (age >= 7) fleetScore = 75;
-    else fleetScore = 30;
-  }
-  const fleetPts = +((fleetScore * wFleet) / totalWeight).toFixed(1);
-
-  // Claims remain available as evidence, but local denial percentages do not affect PulseIQ.
-  const cmsScore = 0;
-  const cmsPts = 0;
-
-  // 3. Cardiac Volume / Clinical Acuity
   const cardiac = agency.annualCardiacArrestCalls ?? 600;
-  let cardiacScore = 40;
-  if (cardiac >= 1800) cardiacScore = 100;
-  else if (cardiac >= 1000) cardiacScore = 85;
-  else if (cardiac >= 500) cardiacScore = 70;
-  else cardiacScore = 50;
-  const cardiacPts = +((cardiacScore * wCardiac) / totalWeight).toFixed(1);
-
-  // 4. Grant Award Component
-  const grantScore = agency.grantStatus?.afgAwarded ? 100 : (agency.grantStatus?.saferGrantActive ? 60 : 25);
-  const grantPts = +((grantScore * wGrant) / totalWeight).toFixed(1);
-
-  // 5. Software Whitespace
   const billingSw = agency.installedFleet?.billingSoftware || '';
   const epcrSw = agency.installedFleet?.epcrCadSoftware || '';
   const hasZollSoftware = billingSw.includes('ZOLL') || epcrSw.includes('ZOLL');
-  const softwareScore = hasZollSoftware ? 35 : 95;
-  const softwarePts = +((softwareScore * wSoftware) / totalWeight).toFixed(1);
 
   const finalScore = calculateScore(agency, weights);
-
-  const brandName = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-  const unitsCount = agency.installedFleet?.defibUnitsCount ?? 12;
   const warrantyStatus = agency.installedFleet?.defibWarrantyStatus || 'Expired';
   const afgAmount = agency.grantStatus?.afgAwardAmount ? Math.round(agency.grantStatus.afgAwardAmount / 1000) : 0;
   const afgYear = agency.grantStatus?.afgFiscalYear || 2025;
   const epcrName = agency.installedFleet?.epcrCadSoftware || 'Legacy ePCR';
   const billingName = agency.installedFleet?.billingSoftware || 'In-House Billing';
+  const evaluatedFactors = evaluatePulseIqFactors(agency, weights);
+  const factors: PulseIqFactorBreakdown[] = evaluatedFactors.map((factor) => {
+    let agencyMetricValue: string;
+    let clinicalImpactSummary: string;
+    let urgencyLevel: PulseIqFactorBreakdown['urgencyLevel'];
 
-  const factors: PulseIqFactorBreakdown[] = [
-    {
-      id: 'fleet',
-      name: 'Installed Defib Fleet & Warranty Risk',
-      weightPct: Math.round((wFleet / totalWeight) * 100),
-      componentScore: fleetScore,
-      pointsContributed: fleetPts,
-      agencyMetricValue: `${brandName} · ${unitsCount} units (${age} yrs old)`,
-      clinicalImpactSummary:
-        age >= 7
-          ? `Aging ${brandName} monitors are ${age} years old with ${warrantyStatus.toLowerCase()} warranty, driving urgent tech refresh.`
-          : `Fleet monitors are ${age} years old (${warrantyStatus}).`,
-      urgencyLevel: age >= 8 ? 'Critical' : age >= 6 ? 'Elevated' : 'Moderate'
-    },
-    {
-      id: 'cms',
-      name: 'Local claim rates excluded',
-      weightPct: 0,
-      componentScore: cmsScore,
-      pointsContributed: cmsPts,
-      agencyMetricValue: 'Excluded from the score; source records remain available separately',
-      clinicalImpactSummary: 'Imported claim counts and citations are for direct review only. No local percentage or denial-based recovery estimate contributes to PulseIQ.',
-      urgencyLevel: 'Nominal'
-    },
-    {
-      id: 'cardiac',
-      name: 'Cardiac Arrest Call Volume (Acuity)',
-      weightPct: Math.round((wCardiac / totalWeight) * 100),
-      componentScore: cardiacScore,
-      pointsContributed: cardiacPts,
-      agencyMetricValue: `${cardiac.toLocaleString()} OHCA Cardiac Calls/yr`,
-      clinicalImpactSummary:
-        cardiac >= 1000
+    switch (factor.key) {
+      case 'fleet':
+        agencyMetricValue = `${brand} · ${agency.installedFleet?.defibUnitsCount ?? 12} units (${age} yrs old)`;
+        clinicalImpactSummary = age >= 7
+          ? `Aging ${brand} monitors are ${age} years old with ${warrantyStatus.toLowerCase()} warranty, driving urgent tech refresh.`
+          : `Fleet monitors are ${age} years old (${warrantyStatus}).`;
+        urgencyLevel = age >= 8 ? 'Critical' : age >= 6 ? 'Elevated' : 'Moderate';
+        break;
+      case 'clinical':
+        agencyMetricValue = `${cardiac.toLocaleString()} OHCA cardiac calls/year`;
+        clinicalImpactSummary = cardiac >= 1000
           ? `High-volume resuscitation system with ${cardiac.toLocaleString()} annual cardiac arrest calls and ${agency.utsteinSurvivalRate || 14}% Utstein survival.`
-          : `Moderate cardiac arrest volume (${cardiac.toLocaleString()} calls/yr) with opportunity for AutoPulse mechanical CPR.`,
-      urgencyLevel: cardiac >= 1200 ? 'Critical' : cardiac >= 700 ? 'Elevated' : 'Moderate'
-    },
-    {
-      id: 'grants',
-      name: 'Federal AFG / SAFER Grant Award Status',
-      weightPct: Math.round((wGrant / totalWeight) * 100),
-      componentScore: grantScore,
-      pointsContributed: grantPts,
-      agencyMetricValue: agency.grantStatus?.afgAwarded
-        ? `FEMA AFG Awarded: $${afgAmount}K (FY${afgYear})`
-        : 'Eligible for FY2026 AFG Equipment Grant',
-      clinicalImpactSummary: agency.grantStatus?.afgAwarded
-        ? `Federal funding ($${afgAmount}K) secured under FEMA AFG FY${afgYear} for capital equipment purchase.`
-        : 'Department meets qualifying criteria for FEMA AFG regional joint grant application.',
-      urgencyLevel: agency.grantStatus?.afgAwarded ? 'Critical' : 'Moderate'
-    },
-    {
-      id: 'software',
-      name: 'ePCR & Billing Software Whitespace',
-      weightPct: Math.round((wSoftware / totalWeight) * 100),
-      componentScore: softwareScore,
-      pointsContributed: softwarePts,
-      agencyMetricValue: `Charting: ${epcrName} · Billing: ${billingName}`,
-      clinicalImpactSummary: !hasZollSoftware
-        ? `Opportunity to displace legacy ${epcrName} and unify billing with ZOLL RescueNet & AR Boost.`
-        : 'Existing customer with expansion opportunity into ZOLL Respond & CAD dispatch integration.',
-      urgencyLevel: !hasZollSoftware ? 'Elevated' : 'Nominal'
+          : `Moderate cardiac arrest volume (${cardiac.toLocaleString()} calls/year) with opportunity for AutoPulse mechanical CPR.`;
+        urgencyLevel = cardiac >= 1200 ? 'Critical' : cardiac >= 700 ? 'Elevated' : 'Moderate';
+        break;
+      case 'grant':
+        agencyMetricValue = agency.grantStatus?.afgAwarded
+          ? `FEMA AFG awarded: $${afgAmount}K (FY${afgYear})`
+          : agency.grantStatus?.saferGrantActive
+            ? 'Active SAFER grant; no AFG award recorded'
+            : 'No AFG award or active SAFER grant recorded';
+        clinicalImpactSummary = agency.grantStatus?.afgAwarded
+          ? `Federal funding ($${afgAmount}K) secured under FEMA AFG FY${afgYear} for capital equipment purchase.`
+          : agency.grantStatus?.saferGrantActive
+            ? 'An active SAFER grant is recorded.'
+            : 'No active federal grant is recorded in this profile.';
+        urgencyLevel = agency.grantStatus?.afgAwarded ? 'Critical' : agency.grantStatus?.saferGrantActive ? 'Elevated' : 'Moderate';
+        break;
+      case 'software':
+        agencyMetricValue = `Charting: ${epcrName} · Billing: ${billingName}`;
+        clinicalImpactSummary = !hasZollSoftware
+          ? `Opportunity to displace legacy ${epcrName} and unify billing with ZOLL RescueNet & AR Boost.`
+          : 'Existing customer with expansion opportunity into ZOLL Respond & CAD dispatch integration.';
+        urgencyLevel = !hasZollSoftware ? 'Elevated' : 'Nominal';
+        break;
     }
-  ];
+
+    return {
+      id: factor.key,
+      name: factor.label,
+      weightPct: factor.weightPct,
+      componentScore: factor.baseScore,
+      pointsContributed: factor.contributionPts,
+      agencyMetricValue,
+      clinicalImpactSummary,
+      urgencyLevel,
+      method: factor.method
+    };
+  });
 
   return {
     totalScore: finalScore,
-    priorityTier: agency.zollOpportunity.priorityTier || (finalScore >= 88 ? 'Tier 1 Prime Target' : finalScore >= 78 ? 'Tier 2 Active Target' : 'Tier 3 Standard'),
+    priorityTier: finalScore >= 88 ? 'Tier 1 Prime Target' : finalScore >= 78 ? 'Tier 2 Active Target' : 'Tier 3 Standard',
     factors
   };
 }

@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+import type { PredictiveWeights } from '../types';
+import {
+  DEFAULT_WEIGHTS,
+  getPulseIqFormula,
+  getPulseIqWeightDetails,
+  PULSE_IQ_FACTOR_RULES
+} from '../utils/pulseIqScoring';
 import {
   X,
   Layers,
@@ -21,16 +28,19 @@ interface UnderstandingPulseIqModalProps {
   onClose: () => void;
   onOpenCalibration?: () => void;
   onOpenWeightsModal?: () => void;
+  weights?: PredictiveWeights;
 }
 
 export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps> = ({
   isOpen,
   onClose,
   onOpenCalibration,
-  onOpenWeightsModal
+  onOpenWeightsModal,
+  weights = DEFAULT_WEIGHTS
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'pillars' | 'playbook' | 'provenance'>('overview');
   const handleOpenCalibration = onOpenCalibration || onOpenWeightsModal;
+  const weightDetails = getPulseIqWeightDetails(weights);
 
   if (!isOpen) return null;
 
@@ -130,7 +140,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                   What is PulseIQ™?
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  PulseIQ™ is Nick&apos;s proprietary, transparent actuarial index (0–100) that models capital replacement urgency, reimbursement distress, and procurement readiness across EMS and fire departments.
+                  PulseIQ™ is a transparent prioritization estimate (0–100) based on fleet condition, cardiac call volume, grant readiness, and software status across EMS and fire departments.
                 </p>
                 <p className="text-slate-300 text-sm leading-relaxed mt-2">
                   PulseIQ™ is a deterministic model based on available fleet, cardiac-volume, grant, and software inputs. Local claim-denial rates and claim-based recovery estimates are excluded from the score; imported claim summaries remain available for separate review.
@@ -246,215 +256,32 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
           {activeTab === 'pillars' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-400">
-                PulseIQ aggregates five mathematically distinct operational pillars. The final score is a weighted composite sum totaling 100 possible points:
+                PulseIQ uses the active factors and weights below. Weights are normalized by their active total, and the displayed formula follows the same calculation used for each score:
               </p>
-
-              {/* Pillar 1 */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Pillar 1: Fleet Age & Equipment Obsolescence
-                      </h4>
-                      <span className="text-xs text-slate-400">Default Weight: 30% | Maximum Points: 30</span>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-mono font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-md">
-                    30% Weight
-                  </span>
-                </div>
-                <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
-                  <p>
-                    Evaluates fleet age and the mechanical/clinical end-of-service lifecycle of currently fielded monitor/defibrillators (e.g. legacy Stryker LIFEPAK 15 v1/v2, Philips MRx).
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Fleet Age ≥ 9 yrs</span>
-                      <strong className="text-orange-400">100 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Fleet Age ≥ 7–9 yrs</span>
-                      <strong className="text-amber-400">85 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Fleet Age ≥ 5–7 yrs</span>
-                      <strong className="text-blue-400">65 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Fleet Age &lt; 5 yrs</span>
-                      <strong className="text-slate-400">40 / 100 pts</strong>
-                    </div>
-                  </div>
-                </div>
+              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-cyan-300">
+                PulseIQ estimate = {getPulseIqFormula(weights)}
               </div>
-
-              {/* Pillar 2 */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <DollarSign className="w-4 h-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {weightDetails.factors.map((factor, index) => (
+                  <article key={factor.key} className="p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-sm font-bold text-white">{index + 1}. {factor.label}</h4>
+                      <span className="shrink-0 px-2 py-1 text-xs font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-md">
+                        {factor.weightPct.toFixed(1)}% weight
+                      </span>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Pillar 2: Medicare Volume & Reimbursement Health
-                      </h4>
-                      <span className="text-xs text-slate-400">Default Weight: 25% | Maximum Points: 25</span>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-md">
-                    25% Weight
-                  </span>
-                </div>
-                <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
-                  <p>
-                    Imported Medicare claim summaries preserve counts, scope, period, and source links for direct review. They do not contribute local denial percentages or recovery estimates to PulseIQ.
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Denial Rate ≥ 22%</span>
-                      <strong className="text-emerald-400">100 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Denial Rate ≥ 18–22%</span>
-                      <strong className="text-teal-400">85 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Denial Rate ≥ 15–18%</span>
-                      <strong className="text-blue-400">65 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Denial Rate &lt; 15%</span>
-                      <strong className="text-slate-400">40 / 100 pts</strong>
-                    </div>
-                  </div>
-                </div>
+                    <p className="mt-3 text-xs text-slate-300 leading-relaxed">
+                      {PULSE_IQ_FACTOR_RULES[factor.key]}
+                    </p>
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      Active weight: {factor.weight} · Total active weight: {weightDetails.totalWeight}
+                    </p>
+                  </article>
+                ))}
               </div>
-
-              {/* Pillar 3 */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                      <Award className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Pillar 3: Procurement Activity & Capital Cycles
-                      </h4>
-                      <span className="text-xs text-slate-400">Default Weight: 20% | Maximum Points: 20</span>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-mono font-bold text-purple-400 bg-purple-500/10 border border-purple-500/30 rounded-md">
-                    20% Weight
-                  </span>
-                </div>
-                <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
-                  <p>
-                    Analyzes capital budget cycles, federal FEMA Assistance to Firefighters Grants (AFG), SAFER funding, state trauma grants, and published municipal RFP procurement activity.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Active AFG / Bond Award</span>
-                      <strong className="text-purple-400">100 / 100 pts (Awarded)</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Active SAFER / State Grant</span>
-                      <strong className="text-purple-300">65 / 100 pts (Active)</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Fiscal Cycle Eligible</span>
-                      <strong className="text-slate-400">30 / 100 pts (Eligible)</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pillar 4 */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                      <Activity className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Pillar 4: Clinical Outcomes & Resuscitation Quality
-                      </h4>
-                      <span className="text-xs text-slate-400">Default Weight: 15% | Maximum Points: 15</span>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-md">
-                    15% Weight
-                  </span>
-                </div>
-                <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
-                  <p>
-                    Measures annual Out-of-Hospital Cardiac Arrest (OHCA) encounters, Utstein survival rates, and high-acuity resuscitation call volumes from CARES/NEMSIS registry telemetry. High clinical demand creates pressing clinical justification for Real CPR Help® and See-Thru CPR®.
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">OHCA Volume ≥ 1,800</span>
-                      <strong className="text-rose-400">100 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">OHCA Volume ≥ 1,000</span>
-                      <strong className="text-pink-400">85 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">OHCA Volume ≥ 500</span>
-                      <strong className="text-indigo-400">70 / 100 pts</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Baseline Volume</span>
-                      <strong className="text-slate-400">50 / 100 pts</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pillar 5 */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Pillar 5: Engagement History & Account Readiness
-                      </h4>
-                      <span className="text-xs text-slate-400">Default Weight: 10% | Maximum Points: 10</span>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 rounded-md">
-                    10% Weight
-                  </span>
-                </div>
-                <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
-                  <p>
-                    Evaluates relationship history, field rep visits, clinical evaluation trials, RFP specification downloads, and software dispatch whitespace. Accounts with active evaluation momentum or legacy competitor CAD/ePCR represent prime conversion targets.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Active Demo / Evaluation</span>
-                      <strong className="text-cyan-400">100 / 100 pts (Accelerated)</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Recent Visit / Contact</span>
-                      <strong className="text-cyan-300">75 / 100 pts (In Progress)</strong>
-                    </div>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[10px]">Uncontacted Prospect</span>
-                      <strong className="text-slate-400">40 / 100 pts (Outreach Required)</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-slate-400">
+                Medicare claim records and local denial rates are excluded from the scored factors and remain available separately for review.
+              </p>
             </div>
           )}
 

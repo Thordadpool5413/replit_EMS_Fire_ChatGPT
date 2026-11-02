@@ -8,6 +8,7 @@ import {
   Agency,
   LeadStage,
   FieldNote,
+  PredictiveWeights,
   AgencySourceRecordAssociation,
 } from '../types';
 import {
@@ -35,6 +36,7 @@ import { ProviderDenialDetails } from './ProviderDenialDetails';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
+  weights?: PredictiveWeights;
   onClose: () => void;
   onOpenFullDossier: (agency: Agency) => void;
   onUpdateStage: (agencyId: string, newStage: LeadStage) => void;
@@ -60,6 +62,7 @@ const STAGES: LeadStage[] = [
 
 export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> = ({
   agency,
+  weights,
   onClose,
   onOpenFullDossier,
   onUpdateStage,
@@ -302,7 +305,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             </div>
           </div>
 
-          <PulseIqEvidencePanel agency={agency} compact />
+          <PulseIqEvidencePanel agency={agency} compact weights={weights} />
 
           {/* Command & Infrastructure Details */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 text-xs">

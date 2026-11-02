@@ -5,7 +5,8 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useClickOutside } from '../hooks/useClickOutside';
-import { Agency } from '../types';
+import { Agency, PredictiveWeights } from '../types';
+import { calculateScore, DEFAULT_WEIGHTS, evaluatePulseIqFactors, getPulseIqFormula } from '../utils/pulseIqScoring';
 import { 
   DATA_REGISTRY_SOURCES, 
   auditAgencyDataLineage, 
@@ -39,6 +40,7 @@ interface DataLineageTrustModalProps {
   agencies?: Agency[];
   selectedAgency?: Agency | null;
   onSelectAgency?: (agency: Agency) => void;
+  weights?: PredictiveWeights;
 }
 
 type ModalTab = 'account_lineage' | 'repositories' | 'algorithm_proof' | 'coop_contracts' | 'compliance';
@@ -48,7 +50,8 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
   onClose,
   agencies = [],
   selectedAgency: initialSelectedAgency,
-  onSelectAgency
+  onSelectAgency,
+  weights = DEFAULT_WEIGHTS
 }) => {
   const [activeTab, setActiveTab] = useState<ModalTab>('account_lineage');
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(
@@ -97,6 +100,11 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
   const activeAgency = useMemo(() => {
     return agencies.find(a => a.id === selectedAgencyId) || initialSelectedAgency || agencies[0];
   }, [agencies, selectedAgencyId, initialSelectedAgency]);
+
+  const pulseIqFactors = useMemo(
+    () => activeAgency ? evaluatePulseIqFactors(activeAgency, weights) : [],
+    [activeAgency, weights]
+  );
 
   const auditReport = useMemo(() => {
     if (!activeAgency) return null;
@@ -577,62 +585,41 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold block">
-                  PulseIQ prioritization estimate
+                  PulseIQ four-factor prioritization estimate
                 </span>
                 <div className="p-3 bg-slate-950 text-sky-300 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
-                  PulseIQ estimate = weighted fleet, clinical volume, grant readiness, and software factors ÷ total active factor weight
+                  PulseIQ estimate = {getPulseIqFormula(weights)}
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  PulseIQ summarizes the weighted factors shown below into a 0–100 prioritization estimate.
+                  {activeAgency
+                    ? `${activeAgency.name}: ${calculateScore(activeAgency, weights)} / 100. Each active factor below uses the same score, weight, and scoring rule as the calculation.`
+                    : 'Select an account to see its active factors and calculated contributions.'}
+                  {' '}Imported Medicare claim evidence is separate and does not contribute to this score.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs">
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">1. Fleet Age</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">25 pts</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {pulseIqFactors.map((factor, index) => (
+                  <div key={factor.key} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-slate-900">{index + 1}. {factor.label}</span>
+                      <span className="font-semibold text-sky-700 tabular-nums">
+                        {factor.weightPct.toFixed(1)}% · +{factor.contributionPts.toFixed(1)} pts
+                      </span>
+                    </div>
+                    <div className="font-medium text-slate-700 tabular-nums">
+                      Index {factor.baseScore}/100 × {factor.weightPct.toFixed(1)}% = {factor.contributionPts.toFixed(1)} points
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-snug">{factor.method}</p>
+                    <ul className="space-y-1 text-[11px] text-slate-500">
+                      {factor.inputs.map((input) => (
+                        <li key={`${factor.key}-${input.label}`}>
+                          {input.label}: {input.valueUsed}{input.usedDefault ? ' (model default)' : ''}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Graduated points for competitor hardware older than 7 years, expired OEM warranties, and announced manufacturer service sunsets.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">2. Clinical Acuity</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">25 pts</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Cardiac arrest call density (NEMSIS OHCA), Utstein survival deficit vs. 29.7% benchmark, and drive time to cath labs.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">3. CMS Financials</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">20 pts</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Medicare Part B claim-source evidence, GADCS reporting compliance, and addressable cash recovery via ZOLL Billing.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">4. Demographics</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">15 pts</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Senior 65+ population concentration, municipal poverty percentage, and public access AED coverage deficit in schools.
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">5. Budget & Grants</span>
-                    <span className="font-semibold text-sky-700 tabular-nums">15 pts</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Active FEMA Assistance to Firefighters Grant (AFG) obligation status and municipal fiscal year-end surplus spend timing.
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           )}

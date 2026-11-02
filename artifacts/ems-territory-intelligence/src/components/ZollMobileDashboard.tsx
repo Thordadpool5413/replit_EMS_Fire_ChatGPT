@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Agency,
   LeadStage,
+  PredictiveWeights,
   SyncOutboxItem, 
   PushAlert 
 } from '../types';
@@ -56,6 +57,7 @@ interface ZollMobileDashboardProps {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   alerts?: PushAlert[];
+  weights?: PredictiveWeights;
 }
 
 export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
@@ -68,7 +70,8 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
   outbox,
   isDarkMode,
   onToggleDarkMode,
-  alerts = []
+  alerts = [],
+  weights
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'critical' | 'high_priority' | 'day_route' | 'ems' | 'fire'>('all');
@@ -854,7 +857,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                           <CompetitiveBattlecardView agency={agency} variant="compact" onOpenFullProfile={onSelectAgency} />
                         )}
                         {mobileClarityDrawer[agency.id] === 'score_explainer' && (
-                          <PulseIqScoreExplainerHub agency={agency} variant="compact" onOpenFullProfile={onSelectAgency} />
+                          <PulseIqScoreExplainerHub agency={agency} weights={weights} variant="compact" onOpenFullProfile={onSelectAgency} />
                         )}
                       </div>
                     )}

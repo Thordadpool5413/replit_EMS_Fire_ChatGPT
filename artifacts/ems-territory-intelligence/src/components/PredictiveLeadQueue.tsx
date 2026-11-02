@@ -898,12 +898,12 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                     >
                       <div className="flex items-baseline justify-end gap-0.5">
                         <span className="text-xl font-semibold text-slate-900 dark:text-white tabular-nums leading-none">
-                          {hasVerifiedModel ? agency.zollOpportunity.pulseIqScore : '—'}
+                          {agency.zollOpportunity.pulseIqScore}
                         </span>
                         <span className="text-xs text-slate-400 tabular-nums">/100</span>
                       </div>
 
-                        {hasVerifiedModel && (
+                        {(
                           <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-800 mt-1.5 overflow-hidden">
                             <div
                               className="h-full bg-[#1E3A8A] dark:bg-blue-400"
@@ -912,7 +912,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           </div>
                         )}
                       <span className="text-xs text-slate-400 mt-1">
-                          {hasVerifiedModel ? 'PulseIQ estimate' : 'Inputs incomplete'}
+                          PulseIQ estimate
                       </span>
                     </div>
                   </div>
@@ -1333,7 +1333,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="space-y-1 w-20">
                           <div className="flex items-baseline justify-between">
                             <span className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">
-                              {hasVerifiedModel ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></> : '—'}
+                              <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></>
                             </span>
                             <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears}y` : '—'}

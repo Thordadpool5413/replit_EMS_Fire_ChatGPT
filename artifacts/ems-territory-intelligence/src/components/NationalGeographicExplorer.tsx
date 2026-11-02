@@ -2213,9 +2213,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {hasVerifiedModel
-                            ? <PulseIqScoreTooltip agency={agency} size="compact" showLabel={true} />
-                            : <span className="text-[10px] text-slate-500 dark:text-slate-400">Model score withheld</span>}
+                          <PulseIqScoreTooltip agency={agency} size="compact" showLabel={true} />
                         </div>
                       </div>
 
@@ -2388,7 +2386,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums">
-                            {hasVerifiedModel ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></> : '—'}
+                            <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></>
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">

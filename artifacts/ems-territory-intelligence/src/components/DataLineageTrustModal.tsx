@@ -577,19 +577,13 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold block">
-                  Heuristic opportunity score — not a validated predictive model
+                  PulseIQ prioritization estimate
                 </span>
                 <div className="p-3 bg-slate-950 text-sky-300 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
-                  PulseIQ Score (0–100) = [ 
-                    (FleetAge_Pts × 0.25) + 
-                    (ClinicalAcuity_Pts × 0.25) + 
-                    (CMSDenial_Pts × 0.20) + 
-                    (DemographicNeed_Pts × 0.15) + 
-                    (GrantReadiness_Pts × 0.15) 
-                  ]
+                  PulseIQ estimate = weighted fleet, clinical volume, grant readiness, and software factors ÷ total active factor weight
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Scores are a prioritization heuristic. Many input values are modeled or unverified in this app; the score is not evidence of agency conditions, clinical outcomes, purchasing intent, or likely sales conversion.
+                  PulseIQ summarizes the weighted factors shown below into a 0–100 prioritization estimate.
                 </p>
               </div>
 

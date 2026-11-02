@@ -207,14 +207,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    title={hasVerifiedModelInputs(agency) ? `PulseIQ Score: ${agency.zollOpportunity.pulseIqScore}/100` : 'Model inputs are incomplete'}
+                    title={`Estimated PulseIQ score: ${agency.zollOpportunity.pulseIqScore}/100`}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-xs tabular-nums shrink-0 ${
-                      hasVerifiedModelInputs(agency) && agency.zollOpportunity.pulseIqScore >= 88
+                      agency.zollOpportunity.pulseIqScore >= 88
                         ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
                         : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     }`}
                   >
-                    {hasVerifiedModelInputs(agency) ? agency.zollOpportunity.pulseIqScore : '—'}
+                    {agency.zollOpportunity.pulseIqScore}
                   </div>
                   <div className="min-w-0">
                     <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 truncate">

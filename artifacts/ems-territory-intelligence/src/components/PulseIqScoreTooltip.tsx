@@ -32,6 +32,11 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
   }, [agency, weights]);
 
   const score = agency.zollOpportunity?.pulseIqScore ?? explanation.totalScore;
+  const operationalWeightTotal =
+    weights.fleetAgeWeight +
+    weights.cardiacVolumeWeight +
+    weights.grantAwardWeight +
+    weights.softwareWhitespaceWeight || 100;
 
   // Robust click-outside & Escape dismissal
   useClickOutside(containerRef, () => setIsOpen(false), {
@@ -136,7 +141,7 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
                 {agency.name}
               </h4>
               <p className="text-[11px] text-[#6B7280] mt-0.5">
-                Composite Pulse IQ Priority Score: <strong className="tabular-nums text-[#111827] font-semibold">{score} / 100</strong> ({explanation.priorityTier})
+                Estimated PulseIQ priority: <strong className="tabular-nums text-[#111827] font-semibold">{score} / 100</strong> ({explanation.priorityTier})
               </p>
             </div>
 
@@ -153,10 +158,10 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
           {/* Explicit Actuarial Formula Disclosure */}
           <div className="p-2.5 rounded-lg bg-slate-900 text-slate-100 font-mono text-[10px] leading-relaxed space-y-1">
             <div className="text-blue-300 font-bold uppercase tracking-wider">
-              White-Box Actuarial Equation · [FORECAST / PULSEIQ MODEL]
+              PulseIQ estimate formula
             </div>
             <div>
-              PulseIQ = ({weights.fleetAgeWeight}×F_age + {weights.cmsDenialWeight}×F_cms + {weights.cardiacVolumeWeight}×F_ohca + {weights.grantAwardWeight}×F_afg + {weights.softwareWhitespaceWeight}×F_saas) ÷ 100
+              (F_fleet × {weights.fleetAgeWeight} + F_clinical × {weights.cardiacVolumeWeight} + F_grant × {weights.grantAwardWeight} + F_software × {weights.softwareWhitespaceWeight}) ÷ {operationalWeightTotal}
             </div>
           </div>
 
@@ -174,7 +179,7 @@ export const PulseIqScoreTooltip: React.FC<PulseIqScoreTooltipProps> = ({
                       <div className="font-semibold text-[#111827] leading-tight">
                         {factor.name}
                       </div>
-                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                         {factor.id === 'afgGrantFunding' || factor.id === 'cardiacArrestVolume'
                           ? 'Federal Record + PulseIQ Weight'
                           : 'PulseIQ Mathematical Index'}

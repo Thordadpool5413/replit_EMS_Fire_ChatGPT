@@ -92,7 +92,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       'Google Maps Link',
       'Verified Defib Brand',
       'Verified Defib Units',
-      'Model Priority Score (verified inputs only)'
+      'PulseIQ Estimate (0–100)'
     ];
     const rows = targetList.map((a, idx) => {
       const chief = hasAgencyFactEvidence(a, 'agencyLeadership')
@@ -101,14 +101,6 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       const verifiedAddress = hasAgencyFactEvidence(a, 'providerAddress') ? a.address : '';
       const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(verifiedAddress || `${a.name}, ${a.city}, ${a.stateCode}`)}`;
       const hasVerifiedDefibFleet = hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet');
-      const hasVerifiedModelInputs =
-        hasAgencyFactEvidence(a, 'frontlineApparatusStations') &&
-        hasAgencyFactEvidence(a, 'annualEmergencyVolume') &&
-        hasAgencyFactEvidence(a, 'clinicalOutcomes') &&
-        hasAgencyFactEvidence(a, 'defibrillatorBiomedicalFleet') &&
-        hasAgencyFactEvidence(a, 'maintenanceContracts') &&
-        hasAgencyFactEvidence(a, 'cmsClaims') &&
-        hasAgencyFactEvidence(a, 'federalGrant');
       return [
         idx + 1,
         `"${(a.name || '').replace(/"/g, '""')}"`,
@@ -124,7 +116,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
         `"${mapsLink.replace(/"/g, '""')}"`,
          `"${(hasVerifiedDefibFleet ? a.installedFleet.defibBrand : '').replace(/"/g, '""')}"`,
          hasVerifiedDefibFleet ? a.installedFleet.defibUnitsCount : '',
-         hasVerifiedModelInputs ? a.zollOpportunity.pulseIqScore : ''
+          a.zollOpportunity.pulseIqScore
       ].join(',');
     });
     const csvContent = [headers.join(','), ...rows].join('\n');

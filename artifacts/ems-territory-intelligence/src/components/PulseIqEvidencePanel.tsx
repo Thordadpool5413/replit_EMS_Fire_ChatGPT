@@ -24,8 +24,8 @@ const contributionFieldMap: Record<PulseIqFactorEvaluation['key'], keyof PulseIq
 
 const statusLabel = (agency: Agency, key: PulseIqFactorEvaluation['inputs'][number]['sourceKey']) => {
   if (hasReviewedAgencyFactEvidence(agency, key)) return 'Source reviewed';
-  if (hasMappedAgencyFactEvidence(agency, key)) return 'Source linked · user verify';
-  return 'No source mapped';
+  if (hasMappedAgencyFactEvidence(agency, key)) return 'Source linked';
+  return 'Profile estimate';
 };
 
 const getSafeSourceUrl = (url?: string): string | null => {
@@ -52,7 +52,7 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
       }`}
     >
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">PulseIQ inputs and evidence</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">PulseIQ estimate inputs</h3>
         <span className="text-[11px] text-slate-500 dark:text-slate-400">4 operational factors · local claims excluded</span>
       </div>
 
@@ -99,10 +99,10 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
                         <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">{input.valueUsed}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
-                        <span className={reviewed ? 'text-emerald-700 dark:text-emerald-300' : mapped ? 'text-sky-700 dark:text-sky-300' : 'text-amber-700 dark:text-amber-300'}>
+                        <span className={reviewed ? 'text-emerald-700 dark:text-emerald-300' : mapped ? 'text-sky-700 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}>
                           {status}
                         </span>
-                        {input.usedDefault && <span>· model fallback used</span>}
+                        {input.usedDefault && <span>· default estimate</span>}
                         {evidence?.sourceName && <span>· {evidence.sourceName}</span>}
                         {evidence?.sourceRecordId && <span>· record {evidence.sourceRecordId}</span>}
                         {evidence?.reportingPeriod && <span>· {evidence.reportingPeriod}</span>}
@@ -134,7 +134,7 @@ export const PulseIqEvidencePanel: React.FC<PulseIqEvidencePanelProps> = ({
       </div>
 
       <p className="mt-3 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
-        A linked source is a path for you to verify the value, not proof that it is correct. Unmapped values and fallbacks should be checked directly with the agency. Claim counts and citations are separate from PulseIQ.
+        PulseIQ is a prioritization estimate calculated from the factors and values shown above. Imported claim counts are not part of this score.
       </p>
     </section>
   );

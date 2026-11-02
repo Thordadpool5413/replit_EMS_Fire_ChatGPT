@@ -213,7 +213,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </h1>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Local integrity checks and source lineage for agency records, field notes, and PulseIQ™ scores. Equipment, budget, grant, and outcomes fields may be modeled or unverified; review provenance before relying on them.
+              Local integrity checks and source lineage for agency records, field notes, and PulseIQ™ score estimates. PulseIQ is a prioritization estimate; linked source records remain available for review.
             </p>
           </div>
 

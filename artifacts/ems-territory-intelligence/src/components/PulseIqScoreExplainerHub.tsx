@@ -254,7 +254,7 @@ export const PulseIqScoreExplainerHub: React.FC<PulseIqScoreExplainerHubProps> =
           <span>Recommended Next Action to Advance this Deal</span>
         </div>
         <p className="text-slate-700 dark:text-slate-300">
-          PulseIQ uses <strong>fleet condition, cardiac call volume, grant readiness, and software status</strong>. Review those inputs and their source records with command staff before discussing fit. Imported Medicare claim summaries remain separate from the score and can be reviewed directly with the agency.
+          PulseIQ is an estimate based on <strong>fleet condition, cardiac call volume, grant readiness, and software status</strong>. Imported Medicare claim summaries are separate from the score.
         </p>
         {getAgencyMedicareDenialMetricForDisplay(agency) && (
           <ProviderDenialDetails metric={getAgencyMedicareDenialMetricForDisplay(agency)!} />

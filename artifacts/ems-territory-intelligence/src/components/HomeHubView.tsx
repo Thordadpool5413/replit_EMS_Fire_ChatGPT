@@ -486,9 +486,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <div className="home-map-legend flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
                 <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
-                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
+                  <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
                   <span className="h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
-                  <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
+                  <span className="home-map-legend-endpoint home-map-legend-endpoint-high">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
                 {mapMetricValues.some((value) => value === 0) && (
                   <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">

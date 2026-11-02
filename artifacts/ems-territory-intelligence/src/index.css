@@ -1429,3 +1429,47 @@
     max-width: 8rem;
   }
 }
+
+@media (max-width: 767px) {
+  .home-map-legend {
+    display: flex;
+    flex-wrap: wrap !important;
+    align-items: center;
+    gap: 0.5rem 0.75rem !important;
+    overflow: visible !important;
+  }
+
+  .home-map-legend > span:first-child,
+  .home-map-legend > span:nth-child(2) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .home-map-legend > span:nth-child(2) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 4.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.375rem !important;
+    white-space: normal !important;
+  }
+
+  .home-map-legend-endpoint {
+    min-width: 0;
+    white-space: normal !important;
+    line-height: 1.25;
+  }
+
+  .home-map-legend-endpoint-high {
+    text-align: right;
+  }
+
+  .home-map-legend > span:nth-child(2) > span:nth-child(2) {
+    width: 4.5rem;
+    flex: 0 0 4.5rem;
+    justify-self: center;
+  }
+
+  .home-map-legend > span:nth-child(n + 3) {
+    flex: 0 0 auto;
+  }
+}

@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  AGENCY_SOURCE_RECORD_BACKUP_FORMAT,
   applyAgencySourceRecordDataMap,
+  createAgencySourceRecordBackup,
+  mergeAgencySourceRecordDataMaps,
   findAgencySourceRecordAssociation,
   loadAgencySourceRecordData,
+  parseAgencySourceRecordBackup,
   replaceAgencySourceRecordAssociation,
   saveAgencySourceRecordData,
+  saveAgencySourceRecordDataMap,
   stripBrowserLocalAgencySourceData,
 } from "./agencySourceRecordStore";
 import type {
@@ -74,6 +79,119 @@ test("persists source decisions and scoped facts independently by agency", () =>
     sourceFacts: [fact],
   });
   assert.equal(loadAgencySourceRecordData(storage)["agency-2"], undefined);
+});
+
+test("exports and restores a versioned source-only backup", () => {
+  const sourceData = {
+    "agency-1": {
+      sourceRecordAssociations: [association],
+      sourceFacts: [fact],
+    },
+  };
+  const serialized = createAgencySourceRecordBackup(
+    sourceData,
+    "2026-11-02T12:00:00.000Z",
+  );
+  const parsed = parseAgencySourceRecordBackup(serialized);
+
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.associationCount, 1);
+  assert.equal(parsed.factCount, 1);
+  assert.deepEqual(parsed.data, sourceData);
+
+  const storage = memoryStorage();
+  assert.deepEqual(saveAgencySourceRecordDataMap(parsed.data, storage), {
+    ok: true,
+  });
+  assert.deepEqual(loadAgencySourceRecordData(storage), sourceData);
+});
+
+test("rejects unsupported or unsafe source-record backups", () => {
+  const unsupported = parseAgencySourceRecordBackup(
+    JSON.stringify({
+      format: AGENCY_SOURCE_RECORD_BACKUP_FORMAT,
+      version: 99,
+      exportedAt: "2026-11-02T12:00:00.000Z",
+      records: {},
+    }),
+  );
+  assert.equal(unsupported.ok, false);
+
+  const unsafeAgencyId = parseAgencySourceRecordBackup(
+    `{"format":"${AGENCY_SOURCE_RECORD_BACKUP_FORMAT}","version":1,"exportedAt":"2026-11-02T12:00:00.000Z","records":{"__proto__":{"sourceRecordAssociations":[],"sourceFacts":[]}}}`,
+  );
+  assert.equal(unsafeAgencyId.ok, false);
+
+  const insecureSourceUrl = parseAgencySourceRecordBackup(
+    JSON.stringify({
+      format: AGENCY_SOURCE_RECORD_BACKUP_FORMAT,
+      version: 1,
+      exportedAt: "2026-11-02T12:00:00.000Z",
+      records: {
+        "agency-1": {
+          sourceRecordAssociations: [
+            { ...association, sourceUrl: "http://example.gov/record" },
+          ],
+          sourceFacts: [],
+        },
+      },
+    }),
+  );
+  assert.equal(insecureSourceUrl.ok, false);
+});
+
+test("backup import merges new items and leaves conflicts unchanged", () => {
+  const conflictingAssociation: AgencySourceRecordAssociation = {
+    ...association,
+    decision: "rejected",
+    decidedAt: "2026-11-02T12:00:00.000Z",
+  };
+  const addedAssociation: AgencySourceRecordAssociation = {
+    ...association,
+    id: "NERIS:neris-456",
+    sourceRecordId: "neris-456",
+  };
+  const conflictingFact: AgencySourceFact = {
+    ...fact,
+    value: "9,999",
+  };
+  const addedFact: AgencySourceFact = {
+    ...fact,
+    id: "fact-2",
+    value: "2,345",
+  };
+
+  const merged = mergeAgencySourceRecordDataMaps(
+    {
+      "agency-1": {
+        sourceRecordAssociations: [association],
+        sourceFacts: [fact],
+      },
+    },
+    {
+      "agency-1": {
+        sourceRecordAssociations: [
+          association,
+          conflictingAssociation,
+          addedAssociation,
+        ],
+        sourceFacts: [fact, conflictingFact, addedFact],
+      },
+    },
+  );
+
+  assert.equal(merged.associationsAdded, 1);
+  assert.equal(merged.factsAdded, 1);
+  assert.equal(merged.conflictsSkipped, 2);
+  assert.equal(merged.duplicatesSkipped, 2);
+  assert.equal(
+    merged.data["agency-1"].sourceRecordAssociations[0]?.decision,
+    "confirmed",
+  );
+  assert.equal(merged.data["agency-1"].sourceFacts[0]?.value, "1,234");
+  assert.equal(merged.data["agency-1"].sourceRecordAssociations.length, 2);
+  assert.equal(merged.data["agency-1"].sourceFacts.length, 2);
 });
 
 test("rehydrates local source evidence onto a refreshed agency record", () => {

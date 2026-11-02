@@ -13,7 +13,10 @@ import {
   PredictiveWeights,
   AgencySourceRecordAssociation
 } from './types';
-import type { AgencySourceRecordData } from './services/agencySourceRecordStore';
+import type {
+  AgencySourceRecordData,
+  AgencySourceRecordRestoreResult,
+} from './services/agencySourceRecordStore';
 import { 
   saveAgencies, 
   loadStoredOutbox, 
@@ -25,8 +28,13 @@ import {
 } from './utils/syncStore';
 import { calculatePulseIqContributions } from './utils/pulseIqScoring';
 import {
+  applyAgencySourceRecordDataMap,
+  loadAgencySourceRecordData,
+  mergeAgencySourceRecordDataMaps,
+  parseAgencySourceRecordBackup,
   replaceAgencySourceRecordAssociation,
   saveAgencySourceRecordData,
+  saveAgencySourceRecordDataMap,
 } from './services/agencySourceRecordStore';
 import { 
   loadStoredNotifications, 
@@ -280,6 +288,35 @@ export default function App() {
     showToast('Saved to this browser only; it was not shared with other users.', 'success');
     return true;
   }, [agencies, updateAgenciesState, previewAgency, showToast]);
+
+  const handleImportAgencySourceRecords = useCallback((
+    serializedBackup: string
+  ): AgencySourceRecordRestoreResult => {
+    const parsed = parseAgencySourceRecordBackup(serializedBackup);
+    if (!parsed.ok) return parsed;
+
+    const existing = loadAgencySourceRecordData();
+    const merged = mergeAgencySourceRecordDataMaps(existing, parsed.data);
+    const saved = saveAgencySourceRecordDataMap(merged.data);
+    if (!saved.ok) return saved;
+
+    const knownAgencyIds = new Set(agencies.map((agency) => agency.id));
+    const unmatchedAgencyCount = Object.keys(parsed.data).filter(
+      (agencyId) => !knownAgencyIds.has(agencyId),
+    ).length;
+    updateAgenciesState(
+      applyAgencySourceRecordDataMap(agencies, merged.data),
+    );
+
+    return {
+      ok: true,
+      associationsAdded: merged.associationsAdded,
+      factsAdded: merged.factsAdded,
+      duplicatesSkipped: merged.duplicatesSkipped,
+      conflictsSkipped: merged.conflictsSkipped,
+      unmatchedAgencyCount,
+    };
+  }, [agencies, updateAgenciesState]);
 
   const handleDecideAgencySourceRecord = useCallback((
     agencyId: string,
@@ -1131,6 +1168,7 @@ export default function App() {
             <CloudBackupResilienceView
               agencies={agencies}
               onRestoreAgencies={updateAgenciesState}
+              onImportAgencySourceRecords={handleImportAgencySourceRecords}
               showToast={showToast}
             />
           </div>

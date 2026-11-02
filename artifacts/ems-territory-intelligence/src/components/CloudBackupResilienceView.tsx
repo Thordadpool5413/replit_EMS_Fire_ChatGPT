@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Cloud, 
   CloudUpload, 
@@ -21,6 +21,11 @@ import {
   Lock
 } from 'lucide-react';
 import { Agency } from '../types';
+import {
+  createAgencySourceRecordBackup,
+  loadAgencySourceRecordData,
+  type AgencySourceRecordRestoreResult,
+} from '../services/agencySourceRecordStore';
 
 export interface CloudSnapshot {
   snapshotId: string;
@@ -38,6 +43,9 @@ export interface CloudSnapshot {
 interface CloudBackupResilienceViewProps {
   agencies: Agency[];
   onRestoreAgencies: (restored: Agency[]) => void;
+  onImportAgencySourceRecords: (
+    serializedBackup: string,
+  ) => AgencySourceRecordRestoreResult;
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -46,6 +54,7 @@ const STORAGE_KEY_SNAPSHOTS = 'zoll_pulseiq_snapshots_v2';
 export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps> = ({
   agencies,
   onRestoreAgencies,
+  onImportAgencySourceRecords,
   showToast
 }) => {
   const [currentUser] = useState({
@@ -85,8 +94,10 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
 
   const [isWriting, setIsWriting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isImportingSourceRecords, setIsImportingSourceRecords] = useState(false);
   const [activeTab, setActiveTab] = useState<'snapshots' | 'console'>('snapshots');
   const [copiedChecksum, setCopiedChecksum] = useState<string | null>(null);
+  const sourceBackupInputRef = useRef<HTMLInputElement>(null);
 
   const [auditLogs, setAuditLogs] = useState<{ id: string; timestamp: string; step: string; status: 'info' | 'pass'; detail: string }[]>([
     {
@@ -177,6 +188,105 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       showToast('Failed to export backup JSON.', 'error');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const sourceRecordData = useMemo(
+    () => loadAgencySourceRecordData(),
+    [agencies],
+  );
+  const sourceRecordCounts = useMemo(
+    () =>
+      Object.values(sourceRecordData).reduce(
+        (counts, record) => ({
+          associations: counts.associations + record.sourceRecordAssociations.length,
+          facts: counts.facts + record.sourceFacts.length,
+        }),
+        { associations: 0, facts: 0 },
+      ),
+    [sourceRecordData],
+  );
+
+  const handleExportSourceRecords = () => {
+    if (sourceRecordCounts.associations + sourceRecordCounts.facts === 0) {
+      showToast('There are no agency source records saved in this browser yet.', 'info');
+      return;
+    }
+    try {
+      const json = createAgencySourceRecordBackup(sourceRecordData);
+      const fileUrl = URL.createObjectURL(
+        new Blob([json], { type: 'application/json' }),
+      );
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = fileUrl;
+      downloadAnchor.download = `ems-agency-source-records-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+
+      addLog(
+        'SOURCE_RECORD_BACKUP_EXPORT',
+        'pass',
+        `Exported ${sourceRecordCounts.associations} source matches and ${sourceRecordCounts.facts} agency facts.`,
+      );
+      showToast('Agency source-record backup exported. It stays under your control.', 'success');
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : 'Could not export the source-record backup.',
+        'error',
+      );
+    }
+  };
+
+  const handleImportSourceRecords = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (file.size > 5_000_000) {
+      showToast('Choose a source-record backup no larger than 5 MB.', 'error');
+      return;
+    }
+
+    setIsImportingSourceRecords(true);
+    try {
+      const result = onImportAgencySourceRecords(await file.text());
+      if (!result.ok) {
+        addLog('SOURCE_RECORD_BACKUP_IMPORT', 'info', result.reason);
+        showToast(result.reason, 'error');
+        return;
+      }
+
+      const addedCount = result.associationsAdded + result.factsAdded;
+      const summary = addedCount
+        ? `Added ${result.associationsAdded} source matches and ${result.factsAdded} agency facts.`
+        : 'No new records were added.';
+      const details = [
+        result.duplicatesSkipped
+          ? `${result.duplicatesSkipped} duplicates skipped`
+          : '',
+        result.conflictsSkipped
+          ? `${result.conflictsSkipped} existing conflicts left unchanged`
+          : '',
+        result.unmatchedAgencyCount
+          ? `${result.unmatchedAgencyCount} agency IDs not in this directory were retained`
+          : '',
+      ].filter(Boolean);
+      const message = [summary, ...details].join(' ');
+
+      addLog(
+        'SOURCE_RECORD_BACKUP_IMPORT',
+        'pass',
+        `${message} No agency profile fields were replaced.`,
+      );
+      showToast(`${message} Existing agency fields were not changed.`, 'success');
+    } catch {
+      showToast('Could not read the selected source-record backup.', 'error');
+    } finally {
+      setIsImportingSourceRecords(false);
     }
   };
 
@@ -281,6 +391,59 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
           </div>
         </div>
       </div>
+
+      <section
+        className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+        aria-labelledby="portable-source-records-title"
+        data-testid="panel-portable-source-records"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h3
+              id="portable-source-records-title"
+              className="text-sm font-semibold text-slate-900 dark:text-white"
+            >
+              Portable agency source records
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              {sourceRecordCounts.associations} source matches · {sourceRecordCounts.facts} agency facts saved in this browser.
+              Export and import a source-only file to move them between browsers. Import adds new records and leaves existing conflicts and agency fields unchanged; it does not sync or write to the cloud.
+              The file is plain JSON; store it somewhere you control.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleExportSourceRecords}
+              disabled={sourceRecordCounts.associations + sourceRecordCounts.facts === 0}
+              className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              data-testid="button-export-agency-source-records"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export source records
+            </button>
+            <button
+              type="button"
+              onClick={() => sourceBackupInputRef.current?.click()}
+              disabled={isImportingSourceRecords}
+              className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-sky-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sky-800 disabled:cursor-wait disabled:opacity-60"
+              data-testid="button-import-agency-source-records"
+            >
+              <CloudDownload className="h-3.5 w-3.5" />
+              {isImportingSourceRecords ? 'Importing…' : 'Import source records'}
+            </button>
+            <input
+              ref={sourceBackupInputRef}
+              className="sr-only"
+              type="file"
+              accept=".json,application/json"
+              aria-label="Choose an agency source-record backup"
+              data-testid="input-agency-source-record-backup"
+              onChange={handleImportSourceRecords}
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Tabs: Snapshot History vs Live Audit Stream */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">

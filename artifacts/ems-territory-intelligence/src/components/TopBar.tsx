@@ -163,7 +163,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
-            <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
+            <div className="w-[120px] h-[120px] rounded-full overflow-hidden ring-2 ring-[#285EE8]/50 bg-[#070F1C] flex items-center justify-center shrink-0 transition-transform group-hover:scale-[1.03]">
               {!logoFailed ? (
                 <img
                   src={logoSrc}
@@ -397,7 +397,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       </aside>
 
       {/* Stable top toolbar */}
-      <header className="pi-command-header sticky top-0 z-40 h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
+      <header className="pi-command-header sticky top-0 z-40 h-20 md:h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}
           <div className="flex items-center gap-3 min-w-0">
@@ -408,7 +408,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               title="Return to Territory Intelligence Home"
               aria-label="Return to Territory Intelligence Home"
             >
-              <div className="w-16 h-16 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full ring-2 ring-[#285EE8]/50 overflow-hidden shrink-0 bg-[#070F1C] flex items-center justify-center">
                 <img
                   src={logoSrc}
                   alt="EMS and Fire logo"
@@ -419,7 +419,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="workspace-context-title shrink-0 whitespace-nowrap text-sm sm:text-base font-semibold text-[#14283F] dark:text-white">
+                <span className="workspace-context-title hidden sm:inline shrink-0 whitespace-nowrap text-sm sm:text-base font-semibold text-[#14283F] dark:text-white">
                   {getWorkspaceTitle()}
                 </span>
                 {hasActiveGeography && (

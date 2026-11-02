@@ -80,6 +80,27 @@ const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'cmsClaims') &&
   hasAgencyFactEvidence(agency, 'federalGrant');
 
+const formatCompactDollars = (value: number) => {
+  if (!Number.isFinite(value)) return 'Not reported';
+  const absoluteValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (absoluteValue >= 1_000_000) return `${sign}$${(absoluteValue / 1_000_000).toFixed(1)}M`;
+  if (absoluteValue >= 1_000) return `${sign}$${Math.round(absoluteValue / 1_000).toLocaleString()}K`;
+  return `${sign}$${absoluteValue.toLocaleString()}`;
+};
+
+const safeAgencyWebsiteUrl = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 interface NationalGeographicExplorerProps {
   agencies: Agency[];
   initialMode?: 'states' | 'counties' | 'cities' | 'pulseiq_chart';
@@ -2160,45 +2181,38 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 const primaryContact = agency.keyContacts[0];
                 const hasVerifiedModel = hasVerifiedModelInputs(agency);
                 const websiteUrl =
-                  (hasAgencyFactEvidence(agency, 'departmentRegistry') ? agency.officialWebsite : undefined) ||
+                  safeAgencyWebsiteUrl(agency.officialWebsite) ||
                   `https://www.google.com/search?q=${encodeURIComponent(`${agency.name} ${agency.city} ${agency.stateCode} official website`)}`;
                 const mapsUrl =
                   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    hasAgencyFactEvidence(agency, 'providerAddress')
+                    agency.address
                       ? agency.address
                       : `${agency.name}, ${agency.city}, ${agency.stateCode}`
                   )}`;
-                const formatCompactDollars = (value: number) => {
-                  const absoluteValue = Math.abs(value);
-                  const sign = value < 0 ? '-' : '';
-                  if (absoluteValue >= 1_000_000) return `${sign}$${(absoluteValue / 1_000_000).toFixed(1)}M`;
-                  if (absoluteValue >= 1_000) return `${sign}$${Math.round(absoluteValue / 1_000).toLocaleString()}K`;
-                  return `${sign}$${absoluteValue.toLocaleString()}`;
-                };
 
                 return (
                   <div
                     key={agency.id}
                     onClick={() => onSelectAgency(agency)}
-                    className="group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+                    className="agency-directory-card group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5"
                   >
                     <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${isFire ? 'bg-gradient-to-r from-rose-500 to-orange-300' : 'bg-gradient-to-r from-blue-700 to-cyan-300'}`} />
                     <div className="space-y-3.5">
                       {/* Agency identity and linked public-record context */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 pt-1 dark:border-slate-800">
+                      <div className="agency-identity-strip flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 pt-1 dark:border-slate-800">
                         <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
                           <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'}`}>
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
                           <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                            FDID {agency.fdid || 'Not listed'}
+                            FDID {agency.fdid || 'Not reported'}
                           </span>
-                          {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
+                          {agency.npiNumber && (
                             <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                               NPI {agency.npiNumber}
                             </span>
                           )}
-                          {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded && (
+                          {agency.grantStatus.afgAwarded && (
                             <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold tabular-nums text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                                 FEMA AFG ${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K
                             </span>
@@ -2242,11 +2256,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                       {/* Leadership and address are separated so neither gets truncated. */}
                       <div
-                        className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-800/50"
+                        className="agency-context-panel rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-800/50"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="grid gap-2">
-                          {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact && (
+                          {primaryContact && (
                             <p className="text-sm leading-snug text-slate-700 dark:text-slate-200">
                               <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Leadership</span>
                               <strong className="font-semibold text-slate-950 dark:text-white">{primaryContact.name}</strong>
@@ -2256,7 +2270,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <div className="flex flex-wrap items-end justify-between gap-2">
                             <p className="min-w-0 break-words text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                               <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Address</span>
-                              {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Not listed'}
+                              {agency.address || 'Not reported'}
                             </p>
                             <div className="flex shrink-0 items-center gap-1.5 font-semibold">
                               <a
@@ -2283,41 +2297,45 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </div>
 
                       {/* 2 × 2 metric tiles retain each value without forcing narrow columns. */}
-                      <div className="grid grid-cols-2 gap-2.5 text-sm tabular-nums">
+                      <div className="agency-metric-grid grid grid-cols-2 gap-2.5 text-sm tabular-nums">
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Upgrade value</span>
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Upgrade value · estimate</span>
                           <span className="mt-1 block break-words text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
-                            {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : 'Required model inputs not available'}
+                            {hasVerifiedModel
+                              ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
+                              : 'Not calculated'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {hasAgencyFactEvidence(agency, 'maintenanceContracts')
+                            {agency.competitorContract.contractEndDate
                               ? `Contract end · ${agency.competitorContract.contractEndDate}`
-                              : 'Contract end not listed'}
+                              : 'Contract end · Not reported'}
                           </span>
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                           <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Installed fleet</span>
                           <span className="mt-1 block break-words text-sm font-bold leading-snug text-slate-950 dark:text-white" title={agency.installedFleet.defibBrand}>
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
+                            {agency.installedFleet.defibBrand && agency.installedFleet.defibBrand !== 'Not reported'
                               ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand}`
                               : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                 ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                : 'Fleet not listed'}
+                                : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age not listed'}
+                            {agency.installedFleet.defibAgeYears != null ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age · Not reported'}
                           </span>
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Claim recovery estimate</span>
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Claim recovery · estimate</span>
                           <span className="mt-1 block break-words text-lg font-bold tracking-tight text-blue-800 dark:text-blue-400">
-                            {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
+                            {agency.cmsData.estimatedRecoverableRevenue != null
                               ? `+${formatCompactDollars(agency.cmsData.estimatedRecoverableRevenue)}/yr`
-                              : 'Not calculated'}
+                              : 'Not reported'}
                           </span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">From available claim summary</span>
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                            {agency.cmsData.medicareDenialReportingPeriod || 'Reporting period · Not reported'}
+                          </span>
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
@@ -2327,27 +2345,27 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               ? `${agency.annualCallVolume.toLocaleString()} calls`
                               : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                                 ? `${agency.annual911Transports.toLocaleString()} transports`
-                                : 'Volume not listed'}
+                              : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
                             {hasAgencyFactEvidence(agency, 'annualCallsReceived')
                               ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not stated'
                               : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                                 ? 'Annual 911 transports'
-                                : 'Clinical period not listed'}
+                                : 'Clinical period · Not reported'}
                             {' · '}
-                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC not listed'}
+                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Clean Card Footer */}
-                    <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <div className="agency-card-footer border-t border-slate-100 pt-3 dark:border-slate-800">
                       <div className="mb-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
                         {hasVerifiedModel
                           ? <>Recommended target · <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
-                          : 'No product target listed'}
+                          : 'Product target · Not reported'}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -2369,7 +2387,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <button
                           type="button"
                           onClick={() => onSelectAgency(agency)}
-                          className="ml-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+                          className="agency-card-primary-action ml-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
                           Open profile
                           <ChevronRight className="h-4 w-4" />
@@ -2404,7 +2422,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onClick={() => setProviderSortBy('value')}
                         className="py-2.5 px-3 text-right hidden sm:table-cell cursor-pointer hover:text-[#1E3A8A]"
                       >
-                        Upgrade Value {providerSortBy === 'value' ? '↓' : ''}
+                        Upgrade value · estimate {providerSortBy === 'value' ? '↓' : ''}
                       </th>
                       <th className="py-2.5 px-3 text-right hidden lg:table-cell">Claim-dollar recovery estimate</th>
                       <th className="py-2.5 px-3 text-right hidden xl:table-cell">Runs &amp; ROSC</th>
@@ -2433,7 +2451,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {agency.name}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'No registry source mapped'}</span>
+                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'Not reported'}</span>
                             </div>
                           </td>
                           <td className="py-2.5 px-3 hidden md:table-cell">
@@ -2442,18 +2460,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand} (${agency.installedFleet.defibAgeYears}y)`
                                 : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                   ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                  : 'No fleet source mapped'}
+                                : 'Not reported'}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'No ePCR source mapped'}
+                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Required model inputs not available'}
+                              {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'maintenanceContracts') ? `Exp ${agency.competitorContract.contractEndDate}` : 'No contract source mapped'}
+                              {agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden lg:table-cell">
@@ -2469,10 +2487,10 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
                                 : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
                                   ? agency.annual911Transports.toLocaleString()
-                                  : 'No volume source mapped'}
+                              : 'Not reported'}
                             </div>
                             <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}
+                              {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>

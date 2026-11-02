@@ -102,7 +102,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
   const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState<boolean>(false);
-  const [isTerritoryExpanded, setIsTerritoryExpanded] = useState<boolean>(false);
   const [isMyWorkExpanded, setIsMyWorkExpanded] = useState<boolean>(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
@@ -121,7 +120,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isHomeActive = activeTab === 'home' && !activeAccountName;
   const isAccountsActive = activeTab === 'queue' || Boolean(activeAccountName);
   const isOpportunitiesActive = ['contracts', 'grants', 'pulseiq'].includes(activeTab) && !activeAccountName;
-  const isTerritoryActive = ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab) && !activeAccountName;
+  const isTerritoryTab = ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab);
+  const isTerritoryActive = isTerritoryTab && !activeAccountName;
   const isMyWorkActive = ['field', 'tm_dashboard'].includes(activeTab) && !activeAccountName;
 
   const advancedTools = [
@@ -137,7 +137,6 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   useEffect(() => {
     setIsOpportunitiesExpanded(['contracts', 'grants', 'pulseiq'].includes(activeTab));
-    setIsTerritoryExpanded(['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab));
     setIsMyWorkExpanded(['field', 'tm_dashboard'].includes(activeTab));
     setIsAdvancedExpanded(['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab));
   }, [activeTab]);
@@ -149,9 +148,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     if (activeTab === 'contracts') return 'Opportunities · Procurement & Contracts';
     if (activeTab === 'grants') return 'Opportunities · FEMA AFG & SAFER Grants';
     if (activeTab === 'pulseiq') return 'Opportunities · PulseIQ Regional Scoring';
-    if (activeTab === 'states_directory' || activeTab === 'geo') return 'Territory · Geographic Directory';
-    if (activeTab === 'google_maps') return 'Territory · Google Maps Live';
-    if (activeTab === 'map' || activeTab === 'gis') return 'Territory · GIS Fleet Heatmap';
+    if (['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab)) return 'Territory Explorer';
     if (activeTab === 'field') return 'My Work · Field Route & Activity';
     if (activeTab === 'tm_dashboard') return 'My Work · Mobile Command';
     const foundAdv = advancedTools.find(t => t.id === activeTab);
@@ -332,75 +329,26 @@ export const TopBar: React.FC<TopBarProps> = ({
                 )}
               </div>
 
-              {/* 4. Territory */}
-              <div className="space-y-0.5">
-                <div
-                  className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
-                    isTerritoryActive
-                      ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                      : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                  }`}
+              {/* 4. Territory Explorer */}
+              <div
+                className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
+                  isTerritoryActive
+                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
+                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(isTerritoryTab ? activeTab : 'states_directory')}
+                  className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(isTerritoryActive ? activeTab : 'states_directory');
-                      setIsTerritoryExpanded(true);
-                    }}
-                    className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
-                  >
-                    <Globe className="w-4 h-4 shrink-0" />
-                    <span className="truncate">Territory</span>
-                  </button>
-                  <div className="flex items-center gap-1 pr-1.5 shrink-0">
-                    {globalState !== 'all' && (
-                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#172D49] text-blue-300">
-                        {globalState}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setIsTerritoryExpanded(prev => !prev)}
-                      className="p-1.5 hover:text-white text-slate-400 cursor-pointer shrink-0"
-                      title="Toggle Territory Sub-Navigation"
-                      aria-label="Toggle Territory Sub-Navigation"
-                      aria-expanded={isTerritoryExpanded}
-                    >
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isTerritoryExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sub-links for Territory including GIS Fleet Heatmap */}
-                {isTerritoryExpanded && (
-                  <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
-                    {[
-                      { id: 'states_directory', label: 'Geographic directory' },
-                      { id: 'google_maps', label: 'Agency location map' },
-                      { id: 'map', label: 'Fleet & acuity map' }
-                    ].map((sub) => {
-                      const subActive =
-                        sub.id === 'states_directory'
-                          ? activeTab === 'states_directory' || activeTab === 'geo'
-                          : sub.id === 'map'
-                            ? activeTab === 'map' || activeTab === 'gis'
-                            : activeTab === sub.id;
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => setActiveTab(sub.id)}
-                          className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                            subActive
-                              ? 'text-white font-semibold bg-[#172D49] border-l-2 border-[#285EE8]'
-                              : 'text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {sub.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <Globe className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Territory</span>
+                </button>
+                {globalState !== 'all' && (
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 mr-2 rounded bg-[#172D49] text-blue-300">
+                    {globalState}
+                  </span>
                 )}
               </div>
 

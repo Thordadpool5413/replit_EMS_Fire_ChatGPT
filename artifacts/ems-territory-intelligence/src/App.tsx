@@ -565,7 +565,7 @@ export default function App() {
       <div className="md:pl-64 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
         
-        {/* Mobile-only secondary navigation; desktop navigation lives in the sidebar. */}
+        {/* Secondary workspace tabs; the sidebar points to the Territory Explorer as one destination. */}
         {!currentActive && ['contracts', 'grants', 'pulseiq'].includes(activeTab) && (
           <nav
             aria-label="Opportunities Workspace Navigation"
@@ -596,29 +596,28 @@ export default function App() {
 
         {!currentActive && ['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab) && (
           <nav
-            aria-label="Territory Workspace Navigation"
-            className="md:hidden bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-2xs"
+            aria-label="Territory views"
+            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-              {[
-                { id: 'states_directory', label: 'Directory', active: activeTab === 'states_directory' || activeTab === 'geo' },
-                { id: 'google_maps', label: 'Agency locations', active: activeTab === 'google_maps' },
-                { id: 'map', label: 'Fleet & response map', active: activeTab === 'map' || activeTab === 'gis' }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleNavigateTab(item.id)}
-                  className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    item.active
-                      ? 'bg-[#285EE8] text-white'
-                      : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            {[
+              { id: 'states_directory', label: 'Directory', active: activeTab === 'states_directory' || activeTab === 'geo' },
+              { id: 'google_maps', label: 'Agency locations', active: activeTab === 'google_maps' },
+              { id: 'map', label: 'Fleet & response map', active: activeTab === 'map' || activeTab === 'gis' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={item.active ? 'page' : undefined}
+                onClick={() => handleNavigateTab(item.id)}
+                className={`min-h-10 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  item.active
+                    ? 'bg-[#285EE8] text-white'
+                    : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
         )}
 

@@ -47,6 +47,7 @@ import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { rankByPulseIqScore } from '../utils/pulseIqRanking';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -911,9 +912,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             />
                           </div>
                         )}
-                      <span className="text-xs text-slate-400 mt-1">
-                          PulseIQ estimate
-                      </span>
+                      <PulseIqEstimateLabel className="text-xs text-slate-400 mt-1" />
                     </div>
                   </div>
 
@@ -1203,6 +1202,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                                   style={{ width: `${agency.zollOpportunity.pulseIqScore}%` }}
                                 />
                               </div>
+                              <PulseIqEstimateLabel className="mt-1 block text-[9px] text-slate-500 dark:text-slate-400" />
                             </div>
                           </div>
 
@@ -1345,6 +1345,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               style={{ width: `${agency.zollOpportunity.pulseIqScore}%` }}
                             />
                           </div>
+                          <PulseIqEstimateLabel className="block text-[9px] text-slate-500 dark:text-slate-400" />
                           <div className="grid grid-cols-5 gap-0.5 pt-0.5">
                             {[
                               { val: pClinical, color: 'bg-rose-500' },

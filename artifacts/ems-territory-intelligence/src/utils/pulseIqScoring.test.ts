@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { Agency } from '../types';
+import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
 import {
   calculatePulseIqContributions,
   calculateScore,
@@ -33,6 +37,56 @@ test('PulseIQ score and factor contributions ignore claim rates and recovery amo
     calculatePulseIqContributions(lowClaims),
     calculatePulseIqContributions(highClaims)
   );
+});
+
+test('PulseIQ estimate stays visible without mapped or reviewed factor sources', () => {
+  const record = {
+    ...agency(0, 0),
+    factEvidence: {}
+  } as Agency;
+  const score = calculateScore(record);
+  const factorSourceKeys = evaluatePulseIqFactors(record)
+    .flatMap((factor) => factor.inputs.map((input) => input.sourceKey));
+
+  assert.equal(Number.isFinite(score), true);
+  assert.equal(score, calculateScore(agency(0, 0)));
+  assert.ok(factorSourceKeys.length > 0);
+  for (const sourceKey of new Set(factorSourceKeys)) {
+    assert.equal(hasMappedAgencyFactEvidence(record, sourceKey), false);
+    assert.equal(hasReviewedAgencyFactEvidence(record, sourceKey), false);
+  }
+
+  const estimateMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqEstimateLabel)
+  );
+  assert.match(estimateMarkup, /PulseIQ estimate/);
+});
+
+test('claim evidence does not change PulseIQ score availability or estimate label', () => {
+  const noClaims = {
+    ...agency(0, 0),
+    factEvidence: {}
+  } as Agency;
+  const claimEvidence = {
+    ...agency(98, 99000000),
+    factEvidence: {
+      cmsClaims: {
+        sourceName: 'Imported claim records',
+        sourceRecordId: 'claim-records-1',
+        sourceKind: 'manual',
+        note: 'Imported claim records',
+        reviewed: true,
+        reviewedAt: new Date().toISOString()
+      }
+    }
+  } as Agency;
+
+  const noClaimsScore = calculateScore(noClaims);
+  const claimEvidenceScore = calculateScore(claimEvidence);
+  assert.equal(Number.isFinite(noClaimsScore), true);
+  assert.equal(Number.isFinite(claimEvidenceScore), true);
+  assert.equal(claimEvidenceScore, noClaimsScore);
+  assert.match(renderToStaticMarkup(React.createElement(PulseIqEstimateLabel)), /PulseIQ estimate/);
 });
 
 test('legacy CMS weight cannot change PulseIQ', () => {

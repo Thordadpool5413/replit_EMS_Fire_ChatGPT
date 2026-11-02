@@ -21,6 +21,7 @@ import {
   hasReviewedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
 import { PulseIqEvidencePanel } from './PulseIqEvidencePanel';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 import {
   ArrowLeft,
   MapPin,
@@ -1237,7 +1238,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="mt-3 space-y-3">
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                    <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {agency.zollOpportunity.priorityTier}
+                    <PulseIqEstimateLabel /> · <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {agency.zollOpportunity.priorityTier}
                   </span>
                   <span className="font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
                     {Number.isFinite(agency.zollOpportunity.pulseIqScore)

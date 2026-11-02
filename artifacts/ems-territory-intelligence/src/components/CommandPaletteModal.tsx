@@ -24,6 +24,7 @@ import { Agency } from '../types';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { formatCurrency } from '../utils/formatters';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -223,6 +224,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         {agency.city}, {agency.stateCode}
                       </span>
                     </div>
+                    <PulseIqEstimateLabel className="text-[10px] text-slate-500 dark:text-slate-400" />
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-1.5 mt-0.5">
                       <span>
                         {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')

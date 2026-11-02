@@ -8,6 +8,7 @@ import { Agency, SyncOutboxItem, FieldNote, LeadStage } from '../types';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { ZOLL_PRODUCTS } from '../data/zollProducts';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { PULSE_IQ_ESTIMATE_LABEL } from './PulseIqEstimateLabel';
 import { 
   Car, 
   Phone, 
@@ -92,7 +93,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       'Google Maps Link',
       'Verified Defib Brand',
       'Verified Defib Units',
-      'PulseIQ Estimate (0–100)'
+      `${PULSE_IQ_ESTIMATE_LABEL} (0–100)`
     ];
     const rows = targetList.map((a, idx) => {
       const chief = hasAgencyFactEvidence(a, 'agencyLeadership')

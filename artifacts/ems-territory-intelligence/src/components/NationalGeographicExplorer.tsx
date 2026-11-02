@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { Agency, PredictiveWeights } from '../types';
 import { DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
@@ -2422,7 +2423,10 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums">
-                            <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></>
+                            <div>
+                              <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></>
+                            </div>
+                            <PulseIqEstimateLabel className="block text-[9px] font-normal text-slate-500 dark:text-slate-400" />
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">

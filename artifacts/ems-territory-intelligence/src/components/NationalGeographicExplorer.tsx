@@ -1577,7 +1577,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
       {activeFocusLevel === 'counties' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-xs grid grid-cols-1 gap-5 min-w-0">
+        <div className="grid min-w-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_45px_-36px_rgba(15,23,42,0.5)] sm:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800 min-w-0">
             <div>
               <div className="text-xs font-semibold text-[#1E3A8A] dark:text-blue-400">
@@ -1658,12 +1658,23 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             />
           )}
 
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">County directory</p>
+              <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-950">Browse {activeStateSummary?.state || selectedStateCode} counties</h3>
+              <p className="mt-1 text-sm text-slate-600">Open a county to review its cities and EMS/fire providers.</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold tabular-nums text-slate-700">
+              {paginatedCounties.length} shown · {availableCounties.length} total
+            </span>
+          </div>
+
           {paginatedCounties.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-500">
               No counties matched "{countyFilterInput}". Try clearing the search filter.
             </div>
           ) : (
-            <div className="workspace-county-grid">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const cityCountInCounty = countyCities.length;
@@ -1681,33 +1692,33 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
                       }
                     }}
-                    className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#1E3A8A] dark:hover:border-blue-500 hover:shadow-xs cursor-pointer transition-all flex flex-col justify-between gap-4 group"
+                    className="group relative flex cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
+                          <h3 className="text-lg font-bold tracking-tight text-slate-950 transition-colors group-hover:text-blue-800 sm:text-xl">
                             {c.countyName}
                           </h3>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
-                            <span>Seat: <strong className="text-slate-700 dark:text-slate-200 font-medium">{c.countySeat}</strong></span>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-600">
+                            <span>County seat <strong className="font-semibold text-slate-900">{c.countySeat}</strong></span>
                             <span aria-hidden="true">·</span>
                             <span className="pi-metric-id">FIPS {c.countyFips}</span>
                             {c.landAreaSqMiles && (
                               <>
                                 <span aria-hidden="true">·</span>
-                                <span className="pi-data-number">{c.landAreaSqMiles} sq mi</span>
+                                <span className="pi-data-number">{c.landAreaSqMiles.toLocaleString()} sq mi</span>
                               </>
                             )}
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 pi-data-inline">
+                        <span className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 pi-data-inline">
                           {cityCountInCounty} {cityCountInCounty === 1 ? 'City' : 'Cities'} · {cityCountInCounty * 2} Providers
                         </span>
                       </div>
 
                       {/* Real-World Boundary Coordinates & Verified USPS ZIPs */}
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 tabular-nums">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs tabular-nums text-slate-500">
                         <span>
                           Centroid: {c.centroidLat ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng?.toFixed(3)}°W` : 'NAD83 Verified'}
                         </span>
@@ -1717,11 +1728,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </div>
 
                       {/* Connected Real US Census / USPS Cities in this County */}
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                          Incorporated US Census / USPS Cities (Click city to inspect providers):
+                      <div className="border-t border-slate-100 pt-3">
+                        <div className="mb-2 text-xs font-semibold text-slate-600">
+                          Cities and places
                         </div>
-                        <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                           {countyCities.map(cityName => (
                             <button
                               key={`${c.stateCode}-${c.countyName}-${cityName}`}
@@ -1736,7 +1747,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                   onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
                                 }
                               }}
-                              className="px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800 hover:bg-[#1E3A8A] hover:text-white border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium transition-colors cursor-pointer"
+                              className="cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
                             >
                               {cityName}
                             </button>
@@ -1744,10 +1755,10 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs tabular-nums">
-                        <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Population</span>
-                          <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block">{c.population.toLocaleString()}</span>
+                      <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm tabular-nums">
+                        <div className="rounded-xl bg-slate-50 p-3">
+                          <span className="block text-xs font-medium text-slate-500">Population</span>
+                          <span className="mt-1 block text-lg font-bold tracking-tight text-slate-950">{c.population.toLocaleString()}</span>
                         </div>
                         <div className="hidden">
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
@@ -1849,19 +1860,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             </div>
                           )}
                         </div>
-                        <div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">Avg Transport</span>
-                          <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block">{c.averageTransportMinutes} min</span>
+                        <div className="rounded-xl bg-blue-50/70 p-3">
+                          <span className="block text-xs font-medium text-slate-500">Average transport</span>
+                          <span className="mt-1 block text-lg font-bold tracking-tight text-blue-800">{c.averageTransportMinutes} min</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 pi-data-inline text-[11px]">
-                        <strong className="pi-data-number font-semibold">{c.annualCardiacArrestIncidents}</strong> OHCA/yr · NEMSIS v3.5
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
+                      <span className="text-slate-600 pi-data-inline">
+                        <strong className="pi-data-number font-bold text-slate-900">{c.annualCardiacArrestIncidents.toLocaleString()}</strong> OHCA/yr · NEMSIS v3.5
                       </span>
-                      <span className="font-semibold text-[#1E3A8A] dark:text-blue-400 pi-data-inline group-hover:translate-x-0.5 transition-transform">
-                        Inspect All {cityCountInCounty} Cities &amp; Providers &rarr;
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 font-semibold text-white transition-all group-hover:bg-blue-800">
+                        Inspect county
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
                   </div>

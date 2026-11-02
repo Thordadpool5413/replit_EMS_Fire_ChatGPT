@@ -19,6 +19,7 @@ import {
   hasMappedAgencyFactEvidence,
   hasReviewedAgencyFactEvidence
 } from '../data/agencyFactEvidence';
+import { PulseIqEvidencePanel } from './PulseIqEvidencePanel';
 import {
   ArrowLeft,
   MapPin,
@@ -290,7 +291,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
         cmsFinancialPts: raw.zollOpportunity?.scoreBreakdown?.cmsFinancialPts,
         demographicVulnerabilityPts: raw.zollOpportunity?.scoreBreakdown?.demographicVulnerabilityPts,
         budgetGrantReadinessPts: raw.zollOpportunity?.scoreBreakdown?.budgetGrantReadinessPts,
-        softwareWhitespacePts: raw.zollOpportunity?.scoreBreakdown?.softwareWhitespacePts ?? 0
+        softwareWhitespacePts: raw.zollOpportunity?.scoreBreakdown?.softwareWhitespacePts
       }
     },
     keyContacts: normalizedContacts,
@@ -1195,6 +1196,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     style={{ width: Number.isFinite(agency.zollOpportunity.pulseIqScore) ? `${agency.zollOpportunity.pulseIqScore}%` : '0%' }}
                   />
                 </div>
+                <PulseIqEvidencePanel agency={agency} compact />
 
                 <div className="grid grid-cols-2 gap-px bg-[#DFE6EF] dark:bg-[#1E2D42] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-lg overflow-hidden">
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-2.5">

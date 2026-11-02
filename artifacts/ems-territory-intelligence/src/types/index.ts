@@ -489,6 +489,7 @@ export type AgencyFactEvidenceKey =
   | 'frontlineRescueUnits'
   | 'annualCallsReceived'
   | 'epcrSystem'
+  | 'billingSoftware'
   | 'monitorModelTransition'
   | 'serviceArea';
 

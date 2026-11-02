@@ -10,7 +10,6 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { getAgencyMedicareDenialMetricForDisplay as getAgencyMedicareDenialMetric } from '../services/agencyMedicareDenialService';
 import {
   classifyOhcaRate,
   FLEET_AGE_BANDS,
@@ -134,7 +133,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   onSelectCategory,
   onSwitchToGoogleMaps
 }) => {
-  const [selectedLayer, setSelectedLayer] = useState<'nemsis_cardiac' | 'cardiac' | 'aed' | 'transport' | 'cms'>('nemsis_cardiac');
+  const [selectedLayer, setSelectedLayer] = useState<'nemsis_cardiac' | 'cardiac' | 'aed' | 'transport'>('nemsis_cardiac');
   const [nemsisAcuityFilter, setNemsisAcuityFilter] = useState<'all' | 'high' | 'critical'>('all');
   const [layerThresholdFilter, setLayerThresholdFilter] = useState<'all' | 'high' | 'critical'>('all');
   const [selectedClusterId, setSelectedClusterId] = useState<string>('all');
@@ -286,9 +285,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           if (!hasReportedValue(a.gisData?.publicAccessAedDeficitPct) || a.gisData!.publicAccessAedDeficitPct! < 45) return false;
         } else if (selectedLayer === 'transport') {
           if (!hasReportedValue(a.gisData?.avgTransportTimeMinutes) || a.gisData!.avgTransportTimeMinutes! < 20) return false;
-        } else if (selectedLayer === 'cms') {
-          const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
-          if (denialRate == null || denialRate < 18) return false;
         }
       } else if (layerThresholdFilter === 'critical') {
         if (selectedLayer === 'cardiac') {
@@ -297,9 +293,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           if (!hasReportedValue(a.gisData?.publicAccessAedDeficitPct) || a.gisData!.publicAccessAedDeficitPct! < 55) return false;
         } else if (selectedLayer === 'transport') {
           if (!hasReportedValue(a.gisData?.avgTransportTimeMinutes) || a.gisData!.avgTransportTimeMinutes! < 28) return false;
-        } else if (selectedLayer === 'cms') {
-          const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
-          if (denialRate == null || denialRate < 21) return false;
         }
       }
 
@@ -312,7 +305,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   }, [agencies, selectedState, selectedCounty, selectedCity, selectedCategory, selectedClusterId, selectedTargetProduct, activeAccount, selectedLayer, nemsisAcuityFilter, layerThresholdFilter, nationalOhcaRateThresholds]);
 
   // Layer-specific metric evaluation function for accurate hotspot ranking
-  const getLayerMetric = (a: Agency, layer: string): number => {
+  const getLayerMetric = (a: Agency, layer: typeof selectedLayer): number => {
     if (layer === 'nemsis_cardiac') {
       return getAgencyOhcaRatePerThousand(a) ?? 0;
     }
@@ -329,11 +322,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       // Long Transport (>20 min)
       return a.gisData?.avgTransportTimeMinutes ?? 0;
     }
-    if (layer === 'cms') {
-      // CMS Denial Zones: high Medicare claim denial rate & recoverable revenue
-      return getAgencyMedicareDenialMetric(a)?.ratePct ?? 0;
-    }
-    return a.zollOpportunity?.pulseIqScore ?? 0;
+    return 0;
   };
 
   // Comprehensive Territory Telemetry across filtered jurisdiction for ALL 5 layers (Single-Pass O(N) Algorithm)
@@ -361,11 +350,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         avgTransportTime: 0,
         longTransportCount: 0,
         extremeTransportCount: 0,
-        denialDataCount: 0,
-        avgDenialRate: null,
-        highDenialCount: 0,
-        totalRecoverableRevenue: 0,
-        recoverableRevenueDataCount: 0,
         autoPulseNeedCount: 0,
         mechanicalCprDataCount: 0,
         agingDefibCount: 0,
@@ -394,10 +378,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     let transportDataCount = 0;
     let longTransportCount = 0;
     let extremeTransportCount = 0;
-    let denialDataCount = 0;
-    let highDenialCount = 0;
-    let totalRecoverableRevenue = 0;
-    let recoverableRevenueDataCount = 0;
     let autoPulseNeedCount = 0;
     let mechanicalCprDataCount = 0;
     let agingDefibCount = 0;
@@ -412,8 +392,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       const defibAge = a.installedFleet?.defibAgeYears;
       const aedDeficit = a.gisData?.publicAccessAedDeficitPct;
       const transportTime = a.gisData?.avgTransportTimeMinutes;
-      const denialRate = getAgencyMedicareDenialMetric(a)?.ratePct;
-      const recoverableRev = a.cmsData?.estimatedRecoverableRevenue;
       const mechCpr = a.installedFleet?.mechanicalCPR;
       const vent = a.installedFleet?.transportVentilator;
 
@@ -462,14 +440,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         if (transportTime >= 28) extremeTransportCount++;
         if (vent && vent !== 'Not source-verified' && vent.includes('None')) ventOpportunityCount++;
       }
-      if (hasReportedValue(denialRate)) {
-        denialDataCount++;
-        if (denialRate >= 19) highDenialCount++;
-      }
-      if (hasReportedValue(recoverableRev)) {
-        totalRecoverableRevenue += recoverableRev;
-        recoverableRevenueDataCount++;
-      }
       if (mechCpr && mechCpr !== 'Not source-verified') {
         mechanicalCprDataCount++;
         if (mechCpr.includes('None')) autoPulseNeedCount++;
@@ -484,7 +454,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     const avgSurvival = survivalDataCount ? +(sumSurvival / survivalDataCount).toFixed(1) : 0;
     const avgAedDeficit = aedDataCount ? Math.round(sumAedDeficit / aedDataCount) : 0;
     const avgTransportTime = transportDataCount ? +(sumTransportTime / transportDataCount).toFixed(1) : 0;
-    const avgDenialRate = null;
     const ohcaRatePerThousand = ohcaRateDataCount
       ? +((ohcaRateTotalCalls / ohcaRateTotalTransports) * 1000).toFixed(1)
       : null;
@@ -510,11 +479,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       avgTransportTime,
       longTransportCount,
       extremeTransportCount,
-      denialDataCount,
-      avgDenialRate,
-      highDenialCount,
-      totalRecoverableRevenue,
-      recoverableRevenueDataCount,
       autoPulseNeedCount,
       mechanicalCprDataCount,
       agingDefibCount,
@@ -528,7 +492,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     selectedLayer === 'cardiac' ? nemsisTerritoryStats.survivalDataCount :
     selectedLayer === 'aed' ? nemsisTerritoryStats.aedDataCount :
     selectedLayer === 'transport' ? nemsisTerritoryStats.transportDataCount :
-    nemsisTerritoryStats.denialDataCount;
+    0;
   const secondaryMetricDataCount =
     selectedLayer === 'nemsis_cardiac'
       ? nemsisTerritoryStats.cardiacCallsDataCount
@@ -548,19 +512,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   // Use every filtered agency. KDE and hexbin aggregate the complete filtered set;
   // pins remain available when the full marker layer is too visually dense.
-  const mapRenderedAgencies = useMemo(
-    () => selectedLayer === 'cms'
-      ? filteredAgencies.filter(a => getAgencyMedicareDenialMetric(a) !== null)
-      : filteredAgencies,
-    [filteredAgencies, selectedLayer],
-  );
+  const mapRenderedAgencies = filteredAgencies;
 
   // Ranked hotspots for the active layer
   const topCardiacEpicenters = useMemo(() => {
-    const agenciesWithLayerData = selectedLayer === 'cms'
-      ? filteredAgencies.filter(a => getAgencyMedicareDenialMetric(a) !== null)
-      : filteredAgencies;
-    return [...agenciesWithLayerData]
+    return [...filteredAgencies]
       .sort((a, b) => getLayerMetric(b, selectedLayer) - getLayerMetric(a, selectedLayer))
       .slice(0, 8);
   }, [filteredAgencies, selectedLayer]);
@@ -703,7 +659,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       aedCount: number;
       sumTransport: number;
       transportCount: number;
-      denialCount: number;
     }> = {};
     for (let i = 0; i < effectiveAgencies.length; i++) {
       const a = effectiveAgencies[i];
@@ -712,7 +667,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         stateStats[sc] = {
           totalCardiac: 0, cardiacCount: 0, rateCalls: 0, rateTransports: 0, rateAgencyCount: 0, agencyCount: 0, sumSurvival: 0,
           survivalCount: 0, sumAed: 0, aedCount: 0, sumTransport: 0,
-          transportCount: 0, denialCount: 0
+          transportCount: 0
         };
       }
       const st = stateStats[sc];
@@ -742,9 +697,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       if (hasReportedValue(a.gisData?.avgTransportTimeMinutes)) {
         st.sumTransport += a.gisData!.avgTransportTimeMinutes!;
         st.transportCount++;
-      }
-      if (getAgencyMedicareDenialMetric(a)) {
-        st.denialCount++;
       }
     }
 
@@ -851,9 +803,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           fillColor = basemapTheme === 'dark' ? '#064e3b' : '#f0fdf4';
           borderColor = basemapTheme === 'dark' ? '#22c55e' : '#16a34a';
         }
-      } else {
-        metricLabel = 'Agency denial-rate records';
-        metricValue = stats?.denialCount ? `${stats.denialCount} records` : 'Not reported';
       }
 
       result[sc] = {
@@ -1209,9 +1158,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         selectedLayer === 'cardiac' ? (survivalDataCount ? `${avgSurvival}% avg Utstein survival` : 'Not reported') :
         selectedLayer === 'aed' ? (hasReportedValue(topAgency.gisData?.publicAccessAedDeficitPct) ? `${topAgency.gisData.publicAccessAedDeficitPct}% peak AED deficit` : 'Not reported') :
         selectedLayer === 'transport' ? (hasReportedValue(topAgency.gisData?.avgTransportTimeMinutes) ? `${topAgency.gisData.avgTransportTimeMinutes} min peak transit` : 'Not reported') :
-        (getAgencyMedicareDenialMetric(topAgency)
-          ? 'Claim summary record available'
-          : 'No claim summary record');
+        'No layer-specific details';
 
       cells.push({
         id: `hex-${key}`,
@@ -1262,13 +1209,13 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     metricDisplay: string;
   }
 
-  const getAgencyLayerVisual = (agency: Agency, layer: string): AgencyLayerVisual => {
+  const getAgencyLayerVisual = (agency: Agency, layer: typeof selectedLayer): AgencyLayerVisual => {
     const hasMetric =
       layer === 'nemsis_cardiac' ? getAgencyOhcaRatePerThousand(agency) != null :
       layer === 'cardiac' ? hasReportedValue(agency.utsteinSurvivalRate) :
       layer === 'aed' ? hasReportedValue(agency.gisData?.publicAccessAedDeficitPct) :
       layer === 'transport' ? hasReportedValue(agency.gisData?.avgTransportTimeMinutes) :
-      getAgencyMedicareDenialMetric(agency) !== null;
+      false;
 
     if (!hasMetric) {
       return {
@@ -1525,69 +1472,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       };
     }
 
-    // CMS Denial Zones layer
-    const denialMetric = getAgencyMedicareDenialMetric(agency);
-    const denial = denialMetric?.ratePct ?? 0;
-    const importLabel = denialMetric?.sourceType === 'local-import' ? ' · local import; verify report' : '';
-    const recoverable = agency.cmsData.estimatedRecoverableRevenue;
-    if (denial >= 21) {
-      return {
-        gradientId: 'cms-critical-gradient',
-        ringColor: '#be123c',
-        ringOpacity: 0.85,
-        isCritical: true,
-        markerFill: '#9f1239',
-        markerStroke: '#ffe4e6',
-        markerRadius: 6.5,
-        heatRadius: Math.min(70, 32 + denial * 1.6),
-        tierLabel: 'Severe denial rate',
-        metricDisplay: hasReportedValue(recoverable)
-          ? `Claim summary record available${importLabel} · recovery estimate method unavailable`
-          : `Claim summary record available${importLabel}`
-      };
-    }
-    if (denial >= 18) {
-      return {
-        gradientId: 'cms-high-gradient',
-        ringColor: '#7c3aed',
-        ringOpacity: 0.65,
-        isCritical: false,
-        markerFill: '#6d28d9',
-        markerStroke: '#ede9fe',
-        markerRadius: 5.5,
-        heatRadius: Math.min(52, 24 + denial * 1.3),
-        tierLabel: 'High denial rate',
-        metricDisplay: hasReportedValue(recoverable)
-          ? `Claim summary record available${importLabel} · recovery estimate method unavailable`
-          : `Claim summary record available${importLabel}`
-      };
-    }
-    if (denial >= 14) {
-      return {
-        gradientId: 'cms-moderate-gradient',
-        ringColor: '#0284c7',
-        ringOpacity: 0.45,
-        isCritical: false,
-        markerFill: '#0369a1',
-        markerStroke: '#e0f2fe',
-        markerRadius: 4.5,
-        heatRadius: 30,
-        tierLabel: 'Elevated denial rate',
-        metricDisplay: `Claim summary record available${importLabel}`
-      };
-    }
-    return {
-        gradientId: 'cms-baseline-gradient',
-      ringColor: '#059669',
-      ringOpacity: 0.3,
-      isCritical: false,
-      markerFill: '#047857',
-      markerStroke: '#d1fae5',
-      markerRadius: 4,
-      heatRadius: 18,
-      tierLabel: 'Lower denial rate',
-      metricDisplay: `Claim summary record available${importLabel}`
-    };
   };
 
   return (
@@ -1759,9 +1643,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       ? `Survival Deficit Analysis (${filteredAgencies.length.toLocaleString()} Providers)`
                       : selectedLayer === 'aed'
                         ? `Public Access AED Deficit (${filteredAgencies.length.toLocaleString()} Providers)`
-                        : selectedLayer === 'transport'
-                          ? `Transport Time Isochrones (${filteredAgencies.length.toLocaleString()} Providers)`
-                          : `CMS Billing Denials (${filteredAgencies.length.toLocaleString()} Providers)`}
+                        : `Transport Time Isochrones (${filteredAgencies.length.toLocaleString()} Providers)`}
                 </h2>
               </div>
               <span className="text-xs text-[#53657B] dark:text-slate-400 truncate">
@@ -1957,24 +1839,22 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                    selectedLayer === 'cardiac' ? <Activity className="w-5 h-5 text-red-500 animate-pulse" /> :
                    selectedLayer === 'aed' ? <Zap className="w-5 h-5 text-fuchsia-400 animate-pulse" /> :
                    selectedLayer === 'transport' ? <Clock className="w-5 h-5 text-amber-400 animate-pulse" /> :
-                   <DollarSign className="w-5 h-5 text-emerald-400 animate-pulse" />}
+                    <Clock className="w-5 h-5 text-amber-400 animate-pulse" />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-sm sm:text-base text-white tracking-tight flex items-center gap-1.5 flex-wrap">
                       <span>
-                         {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate per 1,000 Transports' :
+                          {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate per 1,000 Transports' :
                          selectedLayer === 'cardiac' ? 'Cardiac Arrest Survival Deficit Zones' :
                          selectedLayer === 'aed' ? 'Public Access AED Need & Demographics' :
-                         selectedLayer === 'transport' ? 'Extended Transport Isochrones (>20 min)' :
-                         'CMS Medicare Claim Denial Concentrations'}
+                          'Extended Transport Isochrones (>20 min)'}
                       </span>
                       <span className="text-xs text-slate-300 font-normal">
                          · {selectedLayer === 'nemsis_cardiac' ? 'Matched agency reports' :
                            selectedLayer === 'cardiac' ? 'Utstein Resuscitation Registry' :
-                           selectedLayer === 'aed' ? 'GIS PAD Census' :
-                           selectedLayer === 'transport' ? 'NEMSIS Transit Registry' :
-                           'Medicare MAC Revenue Audit'}
+                            selectedLayer === 'aed' ? 'GIS PAD Census' :
+                            'NEMSIS Transit Registry'}
                       </span>
                     </h3>
                   </div>
@@ -1983,7 +1863,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     {selectedLayer === 'cardiac' && `Identifying severe survival deficits (<26% Utstein survival rate) where ZOLL AutoPulse and ResQCPR generate highest clinical resuscitation impact.`}
                     {selectedLayer === 'aed' && `Mapping public access AED deficits and age 65+ demographic vulnerability to deploy ZOLL AED 3 community networks.`}
                     {selectedLayer === 'transport' && `Long transport corridors (>20 min) requiring EMV+ mechanical transport ventilators and uninterrupted patient monitoring.`}
-                    {selectedLayer === 'cms' && 'Local claim-rate shading is not available in this map.'}
                   </p>
                 </div>
               </div>
@@ -2145,43 +2024,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     </>
                   )}
 
-                  {/* Layer: cms */}
-                  {selectedLayer === 'cms' && (
-                    <>
-                      <button
-                        onClick={() => setLayerThresholdFilter('all')}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                          layerThresholdFilter === 'all'
-                            ? 'bg-white text-slate-900 font-semibold shadow-xs'
-                            : 'text-slate-300 hover:text-white'
-                        }`}
-                      >
-                        All Denials
-                      </button>
-                      <button
-                        onClick={() => setLayerThresholdFilter('high')}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
-                          layerThresholdFilter === 'high'
-                            ? 'bg-purple-500 text-white font-semibold shadow-xs'
-                            : 'text-purple-300 hover:text-purple-200'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                        <span>High rate</span>
-                      </button>
-                      <button
-                        onClick={() => setLayerThresholdFilter('critical')}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 ${
-                          layerThresholdFilter === 'critical'
-                            ? 'bg-rose-600 text-white font-semibold shadow-xs'
-                            : 'text-rose-400 hover:text-rose-300'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
-                        <span>Severe rate</span>
-                      </button>
-                    </>
-                  )}
                 </div>
 
                 {/* Map Display Mode: Thermal KDE, H3 Hexbins, Choropleth, Tactical Pins & Kernel Tuning */}
@@ -2325,24 +2167,19 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <span className="text-xs text-slate-400 font-medium truncate block">
                      {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate' :
                      selectedLayer === 'cardiac' ? 'Avg Utstein Survival' :
-                     selectedLayer === 'aed' ? 'Avg Public Access Deficit' :
-                     selectedLayer === 'transport' ? 'Avg Emergency Transit' :
-                      'Agency Denial Rate Records'}
+                      selectedLayer === 'aed' ? 'Avg Public Access Deficit' : 'Avg Emergency Transit'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-400 tabular-nums">
                        {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.ohcaRatePerThousand != null ? nemsisTerritoryStats.ohcaRatePerThousand.toFixed(1) : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.survivalDataCount ? `${nemsisTerritoryStats.avgSurvival}%` : 'Not reported')}
                       {selectedLayer === 'aed' && (nemsisTerritoryStats.aedDataCount ? `${nemsisTerritoryStats.avgAedDeficit}%` : 'Not reported')}
-                      {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.avgTransportTime} min` : 'Not reported')}
-                      {selectedLayer === 'cms' && (nemsisTerritoryStats.denialDataCount ? `${nemsisTerritoryStats.denialDataCount} records` : 'Not reported')}
+                       {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.avgTransportTime} min` : 'Not reported')}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
                        {selectedLayer === 'nemsis_cardiac' ? 'per 1,000 transports' :
                        selectedLayer === 'cardiac' ? 'vs 29.7% bench' :
-                       selectedLayer === 'aed' ? 'community gap' :
-                       selectedLayer === 'transport' ? 'to hospital' :
-                       'Part B Medicare'}
+                        selectedLayer === 'aed' ? 'community gap' : 'to hospital'}
                     </span>
                   </div>
                 </div>
@@ -2357,17 +2194,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <span className="text-xs text-slate-400 font-medium truncate block">
                     {selectedLayer === 'nemsis_cardiac' ? 'Estimated STEMI Pre-Hospital Alerts' :
                      selectedLayer === 'cardiac' ? 'Critical Deficits (<22%)' :
-                     selectedLayer === 'aed' ? 'High Need AED Zones (≥50%)' :
-                     selectedLayer === 'transport' ? 'Prolonged Routes (≥20 min)' :
-                     'High Denial Providers (≥19%)'}
+                     selectedLayer === 'aed' ? 'High Need AED Zones (≥50%)' : 'Prolonged Routes (≥20 min)'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-amber-400 tabular-nums">
                       {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.cardiacCallsDataCount ? nemsisTerritoryStats.totalStemiTransmissions.toLocaleString() : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.survivalDataCount ? `${nemsisTerritoryStats.criticalSurvivalCount}` : 'Not reported')}
                       {selectedLayer === 'aed' && (nemsisTerritoryStats.aedDataCount ? `${nemsisTerritoryStats.highAedNeedCount}` : 'Not reported')}
-                      {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.longTransportCount}` : 'Not reported')}
-                      {selectedLayer === 'cms' && (nemsisTerritoryStats.denialDataCount ? `${nemsisTerritoryStats.highDenialCount}` : 'Not reported')}
+                       {selectedLayer === 'transport' && (nemsisTerritoryStats.transportDataCount ? `${nemsisTerritoryStats.longTransportCount}` : 'Not reported')}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
                       {selectedLayer === 'nemsis_cardiac' ? 'transmissions' : 'agencies'}
@@ -2387,23 +2221,18 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <span className="text-xs text-slate-400 font-medium truncate block">
                     {selectedLayer === 'nemsis_cardiac' ? 'Active 911 Call Load' :
                      selectedLayer === 'cardiac' ? 'AutoPulse CPR Need' :
-                     selectedLayer === 'aed' ? 'Annual Reported Transports' :
-                     selectedLayer === 'transport' ? 'Extreme Rural Routes (≥28 min)' :
-                      'Recovery Estimate'}
+                      selectedLayer === 'aed' ? 'Annual Reported Transports' : 'Extreme Rural Routes (≥28 min)'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-emerald-400 tabular-nums">
                       {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.transportsDataCount ? nemsisTerritoryStats.total911Transports.toLocaleString() : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.mechanicalCprDataCount ? `${nemsisTerritoryStats.autoPulseNeedCount}` : 'Not reported')}
                       {selectedLayer === 'aed' && (nemsisTerritoryStats.transportsDataCount ? nemsisTerritoryStats.total911Transports.toLocaleString() : 'Not reported')}
-                      {selectedLayer === 'transport' && 'Not reported'}
-                      {selectedLayer === 'cms' && 'Not calculated'}
+                       {selectedLayer === 'transport' && 'Not reported'}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
                       {selectedLayer === 'cardiac' ? 'agencies without mech CPR' :
-                       selectedLayer === 'transport' ? 'extended transit zones' :
-                        selectedLayer === 'cms' ? 'inputs/method unavailable' :
-                        'transports/yr'}
+                       selectedLayer === 'transport' ? 'extended transit zones' : 'transports/yr'}
                     </span>
                   </div>
                 </div>
@@ -2420,20 +2249,17 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   <span className="text-xs text-rose-300 font-medium truncate block">
                     {selectedLayer === 'nemsis_cardiac' ? 'Top-Quartile OHCA Rates with 7+ Year Defibs' :
                      selectedLayer === 'cardiac' ? 'Aging Fleets in Deficit' :
-                     selectedLayer === 'aed' ? 'AED 3 Upgrade Target' :
-                     selectedLayer === 'transport' ? 'Ventilator Expansion Need' :
-                     'Avg Denial Recovery / Agency'}
+                      selectedLayer === 'aed' ? 'AED 3 Upgrade Target' : 'Ventilator Expansion Need'}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1 min-w-0 flex-wrap">
                     <span className="text-xl sm:text-2xl font-semibold text-rose-300 tabular-nums">
                       {selectedLayer === 'nemsis_cardiac' && (nemsisTerritoryStats.ohcaRateAndDefibAgeDataCount ? `${nemsisTerritoryStats.agingFleetInCardiacZonesCount}` : 'Not reported')}
                       {selectedLayer === 'cardiac' && (nemsisTerritoryStats.defibAgeDataCount ? `${nemsisTerritoryStats.agingDefibCount}` : 'Not reported')}
                       {selectedLayer === 'aed' && 'Not calculated'}
-                      {selectedLayer === 'transport' && 'Not calculated'}
-                      {selectedLayer === 'cms' && 'Not calculated'}
+                       {selectedLayer === 'transport' && 'Not calculated'}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
-                      {selectedLayer === 'cms' ? 'inputs/method unavailable' : 'priority replacements'}
+                      {selectedLayer === 'transport' ? 'estimate unavailable' : 'priority replacements'}
                     </span>
                   </div>
                 </div>
@@ -3063,9 +2889,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                      <DollarSign className="w-3.5 h-3.5 text-emerald-400" />}
                     {selectedLayer === 'nemsis_cardiac' ? 'OHCA Rate Surface' :
                      selectedLayer === 'cardiac' ? 'Utstein Deficit Surface' :
-                     selectedLayer === 'aed' ? 'Public AED Deficit' :
-                     selectedLayer === 'transport' ? 'Transit Isochrones' :
-                     'CMS Claim Denials'}
+                     selectedLayer === 'aed' ? 'Public AED Deficit' : 'Transit Isochrones'}
                   </span>
                   <span className="text-xs px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40 font-semibold">
                     {mapDisplayMode === 'kde' ? 'KDE' : mapDisplayMode === 'hexbin' ? 'H3' : mapDisplayMode === 'choropleth' ? 'State' : 'Pins'}
@@ -3203,31 +3027,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </div>
                 )}
 
-                {selectedLayer === 'cms' && (
-                  <div className="space-y-1.5 text-xs">
-                    {mapRenderedAgencies.length === 0 && (
-                      <p className="text-slate-400">
-                        No source-backed rates are mapped; missing data is not 0%.
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
-                      <span className="font-semibold text-slate-100">Severe</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                      <span className="text-slate-300">High</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
-                      <span className="text-slate-400">Elevated</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      <span className="text-slate-400">Lower</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

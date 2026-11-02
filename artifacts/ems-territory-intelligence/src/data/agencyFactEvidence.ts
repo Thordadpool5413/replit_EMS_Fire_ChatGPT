@@ -25,6 +25,7 @@ export const AGENCY_FACT_EVIDENCE_FIELDS: Array<{
   { key: 'frontlineRescueUnits', label: 'Frontline rescue-unit count' },
   { key: 'annualCallsReceived', label: 'Reported fire-rescue calls received' },
   { key: 'epcrSystem', label: 'ePCR system and contract record' },
+  { key: 'billingSoftware', label: 'EMS billing software' },
   { key: 'monitorModelTransition', label: 'Cardiac monitor model and replacement status' },
   { key: 'serviceArea', label: 'Reported service area' },
 ];
@@ -130,6 +131,7 @@ export function hasAgencyFactData(
     frontlineRescueUnits: [agency.frontlineRescueUnitCount, agency.responseUnitCount],
     annualCallsReceived: [agency.annualCallVolume, agency.annual911Transports],
     epcrSystem: [agency.installedFleet?.epcrCadSoftware],
+    billingSoftware: [agency.installedFleet?.billingSoftware],
     monitorModelTransition: [agency.installedFleet?.defibBrand, agency.fleet?.currentDefibVendor],
     serviceArea: [agency.populationServed, agency.responseAreaSqMiles, agency.gisData],
   };

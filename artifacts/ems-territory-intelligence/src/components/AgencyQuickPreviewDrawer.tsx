@@ -28,6 +28,7 @@ import {
 import { FireRegistryLookup } from './FireRegistryLookup';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
+import { PulseIqEvidencePanel } from './PulseIqEvidencePanel';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
@@ -103,25 +104,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
     hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
     hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
     hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-    hasAgencyFactEvidence(agency, 'cmsClaims') &&
     hasAgencyFactEvidence(agency, 'federalGrant');
 
   const mappedEvidenceSources = AGENCY_FACT_EVIDENCE_FIELDS
     .filter(({ key }) => hasMappedAgencyFactEvidence(agency, key))
     .map(({ key, label }) => ({ key, label, evidence: agency.factEvidence?.[key] }));
 
-  // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
-  const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-  const clinicalSub = Math.min(
-    100,
-    Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8)
-  );
-  const grantSub = agency.grantStatus.afgAwarded ? 95 : 62;
-  const hasZollSoftware =
-    agency.installedFleet.billingSoftware.includes('ZOLL') ||
-    agency.installedFleet.epcrCadSoftware.includes('ZOLL');
-  const softwareSub = hasZollSoftware ? 35 : 95;
 
   const handleSaveNote = (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,53 +302,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
             </div>
           </div>
 
-          {/* Actuarial PulseIQ Score Breakdown */}
-          {hasDecisionGradeInputs ? (
-          <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 bg-slate-50/50 dark:bg-slate-900 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-900 dark:text-white">
-                PulseIQ Composite Priority Score
-              </span>
-              <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                {agency.zollOpportunity.pulseIqScore}/100
-              </span>
-            </div>
-
-            <div className="space-y-2 text-[11px] tabular-nums">
-              {[
-                { label: 'Fleet replacement pressure', val: fleetAgeSub, detail: `${agency.installedFleet.defibAgeYears} yr cycle` },
-                { label: 'Clinical acuity & volume', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
-                {
-                  label: 'FEMA AFG grant readiness',
-                  val: grantSub,
-                  detail: agency.grantStatus.afgAwarded
-                    ? `FY${agency.grantStatus.afgFiscalYear} $${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K`
-                    : 'Eligible'
-                },
-                { label: 'Software whitespace', val: softwareSub, detail: hasZollSoftware ? 'ZOLL software listed' : 'Non-ZOLL or unlisted software' }
-              ].map((row) => (
-                <div key={row.label} className="space-y-1">
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <span className="font-medium">{row.label}</span>
-                    <span className="text-slate-900 dark:text-white font-semibold">
-                      {row.detail} · {row.val}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#1E3A8A] dark:bg-blue-500"
-                      style={{ width: `${row.val}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          ) : (
-            <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-              This model output is unavailable because required inputs are not listed in the agency record.
-            </div>
-          )}
+          <PulseIqEvidencePanel agency={agency} compact />
 
           {/* Command & Infrastructure Details */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 text-xs">

@@ -148,7 +148,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <header className="county-risk-explorer-header flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">
             <Compass className="h-4 w-4" />
@@ -280,7 +280,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       {!activeCountyNode && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left 7 Cols: Interactive SVG County Boundary Map */}
-          <div className="relative isolate overflow-hidden rounded-2xl border border-[#243751] bg-[#0A1526] p-4 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 lg:col-span-7 flex min-h-[400px] flex-col justify-between">
+          <div className="county-state-map-panel relative isolate overflow-hidden rounded-2xl border border-[#243751] bg-[#0A1526] p-4 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 lg:col-span-7 flex min-h-[400px] flex-col justify-between">
             <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-medium text-slate-300">Select any county boundary to explore its cities and providers</span>
@@ -297,7 +297,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden">
                 <svg
                   viewBox="0 0 720 400"
-                  className="h-auto max-h-[390px] w-full select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
+                  className="county-state-map-svg h-auto max-h-[390px] w-full select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
                   role="img"
                   aria-label={`${stateNode.stateName} County Boundaries Map`}
                 >
@@ -361,7 +361,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
 
           {/* Right 5 Cols: Real-Time County Boundary & City Hierarchy Node Inspector */}
-          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5">
+          <div className="county-state-summary-panel lg:col-span-5 flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5">
             {inspectedCounty ? (
               <div className="space-y-4">
                 <div className="border-b border-slate-100 pb-4">
@@ -579,7 +579,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       {activeCountyNode && projectedSingleCounty && (
         <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
           {/* Map-first county view with the geographic detail kept visually prominent. */}
-          <div className="relative isolate flex min-h-[440px] flex-col justify-between overflow-hidden rounded-2xl border border-[#243751] bg-[radial-gradient(ellipse_at_52%_45%,rgba(37,99,235,0.12),transparent_58%),linear-gradient(145deg,#0a1527,#10243b)] p-4 text-white shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 xl:col-span-7">
+          <div className="county-single-map-panel relative isolate flex min-h-[440px] flex-col justify-between overflow-hidden rounded-2xl border border-[#243751] bg-[radial-gradient(ellipse_at_52%_45%,rgba(37,99,235,0.12),transparent_58%),linear-gradient(145deg,#0a1527,#10243b)] p-4 text-white shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 xl:col-span-7">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-cyan-200">Municipality map</div>
@@ -600,7 +600,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
             <div className="relative flex min-h-[340px] w-full flex-1 items-center justify-center py-2">
               <svg
                 viewBox="0 0 520 340"
-                className="h-auto max-h-[440px] w-full select-none"
+                className="county-single-map-svg h-auto max-h-[440px] w-full select-none"
                 role="img"
                 aria-label={`${activeCountyNode.countyName} Boundary Polygon and Cities`}
               >
@@ -674,7 +674,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
 
           {/* Connected city and provider directory */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5 xl:col-span-5">
+          <div className="county-city-directory-panel flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5 xl:col-span-5">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>

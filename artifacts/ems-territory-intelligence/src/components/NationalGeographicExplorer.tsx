@@ -800,12 +800,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           : 'providers';
 
   return (
-    <div className="workspace-section-grid">
+    <div className="workspace-section-grid territory-explorer-screen">
       <NationalAmbulanceReference />
       
       {/* Contextual Drill-Down Breadcrumb Bar (Only shown when drilled into a State, County, or City) */}
       {activeFocusLevel !== 'states' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 shadow-2xs grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-3 min-w-0">
+        <div className="geography-drilldown-breadcrumb bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-2xs grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-2 min-w-0">
           <nav aria-label="Geographic Drill-Down Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-xs">
             <button
               type="button"
@@ -1662,7 +1662,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             />
           )}
 
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
+          <div className="county-directory-heading flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">County directory</p>
               <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-950">Browse {activeStateSummary?.state || selectedStateCode} counties</h3>
@@ -1696,7 +1696,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
                       }
                     }}
-                    className="group relative flex cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
+                    className="county-directory-card group relative flex cursor-pointer flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">

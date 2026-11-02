@@ -359,9 +359,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
          ==================================================================== */}
       <section
         aria-label="Interactive U.S. Territory Map"
-        className="pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
+        className="home-territory-map-screen pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
+        <div className="home-map-page-heading flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
           <div>
             <h2 className="pi-section-heading flex items-center gap-2">
               <Compass className="w-5 h-5 text-[#285EE8] dark:text-blue-400 shrink-0" />
@@ -406,7 +406,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="grid grid-cols-1 gap-4 items-start">
           <div className="min-w-0 space-y-3">
             <div
-              className="relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
+              className="home-territory-map-panel relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
               onMouseLeave={() => setHoveredStateCode(null)}
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -414,7 +414,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 }
               }}
             >
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div className="home-map-control-row flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   Shade states by
                   <select
@@ -426,14 +426,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       setMapMetric(metric);
                       saveMapPreference('metric', metric);
                     }}
-                    className="min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                    className="home-map-layer-select min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                   >
                     {STATE_MAP_METRICS.map((metric) => (
                       <option key={metric.key} value={metric.key}>{metric.label}</option>
                     ))}
                   </select>
                 </label>
-                <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-[#304A61] bg-[#101F30] p-1" role="group" aria-label="Map zoom controls">
+                <div className="home-map-zoom-control flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-[#304A61] bg-[#101F30] p-1" role="group" aria-label="Map zoom controls">
                   <button
                     type="button"
                     data-testid="button-map-zoom-in"
@@ -482,7 +482,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+              <div className="home-map-legend flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
                 <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span>{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
@@ -504,7 +504,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
               <div className="flex flex-col gap-3">
               <div
-                className="order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-[#101F30] border border-[#294158] px-3.5 py-3"
+                className="home-map-readout order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-[#101F30] border border-[#294158] px-3.5 py-3"
                 aria-live="polite"
                 aria-atomic="true"
               >
@@ -540,11 +540,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 Zoom in to inspect a state, then swipe to pan.
               </p>
 
-              <div ref={mapViewportRef} className="overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]">
+              <div ref={mapViewportRef} className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]">
               <svg
                 viewBox="0 0 920 500"
-                className="block h-auto select-none"
+                className="home-map-svg block h-auto select-none"
                 style={{ aspectRatio: '920 / 500', width: `${mapZoom * 100}%` }}
+                data-fit-screen={mapZoom === 1 ? 'true' : 'false'}
                 role="group"
                 aria-label={`Interactive United States map shaded by ${activeMapMetric.label}, zoom ${Math.round(mapZoom * 100)} percent`}
               >
@@ -683,7 +684,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               {/* East Coast Compact Callout Buttons */}
-              <div className="pt-2 border-t border-[#294158] flex flex-wrap items-center gap-1.5 text-xs">
+              <div className="home-map-shortcuts pt-2 border-t border-[#294158] flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-[11px] font-semibold text-[#91A6BB] mr-1">
                   Small-state shortcuts:
                 </span>

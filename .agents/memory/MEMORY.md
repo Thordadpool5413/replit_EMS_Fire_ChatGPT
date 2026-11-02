@@ -11,4 +11,5 @@
 - [Browser-local data boundary](claim-summary-sharing-boundary.md) — keep claims and agency source evidence local until workspace-only access is verified; do not infer a blanket sign-in refusal.
 - [Local denial-rate visibility](local-denial-rate-visibility.md) — do not display local ambulance denial percentages at state, county, or provider scope; retain claim-source records.
 - [Territory visual hierarchy](territory-visual-hierarchy.md) — favor high-contrast map-led screens and readable summaries; tuck technical details away but keep sources accessible.
+- [App-wide visual density](app-wide-visual-density.md) — keep screens compact and scannable; reduce oversized cards and chrome without making text or controls too small.
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.

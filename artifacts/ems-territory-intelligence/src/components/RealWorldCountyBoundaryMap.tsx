@@ -16,7 +16,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { Compass, Layers, MapPin, Building2, ExternalLink } from 'lucide-react';
+import { Compass, Layers, MapPin, Building2, ExternalLink, ChevronRight } from 'lucide-react';
 
 const CMS_MEDICARE_GEOGRAPHIC_VARIATION_URL =
   'https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county';
@@ -577,31 +577,40 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
       {/* Mode B: Single County Boundary Polygon + Plotted Real-World City Coordinates */}
       {activeCountyNode && projectedSingleCounty && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Left 6 Cols: High-Detail Single County Boundary SVG with Plotted City Pins */}
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between min-h-[340px]">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-              <span>
-                FIPS <strong className="font-mono text-[#0F172A]">{activeCountyNode.countyFips}</strong> Boundary Polygon &amp; Plotted Municipalities
-              </span>
-              <span className="font-mono tabular-nums text-[11px]">
-                Centroid {activeCountyNode.centroid.lat.toFixed(4)}°N, {activeCountyNode.centroid.lng.toFixed(4)}°W
-              </span>
+        <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+          {/* Map-first county view with the geographic detail kept visually prominent. */}
+          <div className="relative isolate flex min-h-[440px] flex-col justify-between overflow-hidden rounded-2xl border border-[#243751] bg-[radial-gradient(ellipse_at_52%_45%,rgba(37,99,235,0.12),transparent_58%),linear-gradient(145deg,#0a1527,#10243b)] p-4 text-white shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 xl:col-span-7">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-cyan-200">Municipality map</div>
+                <h4 className="mt-1 text-lg font-bold tracking-tight text-white sm:text-xl">
+                  {activeCountyNode.countyName}
+                </h4>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-semibold text-slate-200">
+                  FIPS <span className="font-mono tabular-nums text-white">{activeCountyNode.countyFips}</span>
+                </span>
+                <span className="rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-slate-300">
+                  {activeCountyNode.landAreaSqMiles.toLocaleString()} sq mi
+                </span>
+              </div>
             </div>
 
-            <div className="relative w-full flex items-center justify-center">
+            <div className="relative flex min-h-[340px] w-full flex-1 items-center justify-center py-2">
               <svg
                 viewBox="0 0 520 340"
-                className="w-full h-auto max-h-[300px] select-none"
+                className="h-auto max-h-[440px] w-full select-none"
                 role="img"
                 aria-label={`${activeCountyNode.countyName} Boundary Polygon and Cities`}
               >
                 {projectedSingleCounty.svgPath && (
                   <path
                     d={projectedSingleCounty.svgPath}
-                    fill="#EFF6FF"
-                    stroke="#1E3A8A"
-                    strokeWidth={2.2}
+                    fill="#18324F"
+                    stroke="#60A5FA"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
                   />
                 )}
 
@@ -619,15 +628,20 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       <circle
                         cx={pin.svgX}
                         cy={pin.svgY}
-                        r={isSelected || isHovered ? 7 : pin.isCountySeat ? 5.5 : 4.5}
-                        fill={isSelected ? '#DC2626' : pin.isCountySeat ? '#1E3A8A' : '#0F172A'}
-                        stroke="#FFFFFF"
-                        strokeWidth={1.8}
+                        r={isSelected || isHovered ? 8 : pin.isCountySeat ? 6.5 : 5.5}
+                        fill={isSelected ? '#FB7185' : pin.isCountySeat ? '#22D3EE' : '#A5B4FC'}
+                        stroke="#081426"
+                        strokeWidth={2.4}
                       />
                       <text
                         x={pin.svgX + 8}
                         y={pin.svgY + 4}
-                        className="text-[11px] font-sans font-semibold fill-[#0F172A]"
+                        fontSize="12"
+                        fontWeight="700"
+                        fill="#F8FAFC"
+                        stroke="#0A1526"
+                        strokeWidth="3"
+                        paintOrder="stroke"
                       >
                         {pin.cityName}
                       </text>
@@ -640,77 +654,80 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </svg>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#1E3A8A] inline-block" />
-                  <span>County Seat ({activeCountyNode.countySeat})</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 text-xs text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
+                  <span>County seat · {activeCountyNode.countySeat}</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] inline-block" />
-                  <span>Incorporated City / Town</span>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-indigo-300" />
+                  <span>City / town</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
-                  <span>Active Selected City</span>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-400" />
+                  <span>Selected city</span>
                 </span>
               </div>
-              <span className="font-mono tabular-nums">{activeCountyNode.landAreaSqMiles} sq mi</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Census geography</span>
             </div>
           </div>
 
-          {/* Right 6 Cols: Hierarchical State -> County -> City -> Provider Mapping Table */}
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          {/* Connected city and provider directory */}
+          <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5 xl:col-span-5">
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
-                  <div className="text-xs font-semibold text-[#1E3A8A]">
-                    State ({stateNode.stateCode}) › {activeCountyNode.countyName} (FIPS {activeCountyNode.countyFips})
+                  <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-blue-700">
+                    {stateNode.stateName} · {stateNode.stateCode}
                   </div>
-                  <h4 className="text-sm font-bold text-[#0F172A]">
-                    Connected Municipal Cities &amp; Postal Jurisdictions ({projectedSingleCounty.cityPins.length})
+                  <h4 className="mt-1 text-lg font-bold tracking-tight text-slate-950">
+                    Cities and places
                   </h4>
+                  <p className="mt-0.5 text-sm text-slate-600">
+                    {projectedSingleCounty.cityPins.length} mapped locations · {projectedSingleCounty.cityPins.reduce((total, pin) => total + pin.providersCount, 0)} provider records
+                  </p>
                 </div>
                 {selectedCityName !== 'all' && (
                   <button
                     type="button"
                     onClick={() => onSelectCity(selectedCityName, activeCountyNode.countyName, stateNode.stateCode)}
-                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 cursor-pointer"
+                    className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
                   >
-                    Show All County Cities
+                    Show all
                   </button>
                 )}
               </div>
 
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+              <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200">
                 {projectedSingleCounty.cityPins.map((pin) => {
                   const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
                   return (
                     <div
                       key={pin.cityName}
                       onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                      className={`px-3.5 py-2.5 flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
-                        isSelected ? 'bg-[#1E3A8A]/10 font-semibold' : 'hover:bg-slate-50'
+                      className={`flex min-h-[62px] cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition-colors ${
+                        isSelected ? 'bg-blue-50 font-semibold' : 'hover:bg-slate-50'
                       }`}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 text-[#0F172A] font-semibold">
-                          <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-rose-600' : 'text-[#1E3A8A]'}`} />
+                        <div className="flex items-center gap-2 text-slate-950 font-semibold">
+                          <MapPin className={`h-4 w-4 shrink-0 ${isSelected ? 'text-rose-600' : pin.isCountySeat ? 'text-cyan-700' : 'text-blue-700'}`} />
                           <span className="truncate">{pin.cityName}</span>
                           {pin.isCountySeat && (
-                            <span className="text-[10px] font-normal text-slate-500">(County Seat)</span>
+                            <span className="shrink-0 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-800">County seat</span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono tabular-nums mt-0.5">
+                        <div className="mt-1 pl-6 text-xs tabular-nums text-slate-500">
                           ZIP {pin.zipCode} · {pin.latitude.toFixed(4)}°N, {pin.longitude.toFixed(4)}°W
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-xs font-semibold text-[#0F172A] tabular-nums">
-                          {pin.providersCount} Providers
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-700">
+                          {pin.providersCount} providers
                         </span>
-                        <span className="text-[#1E3A8A] font-semibold">&rarr;</span>
+                        <ChevronRight className="h-4 w-4 text-blue-700" />
                       </div>
                     </div>
                   );
@@ -718,18 +735,25 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 mt-3">
-              <span>
-                ZIP reference values: <strong className="font-mono text-slate-700">{activeCountyNode.primaryZipCodes.join(', ')}</strong>
-              </span>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <details className="group min-w-0 text-xs text-slate-600">
+                <summary className="cursor-pointer font-semibold text-slate-700">
+                  ZIP references ({activeCountyNode.primaryZipCodes.length})
+                </summary>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {activeCountyNode.primaryZipCodes.map((zip) => (
+                    <span key={zip} className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] tabular-nums text-slate-700">{zip}</span>
+                  ))}
+                </div>
+              </details>
               <a
                 href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${activeCountyNode.countyName}, ${stateNode.stateName}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-[#1E3A8A] hover:underline"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-800"
               >
-                <span>Open County on OpenStreetMap</span>
-                <ExternalLink className="w-3 h-3" />
+                <span>Open map</span>
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>

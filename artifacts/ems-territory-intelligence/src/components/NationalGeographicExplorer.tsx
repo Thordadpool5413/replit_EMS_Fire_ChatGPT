@@ -2167,35 +2167,40 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       ? agency.address
                       : `${agency.name}, ${agency.city}, ${agency.stateCode}`
                   )}`;
+                const formatCompactDollars = (value: number) => {
+                  const absoluteValue = Math.abs(value);
+                  const sign = value < 0 ? '-' : '';
+                  if (absoluteValue >= 1_000_000) return `${sign}$${(absoluteValue / 1_000_000).toFixed(1)}M`;
+                  if (absoluteValue >= 1_000) return `${sign}$${Math.round(absoluteValue / 1_000).toLocaleString()}K`;
+                  return `${sign}$${absoluteValue.toLocaleString()}`;
+                };
 
                 return (
                   <div
                     key={agency.id}
                     onClick={() => onSelectAgency(agency)}
-                    className="min-w-0 p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer transition-colors grid grid-cols-1 content-between gap-4 group"
+                    className="group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5"
                   >
+                    <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${isFire ? 'bg-gradient-to-r from-rose-500 to-orange-300' : 'bg-gradient-to-r from-blue-700 to-cyan-300'}`} />
                     <div className="space-y-3.5">
-                      {/* Unboxed Monospace Provenance & Classification Strip */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-sans font-semibold text-slate-900 dark:text-white text-xs">
+                      {/* Agency identity and linked public-record context */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 pt-1 dark:border-slate-800">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'}`}>
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
-                          <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                          <span>FDID {agency.fdid || 'No registry source mapped'}</span>
+                          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            FDID {agency.fdid || 'Not listed'}
+                          </span>
                           {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
-                            <>
-                              <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                              <span>NPI {agency.npiNumber}</span>
-                            </>
+                            <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                              NPI {agency.npiNumber}
+                            </span>
                           )}
                           {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded && (
-                            <>
-                              <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                            <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold tabular-nums text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                                 FEMA AFG ${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K
-                              </span>
-                            </>
+                            </span>
                           )}
                         </div>
 
@@ -2206,9 +2211,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               e.stopPropagation();
                               onOpenDataLineage(agency);
                             }}
-                            className="text-[11px] font-mono font-medium text-slate-500 hover:text-[#1E3A8A] dark:hover:text-blue-400 hover:underline cursor-pointer"
+                            className="inline-flex shrink-0 cursor-pointer items-center rounded-md px-2 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-blue-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
                           >
-                            Data Lineage
+                            Data sources
                           </button>
                         )}
                       </div>
@@ -2216,11 +2221,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       {/* Provider Name + Connected Hierarchy + Score */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors leading-snug tracking-[-0.02em]">
+                          <h3 className="text-lg font-bold leading-snug tracking-[-0.025em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300 sm:text-xl">
                             {agency.name}
                           </h3>
-                          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
-                            {agency.state} ({agency.stateCode}) › {agency.county} › <strong className="text-slate-900 dark:text-white">{agency.city}</strong> <span className="font-mono text-xs text-slate-500">(ZIP {agency.zipCode})</span>
+                          <div className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            {agency.state} ({agency.stateCode}) <span className="text-slate-400">›</span> {agency.county} <span className="text-slate-400">›</span>{' '}
+                            <strong className="font-semibold text-slate-900 dark:text-white">{agency.city}</strong>{' '}
+                            <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">ZIP {agency.zipCode}</span>
                           </div>
                         </div>
 
@@ -2232,104 +2239,117 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                       </div>
 
-                      {/* Quiet Decision Maker & Headquarters Row */}
+                      {/* Leadership and address are separated so neither gets truncated. */}
                       <div
-                        className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400"
+                        className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-800/50"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="truncate">
+                        <div className="grid gap-2">
                           {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact && (
-                            <span>
-                              <strong className="text-slate-900 dark:text-white">{primaryContact.name}</strong> ({primaryContact.title}) ·{' '}
-                            </span>
+                            <p className="text-sm leading-snug text-slate-700 dark:text-slate-200">
+                              <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Leadership</span>
+                              <strong className="font-semibold text-slate-950 dark:text-white">{primaryContact.name}</strong>
+                              <span className="text-slate-500 dark:text-slate-400"> · {primaryContact.title}</span>
+                            </p>
                           )}
-                          <span>{hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'No address source mapped'}</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0 font-medium">
-                          <a
-                            href={mapsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[#1E3A8A] dark:text-blue-400 hover:underline"
-                          >
-                            <span>Maps</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[#1E3A8A] dark:text-blue-400 hover:underline"
-                          >
-                            <span>Website</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                          <div className="flex flex-wrap items-end justify-between gap-2">
+                            <p className="min-w-0 break-words text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                              <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Address</span>
+                              {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Not listed'}
+                            </p>
+                            <div className="flex shrink-0 items-center gap-1.5 font-semibold">
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-blue-800 transition-colors hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                              >
+                                Maps
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                              <a
+                                href={websiteUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-blue-800 transition-colors hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                              >
+                                Website
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* 4-Cell 1px Architectural Hairline Ledger Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs tabular-nums">
-                        <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Upgrade Value</span>
-                          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5 block tabular-nums">
-                            {hasVerifiedModel ? `$${(agency.zollOpportunity.projectedPipelineValue / 1000).toFixed(0)}K` : 'Required model inputs not available'}
+                      {/* 2 × 2 metric tiles retain each value without forcing narrow columns. */}
+                      <div className="grid grid-cols-2 gap-2.5 text-sm tabular-nums">
+                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Upgrade value</span>
+                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                            {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : 'Required model inputs not available'}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block tabular-nums">
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
                             {hasAgencyFactEvidence(agency, 'maintenanceContracts')
-                              ? `Exp: ${agency.competitorContract.contractEndDate}`
-                              : 'No contract source mapped'}
+                              ? `Contract end · ${agency.competitorContract.contractEndDate}`
+                              : 'Contract end not listed'}
                           </span>
                         </div>
 
-                        <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Installed Fleet</span>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mt-0.5 truncate block tabular-nums" title={agency.installedFleet.defibBrand}>
+                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Installed fleet</span>
+                          <span className="mt-1 block break-words text-sm font-bold leading-snug text-slate-950 dark:text-white" title={agency.installedFleet.defibBrand}>
                             {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                               ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand}`
                               : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                 ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                : 'No fleet source mapped'}
+                                : 'Fleet not listed'}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} yrs old` : 'No fleet-age source mapped'}
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age not listed'}
                           </span>
                         </div>
 
-                        <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Claim-dollar recovery estimate</span>
-                          <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
+                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Claim recovery estimate</span>
+                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-blue-800 dark:text-blue-400">
                             {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
-                              ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr`
+                              ? `+${formatCompactDollars(agency.cmsData.estimatedRecoverableRevenue)}/yr`
                               : 'Not calculated'}
                           </span>
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">From available claim summary</span>
                         </div>
 
-                        <div className="p-2.5 bg-white dark:bg-slate-900">
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block">Runs &amp; ROSC</span>
-                          <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
+                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Annual volume · ROSC</span>
+                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
                             {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                              ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
+                              ? `${agency.annualCallVolume.toLocaleString()} calls`
                               : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                                ? agency.annual911Transports.toLocaleString()
-                                : 'No volume source mapped'}
+                                ? `${agency.annual911Transports.toLocaleString()} transports`
+                                : 'Volume not listed'}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block tabular-nums">
-                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'Outcomes not verified'}
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                            {hasAgencyFactEvidence(agency, 'annualCallsReceived')
+                              ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not stated'
+                              : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+                                ? 'Annual 911 transports'
+                                : 'Clinical period not listed'}
+                            {' · '}
+                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC not listed'}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Clean Card Footer */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 truncate">
+                    <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
+                      <div className="mb-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
                         {hasVerifiedModel
-                          ? <>Model target: <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
-                          : 'Recommendation not available'}
-                      </span>
+                          ? <>Recommended target · <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
+                          : 'No product target listed'}
+                      </div>
 
-                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {onToggleAgencyComparison && (
                           <AgencyCompareButton
                             agency={agency}
@@ -2341,16 +2361,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <button
                           type="button"
                           onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
-                          className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors whitespace-nowrap cursor-pointer"
+                          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
                           Quick Preview
                         </button>
                         <button
                           type="button"
                           onClick={() => onSelectAgency(agency)}
-                          className="h-8 px-3.5 rounded-lg text-xs font-bold text-white bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+                          className="ml-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
-                          Open agency profile &rarr;
+                          Open profile
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     </div>

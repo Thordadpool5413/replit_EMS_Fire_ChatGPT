@@ -902,14 +902,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
-    <div className="fixed inset-0 md:left-64 z-45 bg-[#F5F7FA] dark:bg-[#0B1320] overflow-y-auto">
+    <div className="fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
-        className="profile-workspace w-full min-h-screen bg-[#F5F7FA] dark:bg-[#0B1320] text-[#14283F] dark:text-slate-100 flex flex-col font-sans pb-24"
+        className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24"
       >
         {/* Top Sticky Account 360 Bar */}
         <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur border-b border-[#DFE6EF] dark:border-[#1E2D42] px-4 sm:px-6 lg:px-8 py-2 sm:py-0 min-h-16 flex items-center shadow-2xs">
-          <div className="max-w-[1640px] mx-auto w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 min-w-0">
+          <div className="mx-auto flex w-full min-w-0 max-w-[1640px] flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             {/* Back Navigation & Geographic Breadcrumb */}
             <div className="flex min-w-0 flex-col gap-1.5">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -973,7 +973,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* Primary Account Actions */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            <div className="flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2">
               <AgencyCompareButton
                 agency={agency}
                 selected={comparedAgencyIds.includes(agency.id)}
@@ -1067,7 +1067,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </header>
 
         {/* Main Account 360 Workspace Content */}
-        <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 min-w-0">
+        <div className="mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           {/* ================================================================
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ================================================================ */}
@@ -1078,7 +1078,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             {/* BLOCK 1: AGENCY IDENTITY, OFFICIAL IDENTIFIERS & SOURCE VERIFICATION */}
             <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
               <div className="space-y-3 min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
                     {hasReviewedAgencyFactEvidence(agency, 'departmentRegistry') && hasReviewedAgencyFactEvidence(agency, 'agencyLeadership')
                       ? 'Registry and leadership sources checked · verify'
@@ -1086,56 +1086,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         ? 'Registry and leadership sources mapped · verify'
                         : `Candidate · ${isFire ? 'Fire Department' : 'EMS Provider'}`}
                   </span>
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    {agency.stateLicenseNumber
-                      ? <>Florida EMS license: <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span> · {agency.stateLicenseType || 'Type not listed'} · expires {agency.stateLicenseExpiration || 'Not recorded'}</>
-                      : <>FDID: <span className="font-mono text-[11px]">{agency.fdid || 'Not reported'}</span></>}
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    NPI:{' '}
-                    {agency.npiNumber ? (
-                      validateNpiCheckDigit(agency.npiNumber).isValid ? (
-                        <span className="font-mono text-[11px] font-semibold">{agency.npiNumber}</span>
-                      ) : (
-                        <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-400" title="Failed CMS Luhn-80840 check digit validation">
-                          {agency.npiNumber} (Invalid Check Digit)
-                        </span>
-                      )
-                    ) : (
-                      <span className="font-mono text-[11px]">Not reported</span>
-                    )}
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span>Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
-                  <span aria-hidden="true">·</span>
-                  {hasVerifiedNppesIdentity ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsSourceDrawerOpen(true)}
-                      className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>NPPES identity match</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsSourceDrawerOpen(true)}
-                      className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium hover:underline cursor-pointer"
-                    >
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      <span>No exact NPPES match reviewed</span>
-                    </button>
-                  )}
                 </div>
 
                 <div>
-                  <h1 className="pi-page-title text-[28px] sm:text-[32px] font-[650] text-[#14283F] dark:text-white leading-[1.2]">
+                  <h1 className="pi-page-title text-[24px] font-[650] leading-[1.2] text-[#14283F] dark:text-white sm:text-[32px]">
                     {agency.name}
                   </h1>
-                  <p className="pi-supporting mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="pi-supporting mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold text-[#14283F] dark:text-white">
                       {agency.address || 'Address not reported'}
                     </span>
@@ -1176,13 +1133,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
 
                 {/* Fast-review summary: contact, location, operations, and citations */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
                     <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Agency contact</h2>
-                    <p className="mt-1 truncate font-semibold text-[#14283F] dark:text-white">{primaryContact?.name || 'Contact not listed'}</p>
-                    {primaryContact?.title && <p className="truncate text-[#53657B] dark:text-slate-400">{primaryContact.title}</p>}
+                    <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white [overflow-wrap:anywhere]">{primaryContact?.name || 'Contact not listed'}</p>
+                    {primaryContact?.title && <p className="break-words text-[#53657B] dark:text-slate-400 [overflow-wrap:anywhere]">{primaryContact.title}</p>}
                     {(primaryContact?.phone || agency.headquartersPhone) && (
-                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} className="mt-1 inline-flex min-h-8 items-center gap-1.5 font-semibold text-[#285EE8] dark:text-blue-300">
+                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} className="mt-1 inline-flex min-h-8 max-w-full items-center gap-1.5 break-words font-semibold text-[#285EE8] dark:text-blue-300 [overflow-wrap:anywhere]">
                         <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {primaryContact?.phone || agency.headquartersPhone}
                       </a>
                     )}
@@ -1219,8 +1176,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                           const href = safeExternalUrl(source.url);
                           return (
                             <li key={`${source.label}-${source.sourceName}-${index}`} className="min-w-0">
-                              {href ? <a href={href} target="_blank" rel="noopener noreferrer" className="block truncate font-semibold text-[#285EE8] hover:underline dark:text-blue-300">{source.label}: {source.sourceName}</a> : <p className="truncate font-semibold text-[#30465C] dark:text-slate-200">{source.label}: {source.sourceName}</p>}
-                              <p className="truncate text-[10px] text-[#718398] dark:text-slate-400">{source.period || 'Period not stated'}</p>
+                              {href ? <a href={href} target="_blank" rel="noopener noreferrer" className="block break-words font-semibold text-[#285EE8] hover:underline dark:text-blue-300 [overflow-wrap:anywhere]">{source.label}: {source.sourceName}</a> : <p className="break-words font-semibold text-[#30465C] dark:text-slate-200 [overflow-wrap:anywhere]">{source.label}: {source.sourceName}</p>}
+                              <p className="break-words text-[10px] text-[#718398] dark:text-slate-400 [overflow-wrap:anywhere]">{source.period || 'Period not stated'}</p>
                             </li>
                           );
                         })}
@@ -1231,6 +1188,53 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </section>
                 </div>
               </div>
+
+              <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
+                <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Registry identifiers and verification</summary>
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 text-xs text-[#53657B] dark:text-slate-400">
+                  <span className="break-words [overflow-wrap:anywhere]">
+                    {agency.stateLicenseNumber
+                      ? <>Florida EMS license: <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span> · {agency.stateLicenseType || 'Type not listed'} · expires {agency.stateLicenseExpiration || 'Not recorded'}</>
+                      : <>FDID: <span className="font-mono text-[11px]">{agency.fdid || 'Not reported'}</span></>}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="break-words [overflow-wrap:anywhere]">
+                    NPI:{' '}
+                    {agency.npiNumber ? (
+                      validateNpiCheckDigit(agency.npiNumber).isValid ? (
+                        <span className="font-mono text-[11px] font-semibold">{agency.npiNumber}</span>
+                      ) : (
+                        <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-400" title="Failed CMS Luhn-80840 check digit validation">
+                          {agency.npiNumber} (Invalid Check Digit)
+                        </span>
+                      )
+                    ) : (
+                      <span className="font-mono text-[11px]">Not reported</span>
+                    )}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="break-words [overflow-wrap:anywhere]">Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
+                  {hasVerifiedNppesIdentity ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsSourceDrawerOpen(true)}
+                      className="inline-flex min-h-8 items-center gap-1 font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                      <span>NPPES identity match</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsSourceDrawerOpen(true)}
+                      className="inline-flex min-h-8 items-center gap-1 font-medium text-amber-700 hover:underline dark:text-amber-400"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span>No exact NPPES match reviewed</span>
+                    </button>
+                  )}
+                </div>
+              </details>
 
               {/* Less-frequent commercial planning details remain available but collapsed by default. */}
               <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
@@ -1596,7 +1600,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
              ================================================================ */}
           <nav
             aria-label="Account 360 Topic Navigation"
-            className="pi-surface p-1.5 flex items-center justify-between gap-2 sticky top-[132px] md:top-16 z-30 overflow-hidden"
+            className="pi-surface sticky top-[108px] z-30 flex items-center justify-between gap-2 overflow-hidden p-1.5 md:top-16"
           >
             <div className="w-full md:hidden">
               <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
@@ -3539,12 +3543,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       {/* Sticky Account Quick-Action Bar aligned with the 256px desktop sidebar */}
       <aside 
         aria-label="Account Action Dock"
-            className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur-md border-t border-[#DFE6EF] dark:border-[#1E2D42] px-3 sm:px-6 py-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden transition-all"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#DFE6EF] bg-white/95 px-2.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-md transition-all dark:border-[#1E2D42] dark:bg-[#111C2D]/95 print:hidden sm:left-64 sm:px-6 sm:py-2.5"
       >
-        <div className="max-w-[1600px] mx-auto flex flex-nowrap items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-x-auto sm:no-scrollbar">
           {/* Left: Department Identity & Quick Pipeline Stage Switcher */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="hidden sm:block min-w-0">
+          <div className="hidden min-w-0 items-center gap-3 sm:flex">
+            <div className="min-w-0">
               <div className="text-xs font-bold text-[#14283F] dark:text-white truncate max-w-[240px] lg:max-w-[360px]">
                 {agency.name}
               </div>
@@ -3569,59 +3573,96 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </div>
 
           {/* Right: Action Buttons */}
-          <div className="flex shrink-0 items-center gap-2 flex-nowrap">
+          <div className="grid w-full grid-cols-4 gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:flex-nowrap sm:items-center sm:gap-2">
             <AgencyCompareButton
               agency={agency}
               selected={comparedAgencyIds.includes(agency.id)}
               limitReached={comparedAgencyIds.length >= 3}
               onToggle={onToggleAgencyComparison}
-              className="h-10 px-3"
+              className="h-10 w-full px-1.5 text-[10px] sm:w-auto sm:px-3 sm:text-xs"
             />
             <button
               type="button"
               onClick={onOpenAgencyComparison}
               disabled={comparedAgencyIds.length < 2}
-              className="h-10 whitespace-nowrap rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-10 w-full whitespace-nowrap rounded-lg bg-teal-700 px-1.5 text-[10px] font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-3 sm:text-xs"
               data-testid="button-open-comparison-from-profile-dock"
             >
               Compare {comparedAgencyIds.length}/3
             </button>
             <button
               onClick={() => onToggleRoute(agency.id)}
-              className={`h-10 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              aria-label={agency.inDayRoute ? "Remove agency from today's route" : 'Add agency to route'}
+              className={`h-10 w-full justify-center px-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap sm:w-auto sm:justify-start sm:gap-2 sm:px-3.5 sm:text-xs ${
                 agency.inDayRoute
                   ? 'bg-[#0B1728] dark:bg-white text-white dark:text-slate-900'
                   : 'bg-white dark:bg-[#16243A] text-[#14283F] dark:text-slate-200 border border-[#DFE6EF] dark:border-[#1E2D42] hover:bg-[#F5F7FA]'
               }`}
             >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>{agency.inDayRoute ? "In Today's Route" : 'Add to Route'}</span>
+              <Navigation className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">{agency.inDayRoute ? 'In route' : 'Route'}</span>
+              <span className="hidden sm:inline">{agency.inDayRoute ? "In Today's Route" : 'Add to Route'}</span>
             </button>
 
             {onOpenRfpGenerator && (
               <button
                 onClick={() => onOpenRfpGenerator(agency)}
-                className="h-10 px-3.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                className="h-10 w-full justify-center px-1.5 rounded-lg text-[10px] font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap sm:w-auto sm:justify-start sm:gap-2 sm:px-3.5 sm:text-xs"
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Generate RFP Spec</span>
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span className="sm:hidden">RFP</span>
+                <span className="hidden sm:inline">Generate RFP Spec</span>
               </button>
             )}
 
             <button
               type="button"
-              onClick={() => setIsSourceDrawerOpen(true)}
-              className="h-10 px-3 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                setActiveSection('overview');
+                setTimeout(() => {
+                  const el = document.getElementById('meeting-preparation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              className="inline-flex h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#EEF3FE] px-1.5 text-[10px] font-semibold text-[#285EE8] transition-colors hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 sm:w-auto sm:gap-2 sm:px-3.5 sm:text-xs"
+              aria-label="Prepare for meeting"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden md:inline">Sources</span>
+              <Sparkles className="inline h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">Meeting</span>
+              <span className="hidden sm:inline">Prepare for Meeting</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onToggleBookmark(agency.id)}
+              aria-pressed={agency.isBookmarked}
+              aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}
+              className={`inline-flex h-10 w-full items-center justify-center gap-1 rounded-lg border px-1.5 text-[10px] font-semibold transition-colors sm:w-auto sm:gap-2 sm:px-3 sm:text-xs ${
+                agency.isBookmarked
+                  ? 'border-[#285EE8] bg-[#285EE8] text-white'
+                  : 'border-[#DFE6EF] bg-white text-[#14283F] hover:bg-[#F5F7FA] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-200'
+              }`}
+            >
+              <Bookmark className="inline h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">{agency.isBookmarked ? 'Saved' : 'Save'}</span>
+              <span className="hidden sm:inline">{agency.isBookmarked ? 'Saved' : 'Save'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSourceDrawerOpen(true)}
+              aria-label="Inspect agency sources"
+              className="inline-flex h-10 w-full items-center justify-center gap-1 rounded-lg border border-[#DFE6EF] bg-white px-1.5 text-[10px] font-semibold text-[#14283F] transition-colors hover:bg-[#F5F7FA] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-200 sm:w-auto sm:gap-1.5 sm:px-3 sm:text-xs"
+            >
+              <ShieldCheck className="inline h-3.5 w-3.5 text-emerald-600" />
+              <span>Sources</span>
             </button>
 
             <button
               onClick={onBack}
-              className="h-10 px-3.5 rounded-lg text-xs font-semibold text-[#14283F] dark:text-white bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 border border-[#DFE6EF] dark:border-[#1E2D42] transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] px-1.5 text-[10px] font-semibold text-[#14283F] transition-colors hover:bg-slate-200/70 dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-white sm:w-auto sm:px-3.5 sm:text-xs"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="inline h-3.5 w-3.5" />
               <span>Back</span>
             </button>
           </div>

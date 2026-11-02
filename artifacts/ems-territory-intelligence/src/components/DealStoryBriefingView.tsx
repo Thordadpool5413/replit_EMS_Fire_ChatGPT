@@ -269,7 +269,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       </div>
 
       {/* Sub-Navigation Strip */}
-      <div className="flex items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] w-fit">
+      <div className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-1 dark:border-[#1E2D42] dark:bg-[#16243A]">
         {[
           { id: 'brief', label: '1. Account Brief' },
           { id: 'questions', label: '2. Discovery Questions' },

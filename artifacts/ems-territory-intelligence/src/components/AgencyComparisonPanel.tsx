@@ -27,6 +27,23 @@ type ComparisonSection = {
 };
 
 type ComparisonFilter = 'all' | 'shared' | 'different';
+type ComparisonSort = 'selection' | 'pulseIqDesc' | 'pulseIqAsc';
+
+export function sortAgenciesByPulseIq(agencies: Agency[], sort: ComparisonSort): Agency[] {
+  if (sort === 'selection') return [...agencies];
+
+  const direction = sort === 'pulseIqDesc' ? -1 : 1;
+  return agencies
+    .map((agency, index) => ({ agency, index, score: agency.zollOpportunity?.pulseIqScore }))
+    .sort((a, b) => {
+      const aHasScore = typeof a.score === 'number' && Number.isFinite(a.score);
+      const bHasScore = typeof b.score === 'number' && Number.isFinite(b.score);
+      if (aHasScore !== bHasScore) return aHasScore ? -1 : 1;
+      if (aHasScore && bHasScore && a.score !== b.score) return (a.score - b.score) * direction;
+      return a.index - b.index;
+    })
+    .map(({ agency }) => agency);
+}
 
 const sections: ComparisonSection[] = [
   {
@@ -147,6 +164,12 @@ const displayValue = (value: unknown): string => {
   return String(value);
 };
 
+const displayRowValue = (row: ComparisonRow, agency: Agency): string => {
+  const value = row.getValue(agency);
+  if (row.isEstimate && (typeof value !== 'number' || !Number.isFinite(value))) return 'Not reported';
+  return displayValue(value);
+};
+
 const normalizedValue = (value: unknown) => {
   const formatted = displayValue(value);
   return formatted === 'Not reported' ? null : formatted.trim().toLocaleLowerCase();
@@ -154,7 +177,7 @@ const normalizedValue = (value: unknown) => {
 
 function rowMatchesFilter(row: ComparisonRow, agencies: Agency[], filter: ComparisonFilter) {
   if (filter === 'all') return true;
-  const values = agencies.map((agency) => normalizedValue(row.getValue(agency)));
+  const values = agencies.map((agency) => normalizedValue(displayRowValue(row, agency)));
   const reportedValues = values.filter((value): value is string => value !== null);
   if (filter === 'shared') {
     return agencies.length > 1 && reportedValues.length === agencies.length && new Set(reportedValues).size === 1;
@@ -224,7 +247,7 @@ export function buildAgencyComparisonCsv(
     agency.agencyType,
     section.title,
     row.label,
-    displayValue(row.getValue(agency)),
+    displayRowValue(row, agency),
     row.unit ?? '',
     JSON.stringify(row.showEvidence === false ? [] : getSourceDetails(agency, row.key)),
   ])));
@@ -309,13 +332,14 @@ function SourceFactDetails({ fact, agencyId }: { fact: AgencySourceFact; agencyI
 }
 
 function ValueCell({ agency, row, compact = false }: { agency: Agency; row: ComparisonRow; compact?: boolean }) {
-  const value = row.getValue(agency);
+  const formattedValue = displayRowValue(row, agency);
+  const isNotReported = formattedValue === 'Not reported';
   return (
     <div className={`min-w-0 ${compact ? 'px-3 py-2' : 'px-3 py-3 sm:px-4'}`} data-testid={`comparison-value-${agency.id}-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
       {compact && <p className="mb-1 truncate text-[10px] font-bold text-[#667B8F] dark:text-slate-400" title={agency.name}>{agency.name}</p>}
-      <div className={`break-words text-[13px] font-semibold leading-5 ${value === null || value === undefined || (typeof value === 'string' && value.trim() === '') ? 'text-[#8997A8] dark:text-slate-500' : 'text-[#1B3047] dark:text-slate-100'}`}>
+      <div className={`break-words text-[13px] font-semibold leading-5 ${isNotReported ? 'text-[#8997A8] dark:text-slate-500' : 'text-[#1B3047] dark:text-slate-100'}`}>
         {row.isEstimate && <PulseIqEstimateLabel className="mb-1 block text-[10px] font-medium text-[#617488] dark:text-slate-400" />}
-        {displayValue(value)}{row.unit && displayValue(value) !== 'Not reported' ? <span className="ml-1 font-normal text-[#78889B] dark:text-slate-400">{row.unit}</span> : null}
+        {formattedValue}{row.unit && !isNotReported ? <span className="ml-1 font-normal text-[#78889B] dark:text-slate-400">{row.unit}</span> : null}
       </div>
       {row.showEvidence !== false && <EvidenceDetails agency={agency} factKey={row.key as AgencyFactEvidenceKey} />}
     </div>
@@ -325,8 +349,10 @@ function ValueCell({ agency, row, compact = false }: { agency: Agency; row: Comp
 export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpenProfile }: AgencyComparisonPanelProps) {
   const agencyCount = agencies.length;
   const [comparisonFilter, setComparisonFilter] = useState<ComparisonFilter>('all');
+  const [comparisonSort, setComparisonSort] = useState<ComparisonSort>('selection');
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const orderedAgencies = useMemo(() => sortAgenciesByPulseIq(agencies, comparisonSort), [agencies, comparisonSort]);
   const columnStyle = useMemo(() => ({ gridTemplateColumns: `minmax(132px, 0.84fr) repeat(${Math.max(agencyCount, 1)}, minmax(210px, 1fr))` }), [agencyCount]);
   const visibleSections = useMemo(
     () => sections.map((section) => ({ ...section, rows: section.rows.filter((row) => rowMatchesFilter(row, agencies, comparisonFilter)) })).filter((section) => section.rows.length > 0),
@@ -429,9 +455,23 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                     </button>
                   ))}
                 </div>
+                <label className="flex min-h-10 items-center gap-2 rounded-lg border border-[#D5DFE8] bg-[#F8FAFB] px-3 text-xs font-semibold text-[#586D82] dark:border-[#2B3F5C] dark:bg-[#111C2D] dark:text-slate-300">
+                  <span className="shrink-0">Sort agencies</span>
+                  <select
+                    value={comparisonSort}
+                    onChange={(event) => setComparisonSort(event.target.value as ComparisonSort)}
+                    aria-label="Sort selected agencies"
+                    className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-[#20354B] outline-none focus-visible:ring-2 focus-visible:ring-[#16888A] dark:text-slate-100 sm:w-[175px]"
+                    data-testid="comparison-sort"
+                  >
+                    <option value="selection">Selection order</option>
+                    <option value="pulseIqDesc">PulseIQ highest first</option>
+                    <option value="pulseIqAsc">PulseIQ lowest first</option>
+                  </select>
+                </label>
                 <button
                   type="button"
-                  onClick={() => downloadComparisonCsv(agencies, comparisonFilter)}
+                  onClick={() => downloadComparisonCsv(orderedAgencies, comparisonFilter)}
                   disabled={visibleFieldCount === 0}
                   className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D] sm:w-auto"
                   data-testid="button-export-comparison"
@@ -450,7 +490,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
             <div className="hidden overflow-x-auto rounded-xl border border-[#D5DFE8] bg-[#F9FBFC] shadow-[0_8px_24px_-20px_rgba(22,45,66,0.45)] dark:border-[#263951] dark:bg-[#111C2D] md:block">
               <div className="sticky top-0 z-20 grid border-b border-[#D5DFE8] bg-[#F5F8FA] dark:border-[#263951] dark:bg-[#142238]" style={columnStyle}>
                 <div className="flex items-end px-4 py-4 text-[10px] font-bold uppercase tracking-[0.13em] text-[#728398] dark:text-slate-400">Comparable field</div>
-                {agencies.map((agency, index) => (
+                {orderedAgencies.map((agency, index) => (
                   <div key={agency.id} className={`min-w-0 border-l border-[#D5DFE8] px-4 py-3 dark:border-[#263951] ${index === 0 ? 'border-t-[3px] border-t-[#176568]' : index === 1 ? 'border-t-[3px] border-t-[#B66A35]' : 'border-t-[3px] border-t-[#647891]'}`} data-testid={`comparison-agency-header-${agency.id}`}>
                     <div className="flex items-start justify-between gap-2">
                       <button type="button" onClick={() => onOpenProfile(agency)} className="min-w-0 text-left group" data-testid={`button-open-profile-${agency.id}`}>
@@ -477,7 +517,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                     {section.rows.map((row) => (
                       <div key={`${section.title}-${row.label}`} className="grid border-b border-[#E0E7EC] last:border-b-0 dark:border-[#263951]" style={columnStyle}>
                         <div className="flex items-start px-4 py-3 text-[11px] font-semibold leading-5 text-[#61758A] dark:text-slate-300">{row.label}{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</div>
-                        {agencies.map((agency) => <div key={agency.id} className="border-l border-[#E0E7EC] dark:border-[#263951]"><ValueCell agency={agency} row={row} /></div>)}
+                         {orderedAgencies.map((agency) => <div key={agency.id} className="border-l border-[#E0E7EC] dark:border-[#263951]"><ValueCell agency={agency} row={row} /></div>)}
                       </div>
                     ))}
                   </section>
@@ -487,7 +527,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
 
             <div className="space-y-4 md:hidden" data-testid="comparison-mobile-layout">
               <div className="space-y-2" aria-label="Compared agencies">
-              {agencies.map((agency) => (
+              {orderedAgencies.map((agency) => (
                 <div key={agency.id} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D5DFE8] border-l-[3px] border-l-[#176568] bg-[#F5F8FA] px-3 py-2.5 dark:border-[#263951] dark:bg-[#142238]" data-testid={`comparison-agency-card-${agency.id}`}>
                     <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                       <button type="button" onClick={() => onOpenProfile(agency)} className="min-w-0 text-left" data-testid={`button-open-profile-mobile-${agency.id}`}>
@@ -507,7 +547,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                         <article key={`${section.title}-${row.label}`} className="overflow-hidden rounded-lg border border-[#D5DFE8] bg-[#F9FBFC] dark:border-[#263951] dark:bg-[#111C2D]" data-testid={`comparison-mobile-row-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
                           <h3 className="break-words px-3 pt-2.5 text-[11px] font-bold text-[#455B71] dark:text-slate-200">{row.label}{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</h3>
                           <div className="divide-y divide-[#E0E7EC] dark:divide-[#263951]">
-                            {agencies.map((agency) => <ValueCell key={agency.id} agency={agency} row={row} compact />)}
+                             {orderedAgencies.map((agency) => <ValueCell key={agency.id} agency={agency} row={row} compact />)}
                           </div>
                         </article>
                       ))}

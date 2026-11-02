@@ -4,7 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
-import { AgencyComparisonPanel, buildAgencyComparisonCsv } from '../components/AgencyComparisonPanel';
+import { AgencyComparisonPanel, buildAgencyComparisonCsv, sortAgenciesByPulseIq } from '../components/AgencyComparisonPanel';
 import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from '../components/PulseIqEstimateLabel';
 import {
   HomeMapPulseIqReadout,
@@ -286,6 +286,39 @@ test('agency comparisons and CSV keep the PulseIQ estimate label without citatio
   assert.match(csv, /"PulseIQ estimate","0","\/ 100","\[\]"/);
 });
 
+test('agency comparison sorts PulseIQ estimates in either direction and keeps missing values last', () => {
+  const records = [
+    { id: 'missing', name: 'Missing score', zollOpportunity: {} },
+    { id: 'high', name: 'High score', zollOpportunity: { pulseIqScore: 90 } },
+    { id: 'zero', name: 'Zero score', zollOpportunity: { pulseIqScore: 0 } },
+    { id: 'invalid', name: 'Invalid score', zollOpportunity: { pulseIqScore: Number.NaN } },
+    { id: 'also-high', name: 'Also high', zollOpportunity: { pulseIqScore: 90 } },
+  ] as unknown as Agency[];
+
+  assert.deepEqual(sortAgenciesByPulseIq(records, 'pulseIqDesc').map(({ id }) => id), [
+    'high', 'also-high', 'zero', 'missing', 'invalid',
+  ]);
+  assert.deepEqual(sortAgenciesByPulseIq(records, 'pulseIqAsc').map(({ id }) => id), [
+    'zero', 'high', 'also-high', 'missing', 'invalid',
+  ]);
+  assert.deepEqual(sortAgenciesByPulseIq(records, 'selection').map(({ id }) => id), [
+    'missing', 'high', 'zero', 'invalid', 'also-high',
+  ]);
+
+  const sortedCsvRows = buildAgencyComparisonCsv(sortAgenciesByPulseIq(records, 'pulseIqDesc'), 'all')
+    .split('\r\n')
+    .filter((line) => line.includes('"PulseIQ estimate"'));
+  assert.deepEqual(sortedCsvRows.map((line) => line.split(',')[0]), [
+    '"High score"',
+    '"Also high"',
+    '"Zero score"',
+    '"Missing score"',
+    '"Invalid score"',
+  ]);
+  assert.match(sortedCsvRows[3], /"Not reported"/);
+  assert.match(sortedCsvRows[4], /"Not reported"/);
+});
+
 test('phone comparison uses a field-first layout and keeps controls within the viewport', () => {
   const records = [
     {
@@ -325,6 +358,9 @@ test('phone comparison uses a field-first layout and keeps controls within the v
   assert.match(markup, /class="[^"]*grid-cols-3[^"]*"[^>]*data-testid="comparison-filter-controls"/);
   assert.match(markup, /data-testid="comparison-filter-all"[^>]*>.*?<span class="sm:hidden">All<\/span>/);
   assert.match(markup, /data-testid="comparison-filter-shared"[^>]*>.*?<span class="sm:hidden">Shared<\/span>/);
+  assert.match(markup, /aria-label="Sort selected agencies"[^>]*data-testid="comparison-sort"/);
+  assert.match(markup, /<option value="pulseIqDesc">PulseIQ highest first<\/option>/);
+  assert.match(markup, /<option value="pulseIqAsc">PulseIQ lowest first<\/option>/);
   assert.match(markup, /class="[^"]*w-full[^"]*sm:w-auto[^"]*"[^>]*data-testid="button-export-comparison"/);
 });
 

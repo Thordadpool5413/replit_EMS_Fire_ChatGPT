@@ -4,6 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { AgencyComparisonPanel, buildAgencyComparisonCsv } from '../components/AgencyComparisonPanel';
 import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
 import { PulseIqProfileFactorDetails } from '../components/PulseIqProfileFactorDetails';
 import { PulseIqScoreExplainerHub } from '../components/PulseIqScoreExplainerHub';
@@ -93,6 +94,35 @@ test('claim evidence does not change PulseIQ score availability or estimate labe
   assert.equal(Number.isFinite(claimEvidenceScore), true);
   assert.equal(claimEvidenceScore, noClaimsScore);
   assert.match(renderToStaticMarkup(React.createElement(PulseIqEstimateLabel)), /PulseIQ estimate/);
+});
+
+test('agency comparisons and CSV keep the PulseIQ estimate label without citations', () => {
+  const record = {
+    id: 'comparison-no-citation',
+    name: 'Example EMS',
+    agencyType: 'EMS',
+    stateCode: 'WA',
+    city: 'Example',
+    fdid: '12345',
+    factEvidence: {},
+    sourceFacts: [],
+    zollOpportunity: { pulseIqScore: 0 },
+  } as unknown as Agency;
+  const markup = renderToStaticMarkup(
+    React.createElement(AgencyComparisonPanel, {
+      agencies: [record],
+      onClose: () => {},
+      onRemoveAgency: () => {},
+      onOpenProfile: () => {},
+    }),
+  );
+  const estimateCell = markup.match(/data-testid="comparison-value-comparison-no-citation-pulseIqEstimate-pulseiq-estimate"[^>]*>(.*?)<\/div>/s)?.[1];
+  assert.ok(estimateCell);
+  assert.match(estimateCell, /PulseIQ estimate/);
+  assert.match(estimateCell, />0</);
+
+  const csv = buildAgencyComparisonCsv([record], 'all');
+  assert.match(csv, /"PulseIQ estimate","0","\/ 100","\[\]"/);
 });
 
 test('legacy CMS weight cannot change PulseIQ', () => {

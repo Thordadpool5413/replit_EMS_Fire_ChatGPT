@@ -38,6 +38,7 @@ import {
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/pulseIqExplanation';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;
@@ -506,7 +507,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-slate-900">
-                    Modeled priority index
+                    <PulseIqEstimateLabel /> · modeled priority index
                   </span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1E3A8A] text-white">
                     {agency.zollOpportunity?.priorityTier || 'Not calculated'}

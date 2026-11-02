@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Building2, ClipboardList, MapPin, Shield, X } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey, AgencySourceFact } from '../types';
+import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 type AgencyComparisonPanelProps = {
   agencies: Agency[];
@@ -13,6 +14,8 @@ type ComparisonRow = {
   label: string;
   key: string;
   unit?: string;
+  isEstimate?: boolean;
+  showEvidence?: boolean;
   getValue: (agency: Agency) => unknown;
 };
 
@@ -26,6 +29,21 @@ type ComparisonSection = {
 type ComparisonFilter = 'all' | 'shared' | 'different';
 
 const sections: ComparisonSection[] = [
+  {
+    title: 'PulseIQ prioritization',
+    caption: 'Modeled estimate calculated from operational factors',
+    icon: Shield,
+    rows: [
+      {
+        label: 'PulseIQ estimate',
+        key: 'pulseIqEstimate',
+        unit: '/ 100',
+        isEstimate: true,
+        showEvidence: false,
+        getValue: (agency) => agency.zollOpportunity?.pulseIqScore,
+      },
+    ],
+  },
   {
     title: 'Identity & location',
     caption: 'Agency record and jurisdiction',
@@ -178,7 +196,16 @@ function getSourceDetails(agency: Agency, factKey: string) {
   ];
 }
 
-function downloadComparisonCsv(agencies: Agency[], selectedSections: ComparisonSection[], filter: ComparisonFilter) {
+export function buildAgencyComparisonCsv(
+  agencies: Agency[],
+  filter: ComparisonFilter,
+): string {
+  const selectedSections = sections
+    .map((section) => ({
+      ...section,
+      rows: section.rows.filter((row) => rowMatchesFilter(row, agencies, filter)),
+    }))
+    .filter((section) => section.rows.length > 0);
   const columns = [
     'Agency',
     'Agency ID',
@@ -197,9 +224,13 @@ function downloadComparisonCsv(agencies: Agency[], selectedSections: ComparisonS
     row.label,
     displayValue(row.getValue(agency)),
     row.unit ?? '',
-    JSON.stringify(getSourceDetails(agency, row.key)),
+    JSON.stringify(row.showEvidence === false ? [] : getSourceDetails(agency, row.key)),
   ])));
-  const csv = [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  return [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+}
+
+function downloadComparisonCsv(agencies: Agency[], filter: ComparisonFilter) {
+  const csv = buildAgencyComparisonCsv(agencies, filter);
   const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -280,9 +311,10 @@ function ValueCell({ agency, row }: { agency: Agency; row: ComparisonRow }) {
   return (
     <div className="min-w-0 px-3 py-3 sm:px-4" data-testid={`comparison-value-${agency.id}-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
       <div className={`break-words text-[13px] font-semibold leading-5 ${value === null || value === undefined || (typeof value === 'string' && value.trim() === '') ? 'text-[#8997A8] dark:text-slate-500' : 'text-[#1B3047] dark:text-slate-100'}`}>
+        {row.isEstimate && <PulseIqEstimateLabel className="mb-1 block text-[10px] font-medium text-[#617488] dark:text-slate-400" />}
         {displayValue(value)}{row.unit && displayValue(value) !== 'Not reported' ? <span className="ml-1 font-normal text-[#78889B] dark:text-slate-400">{row.unit}</span> : null}
       </div>
-      <EvidenceDetails agency={agency} factKey={row.key as AgencyFactEvidenceKey} />
+      {row.showEvidence !== false && <EvidenceDetails agency={agency} factKey={row.key as AgencyFactEvidenceKey} />}
     </div>
   );
 }
@@ -395,7 +427,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                 </div>
                 <button
                   type="button"
-                  onClick={() => downloadComparisonCsv(agencies, visibleSections, comparisonFilter)}
+                  onClick={() => downloadComparisonCsv(agencies, comparisonFilter)}
                   disabled={visibleFieldCount === 0}
                   className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D]"
                   data-testid="button-export-comparison"

@@ -174,6 +174,7 @@ function getSourceDetails(agency: Agency, factKey: string) {
   return [
     ...(evidence ? [{
       type: 'attached reference',
+      fieldKey: factKey,
       source: evidence.sourceName,
       recordId: evidence.sourceRecordId,
       url: evidence.sourceUrl,
@@ -184,6 +185,7 @@ function getSourceDetails(agency: Agency, factKey: string) {
     }] : []),
     ...sourceFacts.map((fact) => ({
       type: 'source fact',
+      fieldKey: fact.fieldKey,
       source: fact.sourceName,
       recordId: fact.sourceRecordId,
       url: fact.sourceUrl,
@@ -214,7 +216,7 @@ export function buildAgencyComparisonCsv(
     'Field',
     'Value',
     'Unit',
-    'Attached source details (JSON)',
+    'Field source and reporting-period details (JSON)',
   ];
   const rows = selectedSections.flatMap((section) => section.rows.flatMap((row) => agencies.map((agency) => [
     agency.name,
@@ -267,15 +269,15 @@ function EvidenceDetails({ agency, factKey }: { agency: Agency; factKey: AgencyF
             <span className="h-1.5 w-1.5 rounded-full bg-[#0E7778]" aria-hidden="true" />
             Attached source reference
           </div>
-          <p><span className="font-medium">Source:</span> {displayValue(evidence.sourceName)}</p>
-          <p><span className="font-medium">Record ID:</span> {displayValue(evidence.sourceRecordId)}</p>
+          <p className="break-words"><span className="font-medium">Source:</span> {displayValue(evidence.sourceName)}</p>
+          <p className="break-words"><span className="font-medium">Record ID:</span> {displayValue(evidence.sourceRecordId)}</p>
           {safeExternalUrl(evidence.sourceUrl) ? (
             <a className="mt-0.5 inline-flex items-center gap-1 text-[#2458A6] underline underline-offset-2 hover:text-[#173E78] dark:text-sky-300 dark:hover:text-sky-200" href={safeExternalUrl(evidence.sourceUrl) ?? undefined} target="_blank" rel="noreferrer" data-testid={`evidence-link-${agency.id}-${factKey}`}>
               Open source <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
             </a>
           ) : null}
-          <p><span className="font-medium">Period:</span> {evidence.reportingPeriod?.trim() || 'Period not stated'}</p>
-          <p><span className="font-medium">Geography:</span> {[evidence.geographicLevel, evidence.geographicId, evidence.geographicRelationship, evidence.geographicMatchBasis].filter(Boolean).join(' · ') || 'Not reported'}</p>
+          <p className="break-words"><span className="font-medium">Period:</span> {evidence.reportingPeriod?.trim() || 'Period not stated'}</p>
+          <p className="break-words"><span className="font-medium">Geography:</span> {[evidence.geographicLevel, evidence.geographicId, evidence.geographicRelationship, evidence.geographicMatchBasis].filter(Boolean).join(' · ') || 'Not reported'}</p>
           {evidence.note?.trim() && <p className="mt-1 break-words">{evidence.note}</p>}
         </div>
       )}
@@ -295,21 +297,22 @@ function SourceFactDetails({ fact, agencyId }: { fact: AgencySourceFact; agencyI
         Separate source fact
       </div>
       <p className="break-words"><span className="font-medium">Source value:</span> {displayValue(fact.value)}{fact.unit ? ` ${fact.unit}` : ''}</p>
-      <p><span className="font-medium">Source:</span> {displayValue(fact.sourceName)}</p>
-      <p><span className="font-medium">Record ID:</span> {displayValue(fact.sourceRecordId)}</p>
+      <p className="break-words"><span className="font-medium">Source:</span> {displayValue(fact.sourceName)}</p>
+      <p className="break-words"><span className="font-medium">Record ID:</span> {displayValue(fact.sourceRecordId)}</p>
       {href && <a className="mt-0.5 inline-flex items-center gap-1 text-[#176568] underline underline-offset-2 dark:text-teal-200" href={href} target="_blank" rel="noreferrer" data-testid={`source-fact-link-${agencyId}-${fact.id}`}>Open source <ArrowUpRight className="h-3 w-3" aria-hidden="true" /></a>}
-      <p><span className="font-medium">Period:</span> {fact.reportingPeriod?.trim() || fact.effectivePeriod?.trim() || 'Period not stated'}{fact.reportingPeriod && fact.effectivePeriod ? ` · Effective: ${fact.effectivePeriod}` : ''}</p>
-      <p><span className="font-medium">Geography:</span> {[fact.geographicLevel, fact.geographicId, fact.geographicRelationship].filter(Boolean).join(' · ') || 'Not reported'}</p>
-      <p><span className="font-medium">Basis:</span> {displayValue(fact.basis)}</p>
+      <p className="break-words"><span className="font-medium">Period:</span> {fact.reportingPeriod?.trim() || fact.effectivePeriod?.trim() || 'Period not stated'}{fact.reportingPeriod && fact.effectivePeriod ? ` · Effective: ${fact.effectivePeriod}` : ''}</p>
+      <p className="break-words"><span className="font-medium">Geography:</span> {[fact.geographicLevel, fact.geographicId, fact.geographicRelationship].filter(Boolean).join(' · ') || 'Not reported'}</p>
+      <p className="break-words"><span className="font-medium">Basis:</span> {displayValue(fact.basis)}</p>
       {fact.note?.trim() && <p className="mt-1 break-words">{fact.note}</p>}
     </div>
   );
 }
 
-function ValueCell({ agency, row }: { agency: Agency; row: ComparisonRow }) {
+function ValueCell({ agency, row, compact = false }: { agency: Agency; row: ComparisonRow; compact?: boolean }) {
   const value = row.getValue(agency);
   return (
-    <div className="min-w-0 px-3 py-3 sm:px-4" data-testid={`comparison-value-${agency.id}-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+    <div className={`min-w-0 ${compact ? 'px-3 py-2' : 'px-3 py-3 sm:px-4'}`} data-testid={`comparison-value-${agency.id}-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+      {compact && <p className="mb-1 truncate text-[10px] font-bold text-[#667B8F] dark:text-slate-400" title={agency.name}>{agency.name}</p>}
       <div className={`break-words text-[13px] font-semibold leading-5 ${value === null || value === undefined || (typeof value === 'string' && value.trim() === '') ? 'text-[#8997A8] dark:text-slate-500' : 'text-[#1B3047] dark:text-slate-100'}`}>
         {row.isEstimate && <PulseIqEstimateLabel className="mb-1 block text-[10px] font-medium text-[#617488] dark:text-slate-400" />}
         {displayValue(value)}{row.unit && displayValue(value) !== 'Not reported' ? <span className="ml-1 font-normal text-[#78889B] dark:text-slate-400">{row.unit}</span> : null}
@@ -405,8 +408,8 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                   {' · '}{visibleFieldCount} {visibleFieldCount === 1 ? 'field' : 'fields'}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-lg border border-[#D5DFE8] bg-[#F8FAFB] p-1 dark:border-[#2B3F5C] dark:bg-[#111C2D]" role="group" aria-label="Filter comparison fields">
+              <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <div className="grid w-full grid-cols-3 rounded-lg border border-[#D5DFE8] bg-[#F8FAFB] p-1 dark:border-[#2B3F5C] dark:bg-[#111C2D] sm:inline-flex sm:w-auto" role="group" aria-label="Filter comparison fields" data-testid="comparison-filter-controls">
                   {([
                     ['all', 'All fields'],
                     ['shared', 'Shared values'],
@@ -418,10 +421,11 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                       onClick={() => setComparisonFilter(value)}
                       aria-pressed={comparisonFilter === value}
                       disabled={value !== 'all' && agencyCount < 2}
-                      className={`rounded-md px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 sm:px-3 ${comparisonFilter === value ? 'bg-[#176568] text-white shadow-sm' : 'text-[#586D82] hover:bg-white dark:text-slate-300 dark:hover:bg-[#1B2C44]'}`}
+                      className={`min-w-0 rounded-md px-1.5 py-2 text-[10px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 sm:px-3 sm:text-xs ${comparisonFilter === value ? 'bg-[#176568] text-white shadow-sm' : 'text-[#586D82] hover:bg-white dark:text-slate-300 dark:hover:bg-[#1B2C44]'}`}
                       data-testid={`comparison-filter-${value}`}
                     >
-                      {label}
+                      <span className="sm:hidden">{value === 'all' ? 'All' : value === 'shared' ? 'Shared' : 'Different'}</span>
+                      <span className="hidden sm:inline">{label}</span>
                     </button>
                   ))}
                 </div>
@@ -429,7 +433,7 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
                   type="button"
                   onClick={() => downloadComparisonCsv(agencies, comparisonFilter)}
                   disabled={visibleFieldCount === 0}
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D]"
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#B9CCCF] bg-[#F1F8F7] px-3 py-2 text-xs font-bold text-[#176568] transition-colors hover:bg-[#E2F0EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16888A] disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#285153] dark:bg-[#102B30] dark:text-teal-200 dark:hover:bg-[#153A3D] sm:w-auto"
                   data-testid="button-export-comparison"
                 >
                   <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
@@ -481,31 +485,34 @@ export function AgencyComparisonPanel({ agencies, onClose, onRemoveAgency, onOpe
               })}
             </div>
 
-            <div className="space-y-4 md:hidden">
+            <div className="space-y-4 md:hidden" data-testid="comparison-mobile-layout">
+              <div className="space-y-2" aria-label="Compared agencies">
               {agencies.map((agency) => (
-                <article key={agency.id} className="overflow-hidden rounded-xl border border-[#D5DFE8] bg-[#F9FBFC] shadow-[0_8px_24px_-20px_rgba(22,45,66,0.45)] dark:border-[#263951] dark:bg-[#111C2D]" data-testid={`comparison-agency-card-${agency.id}`}>
-                  <div className="sticky top-0 z-10 border-b border-[#D5DFE8] border-t-[3px] border-t-[#176568] bg-[#F5F8FA] px-4 py-3 dark:border-[#263951] dark:bg-[#142238]">
-                    <div className="flex items-start justify-between gap-3">
+                <div key={agency.id} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D5DFE8] border-l-[3px] border-l-[#176568] bg-[#F5F8FA] px-3 py-2.5 dark:border-[#263951] dark:bg-[#142238]" data-testid={`comparison-agency-card-${agency.id}`}>
+                    <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                       <button type="button" onClick={() => onOpenProfile(agency)} className="min-w-0 text-left" data-testid={`button-open-profile-mobile-${agency.id}`}>
                         <span className="block truncate font-display text-base font-bold text-[#20354B] dark:text-slate-100">{agency.name}</span>
                         <span className="mt-0.5 block truncate text-xs text-[#6B7F92] dark:text-slate-400">{[agency.city, agency.stateCode].filter(Boolean).join(', ') || 'Location not reported'}</span>
                       </button>
-                      <button type="button" onClick={() => onRemoveAgency(agency.id)} aria-label={`Remove ${agency.name} from comparison`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#8291A1] hover:bg-[#F0E8E2] hover:text-[#9B4E2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#16888A] dark:hover:bg-[#3A2A24]" data-testid={`button-remove-agency-mobile-${agency.id}`}><X className="h-4 w-4" aria-hidden="true" /></button>
                     </div>
-                    <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#738498] dark:text-slate-400">{agency.agencyType} <span className="mx-1">/</span> FDID {displayValue(agency.fdid)}</p>
-                  </div>
-                  {visibleSections.map((section) => (
-                    <section key={section.title} aria-label={`${agency.name} ${section.title}`}>
-                      <h2 className="border-b border-[#DCE4EA] bg-[#EDF2F5] px-4 py-2 text-xs font-bold text-[#30465C] dark:border-[#263951] dark:bg-[#16243A] dark:text-slate-100">{section.title}</h2>
+                    <button type="button" onClick={() => onRemoveAgency(agency.id)} aria-label={`Remove ${agency.name} from comparison`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#8291A1] hover:bg-[#F0E8E2] hover:text-[#9B4E2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#16888A] dark:hover:bg-[#3A2A24]" data-testid={`button-remove-agency-mobile-${agency.id}`}><X className="h-4 w-4" aria-hidden="true" /></button>
+                </div>
+              ))}
+              </div>
+              {visibleSections.map((section) => (
+                <section key={section.title} aria-label={section.title}>
+                  <h2 className="border-b border-[#DCE4EA] bg-[#EDF2F5] px-4 py-2 text-xs font-bold text-[#30465C] dark:border-[#263951] dark:bg-[#16243A] dark:text-slate-100">{section.title}</h2>
+                  <div className="space-y-2 pt-2">
                       {section.rows.map((row) => (
-                        <div key={`${section.title}-${row.label}`} className="border-b border-[#E0E7EC] px-1 last:border-b-0 dark:border-[#263951]">
-                          <div className="px-3 pt-3 text-[10px] font-bold uppercase tracking-wide text-[#7A8A9A] dark:text-slate-400">{row.label}{row.unit && <span className="ml-1 font-normal normal-case">({row.unit})</span>}</div>
-                          <ValueCell agency={agency} row={row} />
-                        </div>
+                        <article key={`${section.title}-${row.label}`} className="overflow-hidden rounded-lg border border-[#D5DFE8] bg-[#F9FBFC] dark:border-[#263951] dark:bg-[#111C2D]" data-testid={`comparison-mobile-row-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+                          <h3 className="break-words px-3 pt-2.5 text-[11px] font-bold text-[#455B71] dark:text-slate-200">{row.label}{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</h3>
+                          <div className="divide-y divide-[#E0E7EC] dark:divide-[#263951]">
+                            {agencies.map((agency) => <ValueCell key={agency.id} agency={agency} row={row} compact />)}
+                          </div>
+                        </article>
                       ))}
-                    </section>
-                  ))}
-                </article>
+                  </div>
+                </section>
               ))}
             </div>
             </>}

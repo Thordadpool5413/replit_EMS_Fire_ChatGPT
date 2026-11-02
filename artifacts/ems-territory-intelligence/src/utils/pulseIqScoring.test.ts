@@ -125,6 +125,99 @@ test('agency comparisons and CSV keep the PulseIQ estimate label without citatio
   assert.match(csv, /"PulseIQ estimate","0","\/ 100","\[\]"/);
 });
 
+test('phone comparison uses a field-first layout and keeps controls within the viewport', () => {
+  const records = [
+    {
+      id: 'phone-compare-a',
+      name: 'North Valley EMS',
+      agencyType: 'EMS',
+      city: 'North Valley',
+      stateCode: 'WA',
+      fdid: '123',
+      address: '10 Main Street',
+      factEvidence: {},
+      sourceFacts: [],
+    },
+    {
+      id: 'phone-compare-b',
+      name: 'South Valley Fire and Rescue',
+      agencyType: 'Fire',
+      city: 'South Valley',
+      stateCode: 'WA',
+      fdid: '456',
+      address: '20 Main Street',
+      factEvidence: {},
+      sourceFacts: [],
+    },
+  ] as unknown as Agency[];
+  const markup = renderToStaticMarkup(
+    React.createElement(AgencyComparisonPanel, {
+      agencies: records,
+      onClose: () => {},
+      onRemoveAgency: () => {},
+      onOpenProfile: () => {},
+    }),
+  );
+
+  assert.match(markup, /data-testid="comparison-mobile-layout"/);
+  assert.match(markup, /data-testid="comparison-mobile-row-providerAddress-address"/);
+  assert.match(markup, /class="[^"]*grid-cols-3[^"]*"[^>]*data-testid="comparison-filter-controls"/);
+  assert.match(markup, /data-testid="comparison-filter-all"[^>]*>.*?<span class="sm:hidden">All<\/span>/);
+  assert.match(markup, /data-testid="comparison-filter-shared"[^>]*>.*?<span class="sm:hidden">Shared<\/span>/);
+  assert.match(markup, /class="[^"]*w-full[^"]*sm:w-auto[^"]*"[^>]*data-testid="button-export-comparison"/);
+});
+
+test('comparison CSV attaches source and period details to the matching field', () => {
+  const record = {
+    id: 'source-evidence-agency',
+    name: 'Evidence County EMS',
+    agencyType: 'EMS',
+    address: '12 Main Street',
+    factEvidence: {
+      providerAddress: {
+        sourceName: 'County Assessor',
+        sourceRecordId: 'parcel-42',
+        sourceUrl: 'https://example.org/parcel/42',
+        reportingPeriod: '2025 assessment',
+        geographicLevel: 'county',
+        geographicId: '53033',
+        geographicRelationship: 'agency location',
+        geographicMatchBasis: 'source-id',
+      },
+    },
+    sourceFacts: [
+      {
+        id: 'source-address-1',
+        fieldKey: 'providerAddress',
+        value: '12 Main Street',
+        sourceName: 'County address roster',
+        sourceRecordId: 'row-17',
+        sourceUrl: 'https://example.org/roster/17',
+        reportingPeriod: '2024 roster',
+        effectivePeriod: '2024-01 through 2024-12',
+        geographicLevel: 'county',
+        geographicId: '53033',
+        geographicRelationship: 'agency location',
+        basis: 'source-reported',
+        enteredAt: '2025-01-15T00:00:00.000Z',
+      },
+    ],
+  } as unknown as Agency;
+
+  const csv = buildAgencyComparisonCsv([record], 'all');
+  const addressRow = csv.split('\r\n').find((line) => line.includes('"Address"'));
+
+  assert.ok(addressRow);
+  assert.match(addressRow, /"Identity & location","Address","12 Main Street"/);
+  assert.match(addressRow, /""fieldKey"":""providerAddress""/);
+  assert.match(addressRow, /""source"":""County Assessor""/);
+  assert.match(addressRow, /""reportingPeriod"":""2025 assessment""/);
+  assert.match(addressRow, /""source"":""County address roster""/);
+  assert.match(addressRow, /""reportingPeriod"":""2024 roster""/);
+  assert.match(addressRow, /""effectivePeriod"":""2024-01 through 2024-12""/);
+  assert.doesNotMatch(addressRow, /annual volume|Annual call volume/i);
+});
+
 test('legacy CMS weight cannot change PulseIQ', () => {
   const record = agency(35, 500000);
   const legacyWeights = { ...DEFAULT_WEIGHTS, cmsDenialWeight: 99 };

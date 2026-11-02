@@ -34,11 +34,7 @@ function downloadText(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function rateText(ratePct: number | null): string {
-  return ratePct === null ? 'No adjudicated claims' : `${ratePct.toFixed(1)}%`;
-}
-
-function MetricTable<T extends { ratePct: number | null; deniedClaims: number; adjudicatedClaims: number }>({
+function MetricTable<T extends { deniedClaims: number; adjudicatedClaims: number }>({
   title,
   rows,
   keyOf,
@@ -59,7 +55,6 @@ function MetricTable<T extends { ratePct: number | null; deniedClaims: number; a
           <thead className="sticky top-0 bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400">
             <tr>
               <th className="px-3 py-2 font-medium">Record</th>
-              <th className="px-3 py-2 text-right font-medium">Rate</th>
               <th className="px-3 py-2 text-right font-medium">Denied / adjudicated</th>
             </tr>
           </thead>
@@ -67,9 +62,6 @@ function MetricTable<T extends { ratePct: number | null; deniedClaims: number; a
             {shown.map((row) => (
               <tr key={keyOf(row)} className="border-t border-slate-100 dark:border-slate-800">
                 <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-200">{keyOf(row)}</td>
-                <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
-                  {rateText(row.ratePct)}
-                </td>
                 <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-300">
                   {row.deniedClaims.toLocaleString()} / {row.adjudicatedClaims.toLocaleString()}
                 </td>

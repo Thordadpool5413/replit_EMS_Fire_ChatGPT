@@ -804,7 +804,7 @@ export function auditAgencyDataLineage(
       category: 'CMS Claims & Reimbursement',
       fieldName: 'Medicare Claim Denial Rate',
       fieldValue: hasSourceBackedCmsDenials && cmsDenialMetric
-        ? `${cmsDenialMetric.ratePct}%`
+        ? `${cmsDenialMetric.deniedClaimCount.toLocaleString()} denied / ${cmsDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated`
         : 'Not available',
       sourceRegistry: hasSourceBackedCmsDenials ? 'Provider-specific Medicare claims source' : 'No eligible provider-level claim source',
       schemaIdentifier: hasSourceBackedCmsDenials ? 'Unique adjudicated ambulance claims with final denial status' : 'CMS PSPS denied service units; not claim counts',

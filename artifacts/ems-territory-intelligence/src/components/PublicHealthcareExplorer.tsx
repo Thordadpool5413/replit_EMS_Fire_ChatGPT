@@ -95,11 +95,11 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
               <div className="hidden">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Agency Medicare denial rate</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Medicare claim summary</span>
                 <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
                   {denialMetric
-                    ? `${denialMetric.ratePct.toFixed(1)}% · ${denialMetric.sourceType === 'local-import' ? 'local import' : 'source-backed'}`
-                      : 'Not published'}
+                    ? 'Claim summary attached'
+                    : 'No claim summary attached'}
                 </span>
                 {denialMetric && (
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
@@ -238,7 +238,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
                 <th className="py-2.5 px-3">State / Jurisdiction</th>
                 <th className="py-2.5 px-3 text-right">Registered Agencies</th>
-                <th className="hidden">State ZIP-profile average</th>
+                <th className="hidden">ZIP-profile source records</th>
                 <th className="py-2.5 px-3 text-right">Cardiac Survival (Utstein)</th>
                 <th className="py-2.5 px-3 text-right">YTD AFG Grant Awards</th>
                 <th className="py-2.5 px-3 text-center">Medicaid Expansion</th>
@@ -261,7 +261,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                       if (!denialProfile) return 'Not published';
                       return (
                         <div className="space-y-1">
-                          <div className="font-semibold tabular-nums">{denialProfile.ratePct.toFixed(1)}%</div>
+                          <div className="font-semibold tabular-nums">{denialProfile.sources.length} source records</div>
                           <div className="text-[10px]" title={denialProfile.claimScope}>
                             {denialProfile.reportingPeriod} · {denialProfile.claimScope}
                           </div>

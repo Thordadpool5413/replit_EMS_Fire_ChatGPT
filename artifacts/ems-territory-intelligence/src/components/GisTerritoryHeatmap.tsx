@@ -1210,8 +1210,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         selectedLayer === 'aed' ? (hasReportedValue(topAgency.gisData?.publicAccessAedDeficitPct) ? `${topAgency.gisData.publicAccessAedDeficitPct}% peak AED deficit` : 'Not reported') :
         selectedLayer === 'transport' ? (hasReportedValue(topAgency.gisData?.avgTransportTimeMinutes) ? `${topAgency.gisData.avgTransportTimeMinutes} min peak transit` : 'Not reported') :
         (getAgencyMedicareDenialMetric(topAgency)
-          ? `${getAgencyMedicareDenialMetric(topAgency)!.ratePct}% peak Medicare denial`
-          : 'Not reported');
+          ? 'Claim summary record available'
+          : 'No claim summary record');
 
       cells.push({
         id: `hex-${key}`,
@@ -1542,8 +1542,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         heatRadius: Math.min(70, 32 + denial * 1.6),
         tierLabel: 'Severe denial rate',
         metricDisplay: hasReportedValue(recoverable)
-          ? `${denial}% Medicare denials${importLabel} · recovery estimate method unavailable`
-          : `${denial}% Medicare denials${importLabel}`
+          ? `Claim summary record available${importLabel} · recovery estimate method unavailable`
+          : `Claim summary record available${importLabel}`
       };
     }
     if (denial >= 18) {
@@ -1558,8 +1558,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         heatRadius: Math.min(52, 24 + denial * 1.3),
         tierLabel: 'High denial rate',
         metricDisplay: hasReportedValue(recoverable)
-          ? `${denial}% Medicare denials${importLabel} · recovery estimate method unavailable`
-          : `${denial}% Medicare denials${importLabel}`
+          ? `Claim summary record available${importLabel} · recovery estimate method unavailable`
+          : `Claim summary record available${importLabel}`
       };
     }
     if (denial >= 14) {
@@ -1573,7 +1573,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         markerRadius: 4.5,
         heatRadius: 30,
         tierLabel: 'Elevated denial rate',
-        metricDisplay: `${denial}% Medicare denials${importLabel}`
+        metricDisplay: `Claim summary record available${importLabel}`
       };
     }
     return {
@@ -1586,7 +1586,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       markerRadius: 4,
       heatRadius: 18,
       tierLabel: 'Lower denial rate',
-      metricDisplay: `${denial}% Medicare denials${importLabel}`
+      metricDisplay: `Claim summary record available${importLabel}`
     };
   };
 
@@ -1661,15 +1661,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 Long Transport (&gt;20 min)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedLayer('cms')}
-                className={`hidden ${
-                  selectedLayer === 'cms' ? 'bg-white dark:bg-[#111C2D] text-emerald-800 dark:text-emerald-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
-                }`}
-              >
-                CMS Denial Zones
               </button>
             </div>
           </div>
@@ -1992,9 +1983,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     {selectedLayer === 'cardiac' && `Identifying severe survival deficits (<26% Utstein survival rate) where ZOLL AutoPulse and ResQCPR generate highest clinical resuscitation impact.`}
                     {selectedLayer === 'aed' && `Mapping public access AED deficits and age 65+ demographic vulnerability to deploy ZOLL AED 3 community networks.`}
                     {selectedLayer === 'transport' && `Long transport corridors (>20 min) requiring EMV+ mechanical transport ventilators and uninterrupted patient monitoring.`}
-                    {selectedLayer === 'cms' && (mapRenderedAgencies.length === 0
-                      ? 'No source-backed provider claim denial rates are available to map. CMS PSPS contains locality-level service counts, masks cells under 11, and does not identify NPIs. Missing data is not a 0% rate.'
-                      : 'Provider percentages use denied claims ÷ adjudicated claims for the same claim scope and period. Hover for the source-backed rate; the map does not infer missing values.')}
+                    {selectedLayer === 'cms' && 'Local claim-rate shading is not available in this map.'}
                   </p>
                 </div>
               </div>
@@ -3901,7 +3890,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <span className="text-[#285EE8] font-semibold tabular-nums">20 pts</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-400 mt-1.5 leading-relaxed">
-              Medicare Part B claim denial rate (&gt;15%), GADCS penalty risk, and addressable cash recovery via ZOLL Billing.
+              Medicare claim-source evidence, GADCS penalty risk, and addressable cash recovery via ZOLL Billing.
             </p>
           </div>
 
@@ -4017,14 +4006,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 }`}
               >
                 Transit Times
-              </button>
-              <button
-                onClick={() => setSelectedLayer('cms')}
-                className={`hidden ${
-                  selectedLayer === 'cms' ? 'bg-emerald-700 text-white font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                CMS Denials
               </button>
             </div>
 

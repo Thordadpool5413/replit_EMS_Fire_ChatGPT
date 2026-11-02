@@ -969,10 +969,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           </div>
                         </div>
                         <div className="hidden">
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claims denial rate</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Claim summary</span>
                           <div className="font-semibold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
                             {medicareDenialMetric
-                              ? `${medicareDenialMetric.ratePct.toFixed(1)}% · ${medicareDenialMetric.reportingPeriod}`
+                              ? `Claim summary · ${medicareDenialMetric.reportingPeriod}`
                               : 'Not published'}
                           </div>
                           {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}

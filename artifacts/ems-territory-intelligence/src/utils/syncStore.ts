@@ -252,10 +252,10 @@ export function explainAgencyScore(
       componentScore: cmsScore,
       pointsContributed: cmsPts,
       agencyMetricValue: hasDenialRate
-        ? `${denial}% reported · Code ${agency.cmsData?.topDenialReasonCode || 'Not reported'}`
+        ? `Claim summary present · Code ${agency.cmsData?.topDenialReasonCode || 'Not reported'}`
         : 'County-matched denial rate not published',
       clinicalImpactSummary: hasDenialRate
-        ? `Reported claim denial rate is ${denial}%. Recoverable billing is not calculated from a denial proxy.`
+        ? `Claim summary records are available. Recoverable billing is not calculated from a denial proxy.`
         : 'No county-matched denied and adjudicated ambulance claim counts are available; a neutral score contribution is used.',
       urgencyLevel: hasDenialRate && denial >= 20 ? 'Critical' : hasDenialRate && denial >= 16 ? 'Elevated' : 'Moderate'
     },

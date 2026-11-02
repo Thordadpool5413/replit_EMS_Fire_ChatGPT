@@ -305,7 +305,7 @@ test("invalid NPI check digits are rejected and reported zero is not missing", (
   }), null);
 });
 
-test("provider display keeps the exact percentage and report citation without inventing a source link", () => {
+test("provider display keeps raw claim counts and report citation without showing a local percentage", () => {
   const metric = {
     npi: "1234567893",
     ratePct: 12,
@@ -319,8 +319,8 @@ test("provider display keeps the exact percentage and report citation without in
     sourceType: "local-import" as const,
   };
   const markup = renderToStaticMarkup(React.createElement(ProviderDenialDetails, { metric }));
-  assert.match(markup, /12\.0%/);
   assert.match(markup, /12 denied \/ 100 adjudicated/);
+  assert.doesNotMatch(markup, /12\.0%/);
   assert.match(markup, /Period: 2025/);
   assert.match(markup, /Entire claim denied/);
   assert.match(markup, /Billing summary · Report 2025/);

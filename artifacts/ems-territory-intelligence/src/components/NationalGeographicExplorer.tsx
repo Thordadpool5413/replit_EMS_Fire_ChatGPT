@@ -1288,11 +1288,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </a>
                         )}
                         <span className="text-slate-300 dark:text-slate-700">·</span>
-                        <span className="hidden">
-                          State ZIP-profile average: <strong className="font-semibold">
-                            {denialProfileSummary ? `${denialProfileSummary.ratePct.toFixed(1)}%` : 'Not published'}
-                          </strong>
-                        </span>
                         {denialProfileSummary && (
                           <>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -1667,10 +1662,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 const cityCountInCounty = countyCities.length;
                 const countyDenialDisplay = getCountyDenialDisplay(c);
                 const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
-                const countyDenialRateDisplay =
-                  countyDenialDisplay.kind === 'unavailable'
-                    ? null
-                    : `${countyDenialDisplay.ratePct.toFixed(1)}%`;
                 return (
                   <div
                     key={`${c.stateCode}-${c.countyFips}`}
@@ -1753,14 +1744,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                         <div className="hidden">
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
-                            {countyDenialDisplay.kind === 'county-claims-rate'
-                              ? 'Medicare ambulance claim denial rate'
-                              : countyDenialDisplay.kind === 'zip-profile'
-                                ? 'Selected ZIP-profile rate'
-                                : 'County claim denial rate'}
-                          </span>
-                          <span className="font-semibold text-rose-700 dark:text-rose-400 mt-0.5 block">
-                            {countyDenialRateDisplay ?? 'Not published'}
+                            Claim source records
                           </span>
                            {countyDenialDisplay.kind === 'zip-profile' && (
                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">

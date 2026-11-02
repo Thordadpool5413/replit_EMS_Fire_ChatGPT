@@ -156,7 +156,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                       Active Capital Procurement Cycle
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      End-of-life competitor fleet (≥ 8–10 years old) paired with active FEMA AFG grant award or severe billing claim denial rates (≥ 20%). Organization has budget or acute pain. Deploy direct rep visit within 7 days.
+                      End-of-life competitor fleet (≥ 8–10 years old) paired with an active FEMA AFG grant award or documented billing issues. Organization has budget or acute pain. Deploy direct rep visit within 7 days.
                     </p>
                   </div>
 
@@ -312,7 +312,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                 </div>
                 <div className="mt-3 text-xs text-slate-300 space-y-2 pl-12">
                   <p>
-                    Tracks CMS Medicare Part B ambulance claims volume, transport revenue, and denial percentages. High denial rates identify immediate opportunities for ZOLL Billing and automated ePCR medical necessity validation.
+                    Tracks CMS Medicare Part B ambulance claims volume, transport revenue, and source-documented billing outcomes. Claim records can identify opportunities for ZOLL Billing and automated ePCR medical necessity validation.
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
                     <div className="p-2 rounded bg-slate-900 border border-slate-800">
@@ -509,7 +509,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
                       Arm Your Pitch with Reimbursement Recovery
                     </h5>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      If the account has an elevated Medicare Part B denial rate (&ge; 18%), present the ZOLL Billing / ePCR clinical documentation package. Show the Chief and Fiscal Director how automated ECG transmission and narrative validation reduces billing rejection rates.
+                      When source records show Medicare Part B billing issues, present the ZOLL Billing / ePCR clinical documentation package. Show the Chief and Fiscal Director how automated ECG transmission and narrative validation can help reduce billing rejections.
                     </p>
                   </div>
                 </div>

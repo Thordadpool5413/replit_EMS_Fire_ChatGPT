@@ -113,9 +113,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
   // Decision scores require reviewed inputs; source-mapped facts remain visible for user review.
   const fleetAgeSub = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
-  const denialRate = denialMetric?.ratePct ?? null;
-  const cmsDenialSub = typeof denialRate === 'number'
-    ? Math.min(100, Math.round((denialRate / 25) * 100))
+  const cmsDenialSub = denialMetric
+    ? Math.min(100, Math.round((denialMetric.ratePct / 25) * 100))
     : 50;
   const clinicalSub = Math.min(
     100,
@@ -286,9 +285,9 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     : 'Not listed'}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {typeof denialRate === 'number'
-                    ? 'Medicare claim records available'
-                    : 'Claim rate details are not shown'}
+                  {denialMetric
+                    ? 'Claim summary records available'
+                    : 'No claim summary record attached'}
                 </span>
                 {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
               </div>
@@ -331,7 +330,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {
                   label: 'Medicare Claim Recovery (25%)',
                   val: cmsDenialSub,
-                  detail: 'Agency denial-rate details are not displayed'
+                  detail: 'Claim source records are available separately'
                 },
                 { label: 'Clinical Acuity & Volume (25%)', val: clinicalSub, detail: `${agency.annualCardiacArrestCalls} OHCA/yr` },
                 {

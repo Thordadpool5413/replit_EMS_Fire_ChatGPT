@@ -12,7 +12,7 @@ export function ProviderDenialDetails({ metric }: { metric: AgencyMedicareDenial
         Claim counts &amp; source
       </summary>
       <div className="mt-1 space-y-0.5 break-words">
-        <p>Billing NPI {metric.npi} · {metric.ratePct.toFixed(1)}%</p>
+        <p>Billing NPI {metric.npi}</p>
         <p>{metric.deniedClaimCount.toLocaleString()} denied / {metric.adjudicatedClaimCount.toLocaleString()} adjudicated</p>
         <p>Period: {metric.reportingPeriod}</p>
         <p>Scope: {metric.claimScope}</p>

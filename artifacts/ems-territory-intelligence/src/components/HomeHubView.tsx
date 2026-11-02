@@ -33,14 +33,7 @@ import {
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import {
-  getStateZipDenialProfileSummary,
-  getStateZipDenialProfiles,
-} from '../services/countyDenialProfileService';
-import {
-  getImportedStateDenialMetric,
-  MEDICARE_DENIAL_IMPORT_EVENT,
-} from '../services/medicareDenialImportService';
+import { getStateZipDenialProfiles } from '../services/countyDenialProfileService';
 import { formatCurrency, formatPercent, formatInteger, formatScore } from '../utils/numberFormatting';
 import { NationalAmbulanceReference } from './NationalAmbulanceReference';
 
@@ -57,9 +50,7 @@ const STATE_MAP_METRICS = [
 ] as const;
 
 type StateMapMetricKey =
-  | (typeof STATE_MAP_METRICS)[number]['key']
-  | 'state-claims-denial'
-  | 'zip-denial';
+  (typeof STATE_MAP_METRICS)[number]['key'];
 
 interface StateStats {
   count: number;
@@ -90,8 +81,7 @@ interface StateMapMetricDatum {
 }
 
 const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
-  if (value === null) return metric === 'state-claims-denial' ? 'Not published' : 'Not reported';
-  if (metric === 'zip-denial' || metric === 'state-claims-denial') return `${value.toFixed(1)}%`;
+  if (value === null) return 'Not reported';
   if (metric === 'cardiac-survival') return `${value.toFixed(1)}%`;
   if (metric === 'scene-transit') return `${value.toFixed(1)} min`;
   if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
@@ -169,19 +159,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
   const [mapMetric, setMapMetric] = useState<StateMapMetricKey>('agency-records');
   const [mapZoom, setMapZoom] = useState(1);
-  const [denialImportRevision, setDenialImportRevision] = useState(0);
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const hasInitializedMapRef = useRef(false);
-
-  useEffect(() => {
-    const refreshImportedDenials = () => setDenialImportRevision((revision) => revision + 1);
-    window.addEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
-    window.addEventListener('storage', refreshImportedDenials);
-    return () => {
-      window.removeEventListener(MEDICARE_DENIAL_IMPORT_EVENT, refreshImportedDenials);
-      window.removeEventListener('storage', refreshImportedDenials);
-    };
-  }, []);
 
   // Filter agencies by global category (All / EMS / Fire)
   const scopedAgencies = useMemo(() => {
@@ -292,17 +271,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     () => getStateZipDenialProfiles(displayStateCode),
     [displayStateCode],
   );
-  const stateZipDenialSummary = useMemo(
-    () => getStateZipDenialProfileSummary(displayStateCode),
-    [displayStateCode],
-  );
-
   const stateMapMetricsByCode = useMemo(() => {
     return Object.fromEntries(
       Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
         const stats = stateStatsByCode[state.code];
-        const zipProfiles = getStateZipDenialProfiles(state.code);
-        const zipDenialSummary = getStateZipDenialProfileSummary(state.code);
         const metricData: Record<StateMapMetricKey, StateMapMetricDatum> = {
           'agency-records': {
             value: stats.count,
@@ -340,23 +312,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             period: 'Reporting period is not stated.',
             sourceAction: 'reference-estimate',
           },
-          'state-claims-denial': {
-            value: null,
-            coverage: '',
-            period: '',
-            sourceAction: 'agency-records',
-          },
-          'zip-denial': {
-            value: null,
-            coverage: '',
-            period: '',
-            sourceAction: 'agency-records',
-          },
         };
         return [state.code, metricData];
       }),
     ) as Record<string, Record<StateMapMetricKey, StateMapMetricDatum>>;
-  }, [providerScopeLabel, stateStatsByCode, denialImportRevision]);
+  }, [providerScopeLabel, stateStatsByCode]);
 
   const mapMetricValues = Object.values(stateMapMetricsByCode)
     .map((metrics) => metrics[mapMetric].value)
@@ -950,27 +910,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
                     Period: {stateMapMetricsByCode[displayStateCode][mapMetric].period}
                   </p>
-                  {mapMetric === 'state-claims-denial' && stateMapMetricsByCode[displayStateCode][mapMetric].value !== null && (
-                    <div className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                      <p>
-                        Scope: {stateMapMetricsByCode[displayStateCode][mapMetric].claimScope} · Definition: {stateMapMetricsByCode[displayStateCode][mapMetric].denialDefinition}
-                      </p>
-                      {stateMapMetricsByCode[displayStateCode][mapMetric].sourceUrl ? (
-                        <a
-                          href={stateMapMetricsByCode[displayStateCode][mapMetric].sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
-                        >
-                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source}
-                        </a>
-                      ) : (
-                        <p>
-                          Source: {stateMapMetricsByCode[displayStateCode][mapMetric].source}
-                        </p>
-                      )}
-                    </div>
-                  )}
                   <button
                     type="button"
                     onClick={() => handleMapSourceAction(
@@ -1016,47 +955,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     {formatInteger(stateStats.pulseIqDataCount)} of {formatInteger(stateStats.count)} agency records
                   </span>
                 </div>
-                <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42]">
-                  <span className="text-[#53657B] dark:text-slate-400 block text-[11px]">
-                    State ambulance claim denial rate
-                  </span>
-                  <span className="font-semibold text-[#14283F] dark:text-white text-base pi-metric-card tabular-nums">
-                    {formatStateMapValue(
-                      'state-claims-denial',
-                      stateMapMetricsByCode[displayStateCode]['state-claims-denial'].value,
-                    )}
-                  </span>
-                  <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                    {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].coverage}
-                  </span>
-                  <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                    Period: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].period}
-                  </span>
-                  {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].value !== null && (
-                    <details className="mt-1 text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                      <summary className="cursor-pointer font-semibold text-blue-700 dark:text-blue-300">Scope &amp; source</summary>
-                      <p>Scope: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].claimScope}</p>
-                      <p>Definition: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].denialDefinition}</p>
-                      {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].sourceUrl ? (
-                        <a
-                          href={stateMapMetricsByCode[displayStateCode]['state-claims-denial'].sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2"
-                        >
-                          {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].source}
-                        </a>
-                      ) : (
-                        <p>Source: {stateMapMetricsByCode[displayStateCode]['state-claims-denial'].source}</p>
-                      )}
-                    </details>
-                  )}
-                  {stateZipDenialSummary && (
-                    <span className="text-[10px] text-[#53657B] dark:text-slate-500 block">
-                      ZIP-profile average: {stateZipDenialSummary.ratePct.toFixed(1)}% · not a state claims rate
-                    </span>
-                  )}
-                </div>
               </div>
 
               <div
@@ -1066,7 +964,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-semibold text-[#14283F] dark:text-slate-200">
-                    ZIP-profile denial values
+                    ZIP-profile source records
                   </span>
                   <span className="text-[10px] text-[#53657B] dark:text-slate-400">
                     {stateZipDenialProfiles.length} source-backed entries
@@ -1086,7 +984,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             rel="noopener noreferrer"
                             className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 underline underline-offset-2"
                           >
-                            {record.county} · {record.zipCode} · {record.medicareDenialRate}%
+                            {record.county} · ZIP {record.zipCode} · view source record
                           </a>
                           <div className="mt-0.5 text-[10px] text-[#53657B] dark:text-slate-400">
                             {record.medicareDenialRateReportingPeriod} · {record.medicareDenialClaimScope}
@@ -1094,16 +992,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         </div>
                       ))}
                     </div>
-                    {stateZipDenialSummary && (
-                      <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                        The state ZIP-profile average is an unweighted mean for one reporting period and claim scope. It is not a state claims denial rate.
-                      </p>
-                    )}
                   </>
                 ) : (
                   <>
                     <p className="text-[10px] leading-4 text-[#53657B] dark:text-slate-400">
-                      No complete state or county ambulance claim-denial totals are available from the public CMS files. CMS&apos;s PSPS file has denied service counts by carrier/locality and HCPCS, but suppresses cells under 11 and has no NPI or county FIPS; it cannot produce complete state, county, or provider claim rates.
+                      No ZIP-profile source records are available for this state.
                     </p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
                       <a

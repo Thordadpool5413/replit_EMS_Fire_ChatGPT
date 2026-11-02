@@ -712,7 +712,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                       </td>
                       <td className="py-3.5 px-4 text-right tabular-nums text-rose-700 dark:text-rose-400 font-medium">
                         -${proc.annualRevenueAtRisk.toLocaleString()}
-                        <div className="text-[11px] text-slate-400 tabular-nums">{proc.denialRiskPct}% risk</div>
+                        <div className="text-[11px] text-slate-400">Modeled exposure</div>
                       </td>
                       <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 max-w-md">
                         {proc.zollDocumentationMitigation}

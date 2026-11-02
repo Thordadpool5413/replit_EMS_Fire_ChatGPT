@@ -198,7 +198,7 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Spoke with EMS Battalion Chief. Demoed Real BVM Help and reviewed CMS denial rates..."
+              placeholder="Spoke with EMS Battalion Chief. Demoed Real BVM Help and reviewed claim-source records..."
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500"
               required
             />

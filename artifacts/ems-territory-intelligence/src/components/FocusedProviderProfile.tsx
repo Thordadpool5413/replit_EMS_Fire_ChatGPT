@@ -2237,12 +2237,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="hidden">
-                    <div className="text-xs font-semibold text-slate-600">Active Claims Denial Rate</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-rose-700">{medicareDenialMetric ? `${medicareDenialMetric.ratePct.toFixed(1)}%` : 'Not published'}</div>
+                    <div className="text-xs font-semibold text-slate-600">Medicare claim summary</div>
+                    <div className="text-sm font-semibold text-slate-700">{medicareDenialMetric ? 'Claim summary attached' : 'No claim summary attached'}</div>
                     <div className="text-[11px] text-slate-600">
                       {medicareDenialMetric
                         ? `${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · ${medicareDenialMetric.reportingPeriod} · ${medicareDenialMetric.claimScope} · ${medicareDenialMetric.denialDefinition}`
-                        : 'No complete, exact-NPI claim counts are available.'}
+                        : 'No exact-NPI claim summary is attached.'}
                     </div>
                     {medicareDenialMetric?.sourceUrl ? (
                       <a href={medicareDenialMetric.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-700 underline underline-offset-2">
@@ -2329,7 +2329,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">{proc.estimatedAnnualClaims.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">${proc.grossAnnualBilling.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums text-rose-700 font-semibold">
-                          -${proc.annualRevenueAtRisk.toLocaleString()} ({proc.denialRiskPct}%)
+                          -${proc.annualRevenueAtRisk.toLocaleString()}
                         </td>
                         <td className="py-2.5 px-4 text-slate-600 max-w-md">{proc.zollDocumentationMitigation}</td>
                       </tr>

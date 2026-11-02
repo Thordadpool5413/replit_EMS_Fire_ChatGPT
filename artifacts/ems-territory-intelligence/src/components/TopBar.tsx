@@ -100,7 +100,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   onClearGeography,
   activeAccountName = null,
   dayRouteCount = 0,
-  bookmarkedCount = 0,
   agencies = [],
   onOpenProviderFinder
 }) => {
@@ -108,10 +107,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
-  const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState<boolean>(true);
-  const [isTerritoryExpanded, setIsTerritoryExpanded] = useState<boolean>(true);
-  const [isMyWorkExpanded, setIsMyWorkExpanded] = useState<boolean>(true);
-  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(true);
+  const [isOpportunitiesExpanded, setIsOpportunitiesExpanded] = useState<boolean>(false);
+  const [isTerritoryExpanded, setIsTerritoryExpanded] = useState<boolean>(false);
+  const [isMyWorkExpanded, setIsMyWorkExpanded] = useState<boolean>(false);
+  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState<boolean>(false);
   const utilityRef = useRef<HTMLDivElement>(null);
 
   const roles: UserRole[] = [
@@ -139,15 +138,22 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isMyWorkActive = ['field', 'tm_dashboard'].includes(activeTab) && !activeAccountName;
 
   const advancedTools = [
-    { id: 'knowledge', label: 'Clinical & TCO Hub', icon: Scale },
-    { id: 'claims', label: 'Medicare & Payer Mix', icon: DollarSign },
-    { id: '3d_studio', label: '3D Apparatus Studio', icon: Box },
-    { id: 'gateway', label: 'Federal Data Gateway', icon: Database },
-    { id: 'data_health', label: 'Data Health & Sync', icon: Activity },
-    { id: 'resilience', label: 'Cloud Backup', icon: ShieldCheck }
+    { id: 'knowledge', label: 'Clinical & lifecycle cost', icon: Scale },
+    { id: 'claims', label: 'Medicare utilization', icon: DollarSign },
+    { id: '3d_studio', label: '3D equipment viewer', icon: Box },
+    { id: 'gateway', label: 'Federal data sources', icon: Database },
+    { id: 'data_health', label: 'Data status & sync', icon: Activity },
+    { id: 'resilience', label: 'Backup & restore', icon: ShieldCheck }
   ];
 
   const isAdvancedActive = advancedTools.some(t => t.id === activeTab) && !activeAccountName;
+
+  useEffect(() => {
+    setIsOpportunitiesExpanded(['contracts', 'grants', 'pulseiq'].includes(activeTab));
+    setIsTerritoryExpanded(['states_directory', 'geo', 'google_maps', 'map', 'gis'].includes(activeTab));
+    setIsMyWorkExpanded(['field', 'tm_dashboard'].includes(activeTab));
+    setIsAdvancedExpanded(['knowledge', 'claims', '3d_studio', 'gateway', 'data_health', 'resilience'].includes(activeTab));
+  }, [activeTab]);
 
   const getWorkspaceTitle = () => {
     if (activeAccountName) return `Accounts / ${activeAccountName}`;
@@ -308,6 +314,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     className="p-2 hover:text-white text-slate-400 cursor-pointer shrink-0"
                     title="Toggle Opportunities Sub-Navigation"
                     aria-label="Toggle Opportunities Sub-Navigation"
+                    aria-expanded={isOpportunitiesExpanded}
                   >
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpportunitiesExpanded ? 'rotate-0' : '-rotate-90'}`} />
                   </button>
@@ -317,9 +324,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {isOpportunitiesExpanded && (
                   <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
                     {[
-                      { id: 'contracts', label: 'Contracts & Expirations' },
-                      { id: 'grants', label: 'FEMA AFG & SAFER Grants' },
-                      { id: 'pulseiq', label: 'PulseIQ Scoring Matrix' }
+                    { id: 'contracts', label: 'Contracts & expirations' },
+                    { id: 'grants', label: 'Fire grants · AFG & SAFER' },
+                    { id: 'pulseiq', label: 'Regional priority scores' }
                     ].map((sub) => (
                       <button
                         key={sub.id}
@@ -370,6 +377,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                       className="p-1.5 hover:text-white text-slate-400 cursor-pointer shrink-0"
                       title="Toggle Territory Sub-Navigation"
                       aria-label="Toggle Territory Sub-Navigation"
+                      aria-expanded={isTerritoryExpanded}
                     >
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isTerritoryExpanded ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
@@ -380,9 +388,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {isTerritoryExpanded && (
                   <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
                     {[
-                      { id: 'states_directory', label: 'State → County → City' },
-                      { id: 'google_maps', label: 'Google Maps Live' },
-                      { id: 'map', label: 'GIS Fleet & Acuity Heatmap' }
+                      { id: 'states_directory', label: 'Geographic directory' },
+                      { id: 'google_maps', label: 'Agency location map' },
+                      { id: 'map', label: 'Fleet & acuity map' }
                     ].map((sub) => {
                       const subActive =
                         sub.id === 'states_directory'
@@ -430,9 +438,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                     <span className="truncate">My Work</span>
                   </button>
                   <div className="flex items-center gap-1 pr-1.5 shrink-0">
-                    {(dayRouteCount > 0 || bookmarkedCount > 0) && (
-                      <span className="text-xs font-semibold pi-data-number px-1.5 py-0.5 rounded bg-[#172D49] text-slate-200">
-                        {dayRouteCount || bookmarkedCount}
+                    {dayRouteCount > 0 && (
+                      <span aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`} className="text-xs font-semibold pi-data-number px-1.5 py-0.5 rounded bg-[#172D49] text-slate-200">
+                        {dayRouteCount}
                       </span>
                     )}
                     <button
@@ -441,6 +449,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                       className="p-1.5 hover:text-white text-slate-400 cursor-pointer shrink-0"
                       title="Toggle My Work Sub-Navigation"
                       aria-label="Toggle My Work Sub-Navigation"
+                      aria-expanded={isMyWorkExpanded}
                     >
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMyWorkExpanded ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
@@ -450,8 +459,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {isMyWorkExpanded && (
                   <div className="pl-7 pr-1 py-1 space-y-0.5 border-l border-[#172D49] ml-4 mt-0.5">
                     {[
-                      { id: 'field', label: 'Routes, Visits & Notes' },
-                      { id: 'tm_dashboard', label: 'Field Mobile Cockpit' }
+                      { id: 'field', label: 'Routes, visits & notes' },
+                      { id: 'tm_dashboard', label: 'Mobile field workspace' }
                     ].map((sub) => (
                       <button
                         key={sub.id}
@@ -472,14 +481,15 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
           </div>
 
-          {/* Secondary Area: Advanced Intelligence */}
+          {/* Secondary Area: Specialist tools */}
           <div>
             <button
               type="button"
               onClick={() => setIsAdvancedExpanded(prev => !prev)}
               className="w-full flex items-center justify-between text-xs font-medium text-slate-400 hover:text-slate-200 px-2.5 mb-1.5 cursor-pointer"
+              aria-expanded={isAdvancedExpanded}
             >
-              <span>Advanced intelligence</span>
+              <span>More tools</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform ${isAdvancedExpanded ? 'rotate-0' : '-rotate-90'}`}
               />

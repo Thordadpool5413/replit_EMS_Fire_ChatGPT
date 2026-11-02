@@ -618,7 +618,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                     <span className="font-semibold text-sky-700 tabular-nums">20 pts</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-snug">
-                    Medicare Part B claim denial rate (&gt;15%), GADCS reporting compliance, and addressable cash recovery via ZOLL Billing.
+                    Medicare Part B claim-source evidence, GADCS reporting compliance, and addressable cash recovery via ZOLL Billing.
                   </p>
                 </div>
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">

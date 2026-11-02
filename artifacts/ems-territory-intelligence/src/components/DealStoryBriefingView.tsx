@@ -83,7 +83,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
   const denialRate = denialMetric
-    ? `${denialMetric.ratePct.toFixed(1)}% (billing NPI ${denialMetric.npi}; ${denialMetric.deniedClaimCount.toLocaleString()} denied / ${denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${denialMetric.reportingPeriod}; ${denialMetric.claimScope}; ${denialMetric.denialDefinition}; source: ${denialMetric.source}${denialMetric.sourceReference ? `, ${denialMetric.sourceReference}` : ''}${denialMetric.sourceUrl ? `, ${denialMetric.sourceUrl}` : ''})`
+    ? `Claim summary (billing NPI ${denialMetric.npi}): ${denialMetric.deniedClaimCount.toLocaleString()} denied / ${denialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated; ${denialMetric.reportingPeriod}; ${denialMetric.claimScope}; ${denialMetric.denialDefinition}; source: ${denialMetric.source}${denialMetric.sourceReference ? `, ${denialMetric.sourceReference}` : ''}${denialMetric.sourceUrl ? `, ${denialMetric.sourceUrl}` : ''}`
     : 'Not published';
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
   const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);

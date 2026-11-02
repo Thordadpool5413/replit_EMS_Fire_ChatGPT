@@ -1,3 +1,6 @@
+import type { Agency, PredictiveWeights } from '../types';
+import { calculateScore } from './pulseIqScoring';
+
 /**
  * Return a descending score order without mutating the caller's collection.
  * Original order is retained for ties so claim-record updates cannot introduce
@@ -18,6 +21,28 @@ export function rankByPulseIqScore<T>(
     })
     .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex)
     .map(({ item }) => item);
+}
+
+/**
+ * Use the active calibration for lead queue ordering instead of a persisted
+ * score breakdown, which may have been calculated with older weights.
+ */
+export function rankAgenciesByPulseIqScore(
+  agencies: readonly Agency[],
+  weights?: PredictiveWeights
+): Agency[] {
+  return rankByPulseIqScore(agencies, (agency) => calculateScore(agency, weights));
+}
+
+/**
+ * Apply the lead queue's high-priority threshold to the same active score used
+ * for ordering.
+ */
+export function isHighPriorityPulseIqAgency(
+  agency: Agency,
+  weights?: PredictiveWeights
+): boolean {
+  return calculateScore(agency, weights) >= 80;
 }
 
 export interface PulseIqTerritoryRank {

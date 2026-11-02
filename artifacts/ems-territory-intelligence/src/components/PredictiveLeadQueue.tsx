@@ -46,9 +46,8 @@ import { InteractiveSparkline } from './InteractiveSparkline';
 import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
-import { rankByPulseIqScore } from '../utils/pulseIqRanking';
+import { isHighPriorityPulseIqAgency, rankAgenciesByPulseIqScore } from '../utils/pulseIqRanking';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
-import { calculateScore } from '../utils/pulseIqScoring';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -313,7 +312,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         if (!agency.agencyType.toLowerCase().includes('fire')) return false;
       }
 
-      if (quickSegment === 'high_priority' && calculateScore(agency, weights) < 80) return false;
+      if (quickSegment === 'high_priority' && !isHighPriorityPulseIqAgency(agency, weights)) return false;
       if (quickSegment === 'afg' && !agency.grantStatus.afgAwarded) return false;
       if (quickSegment === 'bookmarked' && !agency.isBookmarked) return false;
 
@@ -340,7 +339,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     }
 
     if (sortBy === 'pulseIq') {
-      return rankByPulseIqScore(result, (agency) => calculateScore(agency, weights));
+      return rankAgenciesByPulseIqScore(result, weights);
     }
 
     return [...result].sort((a, b) => {

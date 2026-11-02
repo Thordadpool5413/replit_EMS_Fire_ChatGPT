@@ -20,7 +20,13 @@ import {
   getPulseIqFormula,
   getPulseIqWeightDetails
 } from './pulseIqScoring';
-import { getPulseIqTerritoryRank, getPulseIqTerritoryRanks, rankByPulseIqScore } from './pulseIqRanking';
+import {
+  getPulseIqTerritoryRank,
+  getPulseIqTerritoryRanks,
+  isHighPriorityPulseIqAgency,
+  rankAgenciesByPulseIqScore,
+  rankByPulseIqScore
+} from './pulseIqRanking';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -400,6 +406,25 @@ const rankedAgency = (
   } as Agency;
 };
 
+const recalibrationAgency = (
+  id: string,
+  annualCardiacArrestCalls: number,
+  defibAgeYears: number,
+  persistedScore: number
+): Agency => {
+  const template = agency(0, 0);
+  return {
+    ...template,
+    id,
+    annualCardiacArrestCalls,
+    installedFleet: {
+      ...template.installedFleet,
+      defibAgeYears
+    },
+    zollOpportunity: { pulseIqScore: persistedScore }
+  } as Agency;
+};
+
 const withChangedClaimRecords = (record: Agency, multiplier: number): Agency => {
   const updated = {
     ...record,
@@ -433,6 +458,81 @@ test('lead queue PulseIQ score order is unchanged by imported claim-record chang
       .map((record) => record.id);
 
   assert.deepEqual(leadOrder(agencies), leadOrder(updatedClaimAgencies));
+});
+
+test('lead queue ordering recalculates with active calibration instead of persisted scores', () => {
+  const fleetDriven = [
+    recalibrationAgency('clinical-lead', 1800, 3, 99),
+    recalibrationAgency('fleet-lead', 100, 10, 0)
+  ];
+  const fleetWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 100,
+    cardiacVolumeWeight: 0,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+  const clinicalWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 0,
+    cardiacVolumeWeight: 100,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+
+  assert.deepEqual(
+    rankAgenciesByPulseIqScore(fleetDriven, fleetWeights).map((record) => record.id),
+    ['fleet-lead', 'clinical-lead']
+  );
+  assert.deepEqual(
+    rankAgenciesByPulseIqScore(fleetDriven, clinicalWeights).map((record) => record.id),
+    ['clinical-lead', 'fleet-lead']
+  );
+});
+
+test('lead queue high-priority membership uses the active score and recalculates with weights', () => {
+  const record = recalibrationAgency('calibrated-priority', 1800, 3, 99);
+  const fleetWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 100,
+    cardiacVolumeWeight: 0,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+  const clinicalWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 0,
+    cardiacVolumeWeight: 100,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+
+  assert.deepEqual(
+    [record].filter((agency) => isHighPriorityPulseIqAgency(agency, fleetWeights)).map((agency) => agency.id),
+    []
+  );
+  assert.deepEqual(
+    [record].filter((agency) => isHighPriorityPulseIqAgency(agency, clinicalWeights)).map((agency) => agency.id),
+    ['calibrated-priority']
+  );
+});
+
+test('lead queue ranking uses shared stable ordering when active scores tie', () => {
+  const first = recalibrationAgency('first-tie', 1800, 10, 0);
+  const second = recalibrationAgency('second-tie', 1800, 10, 99);
+  const below = recalibrationAgency('below-tie', 100, 3, 99);
+  const clinicalWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 0,
+    cardiacVolumeWeight: 100,
+    grantAwardWeight: 0,
+    softwareWhitespaceWeight: 0
+  };
+
+  assert.deepEqual(
+    rankAgenciesByPulseIqScore([first, second, below], clinicalWeights).map((record) => record.id),
+    ['first-tie', 'second-tie', 'below-tie']
+  );
 });
 
 test('regional average PulseIQ ranking is unchanged by imported claim-record changes', () => {

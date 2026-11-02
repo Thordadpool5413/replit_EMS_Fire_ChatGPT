@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
-import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { MobileDashboardPulseIqScore } from './PulseIqSurfaceDisplays';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { formatCurrency } from '../utils/formatters';
 
@@ -679,7 +679,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
             filteredAgencies.slice(0, visibleCardCount).map((agency, index) => {
               const chiefContact = agency.keyContacts.find(c => c.role.toLowerCase().includes('chief')) || agency.keyContacts[0];
               const isUrgent = agency.competitorContract.renewalWindowDays <= 90;
-              const pulseScore = agency.zollOpportunity.pulseIqScore;
+              const pulseScore = agency.zollOpportunity?.pulseIqScore;
 
               return (
                 <motion.div
@@ -703,8 +703,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
                       <div className="flex items-start gap-3 min-w-0">
                         {/* Polished Executive Score Badge */}
                         <div className="w-14 h-14 rounded-xl bg-[#0F172A] dark:bg-slate-800 text-white flex flex-col items-center justify-center font-bold shrink-0 border border-slate-700/80 shadow-xs">
-                          <span className="text-sm font-[650] tabular-nums leading-none">{pulseScore}</span>
-                          <PulseIqEstimateLabel className="text-[8px] font-medium text-slate-300 mt-0.5 whitespace-nowrap" />
+                          <MobileDashboardPulseIqScore agencyId={agency.id} score={pulseScore} />
                         </div>
 
                         <div className="min-w-0">

@@ -16,6 +16,7 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
 import { NationalAmbulanceReference } from './NationalAmbulanceReference';
+import { HomeMapPulseIqReadout } from './PulseIqSurfaceDisplays';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
@@ -80,7 +81,7 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
   if (value === null) return 'Not reported';
   if (metric === 'cardiac-survival') return `${value.toFixed(1)}%`;
   if (metric === 'scene-transit') return `${value.toFixed(1)} min`;
-  if (metric === 'pulseiq') return `${formatScore(value)} / 100`;
+  if (metric === 'pulseiq') return formatScore(value);
   return formatInteger(value);
 };
 
@@ -513,10 +514,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <span className="text-xs font-bold text-[#E4EEF8]">
                       {mapReadoutState.state} ({mapReadoutState.code})
                     </span>
-                    <span className="text-[10px] font-medium text-[#9CB1C7]">{activeMapMetric.label}</span>
-                    <span className="text-sm font-bold tabular-nums text-[#67D6CE]">
-                      {formatStateMapValue(mapMetric, mapReadoutMetric.value)}
-                    </span>
+                    {mapMetric === 'pulseiq'
+                      ? <HomeMapPulseIqReadout score={mapReadoutMetric.value} />
+                      : <>
+                          <span className="text-[10px] font-medium text-[#9CB1C7]">{activeMapMetric.label}</span>
+                          <span className="text-sm font-bold tabular-nums text-[#67D6CE]">
+                            {formatStateMapValue(mapMetric, mapReadoutMetric.value)}
+                          </span>
+                        </>}
                   </div>
                   <p className="mt-0.5 text-[10px] leading-4 text-[#91A6BB]">
                     {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { MobileProviderSelectorPulseIqScore } from './PulseIqSurfaceDisplays';
 
 interface MobileProviderSelectorDrawerProps {
   isOpen: boolean;
@@ -376,8 +376,7 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
                     </span>
 
                     <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums flex items-center gap-1">
-                      <PulseIqEstimateLabel className="text-[10px] font-normal text-slate-400" />
-                      <span className="text-[#285EE8] dark:text-blue-400 font-bold">{pulseIq ?? '—'}</span>
+                      <MobileProviderSelectorPulseIqScore agencyId={agency.id} score={pulseIq} />
                       <span className="text-slate-400 font-normal">/100</span>
                     </span>
                   </div>

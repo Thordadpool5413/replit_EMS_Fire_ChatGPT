@@ -49,6 +49,7 @@ import { formatCurrency, formatScore, formatDistanceMiles, formatInteger } from 
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { TerritoryMapPulseIqScore } from './PulseIqSurfaceDisplays';
 
 interface GoogleMapsTerritoryExplorerProps {
   agencies: Agency[];
@@ -935,12 +936,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                           </div>
 
                           <div className="grid grid-cols-2 gap-2 text-xs mb-2.5 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            <div>
-                              <PulseIqEstimateLabel className="text-[11px] text-slate-500 font-medium block" />
-                              <span className="font-semibold text-blue-700 text-sm pi-data-number">
-                                {formatScore(infoScore)} / 100
-                              </span>
-                            </div>
+                            <TerritoryMapPulseIqScore score={infoScore} />
                             <div>
                               <span className="text-[11px] text-slate-500 font-medium block">Primary fleet</span>
                               <span className="font-semibold text-slate-800 text-xs">
@@ -1070,7 +1066,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                         <div className="text-right shrink-0">
                           <PulseIqEstimateLabel className="block text-[9px] text-slate-500 dark:text-slate-400" />
                           <span className="text-xs font-bold text-blue-700 dark:text-blue-400 pi-data-number">
-                            {formatScore(agency.zollOpportunity?.pulseIqScore)} / 100
+                            {formatScore(agency.zollOpportunity?.pulseIqScore)}
                           </span>
                           {dist !== null && (
                             <span className="block text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 pi-data-number">

@@ -6,6 +6,12 @@ import type { Agency } from '../types';
 import { hasMappedAgencyFactEvidence, hasReviewedAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { AgencyComparisonPanel, buildAgencyComparisonCsv } from '../components/AgencyComparisonPanel';
 import { PulseIqEstimateLabel } from '../components/PulseIqEstimateLabel';
+import {
+  HomeMapPulseIqReadout,
+  MobileDashboardPulseIqScore,
+  MobileProviderSelectorPulseIqScore,
+  TerritoryMapPulseIqScore,
+} from '../components/PulseIqSurfaceDisplays';
 import { PulseIqProfileFactorDetails } from '../components/PulseIqProfileFactorDetails';
 import { PulseIqScoreExplainerHub } from '../components/PulseIqScoreExplainerHub';
 import { PulseIqTooltipFactorDetails } from '../components/PulseIqScoreTooltip';
@@ -40,6 +46,142 @@ const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): A
   grantStatus: { afgAwarded: false, saferGrantActive: true },
   cmsData: { claimDenialRate, estimatedRecoverableRevenue }
 } as Agency);
+
+const surfaceAgency = (score: number | undefined, overrides: Partial<Agency> = {}): Agency => ({
+  id: 'pulseiq-surface-agency',
+  name: 'PulseIQ Test EMS',
+  agencyType: 'EMS',
+  providerCategory: 'EMS',
+  state: 'Florida',
+  stateCode: 'FL',
+  county: 'Orange',
+  city: 'Orlando',
+  zipCode: '32801',
+  address: '1 Main Street',
+  latitude: 28.5383,
+  longitude: -81.3792,
+  annualCardiacArrestCalls: 700,
+  inDayRoute: false,
+  isBookmarked: false,
+  keyContacts: [],
+  fieldNotes: [],
+  competitorContract: { renewalWindowDays: 180, status: 'Active', vendor: 'Example' },
+  installedFleet: { defibUnitsCount: 2, defibBrand: 'Example', defibAgeYears: 0 },
+  cmsData: { medicareAllowedAnnual: 0, claimDenialRate: 0, estimatedRecoverableRevenue: 0 },
+  zollOpportunity: {
+    pulseIqScore: score,
+    priorityTier: 'Maintained Account',
+    salesStage: 'Target Lead',
+    projectedPipelineValue: 0,
+  },
+  factEvidence: {},
+  sourceFacts: [],
+  ...overrides,
+} as Agency);
+
+const renderMobileDashboardScore = (score: number | undefined) => renderToStaticMarkup(
+  React.createElement(MobileDashboardPulseIqScore, { agencyId: 'test-agency', score }),
+);
+
+const renderProviderSelectorScore = (score: number | undefined) => renderToStaticMarkup(
+  React.createElement(MobileProviderSelectorPulseIqScore, { agencyId: 'test-agency', score }),
+);
+
+const renderHomeMapScore = (score: number | undefined) => renderToStaticMarkup(
+  React.createElement(HomeMapPulseIqReadout, { score }),
+);
+
+const renderTerritoryMapDetails = (score: number | undefined) => renderToStaticMarkup(
+  React.createElement(TerritoryMapPulseIqScore, { score }),
+);
+
+test('mobile and map surfaces display a valid zero score and distinguish a missing score', () => {
+  const surfaces = [
+    {
+      name: 'mobile dashboard',
+      render: renderMobileDashboardScore,
+      scoreId: 'mobile-dashboard-pulseiq-score-test-agency',
+      expectedZero: '>0</span>',
+      expectedMissing: '>—</span>',
+    },
+    {
+      name: 'provider selector',
+      render: renderProviderSelectorScore,
+      scoreId: 'provider-selector-pulseiq-score-test-agency',
+      expectedZero: '>0</span>',
+      expectedMissing: '>—</span>',
+    },
+  ];
+
+  for (const surface of surfaces) {
+    const zeroMarkup = surface.render(0);
+    assert.match(zeroMarkup, /PulseIQ estimate/, `${surface.name} should retain the estimate label`);
+    assert.match(zeroMarkup, new RegExp(`data-testid="${surface.scoreId}"[^>]*${surface.expectedZero}`));
+
+    const missingMarkup = surface.render(undefined);
+    assert.match(missingMarkup, /PulseIQ estimate/, `${surface.name} should retain the estimate label when missing`);
+    assert.match(missingMarkup, new RegExp(`data-testid="${surface.scoreId}"[^>]*${surface.expectedMissing}`));
+  }
+
+  const zeroHomeMap = renderHomeMapScore(0);
+  assert.match(zeroHomeMap, /PulseIQ estimate · modeled average/);
+  assert.match(zeroHomeMap, /data-testid="home-map-pulseiq-readout-value"[^>]*>0\/100</);
+  const missingHomeMap = renderHomeMapScore(undefined);
+  assert.match(missingHomeMap, /data-testid="home-map-pulseiq-readout-value"[^>]*>Not reported</);
+
+  for (const [score, expected] of [[0, '0/100'], [undefined, '—']] as const) {
+    const detailsMarkup = renderTerritoryMapDetails(score);
+    assert.match(detailsMarkup, /PulseIQ estimate/);
+    assert.ok(detailsMarkup.includes(expected), `territory map details should show ${expected}`);
+  }
+});
+
+test('unmapped factors and changed claim evidence do not hide or change displayed PulseIQ scores', () => {
+  const unmappedRecord = {
+    ...agency(0, 0),
+    ...surfaceAgency(undefined),
+    factEvidence: {},
+  } as Agency;
+  const importedClaimsRecord = {
+    ...unmappedRecord,
+    cmsData: { claimDenialRate: 98, estimatedRecoverableRevenue: 99000000 },
+    factEvidence: {
+      cmsClaims: {
+        sourceName: 'Imported claim records',
+        sourceRecordId: 'claim-records-1',
+        sourceKind: 'manual',
+        note: 'Imported claim records',
+        reviewed: true,
+        reviewedAt: new Date().toISOString(),
+      },
+    },
+  } as Agency;
+  const scoreWithoutClaims = calculateScore(unmappedRecord);
+  const scoreWithClaims = calculateScore(importedClaimsRecord);
+  assert.equal(scoreWithClaims, scoreWithoutClaims);
+
+  const formatSurfaceScore = (record: Agency) => {
+    const dashboard = renderMobileDashboardScore(record.zollOpportunity?.pulseIqScore);
+    const providerSelector = renderProviderSelectorScore(record.zollOpportunity?.pulseIqScore);
+    const homeMap = renderHomeMapScore(record.zollOpportunity?.pulseIqScore);
+    const territoryMap = renderTerritoryMapDetails(record.zollOpportunity?.pulseIqScore);
+    return [dashboard, providerSelector, homeMap, territoryMap];
+  };
+  const baselineMarkup = formatSurfaceScore({
+    ...unmappedRecord,
+    zollOpportunity: { ...unmappedRecord.zollOpportunity, pulseIqScore: scoreWithoutClaims },
+  });
+  const claimsMarkup = formatSurfaceScore({
+    ...importedClaimsRecord,
+    zollOpportunity: { ...importedClaimsRecord.zollOpportunity, pulseIqScore: scoreWithClaims },
+  });
+
+  for (const [index, surfaceMarkup] of baselineMarkup.entries()) {
+    assert.match(surfaceMarkup, /PulseIQ estimate/);
+    assert.equal(surfaceMarkup, claimsMarkup[index], 'claim evidence should not change any rendered score surface');
+    assert.ok(surfaceMarkup.includes(String(scoreWithoutClaims)));
+  }
+});
 
 test('PulseIQ score and factor contributions ignore claim rates and recovery amounts', () => {
   const lowClaims = agency(2, 0);

@@ -14,3 +14,9 @@ Keep the pure score-explanation mapper separate from `syncStore`. That module in
 **Why:** Importing the storage module from Node-based rendered-view tests loads Vite-only compressed data and prevents the tests from running.
 
 **How to apply:** Place reusable score explanation logic in a dependency-light utility that imports only types and scoring helpers; avoid adding baseline data or browser storage dependencies to scoring tests.
+
+Node-based component-render tests must avoid importing geographic screens that pull in the compressed county dataset through `territoryEngine` or `nationalGeographicData`. Test the lightweight score-display components those screens use, or run a Vite-aware integration test instead.
+
+**Why:** Node's test loader cannot resolve the county dataset's Vite-only `?url` import.
+
+**How to apply:** Keep display components dependency-light and shared with the screen; reserve full-screen rendering for a runner that applies Vite asset handling.

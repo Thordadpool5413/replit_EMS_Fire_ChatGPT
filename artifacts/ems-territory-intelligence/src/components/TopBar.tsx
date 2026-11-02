@@ -430,7 +430,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm sm:text-base font-semibold text-[#14283F] dark:text-white truncate">
+                <span className="workspace-context-title shrink-0 whitespace-nowrap text-sm sm:text-base font-semibold text-[#14283F] dark:text-white">
                   {getWorkspaceTitle()}
                 </span>
                 {hasActiveGeography && (

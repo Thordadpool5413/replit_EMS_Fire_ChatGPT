@@ -379,7 +379,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
 
           {/* Region Filter Segmented Control */}
-          <div className="max-w-full overflow-x-auto">
+          <div className="home-map-region-filter max-w-full overflow-x-auto">
             <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">
             {(['All', 'Northeast', 'Midwest', 'South', 'West'] as const).map((reg) => (
               <button
@@ -502,7 +502,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <span className="shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="home-map-content-stack flex flex-col gap-3">
               <div
                 className="home-map-readout order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-[#101F30] border border-[#294158] px-3.5 py-3"
                 aria-live="polite"
@@ -535,12 +535,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </button>}
               </div>
 
-              <div className="order-1 sm:order-2 space-y-3">
+              <div className="home-map-visual-stack order-1 sm:order-2 space-y-3">
               <p className="text-[10px] text-[#A2B5C8] sm:hidden">
                 Zoom in to inspect a state, then swipe to pan.
               </p>
 
-              <div ref={mapViewportRef} className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]">
+              <div
+                ref={mapViewportRef}
+                data-map-zoom={mapZoom}
+                className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]"
+              >
               <svg
                 viewBox="0 0 920 500"
                 className="home-map-svg block h-auto select-none"

@@ -870,3 +870,213 @@
     align-items: center;
   }
 }
+
+/* Laptop map layout: give the geography its own canvas and move controls into a rail. */
+@media (min-width: 1024px) {
+  .home-map-region-filter {
+    max-width: 100%;
+    overflow: visible !important;
+    scrollbar-width: none;
+  }
+
+  .home-map-region-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-map-region-filter > div {
+    gap: 0.125rem !important;
+    padding: 0.25rem !important;
+  }
+
+  .home-map-region-filter button {
+    min-height: 2rem !important;
+    padding-inline: 0.45rem !important;
+    font-size: 0.625rem !important;
+  }
+
+  .home-territory-map-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 250px);
+    grid-template-rows: auto auto minmax(130px, 1fr) auto;
+    align-items: stretch;
+    gap: 0.375rem;
+    min-height: min(520px, max(360px, calc(100dvh - 300px)));
+    padding: 0.625rem !important;
+  }
+
+  .home-territory-map-panel > * + * {
+    margin-top: 0 !important;
+  }
+
+  .home-map-control-row {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .home-map-control-row > label,
+  .home-map-layer-select {
+    width: 100%;
+  }
+
+  .home-map-control-row > label {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .home-map-layer-select {
+    min-height: 2.35rem !important;
+    min-width: 0 !important;
+    font-size: 0.75rem !important;
+  }
+
+  .home-map-zoom-control {
+    align-self: flex-start;
+    gap: 0.25rem !important;
+    padding: 0.125rem !important;
+  }
+
+  .home-map-zoom-control button {
+    min-height: 2rem !important;
+    min-width: 2rem !important;
+  }
+
+  .home-map-legend {
+    grid-column: 2;
+    grid-row: 2;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    overflow-x: hidden;
+    padding: 0.375rem;
+    font-size: 0.625rem;
+  }
+
+  .home-map-legend > span:first-child,
+  .home-map-legend > span:nth-child(2) {
+    flex: 1 1 100%;
+  }
+
+  .home-map-legend > span:first-child {
+    font-size: 0.625rem;
+  }
+
+  .home-map-legend > span:nth-child(2) {
+    gap: 0.25rem;
+  }
+
+  .home-map-legend > span:nth-child(2) > span:nth-child(2) {
+    width: 4.5rem;
+    flex: 0 0 4.5rem;
+  }
+
+  .home-map-legend > span:nth-child(n + 3) {
+    gap: 0.25rem;
+    font-size: 0.5625rem;
+  }
+
+  .home-map-legend > span:nth-child(2) {
+    flex: 1 1 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .home-map-content-stack,
+  .home-map-visual-stack {
+    display: contents !important;
+  }
+
+  .home-map-visual-stack > * + * {
+    margin-top: 0 !important;
+  }
+
+  .home-map-readout {
+    grid-column: 2;
+    grid-row: 3;
+    order: 0 !important;
+    align-self: start;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.375rem;
+    padding: 0.5rem !important;
+  }
+
+  .home-map-readout > div:first-child > p {
+    font-size: 0.5625rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .home-map-readout > button {
+    align-self: flex-start;
+    min-height: 2rem !important;
+  }
+
+  .home-map-viewport {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .home-map-viewport[data-map-zoom="1"] {
+    overflow: hidden;
+  }
+
+  .home-map-viewport:not([data-map-zoom="1"]) {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .home-map-viewport:not([data-map-zoom="1"]) svg {
+    flex: 0 0 auto;
+  }
+
+  .home-map-viewport svg[data-fit-screen="true"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 100% !important;
+    margin: auto;
+  }
+
+  .home-map-shortcuts {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    flex-wrap: nowrap;
+    margin: 0 !important;
+    overflow-x: auto;
+  }
+
+  .home-map-shortcuts > button {
+    min-height: 2.125rem !important;
+    min-width: 2.125rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .home-territory-map-panel {
+    min-height: 360px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .pi-command-header button[title^="Search any EMS agency"] {
+    width: 14rem !important;
+  }
+
+  .workspace-context-title {
+    max-width: 8rem;
+  }
+}

@@ -695,10 +695,50 @@ async function checkTerritoryAtViewport(cdp, viewport) {
       Boolean(document.querySelector('.county-directory-card'))`,
     `Florida county directory at ${viewport.width}px`,
   );
+  await waitFor(
+    cdp,
+    `(() => {
+      const details = document.querySelector('.territory-explorer-screen details');
+      return Boolean(details &&
+        (details.textContent.includes('county-equivalent source records') ||
+         details.textContent.includes('County risk data could not be loaded.')));
+    })()`,
+    `the county risk source status at ${viewport.width}px`,
+    60_000,
+  );
+  const riskSourceStatus = await evaluate(
+    cdp,
+    `document.querySelector('.territory-explorer-screen details')?.textContent ?? ''`,
+  );
+  let riskMapReady = false;
+  if (riskSourceStatus.includes('County risk data could not be loaded.')) {
+    const isDirectLocalVite =
+      baseUrl.startsWith('http://127.0.0.1:') ||
+      baseUrl.startsWith('http://localhost:');
+    assert(
+      isDirectLocalVite,
+      `County risk source request failed at ${viewport.width}px: ${riskSourceStatus}`,
+    );
+    console.log(`ℹ ${viewport.width}px: direct local Vite bypasses Replit's root /api proxy; FEMA colors will be checked through PROFILE_TEST_URL`);
+  } else {
+    riskMapReady = await waitFor(
+      cdp,
+      `(() => {
+        const map = document.querySelector('.county-state-map-svg');
+        return Boolean(map && [...map.querySelectorAll('path')]
+          .some((path) => path.getAttribute('fill') !== '#475569'));
+      })()`,
+      `mapped FEMA county risk colors at ${viewport.width}px`,
+      60_000,
+    );
+    assert(riskMapReady, `FEMA county risk colors did not populate at ${viewport.width}px`);
+  }
   await evaluate(cdp, `document.querySelector('.county-drilldown-shell')?.scrollIntoView({ block: 'start' })`);
   const countyLayout = await evaluate(cdp, `(() => {
     const root = document.documentElement;
     const shell = document.querySelector('.county-drilldown-shell');
+    const breadcrumb = document.querySelector('.geography-drilldown-breadcrumb');
+    const sourceDetails = document.querySelector('.territory-explorer-screen details');
     const search = shell?.querySelector('input');
     const action = [...(shell?.querySelectorAll('button') ?? [])]
       .find((button) => button.innerText.includes('State Providers'));
@@ -734,6 +774,8 @@ async function checkTerritoryAtViewport(cdp, viewport) {
       titleContrast: contrast(titleStyle.color, cardStyle.backgroundColor),
       cardBackground: cardStyle.backgroundColor,
       titleColor: titleStyle.color,
+      sourceDetailsBackground: sourceDetails ? getComputedStyle(sourceDetails).backgroundColor : null,
+      breadcrumbBackground: breadcrumb ? getComputedStyle(breadcrumb).backgroundColor : null,
     };
   })()`);
   assert(countyLayout, `Could not measure the county layout at ${viewport.width}px`);
@@ -753,7 +795,12 @@ async function checkTerritoryAtViewport(cdp, viewport) {
     countyLayout.titleContrast >= 4.5,
     `County card title contrast is too low at ${viewport.width}px: ${JSON.stringify(countyLayout)}`,
   );
-  if (viewport.width === 390) {
+  assert(
+    countyLayout.sourceDetailsBackground !== 'rgb(255, 255, 255)' &&
+      countyLayout.breadcrumbBackground !== 'rgb(255, 255, 255)',
+    `Dark-mode Territory surfaces are still bright white at ${viewport.width}px: ${JSON.stringify(countyLayout)}`,
+  );
+  if (viewport.width === 390 && riskMapReady) {
     const screenshot = await cdp.send('Page.captureScreenshot', {
       format: 'png',
       captureBeyondViewport: false,

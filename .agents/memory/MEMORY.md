@@ -15,3 +15,4 @@
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.
 - [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.
 - [PWA registration timing](pwa-registration-timing.md) — register the worker during entry startup and cache versioned app assets, never live source records.
+- [API checks through artifact proxies](api-proxy-local-vs-preview.md) — direct localhost Vite tests bypass Replit’s root `/api` proxy; verify API-backed UI through the artifact preview URL.

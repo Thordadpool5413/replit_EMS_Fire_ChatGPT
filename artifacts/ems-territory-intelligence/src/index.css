@@ -4047,6 +4047,39 @@ body {
 
 /* Phone-first territory review: compact, coherent surfaces without reducing records. */
 @media (max-width: 767px) {
+  .geography-drilldown-breadcrumb {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: .55rem !important;
+    padding: .65rem !important;
+  }
+
+  .geography-drilldown-breadcrumb > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .4rem !important;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .geography-drilldown-breadcrumb > div:last-child > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .geography-drilldown-breadcrumb select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .geography-drilldown-breadcrumb > div:last-child > button {
+    min-width: 0;
+    min-height: 2.5rem;
+    justify-content: center;
+    white-space: normal !important;
+    text-align: center;
+  }
+
   .territory-explorer-screen,
   .county-drilldown-shell,
   .county-risk-explorer-header,
@@ -4413,4 +4446,36 @@ body {
 
 .dark .territory-explorer-screen .county-city-directory-panel .text-cyan-800 {
   color: #9ce4de !important;
+}
+
+.dark .geography-drilldown-breadcrumb {
+  border-color: #2b434d !important;
+  background-color: #142832 !important;
+  color: #e5efed;
+}
+
+.dark .geography-drilldown-breadcrumb .text-slate-700,
+.dark .geography-drilldown-breadcrumb .text-slate-900 {
+  color: #dce9e7 !important;
+}
+
+.dark .territory-explorer-screen .county-directory-heading > div > p:first-child,
+.dark .territory-explorer-screen .county-risk-explorer-header .text-blue-700 {
+  color: #9bc8ff !important;
+}
+
+.dark .territory-explorer-screen details {
+  border-color: #2b434d !important;
+  background-color: #142832 !important;
+  color: #dce9e7 !important;
+}
+
+.dark .territory-explorer-screen details summary,
+.dark .territory-explorer-screen details .text-slate-700,
+.dark .territory-explorer-screen details .text-slate-600 {
+  color: #c8d8d7 !important;
+}
+
+.dark .territory-explorer-screen details .text-slate-500 {
+  color: #a5b8b7 !important;
 }

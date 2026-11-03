@@ -1098,7 +1098,7 @@ export default function App() {
 
         {/* Clinical & Competitive Intelligence Hub (Advanced Workspace) */}
         {activeTab === 'knowledge' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <ClinicalCompetitiveKnowledgeHub
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1109,7 +1109,7 @@ export default function App() {
 
         {/* Medicare Claims & Public Healthcare Explorer (Advanced Workspace) */}
         {activeTab === 'claims' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <PublicHealthcareExplorer
               agencies={agencies}
               onSelectStateFilter={(stateCode) => {
@@ -1143,7 +1143,7 @@ export default function App() {
 
         {/* Data Health & Synchronization Dashboard (Advanced Workspace) */}
         {activeTab === 'data_health' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <DataHealthDashboard
               agencies={agencies}
               isCloudConnected={isCloudConnected}
@@ -1160,7 +1160,7 @@ export default function App() {
 
         {/* Cloud Backup & Resilience View (Advanced Workspace) */}
         {activeTab === 'resilience' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <CloudBackupResilienceView
               agencies={agencies}
               onRestoreAgencies={updateAgenciesState}
@@ -1172,7 +1172,7 @@ export default function App() {
 
         {/* Federal Nationwide Data Gateway View (Advanced Workspace) */}
         {activeTab === 'gateway' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <NationwideDataGatewayView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1208,7 +1208,7 @@ export default function App() {
 
         {/* 3D Apparatus & Cardiac Monitor Studio (Advanced Workspace) */}
         {activeTab === '3d_studio' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-5 sm:p-6 shadow-2xs min-w-0">
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-[#14283F] dark:text-white tracking-tight">

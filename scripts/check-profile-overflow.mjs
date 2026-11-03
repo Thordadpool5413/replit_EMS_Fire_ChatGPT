@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -577,6 +577,26 @@ async function checkProfileAtViewport(cdp, viewport) {
     throw new Error(`${error.message}. Meeting state: ${meetingState}`);
   }
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  if (viewport.mobile) {
+    const dockState = await evaluate(cdp, `(() => {
+      const dock = document.querySelector('.profile-action-dock');
+      const nav = document.querySelector('.pi-mobile-nav');
+      if (!dock || !nav) return null;
+      const dockRect = dock.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      return {
+        position: getComputedStyle(dock).position,
+        top: dockRect.top,
+        bottom: dockRect.bottom,
+        navTop: navRect.top,
+        visible: dockRect.height > 0 && dockRect.top >= 0 && dockRect.bottom <= navRect.top,
+      };
+    })()`);
+    assert(
+      dockState?.position === 'sticky' && dockState.visible,
+      `Mobile agency actions are not sticky and clear of bottom navigation at ${viewport.width}px: ${JSON.stringify(dockState)}`,
+    );
+  }
 
   const drawerButton = await evaluate(cdp, `(() => {
     const actionArea = document.querySelector('[data-testid="profile-primary-actions"]');
@@ -631,6 +651,160 @@ async function checkProfileAtViewport(cdp, viewport) {
     `the source inspection drawer to close at ${viewport.width}px`,
   );
   console.log(`✓ ${viewport.width}px: profile, actions, section, registry details, briefing, and source drawer`);
+}
+
+async function checkTerritoryAtViewport(cdp, viewport) {
+  console.log(`Checking Territory at ${viewport.width}px viewport...`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      document.body.innerText.includes('Interactive U.S. Territory Map')`,
+    `the app at ${viewport.width}px`,
+    60_000,
+  );
+  await clickVisibleButton(cdp, 'Territory', 'Territory navigation');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.territory-explorer-screen'))`,
+    'the Territory directory',
+  );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('#home-state-picker'))`,
+    'the state selector',
+  );
+  await evaluate(cdp, 'document.documentElement.classList.add("dark")');
+  const selectedState = await evaluate(cdp, `(() => {
+    const select = document.querySelector('#home-state-picker');
+    if (!select) return false;
+    select.value = 'FL';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert(selectedState, `The state selector was unavailable at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.county-drilldown-shell')?.innerText.includes('Florida')) &&
+      Boolean(document.querySelector('.county-directory-card'))`,
+    `Florida county directory at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `document.querySelector('.county-drilldown-shell')?.scrollIntoView({ block: 'start' })`);
+  const countyLayout = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const shell = document.querySelector('.county-drilldown-shell');
+    const search = shell?.querySelector('input');
+    const action = [...(shell?.querySelectorAll('button') ?? [])]
+      .find((button) => button.innerText.includes('State Providers'));
+    const card = document.querySelector('.county-directory-card');
+    const title = card?.querySelector('h3');
+    const color = (value) => {
+      const [r, g, b] = value.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
+      const channel = (v) => {
+        v /= 255;
+        return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const contrast = (foreground, background) => {
+      const a = color(foreground);
+      const b = color(background);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    };
+    if (!shell || !search || !action || !card || !title) return null;
+    const shellRect = shell.getBoundingClientRect();
+    const searchRect = search.getBoundingClientRect();
+    const actionRect = action.getBoundingClientRect();
+    const titleStyle = getComputedStyle(title);
+    const cardStyle = getComputedStyle(card);
+    return {
+      documentWidth: root.scrollWidth,
+      shellLeft: shellRect.left,
+      shellRight: shellRect.right,
+      searchLeft: searchRect.left,
+      searchRight: searchRect.right,
+      actionLeft: actionRect.left,
+      actionRight: actionRect.right,
+      titleContrast: contrast(titleStyle.color, cardStyle.backgroundColor),
+      cardBackground: cardStyle.backgroundColor,
+      titleColor: titleStyle.color,
+    };
+  })()`);
+  assert(countyLayout, `Could not measure the county layout at ${viewport.width}px`);
+  assert(
+    countyLayout.documentWidth <= viewport.width + 1 &&
+      countyLayout.shellLeft >= -1 && countyLayout.shellRight <= viewport.width + 1,
+    `County directory overflows horizontally at ${viewport.width}px: ${JSON.stringify(countyLayout)}`,
+  );
+  assert(
+    countyLayout.searchLeft >= -1 &&
+      countyLayout.searchRight <= viewport.width + 1 &&
+      countyLayout.actionLeft >= -1 &&
+      countyLayout.actionRight <= viewport.width + 1,
+    `County search/action is clipped at ${viewport.width}px: ${JSON.stringify(countyLayout)}`,
+  );
+  assert(
+    countyLayout.titleContrast >= 4.5,
+    `County card title contrast is too low at ${viewport.width}px: ${JSON.stringify(countyLayout)}`,
+  );
+  if (viewport.width === 390) {
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile('/tmp/ems-territory-county-directory-390.png', Buffer.from(screenshot.result.data, 'base64'));
+  }
+
+  const openedCounty = await evaluate(cdp, `(() => {
+    const card = document.querySelector('.county-directory-card');
+    if (!card) return false;
+    card.click();
+    return true;
+  })()`);
+  assert(openedCounty, `A county could not be opened at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.county-city-directory-panel'))`,
+    `the selected county city directory at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `document.querySelector('.county-single-map-panel')?.scrollIntoView({ block: 'start' })`);
+  const cityPanel = await evaluate(cdp, `(() => {
+    const panel = document.querySelector('.county-city-directory-panel');
+    const heading = panel?.querySelector('h4');
+    if (!panel || !heading) return null;
+    return {
+      panelBackground: getComputedStyle(panel).backgroundColor,
+      headingColor: getComputedStyle(heading).color,
+      width: panel.getBoundingClientRect().width,
+      right: panel.getBoundingClientRect().right,
+      documentWidth: document.documentElement.scrollWidth,
+    };
+  })()`);
+  assert(cityPanel, `The city directory panel was not rendered at ${viewport.width}px`);
+  assert(
+    cityPanel.documentWidth <= viewport.width + 1 &&
+      cityPanel.right <= viewport.width + 1 &&
+      cityPanel.width > 0,
+    `The selected county view overflows at ${viewport.width}px: ${JSON.stringify(cityPanel)}`,
+  );
+  assert(
+    cityPanel.panelBackground !== 'rgb(255, 255, 255)',
+    `The dark-mode county city directory retained a bright white surface at ${viewport.width}px: ${JSON.stringify(cityPanel)}`,
+  );
+  if (viewport.width === 390) {
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile('/tmp/ems-territory-selected-county-390.png', Buffer.from(screenshot.result.data, 'base64'));
+  }
+  console.log(`✓ ${viewport.width}px: county search, directory contrast, selected county map/list, no horizontal overflow`);
 }
 
 async function openAgencyComparison(cdp, width) {
@@ -1330,11 +1504,17 @@ async function main() {
     for (const viewport of testViewports) {
       await checkProfileAtViewport(cdp, viewport);
     }
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+    ]) {
+      await checkTerritoryAtViewport(cdp, viewport);
+    }
     for (const viewport of comparisonViewports) {
       await checkComparisonAtViewport(cdp, viewport, downloadPath);
     }
     await checkSpecialistAndSystemViews(cdp);
-    console.log('Agency profile, comparison, specialist, and system responsive checks passed.');
+    console.log('Agency profile, Territory, comparison, specialist, and system responsive checks passed.');
   } finally {
     cdp?.close();
     const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));

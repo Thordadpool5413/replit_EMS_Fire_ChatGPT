@@ -994,12 +994,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 )}
               </div>
             </div>
+          </div>
+        </header>
 
-            {/* Primary Account Actions */}
-            <div
-              className="flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2"
-              data-testid="profile-primary-actions"
-            >
+        {/* Primary actions stay available as a compact dock while reading the profile. */}
+        <div
+          className="profile-action-dock flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2"
+          data-testid="profile-primary-actions"
+        >
               <AgencyCompareButton
                 agency={agency}
                 selected={comparedAgencyIds.includes(agency.id)}
@@ -1092,9 +1094,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <span>Generate RFP Spec</span>
                 </button>
               )}
-            </div>
-          </div>
-        </header>
+        </div>
 
         {/* Main Account 360 Workspace Content */}
         <div className="mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">

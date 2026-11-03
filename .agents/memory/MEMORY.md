@@ -14,3 +14,4 @@
 - [App-wide visual density](app-wide-visual-density.md) — keep screens compact and scannable; reduce oversized cards and chrome without making text or controls too small.
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.
 - [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.
+- [PWA registration timing](pwa-registration-timing.md) — register the worker during entry startup and cache versioned app assets, never live source records.

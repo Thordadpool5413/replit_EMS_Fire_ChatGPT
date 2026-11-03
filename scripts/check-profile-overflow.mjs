@@ -21,17 +21,74 @@ const comparisonViewports = [
   { width: 1280, height: 900, mobile: false },
 ];
 const workspaceRegressionViewports = [
+  { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
   { width: 768, height: 900, mobile: false },
   { width: 1280, height: 900, mobile: false },
 ];
+const interactionViewports = [
+  { width: 360, height: 844, mobile: true },
+  { width: 390, height: 844, mobile: true },
+];
 const specialistAndSystemViews = [
-  { group: 'Specialist tools', tab: 'Clinical & competitive', heading: 'Clinical & competitive knowledge hub' },
-  { group: 'Specialist tools', tab: 'Medicare & public health', heading: 'Public healthcare, CMS claims & EMS outcomes engine' },
-  { group: 'Specialist tools', tab: 'Equipment viewer', heading: '3D Ambulance, Fire Apparatus' },
-  { group: 'Specialist tools', tab: 'Federal sources', heading: 'Nationwide Federal Registry' },
-  { group: 'Data & system', tab: 'Data health & sync', heading: 'Data Health, Cloud Synchronization' },
-  { group: 'Data & system', tab: 'Backup & restore', heading: 'Local Backup & State Archive Center' },
+  {
+    group: 'Specialist tools',
+    tab: 'Clinical & competitive',
+    heading: 'Clinical & competitive knowledge hub',
+    interactions: [
+      { label: 'Safety recalls & talk tracks', expectedText: 'FDA MAUDE recalls, end-of-life status' },
+      { label: 'Cooperative purchasing vehicles', expectedText: 'Pre-competed cooperative purchasing contracts & vehicles' },
+      { label: 'Quality scorecard & fee schedules', expectedText: 'NEMSQA, AHA & CARES clinical quality scorecard' },
+    ],
+  },
+  {
+    group: 'Specialist tools',
+    tab: 'Medicare & public health',
+    heading: 'Public healthcare, CMS claims & EMS outcomes engine',
+    interactions: [
+      { label: '4. Federal AFG', expectedText: 'Playbook 4: The FEMA Assistance to Firefighters Grant (AFG) Fast-Track' },
+      { label: '6. ET3 & MIH', expectedText: 'Playbook 6: CMS ET3, Hospital Handoff Reduction & Community Paramedicine' },
+    ],
+  },
+  {
+    group: 'Specialist tools',
+    tab: 'Equipment viewer',
+    heading: '3D Ambulance, Fire Apparatus',
+    interactions: [
+      { label: 'Rescue Pumper', expectedText: 'Class A Rescue Pumper' },
+      { label: 'ALS Ambulance', expectedText: 'Type III Modular ALS Transport Unit' },
+      { label: 'ALS Patient Module & Mount', expectedText: 'ALS Patient Module & Mount • SAE J3043 Crash-Rated X Series' },
+    ],
+  },
+  {
+    group: 'Specialist tools',
+    tab: 'Federal sources',
+    heading: 'Nationwide Federal Registry',
+    interactions: [
+      { label: '2. Live OpenFEMA & Co-Op Horizon', expectedText: 'Live OpenFEMA & Co-Op Horizon' },
+      { label: '4. Fleet Lifecycle & TCO Ledger', expectedText: 'Agency Fleet Lifecycle & 5-Year TCO Telemetry' },
+      { label: '3. NEMSIS v3.5 & HIPAA Safe Harbor', expectedText: 'REGULATORY & CLINICAL STANDARDS REFERENCE' },
+    ],
+  },
+  {
+    group: 'Data & system',
+    tab: 'Data health & sync',
+    heading: 'Data Health, Cloud Synchronization',
+    interactions: [
+      { label: 'Flagged Mismatches', selectedClass: 'bg-white' },
+      { label: 'Invalid Checksums', selectedClass: 'bg-white' },
+      { label: 'Public Baseline', selectedClass: 'bg-white' },
+    ],
+  },
+  {
+    group: 'Data & system',
+    tab: 'Backup & restore',
+    heading: 'Local Backup & State Archive Center',
+    interactions: [
+      { label: 'Audit Log Stream', expectedText: 'CLOUD AUDIT STREAM' },
+      { label: 'Versioned State Snapshots', expectedText: 'SHA-256:' },
+    ],
+  },
 ];
 
 function assert(condition, message) {
@@ -800,7 +857,7 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
   );
   assert(
     layout.isDarkMode &&
-      layout.expectedText === 'rgb(241, 245, 249)' &&
+      layout.expectedText === 'rgb(231, 239, 241)' &&
       layout.expectedSurface === 'rgb(20, 35, 46)',
     `"${view.tab}" is not using the dark theme tokens at ${viewport.width}px: ${JSON.stringify(layout)}`,
   );
@@ -828,6 +885,119 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
   console.log(`✓ ${viewport.width}px: ${view.tab}, dark heading/surface tokens, no horizontal overflow`);
 }
 
+async function clickWorkspaceInteraction(cdp, view, interaction, viewport) {
+  const clicked = await evaluate(cdp, `(() => {
+    const workspace = document.querySelector('main.workspace-grid-shell .operations-workspace');
+    const button = [...(workspace?.querySelectorAll('button') ?? [])]
+      .find((candidate) => candidate.innerText.trim().includes(${JSON.stringify(interaction.label)}));
+    if (!button) return false;
+    button.scrollIntoView({ block: 'center' });
+    button.click();
+    return true;
+  })()`);
+  assert(
+    clicked,
+    `Could not activate "${interaction.label}" in "${view.tab}" at ${viewport.width}px`,
+  );
+
+  if (interaction.expectedText) {
+    try {
+      await waitFor(
+        cdp,
+        `document.querySelector('main.workspace-grid-shell .operations-workspace')
+          ?.innerText.includes(${JSON.stringify(interaction.expectedText)})`,
+        `"${interaction.expectedText}" after "${interaction.label}"`,
+      );
+    } catch (error) {
+      const state = await evaluate(cdp, `(() => {
+        const workspace = document.querySelector('main.workspace-grid-shell .operations-workspace');
+        return JSON.stringify({
+          text: workspace?.innerText.slice(-1600) ?? '',
+          matchingButtons: [...(workspace?.querySelectorAll('button') ?? [])]
+            .map((button) => ({
+              text: button.innerText.trim().replace(/\\s+/g, ' ').slice(0, 90),
+              className: typeof button.className === 'string' ? button.className.slice(0, 120) : '',
+            }))
+            .filter((button) => button.text.includes(${JSON.stringify(interaction.label)})),
+        });
+      })()`);
+      throw new Error(`${error.message}. Current interaction state: ${state}`);
+    }
+  }
+  if (interaction.selectedClass) {
+    await waitFor(
+      cdp,
+      `(() => {
+        const workspace = document.querySelector('main.workspace-grid-shell .operations-workspace');
+        const button = [...(workspace?.querySelectorAll('button') ?? [])]
+          .find((candidate) => candidate.innerText.trim().includes(${JSON.stringify(interaction.label)}));
+        return button?.className.includes(${JSON.stringify(interaction.selectedClass)}) ?? false;
+      })()`,
+      `"${interaction.label}" to become selected`,
+    );
+  }
+  await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(resolve)))`);
+
+  const dimensions = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const main = document.querySelector('main.workspace-grid-shell');
+    if (!main) return null;
+    const bounds = main.getBoundingClientRect();
+    return {
+      viewport: innerWidth,
+      documentWidth: root.scrollWidth,
+      mainWidth: main.scrollWidth,
+      mainClientWidth: main.clientWidth,
+      mainLeft: bounds.left,
+      mainRight: bounds.right,
+      overflowCandidates: [...main.querySelectorAll('*')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            className: typeof element.className === 'string' ? element.className.slice(0, 120) : '',
+            text: element.innerText?.trim().replace(/\s+/g, ' ').slice(0, 100) ?? '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          };
+        })
+        .filter((element) =>
+          element.right > bounds.right + 1 ||
+          (element.scrollWidth > element.clientWidth + 1 && element.clientWidth > 0),
+        )
+        .sort((a, b) =>
+          (b.right - b.left) - (a.right - a.left) ||
+          (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth),
+        )
+        .slice(0, 8),
+    };
+  })()`);
+  assert(
+    dimensions,
+    `Missing main workspace after "${interaction.label}" in "${view.tab}" at ${viewport.width}px`,
+  );
+  assert(
+    dimensions.viewport === viewport.width,
+    `Expected ${viewport.width}px viewport after "${interaction.label}", got ${dimensions.viewport}px`,
+  );
+  assert(
+    dimensions.documentWidth <= viewport.width + 1,
+    `Document overflows after "${interaction.label}" in "${view.tab}" at ${viewport.width}px (${dimensions.documentWidth}px wide)`,
+  );
+  assert(
+    dimensions.mainWidth <= dimensions.mainClientWidth + 1,
+    `Main workspace overflows after "${interaction.label}" in "${view.tab}" at ${viewport.width}px (${dimensions.mainWidth}px content / ${dimensions.mainClientWidth}px visible); candidates: ${JSON.stringify(dimensions.overflowCandidates)}`,
+  );
+  assert(
+    dimensions.mainLeft >= -1 && dimensions.mainRight <= viewport.width + 1,
+    `Main workspace extends beyond the ${viewport.width}px viewport after "${interaction.label}" in "${view.tab}"`,
+  );
+  console.log(`✓ ${viewport.width}px: ${view.tab} → ${interaction.label}, no horizontal overflow`);
+}
+
 async function checkSpecialistAndSystemViews(cdp) {
   for (const view of specialistAndSystemViews) {
     await cdp.send('Page.navigate', { url: baseUrl });
@@ -842,6 +1012,17 @@ async function checkSpecialistAndSystemViews(cdp) {
     await ensureDarkMode(cdp);
     for (const viewport of workspaceRegressionViewports) {
       await checkSpecialistAndSystemAtViewport(cdp, view, viewport);
+    }
+    for (const viewport of interactionViewports) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 1,
+        mobile: viewport.mobile,
+      });
+      for (const interaction of view.interactions) {
+        await clickWorkspaceInteraction(cdp, view, interaction, viewport);
+      }
     }
   }
 }

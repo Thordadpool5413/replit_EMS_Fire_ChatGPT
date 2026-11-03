@@ -430,7 +430,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                     [FEDERAL RECORD · LIVE OPENFEMA API v2]
                   </span>
-                  <span className="text-xs font-mono text-slate-500">
+                  <span className="min-w-0 break-all text-xs font-mono text-slate-500">
                     https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants
                   </span>
                 </div>
@@ -517,7 +517,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 </table>
               </div>
             ) : (
-              <div className="p-4 text-xs text-slate-500 font-mono">
+              <div className="break-all p-4 text-xs text-slate-500 font-mono">
                 {isLoadingFema ? 'Querying https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants...' : afgQuery.isError ? 'OpenFEMA request failed. Federal award records are unavailable; no local estimates are presented as verified awards.' : 'No OpenFEMA awards returned for this state.'}
               </div>
             )}

@@ -38,15 +38,17 @@ export const PulseIqLeadFactorBars: React.FC<PulseIqLeadFactorBarsProps> = ({
         {factors.map((factor) => (
           <div
             key={factor.key}
-            aria-label={`${factor.label}: factor score ${factor.baseScore} out of 100; weighted contribution ${factor.contributionPts.toFixed(1)} points`}
+            aria-label={`${factor.label}: factor score ${factor.baseScore} out of 100; active normalized weight ${factor.weightPct.toFixed(1)} percent; weighted contribution ${factor.contributionPts.toFixed(1)} points`}
             className="min-w-0"
           >
-            <div className="mb-1 flex items-baseline justify-between gap-2 text-[11px]">
+            <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 text-[11px]">
               <span className="truncate font-medium text-slate-700 dark:text-slate-300">
                 {factor.label}
               </span>
               <span className="shrink-0 tabular-nums text-slate-600 dark:text-slate-400">
                 <span>Score {factor.baseScore}/100</span>
+                <span className="mx-1 text-slate-400" aria-hidden="true">·</span>
+                <span>Weight {factor.weightPct.toFixed(1)}%</span>
                 <span className="mx-1 text-slate-400" aria-hidden="true">·</span>
                 <span>+{factor.contributionPts.toFixed(1)} pts</span>
               </span>

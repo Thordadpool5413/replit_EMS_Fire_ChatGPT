@@ -507,9 +507,9 @@ test('lead-card bars use shared factor scores and recalibrated weighted contribu
   const calibratedWeights = {
     ...DEFAULT_WEIGHTS,
     fleetAgeWeight: 10,
-    cardiacVolumeWeight: 50,
+    cardiacVolumeWeight: 60,
     grantAwardWeight: 30,
-    softwareWhitespaceWeight: 10
+    softwareWhitespaceWeight: 20
   };
   const calibratedMarkup = renderToStaticMarkup(
     React.createElement(PulseIqLeadFactorBars, {
@@ -523,12 +523,29 @@ test('lead-card bars use shared factor scores and recalibrated weighted contribu
 
   assert.equal(defaultClinical.baseScore, calibratedClinical.baseScore);
   assert.notEqual(defaultClinical.contributionPts, calibratedClinical.contributionPts);
+  assert.notEqual(defaultClinical.weightPct, calibratedClinical.weightPct);
   assert.match(defaultMarkup, /Score 70\/100/);
   assert.match(defaultMarkup, new RegExp(`\\+${defaultClinical.contributionPts.toFixed(1)} pts`));
   assert.match(calibratedMarkup, /Score 70\/100/);
   assert.match(calibratedMarkup, new RegExp(`\\+${calibratedClinical.contributionPts.toFixed(1)} pts`));
   assert.match(defaultMarkup, /Bars show weighted points; scores are unweighted/);
   assert.match(calibratedMarkup, new RegExp(`width:${calibratedClinical.contributionPts}%`));
+
+  for (const [markup, factors] of [
+    [defaultMarkup, evaluatePulseIqFactors(record)],
+    [calibratedMarkup, evaluatePulseIqFactors(record, calibratedWeights)]
+  ] as const) {
+    for (const factor of factors) {
+      assert.ok(
+        markup.includes(`Weight ${factor.weightPct.toFixed(1)}%`),
+        `${factor.key} should show its normalized active weight`
+      );
+      assert.ok(
+        markup.includes(`active normalized weight ${factor.weightPct.toFixed(1)} percent`),
+        `${factor.key} accessibility label should match its normalized active weight`
+      );
+    }
+  }
 });
 
 test('custom weights use the same four active factors in score details and formula', () => {

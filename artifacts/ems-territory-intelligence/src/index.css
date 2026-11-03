@@ -2728,3 +2728,350 @@
     min-width: 0;
   }
 }
+
+/* ==========================================================================
+   TERRITORY INTELLIGENCE — responsive design-system finish
+   Layout: compact command workspace. Mood: field-briefing precision.
+   Scoped to the existing app shell and map; no data or map semantics altered.
+   ========================================================================== */
+:root {
+  --pi-canvas-bg: #eef2f4;
+  --pi-surface-bg: #fbfcfc;
+  --pi-surface-subtle: #f1f5f5;
+  --pi-text-primary: #193246;
+  --pi-text-secondary: #526a78;
+  --pi-text-muted: #70838d;
+  --pi-border: #d8e1e5;
+  --pi-border-strong: #b9c8cf;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-subtle: #e7f1f0;
+  --bg-canvas: #eef2f4;
+  --bg-surface: #fbfcfc;
+  --bg-subtle: #f1f5f5;
+  --text-primary: #193246;
+  --text-secondary: #526a78;
+  --text-muted: #70838d;
+  --border-crisp: #d8e1e5;
+  --border-strong: #b9c8cf;
+  --brand-primary: #176568;
+  --brand-primary-hover: #105255;
+  --radius-card: 0.7rem;
+  --radius-control: 0.45rem;
+}
+
+.dark {
+  --pi-canvas-bg: #0d1821;
+  --pi-surface-bg: #14232e;
+  --pi-surface-subtle: #192b37;
+  --pi-text-primary: #e7eff1;
+  --pi-text-secondary: #a1b3bb;
+  --pi-text-muted: #8299a3;
+  --pi-border: #2a3d49;
+  --pi-border-strong: #3b5360;
+}
+
+html {
+  min-height: 100%;
+  scroll-padding-top: 4rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+#root {
+  min-height: 100dvh;
+}
+
+body {
+  background: var(--pi-canvas-bg);
+  color: var(--pi-text-primary);
+}
+
+.pi-app-shell {
+  min-height: 100dvh;
+  background-color: var(--pi-canvas-bg);
+  background-image: radial-gradient(ellipse at 84% -18%, rgba(23, 101, 104, 0.07), transparent 42rem);
+}
+
+.dark .pi-app-shell {
+  background-image: radial-gradient(ellipse at 84% -18%, rgba(90, 167, 162, 0.09), transparent 42rem);
+}
+
+.pi-surface,
+.surface-card,
+.pi-surface-interactive,
+.scannable-table-wrap {
+  border-radius: 0.7rem;
+}
+
+.pi-page-title {
+  font-size: clamp(1.45rem, 1.8vw, 1.85rem);
+}
+
+.pi-profile-title {
+  font-size: clamp(1.4rem, 1.65vw, 1.75rem);
+}
+
+.pi-section-heading {
+  font-size: clamp(1.12rem, 1.3vw, 1.3rem);
+}
+
+.workspace-grid-shell {
+  width: 100%;
+  max-width: 1680px;
+  padding-top: clamp(0.65rem, 1.25vh, 1rem);
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  gap: 0.8rem;
+}
+
+.workspace-view-container,
+.workspace-section-grid {
+  gap: 0.85rem;
+}
+
+.workspace-cards-grid,
+.agency-cards-grid {
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+}
+
+.pi-primary-sidebar {
+  width: 12rem !important;
+  background: #0b1a29;
+  border-color: #1b3445;
+}
+
+.pi-primary-sidebar > div:first-child {
+  padding-block: 0.6rem !important;
+}
+
+.pi-sidebar-logo {
+  width: 7rem !important;
+  height: 7rem !important;
+  border-width: 1px !important;
+}
+
+.pi-primary-nav {
+  gap: 0.8rem !important;
+}
+
+.pi-primary-nav button {
+  min-height: 2.35rem;
+}
+
+.pi-command-header {
+  padding-left: 12rem !important;
+  height: 3.35rem !important;
+}
+
+.pi-workspace-body {
+  padding-left: 12rem !important;
+}
+
+.pi-command-header,
+.pi-primary-sidebar,
+.pi-mobile-nav {
+  border-color: var(--pi-border);
+}
+
+.pi-command-header {
+  background-color: color-mix(in srgb, var(--pi-surface-bg) 95%, transparent);
+}
+
+.pi-mobile-nav {
+  height: calc(4.25rem + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #0b1a29;
+  border-color: #1b3445;
+  box-shadow: 0 -8px 24px -20px rgba(4, 20, 30, 0.65);
+}
+
+.pi-mobile-nav > div {
+  height: 4.25rem;
+}
+
+.pi-mobile-nav button {
+  min-height: 3rem;
+  touch-action: manipulation;
+}
+
+.workspace-grid-shell > nav {
+  border-radius: 0.65rem;
+  box-shadow: 0 1px 2px rgba(25, 50, 70, 0.04);
+}
+
+.workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-grid-shell select,
+.workspace-grid-shell textarea {
+  min-height: 2.5rem;
+  border-radius: 0.45rem;
+}
+
+.home-territory-map-screen-v2 {
+  padding: 0.9rem !important;
+  gap: 0.8rem !important;
+}
+
+.home-territory-map-screen-v2 .home-map-page-heading {
+  gap: 0.75rem !important;
+  padding-bottom: 0.65rem !important;
+}
+
+.home-territory-map-screen-v2 .home-map-stage-v2 {
+  gap: 0.65rem 0.9rem !important;
+  padding: 0.7rem !important;
+}
+
+.home-territory-map-screen-v2 .home-map-viewport {
+  border-radius: 0.55rem;
+}
+
+.home-territory-map-screen-v2 .home-map-inspector-v2 {
+  border-radius: 0.6rem;
+}
+
+.operations-workspace,
+.profile-workspace {
+  min-width: 0;
+}
+
+@media (min-width: 1200px) {
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    min-height: clamp(21rem, calc(100dvh - 250px), 40rem) !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  .pi-primary-sidebar {
+    width: 11.5rem !important;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 11.5rem !important;
+  }
+
+  .pi-command-header {
+    height: 3rem !important;
+  }
+
+  .pi-sidebar-logo {
+    width: 4.65rem !important;
+    height: 4.65rem !important;
+  }
+
+  .pi-primary-sidebar > div:first-child {
+    padding-block: 0.4rem !important;
+  }
+
+  .pi-primary-nav {
+    gap: 0.55rem !important;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .pi-primary-nav button {
+    min-height: 2.1rem;
+    padding-block: 0.35rem !important;
+  }
+
+  .workspace-grid-shell {
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  .home-territory-map-screen-v2 {
+    padding: 0.7rem !important;
+    gap: 0.6rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    min-height: clamp(19rem, calc(100dvh - 205px), 34rem) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 3.5rem;
+  }
+
+  .pi-app-shell {
+    background-image: none;
+    padding-bottom: 0 !important;
+  }
+
+  .pi-command-header {
+    height: calc(3.5rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top);
+    padding-left: 0 !important;
+  }
+
+  .pi-command-header > div {
+    padding-inline: max(0.75rem, env(safe-area-inset-left)) !important;
+  }
+
+  .pi-mobile-logo {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    border-width: 1px;
+  }
+
+  .pi-header-actions > button,
+  .pi-header-actions > .relative > button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .workspace-grid-shell {
+    padding-top: 0.65rem !important;
+    padding-bottom: max(5rem, calc(4.5rem + env(safe-area-inset-bottom))) !important;
+    padding-inline: max(0.7rem, env(safe-area-inset-left)) !important;
+    gap: 0.7rem;
+  }
+
+  .workspace-view-container,
+  .workspace-section-grid {
+    gap: 0.7rem;
+  }
+
+  .home-territory-map-screen-v2 {
+    padding: 0.7rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-page-heading {
+    align-items: stretch;
+  }
+
+  .home-territory-map-screen-v2 .home-map-viewport {
+    min-height: 13rem;
+    max-height: min(64vw, 20rem);
+  }
+
+  .pi-primary-sidebar {
+    display: none !important;
+  }
+
+  .pi-workspace-body {
+    padding-left: 0 !important;
+  }
+
+  .pi-mobile-nav {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@media (max-width: 380px) {
+  .pi-mobile-nav > div {
+    padding-inline: 0.1rem;
+  }
+
+  .pi-mobile-nav button {
+    min-width: 0;
+  }
+
+  .pi-mobile-nav button > span {
+    font-size: 0.55rem;
+  }
+}

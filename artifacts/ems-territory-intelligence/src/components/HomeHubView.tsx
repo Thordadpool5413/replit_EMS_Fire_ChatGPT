@@ -359,7 +359,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
          ==================================================================== */}
       <section
         aria-label="Interactive U.S. Territory Map"
-        className="home-territory-map-screen pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
+        className="home-territory-map-screen home-territory-map-screen-v2 pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
       >
         <div className="home-map-page-heading flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
           <div>
@@ -406,7 +406,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="grid grid-cols-1 gap-4 items-start">
           <div className="min-w-0 space-y-3">
             <div
-              className="home-territory-map-panel relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
+              className="home-territory-map-panel home-map-stage-v2 relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
               onMouseLeave={() => setHoveredStateCode(null)}
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -414,7 +414,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 }
               }}
             >
-              <div className="home-map-control-row flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   Shade states by
                   <select
@@ -482,7 +482,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="home-map-legend flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+              <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
                 <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
@@ -502,34 +502,52 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <span className="shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
               </div>
 
-              <div className="home-map-content-stack flex flex-col gap-3">
+              <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
               <div
-                className="home-map-readout order-2 sm:order-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-[#101F30] border border-[#294158] px-3.5 py-3"
+                className="home-map-readout home-map-inspector-v2"
                 aria-live="polite"
                 aria-atomic="true"
+                aria-label={`${mapReadoutState.state} selected territory details`}
               >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="text-xs font-bold text-[#E4EEF8]">
-                      {mapReadoutState.state} ({mapReadoutState.code})
-                    </span>
-                    {mapMetric === 'pulseiq'
-                      ? <HomeMapPulseIqReadout score={mapReadoutMetric.value} />
-                      : <>
-                          <span className="text-[10px] font-medium text-[#9CB1C7]">{activeMapMetric.label}</span>
-                          <span className="text-sm font-bold tabular-nums text-[#67D6CE]">
-                            {formatStateMapValue(mapMetric, mapReadoutMetric.value)}
-                          </span>
-                        </>}
+                <div className="home-map-inspector-v2__heading">
+                  <div className="home-map-inspector-v2__state">
+                    <span className="home-map-inspector-v2__eyebrow">Selected state</span>
+                    <strong>{mapReadoutState.state}</strong>
                   </div>
-                  <p className="mt-0.5 text-[10px] leading-4 text-[#91A6BB]">
-                    {mapReadoutMetric.coverage} · Period: {mapReadoutMetric.period}
-                  </p>
+                  <span className="home-map-inspector-v2__code">{mapReadoutState.code}</span>
                 </div>
+                <div className="home-map-inspector-v2__metric">
+                  <span>{activeMapMetric.label}</span>
+                  {mapMetric === 'pulseiq'
+                    ? <HomeMapPulseIqReadout score={mapReadoutMetric.value} />
+                    : <strong className="tabular-nums">{formatStateMapValue(mapMetric, mapReadoutMetric.value)}</strong>}
+                </div>
+                <dl className="home-map-inspector-v2__details">
+                  <div>
+                    <dt>Coverage</dt>
+                    <dd>{mapReadoutMetric.coverage}</dd>
+                  </div>
+                  <div>
+                    <dt>Period</dt>
+                    <dd>{mapReadoutMetric.period}</dd>
+                  </div>
+                  {mapReadoutMetric.source && (
+                    <div>
+                      <dt>Source</dt>
+                      <dd>{mapReadoutMetric.source}</dd>
+                    </div>
+                  )}
+                  {mapReadoutMetric.claimScope && (
+                    <div>
+                      <dt>Scope</dt>
+                      <dd>{mapReadoutMetric.claimScope}{mapReadoutMetric.denialDefinition ? ` · ${mapReadoutMetric.denialDefinition}` : ''}</dd>
+                    </div>
+                  )}
+                </dl>
                 {mapReadoutMetric.sourceAction !== 'reference-estimate' && <button
                   type="button"
                   onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
-                  className="min-h-9 shrink-0 self-start sm:self-center rounded-lg border border-[#3D6577] bg-[#142D3D] px-3 text-[11px] font-semibold text-[#9AE6DE] hover:bg-[#1B3A4D] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                  className="home-map-inspector-v2__action"
                 >
                   {mapReadoutMetric.sourceAction === 'zip-profiles'
                     ? 'View ZIP profile records'
@@ -539,7 +557,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </button>}
               </div>
 
-              <div className="home-map-visual-stack order-1 sm:order-2 space-y-3">
+              <div className="home-map-visual-stack home-map-visual-v2">
               <p className="text-[10px] text-[#A2B5C8] sm:hidden">
                 Zoom in to inspect a state, then swipe to pan.
               </p>

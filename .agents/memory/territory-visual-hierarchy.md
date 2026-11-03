@@ -3,8 +3,8 @@ name: Territory visual hierarchy
 description: User-stated visual direction for territory and county exploration screens.
 ---
 
-For territory exploration, make the map and selected-area summary the visual focus. Use clear contrast, readable metric sizing, and deliberate card hierarchy. On laptops, avoid a small centered map inside a wide, mostly empty canvas: give the map a dedicated aspect-ratio-preserving area and place controls, legend, and summary in a compact rail beside it. Keep lower-level geography and source metadata available through expandable details rather than letting it compete with the main task.
+For the Home territory map, make the map the visual focus and show the selected area's summary in an adjacent inspection panel on desktop. Keep the metric selector, legend, and zoom controls together in a compact toolbar above the map. On phones, stack the inspector below the map. Use neutral surrounding surfaces, reserve strong colors for map metrics/status, keep selection distinct from metric shading, and reduce nested cards in favor of headings and dividers.
 
 **Why:** The user repeatedly said the territory and county screens did not feel visually impressive or professional.
 
-**How to apply:** On short laptop screens, reduce surrounding chrome and keep map controls on one compact row before shrinking readable text. Fit the boundary crop to the data, balance the map and summary widths, and verify the phone layout stacks without horizontal overflow. Preserve available data, citations, actions, and usable map controls.
+**How to apply:** Reduce surrounding chrome before shrinking readable text. Fit the map without cropping, balance the map and inspector widths, and verify the phone layout stacks without horizontal overflow or clipped legend labels. Preserve available data, citations, actions, and usable map controls.

@@ -1,0 +1,80 @@
+/* Precision Intelligence app tokens scoped to this extracted map group. */
+:root {
+  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pi-font-data: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --pi-nav-bg: #0B1728;
+  --pi-nav-secondary: #172D49;
+  --pi-canvas-bg: #eef2f4;
+  --pi-surface-bg: #fbfcfc;
+  --pi-surface-subtle: #f1f5f5;
+  --pi-surface-elevated: #FFFFFF;
+  --pi-text-primary: #14283F;
+  --pi-text-secondary: #53657B;
+  --pi-text-muted: #6E8096;
+  --pi-border: #d8e1e5;
+  --pi-border-strong: #b9c8cf;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-subtle: #e7f1f0;
+  --radius-card: 0.7rem;
+  --radius-control: 0.45rem;
+  --shadow-card: 0 1px 2px rgba(22, 48, 60, 0.035);
+  --shadow-card-hover: 0 3px 10px -4px rgba(22, 48, 60, 0.14);
+}
+
+.dark {
+  --pi-nav-bg: #070F1C;
+  --pi-nav-secondary: #112238;
+  --pi-canvas-bg: #0d1821;
+  --pi-surface-bg: #14232e;
+  --pi-surface-subtle: #192b37;
+  --pi-surface-elevated: #17263C;
+  --pi-text-primary: #F1F5F9;
+  --pi-text-secondary: #94A3B8;
+  --pi-text-muted: #64748B;
+  --pi-border: #2a3d49;
+  --pi-border-strong: #3b5360;
+  --pi-action: #5aa7a2;
+  --pi-action-hover: #74bbb5;
+  --pi-action-subtle: rgba(90, 167, 162, 0.15);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+}
+
+.ems-territory-map-redesign {
+  color: var(--pi-text-primary);
+  font-family: var(--font-sans);
+}
+
+.ems-territory-map-redesign .pi-surface {
+  background-color: var(--pi-surface-bg);
+  border: 1px solid var(--pi-border);
+  border-radius: 0.95rem;
+  box-shadow: 0 1px 2px rgba(20, 40, 63, 0.035), 0 8px 22px -18px rgba(20, 40, 63, 0.22);
+}
+
+.ems-territory-map-redesign .pi-section-heading {
+  color: var(--pi-text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 1.45vw, 1.375rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.ems-territory-map-redesign .pi-supporting {
+  color: var(--pi-text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.ems-territory-map-redesign .tabular-nums {
+  font-family: var(--pi-font-data);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}

@@ -5,6 +5,7 @@ import {
 } from "../data/agencyFactEvidence";
 import type {
   Agency,
+  AgencySourceFactCorrection,
   AgencySourceFact,
   AgencySourceFactBasis,
   GeographicLevel,
@@ -57,6 +58,34 @@ function factLabel(key: AgencySourceFact["fieldKey"]): string {
   );
 }
 
+function profileFactSnapshot(
+  agency: Agency,
+  fieldKey: AgencySourceFact["fieldKey"],
+): AgencySourceFactCorrection {
+  const evidence = agency.factEvidence?.[fieldKey];
+  const previousBasis =
+    evidence?.sourceKind === "manual"
+      ? "user-entered"
+      : evidence?.sourceKind === "logic"
+        ? "calculated"
+        : evidence
+          ? "source-reported"
+          : undefined;
+  return {
+    profileFieldLabel: factLabel(fieldKey),
+    previousValue: "",
+    previousSourceName: evidence?.sourceName,
+    previousSourceRecordId: evidence?.sourceRecordId,
+    previousSourceUrl: evidence?.sourceUrl,
+    previousReportingPeriod: evidence?.reportingPeriod,
+    previousGeographicLevel: evidence?.geographicLevel,
+    previousGeographicId: evidence?.geographicId,
+    previousGeographicRelationship: evidence?.geographicRelationship,
+    previousBasis,
+    capturedAt: "",
+  };
+}
+
 type AgencySourceRecordWorkspaceProps = {
   agency: Agency;
   onSave: (data: AgencySourceRecordData) => boolean;
@@ -69,8 +98,13 @@ export function AgencySourceRecordWorkspace({
   const associations = agency.sourceRecordAssociations ?? [];
   const facts = agency.sourceFacts ?? [];
   const [isAdding, setIsAdding] = useState(false);
+  const [entryMode, setEntryMode] = useState<"fact" | "correction">("fact");
   const [fieldKey, setFieldKey] =
     useState<AgencySourceFact["fieldKey"]>("annualEmergencyVolume");
+  const [priorSnapshot, setPriorSnapshot] =
+    useState<AgencySourceFactCorrection>(() =>
+      profileFactSnapshot(agency, "annualEmergencyVolume"),
+    );
   const [value, setValue] = useState("");
   const [unit, setUnit] = useState("");
   const [sourceName, setSourceName] = useState("");
@@ -102,6 +136,48 @@ export function AgencySourceRecordWorkspace({
     setBasis("source-reported");
     setNote("");
     setFormError("");
+  };
+
+  const beginAdding = (mode: "fact" | "correction") => {
+    setEntryMode(mode);
+    setPriorSnapshot(profileFactSnapshot(agency, fieldKey));
+    setIsAdding(true);
+    setFormError("");
+  };
+
+  const handleFieldKeyChange = (nextFieldKey: AgencySourceFact["fieldKey"]) => {
+    setFieldKey(nextFieldKey);
+    if (entryMode === "correction") {
+      setPriorSnapshot(profileFactSnapshot(agency, nextFieldKey));
+    }
+  };
+
+  const handlePriorRecordChange = (recordId: string) => {
+    if (recordId === "profile") {
+      setPriorSnapshot(profileFactSnapshot(agency, fieldKey));
+      return;
+    }
+    const previousFact = facts.find((fact) => fact.id === recordId);
+    if (!previousFact) return;
+    setFieldKey(previousFact.fieldKey);
+    setPriorSnapshot({
+      profileFieldLabel:
+        previousFact.correction?.profileFieldLabel ??
+        factLabel(previousFact.fieldKey),
+      previousValue: previousFact.value,
+      previousUnit: previousFact.unit,
+      previousSourceName: previousFact.sourceName,
+      previousSourceRecordId: previousFact.sourceRecordId,
+      previousSourceUrl: previousFact.sourceUrl,
+      previousReportingPeriod: previousFact.reportingPeriod,
+      previousEffectivePeriod: previousFact.effectivePeriod,
+      previousGeographicLevel: previousFact.geographicLevel,
+      previousGeographicId: previousFact.geographicId,
+      previousGeographicRelationship: previousFact.geographicRelationship,
+      previousBasis: previousFact.basis,
+      previousFactId: previousFact.id,
+      capturedAt: "",
+    });
   };
 
   const handleLevelChange = (next: GeographicLevel) => {
@@ -136,6 +212,36 @@ export function AgencySourceRecordWorkspace({
       );
       return;
     }
+    if (
+      entryMode === "correction" &&
+      (!priorSnapshot.profileFieldLabel?.trim() ||
+        !priorSnapshot.previousValue.trim())
+    ) {
+      setFormError("Enter the profile field and prior value being corrected.");
+      return;
+    }
+    if (
+      entryMode === "correction" &&
+      !reportingPeriod.trim() &&
+      !effectivePeriod.trim()
+    ) {
+      setFormError("Enter a reporting or effective period for this correction.");
+      return;
+    }
+    if (
+      entryMode === "correction" &&
+      priorSnapshot.previousSourceUrl?.trim()
+    ) {
+      try {
+        if (new URL(priorSnapshot.previousSourceUrl.trim()).protocol !== "https:") {
+          setFormError("The prior source link must use HTTPS.");
+          return;
+        }
+      } catch {
+        setFormError("Enter a valid HTTPS prior source link or leave it blank.");
+        return;
+      }
+    }
     if (normalizedUrl) {
       try {
         if (new URL(normalizedUrl).protocol !== "https:") {
@@ -163,6 +269,28 @@ export function AgencySourceRecordWorkspace({
       geographicRelationship: geographicRelationship || undefined,
       basis,
       note: note.trim() || undefined,
+      correction:
+        entryMode === "correction"
+          ? {
+              ...priorSnapshot,
+              profileFieldLabel: priorSnapshot.profileFieldLabel?.trim(),
+              previousValue: priorSnapshot.previousValue.trim(),
+              previousUnit: priorSnapshot.previousUnit?.trim() || undefined,
+              previousSourceName:
+                priorSnapshot.previousSourceName?.trim() || undefined,
+              previousSourceRecordId:
+                priorSnapshot.previousSourceRecordId?.trim() || undefined,
+              previousSourceUrl:
+                priorSnapshot.previousSourceUrl?.trim() || undefined,
+              previousReportingPeriod:
+                priorSnapshot.previousReportingPeriod?.trim() || undefined,
+              previousEffectivePeriod:
+                priorSnapshot.previousEffectivePeriod?.trim() || undefined,
+              previousGeographicId:
+                priorSnapshot.previousGeographicId?.trim() || undefined,
+              capturedAt: new Date().toISOString(),
+            }
+          : undefined,
       enteredAt: new Date().toISOString(),
     };
 
@@ -289,24 +417,48 @@ export function AgencySourceRecordWorkspace({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
-                Source-backed agency facts ({facts.length})
+                Source facts &amp; correction history ({facts.length})
               </h4>
               <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                Record observations with their exact scope and period.
+                Corrections add a local record; they do not replace the current app profile value.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAdding((current) => !current);
-                setFormError("");
-              }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              data-testid="button-toggle-agency-source-fact-form"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {isAdding ? "Close form" : "Add fact"}
-            </button>
+            <div className="flex flex-wrap gap-1.5">
+              {isAdding ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setIsAdding(false);
+                  }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  data-testid="button-toggle-agency-source-fact-form"
+                >
+                  Close form
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => beginAdding("fact")}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    data-testid="button-toggle-agency-source-fact-form"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add fact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => beginAdding("correction")}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md bg-blue-700 px-2.5 text-[10px] font-semibold text-white hover:bg-blue-800"
+                    data-testid="button-add-agency-source-correction"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add correction
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {facts.length > 0 && (
@@ -326,6 +478,11 @@ export function AgencySourceRecordWorkspace({
                         {fact.value}
                         {fact.unit ? ` ${fact.unit}` : ""}
                       </p>
+                      {fact.correction && (
+                        <span className="mt-1 inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                          Correction · prior entry retained
+                        </span>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -377,6 +534,60 @@ export function AgencySourceRecordWorkspace({
                       {fact.note}
                     </p>
                   )}
+                  {fact.correction && (
+                    <div
+                      className="mt-2 rounded border border-amber-200 bg-amber-50/70 p-2 dark:border-amber-900 dark:bg-amber-950/20"
+                      data-testid={`source-fact-correction-history-${fact.id}`}
+                    >
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-amber-900 dark:text-amber-200">
+                        {fact.correction.profileFieldLabel || factLabel(fact.fieldKey)} · previous entry captured {formatDate(fact.correction.capturedAt)}
+                      </p>
+                      <p className="mt-1 break-words text-[11px] font-semibold text-slate-800 dark:text-slate-100">
+                        {fact.correction.previousValue}
+                        {fact.correction.previousUnit
+                          ? ` ${fact.correction.previousUnit}`
+                          : ""}
+                      </p>
+                      <p className="mt-1 break-words text-[9px] text-slate-600 dark:text-slate-300">
+                        Source: {fact.correction.previousSourceName || "Not recorded"}
+                        {fact.correction.previousSourceRecordId
+                          ? ` · record ${fact.correction.previousSourceRecordId}`
+                          : ""}
+                        {fact.correction.previousBasis
+                          ? ` · basis ${fact.correction.previousBasis}`
+                          : ""}
+                      </p>
+                      {(fact.correction.previousReportingPeriod ||
+                        fact.correction.previousEffectivePeriod ||
+                        fact.correction.previousGeographicLevel ||
+                        fact.correction.previousGeographicId) && (
+                        <p className="mt-1 break-words text-[9px] text-slate-500 dark:text-slate-400">
+                          {fact.correction.previousReportingPeriod
+                            ? `Reporting period: ${fact.correction.previousReportingPeriod} · `
+                            : ""}
+                          {fact.correction.previousEffectivePeriod
+                            ? `Effective period: ${fact.correction.previousEffectivePeriod} · `
+                            : ""}
+                          {fact.correction.previousGeographicLevel
+                            ? `Geography: ${fact.correction.previousGeographicLevel}`
+                            : ""}
+                          {fact.correction.previousGeographicId
+                            ? ` · ${fact.correction.previousGeographicId}`
+                            : ""}
+                        </p>
+                      )}
+                      {fact.correction.previousSourceUrl && (
+                        <a
+                          href={fact.correction.previousSourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 text-[9px] font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                        >
+                          Open previous source <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -386,8 +597,187 @@ export function AgencySourceRecordWorkspace({
             <form
               className="mt-3 space-y-3 rounded-md border border-blue-200 bg-blue-50/50 p-3 dark:border-blue-900 dark:bg-blue-950/20"
               onSubmit={handleAddFact}
-              data-testid="form-add-agency-source-fact"
+              data-testid={
+                entryMode === "correction"
+                  ? "form-add-agency-source-correction"
+                  : "form-add-agency-source-fact"
+              }
             >
+              {entryMode === "correction" && (
+                <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/70 p-2.5 dark:border-amber-900 dark:bg-amber-950/20">
+                  <div>
+                    <p className="text-[10px] font-bold text-amber-950 dark:text-amber-200">
+                      Correct a profile fact
+                    </p>
+                    <p className="mt-0.5 text-[9px] leading-relaxed text-amber-900 dark:text-amber-200">
+                      The previous value and source details are captured in this browser’s history. The agency’s app-supplied fields remain unchanged.
+                    </p>
+                  </div>
+                  <label>
+                    <span className={LABEL_CLASS}>Prior entry</span>
+                    <select
+                      className={INPUT_CLASS}
+                      value={priorSnapshot.previousFactId ?? "profile"}
+                      onChange={(event) =>
+                        handlePriorRecordChange(event.target.value)
+                      }
+                    >
+                      <option value="profile">Current app profile value</option>
+                      {facts.map((fact) => (
+                        <option key={fact.id} value={fact.id}>
+                          {factLabel(fact.fieldKey)} · {fact.value} · {fact.sourceName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className={LABEL_CLASS}>Profile fact being corrected</span>
+                    <input
+                      className={INPUT_CLASS}
+                      value={priorSnapshot.profileFieldLabel ?? ""}
+                      onChange={(event) =>
+                        setPriorSnapshot((current) => ({
+                          ...current,
+                          profileFieldLabel: event.target.value,
+                        }))
+                      }
+                      maxLength={120}
+                      required
+                      placeholder="Name the specific field, e.g. Annual call volume"
+                    />
+                  </label>
+                  <label>
+                    <span className={LABEL_CLASS}>Previous value</span>
+                    <input
+                      className={INPUT_CLASS}
+                      value={priorSnapshot.previousValue}
+                      onChange={(event) =>
+                        setPriorSnapshot((current) => ({
+                          ...current,
+                          previousValue: event.target.value,
+                        }))
+                      }
+                      maxLength={300}
+                      required
+                      placeholder="Value currently shown in the profile"
+                    />
+                  </label>
+                  <details>
+                    <summary className="cursor-pointer text-[9px] font-semibold text-slate-600 dark:text-slate-300">
+                      Prior source and scope details
+                    </summary>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <label>
+                        <span className={LABEL_CLASS}>Previous source name</span>
+                        <input
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousSourceName ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousSourceName: event.target.value,
+                            }))
+                          }
+                          maxLength={160}
+                        />
+                      </label>
+                      <label>
+                        <span className={LABEL_CLASS}>Previous source record ID</span>
+                        <input
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousSourceRecordId ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousSourceRecordId: event.target.value,
+                            }))
+                          }
+                          maxLength={180}
+                        />
+                      </label>
+                      <label className="sm:col-span-2">
+                        <span className={LABEL_CLASS}>Previous HTTPS source link</span>
+                        <input
+                          className={INPUT_CLASS}
+                          type="url"
+                          value={priorSnapshot.previousSourceUrl ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousSourceUrl: event.target.value,
+                            }))
+                          }
+                          maxLength={1000}
+                          placeholder="https://..."
+                        />
+                      </label>
+                      <label>
+                        <span className={LABEL_CLASS}>Previous reporting period</span>
+                        <input
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousReportingPeriod ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousReportingPeriod: event.target.value,
+                            }))
+                          }
+                          maxLength={120}
+                        />
+                      </label>
+                      <label>
+                        <span className={LABEL_CLASS}>Previous effective period</span>
+                        <input
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousEffectivePeriod ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousEffectivePeriod: event.target.value,
+                            }))
+                          }
+                          maxLength={120}
+                        />
+                      </label>
+                      <label>
+                        <span className={LABEL_CLASS}>Previous geography</span>
+                        <select
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousGeographicLevel ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousGeographicLevel:
+                                (event.target.value as GeographicLevel) || undefined,
+                            }))
+                          }
+                        >
+                          <option value="">Not stated</option>
+                          {GEOGRAPHIC_LEVELS.map((level) => (
+                            <option key={level.value} value={level.value}>
+                              {level.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className={LABEL_CLASS}>Previous geography ID</span>
+                        <input
+                          className={INPUT_CLASS}
+                          value={priorSnapshot.previousGeographicId ?? ""}
+                          onChange={(event) =>
+                            setPriorSnapshot((current) => ({
+                              ...current,
+                              previousGeographicId: event.target.value,
+                            }))
+                          }
+                          maxLength={120}
+                        />
+                      </label>
+                    </div>
+                  </details>
+                </div>
+              )}
               <div className="grid gap-2 sm:grid-cols-2">
                 <label>
                   <span className={LABEL_CLASS}>Fact category</span>
@@ -395,7 +785,7 @@ export function AgencySourceRecordWorkspace({
                     className={INPUT_CLASS}
                     value={fieldKey}
                     onChange={(event) =>
-                      setFieldKey(
+                      handleFieldKeyChange(
                         event.target.value as AgencySourceFact["fieldKey"],
                       )
                     }
@@ -468,6 +858,9 @@ export function AgencySourceRecordWorkspace({
                     value={reportingPeriod}
                     onChange={(event) => setReportingPeriod(event.target.value)}
                     maxLength={120}
+                    required={
+                      entryMode === "correction" && !effectivePeriod.trim()
+                    }
                     placeholder="e.g. FY2025 or Jan–Dec 2025"
                   />
                 </label>
@@ -478,6 +871,9 @@ export function AgencySourceRecordWorkspace({
                     value={effectivePeriod}
                     onChange={(event) => setEffectivePeriod(event.target.value)}
                     maxLength={120}
+                    required={
+                      entryMode === "correction" && !reportingPeriod.trim()
+                    }
                     placeholder="e.g. 2025-07 to 2028-06"
                   />
                 </label>
@@ -589,7 +985,7 @@ export function AgencySourceRecordWorkspace({
                   data-testid="button-save-agency-source-fact"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Save fact
+                  {entryMode === "correction" ? "Save correction" : "Save fact"}
                 </button>
               </div>
             </form>

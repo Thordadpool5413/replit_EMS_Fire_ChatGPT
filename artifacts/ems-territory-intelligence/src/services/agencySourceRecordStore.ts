@@ -1,5 +1,6 @@
 import type {
   Agency,
+  AgencySourceFactCorrection,
   AgencySourceFact,
   AgencySourceRecordAssociation,
 } from "../types";
@@ -319,6 +320,8 @@ function isSourceFact(value: unknown): value is AgencySourceFact {
   const hasValidUrl =
     value.sourceUrl === undefined ||
     (typeof value.sourceUrl === "string" && isHttpsUrl(value.sourceUrl));
+  const hasValidCorrection =
+    value.correction === undefined || isSourceFactCorrection(value.correction);
   return (
     typeof value.id === "string" &&
     typeof value.fieldKey === "string" &&
@@ -331,7 +334,47 @@ function isSourceFact(value: unknown): value is AgencySourceFact {
     (value.basis === "source-reported" ||
       value.basis === "user-entered" ||
       value.basis === "calculated") &&
+    hasValidCorrection &&
     typeof value.enteredAt === "string"
+  );
+}
+
+function isSourceFactCorrection(
+  value: unknown,
+): value is AgencySourceFactCorrection {
+  if (!isRecord(value)) return false;
+  const optionalStrings = [
+    "profileFieldLabel",
+    "previousUnit",
+    "previousSourceName",
+    "previousSourceRecordId",
+    "previousReportingPeriod",
+    "previousEffectivePeriod",
+    "previousGeographicLevel",
+    "previousGeographicId",
+    "previousGeographicRelationship",
+    "previousFactId",
+  ];
+  const hasValidPreviousUrl =
+    value.previousSourceUrl === undefined ||
+    (typeof value.previousSourceUrl === "string" &&
+      isHttpsUrl(value.previousSourceUrl));
+  const hasValidPreviousBasis =
+    value.previousBasis === undefined ||
+    value.previousBasis === "source-reported" ||
+    value.previousBasis === "user-entered" ||
+    value.previousBasis === "calculated";
+
+  return (
+    typeof value.previousValue === "string" &&
+    Boolean(value.previousValue.trim()) &&
+    typeof value.capturedAt === "string" &&
+    !Number.isNaN(Date.parse(value.capturedAt)) &&
+    optionalStrings.every(
+      (key) => value[key] === undefined || typeof value[key] === "string",
+    ) &&
+    hasValidPreviousUrl &&
+    hasValidPreviousBasis
   );
 }
 

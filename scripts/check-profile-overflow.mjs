@@ -232,6 +232,77 @@ async function openAgencyProfile(cdp) {
     `Boolean(document.querySelector('#profile-source-evidence'))`,
     'the full agency source and records workspace',
   );
+  const openedCorrectionForm = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="button-add-agency-source-correction"]');
+    button?.scrollIntoView({ block: 'center' });
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(openedCorrectionForm, 'The agency source workspace is missing its correction action');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-correction"]'))`,
+    'the agency correction form',
+  );
+  const correctionFormChecks = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    return {
+      profileField: Boolean(form?.querySelector('input[placeholder="Name the specific field, e.g. Annual call volume"]')),
+      previousValue: Boolean(form?.querySelector('input[placeholder="Value currently shown in the profile"]')),
+      newValue: [...(form?.querySelectorAll('input') ?? [])].some((input) =>
+        input.placeholder === 'Enter the exact value',
+      ),
+      sourceAndPeriod: form?.innerText.includes('Source name') && form.innerText.includes('Reporting period'),
+      geographyAndBasis: form?.innerText.includes('Geographic scope') && form.innerText.includes('Value basis'),
+    };
+  })()`);
+  for (const [field, available] of Object.entries(correctionFormChecks)) {
+    assert(available, `The agency correction form is missing ${field}`);
+  }
+  const submittedCorrection = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    if (!form) return false;
+    const setValue = (selector, value) => {
+      const input = form.querySelector(selector);
+      if (!input) return false;
+      const prototype = input instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, 'value')?.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    };
+    const fieldsSet = [
+      setValue('input[placeholder="Name the specific field, e.g. Annual call volume"]', 'Annual emergency call volume'),
+      setValue('input[placeholder="Value currently shown in the profile"]', '1,200'),
+      setValue('input[placeholder="Enter the exact value"]', '1,350'),
+      setValue('input[placeholder="Agency report, contract, account disclosure"]', 'Correction UI check'),
+      setValue('input[placeholder="Document number, page, asset ID..."]', 'browser-check-2026'),
+      setValue('input[placeholder="e.g. FY2025 or Jan–Dec 2025"]', 'FY2026'),
+    ].every(Boolean);
+    if (!fieldsSet) return false;
+    form.querySelector('[data-testid="button-save-agency-source-fact"]')?.click();
+    return true;
+  })()`);
+  assert(submittedCorrection, 'Could not submit the agency correction form');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid^="source-fact-correction-history-"]'))`,
+    'the previous agency value to appear in correction history',
+  );
+  const correctionPersisted = await evaluate(cdp, `(() => {
+    const saved = JSON.parse(localStorage.getItem('ems_territory_agency_source_records_v1') || '{}');
+    return Object.values(saved).some((agency) =>
+      agency.sourceFacts?.some((fact) =>
+        fact.value === '1,350' &&
+        fact.reportingPeriod === 'FY2026' &&
+        fact.correction?.previousValue === '1,200' &&
+        fact.sourceRecordId === 'browser-check-2026',
+      ),
+    );
+  })()`);
+  assert(correctionPersisted, 'The corrected and previous values were not saved locally');
 }
 
 async function assertNoHorizontalOverflow(cdp, width, area) {

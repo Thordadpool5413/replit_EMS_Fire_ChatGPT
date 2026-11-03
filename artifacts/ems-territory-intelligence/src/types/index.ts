@@ -542,7 +542,25 @@ export interface AgencySourceFact {
   geographicRelationship?: GeographicRelationship;
   basis: AgencySourceFactBasis;
   note?: string;
+  correction?: AgencySourceFactCorrection;
   enteredAt: string;
+}
+
+export interface AgencySourceFactCorrection {
+  profileFieldLabel?: string;
+  previousValue: string;
+  previousUnit?: string;
+  previousSourceName?: string;
+  previousSourceRecordId?: string;
+  previousSourceUrl?: string;
+  previousReportingPeriod?: string;
+  previousEffectivePeriod?: string;
+  previousGeographicLevel?: GeographicLevel;
+  previousGeographicId?: string;
+  previousGeographicRelationship?: GeographicRelationship;
+  previousBasis?: AgencySourceFactBasis;
+  previousFactId?: string;
+  capturedAt: string;
 }
 
 export interface TerritoryCluster {

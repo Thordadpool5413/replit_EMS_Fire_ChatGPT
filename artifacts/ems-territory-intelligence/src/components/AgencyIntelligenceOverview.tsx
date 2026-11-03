@@ -392,19 +392,20 @@ export default function AgencyIntelligenceOverview({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--pi-border)] px-3.5 py-2.5">
             <div>
               <h3 id="agency-evidence-heading" className="text-sm font-semibold text-[var(--pi-text-primary)]">Source details &amp; record associations</h3>
-              <p className="mt-0.5 text-xs text-[var(--pi-text-secondary)]">Agency source facts are stored locally in this browser.</p>
+              <p className="mt-0.5 text-xs text-[var(--pi-text-secondary)]">Source facts and correction history stay in this browser; corrections do not overwrite app-supplied profile fields.</p>
             </div>
             <button type="button" onClick={onOpenSources} data-testid="button-review-source-records" className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-[var(--pi-action)] hover:bg-[var(--pi-action-subtle)]">Open source workspace <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" /></button>
           </div>
           <div className="grid min-w-0 grid-cols-1 gap-3 p-3.5 lg:grid-cols-2">
             {sourceFacts.length > 0 && (
               <div className="min-w-0">
-                <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--pi-text-secondary)]">Source facts</h4>
+                <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--pi-text-secondary)]">Source facts &amp; local correction history</h4>
                 <ul className="space-y-2">
                   {sourceFacts.map((fact, index) => (
                     <li key={fact.id || `${fact.fieldKey}-${index}`} data-testid={`source-fact-${fact.id || index}`} className="rounded-md border border-[var(--pi-border)] bg-[var(--pi-surface-subtle)] p-2.5">
                       <p className="text-xs font-semibold text-[var(--pi-text-secondary)]">{labels.get(fact.fieldKey) || fact.fieldKey}</p>
                       <p data-testid={`source-fact-value-${fact.id || index}`} className="mt-0.5 break-words text-sm font-medium text-[var(--pi-text-primary)]">{fact.value}{textAvailable(fact.unit) ? ` ${fact.unit}` : ''}</p>
+                      {fact.correction && <span className="mt-1 inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">Correction · prior entry retained</span>}
                       <p className="mt-1 break-words text-xs leading-relaxed text-[var(--pi-text-secondary)]">
                         Basis: {fact.basis} · Source: {fact.sourceName || 'Not listed in this profile'}
                         {textAvailable(fact.reportingPeriod) && <> · Period: {fact.reportingPeriod}</>}
@@ -414,6 +415,20 @@ export default function AgencyIntelligenceOverview({
                       </p>
                       {textAvailable(fact.note) && <p className="mt-1 break-words text-xs text-[var(--pi-text-secondary)]">{fact.note}</p>}
                       {textAvailable(fact.sourceUrl) && <ExternalSourceLink href={fact.sourceUrl} label="Open source" testId={`source-fact-link-${fact.id || index}`} />}
+                      {fact.correction && (
+                        <div data-testid={`overview-correction-history-${fact.id || index}`} className="mt-2 rounded-md border border-amber-200 bg-amber-50/70 p-2 dark:border-amber-900 dark:bg-amber-950/20">
+                          <p className="text-[10px] font-semibold text-amber-950 dark:text-amber-200">{fact.correction.profileFieldLabel || labels.get(fact.fieldKey) || fact.fieldKey} · previous profile entry</p>
+                          <p className="mt-0.5 break-words text-xs font-medium text-[var(--pi-text-primary)]">{fact.correction.previousValue}{textAvailable(fact.correction.previousUnit) ? ` ${fact.correction.previousUnit}` : ''}</p>
+                          <p className="mt-1 break-words text-xs text-[var(--pi-text-secondary)]">
+                            Prior source: {fact.correction.previousSourceName || 'Not recorded'}
+                            {textAvailable(fact.correction.previousSourceRecordId) && <> · record {fact.correction.previousSourceRecordId}</>}
+                            {textAvailable(fact.correction.previousReportingPeriod) && <> · period {fact.correction.previousReportingPeriod}</>}
+                            {textAvailable(fact.correction.previousGeographicLevel) && <> · geography {fact.correction.previousGeographicLevel}</>}
+                            {textAvailable(fact.correction.previousGeographicId) && <> / {fact.correction.previousGeographicId}</>}
+                          </p>
+                          {textAvailable(fact.correction.previousSourceUrl) && <ExternalSourceLink href={fact.correction.previousSourceUrl} label="Open previous source" testId={`source-fact-prior-link-${fact.id || index}`} />}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

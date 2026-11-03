@@ -81,6 +81,53 @@ test("persists source decisions and scoped facts independently by agency", () =>
   assert.equal(loadAgencySourceRecordData(storage)["agency-2"], undefined);
 });
 
+test("preserves the previous value and citation in browser-local correction history", () => {
+  const storage = memoryStorage();
+  const correctionFact: AgencySourceFact = {
+    ...fact,
+    id: "fact-correction-1",
+    value: "1,456",
+    sourceName: "Updated agency report",
+    sourceRecordId: "report-2026-page-4",
+    reportingPeriod: "FY2026",
+    enteredAt: "2026-11-02T12:05:00.000Z",
+    correction: {
+      profileFieldLabel: "Annual emergency call volume",
+      previousValue: fact.value,
+      previousUnit: fact.unit,
+      previousSourceName: fact.sourceName,
+      previousSourceRecordId: fact.sourceRecordId,
+      previousSourceUrl: fact.sourceUrl,
+      previousReportingPeriod: fact.reportingPeriod,
+      previousGeographicLevel: fact.geographicLevel,
+      previousGeographicId: fact.geographicId,
+      previousBasis: fact.basis,
+      previousFactId: fact.id,
+      capturedAt: "2026-11-02T12:04:00.000Z",
+    },
+  };
+
+  const saved = saveAgencySourceRecordData(
+    "agency-1",
+    { sourceRecordAssociations: [], sourceFacts: [fact, correctionFact] },
+    storage,
+  );
+
+  assert.deepEqual(saved, { ok: true });
+  const restored = loadAgencySourceRecordData(storage)["agency-1"].sourceFacts;
+  assert.deepEqual(restored, [fact, correctionFact]);
+  assert.equal(restored[0]?.value, "1,234");
+  assert.equal(restored[1]?.correction?.previousSourceRecordId, "report-2025-page-4");
+
+  const backup = parseAgencySourceRecordBackup(
+    createAgencySourceRecordBackup(loadAgencySourceRecordData(storage)),
+  );
+  assert.equal(backup.ok, true);
+  if (backup.ok) {
+    assert.deepEqual(backup.data["agency-1"].sourceFacts, [fact, correctionFact]);
+  }
+});
+
 test("exports and restores a versioned source-only backup", () => {
   const sourceData = {
     "agency-1": {

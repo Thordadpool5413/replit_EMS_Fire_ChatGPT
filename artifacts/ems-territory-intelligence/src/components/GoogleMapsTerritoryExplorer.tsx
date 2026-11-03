@@ -48,7 +48,13 @@ import {
 import { formatCurrency, formatScore, formatDistanceMiles, formatInteger } from '../utils/numberFormatting';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from './PulseIqEstimateLabel';
+import {
+  describePulseIqScoreSummary,
+  PulseIqClusterSummary,
+  PulseIqEstimateLabel,
+  PulseIqMarkerEstimate,
+  summarizePulseIqScores,
+} from './PulseIqEstimateLabel';
 import { TerritoryMapPulseIqScore } from './PulseIqSurfaceDisplays';
 import { groupOverlappingMapMarkers } from '../utils/mapMarkerClusters';
 import { isPulseIqScoreWithinRange } from '../utils/pulseIqRange';
@@ -989,6 +995,8 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                     if (group.length > 1) {
                       const clusterId = group.map((agency) => agency.id).sort().join('|');
                       const isExpanded = expandedMarkerClusterId === clusterId;
+                      const pulseIqScores = group.map((agency) => agency.zollOpportunity?.pulseIqScore);
+                      const pulseIqSummary = summarizePulseIqScores(pulseIqScores);
                       const position = {
                         lat: group.reduce((total, agency) => total + agency.latitude, 0) / group.length,
                         lng: group.reduce((total, agency) => total + agency.longitude, 0) / group.length,
@@ -998,7 +1006,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                         <React.Fragment key={`cluster-${clusterId}`}>
                           <AdvancedMarker
                             position={position}
-                            title={`${group.length} agencies overlap; select to inspect each PulseIQ estimate`}
+                            title={`${group.length} agencies overlap; ${describePulseIqScoreSummary(pulseIqSummary)}. Select to inspect each agency.`}
                             onClick={() => {
                               setSelectedAgencyForInfo(null);
                               setExpandedMarkerClusterId(clusterId);
@@ -1006,10 +1014,11 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                             zIndex={1100}
                           >
                             <div
-                              aria-label={`${group.length} overlapping agencies`}
-                              className="flex h-10 min-w-10 items-center justify-center rounded-full border-2 border-white bg-slate-950 px-2 text-sm font-bold tabular-nums text-white shadow-lg ring-2 ring-blue-500"
+                              aria-label={`${group.length} overlapping agencies; ${describePulseIqScoreSummary(pulseIqSummary)}`}
+                              className="flex min-h-10 min-w-12 flex-col items-center justify-center rounded-xl border-2 border-white bg-slate-950 px-2 py-1 text-white shadow-lg ring-2 ring-blue-500"
                             >
-                              {group.length}
+                              <span className="text-sm font-bold leading-none tabular-nums">{group.length}</span>
+                              <PulseIqClusterSummary scores={pulseIqScores} />
                             </div>
                           </AdvancedMarker>
                           {isExpanded && (

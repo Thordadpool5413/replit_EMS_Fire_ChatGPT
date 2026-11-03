@@ -3,6 +3,39 @@ import { formatScore } from '../utils/numberFormatting';
 
 export const PULSE_IQ_ESTIMATE_LABEL = 'PulseIQ estimate';
 
+export interface PulseIqScoreSummary {
+  availableCount: number;
+  missingCount: number;
+  averageScore: number | null;
+}
+
+export function summarizePulseIqScores(
+  scores: readonly (number | null | undefined)[]
+): PulseIqScoreSummary {
+  const availableScores = scores.filter(
+    (score): score is number => typeof score === 'number' && Number.isFinite(score)
+  );
+
+  return {
+    availableCount: availableScores.length,
+    missingCount: scores.length - availableScores.length,
+    averageScore: availableScores.length
+      ? availableScores.reduce((total, score) => total + score, 0) / availableScores.length
+      : null,
+  };
+}
+
+export function describePulseIqScoreSummary(summary: PulseIqScoreSummary): string {
+  const estimateSummary = summary.averageScore === null
+    ? 'no available estimates'
+    : `average PulseIQ estimate ${formatScore(summary.averageScore)}`;
+  const missingSummary = summary.missingCount
+    ? `; ${summary.missingCount} ${summary.missingCount === 1 ? 'estimate' : 'estimates'} not reported`
+    : '';
+
+  return `${summary.availableCount} ${summary.availableCount === 1 ? 'estimate' : 'estimates'} available; ${estimateSummary}${missingSummary}`;
+}
+
 export const PulseIqEstimateLabel: React.FC<{ className?: string }> = ({
   className
 }) => (
@@ -10,6 +43,30 @@ export const PulseIqEstimateLabel: React.FC<{ className?: string }> = ({
     {PULSE_IQ_ESTIMATE_LABEL}
   </span>
 );
+
+export const PulseIqClusterSummary: React.FC<{
+  scores: readonly (number | null | undefined)[];
+}> = ({ scores }) => {
+  const summary = summarizePulseIqScores(scores);
+
+  return (
+    <span
+      aria-label={describePulseIqScoreSummary(summary)}
+      data-testid="pulseiq-cluster-summary"
+      className="flex flex-col items-center leading-none"
+    >
+      <span className="mt-0.5 text-[9px] font-semibold text-blue-200">
+        {summary.averageScore === null
+          ? 'No estimates'
+          : `Avg ${formatScore(summary.averageScore)}`}
+      </span>
+      <span className="mt-0.5 text-[8px] font-medium text-slate-300">
+        {summary.availableCount} available
+        {summary.missingCount > 0 && ` · ${summary.missingCount} missing`}
+      </span>
+    </span>
+  );
+};
 
 export const PulseIqMarkerEstimate: React.FC<{
   agencyId: string;

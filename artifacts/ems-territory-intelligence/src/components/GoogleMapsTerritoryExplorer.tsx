@@ -50,6 +50,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from './PulseIqEstimateLabel';
 import { TerritoryMapPulseIqScore } from './PulseIqSurfaceDisplays';
+import { groupOverlappingMapMarkers } from '../utils/mapMarkerClusters';
 
 interface GoogleMapsTerritoryExplorerProps {
   agencies: Agency[];
@@ -394,6 +395,28 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     if (globalState !== 'all') return 8;
     return 8;
   }, [isNearMeActive, nearMeRadiusMiles, activeAccount, globalCity, globalCounty, globalState]);
+
+  const [markerZoom, setMarkerZoom] = useState<number | null>(null);
+  const [expandedMarkerClusterId, setExpandedMarkerClusterId] = useState<string | null>(null);
+  const markerGroups = useMemo(
+    () => groupOverlappingMapMarkers(filteredAgencies, markerZoom ?? mapZoom),
+    [filteredAgencies, markerZoom, mapZoom],
+  );
+  const markerClusterIds = useMemo(
+    () =>
+      new Set(
+        markerGroups
+          .filter((group) => group.length > 1)
+          .map((group) => group.map((agency) => agency.id).sort().join('|')),
+      ),
+    [markerGroups],
+  );
+
+  useEffect(() => {
+    if (expandedMarkerClusterId && !markerClusterIds.has(expandedMarkerClusterId)) {
+      setExpandedMarkerClusterId(null);
+    }
+  }, [expandedMarkerClusterId, markerClusterIds]);
 
   // Build Map Handler for User Selection
   const handleBuildMap = () => {
@@ -841,6 +864,10 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   mapId="DEMO_MAP_ID"
                   center={mapCenter}
                   zoom={mapZoom}
+                  onZoomChanged={(event) => {
+                    setMarkerZoom(event.detail.zoom);
+                    setExpandedMarkerClusterId(null);
+                  }}
                   gestureHandling="greedy"
                   disableDefaultUI={false}
                   mapTypeId={mapTypeId}
@@ -872,7 +899,76 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   />
 
                   {/* Plotted Local Station Markers */}
-                  {filteredAgencies.map((agency) => {
+                  {markerGroups.map((group) => {
+                    if (group.length > 1) {
+                      const clusterId = group.map((agency) => agency.id).sort().join('|');
+                      const isExpanded = expandedMarkerClusterId === clusterId;
+                      const position = {
+                        lat: group.reduce((total, agency) => total + agency.latitude, 0) / group.length,
+                        lng: group.reduce((total, agency) => total + agency.longitude, 0) / group.length,
+                      };
+
+                      return (
+                        <React.Fragment key={`cluster-${clusterId}`}>
+                          <AdvancedMarker
+                            position={position}
+                            title={`${group.length} agencies overlap; select to inspect each PulseIQ estimate`}
+                            onClick={() => {
+                              setSelectedAgencyForInfo(null);
+                              setExpandedMarkerClusterId(clusterId);
+                            }}
+                            zIndex={1100}
+                          >
+                            <div
+                              aria-label={`${group.length} overlapping agencies`}
+                              className="flex h-10 min-w-10 items-center justify-center rounded-full border-2 border-white bg-slate-950 px-2 text-sm font-bold tabular-nums text-white shadow-lg ring-2 ring-blue-500"
+                            >
+                              {group.length}
+                            </div>
+                          </AdvancedMarker>
+                          {isExpanded && (
+                            <InfoWindow
+                              position={position}
+                              onCloseClick={() => setExpandedMarkerClusterId(null)}
+                            >
+                              <div className="max-h-72 min-w-64 max-w-sm overflow-y-auto p-1 font-sans text-slate-900">
+                                <h4 className="mb-2 border-b border-slate-200 pb-2 text-xs font-bold">
+                                  {group.length} nearby agencies
+                                </h4>
+                                <div className="space-y-1">
+                                  {group.map((agency) => (
+                                    <button
+                                      key={agency.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setExpandedMarkerClusterId(null);
+                                        setSelectedAgencyForInfo(agency);
+                                        onSelectAgency(agency);
+                                      }}
+                                      className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-2 text-left hover:border-blue-400 hover:bg-blue-50"
+                                    >
+                                      <span className="min-w-0">
+                                        <span className="block truncate text-xs font-semibold">{agency.name}</span>
+                                        <span className="block truncate text-[10px] text-slate-500">
+                                          {agency.city}, {agency.stateCode}
+                                        </span>
+                                      </span>
+                                      <PulseIqMarkerEstimate
+                                        agencyId={agency.id}
+                                        score={agency.zollOpportunity?.pulseIqScore}
+                                        compact
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </InfoWindow>
+                          )}
+                        </React.Fragment>
+                      );
+                    }
+
+                    const agency = group[0];
                     const tier = agency.zollOpportunity?.priorityTier || 'Maintained Account';
                     const tierStyle = TIER_COLORS[tier] || TIER_COLORS['Maintained Account'];
                     const isSelected = selectedAgencyForInfo?.id === agency.id;

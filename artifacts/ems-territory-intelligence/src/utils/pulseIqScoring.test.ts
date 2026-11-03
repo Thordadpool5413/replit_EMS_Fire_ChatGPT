@@ -148,6 +148,17 @@ test('mobile and map surfaces display a valid zero score and distinguish a missi
   );
   assert.match(missingMarkerMarkup, /aria-label="PulseIQ estimate: Not reported"/);
   assert.match(missingMarkerMarkup, />Not reported</);
+
+  const compactMissingMarkerMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqMarkerEstimate, {
+      agencyId: 'compact-missing-agency',
+      score: undefined,
+      compact: true,
+    }),
+  );
+  assert.match(compactMissingMarkerMarkup, /PulseIQ estimate/);
+  assert.match(compactMissingMarkerMarkup, /aria-label="PulseIQ estimate: Not reported"/);
+  assert.match(compactMissingMarkerMarkup, />Not reported</);
 });
 
 test('unmapped factors and changed claim evidence do not hide or change displayed PulseIQ scores', () => {

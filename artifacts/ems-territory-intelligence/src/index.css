@@ -2220,6 +2220,32 @@
 }
 
 /* Home map: a compact control band, dominant geography, and one quiet inspector. */
+.home-territory-map-screen-v2 {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-territory-map-screen-v2 .home-map-page-heading {
+  padding: 0 0 0.75rem !important;
+  border-color: color-mix(in srgb, var(--pi-border) 78%, transparent) !important;
+}
+
+.home-territory-map-screen-v2 .home-map-page-heading .pi-section-heading {
+  font-size: clamp(1.1rem, 1.35vw, 1.3rem);
+  letter-spacing: -0.025em;
+}
+
+.home-territory-map-screen-v2 .home-map-page-heading svg {
+  color: #176b68 !important;
+}
+
+.dark .home-territory-map-screen-v2 .home-map-page-heading svg {
+  color: #76bbb2 !important;
+}
+
 .home-territory-map-screen-v2 .home-map-stage-v2 {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
@@ -2230,9 +2256,15 @@
     "map"
     "inspector" !important;
   align-items: start !important;
-  gap: 0.65rem 1rem !important;
+  gap: 0.7rem 1rem !important;
   min-height: 0 !important;
-  padding: 0.75rem !important;
+  padding: 0.85rem !important;
+  border-color: #294355 !important;
+  border-radius: 0.9rem !important;
+  background:
+    radial-gradient(ellipse at 18% 8%, rgba(34, 91, 100, 0.18), transparent 42%),
+    #091723 !important;
+  box-shadow: 0 18px 44px -30px rgba(5, 19, 29, 0.65), inset 0 1px rgba(190, 221, 225, 0.035) !important;
 }
 
 .home-territory-map-screen-v2 .home-map-stage-v2 > * + * {
@@ -2249,7 +2281,7 @@
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 1rem !important;
+  gap: 0.85rem !important;
   min-width: 0;
 }
 
@@ -2264,8 +2296,15 @@
 .home-territory-map-screen-v2 .home-map-layer-select {
   width: min(100%, 28rem);
   min-width: 15rem !important;
-  min-height: 2.5rem !important;
+  min-height: 2.35rem !important;
   font-size: 0.8125rem !important;
+  border-color: #34536a !important;
+  background-color: #102332 !important;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.home-territory-map-screen-v2 .home-map-layer-select:hover {
+  border-color: #638896 !important;
 }
 
 .home-territory-map-screen-v2 .home-map-zoom-control {
@@ -2273,6 +2312,21 @@
   align-self: center !important;
   border-color: #304a61 !important;
   background: transparent !important;
+}
+
+.home-territory-map-screen-v2 .home-map-zoom-control button,
+.home-territory-map-screen-v2 .home-map-shortcuts > button {
+  transition: transform 130ms ease, background-color 130ms ease, color 130ms ease;
+}
+
+.home-territory-map-screen-v2 .home-map-zoom-control button:hover:not(:disabled),
+.home-territory-map-screen-v2 .home-map-shortcuts > button:hover {
+  transform: translateY(-1px);
+}
+
+.home-territory-map-screen-v2 .home-map-zoom-control button:active:not(:disabled),
+.home-territory-map-screen-v2 .home-map-shortcuts > button:active {
+  transform: scale(0.96);
 }
 
 .home-territory-map-screen-v2 .home-map-legend-v2 {
@@ -2284,9 +2338,9 @@
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center;
-  gap: 0.55rem 0.9rem !important;
+  gap: 0.45rem 0.8rem !important;
   overflow: visible !important;
-  padding: 0.55rem 0 0 !important;
+  padding: 0.5rem 0.15rem 0 !important;
   border: 0 !important;
   border-top: 1px solid #21394c !important;
   border-radius: 0 !important;
@@ -2314,7 +2368,7 @@
   grid-row: 3 !important;
   display: flex !important;
   flex-direction: column;
-  gap: 0.55rem !important;
+  gap: 0.45rem !important;
   min-width: 0;
 }
 
@@ -2331,6 +2385,11 @@
   height: auto !important;
   aspect-ratio: 920 / 500;
   overflow: hidden;
+  border-color: #31556a !important;
+  background:
+    radial-gradient(ellipse at 54% 44%, rgba(29, 72, 85, 0.2), transparent 68%),
+    #081521 !important;
+  box-shadow: inset 0 0 0 1px rgba(106, 150, 183, 0.08), 0 8px 26px -22px rgba(0, 0, 0, 0.72) !important;
 }
 
 .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
@@ -2363,12 +2422,13 @@
   align-self: start !important;
   gap: 0 !important;
   min-width: 0;
-  padding: 0.9rem 1rem !important;
+  padding: 0.8rem 0.85rem !important;
   color: var(--pi-text-primary) !important;
   background: var(--pi-surface-bg) !important;
   border: 1px solid var(--pi-border) !important;
-  border-radius: 0.7rem !important;
-  box-shadow: inset 3px 0 #e3b952 !important;
+  border-radius: 0.65rem !important;
+  box-shadow: inset 2px 0 #d8b45e, 0 8px 20px -20px rgba(0, 0, 0, 0.5) !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .home-territory-map-screen-v2 .home-map-inspector-v2__heading {
@@ -2376,7 +2436,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding-bottom: 0.7rem;
+  padding-bottom: 0.6rem;
   border-bottom: 1px solid var(--pi-border);
 }
 
@@ -2425,7 +2485,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  padding: 0.7rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--pi-border);
 }
 
@@ -2452,8 +2512,8 @@
 .home-territory-map-screen-v2 .home-map-inspector-v2__details > div {
   display: grid;
   grid-template-columns: minmax(4.5rem, 5.5rem) minmax(0, 1fr);
-  gap: 0.5rem;
-  padding: 0.55rem 0;
+  gap: 0.45rem;
+  padding: 0.48rem 0;
   border-bottom: 1px solid var(--pi-border);
 }
 
@@ -2515,15 +2575,15 @@
   flex: 0 0 auto;
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1024px) {
   .home-territory-map-screen-v2 .home-map-stage-v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 300px) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 276px) !important;
     grid-template-rows: auto auto minmax(0, 1fr) !important;
     grid-template-areas:
       "toolbar toolbar"
       "legend legend"
       "map inspector" !important;
-    min-height: clamp(26rem, calc(100dvh - 270px), 42rem) !important;
+    min-height: clamp(23rem, calc(100dvh - 250px), 40rem) !important;
   }
 
   .home-territory-map-screen-v2 .home-map-visual-v2 {
@@ -2538,9 +2598,14 @@
 }
 
 @media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-page-heading {
+    padding-bottom: 0.65rem !important;
+  }
+
   .home-territory-map-screen-v2 .home-map-stage-v2 {
-    gap: 0.6rem !important;
+    gap: 0.55rem !important;
     padding: 0.6rem !important;
+    border-radius: 0.75rem !important;
   }
 
   .home-territory-map-screen-v2 .home-map-toolbar-v2 {
@@ -3369,7 +3434,17 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-territory-map-screen-v2 .home-map-state-path {
+  .home-territory-map-screen-v2 .home-map-state-path,
+  .home-territory-map-screen-v2 .home-map-zoom-control button,
+  .home-territory-map-screen-v2 .home-map-shortcuts > button,
+  .home-territory-map-screen-v2 .home-map-inspector-v2 {
     transition: none !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button:hover:not(:disabled),
+  .home-territory-map-screen-v2 .home-map-zoom-control button:active:not(:disabled),
+  .home-territory-map-screen-v2 .home-map-shortcuts > button:hover,
+  .home-territory-map-screen-v2 .home-map-shortcuts > button:active {
+    transform: none !important;
   }
 }

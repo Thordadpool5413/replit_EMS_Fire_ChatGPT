@@ -713,6 +713,35 @@ async function openSpecialistOrSystemView(cdp, view) {
   );
 }
 
+async function ensureDarkMode(cdp) {
+  const isDark = await evaluate(
+    cdp,
+    `document.documentElement.classList.contains('dark')`,
+  );
+  if (!isDark) {
+    const toggled = await evaluate(cdp, `(() => {
+      const button = [...document.querySelectorAll(
+        'button[aria-label="Switch to Dark Mode"]',
+      )].find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        const style = getComputedStyle(candidate);
+        return rect.width > 0 && rect.height > 0 &&
+          style.visibility !== 'hidden' && style.display !== 'none' &&
+          rect.right > 0 && rect.left < innerWidth &&
+          rect.bottom > 0 && rect.top < innerHeight;
+      });
+      button?.click();
+      return Boolean(button);
+    })()`);
+    assert(toggled, 'Could not reach the dark mode toggle');
+  }
+  await waitFor(
+    cdp,
+    `document.documentElement.classList.contains('dark')`,
+    'dark mode to activate',
+  );
+}
+
 async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
@@ -753,6 +782,7 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
       mainClientWidth: main.clientWidth,
       mainLeft: bounds.left,
       mainRight: bounds.right,
+      isDarkMode: root.classList.contains('dark'),
       headingPresent: Boolean(heading),
       headingFont: headingStyle?.fontFamily ?? null,
       displayFont: expectedDisplayFont,
@@ -767,6 +797,12 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
   assert(
     layout.viewport === viewport.width,
     `Expected ${viewport.width}px viewport, got ${layout.viewport}px`,
+  );
+  assert(
+    layout.isDarkMode &&
+      layout.expectedText === 'rgb(241, 245, 249)' &&
+      layout.expectedSurface === 'rgb(20, 35, 46)',
+    `"${view.tab}" is not using the dark theme tokens at ${viewport.width}px: ${JSON.stringify(layout)}`,
   );
   assert(
     layout.documentWidth <= viewport.width + 1,
@@ -789,7 +825,7 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
     layout.surfacePresent && layout.surfaceColor === layout.expectedSurface,
     `"${view.tab}" is missing shared surface styling at ${viewport.width}px: ${JSON.stringify(layout)}`,
   );
-  console.log(`✓ ${viewport.width}px: ${view.tab}, shared heading/surface, no horizontal overflow`);
+  console.log(`✓ ${viewport.width}px: ${view.tab}, dark heading/surface tokens, no horizontal overflow`);
 }
 
 async function checkSpecialistAndSystemViews(cdp) {
@@ -803,6 +839,7 @@ async function checkSpecialistAndSystemViews(cdp) {
       60_000,
     );
     await openSpecialistOrSystemView(cdp, view);
+    await ensureDarkMode(cdp);
     for (const viewport of workspaceRegressionViewports) {
       await checkSpecialistAndSystemAtViewport(cdp, view, viewport);
     }

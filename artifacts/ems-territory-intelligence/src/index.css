@@ -857,7 +857,7 @@
 }
 
 @media (max-width: 767px) {
-  :root {
+  :root:not(.dark) {
     --pi-canvas-bg: #eef2f4;
     --pi-surface-bg: #fbfcfc;
   }

@@ -1582,7 +1582,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               {onNavigateToQueueWithFilter && (
                 <button
                   type="button"
-                  onClick={() => onNavigateToQueueWithFilter()}
+                  onClick={() => onNavigateToQueueWithFilter(
+                    selectedStateCode,
+                    selectedCountyName,
+                    selectedCityName,
+                    debouncedZipQuery || undefined,
+                  )}
                   className="w-full h-10 px-4 rounded-lg font-bold text-xs bg-[#1E3A8A] text-white hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                 >
                   <ListOrdered className="w-4 h-4 text-white" />

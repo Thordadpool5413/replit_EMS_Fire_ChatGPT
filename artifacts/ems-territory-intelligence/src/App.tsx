@@ -46,6 +46,8 @@ import { TopBar } from './components/TopBar';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
+import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
+import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
 import {
   FIELD_WORKSPACE_TABS,
   isFieldWorkTab,
@@ -186,6 +188,7 @@ export default function App() {
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
   const [comparisonAgencyIds, setComparisonAgencyIds] = useState<string[]>([]);
   const [isAgencyComparisonOpen, setIsAgencyComparisonOpen] = useState(false);
+  const [returnToComparisonAfterProfile, setReturnToComparisonAfterProfile] = useState(false);
   const [previewAgency, setPreviewAgency] = useState<Agency | null>(null);
   const [rfpAgency, setRfpAgency] = useState<Agency | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
@@ -483,11 +486,12 @@ export default function App() {
   }, [addFieldNoteInCloud, selectedAgency, activeAccount, previewAgency, isOnline, agencies, showToast]);
 
 
-  const handleOpenAgencyProfile = useCallback((agency: Agency) => {
+  const handleOpenAgencyProfile = useCallback((agency: Agency, returnToComparison = false) => {
     const profileAgency = agencies.find((candidate) => candidate.id === agency.id) ?? agency;
 
     setPreviewAgency(null);
     setIsAgencyComparisonOpen(false);
+    setReturnToComparisonAfterProfile(returnToComparison);
     setSelectedAgency(profileAgency);
     setActiveAccount(profileAgency);
     setIsCommandPaletteOpen(false);
@@ -559,6 +563,7 @@ export default function App() {
     setSelectedAgency(null);
     setActiveAccount(null);
     setIsAgencyComparisonOpen(false);
+    setReturnToComparisonAfterProfile(false);
     setRfpAgency(null);
     setIsCommandPaletteOpen(false);
     setIsDataLineageOpen(false);
@@ -578,8 +583,23 @@ export default function App() {
     setSelectedAgency(null);
     setActiveAccount(null);
     setIsAgencyComparisonOpen(false);
+    setReturnToComparisonAfterProfile(false);
     setPreviewAgency(null);
     setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleNavigateGeography = useCallback((state: string, county = 'all', city = 'all') => {
+    setGlobalState(state || 'all');
+    setGlobalCounty(county || 'all');
+    setGlobalCity(city || 'all');
+    setQueueFilterState(null);
+    setSelectedAgency(null);
+    setActiveAccount(null);
+    setPreviewAgency(null);
+    setIsAgencyComparisonOpen(false);
+    setReturnToComparisonAfterProfile(false);
+    setActiveTab('states_directory');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -641,6 +661,21 @@ export default function App() {
       {/* Main Workspace Body with a synchronized desktop sidebar offset */}
       <div className="pi-workspace-body md:pl-64 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 min-w-0">
+
+        {!currentActive && activeTab !== 'home' && (
+          <TerritoryContextBreadcrumb
+            state={globalState === 'all' ? null : globalState}
+            stateLabel={globalState === 'all' ? null : ALL_50_STATES_SUMMARIES[globalState]?.state || globalState}
+            county={globalCounty}
+            city={globalCity}
+            providerScope={globalCategory}
+            className="mb-3"
+            onSelectUnitedStates={() => handleNavigateGeography('all')}
+            onSelectState={(stateCode) => handleNavigateGeography(stateCode)}
+            onSelectCounty={(county) => handleNavigateGeography(globalState, county)}
+            onSelectCity={(city) => handleNavigateGeography(globalState, globalCounty, city)}
+          />
+        )}
         
         {/* Secondary workspace tabs are consistent across desktop and mobile. */}
         {!currentActive && isOpportunitiesTab(activeTab) && (
@@ -1054,6 +1089,9 @@ export default function App() {
               onNavigateToQueueWithFilter={(stateCode, county, city, zip) => {
                 setSelectedAgency(null);
                 setActiveAccount(null);
+                setGlobalState(stateCode ?? globalState);
+                setGlobalCounty(county ?? globalCounty);
+                setGlobalCity(city ?? globalCity);
                 setQueueFilterState({ state: stateCode, county, city, zip });
                 handleNavigateTab('queue');
               }}
@@ -1292,17 +1330,15 @@ export default function App() {
           onToggleAgencyComparison={handleToggleAgencyComparison}
           onOpenAgencyComparison={() => setIsAgencyComparisonOpen(true)}
           onBack={() => {
+            const shouldReopenComparison = returnToComparisonAfterProfile;
+            setReturnToComparisonAfterProfile(false);
             setSelectedAgency(null);
             setActiveAccount(null);
+            setIsAgencyComparisonOpen(shouldReopenComparison);
           }}
           onGoHome={handleGoHome}
           onNavigateGeography={(state, county, city) => {
-            setSelectedAgency(null);
-            setActiveAccount(null);
-            if (state) setGlobalState(state);
-            if (county) setGlobalCounty(county);
-            if (city) setGlobalCity(city);
-            setActiveTab('states_directory');
+            handleNavigateGeography(state || globalState, county || 'all', city || 'all');
           }}
           onUpdateStage={handleUpdateStage}
           onToggleRoute={handleToggleRoute}
@@ -1406,7 +1442,7 @@ export default function App() {
           weights={weights}
           onClose={handleCloseAgencyComparison}
           onRemoveAgency={handleRemoveComparedAgency}
-          onOpenProfile={handleOpenAgencyProfile}
+          onOpenProfile={(agency) => handleOpenAgencyProfile(agency, true)}
         />
       )}
       </React.Suspense>

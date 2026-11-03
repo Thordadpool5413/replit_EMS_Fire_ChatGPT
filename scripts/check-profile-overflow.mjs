@@ -577,6 +577,12 @@ async function openAgencyComparison(cdp, width) {
   await clickVisibleButton(cdp, 'Agencies', 'Agencies navigation');
   await waitFor(
     cdp,
+    `Boolean(document.querySelector('[data-testid="territory-context-breadcrumb"]')) &&
+      document.querySelector('[data-testid="territory-context-breadcrumb"]')?.innerText.includes('United States')`,
+    'the persistent U.S. territory context in the Agencies workspace',
+  );
+  await waitFor(
+    cdp,
     `document.body.innerText.includes('Open agency profile')`,
     'the agency directory',
   );
@@ -617,6 +623,42 @@ async function openAgencyComparison(cdp, width) {
   );
 }
 
+async function verifyComparisonProfileReturn(cdp, width) {
+  const openedProfile = await evaluate(cdp, `(() => {
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 &&
+        style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const button = [...document.querySelectorAll(
+      '[data-testid^="button-open-profile-"]',
+    )].find(visible);
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(openedProfile, `Could not open an agency profile from comparison at ${width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('main[aria-label$="Account 360 Workspace"]'))`,
+    `the comparison agency profile at ${width}px`,
+  );
+  const returned = await evaluate(cdp, `(() => {
+    const button = document.querySelector('button[aria-label="Back to Agencies"]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(returned, `Could not return from a compared profile at ${width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="agency-comparison-panel"]')) &&
+      !document.querySelector('main[aria-label$="Account 360 Workspace"]')`,
+    `comparison to reopen after profile return at ${width}px`,
+  );
+}
+
 async function checkComparisonAtViewport(cdp, viewport, downloadPath) {
   console.log(`Checking agency comparison at ${viewport.width}px viewport...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -626,6 +668,7 @@ async function checkComparisonAtViewport(cdp, viewport, downloadPath) {
     mobile: viewport.mobile,
   });
   await openAgencyComparison(cdp, viewport.width);
+  await verifyComparisonProfileReturn(cdp, viewport.width);
 
   const layout = await evaluate(cdp, `(() => {
     const root = document.documentElement;

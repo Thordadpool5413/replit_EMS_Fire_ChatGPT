@@ -1761,7 +1761,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <span className="hidden group-open:inline">Hide list</span>
                           </span>
                         </summary>
-                        <div className="mt-2 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="county-city-list mt-2 flex flex-wrap gap-1.5"
+                          role="group"
+                          aria-label={`Cities and places in ${c.countyName}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {countyCities.map(cityName => (
                             <button
                               key={`${c.stateCode}-${c.countyName}-${cityName}`}

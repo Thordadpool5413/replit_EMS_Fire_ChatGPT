@@ -3080,6 +3080,32 @@ body {
   }
 }
 
+/* Keep the brand mark unmistakable while preserving room for navigation. */
+@media (min-width: 768px) and (min-height: 821px) {
+  .pi-sidebar-logo {
+    width: 10rem !important;
+    height: 10rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  .pi-sidebar-logo {
+    width: 5.75rem !important;
+    height: 5.75rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .pi-command-header {
+    height: calc(4.5rem + env(safe-area-inset-top)) !important;
+  }
+
+  .pi-mobile-logo {
+    width: 4.25rem !important;
+    height: 4.25rem !important;
+  }
+}
+
 /* Home map finish — a field-ready cartographic instrument, not a dashboard panel. */
 .home-territory-map-screen-v2 {
   background:

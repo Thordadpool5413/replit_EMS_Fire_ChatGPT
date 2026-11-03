@@ -27,6 +27,7 @@ const workspaceRegressionViewports = [
   { width: 1280, height: 900, mobile: false },
 ];
 const interactionViewports = [
+  { width: 320, height: 740, mobile: true },
   { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
 ];
@@ -1017,6 +1018,30 @@ async function clickWorkspaceInteraction(cdp, view, interaction, viewport) {
           (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth),
         )
         .slice(0, 8),
+      externalOverflowCandidates: [...main.querySelectorAll('*')]
+        .filter((element) => !element.closest('[class*="overflow-x-auto"]'))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            className: typeof element.className === 'string' ? element.className.slice(0, 120) : '',
+            text: element.innerText?.trim().replace(/\s+/g, ' ').slice(0, 100) ?? '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          };
+        })
+        .filter((element) =>
+          element.right > bounds.right + 1 ||
+          (element.scrollWidth > element.clientWidth + 1 && element.clientWidth > 0),
+        )
+        .sort((a, b) =>
+          (b.right - bounds.right) - (a.right - bounds.right) ||
+          (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth),
+        )
+        .slice(0, 8),
     };
   })()`);
   assert(
@@ -1033,7 +1058,7 @@ async function clickWorkspaceInteraction(cdp, view, interaction, viewport) {
   );
   assert(
     dimensions.mainWidth <= dimensions.mainClientWidth + 1,
-    `Main workspace overflows after "${interaction.label}" in "${view.tab}" at ${viewport.width}px (${dimensions.mainWidth}px content / ${dimensions.mainClientWidth}px visible); candidates: ${JSON.stringify(dimensions.overflowCandidates)}`,
+    `Main workspace overflows after "${interaction.label}" in "${view.tab}" at ${viewport.width}px (${dimensions.mainWidth}px content / ${dimensions.mainClientWidth}px visible); external candidates: ${JSON.stringify(dimensions.externalOverflowCandidates)}; all candidates: ${JSON.stringify(dimensions.overflowCandidates)}`,
   );
   assert(
     dimensions.mainLeft >= -1 && dimensions.mainRight <= viewport.width + 1,

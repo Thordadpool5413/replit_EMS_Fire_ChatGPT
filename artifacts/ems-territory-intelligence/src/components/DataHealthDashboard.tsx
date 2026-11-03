@@ -193,7 +193,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
       <section className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                 Data Sanitization Firewall Active

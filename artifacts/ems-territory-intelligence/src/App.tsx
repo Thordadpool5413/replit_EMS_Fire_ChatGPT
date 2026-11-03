@@ -68,7 +68,6 @@ const PublicHealthcareExplorer = React.lazy(() => import('./components/PublicHea
 const AfgGrantsTracker = React.lazy(() => import('./components/AfgGrantsTracker').then((module) => ({ default: module.AfgGrantsTracker })));
 const FieldModeView = React.lazy(() => import('./components/FieldModeView').then((module) => ({ default: module.FieldModeView })));
 const NotificationDrawer = React.lazy(() => import('./components/NotificationDrawer').then((module) => ({ default: module.NotificationDrawer })));
-const QuickVisitModal = React.lazy(() => import('./components/QuickVisitModal').then((module) => ({ default: module.QuickVisitModal })));
 const ContractExpirationCalendar = React.lazy(() => import('./components/ContractExpirationCalendar').then((module) => ({ default: module.ContractExpirationCalendar })));
 const RfpSpecGeneratorModal = React.lazy(() => import('./components/RfpSpecGeneratorModal').then((module) => ({ default: module.RfpSpecGeneratorModal })));
 const CloudBackupResilienceView = React.lazy(() => import('./components/CloudBackupResilienceView').then((module) => ({ default: module.CloudBackupResilienceView })));
@@ -190,7 +189,6 @@ export default function App() {
   const [previewAgency, setPreviewAgency] = useState<Agency | null>(null);
   const [rfpAgency, setRfpAgency] = useState<Agency | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
-  const [isQuickVisitOpen, setIsQuickVisitOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isDataLineageOpen, setIsDataLineageOpen] = useState<boolean>(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState<boolean>(false);
@@ -562,7 +560,6 @@ export default function App() {
     setActiveAccount(null);
     setIsAgencyComparisonOpen(false);
     setRfpAgency(null);
-    setIsQuickVisitOpen(false);
     setIsCommandPaletteOpen(false);
     setIsDataLineageOpen(false);
     setIsChatbotOpen(false);
@@ -608,7 +605,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Primary Navigation Shell (256px Sidebar + 64px Top Toolbar) */}
+      {/* Primary navigation sidebar; desktop utilities are integrated into the sidebar. */}
       <TopBar
         activeTab={activeTab}
         setActiveTab={handleNavigateTab}
@@ -622,7 +619,6 @@ export default function App() {
         triggerManualSync={handleManualSync}
         unreadAlertCount={unreadAlertCount}
         openNotifications={() => setIsNotificationsOpen(true)}
-        openQuickVisitModal={() => setIsQuickVisitOpen(true)}
         openCommandPalette={() => setIsCommandPaletteOpen(true)}
         openDataLineageModal={() => setIsDataLineageOpen(true)}
         openChatbot={() => setIsChatbotOpen(true)}
@@ -1343,15 +1339,6 @@ export default function App() {
           saveStoredNotifications([]);
         }}
         onSelectAlertAgency={handleSelectAlertAgency}
-      />}
-
-      {/* Quick Field Visit Entry Modal */}
-      {isQuickVisitOpen && <QuickVisitModal
-        isOpen={isQuickVisitOpen}
-        onClose={() => setIsQuickVisitOpen(false)}
-        agencies={agencies}
-        onAddFieldNote={handleAddFieldNote}
-        isOnline={isOnline}
       />}
 
       {/* Mobile Bottom Navigation Bar */}

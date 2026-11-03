@@ -572,12 +572,14 @@
 }
 
 .pi-primary-nav button,
+.pi-sidebar-quick-actions button,
 .pi-mobile-nav button,
 .pi-command-header button {
   -webkit-tap-highlight-color: transparent;
 }
 
 .pi-primary-nav button:focus-visible,
+.pi-sidebar-quick-actions button:focus-visible,
 .pi-mobile-nav button:focus-visible,
 .pi-command-header button:focus-visible {
   outline: 2px solid var(--pi-action);

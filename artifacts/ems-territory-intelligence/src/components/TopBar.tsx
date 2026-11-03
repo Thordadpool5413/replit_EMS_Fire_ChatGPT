@@ -8,7 +8,6 @@ import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import {
   Search,
   Bell,
-  Plus,
   ChevronDown,
   Sun,
   Moon,
@@ -51,7 +50,6 @@ interface TopBarProps {
   triggerManualSync: () => void;
   unreadAlertCount: number;
   openNotifications: () => void;
-  openQuickVisitModal: () => void;
   openCommandPalette?: () => void;
   openDataLineageModal?: () => void;
   openChatbot?: () => void;
@@ -84,7 +82,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   triggerManualSync,
   unreadAlertCount,
   openNotifications,
-  openQuickVisitModal,
   openCommandPalette,
   openDataLineageModal,
   openChatbot,
@@ -107,11 +104,15 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
-  const utilityRef = useRef<HTMLDivElement>(null);
+  const desktopUtilityRef = useRef<HTMLDivElement>(null);
+  const mobileUtilityRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (utilityRef.current && !utilityRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedUtility = [desktopUtilityRef, mobileUtilityRef]
+        .some((ref) => ref.current?.contains(target));
+      if (!clickedUtility) {
         setIsUtilityMenuOpen(false);
       }
     };
@@ -356,7 +357,148 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </nav>
 
-  {/* Bottom Sidebar Footer: Data State */}
+        {/* Desktop command actions live in the sidebar instead of a separate top row. */}
+        <div className="pi-sidebar-quick-actions px-3 pb-3 space-y-2 shrink-0">
+          {hasActiveGeography && (
+            <div className="flex min-w-0 items-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-2 py-1.5 text-[10px] text-slate-300">
+              <MapPin className="h-3 w-3 shrink-0 text-blue-300" />
+              <span className="min-w-0 flex-1 truncate" title={`${globalState !== 'all' ? globalState : 'US'}${globalCounty !== 'all' ? ` · ${globalCounty}` : ''}${globalCity !== 'all' ? ` · ${globalCity}` : ''}`}>
+                {globalState !== 'all' ? globalState : 'US'}
+                {globalCounty !== 'all' ? ` · ${globalCounty}` : ''}
+                {globalCity !== 'all' ? ` · ${globalCity}` : ''}
+              </span>
+              {onClearGeography && (
+                <button
+                  type="button"
+                  onClick={onClearGeography}
+                  className="shrink-0 text-blue-300 hover:text-white"
+                  title="Reset geography filter"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
+
+          {pendingSyncCount > 0 && (
+            <button
+              type="button"
+              onClick={triggerManualSync}
+              disabled={!isOnline || isSyncing}
+              className="flex h-8 w-full items-center gap-2 rounded-lg border border-amber-800 bg-amber-950/40 px-2.5 text-[11px] font-medium text-amber-200 hover:bg-amber-900/50 disabled:opacity-50"
+              aria-label={`${pendingSyncCount} pending sync items${!isOnline ? ', offline' : ''}`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="truncate">{isSyncing ? 'Syncing…' : `Sync ${pendingSyncCount} pending`}</span>
+            </button>
+          )}
+
+          {openCommandPalette && (
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="flex h-8 w-full items-center gap-2 rounded-lg border border-[#233B5E] bg-[#101F34] px-2.5 text-[11px] font-medium text-slate-200 hover:bg-[#172D49]"
+              title="Search agencies, cities, ZIP codes, or NPIs"
+            >
+              <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className="min-w-0 flex-1 truncate text-left">Search</span>
+              <kbd className="rounded border border-[#344B68] px-1 text-[9px] text-slate-400">⌘K</kbd>
+            </button>
+          )}
+
+          {openChatbot && (
+            <button
+              type="button"
+              onClick={openChatbot}
+              className="flex h-8 w-full items-center gap-2 rounded-lg border border-blue-800/80 bg-blue-950/45 px-2.5 text-[11px] font-semibold text-blue-200 hover:bg-blue-900/60"
+              title="Open Territory Strategy AI"
+            >
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-300" />
+              <span className="truncate">Strategy AI</span>
+            </button>
+          )}
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={openNotifications}
+              aria-label={`Notifications${unreadAlertCount > 0 ? `, ${unreadAlertCount} unread` : ''}`}
+              className="relative flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-1.5 text-[10px] font-medium text-slate-300 hover:bg-[#172D49]"
+              title="Notifications"
+            >
+              <Bell className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Alerts</span>
+              {unreadAlertCount > 0 && (
+                <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[#285EE8] px-1 text-center text-[9px] font-bold text-white">
+                  {unreadAlertCount}
+                </span>
+              )}
+            </button>
+
+            {onToggleDarkMode && (
+              <button
+                type="button"
+                onClick={onToggleDarkMode}
+                aria-label={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
+                className="flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-1.5 text-[10px] font-medium text-slate-300 hover:bg-[#172D49]"
+                title={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
+              >
+                {isDarkMode ? <Sun className="h-3.5 w-3.5 shrink-0 text-amber-300" /> : <Moon className="h-3.5 w-3.5 shrink-0" />}
+                <span className="truncate">Theme</span>
+              </button>
+            )}
+          </div>
+
+          <div className="relative" ref={desktopUtilityRef}>
+            <button
+              type="button"
+              onClick={() => setIsUtilityMenuOpen((prev) => !prev)}
+              className="flex h-8 w-full items-center gap-2 rounded-lg border border-[#233B5E] bg-[#101F34] px-2.5 text-[11px] font-medium text-slate-300 hover:bg-[#172D49]"
+              title="Help and sources"
+              aria-label="Help and sources"
+              aria-expanded={isUtilityMenuOpen}
+            >
+              <CircleHelp className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className="min-w-0 flex-1 truncate text-left">Help &amp; sources</span>
+              <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
+            </button>
+            {isUtilityMenuOpen && (
+              <div className="absolute bottom-full right-0 z-[60] mb-2 w-56 rounded-xl border border-[#DFE6EF] bg-white py-2 text-xs shadow-xl dark:border-[#1E2D42] dark:bg-[#111C2D]">
+                <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
+                  Help &amp; sources
+                </div>
+                <div className="space-y-0.5 px-2 pt-1">
+                  {onToggleGuide && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onToggleGuide();
+                        setIsUtilityMenuOpen(false);
+                      }}
+                      className="w-full rounded-md px-2.5 py-1.5 text-left text-[#14283F] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      {showGuide ? 'Hide Quick Start Strip' : 'Show Quick Start Strip'}
+                    </button>
+                  )}
+                  {openDataLineageModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openDataLineageModal();
+                        setIsUtilityMenuOpen(false);
+                      }}
+                      className="w-full rounded-md px-2.5 py-1.5 text-left text-[#14283F] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Federal data lineage &amp; sources
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Sidebar Footer: Data State */}
         <div className="p-3 border-t border-[#172D49] bg-[#091322] space-y-2 shrink-0">
           <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
             <button
@@ -383,21 +525,12 @@ export const TopBar: React.FC<TopBarProps> = ({
               </span>
             </button>
 
-            {openDataLineageModal && (
-              <button
-                type="button"
-                onClick={openDataLineageModal}
-                className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
-              >
-                Sources
-              </button>
-            )}
           </div>
         </div>
       </aside>
 
-      {/* Stable top toolbar */}
-      <header className="pi-command-header sticky top-0 z-40 h-16 md:h-16 md:pl-64 bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
+      {/* Mobile-only utility header; desktop actions are integrated into the sidebar. */}
+      <header className="pi-command-header sticky top-0 z-40 h-16 md:hidden bg-white dark:bg-[#111C2D] border-b border-[#DFE6EF] dark:border-[#1E2D42] transition-colors">
         <div className="h-full max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Left: Mobile Brand + Current Workspace Context & Active Geography */}
           <div className="flex items-center gap-3 min-w-0">
@@ -493,17 +626,6 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
 
-            {/* Primary Action: Log Field Visit */}
-            <button
-              type="button"
-              onClick={openQuickVisitModal}
-              className="h-9 px-3.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              title="Log a station visit or field note"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Log Visit</span>
-            </button>
-
             {/* Notifications Drawer Trigger */}
             <button
               type="button"
@@ -534,7 +656,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             )}
 
             {/* Help and source utilities */}
-            <div className="relative" ref={utilityRef}>
+            <div className="relative" ref={mobileUtilityRef}>
               <button
                 type="button"
                 onClick={() => setIsUtilityMenuOpen(prev => !prev)}

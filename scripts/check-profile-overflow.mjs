@@ -20,6 +20,19 @@ const comparisonViewports = [
   { width: 768, height: 900, mobile: false },
   { width: 1280, height: 900, mobile: false },
 ];
+const workspaceRegressionViewports = [
+  { width: 390, height: 844, mobile: true },
+  { width: 768, height: 900, mobile: false },
+  { width: 1280, height: 900, mobile: false },
+];
+const specialistAndSystemViews = [
+  { group: 'Specialist tools', tab: 'Clinical & competitive', heading: 'Clinical & competitive knowledge hub' },
+  { group: 'Specialist tools', tab: 'Medicare & public health', heading: 'Public healthcare, CMS claims & EMS outcomes engine' },
+  { group: 'Specialist tools', tab: 'Equipment viewer', heading: '3D Ambulance, Fire Apparatus' },
+  { group: 'Specialist tools', tab: 'Federal sources', heading: 'Nationwide Federal Registry' },
+  { group: 'Data & system', tab: 'Data health & sync', heading: 'Data Health, Cloud Synchronization' },
+  { group: 'Data & system', tab: 'Backup & restore', heading: 'Local Backup & State Archive Center' },
+];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -592,6 +605,139 @@ async function checkComparisonAtViewport(cdp, viewport, downloadPath) {
   console.log(`✓ ${viewport.width}px: no page overflow, correct layout, filters, sorting, and CSV export`);
 }
 
+async function openSpecialistOrSystemView(cdp, view) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 1280,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await clickVisibleButton(cdp, view.group, `${view.group} navigation`);
+  const navLabel = view.group === 'Specialist tools'
+    ? 'Specialist tool views'
+    : 'Data and system views';
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('nav[aria-label="${navLabel}"]'))`,
+    `${view.group} view tabs`,
+  );
+  const selected = await evaluate(cdp, `(() => {
+    const nav = document.querySelector('nav[aria-label="${navLabel}"]');
+    const button = [...(nav?.querySelectorAll('button') ?? [])]
+      .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(view.tab)});
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(selected, `Could not select "${view.tab}"`);
+  await waitFor(
+    cdp,
+    `(() => {
+      const workspace = document.querySelector('main.workspace-grid-shell .operations-workspace');
+      return Boolean(workspace && [...workspace.querySelectorAll('h1, h2')]
+        .some((heading) => heading.innerText.includes(${JSON.stringify(view.heading)})));
+    })()`,
+    `"${view.heading}" workspace`,
+    60_000,
+  );
+}
+
+async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(resolve)))`);
+
+  const layout = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const main = document.querySelector('main.workspace-grid-shell');
+    const workspace = main?.querySelector('.operations-workspace');
+    if (!main || !workspace) return null;
+    const headings = [...workspace.querySelectorAll('h1, h2')];
+    const heading = headings.find((item) => item.innerText.includes(${JSON.stringify(view.heading)}));
+    const headingStyle = heading ? getComputedStyle(heading) : null;
+    const tokenProbe = document.createElement('span');
+    tokenProbe.style.backgroundColor = 'var(--pi-surface-bg)';
+    tokenProbe.style.color = 'var(--pi-text-primary)';
+    tokenProbe.style.fontFamily = 'var(--font-display)';
+    document.body.appendChild(tokenProbe);
+    const expectedSurface = getComputedStyle(tokenProbe).backgroundColor;
+    const expectedText = getComputedStyle(tokenProbe).color;
+    const expectedDisplayFont = getComputedStyle(tokenProbe).fontFamily;
+    tokenProbe.remove();
+    const surfaces = [...workspace.querySelectorAll(
+      '[class~="bg-white"], [class*="dark:bg-slate-900"]',
+    )];
+    const surface = surfaces.find((item) =>
+      getComputedStyle(item).backgroundColor === expectedSurface);
+    const bounds = main.getBoundingClientRect();
+    return {
+      viewport: innerWidth,
+      documentWidth: root.scrollWidth,
+      mainWidth: main.scrollWidth,
+      mainClientWidth: main.clientWidth,
+      mainLeft: bounds.left,
+      mainRight: bounds.right,
+      headingPresent: Boolean(heading),
+      headingFont: headingStyle?.fontFamily ?? null,
+      displayFont: expectedDisplayFont,
+      headingColor: headingStyle?.color ?? null,
+      expectedText,
+      surfacePresent: Boolean(surface),
+      surfaceColor: surface ? getComputedStyle(surface).backgroundColor : null,
+      expectedSurface,
+    };
+  })()`);
+  assert(layout, `Missing main workspace content for "${view.tab}" at ${viewport.width}px`);
+  assert(
+    layout.viewport === viewport.width,
+    `Expected ${viewport.width}px viewport, got ${layout.viewport}px`,
+  );
+  assert(
+    layout.documentWidth <= viewport.width + 1,
+    `"${view.tab}" document overflows at ${viewport.width}px (${layout.documentWidth}px wide)`,
+  );
+  assert(
+    layout.mainWidth <= layout.mainClientWidth + 1,
+    `"${view.tab}" main workspace overflows at ${viewport.width}px (${layout.mainWidth}px content / ${layout.mainClientWidth}px visible)`,
+  );
+  assert(
+    layout.mainLeft >= -1 && layout.mainRight <= viewport.width + 1,
+    `"${view.tab}" main workspace extends beyond the ${viewport.width}px viewport`,
+  );
+  assert(
+    layout.headingPresent && layout.headingFont === layout.displayFont &&
+      layout.headingColor === layout.expectedText,
+    `"${view.tab}" is missing shared heading styling at ${viewport.width}px: ${JSON.stringify(layout)}`,
+  );
+  assert(
+    layout.surfacePresent && layout.surfaceColor === layout.expectedSurface,
+    `"${view.tab}" is missing shared surface styling at ${viewport.width}px: ${JSON.stringify(layout)}`,
+  );
+  console.log(`✓ ${viewport.width}px: ${view.tab}, shared heading/surface, no horizontal overflow`);
+}
+
+async function checkSpecialistAndSystemViews(cdp) {
+  for (const view of specialistAndSystemViews) {
+    await cdp.send('Page.navigate', { url: baseUrl });
+    await waitFor(
+      cdp,
+      `document.querySelector('#root')?.childElementCount > 0 &&
+        document.body.innerText.includes('Interactive U.S. Territory Map')`,
+      'the app before opening a specialist or system view',
+      60_000,
+    );
+    await openSpecialistOrSystemView(cdp, view);
+    for (const viewport of workspaceRegressionViewports) {
+      await checkSpecialistAndSystemAtViewport(cdp, view, viewport);
+    }
+  }
+}
+
 async function main() {
   const response = await fetch(baseUrl);
   assert(
@@ -635,7 +781,8 @@ async function main() {
     for (const viewport of comparisonViewports) {
       await checkComparisonAtViewport(cdp, viewport, downloadPath);
     }
-    console.log('Agency profile and comparison overflow checks passed at all requested viewport widths.');
+    await checkSpecialistAndSystemViews(cdp);
+    console.log('Agency profile, comparison, specialist, and system responsive checks passed.');
   } finally {
     cdp?.close();
     const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));
@@ -662,6 +809,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`Agency responsive browser check failed: ${error.message}`);
+  console.error(`Responsive browser check failed: ${error.message}`);
   process.exitCode = 1;
 });

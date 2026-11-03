@@ -508,9 +508,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <stop offset=".55" stopColor="#183b4b" stopOpacity=".15" />
                     <stop offset="1" stopColor="#071521" stopOpacity="0" />
                   </radialGradient>
+                  <filter id="home-map-land-glow" x="-12%" y="-12%" width="124%" height="124%">
+                    <feGaussianBlur stdDeviation="9" />
+                  </filter>
                   <pattern id="home-map-bathymetry" width="260" height="180" patternUnits="userSpaceOnUse">
-                    <path d="M-34 111C12 58 67 47 110 72s79 29 136-15M-26 140C20 87 74 77 119 101s83 27 143-18M-9 168c39-43 84-48 126-27s78 24 129-12" fill="none" stroke="#75a3ae" strokeOpacity=".09" strokeWidth="1" />
-                    <path d="M189-25c-35 28-42 58-16 83s29 56 6 95M225-21c-35 28-42 58-16 83s29 56 6 95" fill="none" stroke="#75a3ae" strokeOpacity=".055" strokeWidth="1" />
+                    <path d="M-34 111C12 58 67 47 110 72s79 29 136-15M-26 140C20 87 74 77 119 101s83 27 143-18M-9 168c39-43 84-48 126-27s78 24 129-12" fill="none" stroke="#75a3ae" strokeOpacity=".14" strokeWidth="1" />
+                    <path d="M189-25c-35 28-42 58-16 83s29 56 6 95M225-21c-35 28-42 58-16 83s29 56 6 95" fill="none" stroke="#75a3ae" strokeOpacity=".095" strokeWidth="1" />
                   </pattern>
                   <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                     <rect width="7" height="7" fill="#172A3D" />
@@ -520,9 +523,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <rect width="920" height="500" fill="url(#home-map-ocean)" />
                 <rect width="920" height="500" fill="url(#home-map-atmosphere)" />
                 <rect width="920" height="500" fill="url(#home-map-bathymetry)" />
-                <g fill="none" stroke="#8ab5bd" strokeOpacity=".1" strokeWidth=".8" pointerEvents="none">
+                <g fill="none" stroke="#8ab5bd" strokeOpacity=".14" strokeWidth=".8" pointerEvents="none">
                   <path d="M0 116C220 94 480 99 920 74M0 194C232 174 534 180 920 151M0 272C238 249 538 260 920 232M0 350C236 329 554 339 920 311M0 428C252 409 590 415 920 389" />
                   <path d="M118 0C138 130 140 320 124 500M286 0C300 146 303 354 291 500M454 0C462 151 463 350 458 500M622 0C621 150 631 350 643 500M790 0C777 160 790 350 811 500" strokeDasharray="2 8" />
+                  <ellipse cx="465" cy="245" rx="400" ry="206" strokeOpacity=".12" strokeDasharray="3 8" />
+                  <ellipse cx="465" cy="245" rx="350" ry="178" strokeOpacity=".08" />
                 </g>
                 <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
@@ -533,6 +538,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
                   <rect x="196" y="396" width="124" height="94" rx="10" fill="#0C1B2A" fillOpacity="0.98" stroke="#52718D" strokeWidth="1.25" strokeDasharray="4 4" />
                   <text x="206" y="413" fill="#C3D3E2" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
+                </g>
+
+                {/* A restrained coastal halo separates the national silhouette from the ocean field. */}
+                <g fill="#58d2d1" opacity="0.3" filter="url(#home-map-land-glow)" pointerEvents="none" aria-hidden="true">
+                  {Object.values(ALL_50_STATES_SUMMARIES).map((st) => {
+                    const boundary = US_STATES_SVG_PATHS[st.code];
+                    return boundary?.d ? <path key={`home-glow-${st.code}`} d={boundary.d} /> : null;
+                  })}
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}

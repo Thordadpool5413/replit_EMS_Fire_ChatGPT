@@ -173,32 +173,32 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   if (!stateNode) return null;
 
   return (
-    <div className="space-y-4">
-      <header className="county-risk-explorer-header flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div className="space-y-3">
+      <header className="county-risk-explorer-header flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">
             <Compass className="h-4 w-4" />
             County risk explorer
           </div>
-          <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+          <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-950 sm:text-xl">
             {stateNode.stateName} county profiles
           </h3>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+          <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-600">
             Select a county on the map to inspect local context and connected cities.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+        <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             FEMA National Risk Index
           </span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 tabular-nums">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 tabular-nums">
             {stateNode.countiesList.length} counties
           </span>
         </div>
       </header>
 
-      <details className="group rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_6px_20px_-18px_rgba(15,23,42,0.35)]">
+      <details className="group rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-[0_6px_20px_-18px_rgba(15,23,42,0.35)]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-700 marker:hidden">
           <span className="inline-flex items-center gap-2">
             <Layers className="h-4 w-4 text-blue-700" />
@@ -304,9 +304,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
       {/* Mode A: Statewide County Boundary Choropleth + Hierarchy Inspector */}
       {!activeCountyNode && (
-        <div className="county-state-map-grid grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div className="county-state-map-grid grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
           {/* Left 7 Cols: Interactive SVG County Boundary Map */}
-          <div className="county-state-map-panel relative isolate overflow-hidden rounded-2xl border border-[#243751] bg-[#0A1526] p-4 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-5 lg:col-span-7 flex min-h-[400px] flex-col justify-between">
+          <div className="county-state-map-panel relative isolate overflow-hidden rounded-xl border border-[#243751] bg-[#0A1526] p-3 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-4 lg:col-span-7 flex min-h-[320px] flex-col justify-between">
             <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-medium text-slate-300">Select any county boundary to explore its cities and providers</span>
@@ -324,7 +324,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 <svg
                   viewBox={countyMapViewBox}
                   preserveAspectRatio="xMidYMid meet"
-                  className="county-state-map-svg h-full max-h-[390px] w-full min-h-0 select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
+                  className="county-state-map-svg h-full max-h-[300px] w-full min-h-0 select-none drop-shadow-[0_8px_22px_rgba(0,0,0,0.24)]"
                   role="img"
                   aria-label={`${stateNode.stateName} County Boundaries Map`}
                 >
@@ -370,16 +370,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </div>
             )}
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 text-[11px] text-slate-300">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 text-[10px] text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {Object.entries(nriRatingColors).map(([rating, color]) => (
                   <span key={rating} className="flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 rounded-sm ring-1 ring-white/30" style={{ backgroundColor: color }} />
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm ring-1 ring-white/30" style={{ backgroundColor: color }} />
                     <span>{rating}</span>
                   </span>
                 ))}
                 <span className="flex items-center gap-2">
-                  <span className="inline-block h-3 w-3 rounded-sm bg-slate-600 ring-1 ring-white/30" />
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-600 ring-1 ring-white/30" />
                   <span>No matching data</span>
                 </span>
               </div>
@@ -388,10 +388,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
 
           {/* Right 5 Cols: Real-Time County Boundary & City Hierarchy Node Inspector */}
-          <div className="county-state-summary-panel lg:col-span-5 flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-5">
+          <div className="county-state-summary-panel lg:col-span-5 flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-4">
             {inspectedCounty ? (
-              <div className="space-y-4">
-                <div className="border-b border-slate-100 pb-4">
+              <div className="space-y-3">
+                <div className="border-b border-slate-100 pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                       {hoveredCountyFips ? 'Map preview' : 'County overview'}
@@ -400,10 +400,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       FIPS {inspectedCounty.countyFips}
                     </span>
                   </div>
-                  <h4 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                  <h4 className="mt-1.5 text-xl font-bold tracking-tight text-slate-950">
                     {inspectedCounty.countyName}, {stateNode.stateName}
                   </h4>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
                     <span>County seat <strong className="font-semibold text-slate-900">{inspectedCounty.countySeat}</strong></span>
                     <span aria-hidden="true" className="text-slate-300">·</span>
                     <span>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</span>
@@ -411,10 +411,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 </div>
 
                 {/* County context: large enough to scan, with source details kept accessible. */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <span className="block text-xs font-medium text-slate-500">Population reference</span>
-                    <span className="mt-1 block text-xl font-bold tabular-nums tracking-tight text-slate-950">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                    <span className="block text-[11px] font-medium text-slate-500">Population reference</span>
+                    <span className="mt-0.5 block text-lg font-bold tabular-nums tracking-tight text-slate-950">
                       {inspectedCounty.population.toLocaleString()}
                     </span>
                     <span className="mt-1 block text-[11px] text-slate-500">
@@ -492,9 +492,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       </span>
                     )}
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <span className="block text-xs font-medium text-slate-500">Average transport</span>
-                    <span className="mt-1 block text-xl font-bold tabular-nums tracking-tight text-blue-800">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                    <span className="block text-[11px] font-medium text-slate-500">Average transport</span>
+                    <span className="mt-0.5 block text-lg font-bold tabular-nums tracking-tight text-blue-800">
                       {inspectedCounty.averageTransportMinutes} min
                     </span>
                   </div>

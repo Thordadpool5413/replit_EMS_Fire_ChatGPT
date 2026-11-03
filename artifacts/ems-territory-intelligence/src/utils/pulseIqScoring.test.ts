@@ -34,6 +34,7 @@ import {
   rankAgenciesByPulseIqScore,
   rankByPulseIqScore
 } from './pulseIqRanking';
+import { isPulseIqScoreWithinRange } from './pulseIqRange';
 
 const agency = (claimDenialRate: number, estimatedRecoverableRevenue: number): Agency => ({
   id: 'agency-claim-score-test',
@@ -159,6 +160,17 @@ test('mobile and map surfaces display a valid zero score and distinguish a missi
   assert.match(compactMissingMarkerMarkup, /PulseIQ estimate/);
   assert.match(compactMissingMarkerMarkup, /aria-label="PulseIQ estimate: Not reported"/);
   assert.match(compactMissingMarkerMarkup, />Not reported</);
+});
+
+test('PulseIQ map range includes zero and excludes missing or invalid scores when active', () => {
+  assert.equal(isPulseIqScoreWithinRange(0, 0, 0), true);
+  assert.equal(isPulseIqScoreWithinRange(1, 0, 0), false);
+  assert.equal(isPulseIqScoreWithinRange(50, 40, 60), true);
+  assert.equal(isPulseIqScoreWithinRange(39, 40, 60), false);
+  assert.equal(isPulseIqScoreWithinRange(undefined, 0, 100), false);
+  assert.equal(isPulseIqScoreWithinRange(null, 0, 100), false);
+  assert.equal(isPulseIqScoreWithinRange(Number.NaN, 0, 100), false);
+  assert.equal(isPulseIqScoreWithinRange(undefined, null, null), true);
 });
 
 test('unmapped factors and changed claim evidence do not hide or change displayed PulseIQ scores', () => {

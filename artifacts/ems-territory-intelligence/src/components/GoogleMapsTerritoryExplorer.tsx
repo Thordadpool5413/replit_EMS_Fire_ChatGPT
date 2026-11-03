@@ -51,6 +51,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { PulseIqEstimateLabel, PulseIqMarkerEstimate } from './PulseIqEstimateLabel';
 import { TerritoryMapPulseIqScore } from './PulseIqSurfaceDisplays';
 import { groupOverlappingMapMarkers } from '../utils/mapMarkerClusters';
+import { isPulseIqScoreWithinRange } from '../utils/pulseIqRange';
 
 interface GoogleMapsTerritoryExplorerProps {
   agencies: Agency[];
@@ -221,6 +222,8 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   // Filters & Map Display Settings
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTier, setSelectedTier] = useState<string>('all');
+  const [minPulseIqScore, setMinPulseIqScore] = useState<string>('');
+  const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>('');
   const [selectedAgencyForInfo, setSelectedAgencyForInfo] = useState<Agency | null>(null);
   const [mapTypeId, setMapTypeId] = useState<string>('roadmap');
   const [showNearbyDrawer, setShowNearbyDrawer] = useState<boolean>(true);
@@ -311,6 +314,8 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   // Filtered agencies based on State/County OR Near Me location
   const filteredAgencies = useMemo(() => {
+    const minScore = minPulseIqScore === '' ? null : Number(minPulseIqScore);
+    const maxScore = maxPulseIqScore === '' ? null : Number(maxPulseIqScore);
     let pool = agencies.filter((agency) => {
       // Must have valid coordinates
       return typeof agency.latitude === 'number' && !isNaN(agency.latitude) && 
@@ -363,10 +368,30 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
       );
     }
 
-    // 6. Safe Marker Ceiling (Guards mobile memory & WebGL from crashing)
+    // 6. PulseIQ range; missing or invalid estimates are excluded only while a bound is active.
+    if (minScore !== null || maxScore !== null) {
+      pool = pool.filter(a =>
+        isPulseIqScoreWithinRange(a.zollOpportunity?.pulseIqScore, minScore, maxScore),
+      );
+    }
+
+    // 7. Safe Marker Ceiling (Guards mobile memory & WebGL from crashing)
     // Limits simultaneously rendered map markers to top 150 prioritized records
     return pool.slice(0, 150);
-  }, [agencies, globalCategory, isNearMeActive, userLocation, nearMeRadiusMiles, globalState, globalCounty, globalCity, selectedTier, searchQuery]);
+  }, [
+    agencies,
+    globalCategory,
+    isNearMeActive,
+    userLocation,
+    nearMeRadiusMiles,
+    globalState,
+    globalCounty,
+    globalCity,
+    selectedTier,
+    searchQuery,
+    minPulseIqScore,
+    maxPulseIqScore,
+  ]);
 
   // Compute map center and zoom
   const mapCenter = useMemo(() => {
@@ -809,6 +834,67 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   ))}
                 </div>
               )}
+
+              {/* PulseIQ Estimate Range */}
+              <div
+                className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                aria-label="PulseIQ estimate range filter"
+              >
+                <span className="mr-0.5 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  PulseIQ
+                </span>
+                <label className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  Min
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    inputMode="numeric"
+                    value={minPulseIqScore}
+                    onChange={(event) => setMinPulseIqScore(event.target.value)}
+                    placeholder="Any"
+                    aria-label="Minimum PulseIQ estimate"
+                    data-testid="pulseiq-range-min"
+                    className="h-7 w-14 rounded-md border border-slate-300 bg-white px-1.5 text-xs font-semibold tabular-nums text-slate-900 outline-none focus:ring-2 focus:ring-[#285EE8] dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                  />
+                </label>
+                <label className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  Max
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    inputMode="numeric"
+                    value={maxPulseIqScore}
+                    onChange={(event) => setMaxPulseIqScore(event.target.value)}
+                    placeholder="Any"
+                    aria-label="Maximum PulseIQ estimate"
+                    data-testid="pulseiq-range-max"
+                    className="h-7 w-14 rounded-md border border-slate-300 bg-white px-1.5 text-xs font-semibold tabular-nums text-slate-900 outline-none focus:ring-2 focus:ring-[#285EE8] dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                  />
+                </label>
+                {(minPulseIqScore !== '' || maxPulseIqScore !== '') && (
+                  <>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Unscored excluded
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMinPulseIqScore('');
+                        setMaxPulseIqScore('');
+                      }}
+                      className="rounded px-1.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-slate-700"
+                      aria-label="Clear PulseIQ estimate range"
+                      data-testid="pulseiq-range-clear"
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
 
               {/* Map Type Switcher */}
               <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800">

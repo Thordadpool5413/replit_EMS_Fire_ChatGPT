@@ -2682,6 +2682,318 @@
   }
 }
 
+/* Mobile field-work pass — compact shell, full-width map, and safe fixed navigation. */
+@media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .pi-app-shell {
+    min-height: 100dvh;
+    padding-bottom: 0 !important;
+  }
+
+  .pi-command-header {
+    position: sticky;
+    top: 0;
+    height: calc(3.25rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top);
+    background-color: color-mix(in srgb, var(--pi-nav-bg) 96%, transparent) !important;
+    border-color: #20384c !important;
+    color: #f3f7fa;
+  }
+
+  .pi-command-header > div {
+    height: 3.25rem;
+    padding-inline: 0.75rem !important;
+  }
+
+  .pi-mobile-logo {
+    width: 2.65rem !important;
+    height: 2.65rem !important;
+    border: 1px solid rgba(116, 177, 181, 0.52);
+  }
+
+  .pi-header-actions > button,
+  .pi-header-actions > .relative > button {
+    width: 2.25rem;
+    height: 2.25rem;
+    color: #d6e2e9;
+    background: #112538;
+    border-color: #294355;
+  }
+
+  /* Scope and search live in their relevant workspaces; avoid repeating them below the logo. */
+  .pi-command-header + [aria-label="Mobile Provider Filter Bar"] {
+    display: none !important;
+  }
+
+  .workspace-grid-shell {
+    gap: 0.6rem !important;
+    padding: 0.55rem 0.65rem 6.25rem !important;
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+
+  .workspace-grid-shell > nav {
+    margin: 0 !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .workspace-grid-shell > nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-territory-map-screen-v2 {
+    margin-top: 0 !important;
+    gap: 0.55rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-page-heading {
+    padding-bottom: 0.45rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-page-heading .pi-section-heading {
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .home-territory-map-screen-v2 .home-map-page-heading .pi-supporting {
+    margin-top: 0.2rem !important;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .home-territory-map-screen-v2 .home-map-region-filter {
+    max-width: 100%;
+    margin-top: 0.45rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-region-filter > div {
+    width: max-content;
+    max-width: 100%;
+    gap: 0.15rem;
+    padding: 0.2rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-region-filter button {
+    min-height: 2.35rem;
+    padding-inline: 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    gap: 0.45rem !important;
+    padding: 0.55rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end !important;
+    gap: 0.45rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 > label {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.2rem !important;
+    min-width: 0;
+    font-size: 0.625rem !important;
+    letter-spacing: 0.09em !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-layer-select {
+    min-height: 2.65rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control {
+    min-height: 2.65rem;
+    align-self: end !important;
+    gap: 0 !important;
+    padding: 0.12rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button {
+    min-width: 2.35rem !important;
+    min-height: 2.35rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control > span {
+    min-width: 2.6rem;
+    font-size: 0.6875rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-legend-v2 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem 0.65rem !important;
+    padding-top: 0.4rem !important;
+    font-size: 0.6875rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-legend-v2 > span:first-child {
+    flex: 1 0 100%;
+    font-size: 0.75rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-legend-v2 > span:nth-child(2) {
+    flex: 1 0 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 3.25rem minmax(0, 1fr);
+    gap: 0.35rem !important;
+    font-size: 0.6875rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-legend-v2 > span:nth-child(2) > span:nth-child(2) {
+    width: 3.25rem !important;
+    flex-basis: 3.25rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-legend-v2 > span:nth-child(n + 3) {
+    font-size: 0.6875rem;
+  }
+
+  .home-territory-map-screen-v2 .home-map-visual-v2 {
+    gap: 0.35rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-visual-v2 > p {
+    margin: 0 !important;
+    font-size: 0.6875rem !important;
+    line-height: 1.35;
+  }
+
+  .home-territory-map-screen-v2 .home-map-viewport {
+    aspect-ratio: 920 / 500;
+    min-height: 0;
+    touch-action: pan-x pan-y;
+  }
+
+  .home-territory-map-screen-v2 .home-map-shortcuts {
+    max-width: 100%;
+    padding-bottom: 0.15rem !important;
+    scroll-padding-inline: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .home-territory-map-screen-v2 .home-map-shortcuts > button {
+    min-height: 2.6rem;
+    min-width: 2.6rem;
+  }
+
+  /* The profile actions are already available in its header; the bottom workspace nav stays primary. */
+  [aria-label="Account Action Dock"] {
+    display: none !important;
+  }
+
+  .provider-profile-overlay {
+    bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .profile-workspace {
+    min-height: 100% !important;
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
+  .pi-mobile-nav {
+    height: calc(4rem + env(safe-area-inset-bottom)) !important;
+    padding: 0 0 max(env(safe-area-inset-bottom), 0px) !important;
+    background: color-mix(in srgb, var(--pi-nav-bg) 97%, transparent) !important;
+    border-color: #20384c !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .pi-mobile-nav > div {
+    height: 4rem !important;
+    padding-inline: 0.2rem !important;
+  }
+
+  .pi-mobile-nav button {
+    min-height: 3rem !important;
+    min-width: 0;
+    gap: 0.05rem;
+  }
+
+  .pi-mobile-nav button span {
+    font-size: 0.625rem !important;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .profile-workspace section {
+    scroll-margin-top: calc(4rem + env(safe-area-inset-top));
+  }
+
+  input,
+  select,
+  textarea {
+    scroll-margin-bottom: 1rem;
+  }
+
+  .workspace-section-grid,
+  .workspace-view-container {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .territory-explorer-screen {
+    gap: 0.85rem !important;
+  }
+
+  .territory-explorer-screen .geography-drilldown-breadcrumb {
+    padding: 0.7rem !important;
+    border-radius: 0.8rem !important;
+  }
+
+  .territory-explorer-screen input:not([type="checkbox"]),
+  .territory-explorer-screen select,
+  .workspace-view-container input:not([type="checkbox"]),
+  .workspace-view-container select {
+    min-height: 2.75rem;
+    max-width: 100%;
+    font-size: 0.875rem;
+  }
+
+  .territory-explorer-screen button,
+  .workspace-view-container button {
+    touch-action: manipulation;
+  }
+
+  .territory-explorer-screen [class*="grid-cols-"] {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .workspace-grid-shell {
+    padding-inline: 0.5rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    padding: 0.45rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button {
+    min-width: 2.15rem !important;
+    min-height: 2.25rem !important;
+  }
+
+  .pi-mobile-nav button span {
+    font-size: 0.58rem !important;
+  }
+}
+
 /* Specialist and data-management views use the shared territory surfaces and type scale. */
 .operations-workspace {
   min-width: 0;

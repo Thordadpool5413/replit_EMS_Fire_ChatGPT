@@ -126,7 +126,7 @@ const FactVerificationTag: React.FC<{
         : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
   }`;
   const title = evidence
-    ? `${evidence.sourceName}${evidence.sourceKind ? ` · ${evidence.sourceKind.toUpperCase()}` : ''}${evidence.note ? ` · ${evidence.note}` : ''}`
+    ? `${evidence.sourceName}${evidence.sourceKind ? ` · ${evidence.sourceKind.toUpperCase()}` : ''}${evidence.reportingPeriod ? ` · ${evidence.reportingPeriod}` : ''}${evidence.note ? ` · ${evidence.note}` : ''}`
     : unverifiedLabel;
   return evidence?.sourceUrl ? (
     <a
@@ -697,6 +697,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     window.print();
   };
 
+  const isFireAgency = agency.agencyType?.toLowerCase().includes('fire') ?? false;
   const primaryContact = agency.keyContacts[0];
   const topSourceItems = [
     { label: 'Agency address', sourceName: agency.factEvidence?.providerAddress?.sourceName, period: agency.factEvidence?.providerAddress?.reportingPeriod, url: agency.factEvidence?.providerAddress?.sourceUrl },
@@ -704,12 +705,22 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     { label: 'Operations', sourceName: agency.factEvidence?.annualEmergencyVolume?.sourceName || agency.factEvidence?.annualCallsReceived?.sourceName, period: agency.factEvidence?.annualEmergencyVolume?.reportingPeriod || agency.factEvidence?.annualCallsReceived?.reportingPeriod, url: agency.factEvidence?.annualEmergencyVolume?.sourceUrl || agency.factEvidence?.annualCallsReceived?.sourceUrl },
     { label: 'Frontline units', sourceName: agency.factEvidence?.frontlineApparatusStations?.sourceName || agency.factEvidence?.frontlineRescueUnits?.sourceName, period: agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || agency.factEvidence?.frontlineRescueUnits?.reportingPeriod, url: agency.factEvidence?.frontlineApparatusStations?.sourceUrl || agency.factEvidence?.frontlineRescueUnits?.sourceUrl },
     ...(agency.sourceFacts ?? []).map((fact) => ({
-      label: fact.fieldKey,
+      label: fact.fieldKey
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/^./, (character) => character.toUpperCase()),
       sourceName: fact.sourceName,
       period: fact.reportingPeriod || fact.effectivePeriod,
       url: fact.sourceUrl,
     })),
-  ].filter((source) => source.sourceName || source.url).slice(0, 4);
+  ]
+    .filter((source) => source.sourceName || source.url)
+    .filter((source, index, allSources) => allSources.findIndex((candidate) =>
+      candidate.label === source.label &&
+      candidate.sourceName === source.sourceName &&
+      candidate.period === source.period &&
+      candidate.url === source.url,
+    ) === index)
+    .slice(0, 3);
 
   const showSection = (
     sec:
@@ -1103,7 +1114,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
              ================================================================ */}
           <section
             aria-label="Account 360 Executive Decision Header"
-            className="pi-surface p-4 sm:p-5 lg:p-6 space-y-5"
+            className="profile-executive-header pi-surface p-4 sm:p-5 lg:p-6 space-y-5"
           >
             {/* BLOCK 1: AGENCY IDENTITY, OFFICIAL IDENTIFIERS & SOURCE VERIFICATION */}
             <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -1159,8 +1170,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
 
                 {/* Fast-review summary: contact, location, operations, and citations */}
-                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
+                <div className="profile-summary-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
                     <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Agency contact</h2>
                     <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white [overflow-wrap:anywhere]">{primaryContact?.name || 'Not reported'}</p>
                     {primaryContact?.title && <p className="break-words text-[#53657B] dark:text-slate-400 [overflow-wrap:anywhere]">{primaryContact.title}</p>}
@@ -1176,22 +1187,69 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     )}
                   </section>
 
-                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency location summary">
+                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency location summary">
                     <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Location</h2>
                     <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white">{agency.address || 'Address not reported'}</p>
-                    <p className="mt-0.5 text-[#53657B] dark:text-slate-400">{[agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ')}</p>
+                    <p className="mt-0.5 text-[#53657B] dark:text-slate-400">{[agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ') || 'Not reported'}</p>
                     {safeExternalUrl(agency.googleMapsUri) && <a href={safeExternalUrl(agency.googleMapsUri)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-8 items-center gap-1 font-semibold text-[#285EE8] dark:text-blue-300"><MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Open map</a>}
                   </section>
 
-                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency operations summary">
+                  <section className="profile-summary-panel profile-operations-summary min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency operations summary">
                     <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Operations</h2>
-                    <p className="mt-1 font-semibold text-[#14283F] dark:text-white">{reportMetric(agency.stationsCount)} stations · {reportMetric(agency.totalAmbulances)} ambulances</p>
-                    <p className="text-[#53657B] dark:text-slate-400">{reportMetric(agency.totalFireEngines)} fire engines</p>
-                    <p className="mt-1 font-semibold text-[#14283F] dark:text-white">{reportMetric(agency.annualCallVolume)} annual calls</p>
-                    <p className="text-[#53657B] dark:text-slate-400">{reportMetric(agency.annual911Transports)} transports · {reportMetric(agency.annualCardiacArrestCalls)} cardiac calls</p>
+                    <FactVerificationTag agency={agency} field="stationCount" />
+                    <FactVerificationTag agency={agency} field="frontlineApparatusStations" />
+                    <FactVerificationTag agency={agency} field="annualCallsReceived" />
+                    <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
+                    {isFireAgency ? (
+                      <>
+                        <p className="profile-operations-lead mt-1 font-semibold text-[#14283F] dark:text-white">
+                          {hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.stationsCount) : 'Not reported'} stations
+                          <span aria-hidden="true"> · </span>
+                          {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.totalFireEngines) : 'Not reported'} fire engines
+                        </p>
+                        <p className="text-[#53657B] dark:text-slate-400">
+                          {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.totalAmbulances) : 'Not reported'} ambulances
+                          {hasAgencyFactEvidence(agency, 'annualCallsReceived') && (
+                            <>
+                              <span aria-hidden="true"> · </span>
+                              {reportMetric(agency.annualCallVolume)} annual responses
+                            </>
+                          )}
+                        </p>
+                        {hasAgencyFactEvidence(agency, 'annualEmergencyVolume') && (
+                          <p className="text-[#53657B] dark:text-slate-400">
+                            {reportMetric(agency.annual911Transports)} EMS transports
+                            <span aria-hidden="true"> · </span>
+                            {reportMetric(agency.annualCardiacArrestCalls)} cardiac calls
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="profile-operations-lead mt-1 font-semibold text-[#14283F] dark:text-white">
+                          {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.totalAmbulances) : 'Not reported'} ambulances
+                        </p>
+                        <p className="text-[#53657B] dark:text-slate-400">
+                          {hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                            ? `${reportMetric(agency.stationsCount)} stations`
+                            : 'Stations · Not reported'}
+                          {hasAgencyFactEvidence(agency, 'annualCallsReceived') && (
+                            <>
+                              <span aria-hidden="true"> · </span>
+                              {reportMetric(agency.annualCallVolume)} annual calls
+                            </>
+                          )}
+                        </p>
+                        <p className="text-[#53657B] dark:text-slate-400">
+                          {hasAgencyFactEvidence(agency, 'annualEmergencyVolume') ? reportMetric(agency.annual911Transports) : 'Not reported'} transports
+                          <span aria-hidden="true"> · </span>
+                          {hasAgencyFactEvidence(agency, 'annualEmergencyVolume') ? reportMetric(agency.annualCardiacArrestCalls) : 'Not reported'} cardiac calls
+                        </p>
+                      </>
+                    )}
                   </section>
 
-                  <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
+                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Source references</h2>
                       <button type="button" onClick={() => setIsSourceDrawerOpen(true)} className="min-h-8 shrink-0 font-semibold text-[#285EE8] hover:underline dark:text-blue-300">Review all</button>
@@ -1253,7 +1311,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsSourceDrawerOpen(true)}
-                      className="inline-flex min-h-8 items-center gap-1 font-medium text-amber-700 hover:underline dark:text-amber-400"
+                      className="inline-flex min-h-8 items-center gap-1 font-medium text-[#53657B] hover:underline dark:text-slate-300"
                     >
                       <HelpCircle className="h-3.5 w-3.5 shrink-0" />
                       <span>No exact NPPES match reviewed</span>
@@ -1266,7 +1324,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
                 <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Planning scores and estimates</summary>
                 <div className="mt-3 space-y-3">
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between gap-4">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
                     <PulseIqEstimateLabel /> · <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {agency.zollOpportunity.priorityTier}
                   </span>

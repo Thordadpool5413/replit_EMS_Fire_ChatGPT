@@ -257,6 +257,17 @@ async function openAgencyProfile(cdp) {
     })`);
     throw new Error(`${error.message}. Current screen: ${state}`);
   }
+  const viewportWidth = await evaluate(cdp, 'innerWidth');
+  if (viewportWidth === 390 || viewportWidth === 1280) {
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile(
+      `/tmp/ems-agency-directory-${viewportWidth}.png`,
+      Buffer.from(screenshot.result.data, 'base64'),
+    );
+  }
   const opened = await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('button, a, [role="button"]')]
       .find((candidate) => candidate.innerText.trim().includes('Open agency profile'));
@@ -453,6 +464,33 @@ async function checkProfileAtViewport(cdp, viewport) {
     60_000,
   );
   await openAgencyProfile(cdp);
+  if (viewport.width === 390 || viewport.width === 1280) {
+    await evaluate(cdp, `(() => {
+      const mobileSelect = document.querySelector('[data-testid="select-profile-section-mobile"]');
+      if (mobileSelect) {
+        mobileSelect.value = 'overview';
+        mobileSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        const overview = [...document.querySelectorAll('button')]
+          .find((button) => button.innerText.trim().startsWith('1. Overview'));
+        overview?.click();
+      }
+      document.querySelector('.provider-profile-overlay')?.scrollTo({ top: 0 });
+    })()`);
+    await waitFor(
+      cdp,
+      `document.querySelector('main.profile-workspace')?.innerText.includes('Operational intelligence')`,
+      'the profile overview for visual capture',
+    );
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile(
+      `/tmp/ems-agency-profile-${viewport.width}.png`,
+      Buffer.from(screenshot.result.data, 'base64'),
+    );
+  }
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
   if (viewport.mobile) {
     await evaluate(cdp, `(() => {

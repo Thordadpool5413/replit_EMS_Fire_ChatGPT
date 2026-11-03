@@ -4479,3 +4479,175 @@ body {
 .dark .territory-explorer-screen details .text-slate-500 {
   color: #a5b8b7 !important;
 }
+
+/* ==========================================================================
+   AGENCY RECORD SURFACES — field atlas / evidence-first briefing
+   Teal identifies EMS, ember identifies fire, and planning figures remain
+   visually subordinate to reported operational records.
+   ========================================================================== */
+.agency-directory-card {
+  --agency-accent: #176568;
+  border-radius: 0.8rem !important;
+  border-color: color-mix(in srgb, var(--agency-accent) 19%, var(--pi-border)) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--agency-accent) 3%, var(--pi-surface-bg)), var(--pi-surface-bg) 44%) !important;
+  box-shadow: 0 3px 14px -12px rgba(20, 47, 59, 0.4) !important;
+  transition: transform 160ms ease, opacity 160ms ease !important;
+}
+
+.agency-directory-card--fire {
+  --agency-accent: #a54b39;
+}
+
+.agency-directory-card--ems {
+  --agency-accent: #176568;
+}
+
+.agency-directory-card:hover {
+  border-color: color-mix(in srgb, var(--agency-accent) 42%, var(--pi-border)) !important;
+  box-shadow: 0 12px 26px -23px color-mix(in srgb, var(--agency-accent) 55%, transparent) !important;
+}
+
+.agency-directory-card > [aria-hidden="true"] {
+  background: linear-gradient(90deg, var(--agency-accent), color-mix(in srgb, var(--agency-accent) 22%, #d5dfdd)) !important;
+}
+
+.agency-directory-card--fire > [aria-hidden="true"] {
+  background: linear-gradient(90deg, #9c4738, #d49a64) !important;
+}
+
+.agency-card-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  line-height: 1.16;
+}
+
+.agency-card-geography {
+  font-size: 0.79rem !important;
+}
+
+.agency-directory-card .agency-identity-strip {
+  border-color: color-mix(in srgb, var(--agency-accent) 14%, var(--pi-border)) !important;
+}
+
+.agency-directory-card .agency-context-panel {
+  border: 0 !important;
+  border-left: 2px solid color-mix(in srgb, var(--agency-accent) 45%, transparent) !important;
+  border-radius: 0 0.45rem 0.45rem 0 !important;
+  background: color-mix(in srgb, var(--agency-accent) 5%, var(--pi-surface-subtle)) !important;
+}
+
+.agency-directory-card .agency-metric-grid > div {
+  border: 0 !important;
+  border-top: 1px solid var(--pi-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.65rem 0.45rem 0.55rem !important;
+}
+
+.agency-directory-card .agency-metric-grid > div:nth-child(odd) {
+  border-right: 1px solid var(--pi-border) !important;
+}
+
+.agency-directory-card .agency-card-metric-value {
+  letter-spacing: -0.025em;
+}
+
+.agency-directory-card .agency-card-footer {
+  border-color: var(--pi-border) !important;
+}
+
+.agency-directory-card .agency-card-primary-action {
+  background: var(--agency-accent) !important;
+}
+
+.agency-directory-card .agency-card-primary-action:hover {
+  background: color-mix(in srgb, var(--agency-accent) 82%, #17232c) !important;
+}
+
+.pulseiq-factor-disclosure > div > section[aria-label="PulseIQ factor scores and weighted contributions"] {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.pulseiq-factor-disclosure section[aria-label="PulseIQ factor scores and weighted contributions"] > div.grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.profile-workspace .profile-executive-header {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--pi-action) 18%, var(--pi-border));
+  background: linear-gradient(118deg, color-mix(in srgb, var(--pi-action) 4%, var(--pi-surface-bg)), var(--pi-surface-bg) 48%);
+}
+
+.profile-workspace .profile-executive-header::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--pi-action);
+  content: "";
+}
+
+.profile-workspace .profile-summary-grid {
+  gap: 0.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.profile-workspace .profile-summary-panel {
+  border: 0 !important;
+  border-top: 1px solid var(--pi-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.75rem 0.65rem 0.5rem !important;
+}
+
+.profile-workspace .profile-summary-panel h2 {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.profile-workspace .profile-operations-summary {
+  border-top-color: color-mix(in srgb, var(--pi-action) 48%, var(--pi-border)) !important;
+}
+
+.profile-workspace .profile-operations-lead {
+  font-family: var(--pi-font-data);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-workspace .profile-summary-panel a,
+.profile-workspace .profile-summary-panel button {
+  min-height: 2rem;
+}
+
+@media (max-width: 767px) {
+  .agency-directory-card {
+    gap: 0.8rem !important;
+    padding: 0.9rem !important;
+  }
+
+  .agency-directory-card .agency-metric-grid {
+    gap: 0 0.5rem !important;
+  }
+
+  .agency-directory-card .agency-metric-grid > div {
+    padding-inline: 0.25rem !important;
+  }
+
+  .agency-directory-card .agency-card-footer {
+    padding-top: 0.7rem;
+  }
+
+  .profile-workspace .profile-executive-header {
+    padding: 0.9rem !important;
+  }
+
+  .profile-workspace .profile-summary-grid {
+    gap: 0.2rem 0.55rem;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

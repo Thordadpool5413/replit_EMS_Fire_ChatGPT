@@ -2190,10 +2190,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ) : providerViewMode === 'cards' ? (
             <div className="workspace-cards-grid">
               {paginatedAgencies.map(agency => {
-                const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
                 const isFire = agency.agencyType.toLowerCase().includes('fire');
                 const primaryContact = agency.keyContacts[0];
-                const hasVerifiedModel = hasVerifiedModelInputs(agency);
                 const websiteUrl =
                   safeAgencyWebsiteUrl(agency.officialWebsite) ||
                   `https://www.google.com/search?q=${encodeURIComponent(`${agency.name} ${agency.city} ${agency.stateCode} official website`)}`;
@@ -2208,7 +2206,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <div
                     key={agency.id}
                     onClick={() => onSelectAgency(agency)}
-                    className="agency-directory-card group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5"
+                    className={`agency-directory-card ${isFire ? 'agency-directory-card--fire' : 'agency-directory-card--ems'} group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5`}
+                    data-testid={`agency-card-${agency.id}`}
                   >
                     <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${isFire ? 'bg-gradient-to-r from-rose-500 to-orange-300' : 'bg-gradient-to-r from-blue-700 to-cyan-300'}`} />
                     <div className="space-y-3.5">
@@ -2250,10 +2249,10 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       {/* Provider Name + Connected Hierarchy + Score */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="text-lg font-bold leading-snug tracking-[-0.025em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300 sm:text-xl">
+                          <h3 className="agency-card-title text-lg font-bold leading-snug tracking-[-0.025em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300 sm:text-xl">
                             {agency.name}
                           </h3>
-                          <div className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                          <div className="agency-card-geography mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                             {agency.state} ({agency.stateCode}) <span className="text-slate-400">›</span> {agency.county} <span className="text-slate-400">›</span>{' '}
                             <strong className="font-semibold text-slate-900 dark:text-white">{agency.city}</strong>{' '}
                             <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">ZIP {agency.zipCode}</span>
@@ -2311,14 +2310,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </div>
 
                       {/* 2 × 2 metric tiles retain each value without forcing narrow columns. */}
-                      <div className="agency-metric-grid grid grid-cols-2 gap-2.5 text-sm tabular-nums">
+                      <div className="agency-metric-grid grid grid-cols-2 gap-2.5 text-sm tabular-nums" aria-label="Agency record and planning summary">
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Upgrade value · estimate</span>
-                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
-                            {hasVerifiedModel
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Planning value · estimate</span>
+                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                            {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
                               ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
                               : 'Not calculated'}
                           </span>
+                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">PulseIQ planning model · not agency performance</span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
                             {agency.competitorContract.contractEndDate
                               ? `Contract end · ${agency.competitorContract.contractEndDate}`
@@ -2327,39 +2327,49 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Installed fleet</span>
-                          <span className="mt-1 block break-words text-sm font-bold leading-snug text-slate-950 dark:text-white" title={agency.installedFleet.defibBrand}>
-                            {agency.installedFleet.defibBrand && agency.installedFleet.defibBrand !== 'Not reported'
-                              ? `${agency.installedFleet.defibUnitsCount}× ${agency.installedFleet.defibBrand}`
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{isFire ? 'Fire & EMS fleet' : 'EMS monitor fleet'}</span>
+                          <span className="agency-card-metric-value mt-1 block break-words text-sm font-bold leading-snug text-slate-950 dark:text-white" title={agency.installedFleet.defibBrand}>
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') && agency.installedFleet.defibBrand && agency.installedFleet.defibBrand !== 'Not reported'
+                              ? `${Number.isFinite(agency.installedFleet.defibUnitsCount) ? agency.installedFleet.defibUnitsCount.toLocaleString() : 'Not reported'}× ${agency.installedFleet.defibBrand}`
                               : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                                 ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
                                 : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {agency.installedFleet.defibAgeYears != null ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age · Not reported'}
+                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') && Number.isFinite(agency.installedFleet.defibAgeYears) ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age · Not reported'}
+                            {' · '}
+                            {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                              ? `${agency.totalAmbulances.toLocaleString()} ambulances · ${agency.totalFireEngines.toLocaleString()} engines`
+                              : 'Ambulance / engine counts · Not reported'}
                           </span>
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Claim recovery · estimate</span>
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{isFire ? 'Stations · public record' : 'Claim recovery · estimate'}</span>
                           <span className="mt-1 block break-words text-lg font-bold tracking-tight text-blue-800 dark:text-blue-400">
-                            {agency.cmsData.estimatedRecoverableRevenue != null
-                              ? `+${formatCompactDollars(agency.cmsData.estimatedRecoverableRevenue)}/yr`
-                              : 'Not reported'}
+                            {isFire
+                              ? hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                                ? agency.stationsCount.toLocaleString()
+                                : 'Not reported'
+                              : agency.cmsData.estimatedRecoverableRevenue != null && Number.isFinite(agency.cmsData.estimatedRecoverableRevenue)
+                                ? `+${formatCompactDollars(agency.cmsData.estimatedRecoverableRevenue)}/yr`
+                                : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {agency.cmsData.medicareDenialReportingPeriod || 'Reporting period · Not reported'}
+                            {isFire
+                              ? agency.factEvidence?.stationCount?.reportingPeriod || agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || 'Reporting period · Not reported'
+                              : `${agency.cmsData.medicareDenialSource || 'Source not listed'} · ${agency.cmsData.medicareDenialReportingPeriod || 'Period not reported'}`}
                           </span>
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Annual volume · ROSC</span>
-                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{isFire ? 'Annual response volume' : 'Annual EMS volume'}</span>
+                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
                             {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                              ? `${agency.annualCallVolume.toLocaleString()} calls`
+                              ? `${Number.isFinite(agency.annualCallVolume) ? agency.annualCallVolume.toLocaleString() : 'Not reported'} calls`
                               : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                                ? `${agency.annual911Transports.toLocaleString()} transports`
-                              : 'Not reported'}
+                                ? `${Number.isFinite(agency.annual911Transports) ? agency.annual911Transports.toLocaleString() : 'Not reported'} transports`
+                                : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
                             {hasAgencyFactEvidence(agency, 'annualCallsReceived')
@@ -2368,7 +2378,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 ? 'Annual 911 transports'
                                 : 'Clinical period · Not reported'}
                             {' · '}
-                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
+                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') && Number.isFinite(agency.utsteinSurvivalRate)
+                              ? `${agency.utsteinSurvivalRate}% ROSC`
+                              : 'ROSC · Not reported'}
                           </span>
                         </div>
                       </div>
@@ -2377,9 +2389,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     {/* Clean Card Footer */}
                     <div className="agency-card-footer border-t border-slate-100 pt-3 dark:border-slate-800">
                       <div className="mb-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                        {hasVerifiedModel
-                          ? <>Recommended target · <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
-                          : 'Product target · Not reported'}
+                        {agency.zollOpportunity.primaryTargetProduct
+                          ? <>Planning target · <strong className="text-slate-900 dark:text-white">{agency.zollOpportunity.primaryTargetProduct}</strong></>
+                          : 'Planning target · Not reported'}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -2416,7 +2428,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             <>
               <div className="provider-mobile-list space-y-2 md:hidden">
                 {paginatedAgencies.map((agency) => {
-                  const hasVerifiedModel = hasVerifiedModelInputs(agency);
                   const isFire = agency.agencyType.toLowerCase().includes('fire');
                   return (
                     <article
@@ -2441,20 +2452,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </p>
                           <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-xs">
                             <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                              Upgrade value · estimate
+                              Planning value · estimate
                             </span>
                             <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                              {hasVerifiedModel
+                              {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
                                 ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
                                 : 'Not calculated'}
                             </span>
                           </p>
                         </div>
-                        <div className="self-start rounded-lg bg-slate-50 px-2.5 py-1.5 text-right dark:bg-slate-800">
-                          <span className="block font-mono text-lg font-bold leading-none tabular-nums text-slate-900 dark:text-white">
-                            {agency.zollOpportunity.pulseIqScore}
-                            <span className="text-[10px] font-medium text-slate-400">/100</span>
-                          </span>
+                        <div className="self-start text-right">
+                          <PulseIqScoreTooltip agency={agency} weights={weights} size="badge" />
                           <PulseIqEstimateLabel className="mt-1 block text-[9px] leading-tight text-slate-500 dark:text-slate-400" />
                         </div>
 

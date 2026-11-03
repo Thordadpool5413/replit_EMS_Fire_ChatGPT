@@ -945,7 +945,18 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                     </div>
                   </div>
 
-                  <PulseIqLeadFactorBars agency={agency} weights={weights} />
+                  <details
+                    className="pulseiq-factor-disclosure border-t border-slate-200 pt-2 dark:border-slate-800"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 text-xs font-semibold text-slate-700 marker:hidden hover:text-blue-800 dark:text-slate-200 dark:hover:text-blue-300">
+                      <span>View PulseIQ score factors</span>
+                      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">4 weighted inputs</span>
+                    </summary>
+                    <div className="pt-1">
+                      <PulseIqLeadFactorBars agency={agency} weights={weights} />
+                    </div>
+                  </details>
 
                   {/* Progressive Deep Dive Drawer (Collapsible) */}
                   {isExpanded && (

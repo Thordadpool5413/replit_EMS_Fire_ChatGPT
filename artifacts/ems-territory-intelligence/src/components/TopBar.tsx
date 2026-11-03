@@ -25,7 +25,8 @@ import {
   Sparkles,
   CircleHelp,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { Agency } from '../types';
 import { MobileQuickProviderBar } from './MobileQuickProviderBar';
@@ -69,6 +70,11 @@ interface TopBarProps {
   onOpenProviderFinder?: () => void;
 }
 
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 export const TopBar: React.FC<TopBarProps> = ({
   activeTab,
   setActiveTab,
@@ -104,8 +110,61 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
   const desktopUtilityRef = useRef<HTMLDivElement>(null);
   const mobileUtilityRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const standaloneMedia = window.matchMedia('(display-mode: standalone)');
+    const updateInstalledState = () => {
+      const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setIsAppInstalled(standaloneMedia.matches || iosStandalone);
+    };
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setInstallPrompt(null);
+      setShowInstallHelp(false);
+    };
+
+    updateInstalledState();
+    standaloneMedia.addEventListener('change', updateInstalledState);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      standaloneMedia.removeEventListener('change', updateInstalledState);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) {
+      setShowInstallHelp((show) => !show);
+      return;
+    }
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      setInstallPrompt(null);
+      if (choice.outcome === 'accepted') setIsAppInstalled(true);
+    } catch (error) {
+      console.error('Unable to open the app install prompt:', error);
+      setShowInstallHelp(true);
+    }
+  };
+
+  const isIosBrowser = typeof navigator !== 'undefined'
+    && (/iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const installHelpText = isIosBrowser
+    ? 'In Safari, tap Share, then choose “Add to Home Screen.”'
+    : 'Open your browser menu and choose “Install app” or “Add to Home Screen.”';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -480,6 +539,25 @@ export const TopBar: React.FC<TopBarProps> = ({
                       {showGuide ? 'Hide Quick Start Strip' : 'Show Quick Start Strip'}
                     </button>
                   )}
+                  {!isAppInstalled && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void handleInstallApp()}
+                        className="w-full rounded-md px-2.5 py-1.5 text-left text-[#14283F] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-slate-800"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Download className="h-3.5 w-3.5" />
+                          Install app
+                        </span>
+                      </button>
+                      {showInstallHelp && (
+                        <p className="mx-2.5 rounded-md bg-[#F5F7FA] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:bg-[#16243A] dark:text-slate-300" role="status">
+                          {installHelpText}
+                        </p>
+                      )}
+                    </>
+                  )}
                   {openDataLineageModal && (
                     <button
                       type="button"
@@ -688,6 +766,25 @@ export const TopBar: React.FC<TopBarProps> = ({
                       >
                         {showGuide ? 'Hide Quick Start Strip' : 'Show Quick Start Strip'}
                       </button>
+                    )}
+                    {!isAppInstalled && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void handleInstallApp()}
+                          className="w-full text-left px-2.5 py-1.5 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <Download className="h-3.5 w-3.5" />
+                            Install app
+                          </span>
+                        </button>
+                        {showInstallHelp && (
+                          <p className="mx-2.5 rounded-md bg-[#F5F7FA] dark:bg-[#16243A] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:text-slate-300" role="status">
+                            {installHelpText}
+                          </p>
+                        )}
+                      </>
                     )}
                     {openDataLineageModal && (
                       <button

@@ -161,18 +161,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
   const [providerViewMode, setProviderViewModeState] = useState<'cards' | 'table'>(() => {
     try {
-      const saved = localStorage.getItem('nicks_agency_view_mode');
-      if (saved === 'table') return 'table';
+      const saved = localStorage.getItem('nicks_agency_view_mode_v2');
+      if (saved === 'cards' || saved === 'table') return saved;
     } catch {
       // ignore
     }
-    return 'cards';
+    return 'table';
   });
 
   const setProviderViewMode = (mode: 'cards' | 'table') => {
     setProviderViewModeState(mode);
     try {
-      localStorage.setItem('nicks_agency_view_mode', mode);
+      localStorage.setItem('nicks_agency_view_mode_v2', mode);
     } catch {
       // ignore
     }
@@ -2396,8 +2396,85 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               })}
             </div>
           ) : (
-            /* High-Density Sortable Provider Comparison Table */
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+            <>
+              <div className="provider-mobile-list space-y-2 md:hidden">
+                {paginatedAgencies.map((agency) => {
+                  const hasVerifiedModel = hasVerifiedModelInputs(agency);
+                  const isFire = agency.agencyType.toLowerCase().includes('fire');
+                  return (
+                    <article
+                      key={agency.id}
+                      className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_5px_16px_-14px_rgba(24,50,70,.45)] dark:border-slate-800 dark:bg-slate-900"
+                    >
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 p-2.5">
+                        <div className="min-w-0">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300'}`}>
+                              {isFire ? 'Fire' : 'EMS'}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                              FDID {agency.fdid || 'Not reported'}
+                            </span>
+                          </div>
+                          <h3 className="break-words text-sm font-bold leading-snug text-slate-950 dark:text-white">
+                            {agency.name}
+                          </h3>
+                          <p className="mt-1 text-xs leading-snug text-slate-600 dark:text-slate-300">
+                            {agency.city}, {agency.stateCode} · {agency.county}
+                          </p>
+                          <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-xs">
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                              Upgrade value · estimate
+                            </span>
+                            <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                              {hasVerifiedModel
+                                ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
+                                : 'Not calculated'}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="self-start rounded-lg bg-slate-50 px-2.5 py-1.5 text-right dark:bg-slate-800">
+                          <span className="block font-mono text-lg font-bold leading-none tabular-nums text-slate-900 dark:text-white">
+                            {agency.zollOpportunity.pulseIqScore}
+                            <span className="text-[10px] font-medium text-slate-400">/100</span>
+                          </span>
+                          <PulseIqEstimateLabel className="mt-1 block text-[9px] leading-tight text-slate-500 dark:text-slate-400" />
+                        </div>
+
+                        <div className="col-span-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                          {onToggleAgencyComparison && (
+                            <AgencyCompareButton
+                              agency={agency}
+                              selected={comparedAgencyIds.includes(agency.id)}
+                              limitReached={comparedAgencyIds.length >= 3}
+                              onToggle={onToggleAgencyComparison}
+                              className="min-h-9"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
+                            className="inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                          >
+                            Quick Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onSelectAgency(agency)}
+                            className="ml-auto inline-flex min-h-9 items-center justify-center gap-1 rounded-lg bg-[#194d54] px-3 text-xs font-bold text-white transition-colors hover:bg-[#123c43]"
+                          >
+                            Open profile
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {/* High-Density Sortable Provider Comparison Table */}
+              <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse tabular-nums">
                   <thead>
@@ -2422,7 +2499,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         Upgrade value · estimate {providerSortBy === 'value' ? '↓' : ''}
                       </th>
                       <th className="py-2.5 px-3 text-right hidden lg:table-cell">Claim-dollar recovery estimate</th>
-                      <th className="py-2.5 px-3 text-right hidden xl:table-cell">Runs &amp; ROSC</th>
+                      <th className="py-2.5 px-3 text-right hidden 2xl:table-cell">Runs &amp; ROSC</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -2441,7 +2518,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <div>
                               <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></>
                             </div>
-                            <PulseIqEstimateLabel className="block text-[9px] font-normal text-slate-500 dark:text-slate-400" />
+                            <PulseIqEstimateLabel className="block text-[10px] font-normal text-slate-500 dark:text-slate-400" />
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
@@ -2478,7 +2555,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 : 'Not calculated'}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-right hidden xl:table-cell">
+                          <td className="py-2.5 px-3 text-right hidden 2xl:table-cell">
                             <div className="font-semibold text-slate-900 dark:text-white tabular-nums">
                               {hasAgencyFactEvidence(agency, 'annualCallsReceived')
                                 ? `${agency.annualCallVolume.toLocaleString()} calls received · ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
@@ -2503,16 +2580,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               <button
                                 type="button"
                                 onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
-                                className="h-7 px-2.5 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                className="h-8 shrink-0 whitespace-nowrap px-2.5 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                               >
                                 Preview
                               </button>
                               <button
                                 type="button"
                                 onClick={() => onSelectAgency(agency)}
-                                className="h-7 px-2.5 rounded-lg text-[11px] font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
+                                aria-label={`Open agency profile for ${agency.name}`}
+                                title="Open agency profile"
+                                className="h-8 shrink-0 whitespace-nowrap px-2.5 rounded-lg text-[11px] font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
                               >
-                                <span>Open agency profile</span>
+                                <span>Open profile</span>
                                 <ChevronRight className="w-3 h-3" />
                               </button>
                             </div>
@@ -2523,7 +2602,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   </tbody>
                 </table>
               </div>
-            </div>
+              </div>
+            </>
           )}
 
           {totalAgencyPages > 1 && (

@@ -48,6 +48,7 @@ import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } 
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { getActivePulseIqScore, isHighPriorityPulseIqAgency, rankAgenciesByPulseIqScore } from '../utils/pulseIqRanking';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { PulseIqLeadFactorBars } from './PulseIqLeadFactorBars';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -809,21 +810,6 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               : undefined;
             const medicareDenialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
 
-            // Show the same four operational factors used by PulseIQ.
-            const p1Clinical = Math.min(100, Math.round((agency.annualCardiacArrestCalls || 120) / 3.5 + (35 - Math.min(35, agency.utsteinSurvivalRate || 22)) * 1.8));
-            const p2Fleet = Math.min(100, Math.round((agency.installedFleet.defibAgeYears / 10) * 100));
-            const hasZollSoftware =
-              agency.installedFleet.billingSoftware.includes('ZOLL') ||
-              agency.installedFleet.epcrCadSoftware.includes('ZOLL');
-            const p3Software = hasZollSoftware ? 35 : 95;
-            const p4Grant = agency.grantStatus.afgAwarded ? 95 : agency.grantStatus.saferGrantActive ? 70 : 45;
-            const pillarBars = [
-              { label: 'Clinical Acuity (NEMSIS v3.5)', val: p1Clinical, color: 'bg-[#1E3A8A] dark:bg-blue-500' },
-              { label: 'Fleet Age (Modeled Cycle)', val: p2Fleet, color: 'bg-amber-500' },
-              { label: 'Software / Billing Whitespace', val: p3Software, color: 'bg-blue-500 dark:bg-blue-400' },
-              { label: 'AFG / SAFER Grant Readiness', val: p4Grant, color: 'bg-emerald-600 dark:bg-emerald-500' }
-            ];
-
             return (
               <div 
                 key={agency.id}
@@ -958,6 +944,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  <PulseIqLeadFactorBars agency={agency} weights={weights} />
 
                   {/* Progressive Deep Dive Drawer (Collapsible) */}
                   {isExpanded && (

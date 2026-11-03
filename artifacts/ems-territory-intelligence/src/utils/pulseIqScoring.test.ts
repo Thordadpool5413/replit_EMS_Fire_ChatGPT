@@ -17,6 +17,7 @@ import { PulseIqScoreExplainerHub } from '../components/PulseIqScoreExplainerHub
 import { PulseIqTooltipFactorDetails } from '../components/PulseIqScoreTooltip';
 import { PulseIqRegionalTooltipFactors } from '../components/PulseIqRegionalTooltipFactors';
 import { PulseIqMethodologyFactors } from '../components/UnderstandingPulseIqModal';
+import { PulseIqLeadFactorBars } from '../components/PulseIqLeadFactorBars';
 import { explainAgencyScore } from './pulseIqExplanation';
 import {
   calculatePulseIqContributions,
@@ -496,6 +497,38 @@ test('PulseIQ factor detail exposes the values, weights, rules, and source field
     Math.round(factors.reduce((sum, factor) => sum + factor.contributionPts, 0)),
     calculateScore(record)
   );
+});
+
+test('lead-card bars use shared factor scores and recalibrated weighted contributions', () => {
+  const record = agency(35, 500000);
+  const defaultMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqLeadFactorBars, { agency: record })
+  );
+  const calibratedWeights = {
+    ...DEFAULT_WEIGHTS,
+    fleetAgeWeight: 10,
+    cardiacVolumeWeight: 50,
+    grantAwardWeight: 30,
+    softwareWhitespaceWeight: 10
+  };
+  const calibratedMarkup = renderToStaticMarkup(
+    React.createElement(PulseIqLeadFactorBars, {
+      agency: record,
+      weights: calibratedWeights
+    })
+  );
+  const defaultClinical = evaluatePulseIqFactors(record).find((factor) => factor.key === 'clinical')!;
+  const calibratedClinical = evaluatePulseIqFactors(record, calibratedWeights)
+    .find((factor) => factor.key === 'clinical')!;
+
+  assert.equal(defaultClinical.baseScore, calibratedClinical.baseScore);
+  assert.notEqual(defaultClinical.contributionPts, calibratedClinical.contributionPts);
+  assert.match(defaultMarkup, /Score 70\/100/);
+  assert.match(defaultMarkup, new RegExp(`\\+${defaultClinical.contributionPts.toFixed(1)} pts`));
+  assert.match(calibratedMarkup, /Score 70\/100/);
+  assert.match(calibratedMarkup, new RegExp(`\\+${calibratedClinical.contributionPts.toFixed(1)} pts`));
+  assert.match(defaultMarkup, /Bars show weighted points; scores are unweighted/);
+  assert.match(calibratedMarkup, new RegExp(`width:${calibratedClinical.contributionPts}%`));
 });
 
 test('custom weights use the same four active factors in score details and formula', () => {

@@ -27,6 +27,7 @@ import {
   getPulseIqWeightDetails
 } from './pulseIqScoring';
 import {
+  getActivePulseIqScore,
   getPulseIqTerritoryRank,
   getPulseIqTerritoryRanks,
   isHighPriorityPulseIqAgency,
@@ -683,8 +684,8 @@ test('lead queue PulseIQ score order is unchanged by imported claim-record chang
 
 test('lead queue ordering recalculates with active calibration instead of persisted scores', () => {
   const fleetDriven = [
-    recalibrationAgency('clinical-lead', 1800, 3, 99),
-    recalibrationAgency('fleet-lead', 100, 10, 0)
+    recalibrationAgency('clinical-lead', 1800, 3, 98),
+    recalibrationAgency('fleet-lead', 100, 10, 1)
   ];
   const fleetWeights = {
     ...DEFAULT_WEIGHTS,
@@ -701,13 +702,32 @@ test('lead queue ordering recalculates with active calibration instead of persis
     softwareWhitespaceWeight: 0
   };
 
-  assert.deepEqual(
-    rankAgenciesByPulseIqScore(fleetDriven, fleetWeights).map((record) => record.id),
-    ['fleet-lead', 'clinical-lead']
-  );
-  assert.deepEqual(
-    rankAgenciesByPulseIqScore(fleetDriven, clinicalWeights).map((record) => record.id),
-    ['clinical-lead', 'fleet-lead']
+  const queueScores = (weights: typeof fleetWeights) =>
+    rankAgenciesByPulseIqScore(fleetDriven, weights).map((record) => ({
+      id: record.id,
+      score: getActivePulseIqScore(record, weights)
+    }));
+  const fleetQueue = queueScores(fleetWeights);
+  const clinicalQueue = queueScores(clinicalWeights);
+
+  assert.deepEqual(fleetQueue.map(({ id }) => id), ['fleet-lead', 'clinical-lead']);
+  assert.deepEqual(clinicalQueue.map(({ id }) => id), ['clinical-lead', 'fleet-lead']);
+  assert.deepEqual(fleetQueue, [
+    { id: 'fleet-lead', score: 99 },
+    { id: 'clinical-lead', score: 40 }
+  ]);
+  assert.deepEqual(clinicalQueue, [
+    { id: 'clinical-lead', score: 99 },
+    { id: 'fleet-lead', score: 50 }
+  ]);
+  for (const { id, score } of [...fleetQueue, ...clinicalQueue]) {
+    const record = fleetDriven.find((agency) => agency.id === id)!;
+    assert.notEqual(score, record.zollOpportunity.pulseIqScore, 'queue scores must not fall back to stale saved values');
+  }
+  assert.notDeepEqual(
+    fleetQueue.map(({ id, score }) => [id, score]),
+    clinicalQueue.map(({ id, score }) => [id, score]),
+    'recalibration should change both displayed score values and their order'
   );
 });
 

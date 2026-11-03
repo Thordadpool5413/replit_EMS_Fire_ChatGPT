@@ -46,7 +46,7 @@ import { InteractiveSparkline } from './InteractiveSparkline';
 import { UnderstandingPulseIqModal } from './UnderstandingPulseIqModal';
 import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
-import { isHighPriorityPulseIqAgency, rankAgenciesByPulseIqScore } from '../utils/pulseIqRanking';
+import { getActivePulseIqScore, isHighPriorityPulseIqAgency, rankAgenciesByPulseIqScore } from '../utils/pulseIqRanking';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
@@ -791,6 +791,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         /* 3-Zone Scannable Summary Card Layout with Progressive Disclosure */
         <div className="workspace-cards-grid">
           {paginatedAgencies.map((agency) => {
+            const activePulseIqScore = getActivePulseIqScore(agency, weights);
             const isFire = agency.agencyType.toLowerCase().includes('fire');
             const isExpanded = Boolean(expandedAgencyIds[agency.id]);
             const hasVerifiedModel = hasVerifiedModelInputs(agency);
@@ -899,7 +900,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                     >
                       <div className="flex items-baseline justify-end gap-0.5">
                         <span className="text-xl font-semibold text-slate-900 dark:text-white tabular-nums leading-none">
-                          {agency.zollOpportunity.pulseIqScore}
+                          {activePulseIqScore}
                         </span>
                         <span className="text-xs text-slate-400 tabular-nums">/100</span>
                       </div>
@@ -908,7 +909,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-800 mt-1.5 overflow-hidden">
                             <div
                               className="h-full bg-[#1E3A8A] dark:bg-blue-400"
-                              style={{ width: `${Math.min(100, agency.zollOpportunity.pulseIqScore)}%` }}
+                              style={{ width: `${Math.min(100, activePulseIqScore)}%` }}
                             />
                           </div>
                         )}
@@ -1172,6 +1173,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   {/* Column Deal Cards */}
                   <div className="space-y-2 max-h-[680px] overflow-y-auto pr-0.5">
                     {visibleDeals.map((agency) => {
+                      const activePulseIqScore = getActivePulseIqScore(agency, weights);
                       const isFire = agency.agencyType.toLowerCase().includes('fire');
                       return (
                         <div
@@ -1194,12 +1196,12 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             </div>
                             <div className="shrink-0 text-right">
                               <div className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">
-                                {agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span>
+                                {activePulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span>
                               </div>
                               <div className="w-10 h-[2px] bg-slate-200 dark:bg-slate-700 overflow-hidden mt-0.5 ml-auto rounded-full">
                                 <div
                                   className="h-full bg-[#1E3A8A] dark:bg-blue-400"
-                                  style={{ width: `${agency.zollOpportunity.pulseIqScore}%` }}
+                                  style={{ width: `${activePulseIqScore}%` }}
                                 />
                               </div>
                               <PulseIqEstimateLabel className="mt-1 block text-[9px] text-slate-500 dark:text-slate-400" />
@@ -1309,6 +1311,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {paginatedAgencies.map((agency) => {
+                  const activePulseIqScore = getActivePulseIqScore(agency, weights);
                   const hasVerifiedModel = hasVerifiedModelInputs(agency);
                   const fireChiefContact = agency.keyContacts.find(c => c.role === 'Fire Chief' || c.title.toLowerCase().includes('fire')) || agency.keyContacts[0];
                   const emsDirectorContact = agency.keyContacts.find(c => c.role === 'EMS Chief' || c.title.toLowerCase().includes('ems')) || agency.keyContacts[1];
@@ -1333,7 +1336,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="space-y-1 w-20">
                           <div className="flex items-baseline justify-between">
                             <span className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">
-                              <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></>
+                              <>{activePulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></>
                             </span>
                             <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                               {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') ? `${agency.installedFleet.defibAgeYears}y` : '—'}
@@ -1342,7 +1345,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-700 overflow-hidden">
                             <div
                               className="h-full bg-[#1E3A8A] dark:bg-blue-400"
-                              style={{ width: `${agency.zollOpportunity.pulseIqScore}%` }}
+                              style={{ width: `${activePulseIqScore}%` }}
                             />
                           </div>
                           <PulseIqEstimateLabel className="block text-[9px] text-slate-500 dark:text-slate-400" />

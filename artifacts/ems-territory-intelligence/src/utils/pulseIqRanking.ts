@@ -2,6 +2,18 @@ import type { Agency, PredictiveWeights } from '../types';
 import { calculateScore } from './pulseIqScoring';
 
 /**
+ * Return the score calculated with the active calibration, using the same
+ * zero fallback as ranking when a score cannot be calculated.
+ */
+export function getActivePulseIqScore(
+  agency: Agency,
+  weights?: PredictiveWeights
+): number {
+  const score = calculateScore(agency, weights);
+  return Number.isFinite(score) ? score : 0;
+}
+
+/**
  * Return a descending score order without mutating the caller's collection.
  * Original order is retained for ties so claim-record updates cannot introduce
  * nondeterministic lead ordering.
@@ -31,7 +43,7 @@ export function rankAgenciesByPulseIqScore(
   agencies: readonly Agency[],
   weights?: PredictiveWeights
 ): Agency[] {
-  return rankByPulseIqScore(agencies, (agency) => calculateScore(agency, weights));
+  return rankByPulseIqScore(agencies, (agency) => getActivePulseIqScore(agency, weights));
 }
 
 /**
@@ -42,7 +54,7 @@ export function isHighPriorityPulseIqAgency(
   agency: Agency,
   weights?: PredictiveWeights
 ): boolean {
-  return calculateScore(agency, weights) >= 80;
+  return getActivePulseIqScore(agency, weights) >= 80;
 }
 
 export interface PulseIqTerritoryRank {

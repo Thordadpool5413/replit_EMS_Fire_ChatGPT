@@ -385,6 +385,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 key={reg}
                 type="button"
+                aria-pressed={regionFilter === reg}
                 onClick={() => {
                   setRegionFilter(reg);
                   saveMapPreference('region', reg);
@@ -507,11 +508,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 className="home-map-readout home-map-inspector-v2"
                 aria-live="polite"
                 aria-atomic="true"
-                aria-label={`${mapReadoutState.state} selected territory details`}
+                aria-label={`${mapReadoutState.state} territory details`}
               >
                 <div className="home-map-inspector-v2__heading">
                   <div className="home-map-inspector-v2__state">
-                    <span className="home-map-inspector-v2__eyebrow">Selected state</span>
+                    <span className="home-map-inspector-v2__eyebrow">
+                      {hoveredStateCode ? 'Focused state' : 'Selected state'}
+                    </span>
                     <strong>{mapReadoutState.state}</strong>
                   </div>
                   <span className="home-map-inspector-v2__code">{mapReadoutState.code}</span>
@@ -652,7 +655,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           role="button"
                           aria-pressed={isSelected}
                           aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
-                          className="cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#67D6CE] focus:stroke-[3px]"
+                          className={`home-map-state-path cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#67D6CE] focus:stroke-[3px]${isSelected ? ' is-selected' : ''}${isHovered ? ' is-hovered' : ''}`}
                         >
                           <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${datum.coverage} · Period ${datum.period}${datum.claimScope ? ` · ${datum.claimScope} · ${datum.denialDefinition}` : ''}${datum.source ? ` · ${datum.source}` : ''} · ${countyCount} counties`}</title>
                         </path>
@@ -717,9 +720,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 {EAST_COAST_CALLOUT_STATES.map((c) => {
                   const isSelected = selectedStateCode === c.code;
                   const datum = stateMapMetricsByCode[c.code][mapMetric];
-                  const chipFill = hasReportedValue(datum.value)
-                    ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax)
-                    : '#172A3D';
                   return (
                     <button
                       key={c.code}
@@ -728,14 +728,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       onMouseEnter={() => setHoveredStateCode(c.code)}
                       onFocus={() => setHoveredStateCode(c.code)}
                       aria-pressed={isSelected}
-                      aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${formatStateMapValue(mapMetric, datum.value)}`}
+                      aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${activeMapMetric.label}, ${formatStateMapValue(mapMetric, datum.value)}`}
                       style={{
-                        backgroundColor: chipFill,
-                        color: hasReportedValue(datum.value) ? readableTextForFill(chipFill) : '#C3D3E2',
+                        backgroundColor: isSelected ? '#F4C86A' : undefined,
+                        color: isSelected ? '#14283F' : undefined,
+                        borderColor: isSelected ? '#FFE8AC' : undefined,
                         outline: isSelected ? '2px solid #F4C86A' : undefined,
                         outlineOffset: isSelected ? '1px' : undefined,
                       }}
-                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#7890A8] text-[12px] font-bold font-mono transition-[outline,filter] hover:brightness-110 focus:outline focus:outline-2 focus:outline-[#67D6CE]"
+                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#3B5668] bg-[#112333] text-[12px] font-bold font-mono text-[#D3E1E7] transition-[background-color,color,outline] hover:bg-[#1D3B50] focus:outline focus:outline-2 focus:outline-[#67D6CE]"
                     >
                       {c.code}
                     </button>

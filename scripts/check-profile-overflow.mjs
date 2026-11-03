@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,6 +12,12 @@ const testViewports = [
   { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
   { width: 430, height: 932, mobile: true },
+  { width: 1280, height: 900, mobile: false },
+];
+const comparisonViewports = [
+  { width: 320, height: 740, mobile: true },
+  { width: 402, height: 874, mobile: true },
+  { width: 768, height: 900, mobile: false },
   { width: 1280, height: 900, mobile: false },
 ];
 
@@ -369,6 +375,174 @@ async function checkProfileAtViewport(cdp, viewport) {
   console.log(`✓ ${viewport.width}px: profile, actions, section, registry details, briefing, and source drawer`);
 }
 
+async function openAgencyComparison(cdp, width) {
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      document.body.innerText.includes('Interactive U.S. Territory Map')`,
+    `the app at ${width}px`,
+    60_000,
+  );
+  await clickVisibleButton(cdp, 'Agencies', 'Agencies navigation');
+  await waitFor(
+    cdp,
+    `document.body.innerText.includes('Open agency profile')`,
+    'the agency directory',
+  );
+  const selectedIds = await evaluate(cdp, `(() => {
+    const visible = (button) => {
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      return rect.width > 0 && rect.height > 0 &&
+        style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const buttons = [...document.querySelectorAll('[data-testid^="button-toggle-comparison-"]')]
+      .filter(visible);
+    const selected = buttons.slice(0, 3);
+    selected.forEach((button) => button.click());
+    return selected.map((button) => button.dataset.testid);
+  })()`);
+  assert(
+    selectedIds?.length === 3,
+    `Could not select three agencies for comparison at ${width}px: ${JSON.stringify(selectedIds)}`,
+  );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="button-open-agency-comparison"]')) &&
+      !document.querySelector('[data-testid="button-open-agency-comparison"]').disabled`,
+    'the enabled agency comparison action',
+  );
+  const opened = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="button-open-agency-comparison"]');
+    if (!button || button.disabled) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(opened, `Could not open agency comparison at ${width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="agency-comparison-panel"]'))`,
+    'the agency comparison panel',
+  );
+}
+
+async function checkComparisonAtViewport(cdp, viewport, downloadPath) {
+  console.log(`Checking agency comparison at ${viewport.width}px viewport...`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await openAgencyComparison(cdp, viewport.width);
+
+  const layout = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const panel = document.querySelector('[data-testid="agency-comparison-panel"]');
+    const mobile = document.querySelector('[data-testid="comparison-mobile-layout"]');
+    const table = panel?.querySelector('.overflow-x-auto');
+    const rect = (element) => {
+      if (!element) return null;
+      const bounds = element.getBoundingClientRect();
+      return { left: bounds.left, right: bounds.right, width: bounds.width, height: bounds.height };
+    };
+    return {
+      viewport: innerWidth,
+      documentWidth: root.scrollWidth,
+      bodyWidth: document.body.scrollWidth,
+      panel: rect(panel),
+      mobile: rect(mobile),
+      mobileDisplay: mobile ? getComputedStyle(mobile).display : null,
+      table: rect(table),
+      tableDisplay: table ? getComputedStyle(table).display : null,
+      filters: rect(panel?.querySelector('[data-testid="comparison-filter-controls"]')),
+      sort: rect(panel?.querySelector('[data-testid="comparison-sort"]')?.parentElement),
+      export: rect(panel?.querySelector('[data-testid="button-export-comparison"]')),
+    };
+  })()`);
+  assert(layout, `Agency comparison layout was missing at ${viewport.width}px`);
+  assert(layout.viewport === viewport.width, `Expected ${viewport.width}px viewport, got ${layout.viewport}px`);
+  assert(
+    layout.documentWidth <= viewport.width + 1 && layout.bodyWidth <= viewport.width + 1,
+    `Page scrolls horizontally at ${viewport.width}px (document ${layout.documentWidth}px, body ${layout.bodyWidth}px)`,
+  );
+  assert(
+    layout.panel && layout.panel.left >= -1 && layout.panel.right <= viewport.width + 1,
+    `Comparison panel extends beyond the ${viewport.width}px viewport: ${JSON.stringify(layout.panel)}`,
+  );
+  for (const control of ['filters', 'sort', 'export']) {
+    const bounds = layout[control];
+    assert(
+      bounds && bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= viewport.width + 1,
+      `${control} controls are not fully reachable at ${viewport.width}px: ${JSON.stringify(bounds)}`,
+    );
+  }
+  if (viewport.width < 768) {
+    assert(
+      layout.mobileDisplay !== 'none' && layout.mobile?.width > 0 &&
+        layout.tableDisplay === 'none',
+      `Phone field-first comparison layout is not active at ${viewport.width}px: ${JSON.stringify(layout)}`,
+    );
+  } else {
+    assert(
+      layout.tableDisplay !== 'none' && layout.table?.width > 0 &&
+        layout.mobileDisplay === 'none',
+      `Comparison table is not active at ${viewport.width}px: ${JSON.stringify(layout)}`,
+    );
+  }
+
+  for (const filter of ['different', 'shared', 'all']) {
+    const clicked = await evaluate(cdp, `(() => {
+      const button = document.querySelector('[data-testid="comparison-filter-${filter}"]');
+      if (!button || button.disabled) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(clicked, `The ${filter} filter was unavailable at ${viewport.width}px`);
+    await waitFor(
+      cdp,
+      `document.querySelector('[data-testid="comparison-filter-${filter}"]')?.getAttribute('aria-pressed') === 'true'`,
+      `the ${filter} filter to update at ${viewport.width}px`,
+    );
+  }
+
+  const sortChanged = await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="comparison-sort"]');
+    if (!select || select.disabled) return false;
+    select.value = 'pulseIqDesc';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert(sortChanged, `Sort control was unavailable at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="comparison-sort"]')?.value === 'pulseIqDesc'`,
+    `agency sorting to update at ${viewport.width}px`,
+  );
+
+  const exportClicked = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="button-export-comparison"]');
+    if (!button || button.disabled) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(exportClicked, `Export CSV was unavailable at ${viewport.width}px`);
+  const deadline = Date.now() + 10_000;
+  let downloadedFiles = [];
+  while (Date.now() < deadline) {
+    downloadedFiles = await readdir(downloadPath);
+    if (downloadedFiles.some((file) => file.endsWith('.csv'))) break;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert(
+    downloadedFiles.some((file) => file.endsWith('.csv')),
+    `Export CSV did not produce a download at ${viewport.width}px`,
+  );
+  console.log(`✓ ${viewport.width}px: no page overflow, correct layout, filters, sorting, and CSV export`);
+}
+
 async function main() {
   const response = await fetch(baseUrl);
   assert(
@@ -378,6 +552,8 @@ async function main() {
 
   const debuggingPort = await reservePort();
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'ems-profile-overflow-'));
+  const downloadPath = path.join(userDataDir, 'downloads');
+  await import('node:fs/promises').then(({ mkdir }) => mkdir(downloadPath));
   const chromium = spawn(chromiumPath, [
     '--headless=new',
     '--no-sandbox',
@@ -399,11 +575,18 @@ async function main() {
     await cdp.connect();
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');
+    await cdp.send('Browser.setDownloadBehavior', {
+      behavior: 'allow',
+      downloadPath,
+    });
 
     for (const viewport of testViewports) {
       await checkProfileAtViewport(cdp, viewport);
     }
-    console.log('Agency profile overflow checks passed at all requested viewport widths.');
+    for (const viewport of comparisonViewports) {
+      await checkComparisonAtViewport(cdp, viewport, downloadPath);
+    }
+    console.log('Agency profile and comparison overflow checks passed at all requested viewport widths.');
   } finally {
     cdp?.close();
     const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));
@@ -430,6 +613,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`Agency profile browser check failed: ${error.message}`);
+  console.error(`Agency responsive browser check failed: ${error.message}`);
   process.exitCode = 1;
 });

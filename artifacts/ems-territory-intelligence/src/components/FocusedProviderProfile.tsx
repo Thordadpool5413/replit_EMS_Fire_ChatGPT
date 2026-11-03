@@ -71,6 +71,7 @@ import { QualityScorecard } from './QualityScorecard';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { FireRegistryLookup } from './FireRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
+import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
@@ -734,6 +735,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     if (activeSection === 'medicare') return sec === 'billing';
     if (activeSection === 'evidence') return sec === 'evidence_ledger' || sec === 'notes';
     return false;
+  };
+
+  const navigateProfileSection = (section: ProfileSection) => {
+    setActiveSection(section);
+    window.requestAnimationFrame(() => {
+      document.querySelector('[data-testid="profile-topic-navigation"]')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
+  const openProfileSources = () => {
+    setActiveSection('evidence');
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById('profile-source-evidence')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    });
   };
 
   const hasDecisionGradeInputs =
@@ -1588,6 +1611,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               7-TOPIC ACCOUNT 360 NAVIGATION (SECTION 9)
              ================================================================ */}
           <nav
+            data-testid="profile-topic-navigation"
             aria-label="Account 360 Topic Navigation"
             className="pi-surface sticky top-[108px] z-30 flex items-center justify-between gap-2 overflow-hidden p-1.5 md:top-16"
           >
@@ -1650,6 +1674,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {activeSection === 'all' ? 'Showing All Topics' : 'Expand All'}
             </button>
           </nav>
+
+          {(activeSection === 'overview' || activeSection === 'all') && (
+            <AgencyIntelligenceOverview
+              agency={agency}
+              onOpenSources={openProfileSources}
+              onNavigateSection={navigateProfileSection}
+            />
+          )}
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
           {showSection('leadership') && (
@@ -3320,7 +3352,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
         {/* TOPIC 7: EVIDENCE & SOURCES PROVENANCE LEDGER */}
         {showSection('evidence_ledger') && (
-          <section className="pi-surface p-6 space-y-4">
+          <section id="profile-source-evidence" className="pi-surface scroll-mt-28 p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
               <div>
                   <h2 className="pi-section-heading">

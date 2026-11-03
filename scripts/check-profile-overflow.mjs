@@ -170,6 +170,55 @@ async function openAgencyProfile(cdp) {
     `Boolean(document.querySelector('main.profile-workspace'))`,
     'the agency profile',
   );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="agency-intelligence-overview"]'))`,
+    'the agency intelligence overview',
+  );
+  const overviewChecks = await evaluate(cdp, `(() => {
+    const overview = document.querySelector('[data-testid="agency-intelligence-overview"]');
+    return {
+      heading: overview?.innerText.includes('Operational intelligence') ?? false,
+      identity: Boolean(overview?.querySelector('[data-testid="section-identity"]')),
+      command: Boolean(overview?.querySelector('[data-testid="section-command-contacts"]')),
+      apparatus: Boolean(overview?.querySelector('[data-testid="section-stations-apparatus"]')),
+      operations: Boolean(overview?.querySelector('[data-testid="section-operations-service-area"]')),
+      hospitals: Boolean(overview?.querySelector('[data-testid="section-receiving-hospitals"]')),
+      systems: Boolean(overview?.querySelector('[data-testid="section-equipment-communications"]')),
+      sourcesAction: Boolean(overview?.querySelector('[data-testid="button-open-agency-sources"]')),
+    };
+  })()`);
+  for (const [area, available] of Object.entries(overviewChecks)) {
+    assert(available, `Agency intelligence overview is missing ${area}`);
+  }
+  const initialExpansion = await evaluate(
+    cdp,
+    `document.querySelector('[data-testid="button-toggle-stations-apparatus"]')?.getAttribute('aria-expanded')`,
+  );
+  assert(initialExpansion === 'true' || initialExpansion === 'false', 'Apparatus details are not keyboard-accessible');
+  await evaluate(cdp, `document.querySelector('[data-testid="button-toggle-stations-apparatus"]')?.click()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="button-toggle-stations-apparatus"]')?.getAttribute('aria-expanded') !== ${JSON.stringify(initialExpansion)}`,
+    'apparatus details to expand or collapse',
+  );
+  await evaluate(cdp, `document.querySelector('[data-testid="button-toggle-stations-apparatus"]')?.click()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="button-toggle-stations-apparatus"]')?.getAttribute('aria-expanded') === ${JSON.stringify(initialExpansion)}`,
+    'apparatus details to return to their original state',
+  );
+  await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="button-open-agency-sources"]');
+    button?.scrollIntoView({ block: 'center' });
+    button?.click();
+    return Boolean(button);
+  })()`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('#profile-source-evidence'))`,
+    'the full agency source and records workspace',
+  );
 }
 
 async function assertNoHorizontalOverflow(cdp, width, area) {

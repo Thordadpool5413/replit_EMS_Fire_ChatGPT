@@ -79,6 +79,7 @@ const specialistAndSystemViews = [
       { label: 'Invalid Checksums', selectedClass: 'bg-white' },
       { label: 'Public Baseline', selectedClass: 'bg-white' },
     ],
+    conflictTestId: 'button-inspect-conflict-candidate-chicago-mock',
   },
   {
     group: 'Data & system',
@@ -1041,6 +1042,117 @@ async function clickWorkspaceInteraction(cdp, view, interaction, viewport) {
   console.log(`✓ ${viewport.width}px: ${view.tab} → ${interaction.label}, no horizontal overflow`);
 }
 
+async function checkConflictDialogAtViewport(cdp, view, viewport) {
+  const filterSelected = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="npi-audit-filter-valid_mismatched"]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(
+    filterSelected,
+    `The flagged mismatch filter was unavailable at ${viewport.width}px`,
+  );
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="npi-audit-filter-valid_mismatched"]')?.innerText.includes('Flagged Mismatches')`,
+    `the flagged mismatch filter at ${viewport.width}px`,
+  );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="${view.conflictTestId}"]'))`,
+    `the stable read-only conflict item at ${viewport.width}px`,
+  );
+  const opened = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="${view.conflictTestId}"]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(
+    opened,
+    `The stable read-only conflict item was unavailable at ${viewport.width}px`,
+  );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="dialog-inspect-conflict"]'))`,
+    `the Inspect Conflict dialog at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(resolve)))`);
+
+  const dimensions = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const main = document.querySelector('main.workspace-grid-shell');
+    const dialog = document.querySelector('[data-testid="dialog-inspect-conflict"]');
+    const panel = dialog?.querySelector('[data-testid="inspect-conflict-panel"]');
+    const rect = (element) => {
+      if (!element) return null;
+      const bounds = element.getBoundingClientRect();
+      return {
+        left: bounds.left,
+        right: bounds.right,
+        top: bounds.top,
+        bottom: bounds.bottom,
+        width: bounds.width,
+        height: bounds.height,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      };
+    };
+    return {
+      viewport: innerWidth,
+      documentWidth: root.scrollWidth,
+      main: rect(main),
+      dialog: rect(dialog),
+      panel: rect(panel),
+    };
+  })()`);
+  assert(dimensions, `Missing Inspect Conflict dialog at ${viewport.width}px`);
+  assert(
+    dimensions.viewport === viewport.width,
+    `Expected ${viewport.width}px viewport, got ${dimensions.viewport}px`,
+  );
+  assert(
+    dimensions.documentWidth <= viewport.width + 1,
+    `Document overflows with Inspect Conflict open at ${viewport.width}px (${dimensions.documentWidth}px wide)`,
+  );
+  assert(
+    dimensions.main &&
+      dimensions.main.scrollWidth <= dimensions.main.clientWidth + 1 &&
+      dimensions.main.left >= -1 &&
+      dimensions.main.right <= viewport.width + 1,
+    `Main workspace overflows with Inspect Conflict open at ${viewport.width}px: ${JSON.stringify(dimensions.main)}`,
+  );
+  for (const area of ['dialog', 'panel']) {
+    const bounds = dimensions[area];
+    assert(
+      bounds &&
+        bounds.width > 0 &&
+        bounds.left >= -1 &&
+        bounds.right <= viewport.width + 1 &&
+        bounds.top >= -1 &&
+        bounds.bottom <= viewport.height + 1 &&
+        bounds.scrollWidth <= bounds.clientWidth + 1,
+      `Inspect Conflict ${area} exceeds the ${viewport.width}×${viewport.height}px phone screen: ${JSON.stringify(bounds)}`,
+    );
+  }
+  console.log(`✓ ${viewport.width}px: Inspect Conflict dialog stays within document, workspace, and dialog bounds`);
+
+  const closed = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="dialog-inspect-conflict"] button[aria-label="Close Inspect Conflict"]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(closed, `Could not close Inspect Conflict at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `!document.querySelector('[data-testid="dialog-inspect-conflict"]')`,
+    `Inspect Conflict to close at ${viewport.width}px`,
+  );
+}
+
 async function checkSpecialistAndSystemViews(cdp) {
   for (const view of specialistAndSystemViews) {
     await cdp.send('Page.navigate', { url: baseUrl });
@@ -1065,6 +1177,9 @@ async function checkSpecialistAndSystemViews(cdp) {
       });
       for (const interaction of view.interactions) {
         await clickWorkspaceInteraction(cdp, view, interaction, viewport);
+      }
+      if (view.conflictTestId) {
+        await checkConflictDialogAtViewport(cdp, view, viewport);
       }
     }
   }

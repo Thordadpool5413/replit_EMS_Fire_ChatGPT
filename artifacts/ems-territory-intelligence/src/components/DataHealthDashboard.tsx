@@ -505,6 +505,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               <button
                 key={tab.id}
                 type="button"
+                data-testid={`npi-audit-filter-${tab.id}`}
                 onClick={() => setNpiAuditFilter(tab.id)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
                   npiAuditFilter === tab.id
@@ -644,6 +645,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                     <td className="py-3 px-5 text-right">
                       <button
                         type="button"
+                        data-testid={`button-inspect-conflict-${item.recordId}`}
                         onClick={() => setInspectingConflict(item)}
                         className="px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
                       >
@@ -990,11 +992,15 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
       {/* 6. EVIDENCE CONFLICT & MISMATCH FORENSIC INSPECTOR MODAL */}
       {inspectingConflict && (
         <div
+          data-testid="dialog-inspect-conflict"
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
         >
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
+          <div
+            data-testid="inspect-conflict-panel"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden"
+          >
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Fingerprint className="w-5 h-5 text-sky-600 dark:text-sky-400" />
@@ -1004,6 +1010,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </div>
               <button
                 type="button"
+                aria-label="Close Inspect Conflict"
                 onClick={() => setInspectingConflict(null)}
                 className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >

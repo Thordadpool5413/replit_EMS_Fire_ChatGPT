@@ -2249,12 +2249,11 @@
 .home-territory-map-screen-v2 .home-map-stage-v2 {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
-  grid-template-rows: auto auto auto auto !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
   grid-template-areas:
     "toolbar"
     "legend"
-    "map"
-    "inspector" !important;
+    "map" !important;
   align-items: start !important;
   gap: 0.7rem 1rem !important;
   min-height: 0 !important;
@@ -2364,7 +2363,7 @@
   grid-area: map !important;
   grid-column: auto !important;
   grid-row: auto !important;
-  grid-column: 1 !important;
+  grid-column: 1 / -1 !important;
   grid-row: 3 !important;
   display: flex !important;
   flex-direction: column;
@@ -2393,7 +2392,7 @@
 }
 
 .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
-  width: min(100%, 1100px, calc((100dvh - 320px) * 1.84)) !important;
+  width: min(100%, 1400px, calc((100dvh - 240px) * 1.84)) !important;
   max-width: 100% !important;
   max-height: 100% !important;
   height: auto !important;
@@ -2577,22 +2576,17 @@
 
 @media (min-width: 1024px) {
   .home-territory-map-screen-v2 .home-map-stage-v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(230px, 276px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: auto auto minmax(0, 1fr) !important;
     grid-template-areas:
-      "toolbar toolbar"
-      "legend legend"
-      "map inspector" !important;
-    min-height: clamp(23rem, calc(100dvh - 250px), 40rem) !important;
+      "toolbar"
+      "legend"
+      "map" !important;
+    min-height: clamp(28rem, calc(100dvh - 185px), 48rem) !important;
   }
 
   .home-territory-map-screen-v2 .home-map-visual-v2 {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-  }
-
-  .home-territory-map-screen-v2 .home-map-inspector-v2 {
-    grid-column: 2 !important;
+    grid-column: 1 / -1 !important;
     grid-row: 3 !important;
   }
 }
@@ -3393,22 +3387,17 @@ body {
 
 @media (min-width: 1024px) {
   .home-territory-map-screen-v2 .home-map-stage-v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(238px, 286px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: auto auto minmax(0, 1fr) !important;
     grid-template-areas:
-      "toolbar toolbar"
-      "legend legend"
-      "map inspector" !important;
-    min-height: clamp(25rem, calc(100dvh - 250px), 42rem) !important;
+      "toolbar"
+      "legend"
+      "map" !important;
+    min-height: clamp(28rem, calc(100dvh - 185px), 48rem) !important;
   }
 
   .home-territory-map-screen-v2 .home-map-visual-v2 {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-  }
-
-  .home-territory-map-screen-v2 .home-map-inspector-v2 {
-    grid-column: 2 !important;
+    grid-column: 1 / -1 !important;
     grid-row: 3 !important;
   }
 }

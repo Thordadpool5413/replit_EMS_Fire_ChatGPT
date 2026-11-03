@@ -15,7 +15,6 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
-import { HomeMapPulseIqReadout } from './PulseIqSurfaceDisplays';
 
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
@@ -185,7 +184,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
   }, [globalState]);
 
-  const hoverReadoutStateCode = hoveredStateCode || selectedStateCode;
 
   const stateStatsByCode = useMemo(() => {
     const agenciesByState = new Map<string, Agency[]>();
@@ -292,8 +290,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
   const activeMapPalette = MAP_PALETTES[mapMetric] ?? MAP_PALETTES['agency-records'];
-  const mapReadoutMetric = stateMapMetricsByCode[hoverReadoutStateCode][mapMetric];
-  const mapReadoutState = ALL_50_STATES_SUMMARIES[hoverReadoutStateCode];
 
   useEffect(() => {
     const viewport = mapViewportRef.current;
@@ -329,33 +325,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
   };
 
-  const handleMapSourceAction = (stateCode: string, sourceAction: StateMapMetricDatum['sourceAction']) => {
-    if (sourceAction === 'zip-profiles') {
-      setSelectedStateCode(stateCode);
-      saveMapPreference('state', stateCode);
-      onSelectState?.(stateCode);
-      window.requestAnimationFrame(() => {
-        document.getElementById('state-zip-profile-values')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      });
-      return;
-    }
-    if (sourceAction === 'claims-import') {
-      setSelectedStateCode(stateCode);
-      saveMapPreference('state', stateCode);
-      onSelectState?.(stateCode);
-      onNavigateTab('claims');
-      return;
-    }
-    handleStateClick(stateCode);
-  };
-
   return (
     <div>
       {/* ====================================================================
-          1. INTERACTIVE U.S. TERRITORY MAP WITH STATE INTELLIGENCE DOSSIER
+          1. INTERACTIVE U.S. TERRITORY MAP
          ==================================================================== */}
       <section
         aria-label="Interactive U.S. Territory Map"
@@ -504,62 +477,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
-              <div
-                className="home-map-readout home-map-inspector-v2"
-                aria-live="polite"
-                aria-atomic="true"
-                aria-label={`${mapReadoutState.state} territory details`}
-              >
-                <div className="home-map-inspector-v2__heading">
-                  <div className="home-map-inspector-v2__state">
-                    <span className="home-map-inspector-v2__eyebrow">
-                      {hoveredStateCode ? 'Focused state' : 'Selected state'}
-                    </span>
-                    <strong>{mapReadoutState.state}</strong>
-                  </div>
-                  <span className="home-map-inspector-v2__code">{mapReadoutState.code}</span>
-                </div>
-                <div className="home-map-inspector-v2__metric">
-                  <span>{activeMapMetric.label}</span>
-                  {mapMetric === 'pulseiq'
-                    ? <HomeMapPulseIqReadout score={mapReadoutMetric.value} />
-                    : <strong className="tabular-nums">{formatStateMapValue(mapMetric, mapReadoutMetric.value)}</strong>}
-                </div>
-                <dl className="home-map-inspector-v2__details">
-                  <div>
-                    <dt>Coverage</dt>
-                    <dd>{mapReadoutMetric.coverage}</dd>
-                  </div>
-                  <div>
-                    <dt>Period</dt>
-                    <dd>{mapReadoutMetric.period}</dd>
-                  </div>
-                  {mapReadoutMetric.source && (
-                    <div>
-                      <dt>Source</dt>
-                      <dd>{mapReadoutMetric.source}</dd>
-                    </div>
-                  )}
-                  {mapReadoutMetric.claimScope && (
-                    <div>
-                      <dt>Scope</dt>
-                      <dd>{mapReadoutMetric.claimScope}{mapReadoutMetric.denialDefinition ? ` · ${mapReadoutMetric.denialDefinition}` : ''}</dd>
-                    </div>
-                  )}
-                </dl>
-                {mapReadoutMetric.sourceAction !== 'reference-estimate' && <button
-                  type="button"
-                  onClick={() => handleMapSourceAction(hoverReadoutStateCode, mapReadoutMetric.sourceAction)}
-                  className="home-map-inspector-v2__action"
-                >
-                  {mapReadoutMetric.sourceAction === 'zip-profiles'
-                    ? 'View ZIP profile records'
-                    : mapReadoutMetric.sourceAction === 'claims-import'
-                      ? 'Open claim summary'
-                      : 'Review agency records'}
-                </button>}
-              </div>
-
               <div className="home-map-visual-stack home-map-visual-v2">
               <p className="text-[10px] text-[#A2B5C8] sm:hidden">
                 Zoom in to inspect a state, then swipe to pan.

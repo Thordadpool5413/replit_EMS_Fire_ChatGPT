@@ -16,6 +16,8 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
 
+const HOME_MAP_TRANSLATE_X = 48;
+
 const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
@@ -302,7 +304,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
 
     const scale = svg.getBoundingClientRect().width / 920;
-    const stateX = stateBoundary.labelX * scale;
+    const stateX = (stateBoundary.labelX + HOME_MAP_TRANSLATE_X) * scale;
     const stateY = stateBoundary.labelY * scale;
     const desiredLeft = stateX - viewport.clientWidth / 2;
     const desiredTop = stateY - viewport.clientHeight / 2;
@@ -522,7 +524,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <path d="M0 116C220 94 480 99 920 74M0 194C232 174 534 180 920 151M0 272C238 249 538 260 920 232M0 350C236 329 554 339 920 311M0 428C252 409 590 415 920 389" />
                   <path d="M118 0C138 130 140 320 124 500M286 0C300 146 303 354 291 500M454 0C462 151 463 350 458 500M622 0C621 150 631 350 643 500M790 0C777 160 790 350 811 500" strokeDasharray="2 8" />
                 </g>
-                <g transform="translate(48 0)">
+                <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>

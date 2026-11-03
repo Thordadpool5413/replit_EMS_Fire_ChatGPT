@@ -154,7 +154,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
 
           {/* Active Benchmark Agency Picker */}
           {referenceAgency && (
-            <div className="flex flex-wrap items-center gap-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 shrink-0">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5">
               <div className="text-xs">
                 <label htmlFor="hub-agency-select" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
                   Benchmark agency
@@ -163,7 +163,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                   id="hub-agency-select"
                   value={referenceAgency.id}
                   onChange={(e) => handleAgencyChange(e.target.value)}
-                  className="mt-0.5 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A] max-w-[260px]"
+                  className="mt-0.5 h-8 w-full min-w-0 max-w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A]"
                 >
                   {agencies.slice(0, 80).map(a => (
                     <option key={a.id} value={a.id}>

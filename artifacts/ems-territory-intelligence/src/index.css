@@ -2728,11 +2728,6 @@
     border-color: #294355;
   }
 
-  /* Scope and search live in their relevant workspaces; avoid repeating them below the logo. */
-  .pi-command-header + [aria-label="Mobile Provider Filter Bar"] {
-    display: none !important;
-  }
-
   .workspace-grid-shell {
     gap: 0.6rem !important;
     padding: 0.55rem 0.65rem 6.25rem !important;
@@ -2980,13 +2975,32 @@
     padding-inline: 0.5rem !important;
   }
 
-  .home-territory-map-screen-v2 .home-map-stage-v2 {
-    padding: 0.45rem !important;
+  .home-territory-map-screen-v2 .home-map-page-heading .pi-supporting,
+  .home-territory-map-screen-v2 .home-map-visual-v2 > p {
+    display: none !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 > label {
+    font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-layer-select {
+    font-size: 0.72rem !important;
   }
 
   .home-territory-map-screen-v2 .home-map-zoom-control button {
-    min-width: 2.15rem !important;
-    min-height: 2.25rem !important;
+    min-width: 1.9rem !important;
+    min-height: 2.15rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control > span {
+    min-width: 2.1rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    padding: 0.45rem !important;
   }
 
   .pi-mobile-nav button span {
@@ -4000,5 +4014,33 @@ body {
     height: 100% !important;
     max-width: 100% !important;
     max-height: 100% !important;
+  }
+}
+
+@media (max-width: 359px) {
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.35rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 > label {
+    font-size: 0.62rem !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-layer-select {
+    width: 100% !important;
+    min-height: 2.55rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control {
+    justify-self: end;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button {
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
   }
 }

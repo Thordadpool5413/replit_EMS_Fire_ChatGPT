@@ -29,7 +29,6 @@ import {
   Download
 } from 'lucide-react';
 import { Agency } from '../types';
-import { MobileQuickProviderBar } from './MobileQuickProviderBar';
 import {
   isFieldWorkTab,
   isOpportunitiesTab as isOpportunitiesWorkspaceTab,
@@ -663,9 +662,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             {openCommandPalette && (
               <button
                 type="button"
-                onClick={openCommandPalette}
+                onClick={onOpenProviderFinder || openCommandPalette}
                 className="h-9 w-9 sm:w-56 md:w-64 lg:w-80 px-0 sm:px-3.5 rounded-lg bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 text-[#53657B] dark:text-slate-300 border border-[#DFE6EF] dark:border-[#1E2D42] flex items-center justify-center sm:justify-between gap-2.5 text-xs transition-colors cursor-pointer shrink-0"
-                title="Search any EMS agency, Fire department, city, ZIP, or NPI (⌘K)"
+                aria-label="Search providers"
+                data-testid="button-mobile-provider-search"
+                title="Search and filter EMS or fire providers"
               >
                 <span className="flex items-center gap-2 min-w-0">
                   <Search className="w-3.5 h-3.5 text-[#53657B] dark:text-slate-400 shrink-0" />
@@ -806,18 +807,6 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </header>
 
-      {/* Mobile Dedicated Quick Filter & Provider Finder Bar */}
-      {!activeAccountName && (
-        <MobileQuickProviderBar
-          globalCategory={globalCategory}
-          setGlobalCategory={setGlobalCategory}
-          onOpenProviderFinder={onOpenProviderFinder || openCommandPalette || (() => {})}
-          globalState={globalState}
-          globalCounty={globalCounty}
-          onClearGeography={onClearGeography}
-          agencies={agencies}
-        />
-      )}
     </>
   );
 };

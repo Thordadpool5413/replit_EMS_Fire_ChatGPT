@@ -211,6 +211,35 @@ async function clickVisibleButton(cdp, label, description = label) {
 }
 
 async function openAgencyProfile(cdp) {
+  const isMobile = await evaluate(cdp, 'innerWidth < 768');
+  if (isMobile) {
+    const searchOpened = await evaluate(cdp, `(() => {
+      const button = document.querySelector('[data-testid="button-mobile-provider-search"]');
+      if (!button) return false;
+      const rect = button.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.left >= innerWidth) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(searchOpened, 'The mobile provider search button is not reachable');
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('[role="dialog"][aria-labelledby="mobile-finder-title"]'))`,
+      'the mobile provider search drawer',
+    );
+    const searchClosed = await evaluate(cdp, `(() => {
+      const button = document.querySelector('button[aria-label="Close provider search"]');
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(searchClosed, 'The mobile provider search drawer has no reachable close action');
+    await waitFor(
+      cdp,
+      `!document.querySelector('[role="dialog"][aria-labelledby="mobile-finder-title"]')`,
+      'the mobile provider search drawer to close',
+    );
+  }
   await clickVisibleButton(cdp, 'Agencies', 'Agencies navigation');
   try {
     await waitFor(
@@ -436,6 +465,8 @@ async function checkProfileAtViewport(cdp, viewport) {
   const mobileControls = await evaluate(cdp, `(() => {
     const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
     const dock = document.querySelector('[aria-label="Account Action Dock"]');
+    const primaryActions = document.querySelector('[data-testid="profile-primary-actions"]');
+    const actionArea = primaryActions || dock;
     const visible = (element) => {
       if (!element) return false;
       const rect = element.getBoundingClientRect();
@@ -445,17 +476,27 @@ async function checkProfileAtViewport(cdp, viewport) {
         rect.right > 0 && rect.left < innerWidth &&
         rect.bottom > 0 && rect.top < innerHeight;
     };
+    const reachable = (selector) => {
+      const element = actionArea?.querySelector(selector);
+      if (visible(element)) return true;
+      return Boolean(
+        element &&
+        primaryActions &&
+        primaryActions.clientWidth > 0 &&
+        primaryActions.scrollWidth > primaryActions.clientWidth,
+      );
+    };
     return {
       mobile: innerWidth < 768,
       sectionPicker: visible(select),
-      routeAction: visible(dock?.querySelector(
+      routeAction: reachable(
         '[aria-label="Add agency to route"], [aria-label="Remove agency from today\\'s route"]',
-      )),
-      saveAction: visible(dock?.querySelector(
+      ),
+      saveAction: reachable(
         '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
-      )),
-      meetingAction: visible(dock?.querySelector('[aria-label="Prepare for meeting"]')),
-      sourceAction: visible(dock?.querySelector('[aria-label="Inspect agency sources"]')),
+      ),
+      meetingAction: reachable('[aria-label="Prepare for meeting"]'),
+      sourceAction: reachable('[aria-label="Inspect agency sources"]'),
     };
   })()`);
   if (mobileControls.mobile) {
@@ -492,31 +533,56 @@ async function checkProfileAtViewport(cdp, viewport) {
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
 
   const meetingActionReached = await evaluate(cdp, `(() => {
-    const button = document.querySelector('[aria-label="Account Action Dock"] [aria-label="Prepare for meeting"]');
+    const actionArea = document.querySelector('[data-testid="profile-primary-actions"]');
+    const button = actionArea?.querySelector('[aria-label="Prepare for meeting"]');
     if (!button) return false;
+    button.scrollIntoView({ block: 'center', inline: 'center' });
     const rect = button.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.left >= innerWidth) return false;
     button.click();
     return true;
   })()`);
   assert(meetingActionReached, `Prepare for meeting was not reachable at ${viewport.width}px`);
-  await waitFor(
-    cdp,
-    `(() => {
+  try {
+    await waitFor(
+      cdp,
+      `(() => {
+        const section = document.querySelector('[aria-label="Prepare for Meeting Intelligence Workspace"]');
+        const nav = document.querySelector('.pi-mobile-nav');
+        if (!section) return false;
+        const rect = section.getBoundingClientRect();
+        const navRect = nav?.getBoundingClientRect();
+        const navTop = navRect && navRect.height > 0 && getComputedStyle(nav).display !== 'none'
+          ? navRect.top
+          : innerHeight;
+        return rect.top < navTop && rect.bottom > 0;
+      })()`,
+      `the meeting briefing at ${viewport.width}px`,
+    );
+  } catch (error) {
+    const meetingState = await evaluate(cdp, `(() => {
       const section = document.querySelector('[aria-label="Prepare for Meeting Intelligence Workspace"]');
-      const dock = document.querySelector('[aria-label="Account Action Dock"]');
-      if (!section) return false;
-      const rect = section.getBoundingClientRect();
-      const dockTop = dock?.getBoundingClientRect().top ?? innerHeight;
-      return rect.top < dockTop && rect.bottom > 0;
-    })()`,
-    `the meeting briefing at ${viewport.width}px`,
-  );
+      const profile = document.querySelector('main.profile-workspace');
+      const overlay = document.querySelector('.provider-profile-overlay');
+      const rect = section?.getBoundingClientRect();
+      return JSON.stringify({
+        sectionFound: Boolean(section),
+        sectionRect: rect && { top: rect.top, bottom: rect.bottom },
+        profileScroll: profile?.scrollTop,
+        overlayScroll: overlay?.scrollTop,
+        viewport: { width: innerWidth, height: innerHeight },
+        text: document.body.innerText.slice(-500),
+      });
+    })()`);
+    throw new Error(`${error.message}. Meeting state: ${meetingState}`);
+  }
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
 
   const drawerButton = await evaluate(cdp, `(() => {
-    const button = document.querySelector('[aria-label="Account Action Dock"] [aria-label="Inspect agency sources"]');
+    const actionArea = document.querySelector('[data-testid="profile-primary-actions"]');
+    const button = actionArea?.querySelector('[aria-label="Inspect agency sources"]');
     if (!button) return false;
+    button.scrollIntoView({ block: 'center', inline: 'center' });
     const rect = button.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.left >= innerWidth) return false;
     button.click();
@@ -893,6 +959,20 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
       surfacePresent: Boolean(surface),
       surfaceColor: surface ? getComputedStyle(surface).backgroundColor : null,
       expectedSurface,
+      wideNodes: [...workspace.querySelectorAll('*')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            className: typeof element.className === 'string' ? element.className.slice(0, 120) : '',
+            width: Math.round(rect.width),
+            left: Math.round(rect.left),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          };
+        })
+        .filter((item) => item.width > 0 && item.scrollWidth > item.clientWidth + 8)
+        .slice(0, 10),
     };
   })()`);
   assert(layout, `Missing main workspace content for "${view.tab}" at ${viewport.width}px`);
@@ -912,7 +992,7 @@ async function checkSpecialistAndSystemAtViewport(cdp, view, viewport) {
   );
   assert(
     layout.mainWidth <= layout.mainClientWidth + 1,
-    `"${view.tab}" main workspace overflows at ${viewport.width}px (${layout.mainWidth}px content / ${layout.mainClientWidth}px visible)`,
+    `"${view.tab}" main workspace overflows at ${viewport.width}px (${layout.mainWidth}px content / ${layout.mainClientWidth}px visible); wide nodes: ${JSON.stringify(layout.wideNodes)}`,
   );
   assert(
     layout.mainLeft >= -1 && layout.mainRight <= viewport.width + 1,

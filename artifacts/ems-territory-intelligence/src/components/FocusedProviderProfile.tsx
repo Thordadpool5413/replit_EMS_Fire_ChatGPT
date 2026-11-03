@@ -996,7 +996,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* Primary Account Actions */}
-            <div className="flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2">
+            <div
+              className="flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2"
+              data-testid="profile-primary-actions"
+            >
               <AgencyCompareButton
                 agency={agency}
                 selected={comparedAgencyIds.includes(agency.id)}
@@ -1024,6 +1027,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   }, 50);
                 }}
                 className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer shadow-2xs"
+                aria-label="Prepare for meeting"
                 title="Open executive meeting strategy & discovery questions"
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -1034,6 +1038,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 type="button"
                 onClick={() => setIsSourceDrawerOpen(true)}
                 className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Inspect agency sources"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Inspect Sources</span>
@@ -1042,6 +1047,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleRoute(agency.id)}
+                aria-label={agency.inDayRoute ? "Remove agency from today's route" : 'Add agency to route'}
                 className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   agency.inDayRoute
                     ? 'bg-[#0B1728] dark:bg-blue-600 text-white'
@@ -1055,6 +1061,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleBookmark(agency.id)}
+                aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}
                 className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   agency.isBookmarked
                     ? 'bg-[#285EE8] text-white'

@@ -1275,7 +1275,8 @@ export default function App() {
 
       </main>
 
-      {/* Quiet Institutional Provenance Footer */}
+      {/* Keep Home map-only; sources remain available from Help & Sources. */}
+      {activeTab !== 'home' && (
       <footer className="w-full border-t border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#111C2D] text-[#53657B] dark:text-slate-400 text-xs py-3.5 px-4 sm:px-6 lg:px-8 mt-auto transition-colors">
         <div className="max-w-[1640px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
@@ -1302,6 +1303,7 @@ export default function App() {
           </button>
         </div>
       </footer>
+      )}
       </div>
 
       {/* Slide-Over Quick Preview Drawer (2-second inspection before opening full dossier) */}

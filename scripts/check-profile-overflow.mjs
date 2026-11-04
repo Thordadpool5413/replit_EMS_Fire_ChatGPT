@@ -579,8 +579,17 @@ async function assertNoHorizontalOverflow(cdp, width, area) {
   const dimensions = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
     const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    const workspace = document.querySelector('[data-testid="panel-agency-source-workspace"]');
+    const correctionForm = document.querySelector('[data-testid="form-add-agency-source-correction"]');
     const root = document.documentElement;
-    const measured = ${JSON.stringify(area)} === 'drawer' ? drawer : profile;
+    const areaName = ${JSON.stringify(area)};
+    const measured = areaName === 'drawer'
+      ? drawer
+      : areaName === 'workspace'
+        ? workspace
+        : areaName === 'correction form'
+          ? correctionForm
+          : profile;
     if (!profile || !measured) return null;
     return {
       viewport: innerWidth,
@@ -1783,8 +1792,133 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
     `the EMS source inspection drawer to close at ${viewport.width}px`,
   );
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+
+  const evidenceSectionSelected = await evaluate(cdp, `(() => {
+    const picker = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (!picker || ![...picker.options].some((option) => option.value === 'evidence')) {
+      return false;
+    }
+    picker.value = 'evidence';
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert(
+    evidenceSectionSelected,
+    `EMS source workspace section was unavailable at ${viewport.width}px for ${agencyName}`,
+  );
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-profile-section-mobile"]')?.value === 'evidence' &&
+      Boolean(document.querySelector('[data-testid="panel-agency-source-workspace"]'))`,
+    `the full EMS source workspace at ${viewport.width}px for ${agencyName}`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'workspace');
+
+  const correctionActionOpened = await evaluate(cdp, `(() => {
+    const workspace = document.querySelector('[data-testid="panel-agency-source-workspace"]');
+    const button = workspace?.querySelector('[data-testid="button-add-agency-source-correction"]');
+    if (!button) return false;
+    button.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = button.getBoundingClientRect();
+    const style = getComputedStyle(button);
+    if (bounds.width <= 0 || bounds.height <= 0 ||
+        bounds.left < -1 || bounds.right > innerWidth + 1 ||
+        bounds.top < -1 || bounds.bottom > innerHeight + 1 ||
+        style.visibility === 'hidden' || style.display === 'none') {
+      return false;
+    }
+    button.click();
+    return true;
+  })()`);
+  assert(
+    correctionActionOpened,
+    `EMS correction action was not reachable at ${viewport.width}px for ${agencyName}`,
+  );
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-correction"]'))`,
+    `the EMS correction form at ${viewport.width}px for ${agencyName}`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'workspace');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'correction form');
+
+  const correctionControls = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    if (!form) return null;
+    const priorDetails = form.querySelector('details');
+    if (priorDetails) priorDetails.open = true;
+    const controls = [...form.querySelectorAll('input, select, textarea')];
+    const results = controls.map((control) => {
+      control.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const bounds = control.getBoundingClientRect();
+      const style = getComputedStyle(control);
+      const label = control.closest('label')?.innerText.trim() ||
+        control.getAttribute('aria-label') ||
+        control.getAttribute('placeholder') ||
+        control.tagName.toLowerCase();
+      return {
+        label,
+        reachable: bounds.width > 0 && bounds.height > 0 &&
+          bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+          bounds.top >= -1 && bounds.bottom <= innerHeight + 1 &&
+          style.visibility !== 'hidden' && style.display !== 'none',
+      };
+    });
+    const save = form.querySelector('[data-testid="button-save-agency-source-fact"]');
+    save?.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const saveBounds = save?.getBoundingClientRect();
+    const saveStyle = save && getComputedStyle(save);
+    return {
+      controls: results,
+      saveReachable: Boolean(save && !save.disabled && saveBounds &&
+        saveBounds.width > 0 && saveBounds.height > 0 &&
+        saveBounds.left >= -1 && saveBounds.right <= innerWidth + 1 &&
+        saveBounds.top >= -1 && saveBounds.bottom <= innerHeight + 1 &&
+        saveStyle.visibility !== 'hidden' && saveStyle.display !== 'none'),
+      saveLabel: save?.innerText.trim() ?? '',
+    };
+  })()`);
+  assert(
+    correctionControls?.controls.length >= 10,
+    `EMS correction form fields are missing at ${viewport.width}px for ${agencyName}: ${JSON.stringify(correctionControls)}`,
+  );
+  const unreachableControls = correctionControls.controls
+    .filter((control) => !control.reachable);
+  assert(
+    unreachableControls.length === 0,
+    `EMS correction fields are not reachable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(unreachableControls)}`,
+  );
+  assert(
+    correctionControls.saveReachable &&
+      correctionControls.saveLabel.includes('Save correction'),
+    `EMS correction save action is not reachable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(correctionControls)}`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'workspace');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'correction form');
+
+  const correctionFormClosed = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    const cancel = [...(form?.querySelectorAll('button') ?? [])]
+      .find((button) => button.innerText.trim() === 'Cancel');
+    if (!cancel) return false;
+    cancel.click();
+    return true;
+  })()`);
+  assert(
+    correctionFormClosed,
+    `EMS correction form could not be closed at ${viewport.width}px for ${agencyName}`,
+  );
+  await waitFor(
+    cdp,
+    `!document.querySelector('[data-testid="form-add-agency-source-correction"]')`,
+    `the EMS correction form to close at ${viewport.width}px for ${agencyName}`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
   console.log(
-    `✓ ${viewport.width}px: ${agencyName}; operations="${operationsSummary.lead}", primary actions, source drawer, and no horizontal overflow`,
+    `✓ ${viewport.width}px: ${agencyName}; operations="${operationsSummary.lead}", source drawer, correction fields/save action, and no horizontal overflow`,
   );
 }
 

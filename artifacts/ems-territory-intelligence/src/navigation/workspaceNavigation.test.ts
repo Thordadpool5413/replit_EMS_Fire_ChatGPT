@@ -97,6 +97,36 @@ test('desktop and mobile entry points share workspace groups and expose selected
   }
 });
 
+test('home and mobile tools do not seed or restore alert badges', () => {
+  const app = readSource('App.tsx');
+  const topBar = readSource('components/TopBar.tsx');
+  const home = readSource('components/HomeHubView.tsx');
+  const mobileToolsStart = topBar.indexOf('/* Compact mobile utility menu');
+  const mobileToolsEnd = topBar.indexOf('</header>', mobileToolsStart);
+  assert.ok(mobileToolsStart >= 0 && mobileToolsEnd > mobileToolsStart, 'The mobile tools menu should remain identifiable.');
+  const mobileTools = topBar.slice(mobileToolsStart, mobileToolsEnd);
+  const appAndHome = `${app}\n${home}`;
+
+  assert.doesNotMatch(
+    appAndHome,
+    /\balerts?\b|\bunread\b|\b(?:alertFeed|notificationFeed|unreadAlertCount|unreadNotificationCount)\b/i,
+    'Home should not render an alert feed or unread-alert state.',
+  );
+  // If a feed is added later, replace this no-feed guard with a contract check for record IDs, sources, and timestamps.
+  assert.doesNotMatch(
+    `${app}\n${topBar}`,
+    /(?:localStorage|sessionStorage)\.(?:getItem|setItem)\(\s*['"][^'"]*(?:alert|notification)/i,
+    'Reloading should not restore alert or notification state from browser storage.',
+  );
+  assert.doesNotMatch(
+    mobileTools,
+    /\b(?:alert|notification|unread)\b/i,
+    'Mobile tools should not display an alert feed or unread badge.',
+  );
+  assert.match(mobileTools, /pendingSyncCount > 0/, 'The mobile tools badge should only appear for pending sync work.');
+  assert.match(mobileTools, /{pendingSyncCount}/, 'The mobile tools badge should show the pending sync count.');
+});
+
 test('field dashboard opens Routes & notes and keeps visit actions there', () => {
   const app = readSource('App.tsx');
   const dashboard = readSource('components/ZollMobileDashboard.tsx');

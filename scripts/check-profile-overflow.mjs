@@ -31,6 +31,7 @@ const interactionViewports = [
   { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
 ];
+const testCorrectionRecordId = 'browser-check-2026';
 const specialistAndSystemViews = [
   {
     group: 'Specialist tools',
@@ -340,15 +341,6 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
     );
     assert(providerTypeVisible, `The ${providerCategory} profile type was not visible after opening`);
   }
-  if (providerCategory !== 'all') {
-    const providerTypeVisible = await evaluate(
-      cdp,
-      `document.querySelector('main.profile-workspace')?.innerText.includes(${JSON.stringify(
-        providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider',
-      )}) ?? false`,
-    );
-    assert(providerTypeVisible, `The ${providerCategory} profile type was not visible after opening`);
-  }
   const overviewChecks = await evaluate(cdp, `(() => {
     const overview = document.querySelector('[data-testid="agency-intelligence-overview"]');
     return {
@@ -364,6 +356,48 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
   })()`);
   for (const [area, available] of Object.entries(overviewChecks)) {
     assert(available, `Agency intelligence overview is missing ${area}`);
+  }
+  const profileSummaryChecks = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const operations = profile?.querySelector('[aria-label="Agency operations summary"]');
+    const lead = operations?.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    const sourceLinks = [...(profile?.querySelectorAll('a[href]') ?? [])]
+      .filter((link) => {
+        try {
+          return new URL(link.href).protocol === 'https:';
+        } catch {
+          return false;
+        }
+      });
+    const actions = profile?.querySelector('[data-testid="profile-primary-actions"]');
+    const isFire = ${JSON.stringify(providerCategory)} === 'fire';
+    return {
+      operationsSummary: Boolean(operations),
+      operationsLead: lead,
+      correctOperations: isFire
+        ? /\\bstations\\b/i.test(lead) && /fire engines/i.test(lead)
+        : /\\bambulances\\b/i.test(lead),
+      sourceReferencesPanel: Boolean(profile?.querySelector('[aria-label="Available source references"]')),
+      sourceLinks: sourceLinks.length,
+      sourceLinksAreHttps: sourceLinks.every((link) => new URL(link.href).protocol === 'https:'),
+      inspectSourcesAction: Boolean(actions?.querySelector('[aria-label="Inspect agency sources"]')),
+      prepareMeetingAction: Boolean(actions?.querySelector('[aria-label="Prepare for meeting"]')),
+      addToRouteAction: Boolean(actions?.querySelector('[aria-label="Add agency to route"], [aria-label="Remove agency from today\\'s route"]')),
+      saveAgencyAction: Boolean(actions?.querySelector('[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]')),
+    };
+  })()`);
+  assert(
+    profileSummaryChecks.operationsSummary && profileSummaryChecks.correctOperations,
+    `${providerCategory} profile has the wrong primary operations summary: ${JSON.stringify(profileSummaryChecks)}`,
+  );
+  assert(
+    profileSummaryChecks.sourceReferencesPanel &&
+      profileSummaryChecks.sourceLinks > 0 &&
+      profileSummaryChecks.sourceLinksAreHttps,
+    `${providerCategory} profile has no usable HTTPS source links: ${JSON.stringify(profileSummaryChecks)}`,
+  );
+  for (const action of ['inspectSourcesAction', 'prepareMeetingAction', 'addToRouteAction', 'saveAgencyAction']) {
+    assert(profileSummaryChecks[action], `${providerCategory} profile is missing the ${action} action`);
   }
   const initialExpansion = await evaluate(
     cdp,
@@ -405,6 +439,10 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
     `Boolean(document.querySelector('[data-testid="form-add-agency-source-correction"]'))`,
     'the agency correction form',
   );
+  const sourceRecordsBeforeCorrection = await evaluate(
+    cdp,
+    `localStorage.getItem('ems_territory_agency_source_records_v1')`,
+  );
   const correctionFormChecks = await evaluate(cdp, `(() => {
     const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
     return {
@@ -439,7 +477,7 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
       setValue('input[placeholder="Value currently shown in the profile"]', '1,200'),
       setValue('input[placeholder="Enter the exact value"]', '1,350'),
       setValue('input[placeholder="Agency report, contract, account disclosure"]', 'Correction UI check'),
-      setValue('input[placeholder="Document number, page, asset ID..."]', 'browser-check-2026'),
+      setValue('input[placeholder="Document number, page, asset ID..."]', ${JSON.stringify(testCorrectionRecordId)}),
       setValue('input[placeholder="e.g. FY2025 or Jan–Dec 2025"]', 'FY2026'),
     ].every(Boolean);
     if (!fieldsSet) return false;
@@ -459,11 +497,26 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
         fact.value === '1,350' &&
         fact.reportingPeriod === 'FY2026' &&
         fact.correction?.previousValue === '1,200' &&
-        fact.sourceRecordId === 'browser-check-2026',
+        fact.sourceRecordId === ${JSON.stringify(testCorrectionRecordId)},
       ),
     );
   })()`);
   assert(correctionPersisted, 'The corrected and previous values were not saved locally');
+  const sourceRecordsRestored = await evaluate(cdp, `(() => {
+    const key = 'ems_territory_agency_source_records_v1';
+    const original = ${JSON.stringify(sourceRecordsBeforeCorrection)};
+    if (original === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, original);
+    return localStorage.getItem(key) === original;
+  })()`);
+  assert(sourceRecordsRestored, 'The test-only source correction did not restore the original browser records');
+  const testCorrectionRemoved = await evaluate(cdp, `(() => {
+    const saved = JSON.parse(localStorage.getItem('ems_territory_agency_source_records_v1') || '{}');
+    return !Object.values(saved).some((agency) =>
+      agency.sourceFacts?.some((fact) => fact.sourceRecordId === ${JSON.stringify(testCorrectionRecordId)}),
+    );
+  })()`);
+  assert(testCorrectionRemoved, 'The test-only source correction remains in browser storage');
 }
 
 async function assertNoHorizontalOverflow(cdp, width, area) {
@@ -771,7 +824,49 @@ async function checkFireProfileAtViewport(cdp, viewport) {
   );
   await openAgencyProfile(cdp, 'fire');
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
-  console.log(`✓ ${viewport.width}px: Fire profile and estimate disclosure`);
+  const openedSourceDrawer = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="profile-primary-actions"] [aria-label="Inspect agency sources"]');
+    if (!button) return false;
+    button.scrollIntoView({ block: 'center', inline: 'center' });
+    const rect = button.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.left >= innerWidth) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(openedSourceDrawer, `Fire source inspection was not reachable at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]'))`,
+    `the Fire source inspection drawer at ${viewport.width}px`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'drawer');
+  const fireSourceLinks = await evaluate(cdp, `(() => {
+    const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    return [...(drawer?.querySelectorAll('a[href]') ?? [])]
+      .filter((link) => {
+        try {
+          return new URL(link.href).protocol === 'https:';
+        } catch {
+          return false;
+        }
+      }).length;
+  })()`);
+  assert(fireSourceLinks > 0, `Fire source drawer has no HTTPS links at ${viewport.width}px`);
+  const closedSourceDrawer = await evaluate(cdp, `(() => {
+    const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    const close = [...(drawer?.querySelectorAll('button') ?? [])]
+      .find((button) => button.innerText.trim() === 'Close');
+    if (!close) return false;
+    close.click();
+    return true;
+  })()`);
+  assert(closedSourceDrawer, `The Fire source drawer could not be closed at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `!document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]')`,
+    `the Fire source inspection drawer to close at ${viewport.width}px`,
+  );
+  console.log(`✓ ${viewport.width}px: Fire operations summary, source links, actions, and overflow`);
 }
 
 async function checkTerritoryAtViewport(cdp, viewport) {

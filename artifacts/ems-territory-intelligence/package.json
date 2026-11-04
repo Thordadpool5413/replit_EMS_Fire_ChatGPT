@@ -10,6 +10,7 @@
     "test:claims-import": "tsx --test src/services/medicareDenialImportService.test.ts",
     "test:navigation": "tsx --test src/navigation/workspaceNavigation.test.ts",
     "test:territory-url": "tsx --test src/navigation/territoryUrl.test.ts",
+    "test:territory-links:browser": "node ../../scripts/check-shared-territory-links.mjs",
     "test:profile-overflow": "node ../../scripts/check-profile-overflow.mjs",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"

@@ -53,7 +53,8 @@ import {
   Car,
   Zap,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  Share2
 } from 'lucide-react';
 import { PulseIqRegionalBreakdownChart } from './PulseIqRegionalBreakdownChart';
 import { RealWorldCountyBoundaryMap } from './RealWorldCountyBoundaryMap';
@@ -114,6 +115,7 @@ interface NationalGeographicExplorerProps {
   globalCounty?: string;
   globalCity?: string;
   globalCategory?: 'all' | 'ems' | 'fire';
+  onShareTerritory?: () => void;
   activeAccount?: Agency | null;
   onSyncGlobalGeography?: (state: string, county: string, city: string, category?: 'all' | 'ems' | 'fire') => void;
   comparedAgencyIds?: string[];
@@ -135,6 +137,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   globalCounty,
   globalCity,
   globalCategory,
+  onShareTerritory,
   activeAccount,
   onSyncGlobalGeography,
   comparedAgencyIds = [],
@@ -976,6 +979,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5"
               >
                 <span>&larr; Back to All 50 States</span>
+              </button>
+            )}
+
+            {selectedStateCode !== 'all' && onShareTerritory && (
+              <button
+                type="button"
+                onClick={onShareTerritory}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#1E3A8A] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                aria-label="Copy territory link"
+              >
+                <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Copy territory link</span>
               </button>
             )}
 

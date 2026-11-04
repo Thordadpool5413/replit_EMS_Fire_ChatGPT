@@ -49,6 +49,13 @@ import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
 import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
 import {
+  parseTerritoryUrl,
+  withTerritoryUrl,
+  type ProviderScope,
+  type TerritoryUrlValidators,
+} from './navigation/territoryUrl';
+import { territoryEngine } from './services/territoryIntelligenceEngine';
+import {
   FIELD_WORKSPACE_TABS,
   isFieldWorkTab,
   isOpportunitiesTab,
@@ -102,7 +109,17 @@ type TerritoryNavigationEntry = {
   index: number;
 };
 
+const territoryUrlValidators: TerritoryUrlValidators = {
+  isValidStateCode: (stateCode) =>
+    Object.prototype.hasOwnProperty.call(ALL_50_STATES_SUMMARIES, stateCode),
+  resolveCountyName: (stateCode, countyName) =>
+    territoryEngine.getCountyRecord(stateCode, countyName)?.countyName,
+};
+
 export default function App() {
+  const [initialTerritoryUrl] = useState(() =>
+    parseTerritoryUrl(window.location.search, territoryUrlValidators),
+  );
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' | 'error' } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'info' | 'warn' | 'error' = 'success'): void => {
@@ -111,10 +128,10 @@ export default function App() {
   }, []);
 
   // Global Cascading Geographic & Account Selectors State
-  const [globalState, setGlobalState] = useState<string>('all');
-  const [globalCounty, setGlobalCounty] = useState<string>('all');
+  const [globalState, setGlobalState] = useState<string>(initialTerritoryUrl.state);
+  const [globalCounty, setGlobalCounty] = useState<string>(initialTerritoryUrl.county);
   const [globalCity, setGlobalCity] = useState<string>('all');
-  const [globalCategory, setGlobalCategory] = useState<'all' | 'ems' | 'fire'>('all');
+  const [globalCategory, setGlobalCategory] = useState<ProviderScope>(initialTerritoryUrl.category);
   const [activeAccount, setActiveAccount] = useState<Agency | null>(null);
 
   // Real-time synchronization hook connected to Firebase Firestore cloud backend
@@ -196,7 +213,9 @@ export default function App() {
   }, []);
   
   // Navigation & Modals - Open with Central Home & Guided Onboarding Hub by default
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>(
+    initialTerritoryUrl.hasTerritorySelection ? 'states_directory' : 'home',
+  );
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
   const [comparisonAgencyIds, setComparisonAgencyIds] = useState<string[]>([]);
   const [isAgencyComparisonOpen, setIsAgencyComparisonOpen] = useState(false);
@@ -241,6 +260,7 @@ export default function App() {
       window.history.pushState(
         { ...(window.history.state || {}), territoryNavigation: entry },
         '',
+        withTerritoryUrl(window.location.href, entry, territoryUrlValidators),
       );
       navigationIndexRef.current = entry.index;
       navigationEntriesRef.current.set(entry.index, entry);
@@ -262,6 +282,7 @@ export default function App() {
       window.history.replaceState(
         { ...(window.history.state || {}), territoryNavigation: entry },
         '',
+        withTerritoryUrl(window.location.href, entry, territoryUrlValidators),
       );
       navigationEntriesRef.current.set(entry.index, entry);
       navigationSnapshotRef.current = entry;
@@ -271,9 +292,27 @@ export default function App() {
   }, []);
 
   const restoreNavigationEntry = useCallback((entry: TerritoryNavigationEntry) => {
+    const candidateState = entry.state?.trim().toUpperCase() || 'all';
+    const stateIsValid = candidateState === 'all' ||
+      Object.prototype.hasOwnProperty.call(ALL_50_STATES_SUMMARIES, candidateState);
+    const candidateCounty = entry.county?.trim() || 'all';
+    const countyRecord = candidateState !== 'all' && candidateCounty.toLowerCase() !== 'all'
+      ? territoryEngine.getCountyRecord(candidateState, candidateCounty)
+      : null;
+    const validCategory = (value: string): value is ProviderScope =>
+      value === 'all' || value === 'ems' || value === 'fire';
+    const restoredCategory = validCategory(navigationSnapshotRef.current?.category || '')
+      ? navigationSnapshotRef.current!.category
+      : validCategory(entry.category) ? entry.category : 'all';
     const restoredEntry = {
       ...entry,
-      category: navigationSnapshotRef.current?.category ?? entry.category,
+      state: stateIsValid && (candidateCounty.toLowerCase() === 'all' || countyRecord)
+        ? candidateState
+        : 'all',
+      county: stateIsValid && (candidateCounty.toLowerCase() === 'all' || countyRecord)
+        ? countyRecord?.countyName || 'all'
+        : 'all',
+      category: restoredCategory,
     };
     const agency = restoredEntry.agencyId
       ? agenciesRef.current.find((candidate) => candidate.id === restoredEntry.agencyId) ?? null
@@ -286,6 +325,7 @@ export default function App() {
       window.history.replaceState(
         { ...(window.history.state || {}), territoryNavigation: restoredEntry },
         '',
+        withTerritoryUrl(window.location.href, restoredEntry, territoryUrlValidators),
       );
     } catch {
       // The in-memory navigation still restores when history updates are unavailable.
@@ -322,6 +362,7 @@ export default function App() {
       window.history.replaceState(
         { ...(window.history.state || {}), territoryNavigation: initialEntry },
         '',
+        withTerritoryUrl(window.location.href, initialEntry, territoryUrlValidators),
       );
     } catch {
       // History may be unavailable in an embedded browser; the app remains usable.
@@ -762,6 +803,15 @@ export default function App() {
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pushNavigationEntry]);
+
+  const handleShareTerritory = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('Territory link copied to clipboard.', 'success');
+    } catch {
+      showToast('Could not copy the territory link. Copy the address from your browser.', 'error');
+    }
+  }, [showToast]);
 
   const handleNavigateTab = useCallback((tab: string) => {
     const current = navigationSnapshotRef.current;
@@ -1413,6 +1463,7 @@ export default function App() {
               globalCounty={globalCounty}
               globalCity={globalCity}
               globalCategory={globalCategory}
+              onShareTerritory={handleShareTerritory}
               activeAccount={currentActive}
               onSyncGlobalGeography={(s, c, city, cat) => {
                 handleSyncGlobalGeography(s, c, city, cat);

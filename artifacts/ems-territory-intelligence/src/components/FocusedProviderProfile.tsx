@@ -1025,6 +1025,26 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           className="profile-action-dock flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2"
           data-testid="profile-primary-actions"
         >
+              <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+                <label
+                  htmlFor="profile-sales-stage"
+                  className="text-[10px] font-bold uppercase tracking-wide text-[#53657B] dark:text-slate-400"
+                >
+                  Stage
+                </label>
+                <select
+                  id="profile-sales-stage"
+                  aria-label="Update CRM Sales Pipeline Stage"
+                  data-testid="profile-sales-stage"
+                  value={agency.zollOpportunity.salesStage}
+                  onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
+                  className="h-9 max-w-[170px] rounded-lg border border-[#DFE6EF] bg-white px-2 text-xs font-semibold text-[#14283F] focus:border-[#285EE8] focus:outline-none dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-100"
+                >
+                  {stages.map((stage) => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
+                </select>
+              </div>
               <AgencyCompareButton
                 agency={agency}
                 selected={comparedAgencyIds.includes(agency.id)}

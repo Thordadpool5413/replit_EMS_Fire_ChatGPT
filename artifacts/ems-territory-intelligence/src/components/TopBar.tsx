@@ -294,6 +294,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('home')}
+                aria-current={isHomeActive ? 'page' : undefined}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                   isHomeActive
                     ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
@@ -310,6 +311,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('queue')}
+                aria-current={isAccountsActive ? 'page' : undefined}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                   isAccountsActive
                     ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
@@ -648,7 +650,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="workspace-context-title hidden sm:inline shrink-0 whitespace-nowrap text-sm sm:text-base font-semibold text-[#14283F] dark:text-white">
+                <span className="workspace-context-title inline max-w-[9rem] truncate text-xs font-semibold text-[#14283F] dark:text-white sm:max-w-none sm:shrink-0 sm:whitespace-nowrap sm:text-sm">
                   {getWorkspaceTitle()}
                 </span>
                 {hasActiveGeography && (

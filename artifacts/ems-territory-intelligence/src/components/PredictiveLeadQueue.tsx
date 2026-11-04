@@ -791,7 +791,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       {/* Main Content View */}
       {viewMode === 'cards' ? (
         /* 3-Zone Scannable Summary Card Layout with Progressive Disclosure */
-        <div className="workspace-cards-grid">
+        <div className="workspace-cards-grid agency-lead-cards-grid">
           {paginatedAgencies.map((agency) => {
             const activePulseIqScore = getActivePulseIqScore(agency, weights);
             const isFire = agency.agencyType.toLowerCase().includes('fire');

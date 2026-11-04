@@ -5754,3 +5754,270 @@ button { -webkit-tap-highlight-color: transparent; }
     transition: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Shared shell refinement — field-briefing navigation and denser workspaces.
+   Keep the brand artwork untouched; tune only the surrounding shell and content.
+   -------------------------------------------------------------------------- */
+.pi-primary-sidebar {
+  background: #f5f8f6 !important;
+  border-color: #d9e3de !important;
+  box-shadow: 10px 0 28px -26px rgba(23, 53, 52, 0.4);
+}
+
+.pi-primary-sidebar > div:not(:first-child) {
+  border-color: #dce5df !important;
+}
+
+.pi-primary-nav {
+  min-height: 0;
+  gap: 0.65rem !important;
+  padding: 0.5rem 0.7rem !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.pi-primary-nav > div > div:first-child {
+  color: #788984;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pi-primary-nav button {
+  min-height: 2.35rem;
+  border-radius: 0.55rem !important;
+}
+
+.pi-primary-nav button[aria-current="page"],
+.pi-primary-nav > div button[aria-current="page"] {
+  box-shadow: inset 2px 0 #176568, 0 1px 2px rgba(21, 61, 58, 0.05) !important;
+}
+
+.pi-sidebar-quick-actions {
+  padding: 0.55rem 0.7rem 0.65rem !important;
+  gap: 0.4rem !important;
+}
+
+.pi-sidebar-quick-actions > button,
+.pi-sidebar-quick-actions > div > button {
+  min-height: 2.25rem;
+}
+
+.pi-sidebar-quick-actions .grid.grid-cols-2 > button {
+  min-width: 0;
+  gap: 0.25rem !important;
+  padding-inline: 0.25rem !important;
+  font-size: 0.625rem !important;
+}
+
+.pi-sidebar-quick-actions > div:last-child > button {
+  gap: 0.3rem !important;
+  padding-inline: 0.45rem !important;
+  font-size: 0.625rem !important;
+}
+
+.pi-primary-sidebar > div:last-child {
+  background: #edf3ef !important;
+  border-color: #dce5df !important;
+}
+
+.pi-command-header {
+  border-bottom-color: var(--pi-border) !important;
+}
+
+.workspace-grid-shell {
+  max-width: 1760px;
+  padding-inline: clamp(0.75rem, 1.65vw, 1.5rem) !important;
+  gap: 0.75rem;
+}
+
+.workspace-view-container,
+.workspace-section-grid {
+  gap: 0.75rem;
+}
+
+.workspace-grid-shell > nav {
+  margin-bottom: 0.35rem !important;
+  padding: 0.25rem !important;
+}
+
+.workspace-grid-shell > nav button {
+  min-height: 2.5rem;
+}
+
+.workspace-grid-shell .scannable-table th,
+.workspace-grid-shell .scannable-table td {
+  padding-block: 0.55rem;
+}
+
+.profile-workspace > div:last-of-type {
+  padding-top: 0.85rem !important;
+  padding-bottom: 1.25rem !important;
+  row-gap: 1rem !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child {
+  padding: 1rem !important;
+  gap: 1rem !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child > div:first-child {
+  gap: 0.85rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.profile-workspace .profile-summary-panel {
+  padding: 0.7rem !important;
+}
+
+.profile-workspace .profile-action-dock {
+  padding: 0.35rem 0.75rem;
+  background: color-mix(in srgb, var(--pi-canvas-bg) 92%, transparent);
+  border-bottom: 1px solid var(--pi-border);
+}
+
+.county-directory-card,
+.agency-directory-card {
+  padding: 0.85rem !important;
+  gap: 0.65rem !important;
+}
+
+@media (min-width: 768px) {
+  .workspace-grid-shell {
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 13rem !important;
+  }
+
+  .agency-lead-cards-grid > div {
+    padding: 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.4rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > div.grid.grid-cols-2 {
+    margin-block: 0.25rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > div.grid.grid-cols-2 > div {
+    padding: 0.5rem !important;
+  }
+
+  .agency-lead-cards-grid details {
+    padding-top: 0.35rem !important;
+  }
+
+  .profile-workspace {
+    padding-bottom: 1.5rem !important;
+  }
+
+  .profile-workspace .profile-action-dock {
+    flex-wrap: wrap;
+    gap: 0.4rem !important;
+    overflow-x: visible !important;
+    padding-inline: 0.75rem;
+  }
+
+  .profile-workspace .profile-action-dock button {
+    min-height: 2.25rem;
+    padding-inline: 0.75rem !important;
+  }
+
+  .provider-profile-overlay [aria-label="Account Action Dock"] {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  .pi-primary-nav {
+    gap: 0.45rem !important;
+    padding-block: 0.35rem !important;
+  }
+
+  .pi-primary-nav button {
+    min-height: 2.1rem;
+  }
+
+  .pi-sidebar-quick-actions {
+    padding: 0.4rem 0.6rem 0.45rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .pi-sidebar-quick-actions > button,
+  .pi-sidebar-quick-actions > div > button {
+    min-height: 2rem;
+  }
+
+  .pi-primary-sidebar > div:last-child {
+    padding: 0.45rem 0.65rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 13rem !important;
+  }
+
+  .profile-workspace > div:last-of-type {
+    padding-inline: 1rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 900px) {
+  .provider-profile-overlay {
+    left: 12rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    height: calc(100dvh - 170px) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .pi-command-header > div {
+    padding-inline: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .pi-header-actions {
+    gap: 0.375rem !important;
+  }
+
+  .pi-header-actions > button,
+  .pi-header-actions > .relative > button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .pi-mobile-nav button > span {
+    font-size: 0.625rem !important;
+    letter-spacing: 0;
+  }
+
+  .workspace-grid-shell {
+    padding-inline: 0.7rem !important;
+    padding-top: 0.65rem !important;
+  }
+
+  .profile-workspace > div:last-of-type {
+    padding-inline: 0.75rem !important;
+    row-gap: 0.8rem !important;
+  }
+
+  .profile-workspace > div:last-of-type > section:first-child {
+    padding: 0.8rem !important;
+  }
+
+  .county-directory-card,
+  .agency-directory-card {
+    padding: 0.75rem !important;
+  }
+}

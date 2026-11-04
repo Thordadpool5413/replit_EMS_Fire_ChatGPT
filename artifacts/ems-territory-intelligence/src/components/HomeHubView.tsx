@@ -9,7 +9,8 @@ import {
   Compass,
   ZoomIn,
   ZoomOut,
-  RotateCcw
+  RotateCcw,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -86,10 +87,10 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
 };
 
 const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabel: string }> = {
-  'agency-records': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
-  ambulances: { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
-  'fire-engines': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Fewer', highLabel: 'More' },
-  pulseiq: { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
+  'agency-records': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
+  ambulances: { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
+  'fire-engines': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
+  pulseiq: { stops: ['#F3E8FF', '#D8B4FE', '#B174F0', '#8B43D0', '#612B9B'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
   'cardiac-survival': { stops: ['#FF1744', '#FF9100', '#FFEA00', '#AEEA00', '#00E676'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
   'scene-transit': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
 };
@@ -317,6 +318,67 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     });
   }, [selectedStateCode, mapZoom]);
 
+  const updateMapZoom = (delta: number) => {
+    setMapZoom((zoom) => {
+      const nextZoom = Math.max(1, Math.min(1.8, +(zoom + delta).toFixed(1)));
+      saveMapPreference('zoom', String(nextZoom));
+      return nextZoom;
+    });
+  };
+
+  const resetMapZoom = () => {
+    setMapZoom(1);
+    saveMapPreference('zoom', '1');
+  };
+
+  const renderMapZoomControls = (testIdPrefix = 'button-map', compact = false) => (
+    <div
+      className={`home-map-zoom-control flex items-center gap-1.5 rounded-lg border border-[#304A61] bg-[#101F30] p-1 ${compact ? '' : 'hidden md:flex'}`}
+      role="group"
+      aria-label="Map zoom controls"
+    >
+      <button
+        type="button"
+        data-testid={`${testIdPrefix}-zoom-in`}
+        onClick={() => updateMapZoom(0.2)}
+        disabled={mapZoom >= 1.8}
+        aria-label="Zoom in on map"
+        title="Zoom in"
+        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
+      >
+        <ZoomIn className="h-4 w-4" aria-hidden="true" />
+      </button>
+      <span
+        className="min-w-12 text-center font-mono text-[11px] font-bold tabular-nums text-[#9CB1C7]"
+        aria-live="polite"
+      >
+        {Math.round(mapZoom * 100)}%
+      </span>
+      <button
+        type="button"
+        data-testid={`${testIdPrefix}-zoom-out`}
+        onClick={() => updateMapZoom(-0.2)}
+        disabled={mapZoom <= 1}
+        aria-label="Zoom out on map"
+        title="Zoom out"
+        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
+      >
+        <ZoomOut className="h-4 w-4" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        data-testid={`${testIdPrefix}-zoom-reset`}
+        onClick={resetMapZoom}
+        disabled={mapZoom === 1}
+        aria-label="Reset map zoom"
+        title="Reset zoom"
+        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
+      >
+        <RotateCcw className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </div>
+  );
+
   const handleStateClick = (code: string) => {
     setSelectedStateCode(code);
     saveMapPreference('state', code);
@@ -409,81 +471,41 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     ))}
                   </select>
                 </label>
-                <div className="home-map-zoom-control flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-[#304A61] bg-[#101F30] p-1" role="group" aria-label="Map zoom controls">
-                  <button
-                    type="button"
-                    data-testid="button-map-zoom-in"
-                    onClick={() => setMapZoom((zoom) => {
-                      const nextZoom = Math.min(1.8, +(zoom + 0.2).toFixed(1));
-                      saveMapPreference('zoom', String(nextZoom));
-                      return nextZoom;
-                    })}
-                    disabled={mapZoom >= 1.8}
-                    aria-label="Zoom in on map"
-                    title="Zoom in"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
-                  >
-                    <ZoomIn className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <span className="min-w-12 text-center font-mono text-[11px] font-bold tabular-nums text-[#9CB1C7]" aria-live="polite">{Math.round(mapZoom * 100)}%</span>
-                  <button
-                    type="button"
-                    data-testid="button-map-zoom-out"
-                    onClick={() => setMapZoom((zoom) => {
-                      const nextZoom = Math.max(1, +(zoom - 0.2).toFixed(1));
-                      saveMapPreference('zoom', String(nextZoom));
-                      return nextZoom;
-                    })}
-                    disabled={mapZoom <= 1}
-                    aria-label="Zoom out on map"
-                    title="Zoom out"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
-                  >
-                    <ZoomOut className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="button-map-zoom-reset"
-                    onClick={() => {
-                      setMapZoom(1);
-                      saveMapPreference('zoom', '1');
-                    }}
-                    disabled={mapZoom === 1}
-                    aria-label="Reset map zoom"
-                    title="Reset zoom"
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-[#C7D7E6] hover:bg-[#1C3449] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#65D7D0]"
-                  >
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
+                {renderMapZoomControls()}
+                <details className="home-map-mobile-tools md:hidden">
+                  <summary aria-label="Open map tools">
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                    <span>Tools</span>
+                  </summary>
+                  <div className="home-map-mobile-tools-panel">
+                    {renderMapZoomControls('mobile-button-map', true)}
+                    <p>Zoom in to inspect a state. Swipe to pan around the map.</p>
+                  </div>
+                </details>
               </div>
 
               <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
-                <span className="shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
-                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
+                <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
-                  <span className="h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
+                  <span className="home-map-legend-gradient h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
                   <span className="home-map-legend-endpoint home-map-legend-endpoint-high">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
                 {mapMetricValues.some((value) => value === 0) && (
-                  <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                  <span className="home-map-legend-zero flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                     <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
                     Reported 0
                   </span>
                 )}
-                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                <span className="home-map-legend-missing flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span className="inline-block h-4 w-4 rounded-sm border border-[#7890A8] bg-[repeating-linear-gradient(135deg,#172A3D_0px,#172A3D_3px,#7890A8_3px,#7890A8_4px)]" aria-hidden="true" />
                   Not reported
                 </span>
-                <span className="shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
+                <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
               </div>
 
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
               <div className="home-map-visual-stack home-map-visual-v2">
-              <p className="text-[10px] text-[#A2B5C8] sm:hidden">
-                Zoom in to inspect a state, then swipe to pan.
-              </p>
-
               <div
                 ref={mapViewportRef}
                 data-map-zoom={mapZoom}
@@ -664,10 +686,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               {/* East Coast Compact Callout Buttons */}
-              <div className="home-map-shortcuts pt-2 border-t border-[#294158] flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="text-[11px] font-semibold text-[#91A6BB] mr-1">
-                  Small-state shortcuts:
-                </span>
+              <div className="home-map-shortcuts pt-2 border-t border-[#294158] text-xs">
+                <div className="home-map-shortcuts-heading">
+                  <span>Small-state shortcuts</span>
+                  <span className="home-map-shortcuts-swipe">Swipe to see all {EAST_COAST_CALLOUT_STATES.length}</span>
+                </div>
+                <div className="home-map-shortcut-row" role="group" aria-label="Small-state shortcuts">
                 {EAST_COAST_CALLOUT_STATES.map((c) => {
                   const isSelected = selectedStateCode === c.code;
                   const datum = stateMapMetricsByCode[c.code][mapMetric];
@@ -693,6 +717,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     </button>
                   );
                 })}
+                </div>
               </div>
               </div>
               </div>

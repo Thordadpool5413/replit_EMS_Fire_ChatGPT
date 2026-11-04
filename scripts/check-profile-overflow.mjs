@@ -606,6 +606,107 @@ async function assertNoHorizontalOverflow(cdp, width, area) {
   );
 }
 
+async function checkHomeMapAtViewport(cdp, viewport) {
+  console.log(`Checking Home map at ${viewport.width}px viewport...`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.home-map-viewport') &&
+      document.querySelector('.home-map-state-path'))`,
+    `the Home map at ${viewport.width}px`,
+    60_000,
+  );
+
+  const dimensions = await evaluate(cdp, `(() => {
+    const rect = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const bounds = element.getBoundingClientRect();
+      return {
+        left: bounds.left,
+        right: bounds.right,
+        width: bounds.width,
+        height: bounds.height,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      };
+    };
+    return {
+      document: document.documentElement.scrollWidth,
+      stage: rect('.home-map-stage-v2'),
+      map: rect('.home-map-viewport'),
+      shortcutRow: rect('.home-map-shortcut-row'),
+    };
+  })()`);
+
+  assert(
+    dimensions.document <= viewport.width + 1,
+    `Home map causes horizontal page overflow at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+  );
+  assert(
+    dimensions.map && dimensions.stage &&
+      dimensions.map.width > 0 &&
+      dimensions.map.right <= dimensions.stage.right + 1,
+    `Map viewport escapes its panel at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+  );
+  if (viewport.mobile) {
+    assert(
+      dimensions.map.height >= 210,
+      `Phone map canvas is too short at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+    );
+    assert(
+      dimensions.shortcutRow &&
+        dimensions.shortcutRow.scrollWidth > dimensions.shortcutRow.clientWidth,
+      `Small-state shortcuts do not clearly scroll at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+    );
+    const toolsWork = await evaluate(cdp, `(() => {
+      const details = document.querySelector('.home-map-mobile-tools');
+      if (!details) return false;
+      details.open = true;
+      const zoomIn = details.querySelector('[data-testid="mobile-button-map-zoom-in"]');
+      const reset = details.querySelector('[data-testid="mobile-button-map-zoom-reset"]');
+      if (!zoomIn || !reset || !zoomIn.getBoundingClientRect().width) return false;
+      zoomIn.click();
+      return true;
+    })()`);
+    assert(toolsWork, `The mobile map tools did not open at ${viewport.width}px`);
+    await waitFor(
+      cdp,
+      `document.querySelector('.home-map-viewport')?.dataset.mapZoom === '1.2'`,
+      `mobile zoom-in at ${viewport.width}px`,
+    );
+    await evaluate(cdp, `document.querySelector('[data-testid="mobile-button-map-zoom-reset"]')?.click()`);
+    await waitFor(
+      cdp,
+      `document.querySelector('.home-map-viewport')?.dataset.mapZoom === '1'`,
+      `mobile zoom reset at ${viewport.width}px`,
+    );
+    await evaluate(cdp, `document.querySelector('.home-map-mobile-tools').open = false`);
+  }
+
+  const texasFill = await evaluate(cdp, `(() => {
+    const texas = [...document.querySelectorAll('.home-map-state-path')]
+      .find((path) => path.getAttribute('aria-label')?.startsWith('Texas.'));
+    return texas?.getAttribute('fill') ?? null;
+  })()`);
+  assert(
+    texasFill && /^#[0-9a-f]{6}$/i.test(texasFill),
+    `Texas count shading is not a solid fill: ${texasFill}`,
+  );
+  const [, red, , blue] = texasFill.match(/^#(..)(..)(..)$/).map((channel) => parseInt(channel, 16));
+  assert(blue > red, `Agency-count shading should use the blue sequential palette, received ${texasFill}`);
+
+  console.log(
+    `✓ ${viewport.width}px: map stays in bounds, counts use blue shading, and mobile controls work`,
+  );
+}
+
 async function checkProfileAtViewport(cdp, viewport) {
   console.log(`Checking ${viewport.width}px viewport...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -1886,6 +1987,17 @@ async function main() {
       behavior: 'allow',
       downloadPath,
     });
+
+    if (process.env.HOME_MAP_ONLY === '1') {
+      for (const viewport of [
+        { width: 320, height: 740, mobile: true },
+        { width: 390, height: 844, mobile: true },
+        { width: 1280, height: 900, mobile: false },
+      ]) {
+        await checkHomeMapAtViewport(cdp, viewport);
+      }
+      return;
+    }
 
     for (const viewport of testViewports) {
       await checkProfileAtViewport(cdp, viewport);

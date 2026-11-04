@@ -116,8 +116,12 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
         </div>
 
         {!isOnline && (
-          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-mono">
-            Offline Mode: Record will be stored locally and queued in outbox.
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs"
+          >
+            Offline — this visit stays on this device. Cloud writes remain opt-in.
           </div>
         )}
 

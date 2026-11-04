@@ -586,18 +586,6 @@ export interface TerritoryCluster {
   highPriorityAgencyCount: number;
 }
 
-export interface PushAlert {
-  id: string;
-  timestamp: string;
-  priority: 'critical' | 'high' | 'info';
-  title: string;
-  message: string;
-  agencyId?: string;
-  agencyName?: string;
-  category: 'Grant Award' | 'CMS Audit / Policy' | 'Competitor Notice' | 'RFP Issued' | 'Field Route' | 'GIS Clinical Alert';
-  isRead: boolean;
-}
-
 export interface SyncOutboxItem {
   id: string;
   timestamp: string;

@@ -7,7 +7,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import {
   Search,
-  Bell,
   ChevronDown,
   Sun,
   Moon,
@@ -49,8 +48,6 @@ interface TopBarProps {
   pendingSyncCount: number;
   isSyncing: boolean;
   triggerManualSync: () => void;
-  unreadAlertCount: number;
-  openNotifications: () => void;
   openCommandPalette?: () => void;
   openDataLineageModal?: () => void;
   openChatbot?: () => void;
@@ -86,8 +83,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   pendingSyncCount,
   isSyncing,
   triggerManualSync,
-  unreadAlertCount,
-  openNotifications,
   openCommandPalette,
   openDataLineageModal,
   openChatbot,
@@ -491,23 +486,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             </button>
           )}
 
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={openNotifications}
-              aria-label={`Notifications${unreadAlertCount > 0 ? `, ${unreadAlertCount} unread` : ''}`}
-              className="relative flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-1.5 text-[10px] font-medium text-slate-300 hover:bg-[#172D49]"
-              title="Notifications"
-            >
-              <Bell className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">Alerts</span>
-              {unreadAlertCount > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[#285EE8] px-1 text-center text-[9px] font-bold text-white">
-                  {unreadAlertCount}
-                </span>
-              )}
-            </button>
-
+          <div className="grid grid-cols-1 gap-1.5">
             {onToggleDarkMode && (
               <button
                 type="button"
@@ -714,9 +693,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <SlidersHorizontal className="w-4 h-4 text-[#53657B] dark:text-slate-400" />
                 <span className="hidden sm:inline">Tools</span>
                 <ChevronDown className="hidden sm:block w-3 h-3 text-[#53657B]" />
-                {(unreadAlertCount > 0 || pendingSyncCount > 0) && (
+                {pendingSyncCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[10px] font-bold flex items-center justify-center">
-                    {unreadAlertCount + pendingSyncCount}
+                    {pendingSyncCount}
                   </span>
                 )}
               </button>
@@ -744,22 +723,6 @@ export const TopBar: React.FC<TopBarProps> = ({
                         Strategy AI
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openNotifications();
-                        setIsMobileToolsMenuOpen(false);
-                      }}
-                      className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2"
-                    >
-                      <Bell className="h-4 w-4 text-[#53657B] dark:text-slate-400" />
-                      Alerts
-                      {unreadAlertCount > 0 && (
-                        <span className="ml-auto rounded-full bg-[#285EE8] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                          {unreadAlertCount}
-                        </span>
-                      )}
-                    </button>
                     {onToggleDarkMode && (
                       <button
                         type="button"

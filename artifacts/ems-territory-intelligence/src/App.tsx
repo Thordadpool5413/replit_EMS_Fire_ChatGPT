@@ -9,7 +9,6 @@ import {
   LeadStage, 
   FieldNote, 
   SyncOutboxItem, 
-  PushAlert, 
   PredictiveWeights,
   AgencySourceRecordAssociation
 } from './types';
@@ -36,12 +35,6 @@ import {
   saveAgencySourceRecordData,
   saveAgencySourceRecordDataMap,
 } from './services/agencySourceRecordStore';
-import { 
-  loadStoredNotifications, 
-  saveStoredNotifications, 
-  triggerSystemNotification, 
-  ALERT_TEMPLATES 
-} from './utils/notificationService';
 import { TopBar } from './components/TopBar';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -76,7 +69,6 @@ const PredictiveWeightsModal = React.lazy(() => import('./components/PredictiveW
 const PublicHealthcareExplorer = React.lazy(() => import('./components/PublicHealthcareExplorer').then((module) => ({ default: module.PublicHealthcareExplorer })));
 const AfgGrantsTracker = React.lazy(() => import('./components/AfgGrantsTracker').then((module) => ({ default: module.AfgGrantsTracker })));
 const FieldModeView = React.lazy(() => import('./components/FieldModeView').then((module) => ({ default: module.FieldModeView })));
-const NotificationDrawer = React.lazy(() => import('./components/NotificationDrawer').then((module) => ({ default: module.NotificationDrawer })));
 const ContractExpirationCalendar = React.lazy(() => import('./components/ContractExpirationCalendar').then((module) => ({ default: module.ContractExpirationCalendar })));
 const RfpSpecGeneratorModal = React.lazy(() => import('./components/RfpSpecGeneratorModal').then((module) => ({ default: module.RfpSpecGeneratorModal })));
 const CloudBackupResilienceView = React.lazy(() => import('./components/CloudBackupResilienceView').then((module) => ({ default: module.CloudBackupResilienceView })));
@@ -157,7 +149,6 @@ export default function App() {
   });
 
   const [outbox, setOutbox] = useState<SyncOutboxItem[]>(loadStoredOutbox);
-  const [alerts, setAlerts] = useState<PushAlert[]>(loadStoredNotifications);
   const [weights, setWeights] = useState<PredictiveWeights>(loadStoredWeights);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const isSyncing = false;
@@ -379,7 +370,6 @@ export default function App() {
 
   const [previewAgency, setPreviewAgency] = useState<Agency | null>(null);
   const [rfpAgency, setRfpAgency] = useState<Agency | null>(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isDataLineageOpen, setIsDataLineageOpen] = useState<boolean>(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState<boolean>(false);
@@ -398,11 +388,9 @@ export default function App() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      showToast('Connection restored. Local field changes remain queued until you choose a cloud write.', 'info');
     };
     const handleOffline = () => {
       setIsOnline(false);
-      showToast('Network disconnected. Field offline mode active.', 'warn');
     };
 
     window.addEventListener('online', handleOnline);
@@ -709,7 +697,6 @@ export default function App() {
     setActiveAccount(profileAgency);
     setIsCommandPaletteOpen(false);
     setIsMobileProviderFinderOpen(false);
-    setIsNotificationsOpen(false);
   }, [agencies, pushNavigationEntry, replaceCurrentNavigationEntry]);
 
   const handleToggleAgencyComparison = useCallback((agency: Agency) => {
@@ -734,16 +721,10 @@ export default function App() {
     setIsAgencyComparisonOpen(false);
   }, []);
 
-  const handleSelectAlertAgency = useCallback((agencyId: string) => {
-    const target = agencies.find((agency) => agency.id === agencyId);
-    if (target) handleOpenAgencyProfile(target);
-  }, [agencies, handleOpenAgencyProfile]);
-
   const handleCheckConnectivity = useCallback(() => {
     const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
     setIsOnline(online);
-    showToast(online ? 'Network verified: Online with cloud synchronization.' : 'Network offline: Local field cache active.', online ? 'info' : 'warn');
-  }, [showToast]);
+  }, []);
 
   const handleManualSync = useCallback(() => {
     if (!isOnline) {
@@ -755,7 +736,6 @@ export default function App() {
     showToast('Local change queue cleared. No cloud write was performed; use Data Health to opt in to Firestore writes.', 'info');
   }, [isOnline, showToast]);
 
-  const unreadAlertCount = alerts.filter(a => !a.isRead).length;
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const currentActive = activeAccount || selectedAgency;
@@ -799,7 +779,6 @@ export default function App() {
     setIsCommandPaletteOpen(false);
     setIsDataLineageOpen(false);
     setIsChatbotOpen(false);
-    setIsNotificationsOpen(false);
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pushNavigationEntry]);
@@ -987,8 +966,6 @@ export default function App() {
         pendingSyncCount={outbox.length}
         isSyncing={isSyncing}
         triggerManualSync={handleManualSync}
-        unreadAlertCount={unreadAlertCount}
-        openNotifications={() => setIsNotificationsOpen(true)}
         openCommandPalette={() => setIsCommandPaletteOpen(true)}
         openDataLineageModal={() => setIsDataLineageOpen(true)}
         openChatbot={() => setIsChatbotOpen(true)}
@@ -1245,7 +1222,6 @@ export default function App() {
               outbox={outbox}
               isDarkMode={isDarkMode}
               onToggleDarkMode={toggleDarkMode}
-              alerts={alerts}
             />
           </div>
         )}
@@ -1724,23 +1700,6 @@ export default function App() {
           agency={rfpAgency}
         />
       )}
-
-      {/* Push Notifications Drawer */}
-      {isNotificationsOpen && <NotificationDrawer
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-        alerts={alerts}
-        onMarkAllRead={() => {
-          const updated = alerts.map(a => ({ ...a, isRead: true }));
-          setAlerts(updated);
-          saveStoredNotifications(updated);
-        }}
-        onClearAlerts={() => {
-          setAlerts([]);
-          saveStoredNotifications([]);
-        }}
-        onSelectAlertAgency={handleSelectAlertAgency}
-      />}
 
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav

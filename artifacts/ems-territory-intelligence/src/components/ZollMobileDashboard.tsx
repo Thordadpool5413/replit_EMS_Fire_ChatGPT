@@ -9,15 +9,13 @@ import {
   Agency,
   LeadStage,
   PredictiveWeights,
-  SyncOutboxItem, 
-  PushAlert 
+  SyncOutboxItem
 } from '../types';
 import { 
   Phone, 
   Navigation, 
   Car, 
   Clock, 
-  AlertTriangle, 
   CheckCircle2, 
   Award, 
   Search, 
@@ -57,7 +55,6 @@ interface ZollMobileDashboardProps {
   outbox: SyncOutboxItem[];
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  alerts?: PushAlert[];
   weights?: PredictiveWeights;
 }
 
@@ -71,13 +68,11 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
   outbox,
   isDarkMode,
   onToggleDarkMode,
-  alerts = [],
   weights
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'critical' | 'high_priority' | 'day_route' | 'ems' | 'fire'>('all');
   const [activeGeoTab, setActiveGeoTab] = useState<'cluster' | 'market_share' | 'transit'>('cluster');
-  const [criticalAlertDismissed, setCriticalAlertDismissed] = useState<boolean>(false);
   const [mobileClarityDrawer, setMobileClarityDrawer] = useState<Record<string, 'deal_story' | 'battlecard' | 'score_explainer' | null>>({});
   const [visibleCardCount, setVisibleCardCount] = useState<number>(24);
 
@@ -166,11 +161,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
       })
       .sort((a, b) => (b?.zollOpportunity?.pulseIqScore ?? 50) - (a?.zollOpportunity?.pulseIqScore ?? 50));
   }, [agencies, searchQuery, filterMode]);
-
-  // Urgent Critical Updates
-  const urgentLead = useMemo(() => {
-    return agencies.find(a => (a?.competitorContract?.renewalWindowDays ?? 180) <= 60 && (a?.zollOpportunity?.pulseIqScore ?? 50) >= 85) || agencies[0] || null;
-  }, [agencies]);
 
   // Stage Progression Options
   const stages: LeadStage[] = [
@@ -325,69 +315,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
           </div>
         </div>
       </motion.div>
-
-      {/* 2. REAL-TIME CRITICAL STATUS ALERT TICKER */}
-      {!criticalAlertDismissed && urgentLead && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, height: 0 }}
-          className="rounded-2xl border bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-transparent dark:from-rose-950/40 dark:via-amber-950/20 dark:to-slate-900 border-rose-300 dark:border-rose-900/80 p-4 shadow-sm relative overflow-hidden"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                <AlertTriangle className="w-5 h-5 text-white animate-bounce" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/60 px-2.5 py-0.5 rounded-md">
-                    Urgent status: {urgentLead.competitorContract?.renewalWindowDays ?? 60} days remaining
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                    PulseIQ estimate {urgentLead.zollOpportunity?.pulseIqScore ?? '—'} / 100
-                  </span>
-                </div>
-                <h2 className="text-sm font-bold text-[#111827] dark:text-slate-100 mt-1">
-                  {urgentLead.name} ({urgentLead.city}, {urgentLead.stateCode})
-                </h2>
-                <p className="text-xs text-[#374151] dark:text-slate-300 mt-0.5 line-clamp-2">
-                  Competitor contract with <span className="font-semibold text-rose-700 dark:text-rose-300">{urgentLead.competitorContract?.vendor || 'Stryker'}</span> expires on <span className="font-semibold">{urgentLead.competitorContract?.contractEndDate || '2026-12-31'}</span>. {urgentLead.installedFleet?.defibUnitsCount || 10}x aging monitors eligible for ${((urgentLead.installedFleet?.defibUnitsCount || 10) * 3500).toLocaleString()} trade-in credit toward X Series Advanced.
-                </p>
-                
-                {/* 1-Tap Quick Response Buttons */}
-                <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                  <button
-                    onClick={() => onSelectAgency(urgentLead)}
-                    className="px-3 py-1.5 rounded-lg bg-[#111827] dark:bg-slate-800 text-white text-xs font-semibold hover:bg-[#1E3A8A] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <span>Open agency profile</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  {urgentLead.keyContacts?.[0]?.phone && (
-                    <a
-                      href={`tel:${urgentLead.keyContacts[0].phone}`}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>Call {(urgentLead.keyContacts[0].name || '').split(' ')[0]}</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setCriticalAlertDismissed(true)}
-              className="text-xs text-[#6B7280] dark:text-slate-400 hover:text-[#111827] dark:hover:text-slate-200 p-1 shrink-0 cursor-pointer"
-              title="Dismiss alert"
-            >
-              &times;
-            </button>
-          </div>
-        </motion.div>
-      )}
 
       {/* 3. REAL-TIME GEOGRAPHIC DATA INSIGHTS WIDGET */}
       <motion.div

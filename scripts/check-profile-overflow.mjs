@@ -14,6 +14,11 @@ const testViewports = [
   { width: 430, height: 932, mobile: true },
   { width: 1280, height: 900, mobile: false },
 ];
+const homeMapLandscapeViewports = [
+  { width: 667, height: 375, mobile: true },
+  { width: 844, height: 390, mobile: true },
+  { width: 932, height: 430, mobile: true },
+];
 const landscapeFireViewports = [
   { width: 844, height: 390, mobile: true },
   { width: 932, height: 430, mobile: true },
@@ -637,6 +642,8 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       return {
         left: bounds.left,
         right: bounds.right,
+        top: bounds.top,
+        bottom: bounds.bottom,
         width: bounds.width,
         height: bounds.height,
         scrollWidth: element.scrollWidth,
@@ -648,12 +655,19 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     };
     return {
       document: document.documentElement.scrollWidth,
+      documentHeight: document.documentElement.scrollHeight,
       stage: rect('.home-map-stage-v2'),
       content: rect('.home-map-content-v2'),
       visual: rect('.home-map-visual-v2'),
       map: rect('.home-map-viewport'),
+      mapArtwork: rect('.home-map-viewport svg'),
+      regionFilter: rect('.home-map-region-filter'),
+      layerSelect: rect('.home-map-layer-select'),
+      toolsSummary: rect('.home-map-mobile-tools > summary'),
+      desktopZoom: rect('.home-map-toolbar-v2 > .home-map-zoom-control'),
       shortcuts: rect('.home-map-shortcuts'),
       shortcutRow: rect('.home-map-shortcut-row'),
+      bottomNav: rect('.pi-mobile-nav'),
       shortcutBehavior: (() => {
         const row = document.querySelector('.home-map-shortcut-row');
         if (!row) return null;
@@ -681,10 +695,11 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       dimensions.map.right <= dimensions.stage.right + 1,
     `Map viewport escapes its panel at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
   );
-  if (viewport.mobile) {
+  if (viewport.mobile && viewport.width < 768) {
+    const minimumMapHeight = viewport.height <= 500 ? 130 : 210;
     assert(
-      dimensions.map.height >= 210,
-      `Phone map canvas is too short at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+      dimensions.map.height >= minimumMapHeight,
+      `Phone map canvas is too short at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
     );
     assert(
       dimensions.shortcutBehavior &&
@@ -715,6 +730,151 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       `mobile zoom reset at ${viewport.width}px`,
     );
     await evaluate(cdp, `document.querySelector('.home-map-mobile-tools').open = false`);
+  }
+  if (viewport.mobile) {
+    const regionControlsReachable = await evaluate(cdp, `(() => {
+      const container = document.querySelector('.home-map-region-filter');
+      if (!container) return false;
+      const buttons = [...container.querySelectorAll('button')];
+      const labels = buttons.map((button) => button.innerText.trim());
+      const expected = ['All', 'Northeast', 'Midwest', 'South', 'West'];
+      container.scrollLeft = container.scrollWidth;
+      const containerBounds = container.getBoundingClientRect();
+      const lastBounds = buttons.at(-1)?.getBoundingClientRect();
+      const reachable = expected.every((label) => labels.includes(label)) &&
+        Boolean(lastBounds && lastBounds.left >= containerBounds.left - 1 &&
+          lastBounds.right <= containerBounds.right + 1);
+      container.scrollLeft = 0;
+      return reachable;
+    })()`);
+    assert(
+      regionControlsReachable,
+      `Map region filters cannot all be reached at ${viewport.width}×${viewport.height}px`,
+    );
+  }
+  if (viewport.mobile && viewport.height <= 500) {
+    assert(
+      dimensions.map.height >= 130,
+      `Landscape phone map canvas is too short at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
+    );
+    assert(
+      dimensions.mapArtwork &&
+        dimensions.mapArtwork.width <= dimensions.map.clientWidth + 1 &&
+        dimensions.mapArtwork.height <= dimensions.map.clientWidth * (500 / 920) + 1,
+      `Landscape map artwork does not fit its canvas at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
+    );
+    const hasBottomNav = dimensions.bottomNav?.width > 0;
+    if (hasBottomNav) {
+      assert(
+        dimensions.bottomNav.top >= 0 &&
+          dimensions.bottomNav.bottom <= viewport.height + 1,
+        `Bottom navigation is clipped at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions.bottomNav)}`,
+      );
+    }
+    const mapReachable = await evaluate(cdp, `(() => {
+      const map = document.querySelector('.home-map-viewport');
+      const nav = document.querySelector('.pi-mobile-nav');
+      if (!map) return false;
+      map.scrollIntoView({ block: 'center' });
+      const bounds = map.getBoundingClientRect();
+      const navBounds = nav?.getBoundingClientRect();
+      const lowerEdge = navBounds?.width ? navBounds.top : innerHeight;
+      return bounds.top >= -1 && bounds.bottom <= lowerEdge + 1;
+    })()`);
+    assert(
+      mapReachable,
+      `Map cannot be scrolled above bottom navigation at ${viewport.width}×${viewport.height}px`,
+    );
+    if (dimensions.toolsSummary?.width > 0) {
+      const toolsPanelReachable = await evaluate(cdp, `(() => {
+        const details = document.querySelector('.home-map-mobile-tools');
+        const panel = details?.querySelector('.home-map-mobile-tools-panel');
+        const nav = document.querySelector('.pi-mobile-nav');
+        if (!details || !panel || !nav) return false;
+        details.querySelector('summary')?.scrollIntoView({ block: 'center' });
+        details.open = true;
+        const panelBounds = panel.getBoundingClientRect();
+        const navBounds = nav.getBoundingClientRect();
+        const reachable = panelBounds.width > 0 &&
+          panelBounds.top >= 0 &&
+          panelBounds.bottom <= navBounds.top + 1;
+        details.open = false;
+        return reachable;
+      })()`);
+      assert(
+        toolsPanelReachable,
+        `Map tools are clipped or covered by bottom navigation at ${viewport.width}×${viewport.height}px`,
+      );
+    } else {
+      const desktopToolsWork = await evaluate(cdp, `(() => {
+        const controls = document.querySelector('.home-map-toolbar-v2 > .home-map-zoom-control');
+        const zoomIn = controls?.querySelector('[data-testid="button-map-zoom-in"]');
+        const reset = controls?.querySelector('[data-testid="button-map-zoom-reset"]');
+        if (!controls || !zoomIn || !reset) return false;
+        controls.scrollIntoView({ block: 'center' });
+        const bounds = controls.getBoundingClientRect();
+        if (!bounds.width || bounds.top < 0 || bounds.bottom > innerHeight) return false;
+        zoomIn.click();
+        return true;
+      })()`);
+      assert(
+        desktopToolsWork,
+        `Map zoom controls are not reachable at ${viewport.width}×${viewport.height}px`,
+      );
+      await waitFor(
+        cdp,
+        `document.querySelector('.home-map-viewport')?.dataset.mapZoom === '1.2'`,
+        `desktop zoom-in at ${viewport.width}px`,
+      );
+      await evaluate(cdp, `document.querySelector('[data-testid="button-map-zoom-reset"]')?.click()`);
+      await waitFor(
+        cdp,
+        `document.querySelector('.home-map-viewport')?.dataset.mapZoom === '1'`,
+        `desktop zoom reset at ${viewport.width}px`,
+      );
+    }
+    const shortcutsReachable = await evaluate(cdp, `(() => {
+      const shortcuts = document.querySelector('.home-map-shortcuts');
+      const nav = document.querySelector('.pi-mobile-nav');
+      if (!shortcuts) return false;
+      shortcuts.scrollIntoView({ block: 'end' });
+      const scrollContainer = (() => {
+        for (let element = shortcuts.parentElement; element; element = element.parentElement) {
+          if (element.scrollHeight > element.clientHeight + 1) return element;
+        }
+        return document.scrollingElement;
+      })();
+      if (nav?.getBoundingClientRect().width) {
+        scrollContainer.scrollTop += nav.getBoundingClientRect().height + 8;
+      }
+      const bounds = shortcuts.getBoundingClientRect();
+      const navBounds = nav?.getBoundingClientRect();
+      const lowerEdge = navBounds?.width ? navBounds.top : innerHeight;
+      return {
+        reachable: bounds.top >= -1 && bounds.bottom <= lowerEdge + 1,
+        shortcuts: { top: bounds.top, bottom: bounds.bottom },
+        navTop: navBounds.top,
+        pageScrollY: window.scrollY,
+        scrollContainers: (() => {
+          const containers = [];
+          for (let element = shortcuts.parentElement; element; element = element.parentElement) {
+            if (element.scrollHeight > element.clientHeight + 1) {
+              containers.push({
+                className: typeof element.className === 'string' ? element.className : element.tagName,
+                top: element.scrollTop,
+                height: element.clientHeight,
+                scrollHeight: element.scrollHeight,
+              });
+            }
+          }
+          return containers;
+        })(),
+      };
+    })()`);
+    assert(
+      shortcutsReachable?.reachable,
+      `Map shortcuts cannot be scrolled above bottom navigation at ${viewport.width}×${viewport.height}px: ${JSON.stringify(shortcutsReachable)}`,
+    );
   }
 
   const texasFill = await evaluate(cdp, `(() => {
@@ -2326,6 +2486,7 @@ async function main() {
       for (const viewport of [
         { width: 320, height: 740, mobile: true },
         { width: 390, height: 844, mobile: true },
+        ...homeMapLandscapeViewports,
         { width: 1280, height: 900, mobile: false },
       ]) {
         await checkHomeMapAtViewport(cdp, viewport);

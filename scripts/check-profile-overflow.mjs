@@ -41,6 +41,7 @@ const fireProfileCases = [
   'Miami-Dade County Fire Rescue Department',
   'Chicago Fire Department - Bureau of EMS',
 ];
+const fireProfileOperationsByViewport = new Map();
 const emsProfileCases = [
   'Cleveland Division of Emergency Medical Service',
   'Emergency Medical Services Authority (EMSA) - Oklahoma City',
@@ -1023,6 +1024,11 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
     operationsSummary?.visible && operationsSummary.fits && operationsSummary.fireMetrics,
     `Fire operations summary is not usable at ${viewport.width}px: ${JSON.stringify(operationsSummary)}`,
   );
+  if (agencyName && (viewport.width === 320 || viewport.width === 360)) {
+    const observations = fireProfileOperationsByViewport.get(viewport.width) ?? new Map();
+    observations.set(agencyName, operationsSummary.lead);
+    fireProfileOperationsByViewport.set(viewport.width, observations);
+  }
   const fireActions = await evaluate(cdp, `(() => {
     const area = document.querySelector('[data-testid="profile-primary-actions"]');
     if (!area) return null;
@@ -1122,9 +1128,149 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
     `!document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]')`,
     `the Fire source inspection drawer to close at ${viewport.width}px`,
   );
+  if (viewport.width === 320 || viewport.width === 360) {
+    await checkFireProfileDetailsAtViewport(cdp, viewport, agencyName);
+  }
   console.log(
     `✓ ${viewport.width}px: ${agencyDescription}; operations="${operationsSummary.lead}", ${fireSourceLinks} source links, actions, drawer, and overflow`,
   );
+}
+
+async function checkFireProfileDetailsAtViewport(cdp, viewport, agencyName) {
+  const sections = [
+    {
+      value: 'operations',
+      description: 'operations',
+      expectedText: [
+        'Clinical Emergency Performance & Patient Outcomes',
+        'Clinical charts are not available in this account record',
+        'Apparatus & Emergency Vehicle Fleet Breakdown',
+        'Detailed fleet and receiving-hospital values are not listed in this account record',
+      ],
+    },
+    {
+      value: 'equipment',
+      description: 'apparatus',
+      expectedText: [
+        'Apparatus & Emergency Vehicle Fleet Breakdown',
+        'Detailed fleet and receiving-hospital values are not listed in this account record',
+        'Frontline Apparatus & Maintenance Contracts',
+      ],
+    },
+    {
+      value: 'evidence',
+      description: 'source evidence',
+      expectedText: ['Source Evidence & Verification Ledger'],
+    },
+  ];
+
+  for (const section of sections) {
+    const selected = await evaluate(cdp, `(() => {
+      const picker = document.querySelector('[data-testid="select-profile-section-mobile"]');
+      if (!picker || ![...picker.options].some((option) => option.value === ${JSON.stringify(section.value)})) {
+        return false;
+      }
+      picker.value = ${JSON.stringify(section.value)};
+      picker.dispatchEvent(new Event('change', { bubbles: true }));
+      picker.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const bounds = picker.getBoundingClientRect();
+      const style = getComputedStyle(picker);
+      return bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.top >= -1 && bounds.bottom <= innerHeight + 1 &&
+        style.visibility !== 'hidden' && style.display !== 'none';
+    })()`);
+    assert(
+      selected,
+      `Fire ${section.description} section picker is not reachable at ${viewport.width}px for ${agencyName}`,
+    );
+    await waitFor(
+      cdp,
+      `document.querySelector('[data-testid="select-profile-section-mobile"]')?.value === ${JSON.stringify(section.value)}`,
+      `the Fire ${section.description} section at ${viewport.width}px`,
+    );
+
+    const sectionState = await evaluate(cdp, `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      const expected = ${JSON.stringify(section.expectedText)};
+      if (!profile) return null;
+      const candidates = [...profile.querySelectorAll('h1, h2, h3, p, [role="status"]')];
+      const target = candidates.find((element) =>
+        expected.some((text) => element.innerText.includes(text)),
+      );
+      if (!target) {
+        return {
+          activeSection: document.querySelector('[data-testid="select-profile-section-mobile"]')?.value,
+          expectedTextFound: false,
+          profileText: profile.innerText.slice(-1800),
+        };
+      }
+      target.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const bounds = target.getBoundingClientRect();
+      const targetStyle = getComputedStyle(target);
+      return {
+        activeSection: document.querySelector('[data-testid="select-profile-section-mobile"]')?.value,
+        expectedTextFound: true,
+        targetVisible: bounds.width > 0 && bounds.height > 0 &&
+          bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+          bounds.bottom > 0 && bounds.top < innerHeight &&
+          targetStyle.visibility !== 'hidden' && targetStyle.display !== 'none',
+        targetFits: target.scrollWidth <= target.clientWidth + 1,
+        targetText: target.innerText.trim().slice(0, 220),
+      };
+    })()`);
+    assert(
+      sectionState?.activeSection === section.value &&
+        sectionState.expectedTextFound &&
+        sectionState.targetVisible &&
+        sectionState.targetFits,
+      `Fire ${section.description} details are not readable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(sectionState)}`,
+    );
+    await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+
+    if (section.value === 'evidence') {
+      const evidenceControls = await evaluate(cdp, `(() => {
+        const evidence = document.querySelector('#profile-source-evidence');
+        const tableWrap = evidence?.querySelector('.scannable-table-wrap');
+        const verify = [...(evidence?.querySelectorAll('button') ?? [])]
+          .find((button) => button.innerText.trim() === 'Check NPPES identity');
+        const sourceLinks = [...(tableWrap?.querySelectorAll('a[href]') ?? [])];
+        if (!evidence || !tableWrap || !verify || sourceLinks.length === 0) return null;
+
+        verify.scrollIntoView({ block: 'center', inline: 'nearest' });
+        const verifyBounds = verify.getBoundingClientRect();
+        const verifyStyle = getComputedStyle(verify);
+        const verifyReachable = !verify.disabled &&
+          verifyBounds.width > 0 && verifyBounds.height > 0 &&
+          verifyBounds.left >= -1 && verifyBounds.right <= innerWidth + 1 &&
+          verifyBounds.top >= -1 && verifyBounds.bottom <= innerHeight + 1 &&
+          verifyStyle.visibility !== 'hidden' && verifyStyle.display !== 'none';
+
+        const finalSourceLink = sourceLinks[sourceLinks.length - 1];
+        finalSourceLink.scrollIntoView({ block: 'center', inline: 'center' });
+        const linkBounds = finalSourceLink.getBoundingClientRect();
+        const tableBounds = tableWrap.getBoundingClientRect();
+        return {
+          verifyReachable,
+          sourceRowCount: tableWrap.querySelectorAll('tbody tr').length,
+          sourceLinkCount: sourceLinks.length,
+          finalSourceLinkReachable: linkBounds.width > 0 && linkBounds.height > 0 &&
+            linkBounds.left >= Math.max(-1, tableBounds.left - 1) &&
+            linkBounds.right <= Math.min(innerWidth + 1, tableBounds.right + 1) &&
+            linkBounds.top >= -1 && linkBounds.bottom <= innerHeight + 1,
+        };
+      })()`);
+      assert(
+        evidenceControls?.verifyReachable &&
+          evidenceControls.sourceRowCount > 0 &&
+          evidenceControls.sourceLinkCount > 0 &&
+          evidenceControls.finalSourceLinkReachable,
+        `Fire source evidence controls are not reachable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(evidenceControls)}`,
+      );
+      await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+    }
+    console.log(`  ✓ ${viewport.width}px: ${agencyName} ${section.description} details and controls`);
+  }
 }
 
 async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
@@ -2129,6 +2275,16 @@ async function checkSpecialistAndSystemViews(cdp) {
   }
 }
 
+function assertFireOperationsDifferAtViewport(viewport) {
+  const fireOperations = fireProfileOperationsByViewport.get(viewport.width);
+  assert(
+    fireOperations?.size >= 2 && new Set(fireOperations.values()).size >= 2,
+    `Fire profiles do not cover distinct operations details at ${viewport.width}px: ${JSON.stringify(
+      Object.fromEntries(fireOperations ?? []),
+    )}`,
+  );
+}
+
 async function main() {
   const response = await fetch(baseUrl);
   assert(
@@ -2190,6 +2346,20 @@ async function main() {
       return;
     }
 
+    if (process.env.FIRE_PROFILE_ONLY === '1') {
+      for (const viewport of [
+        { width: 320, height: 740, mobile: true },
+        { width: 360, height: 844, mobile: true },
+      ]) {
+        for (const agencyName of fireProfileCases) {
+          await checkFireProfileAtViewport(cdp, viewport, agencyName);
+        }
+        assertFireOperationsDifferAtViewport(viewport);
+      }
+      console.log('Representative Fire profile detail responsive checks passed.');
+      return;
+    }
+
     for (const viewport of testViewports) {
       await checkProfileAtViewport(cdp, viewport);
     }
@@ -2203,6 +2373,7 @@ async function main() {
       for (const agencyName of fireProfileCases) {
         await checkFireProfileAtViewport(cdp, viewport, agencyName);
       }
+      assertFireOperationsDifferAtViewport(viewport);
     }
     for (const viewport of [
       { width: 390, height: 844, mobile: true },

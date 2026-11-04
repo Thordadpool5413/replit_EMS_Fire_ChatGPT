@@ -546,10 +546,18 @@ export default function App() {
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const currentActive = activeAccount || selectedAgency;
+  const selectedProfileCity = globalCity.trim().toLowerCase() === 'all' ? '' : globalCity.trim();
+  const selectedProfileCounty = globalCounty.trim().toLowerCase() === 'all' ? '' : globalCounty.trim();
   const profileBackLabel = activeTab === 'home'
     ? 'Back to Map'
     : ['states_directory', 'geo', 'gis', 'map', 'google_maps'].includes(activeTab)
-      ? 'Back to Territory'
+      ? selectedProfileCity
+        ? `Back to ${selectedProfileCity}`
+        : selectedProfileCounty
+          ? `Back to ${selectedProfileCounty}`
+          : globalState !== 'all'
+            ? `Back to ${ALL_50_STATES_SUMMARIES[globalState]?.state || globalState} counties`
+            : 'Back to Territory'
       : isFieldWorkTab(activeTab)
         ? 'Back to Field Work'
         : activeTab === 'queue'

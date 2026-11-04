@@ -952,11 +952,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   type="button"
                   onClick={onBack}
                   aria-label={backLabel}
+                  data-testid="profile-back-button"
                   className="whitespace-nowrap shrink-0 inline-flex min-h-10 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#14283F] dark:text-slate-100 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-[#DFE6EF] dark:border-[#1E2D42] transition-colors cursor-pointer"
-                  title="Return to the previous workspace"
+                  title={`Return to ${backLabel.replace(/^Back to /, '')}`}
                 >
                   <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
-                  <span>{backLabel}</span>
+                  <span className="sm:hidden">Back</span>
+                  <span className="hidden sm:inline">{backLabel}</span>
                 </button>
 
                 <div className="hidden md:flex items-center gap-1.5 text-xs text-[#53657B] dark:text-slate-400 font-medium truncate">

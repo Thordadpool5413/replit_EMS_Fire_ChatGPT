@@ -14,6 +14,10 @@ const testViewports = [
   { width: 430, height: 932, mobile: true },
   { width: 1280, height: 900, mobile: false },
 ];
+const landscapeFireViewports = [
+  { width: 844, height: 390, mobile: true },
+  { width: 932, height: 430, mobile: true },
+];
 const comparisonViewports = [
   { width: 320, height: 740, mobile: true },
   { width: 402, height: 874, mobile: true },
@@ -1071,17 +1075,25 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
   const fireSourceDrawer = await evaluate(cdp, `(() => {
     const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
     if (!drawer) return null;
+    const close = [...drawer.querySelectorAll('button')]
+      .find((button) => button.innerText.trim() === 'Close');
+    close?.scrollIntoView({ block: 'center', inline: 'nearest' });
     const bounds = drawer.getBoundingClientRect();
+    const closeBounds = close?.getBoundingClientRect();
+    const closeStyle = close && getComputedStyle(close);
     return {
-      withinViewport: bounds.width > 0 && bounds.left >= -1 && bounds.right <= innerWidth + 1,
-      hasUsableClose: [...drawer.querySelectorAll('button')].some((button) =>
-        button.innerText.trim() === 'Close' && !button.disabled &&
-        button.getBoundingClientRect().width > 0 && button.getBoundingClientRect().height > 0,
-      ),
+      withinViewport: bounds.width > 0 && bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.top >= -1 && bounds.bottom <= innerHeight + 1,
+      fits: drawer.scrollWidth <= drawer.clientWidth + 1,
+      hasUsableClose: Boolean(close && !close.disabled && closeBounds &&
+        closeBounds.width > 0 && closeBounds.height > 0 &&
+        closeBounds.left >= -1 && closeBounds.right <= innerWidth + 1 &&
+        closeBounds.top >= -1 && closeBounds.bottom <= innerHeight + 1 &&
+        closeStyle.visibility !== 'hidden' && closeStyle.display !== 'none'),
     };
   })()`);
   assert(
-    fireSourceDrawer?.withinViewport && fireSourceDrawer.hasUsableClose,
+    fireSourceDrawer?.withinViewport && fireSourceDrawer.fits && fireSourceDrawer.hasUsableClose,
     `Fire source drawer is not usable at ${viewport.width}px: ${JSON.stringify(fireSourceDrawer)}`,
   );
   const fireSourceLinks = await evaluate(cdp, `(() => {
@@ -2037,6 +2049,11 @@ async function main() {
       { width: 1280, height: 900, mobile: false },
     ]) {
       await checkFireProfileAtViewport(cdp, viewport);
+    }
+    for (const viewport of landscapeFireViewports) {
+      for (const agencyName of fireProfileCases) {
+        await checkFireProfileAtViewport(cdp, viewport, agencyName);
+      }
     }
     for (const viewport of [
       { width: 320, height: 740 },

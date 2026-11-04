@@ -824,6 +824,59 @@ async function checkFireProfileAtViewport(cdp, viewport) {
   );
   await openAgencyProfile(cdp, 'fire');
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  const operationsSummary = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const summary = profile?.querySelector('[aria-label="Agency operations summary"]');
+    if (!summary) return null;
+    summary.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = summary.getBoundingClientRect();
+    const lead = summary.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    return {
+      visible: bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.bottom > 0 && bounds.top < innerHeight,
+      fits: summary.scrollWidth <= summary.clientWidth + 1,
+      fireMetrics: /\\bstations\\b/i.test(lead) && /fire engines/i.test(lead),
+      lead,
+    };
+  })()`);
+  assert(
+    operationsSummary?.visible && operationsSummary.fits && operationsSummary.fireMetrics,
+    `Fire operations summary is not usable at ${viewport.width}px: ${JSON.stringify(operationsSummary)}`,
+  );
+  const fireActions = await evaluate(cdp, `(() => {
+    const area = document.querySelector('[data-testid="profile-primary-actions"]');
+    if (!area) return null;
+    const selectors = {
+      meeting: '[aria-label="Prepare for meeting"]',
+      sources: '[aria-label="Inspect agency sources"]',
+      route: '[aria-label="Add agency to route"], [aria-label="Remove agency from today\\'s route"]',
+      saved: '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
+    };
+    const results = {};
+    for (const [name, selector] of Object.entries(selectors)) {
+      const button = area.querySelector(selector);
+      if (!button) {
+        results[name] = false;
+        continue;
+      }
+      button.scrollIntoView({ block: 'center', inline: 'center' });
+      const bounds = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      results[name] = !button.disabled && bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.bottom > 0 && bounds.top < innerHeight &&
+        style.visibility !== 'hidden' && style.display !== 'none';
+    }
+    return results;
+  })()`);
+  for (const [action, usable] of Object.entries(fireActions ?? {})) {
+    assert(usable, `Fire ${action} profile action is not reachable at ${viewport.width}px`);
+  }
+  assert(
+    fireActions && Object.keys(fireActions).length === 4,
+    `Fire profile actions are incomplete at ${viewport.width}px: ${JSON.stringify(fireActions)}`,
+  );
   const openedSourceDrawer = await evaluate(cdp, `(() => {
     const button = document.querySelector('[data-testid="profile-primary-actions"] [aria-label="Inspect agency sources"]');
     if (!button) return false;
@@ -840,6 +893,22 @@ async function checkFireProfileAtViewport(cdp, viewport) {
     `the Fire source inspection drawer at ${viewport.width}px`,
   );
   await assertNoHorizontalOverflow(cdp, viewport.width, 'drawer');
+  const fireSourceDrawer = await evaluate(cdp, `(() => {
+    const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    if (!drawer) return null;
+    const bounds = drawer.getBoundingClientRect();
+    return {
+      withinViewport: bounds.width > 0 && bounds.left >= -1 && bounds.right <= innerWidth + 1,
+      hasUsableClose: [...drawer.querySelectorAll('button')].some((button) =>
+        button.innerText.trim() === 'Close' && !button.disabled &&
+        button.getBoundingClientRect().width > 0 && button.getBoundingClientRect().height > 0,
+      ),
+    };
+  })()`);
+  assert(
+    fireSourceDrawer?.withinViewport && fireSourceDrawer.hasUsableClose,
+    `Fire source drawer is not usable at ${viewport.width}px: ${JSON.stringify(fireSourceDrawer)}`,
+  );
   const fireSourceLinks = await evaluate(cdp, `(() => {
     const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
     return [...(drawer?.querySelectorAll('a[href]') ?? [])]
@@ -866,7 +935,7 @@ async function checkFireProfileAtViewport(cdp, viewport) {
     `!document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]')`,
     `the Fire source inspection drawer to close at ${viewport.width}px`,
   );
-  console.log(`✓ ${viewport.width}px: Fire operations summary, source links, actions, and overflow`);
+  console.log(`✓ ${viewport.width}px: Fire operations summary, profile actions, source drawer, and overflow`);
 }
 
 async function checkTerritoryAtViewport(cdp, viewport) {
@@ -1768,6 +1837,8 @@ async function main() {
       await checkProfileAtViewport(cdp, viewport);
     }
     for (const viewport of [
+      { width: 320, height: 740, mobile: true },
+      { width: 360, height: 844, mobile: true },
       { width: 390, height: 844, mobile: true },
       { width: 1280, height: 900, mobile: false },
     ]) {

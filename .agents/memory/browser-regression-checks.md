@@ -14,3 +14,9 @@ When selecting a named agency from the card directory, locate its exact heading 
 **Why:** A broad ancestor can contain a matching agency name elsewhere in the results while the first profile button belongs to a different agency.
 
 **How to apply:** Use exact visible heading text as the anchor for any browser test that opens a named agency from the directory.
+
+For map palette contrast checks, sample the rendered SVG state `fill` values instead of parsing CSS gradient text.
+
+**Why:** Chromium may normalize gradient color syntax when exposing it through the CSSOM, so tests that expect the original hexadecimal strings are brittle.
+
+**How to apply:** Calculate contrast from actual state fills and use the legend's low/high endpoint labels to verify palette direction across responsive widths.

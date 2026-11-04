@@ -196,7 +196,9 @@ async function evaluate(cdp, expression) {
     throw new Error(`${error.message}; expression: ${expression.slice(0, 240)}`);
   }
   if (response.result.exceptionDetails) {
-    throw new Error(response.result.exceptionDetails.text);
+    const details = response.result.exceptionDetails;
+    const reason = details.exception?.description ?? details.exception?.value ?? details.text;
+    throw new Error(`${reason}; expression: ${expression.slice(0, 240)}`);
   }
   return response.result.result.value;
 }
@@ -616,6 +618,213 @@ async function assertNoHorizontalOverflow(cdp, width, area) {
   );
 }
 
+async function checkMapPaletteAtViewport(cdp, viewport) {
+  await evaluate(cdp, `(() => {
+    const metric = document.querySelector('[data-testid="select-state-map-metric"]');
+    if (!metric) return false;
+    metric.value = 'cardiac-survival';
+    metric.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-state-map-metric"]')?.value === 'cardiac-survival' &&
+      Boolean(document.querySelector('[data-testid="select-map-color-palette"]'))`,
+    `the quality-map palette control at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `(() => {
+    const palette = document.querySelector('[data-testid="select-map-color-palette"]');
+    if (!palette) return false;
+    palette.value = 'standard';
+    palette.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('.home-map-svg')?.dataset.mapPalette === 'standard'`,
+    `the standard cardiac-survival palette at ${viewport.width}px`,
+  );
+  const controlLayout = await evaluate(cdp, `(() => {
+    const control = document.querySelector('[data-testid="select-map-color-palette"]');
+    const stage = document.querySelector('.home-map-stage-v2');
+    if (!control || !stage) return null;
+    const bounds = control.getBoundingClientRect();
+    const stageBounds = stage.getBoundingClientRect();
+    return {
+      visible: bounds.width > 0 && bounds.height > 0,
+      insideStage: bounds.left >= stageBounds.left - 1 && bounds.right <= stageBounds.right + 1,
+      label: control.closest('label')?.innerText.trim() ?? '',
+    };
+  })()`);
+  assert(
+    controlLayout?.visible &&
+      controlLayout.insideStage &&
+      controlLayout.label.toLowerCase().startsWith('map palette'),
+    `Color palette control is clipped or unclear at ${viewport.width}px: ${JSON.stringify(controlLayout)}`,
+  );
+  const standardFill = await evaluate(cdp, `document.querySelector('.home-map-state-path[aria-pressed="true"]')?.getAttribute('fill') ?? null`);
+  await evaluate(cdp, `(() => {
+    const palette = document.querySelector('[data-testid="select-map-color-palette"]');
+    if (!palette) return false;
+    palette.value = 'colorblind-safe';
+    palette.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('.home-map-svg')?.dataset.mapPalette === 'colorblind-safe'`,
+    `the color-blind-safe cardiac-survival palette at ${viewport.width}px`,
+  );
+  const safeCardiac = await evaluate(cdp, `(() => {
+    const selected = document.querySelector('.home-map-state-path[aria-pressed="true"]');
+    const statePaths = [...document.querySelectorAll('.home-map-state-path')];
+    const fills = statePaths.map((path) => path.getAttribute('fill'))
+      .filter((color) => /^#[0-9a-f]{6}$/i.test(color ?? ''));
+    const luminance = (hex) => {
+      const channels = hex.match(/[0-9a-f]{2}/gi).map((channel) => parseInt(channel, 16) / 255);
+      const [red, green, blue] = channels.map((channel) =>
+        channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    };
+    const mapBackground = luminance('#081521');
+    const contrast = fills.map((color) => {
+      const value = luminance(color);
+      return (Math.max(value, mapBackground) + 0.05) / (Math.min(value, mapBackground) + 0.05);
+    });
+    const endpoints = [...document.querySelectorAll('.home-map-legend-endpoint')];
+    const fillForEndpoint = (endpoint) => {
+      const value = endpoint?.innerText.split(' · ')[0].trim();
+      return statePaths.find((path) => path.getAttribute('aria-label')?.includes(': ' + value + '.'))
+        ?.getAttribute('fill') ?? null;
+    };
+    const lowFill = fillForEndpoint(endpoints[0]);
+    const highFill = fillForEndpoint(endpoints[1]);
+    const missingLegend = document.querySelector('.home-map-legend-missing');
+    const missingSwatch = missingLegend?.querySelector('span');
+    return {
+      fill: selected?.getAttribute('fill') ?? null,
+      selectedStroke: selected?.getAttribute('stroke') ?? null,
+      selectedOuterOutline: [...(selected?.parentElement?.querySelectorAll('path') ?? [])]
+        .some((path) => path.getAttribute('stroke') === '#67D6CE'),
+      stateFillCount: fills.length,
+      minimumContrast: contrast.length ? Math.min(...contrast) : 0,
+      lowEndpointLuminance: lowFill ? luminance(lowFill) : null,
+      highEndpointLuminance: highFill ? luminance(highFill) : null,
+      gradientVisible: Boolean(document.querySelector('.home-map-legend-gradient')?.getBoundingClientRect().width),
+      legend: document.querySelector('.home-map-legend-v2')?.innerText ?? '',
+      missingText: missingLegend?.innerText.trim() ?? '',
+      missingHatch: missingSwatch?.className.includes('repeating-linear-gradient') ?? false,
+      missingPattern: Boolean(document.querySelector('#home-map-missing-data')),
+      savedPalette: sessionStorage.getItem('ems-map-palette'),
+    };
+  })()`);
+  assert(
+    safeCardiac.fill && safeCardiac.fill !== standardFill &&
+      safeCardiac.stateFillCount > 0 &&
+      safeCardiac.minimumContrast >= 3,
+    `The safe cardiac palette is not distinct or has insufficient map contrast at ${viewport.width}px: ${JSON.stringify(safeCardiac)}`,
+  );
+  assert(
+    safeCardiac.legend.includes('Cardiac survival estimate') &&
+      safeCardiac.legend.includes('Color-blind safe') &&
+      safeCardiac.legend.includes('Lower') &&
+      safeCardiac.legend.includes('Higher') &&
+      safeCardiac.gradientVisible &&
+      safeCardiac.lowEndpointLuminance < safeCardiac.highEndpointLuminance &&
+      safeCardiac.missingText === 'Not reported' &&
+      safeCardiac.missingHatch &&
+      safeCardiac.missingPattern &&
+      safeCardiac.selectedStroke === '#F4C86A' &&
+      safeCardiac.selectedOuterOutline &&
+      safeCardiac.savedPalette === 'colorblind-safe',
+    `The safe cardiac legend, missing-data hatch, selected outline, or saved setting is unclear at ${viewport.width}px: ${JSON.stringify(safeCardiac)}`,
+  );
+  await evaluate(cdp, `(() => {
+    const metric = document.querySelector('[data-testid="select-state-map-metric"]');
+    if (!metric) return false;
+    metric.value = 'scene-transit';
+    metric.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-state-map-metric"]')?.value === 'scene-transit' &&
+      document.querySelector('.home-map-svg')?.dataset.mapPalette === 'colorblind-safe'`,
+    `the color-blind-safe scene-transit palette at ${viewport.width}px`,
+  );
+  const safeTransit = await evaluate(cdp, `(() => {
+    const selected = document.querySelector('.home-map-state-path[aria-pressed="true"]');
+    const statePaths = [...document.querySelectorAll('.home-map-state-path')];
+    const luminance = (hex) => {
+      const channels = hex.match(/[0-9a-f]{2}/gi).map((channel) => parseInt(channel, 16) / 255);
+      const [red, green, blue] = channels.map((channel) =>
+        channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    };
+    const endpoints = [...document.querySelectorAll('.home-map-legend-endpoint')];
+    const fillForEndpoint = (endpoint) => {
+      const value = endpoint?.innerText.split(' · ')[0].trim();
+      return statePaths.find((path) => path.getAttribute('aria-label')?.includes(': ' + value + '.'))
+        ?.getAttribute('fill') ?? null;
+    };
+    const lowFill = fillForEndpoint(endpoints[0]);
+    const highFill = fillForEndpoint(endpoints[1]);
+    return {
+      selectedStroke: selected?.getAttribute('stroke') ?? null,
+      lowEndpointLuminance: lowFill ? luminance(lowFill) : null,
+      highEndpointLuminance: highFill ? luminance(highFill) : null,
+      legend: document.querySelector('.home-map-legend-v2')?.innerText ?? '',
+    };
+  })()`);
+  assert(
+    safeTransit.lowEndpointLuminance > safeTransit.highEndpointLuminance &&
+      safeTransit.legend.includes('EMS transit estimate') &&
+      safeTransit.legend.includes('Shorter') &&
+      safeTransit.legend.includes('Longer') &&
+      safeTransit.legend.includes('Color-blind safe') &&
+      safeTransit.selectedStroke === '#F4C86A',
+    `Scene-transit palette, legend, or selected outline is unclear at ${viewport.width}px: ${JSON.stringify(safeTransit)}`,
+  );
+  await evaluate(cdp, `(() => {
+    const metric = document.querySelector('[data-testid="select-state-map-metric"]');
+    if (!metric) return false;
+    metric.value = 'cardiac-survival';
+    metric.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-state-map-metric"]')?.value === 'cardiac-survival' &&
+      Boolean(document.querySelector('[data-testid="select-map-color-palette"]'))`,
+    `restoring the map palette selector at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `(() => {
+    const palette = document.querySelector('[data-testid="select-map-color-palette"]');
+    if (!palette) return false;
+    palette.value = 'standard';
+    palette.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('.home-map-svg')?.dataset.mapPalette === 'standard'`,
+    `restoring the standard map palette at ${viewport.width}px`,
+  );
+  await evaluate(cdp, `(() => {
+    const metric = document.querySelector('[data-testid="select-state-map-metric"]');
+    if (!metric) return false;
+    metric.value = 'agency-records';
+    metric.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-state-map-metric"]')?.value === 'agency-records' &&
+      !document.querySelector('[data-testid="select-map-color-palette"]')`,
+    `restoring the standard agency map at ${viewport.width}px`,
+  );
+}
+
 async function checkHomeMapAtViewport(cdp, viewport) {
   console.log(`Checking Home map at ${viewport.width}px viewport...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -889,8 +1098,10 @@ async function checkHomeMapAtViewport(cdp, viewport) {
   const [, red, , blue] = texasFill.match(/^#(..)(..)(..)$/).map((channel) => parseInt(channel, 16));
   assert(blue > red, `Agency-count shading should use the blue sequential palette, received ${texasFill}`);
 
+  await checkMapPaletteAtViewport(cdp, viewport);
+
   console.log(
-    `✓ ${viewport.width}px: map stays in bounds, counts use blue shading, and mobile controls work`,
+    `✓ ${viewport.width}px: map fits, quality palettes switch, and missing/selected states remain distinct`,
   );
 }
 

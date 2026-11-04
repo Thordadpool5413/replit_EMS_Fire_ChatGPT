@@ -34,6 +34,9 @@ const STATE_MAP_METRICS = [
 type StateMapMetricKey =
   (typeof STATE_MAP_METRICS)[number]['key'];
 
+type MapColorScheme = 'standard' | 'colorblind-safe';
+type StateMapPalette = { stops: string[]; lowLabel: string; highLabel: string };
+
 type StateMapRegion = 'All' | 'Northeast' | 'Midwest' | 'South' | 'West';
 
 const readMapPreference = (key: string, fallback: string) => {
@@ -86,7 +89,7 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
   return formatInteger(value);
 };
 
-const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabel: string }> = {
+const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
   'agency-records': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
   ambulances: { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
   'fire-engines': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
@@ -95,12 +98,36 @@ const MAP_PALETTES: Record<string, { stops: string[]; lowLabel: string; highLabe
   'scene-transit': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
 };
 
+// A blue-to-gold progression remains ordered without relying on red/green
+// distinctions. Its lightest stops also stay visible on the dark map canvas.
+const COLORBLIND_SAFE_STOPS = ['#63779D', '#688EAA', '#83A99E', '#BFC37D', '#F0DF65'];
+
+const isQualityMapMetric = (metric: StateMapMetricKey) =>
+  metric === 'cardiac-survival' || metric === 'scene-transit';
+
+const getMapPalette = (metric: StateMapMetricKey, scheme: MapColorScheme): StateMapPalette => {
+  const standard = MAP_PALETTES[metric];
+  if (scheme !== 'colorblind-safe' || !isQualityMapMetric(metric)) return standard;
+  return {
+    ...standard,
+    stops: metric === 'cardiac-survival'
+      ? COLORBLIND_SAFE_STOPS
+      : [...COLORBLIND_SAFE_STOPS].reverse(),
+  };
+};
+
 const hexToRgb = (hex: string) =>
   hex.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [0, 0, 0];
 
-const interpolateStateFill = (metric: StateMapMetricKey, value: number, min: number, max: number) => {
+const interpolateStateFill = (
+  metric: StateMapMetricKey,
+  value: number,
+  min: number,
+  max: number,
+  palette = MAP_PALETTES[metric],
+) => {
   const t = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const stops = MAP_PALETTES[metric]?.stops ?? MAP_PALETTES['agency-records'].stops;
+  const stops = palette.stops;
   const scaled = t * (stops.length - 1);
   const stopIndex = Math.min(stops.length - 2, Math.floor(scaled));
   const localT = scaled - stopIndex;
@@ -110,8 +137,8 @@ const interpolateStateFill = (metric: StateMapMetricKey, value: number, min: num
   return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 };
 
-const getMapGradient = (metric: StateMapMetricKey) =>
-  `linear-gradient(to right, ${(MAP_PALETTES[metric]?.stops ?? MAP_PALETTES['agency-records'].stops).join(', ')})`;
+const getMapGradient = (palette: StateMapPalette) =>
+  `linear-gradient(to right, ${palette.stops.join(', ')})`;
 
 const readableTextForFill = (hexColor: string) => {
   const channels = hexColor.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [219, 234, 254];
@@ -158,6 +185,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [mapMetric, setMapMetric] = useState<StateMapMetricKey>(() => {
     const saved = readMapPreference('metric', 'agency-records');
     return STATE_MAP_METRICS.some((metric) => metric.key === saved) ? saved as StateMapMetricKey : 'agency-records';
+  });
+  const [mapColorScheme, setMapColorScheme] = useState<MapColorScheme>(() => {
+    const saved = readMapPreference('palette', 'standard');
+    return saved === 'colorblind-safe' ? saved : 'standard';
   });
   const [mapZoom, setMapZoom] = useState(() => {
     const saved = Number(readMapPreference('zoom', '1'));
@@ -292,7 +323,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMin = mapMetricValues.length ? Math.min(...mapMetricValues) : 0;
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
-  const activeMapPalette = MAP_PALETTES[mapMetric] ?? MAP_PALETTES['agency-records'];
+  const activeMapPalette = getMapPalette(mapMetric, mapColorScheme);
 
   useEffect(() => {
     const viewport = mapViewportRef.current;
@@ -471,6 +502,25 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     ))}
                   </select>
                 </label>
+                {isQualityMapMetric(mapMetric) && (
+                  <label htmlFor="home-map-color-palette" className="home-map-palette-control flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
+                    Map palette
+                    <select
+                      id="home-map-color-palette"
+                      data-testid="select-map-color-palette"
+                      value={mapColorScheme}
+                      onChange={(event) => {
+                        const scheme = event.target.value as MapColorScheme;
+                        setMapColorScheme(scheme);
+                        saveMapPreference('palette', scheme);
+                      }}
+                      className="home-map-layer-select home-map-palette-select min-h-11 min-w-0 rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="colorblind-safe">Color-blind safe</option>
+                    </select>
+                  </label>
+                )}
                 {renderMapZoomControls()}
                 <details className="home-map-mobile-tools md:hidden">
                   <summary aria-label="Open map tools">
@@ -485,15 +535,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>
 
               <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
-                <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">{activeMapMetric.label}</span>
+                <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
+                  {activeMapMetric.label}
+                  {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
+                    <span className="home-map-legend-palette-note"> · Color-blind safe</span>
+                  )}
+                </span>
                 <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
-                  <span className="home-map-legend-gradient h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(mapMetric) }} aria-hidden="true" />
+                  <span className="home-map-legend-gradient h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
                   <span className="home-map-legend-endpoint home-map-legend-endpoint-high">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
                 {mapMetricValues.some((value) => value === 0) && (
                   <span className="home-map-legend-zero flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
-                    <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax) }} aria-hidden="true" />
+                    <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax, activeMapPalette) }} aria-hidden="true" />
                     Reported 0
                   </span>
                 )}
@@ -516,6 +571,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 className="home-map-svg block h-auto select-none"
                 style={{ aspectRatio: '920 / 500', width: `${mapZoom * 100}%` }}
                 data-fit-screen={mapZoom === 1 ? 'true' : 'false'}
+                data-map-palette={isQualityMapMetric(mapMetric) ? mapColorScheme : 'standard'}
                 role="group"
                 aria-label={`Interactive United States map shaded by ${activeMapMetric.label}, zoom ${Math.round(mapZoom * 100)} percent`}
               >
@@ -582,7 +638,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const fillColor = hasReportedValue(datum.value)
-                      ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax)
+                      ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                       : 'url(#home-map-missing-data)';
                     const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 

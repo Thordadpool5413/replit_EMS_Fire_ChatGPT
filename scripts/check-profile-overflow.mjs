@@ -1673,6 +1673,12 @@ async function main() {
       await checkProfileAtViewport(cdp, viewport);
     }
     for (const viewport of [
+      { width: 390, height: 844, mobile: true },
+      { width: 1280, height: 900, mobile: false },
+    ]) {
+      await checkFireProfileAtViewport(cdp, viewport);
+    }
+    for (const viewport of [
       { width: 320, height: 740 },
       { width: 390, height: 844 },
     ]) {

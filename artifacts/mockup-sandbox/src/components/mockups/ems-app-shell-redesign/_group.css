@@ -1,0 +1,253 @@
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('./assets/geist-latin-wght-normal-BgDaEnEv.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('./assets/inter-latin-wght-normal-Dx4kXJAl.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Manrope Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('./assets/manrope-latin-wght-normal-DHIcAJRg.woff2') format('woff2');
+}
+
+:root {
+  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pi-font-data: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --pi-nav-bg: #0B1728;
+  --pi-nav-secondary: #172D49;
+  --pi-canvas-bg: #eef2f4;
+  --pi-surface-bg: #fbfcfc;
+  --pi-surface-subtle: #f1f5f5;
+  --pi-surface-elevated: #FFFFFF;
+  --pi-text-primary: #14283F;
+  --pi-text-secondary: #53657B;
+  --pi-text-muted: #6E8096;
+  --pi-border: #d8e1e5;
+  --pi-border-strong: #b9c8cf;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-subtle: #e7f1f0;
+  --pi-verified-bg: #ECFDF5;
+  --pi-verified-text: #047857;
+  --pi-verified-border: #A7F3D0;
+  --pi-estimated-bg: #EEF3F7;
+  --pi-estimated-text: #536B7E;
+  --pi-estimated-border: #D5E0E8;
+  --pi-info-bg: #EFF6FF;
+  --pi-info-text: #1D4ED8;
+  --pi-info-border: #BFDBFE;
+  --pi-warning-bg: #FFF7ED;
+  --pi-warning-text: #C2410C;
+  --pi-warning-border: #FED7AA;
+  --pi-critical-bg: #FEF2F2;
+  --pi-critical-text: #B91C1C;
+  --pi-critical-border: #FECACA;
+  --bg-canvas: #eef2f4;
+  --bg-surface: #fbfcfc;
+  --bg-subtle: #f1f5f5;
+  --text-primary: #14283F;
+  --text-secondary: #53657B;
+  --text-muted: #6E8096;
+  --border-crisp: #d8e1e5;
+  --border-strong: #b9c8cf;
+  --brand-primary: #176568;
+  --brand-primary-hover: #105255;
+  --radius-card: 0.7rem;
+  --radius-control: 0.45rem;
+  --shadow-card: 0 1px 2px rgba(22, 48, 60, 0.035);
+  --shadow-card-hover: 0 3px 10px -4px rgba(22, 48, 60, 0.14);
+}
+
+.dark {
+  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pi-font-data: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --pi-nav-bg: #070F1C;
+  --pi-nav-secondary: #112238;
+  --pi-canvas-bg: #0d1821;
+  --pi-surface-bg: #14232e;
+  --pi-surface-subtle: #192b37;
+  --pi-surface-elevated: #17263C;
+  --pi-text-primary: #F1F5F9;
+  --pi-text-secondary: #94A3B8;
+  --pi-text-muted: #64748B;
+  --pi-border: #2a3d49;
+  --pi-border-strong: #3b5360;
+  --pi-action: #5aa7a2;
+  --pi-action-hover: #74bbb5;
+  --pi-action-subtle: rgba(90, 167, 162, 0.15);
+  --pi-info-bg: rgba(30, 64, 175, 0.2);
+  --pi-info-text: #93C5FD;
+  --pi-info-border: rgba(59, 130, 246, 0.4);
+  --pi-warning-bg: rgba(154, 52, 18, 0.2);
+  --pi-warning-text: #FDBA74;
+  --pi-warning-border: rgba(249, 115, 22, 0.35);
+  --pi-critical-bg: rgba(127, 29, 29, 0.24);
+  --pi-critical-text: #FCA5A5;
+  --pi-critical-border: rgba(248, 113, 113, 0.35);
+  --bg-canvas: #0d1821;
+  --bg-surface: #14232e;
+  --bg-subtle: #192b37;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --border-crisp: #2a3d49;
+  --border-strong: #3b5360;
+  --brand-primary: #5aa7a2;
+  --brand-primary-hover: #74bbb5;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  background: var(--pi-canvas-bg);
+  color: var(--pi-text-primary);
+  font-family: var(--font-sans);
+}
+
+.pi-app-shell {
+  min-height: 100dvh;
+  background-color: var(--pi-canvas-bg);
+  background-image: radial-gradient(ellipse at 84% -18%, rgba(23, 101, 104, 0.07), transparent 42rem);
+}
+
+.dark .pi-app-shell {
+  background-image: radial-gradient(ellipse at 84% -18%, rgba(90, 167, 162, 0.09), transparent 42rem);
+}
+
+.pi-primary-sidebar {
+  width: 12rem !important;
+  background: #0b1a29;
+  border-color: #1b3445;
+}
+
+.pi-sidebar-logo {
+  width: 7rem !important;
+  height: 7rem !important;
+  border-width: 1px !important;
+}
+
+.pi-primary-nav {
+  gap: 0.8rem !important;
+}
+
+.pi-primary-nav button {
+  min-height: 2.35rem;
+}
+
+.pi-command-header {
+  padding-left: 12rem !important;
+  height: 3.35rem !important;
+  background-color: color-mix(in srgb, var(--pi-surface-bg) 95%, transparent);
+}
+
+.pi-workspace-body {
+  padding-left: 12rem !important;
+}
+
+.pi-command-header,
+.pi-primary-sidebar,
+.pi-mobile-nav {
+  border-color: var(--pi-border);
+}
+
+.pi-mobile-nav {
+  height: calc(4.25rem + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #0b1a29;
+  border-color: #1b3445;
+  box-shadow: 0 -8px 24px -20px rgba(4, 20, 30, 0.65);
+}
+
+.pi-mobile-nav > div {
+  height: 4.25rem;
+}
+
+.pi-mobile-nav button {
+  min-height: 3rem;
+  touch-action: manipulation;
+}
+
+.workspace-grid-shell {
+  max-width: 1680px;
+  padding-top: clamp(0.65rem, 1.25vh, 1rem);
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  gap: 0.8rem;
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  .pi-primary-sidebar {
+    width: 11.5rem !important;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 11.5rem !important;
+  }
+
+  .pi-command-header {
+    height: 3rem !important;
+  }
+
+  .pi-sidebar-logo {
+    width: 4.65rem !important;
+    height: 4.65rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 3.5rem;
+  }
+
+  .pi-app-shell {
+    background-image: none;
+    padding-bottom: 0 !important;
+  }
+
+  .pi-command-header {
+    height: calc(3.5rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top);
+    padding-left: 0 !important;
+  }
+
+  .pi-command-header > div {
+    padding-inline: max(0.75rem, env(safe-area-inset-left)) !important;
+  }
+
+  .pi-mobile-logo {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    border-width: 1px;
+  }
+
+  .pi-primary-sidebar {
+    display: none !important;
+  }
+
+  .pi-workspace-body {
+    padding-left: 0 !important;
+  }
+
+  .pi-mobile-nav {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

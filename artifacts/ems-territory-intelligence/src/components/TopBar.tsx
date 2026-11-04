@@ -22,6 +22,7 @@ import {
   Database,
   Activity,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   CircleHelp,
   MapPin,
@@ -109,6 +110,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
+  const [isMobileToolsMenuOpen, setIsMobileToolsMenuOpen] = useState<boolean>(false);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
@@ -172,10 +174,21 @@ export const TopBar: React.FC<TopBarProps> = ({
         .some((ref) => ref.current?.contains(target));
       if (!clickedUtility) {
         setIsUtilityMenuOpen(false);
+        setIsMobileToolsMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsUtilityMenuOpen(false);
+        setIsMobileToolsMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   // Workspace active detection
@@ -684,92 +697,107 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
 
-            {/* Pending Offline Sync Button (Only when pending items exist) */}
-            {pendingSyncCount > 0 && (
-              <button
-                type="button"
-                onClick={triggerManualSync}
-                disabled={!isOnline || isSyncing}
-                aria-label={`${pendingSyncCount} pending sync items${!isOnline ? ', offline' : ''}`}
-                className="pi-pending-sync h-9 px-2.5 rounded-lg text-xs tabular-nums font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{pendingSyncCount} pending</span>
-              </button>
-            )}
-
-            {/* Territory Strategy & RFP Desk Trigger */}
-            {openChatbot && (
-              <button
-                type="button"
-                onClick={openChatbot}
-                className="h-9 px-3 rounded-lg border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#285EE8] dark:text-blue-300 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
-                title="Open Territory Strategy & RFP AI Desk"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#285EE8] dark:text-blue-400" />
-                <span className="hidden sm:inline">Strategy AI</span>
-              </button>
-            )}
-
-            {/* Notifications Drawer Trigger */}
-            <button
-              type="button"
-              onClick={openNotifications}
-              aria-label={`Notifications${unreadAlertCount > 0 ? `, ${unreadAlertCount} unread` : ''}`}
-              className="relative h-9 w-9 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#53657B] dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
-              title="Territory & Procurement Alerts"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadAlertCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[10px] font-bold flex items-center justify-center">
-                  {unreadAlertCount}
-                </span>
-              )}
-            </button>
-
-            {/* Theme Toggle */}
-            {onToggleDarkMode && (
-              <button
-                type="button"
-                onClick={onToggleDarkMode}
-                aria-label={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
-                className="h-9 w-9 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#53657B] dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
-                title={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
-              >
-                {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-              </button>
-            )}
-
-            {/* Help and source utilities */}
+            {/* Compact mobile utility menu: search stays prominent, lower-frequency actions stay grouped. */}
             <div className="relative" ref={mobileUtilityRef}>
               <button
                 type="button"
-                onClick={() => setIsUtilityMenuOpen(prev => !prev)}
-                className="h-9 w-9 sm:w-auto sm:px-2.5 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#14283F] dark:text-slate-200 flex items-center justify-center sm:justify-start gap-1.5 text-xs font-medium transition-colors cursor-pointer"
-                title="Help and sources"
-                aria-label="Help and sources"
-                aria-expanded={isUtilityMenuOpen}
+                onClick={() => setIsMobileToolsMenuOpen((open) => !open)}
+                className="relative h-10 w-10 sm:w-auto sm:px-2.5 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#14283F] dark:text-slate-200 flex items-center justify-center sm:justify-start gap-1.5 text-xs font-medium transition-colors cursor-pointer"
+                title="Workspace tools"
+                aria-label="Workspace tools"
+                aria-expanded={isMobileToolsMenuOpen}
+                aria-haspopup="menu"
+                aria-controls="mobile-workspace-tools-menu"
               >
-                <CircleHelp className="w-4 h-4 text-[#53657B] dark:text-slate-400" />
-                <span className="hidden sm:inline">Help</span>
-                <ChevronDown className="w-3 h-3 text-[#53657B]" />
+                <SlidersHorizontal className="w-4 h-4 text-[#53657B] dark:text-slate-400" />
+                <span className="hidden sm:inline">Tools</span>
+                <ChevronDown className="hidden sm:block w-3 h-3 text-[#53657B]" />
+                {(unreadAlertCount > 0 || pendingSyncCount > 0) && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[10px] font-bold flex items-center justify-center">
+                    {unreadAlertCount + pendingSyncCount}
+                  </span>
+                )}
               </button>
 
-              {isUtilityMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] shadow-lg py-2 z-50 text-xs">
+              {isMobileToolsMenuOpen && (
+                <div
+                  id="mobile-workspace-tools-menu"
+                  aria-label="Workspace tools"
+                  className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] max-h-[70dvh] overflow-y-auto rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] shadow-lg py-2 z-50 text-xs"
+                >
                   <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
-                    Help &amp; sources
+                    Workspace tools
                   </div>
-
                   <div className="px-2 pt-1.5 space-y-0.5">
+                    {openChatbot && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openChatbot();
+                          setIsMobileToolsMenuOpen(false);
+                        }}
+                        className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2"
+                      >
+                        <Sparkles className="h-4 w-4 text-[#285EE8] dark:text-blue-400" />
+                        Strategy AI
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openNotifications();
+                        setIsMobileToolsMenuOpen(false);
+                      }}
+                      className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2"
+                    >
+                      <Bell className="h-4 w-4 text-[#53657B] dark:text-slate-400" />
+                      Alerts
+                      {unreadAlertCount > 0 && (
+                        <span className="ml-auto rounded-full bg-[#285EE8] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          {unreadAlertCount}
+                        </span>
+                      )}
+                    </button>
+                    {onToggleDarkMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onToggleDarkMode();
+                          setIsMobileToolsMenuOpen(false);
+                        }}
+                        className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2"
+                      >
+                        {isDarkMode
+                          ? <Sun className="h-4 w-4 text-amber-400" />
+                          : <Moon className="h-4 w-4 text-[#53657B] dark:text-slate-400" />}
+                        {isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={triggerManualSync}
+                      disabled={!isOnline || isSyncing}
+                      className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 text-[#53657B] dark:text-slate-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                      {isSyncing ? 'Syncing…' : 'Sync workspace'}
+                      {pendingSyncCount > 0 && (
+                        <span className="ml-auto text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                          {pendingSyncCount} pending
+                        </span>
+                      )}
+                      {!isOnline && <span className="ml-auto text-[10px] text-slate-500">Offline</span>}
+                    </button>
+                    <div className="my-1.5 border-t border-[#DFE6EF] dark:border-[#1E2D42]" />
                     {onToggleGuide && (
                       <button
                         type="button"
                         onClick={() => {
                           onToggleGuide();
-                          setIsUtilityMenuOpen(false);
+                          setIsMobileToolsMenuOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
+                        className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
                       >
                         {showGuide ? 'Hide Quick Start Strip' : 'Show Quick Start Strip'}
                       </button>
@@ -779,7 +807,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                         <button
                           type="button"
                           onClick={() => void handleInstallApp()}
-                          className="w-full text-left px-2.5 py-1.5 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
+                          className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
                         >
                           <span className="inline-flex items-center gap-2">
                             <Download className="h-3.5 w-3.5" />
@@ -800,9 +828,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                           openDataLineageModal();
                           setIsUtilityMenuOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
+                        className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
                       >
-                        Federal Data Lineage &amp; Sources
+                        <span className="inline-flex items-center gap-2">
+                          <CircleHelp className="h-4 w-4 text-[#53657B] dark:text-slate-400" />
+                          Help, data lineage &amp; sources
+                        </span>
                       </button>
                     )}
                   </div>

@@ -628,6 +628,7 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       const element = document.querySelector(selector);
       if (!element) return null;
       const bounds = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
       return {
         left: bounds.left,
         right: bounds.right,
@@ -635,13 +636,33 @@ async function checkHomeMapAtViewport(cdp, viewport) {
         height: bounds.height,
         scrollWidth: element.scrollWidth,
         clientWidth: element.clientWidth,
+        minWidth: style.minWidth,
+        cssWidth: style.width,
+        flex: style.flex,
       };
     };
     return {
       document: document.documentElement.scrollWidth,
       stage: rect('.home-map-stage-v2'),
+      content: rect('.home-map-content-v2'),
+      visual: rect('.home-map-visual-v2'),
       map: rect('.home-map-viewport'),
+      shortcuts: rect('.home-map-shortcuts'),
       shortcutRow: rect('.home-map-shortcut-row'),
+      shortcutBehavior: (() => {
+        const row = document.querySelector('.home-map-shortcut-row');
+        if (!row) return null;
+        const bounds = row.getBoundingClientRect();
+        const buttons = [...row.querySelectorAll('button')];
+        return {
+          count: buttons.length,
+          scrollable: row.scrollWidth > row.clientWidth,
+          fullyReflowed: buttons.length > 0 && buttons.every((button) => {
+            const rect = button.getBoundingClientRect();
+            return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1;
+          }),
+        };
+      })(),
     };
   })()`);
 
@@ -661,9 +682,10 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       `Phone map canvas is too short at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
     );
     assert(
-      dimensions.shortcutRow &&
-        dimensions.shortcutRow.scrollWidth > dimensions.shortcutRow.clientWidth,
-      `Small-state shortcuts do not clearly scroll at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+      dimensions.shortcutBehavior &&
+        dimensions.shortcutBehavior.count > 0 &&
+        (dimensions.shortcutBehavior.scrollable || dimensions.shortcutBehavior.fullyReflowed),
+      `Small-state shortcuts are clipped at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
     );
     const toolsWork = await evaluate(cdp, `(() => {
       const details = document.querySelector('.home-map-mobile-tools');

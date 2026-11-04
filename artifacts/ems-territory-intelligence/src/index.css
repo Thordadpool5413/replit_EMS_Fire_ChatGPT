@@ -6021,3 +6021,88 @@ button { -webkit-tap-highlight-color: transparent; }
     padding: 0.75rem !important;
   }
 }
+
+/* Compact laptop controls only. The logo and all mobile tap targets stay unchanged. */
+@media (min-width: 768px) {
+  .pi-primary-sidebar [aria-label="Provider Discipline Filter"] > button {
+    min-height: 1.5rem !important;
+    padding-block: 0.12rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .pi-primary-nav {
+    gap: 0.4rem !important;
+  }
+
+  .pi-primary-nav > div + div {
+    margin-top: 0.4rem !important;
+  }
+
+  .pi-primary-nav button {
+    min-height: 1.55rem !important;
+    padding-block: 0.16rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .pi-primary-nav button > span.flex {
+    gap: 0.4rem !important;
+  }
+
+  .pi-primary-nav button svg {
+    width: 0.8rem !important;
+    height: 0.8rem !important;
+  }
+
+  .pi-sidebar-quick-actions {
+    gap: 0.3rem !important;
+    padding-block: 0.32rem 0.42rem !important;
+  }
+
+  .pi-sidebar-quick-actions > button,
+  .pi-sidebar-quick-actions > div > button {
+    height: 1.5rem !important;
+    min-height: 1.5rem !important;
+    padding-block: 0 !important;
+    font-size: 0.67rem !important;
+  }
+
+  .pi-sidebar-quick-actions .grid.grid-cols-2 > button,
+  .pi-sidebar-quick-actions > div:last-child > button {
+    height: 1.45rem !important;
+    min-height: 1.45rem !important;
+    font-size: 0.6rem !important;
+  }
+
+  .pi-sidebar-quick-actions > * + * {
+    margin-top: 0.3rem !important;
+  }
+
+  .home-map-region-filter button {
+    min-height: 1.55rem !important;
+    padding-inline: 0.5rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-layer-select {
+    min-height: 1.75rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control {
+    gap: 0.25rem !important;
+    padding: 0.12rem !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button {
+    width: 1.55rem !important;
+    height: 1.55rem !important;
+    min-width: 1.55rem !important;
+    min-height: 1.55rem !important;
+    padding: 0 !important;
+  }
+
+  .home-territory-map-screen-v2 .home-map-zoom-control button svg {
+    width: 0.8rem !important;
+    height: 0.8rem !important;
+  }
+}

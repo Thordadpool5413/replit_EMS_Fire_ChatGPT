@@ -8,3 +8,9 @@ Home displays only the Interactive U.S. Territory Map; keep it full-width and do
 **Why:** The user explicitly asked for a map-only home screen and a more end-user-friendly app, then said the selected-state side panel adds no value and asked to give that space to the map. They also approved consolidating navigation, removing duplicate route/note actions, separating system controls, preventing arbitrary agency selection, and preserving area context when returning from a profile.
 
 **How to apply:** When changing Home or primary navigation, preserve the full-width map-only landing view without a selected-state side panel, keep one entry point and matching view tabs across screen sizes, retain unique workspace capabilities, remove repeated actions, group system administration separately, and require explicit agency selection for account-specific actions. Keep the contiguous U.S. centered relative to the map canvas and retain visible AK/HI insets; any visual map translation must also be reflected in selected-state zoom/focus calculations. When users move from a map or directory to an agency profile and back, keep the selected state/county/city/category and map metric, region, and zoom; show the active area and an explicit return action.
+
+**Logo constraint:** Keep the logo asset, size, position, crop, and styling unchanged while adjusting toolbar or navigation controls.
+
+**Why:** The user has reiterated that toolbar-button sizing must not alter the logo.
+
+**How to apply:** Scope CSS updates to control selectors; do not change logo assets or logo-related styles.

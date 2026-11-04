@@ -65,6 +65,10 @@ import {
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
+import {
+  getAgencyProfileReviewedAt,
+  saveAgencyProfileReviewedAt
+} from '../services/agencyProfileReviewStore';
 import { ResuscitationSurvivalFunnel } from './ResuscitationSurvivalFunnel';
 import { TcoCumulativeSavingsChart } from './TcoCumulativeSavingsChart';
 import { QualityScorecard } from './QualityScorecard';
@@ -457,6 +461,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [showActuarialMath, setShowActuarialMath] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
+  const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
+  const [profileReviewError, setProfileReviewError] = useState('');
+
+  useEffect(() => {
+    setProfileReviewedAt(getAgencyProfileReviewedAt(rawAgency.id));
+    setProfileReviewError('');
+  }, [rawAgency.id]);
+
+  const markProfileReviewed = () => {
+    const reviewedAt = new Date().toISOString();
+    if (!saveAgencyProfileReviewedAt(agency.id, reviewedAt)) {
+      setProfileReviewError('This browser could not save the review status. The agency data was not changed.');
+      return;
+    }
+    setProfileReviewedAt(reviewedAt);
+    setProfileReviewError('');
+  };
 
   // Field Note Form State
   const [meetingType, setMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
@@ -1273,6 +1294,57 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <p className="mt-1 text-[#53657B] dark:text-slate-400">Open source records for this agency.</p>
                     )}
                   </section>
+                </div>
+
+                <div
+                  className="profile-review-strip flex min-w-0 flex-col gap-2 border-t border-[#DFE6EF] pt-3 dark:border-[#1E2D42] sm:flex-row sm:items-center sm:justify-between"
+                  data-testid={`panel-profile-review-${agency.id}`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-semibold text-[#14283F] dark:text-white">Your review</span>
+                      {profileReviewedAt ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                          data-testid={`status-profile-review-${agency.id}`}
+                          aria-live="polite"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Reviewed in this browser · {new Date(profileReviewedAt).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      ) : (
+                        <span
+                          className="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+                          data-testid={`status-profile-review-${agency.id}`}
+                          aria-live="polite"
+                        >
+                          Not reviewed in this browser
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[#53657B] dark:text-slate-400">
+                      Mark this profile after checking its details. This note stays in this browser and does not independently verify the information.
+                    </p>
+                    {profileReviewError && (
+                      <p className="mt-1 text-[11px] font-medium text-rose-700 dark:text-rose-300" role="alert">
+                        {profileReviewError}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={markProfileReviewed}
+                    aria-pressed={Boolean(profileReviewedAt)}
+                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#B8C9C0] bg-white px-3 text-xs font-semibold text-[#176568] transition-colors hover:bg-[#E7F1EE] dark:border-[#40585A] dark:bg-[#172528] dark:text-[#9BD0C6] dark:hover:bg-[#203735]"
+                    data-testid={`button-mark-profile-reviewed-${agency.id}`}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    {profileReviewedAt ? 'Review again' : 'I reviewed these details'}
+                  </button>
                 </div>
               </div>
 

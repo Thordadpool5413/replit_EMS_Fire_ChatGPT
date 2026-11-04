@@ -1701,6 +1701,69 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
     `EMS operations summary is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(operationsSummary)}`,
   );
 
+  const operationsSectionUsable = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const overlay = document.querySelector('.provider-profile-overlay');
+    const sectionPicker = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (!profile || !overlay || !sectionPicker) return null;
+
+    sectionPicker.value = 'operations';
+    sectionPicker.dispatchEvent(new Event('change', { bubbles: true }));
+    const operationHeading = [...profile.querySelectorAll('h2')]
+      .find((heading) => /clinical emergency performance|active defibrillator/i.test(heading.innerText));
+    const unavailable = [...profile.querySelectorAll('[role="status"]')]
+      .find((status) => /clinical charts are not available/i.test(status.innerText));
+    const target = operationHeading?.closest('section') ?? unavailable;
+    if (!target) {
+      return {
+        targetFound: false,
+        selectedSection: sectionPicker.value,
+        headings: [...profile.querySelectorAll('h2')].map((heading) => heading.innerText.trim()).slice(-8),
+      };
+    }
+
+    target.scrollIntoView({ behavior: 'instant', block: 'start', inline: 'nearest' });
+    const targetRect = target.getBoundingClientRect();
+    const headerRect = profile.querySelector('header')?.getBoundingClientRect();
+    const dock = profile.querySelector('.profile-action-dock');
+    const dockRect = dock?.getBoundingClientRect();
+    const topicNav = profile.querySelector('[data-testid="profile-topic-navigation"]');
+    const topicNavRect = topicNav?.getBoundingClientRect();
+    const bottomNavRect = document.querySelector('.pi-mobile-nav')?.getBoundingClientRect();
+    const stickyNavActive = topicNav && getComputedStyle(topicNav).position === 'sticky' &&
+      topicNavRect?.top >= 0 && topicNavRect.top < innerHeight;
+    const clearTop = Math.max(
+      headerRect?.bottom ?? 0,
+      dockRect?.bottom ?? 0,
+      stickyNavActive ? topicNavRect.bottom : 0,
+    );
+    const clearBottom = bottomNavRect?.top ?? innerHeight;
+    const text = target.innerText.trim();
+    return {
+      targetFound: Boolean(text),
+      selectedSection: sectionPicker.value,
+      targetTextLength: text.length,
+      targetTop: targetRect.top,
+      targetBottom: targetRect.bottom,
+      clearTop,
+      clearBottom,
+      dockBottom: dockRect?.bottom,
+      topicNavTop: topicNavRect?.top,
+      topicNavBottom: topicNavRect?.bottom,
+      overlayScrollTop: overlay.scrollTop,
+      readable: targetRect.height > 0 && targetRect.top >= clearTop - 1 &&
+        targetRect.top < clearBottom && targetRect.bottom > clearTop &&
+        targetRect.left >= -1 && targetRect.right <= innerWidth + 1 &&
+        text.length > 0,
+    };
+  })()`);
+  assert(
+    operationsSectionUsable?.targetFound &&
+      operationsSectionUsable.selectedSection === 'operations' &&
+      operationsSectionUsable.readable,
+    `EMS operations content is obscured by profile controls at ${viewport.width}px for ${agencyName}: ${JSON.stringify(operationsSectionUsable)}`,
+  );
+
   const emsActions = await evaluate(cdp, `(() => {
     const area = document.querySelector('[data-testid="profile-primary-actions"]');
     if (!area) return null;

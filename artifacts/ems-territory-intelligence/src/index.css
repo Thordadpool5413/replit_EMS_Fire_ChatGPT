@@ -2929,7 +2929,7 @@
   }
 
   .profile-workspace section {
-    scroll-margin-top: calc(4rem + env(safe-area-inset-top));
+    scroll-margin-top: calc(10rem + env(safe-area-inset-top));
   }
 
   input,
@@ -4256,6 +4256,14 @@ body {
   .profile-workspace {
     padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
     scroll-padding-top: calc(8rem + env(safe-area-inset-top));
+  }
+
+  .provider-profile-overlay {
+    scroll-padding-top: calc(10rem + env(safe-area-inset-top));
+  }
+
+  .profile-workspace [data-testid="profile-topic-navigation"] {
+    top: calc(9.75rem + env(safe-area-inset-top)) !important;
   }
 
   .profile-action-dock {

@@ -210,7 +210,7 @@ async function clickVisibleButton(cdp, label, description = label) {
   assert(clicked, `Could not reach the ${description} button at this viewport`);
 }
 
-async function openAgencyProfile(cdp) {
+async function openAgencyProfile(cdp, providerCategory = 'all') {
   const isMobile = await evaluate(cdp, 'innerWidth < 768');
   if (isMobile) {
     const searchOpened = await evaluate(cdp, `(() => {
@@ -257,6 +257,35 @@ async function openAgencyProfile(cdp) {
     })`);
     throw new Error(`${error.message}. Current screen: ${state}`);
   }
+  if (providerCategory !== 'all') {
+    const selectedCategory = await evaluate(cdp, `(() => {
+      const expected = ${JSON.stringify(providerCategory)};
+      const visible = (button) => {
+        const rect = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return rect.width > 0 && rect.height > 0 &&
+          style.visibility !== 'hidden' && style.display !== 'none' &&
+          rect.right > 0 && rect.left < innerWidth &&
+          rect.bottom > 0 && rect.top < innerHeight;
+      };
+      const candidate = [...document.querySelectorAll('button')]
+        .filter(visible)
+        .find((button) => new RegExp('^' + expected + '\\\\s*\\\\(', 'i').test(button.innerText.trim()));
+      const fallback = [...(document.querySelector('[aria-label="Provider Discipline Filter"]')?.querySelectorAll('button') ?? [])]
+        .find((button) => button.innerText.trim().toLowerCase() === expected);
+      const button = candidate || fallback;
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(selectedCategory, `Could not select the ${providerCategory} provider filter`);
+    const expectedProviderLabel = providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider';
+    await waitFor(
+      cdp,
+      `document.body.innerText.includes(${JSON.stringify(expectedProviderLabel)})`,
+      `the ${providerCategory} agency directory`,
+    );
+  }
   const viewportWidth = await evaluate(cdp, 'innerWidth');
   if (viewportWidth === 390 || viewportWidth === 1280) {
     const screenshot = await cdp.send('Page.captureScreenshot', {
@@ -264,10 +293,25 @@ async function openAgencyProfile(cdp) {
       captureBeyondViewport: false,
     });
     await writeFile(
-      `/tmp/ems-agency-directory-${viewportWidth}.png`,
+      `/tmp/ems-agency-directory-${providerCategory}-${viewportWidth}.png`,
       Buffer.from(screenshot.result.data, 'base64'),
     );
   }
+  const estimateDisclosureOpened = await evaluate(cdp, `(() => {
+    const details = [...document.querySelectorAll('[data-testid="planning-value-explanation"]')]
+      .find((item) => item.getBoundingClientRect().width > 0);
+    if (!details) return false;
+    details.scrollIntoView({ block: 'center' });
+    details.querySelector('summary')?.click();
+    return details.open;
+  })()`);
+  assert(estimateDisclosureOpened, `The ${providerCategory} directory is missing estimate details`);
+  const estimateDetailsVisible = await evaluate(cdp, `(() => {
+    const details = document.querySelector('[data-testid="planning-value-explanation"]');
+    const text = details?.innerText || '';
+    return text.includes('Formula:') || text.includes('method, inputs, source period');
+  })()`);
+  assert(estimateDetailsVisible, `The ${providerCategory} estimate does not explain its inputs or missing method`);
   const opened = await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('button, a, [role="button"]')]
       .find((candidate) => candidate.innerText.trim().includes('Open agency profile'));
@@ -287,6 +331,24 @@ async function openAgencyProfile(cdp) {
     `Boolean(document.querySelector('[data-testid="agency-intelligence-overview"]'))`,
     'the agency intelligence overview',
   );
+  if (providerCategory !== 'all') {
+    const providerTypeVisible = await evaluate(
+      cdp,
+      `document.querySelector('main.profile-workspace')?.innerText.includes(${JSON.stringify(
+        providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider',
+      )}) ?? false`,
+    );
+    assert(providerTypeVisible, `The ${providerCategory} profile type was not visible after opening`);
+  }
+  if (providerCategory !== 'all') {
+    const providerTypeVisible = await evaluate(
+      cdp,
+      `document.querySelector('main.profile-workspace')?.innerText.includes(${JSON.stringify(
+        providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider',
+      )}) ?? false`,
+    );
+    assert(providerTypeVisible, `The ${providerCategory} profile type was not visible after opening`);
+  }
   const overviewChecks = await evaluate(cdp, `(() => {
     const overview = document.querySelector('[data-testid="agency-intelligence-overview"]');
     return {
@@ -463,7 +525,7 @@ async function checkProfileAtViewport(cdp, viewport) {
     `the app at ${viewport.width}px`,
     60_000,
   );
-  await openAgencyProfile(cdp);
+  await openAgencyProfile(cdp, 'ems');
   if (viewport.width === 390 || viewport.width === 1280) {
     await evaluate(cdp, `(() => {
       const mobileSelect = document.querySelector('[data-testid="select-profile-section-mobile"]');
@@ -487,7 +549,7 @@ async function checkProfileAtViewport(cdp, viewport) {
       captureBeyondViewport: false,
     });
     await writeFile(
-      `/tmp/ems-agency-profile-${viewport.width}.png`,
+      `/tmp/ems-agency-ems-profile-${viewport.width}.png`,
       Buffer.from(screenshot.result.data, 'base64'),
     );
   }
@@ -689,6 +751,27 @@ async function checkProfileAtViewport(cdp, viewport) {
     `the source inspection drawer to close at ${viewport.width}px`,
   );
   console.log(`✓ ${viewport.width}px: profile, actions, section, registry details, briefing, and source drawer`);
+}
+
+async function checkFireProfileAtViewport(cdp, viewport) {
+  console.log(`Checking Fire profile at ${viewport.width}px viewport...`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      document.body.innerText.includes('Interactive U.S. Territory Map')`,
+    `the app at ${viewport.width}px`,
+    60_000,
+  );
+  await openAgencyProfile(cdp, 'fire');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  console.log(`✓ ${viewport.width}px: Fire profile and estimate disclosure`);
 }
 
 async function checkTerritoryAtViewport(cdp, viewport) {

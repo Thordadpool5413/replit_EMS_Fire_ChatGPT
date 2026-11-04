@@ -73,6 +73,7 @@ import { FireRegistryLookup } from './FireRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
 import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
+import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
@@ -1361,6 +1362,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </div>
                   </div>
                 </div>
+
+                <PlanningValueDisclosure agency={agency} />
 
                 <div>
                   <label className="block text-xs font-medium text-[#53657B] dark:text-slate-400 mb-1">

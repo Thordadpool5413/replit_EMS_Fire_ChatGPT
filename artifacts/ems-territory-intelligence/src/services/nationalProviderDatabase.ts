@@ -472,6 +472,15 @@ class NationalProviderDatabaseService {
           softwareWhitespacePts
         }
       },
+      planningValueModel: {
+        modelId: 'national_provider_population_proxy_v1',
+        populationInput: popServed,
+        populationBasis: 'provider_population_proxy',
+        populationPerModeledUnit: 13000,
+        minimumModeledUnits: 2,
+        dollarsPerModeledUnit: 42000,
+        period: null
+      },
       keyContacts: [
         {
           id: `kc-${agencyId}-hq`,

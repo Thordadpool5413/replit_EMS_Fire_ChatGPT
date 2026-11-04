@@ -336,6 +336,16 @@ export interface Agency {
     probabilityPct: number;
     estimatedDealValue?: number;
   };
+  /** Inputs and assumptions attached to generated pipeline-value estimates. */
+  planningValueModel?: {
+    modelId: 'national_provider_population_proxy_v1' | 'territory_county_population_proxy_v1';
+    populationInput: number;
+    populationBasis: 'provider_population_proxy' | 'county_population_proxy';
+    populationPerModeledUnit: number;
+    minimumModeledUnits: number;
+    dollarsPerModeledUnit: number;
+    period: string | null;
+  };
 
   keyContacts: KeyContact[];
   fieldNotes: FieldNote[];

@@ -582,7 +582,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               type="button"
               onClick={toggleNetwork}
               className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-              title="Verify network and cloud sync status"
+              title={
+                globalState === 'all'
+                  ? 'Cloud is reachable. National browsing uses this device’s cache; select a state to load live cloud records.'
+                  : 'Check network and selected-state cloud sync status.'
+              }
             >
               <span
                 className={`w-2 h-2 rounded-full ${
@@ -597,7 +601,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {!isOnline
                   ? 'Offline Cache'
                   : isCloudConnected
-                    ? `Cloud Synced (${cloudSyncCount})`
+                    ? globalState === 'all'
+                      ? `Cloud Ready (${cloudSyncCount})`
+                      : `Cloud Synced (${cloudSyncCount})`
                     : 'Local Ready'}
               </span>
             </button>

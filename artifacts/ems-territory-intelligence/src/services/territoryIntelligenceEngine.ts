@@ -611,6 +611,15 @@ class TerritoryIntelligenceService {
           budgetGrantReadinessPts: 14
         }
       },
+      planningValueModel: {
+        modelId: 'territory_county_population_proxy_v1',
+        populationInput: countyRecord.population,
+        populationBasis: 'county_population_proxy',
+        populationPerModeledUnit: 14000,
+        minimumModeledUnits: 2,
+        dollarsPerModeledUnit: 42000,
+        period: null
+      },
       cmsData: {
         medicareBilledAnnual: Math.round(countyRecord.annualEmergencyTransports * 540),
         medicareAllowedAnnual: Math.round(countyRecord.annualEmergencyTransports * 390),

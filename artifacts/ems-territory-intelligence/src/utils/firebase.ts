@@ -246,7 +246,8 @@ export async function fetchAgenciesFromFirestore(stateCode?: string, county?: st
  */
 export function subscribeToFirestoreAgencies(
   onAgenciesUpdate: (agencies: Agency[]) => void,
-  stateCode?: string
+  stateCode?: string,
+  onError?: (error: unknown) => void
 ): Unsubscribe {
   let q = query(collections.agencies);
   if (stateCode && stateCode !== 'all') {
@@ -261,6 +262,7 @@ export function subscribeToFirestoreAgencies(
     onAgenciesUpdate(list);
   }, (error) => {
     handleFirestoreError(error, OperationType.GET, 'agencies');
+    onError?.(error);
   });
 }
 

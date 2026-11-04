@@ -49,6 +49,7 @@ import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { getActivePulseIqScore, isHighPriorityPulseIqAgency, rankAgenciesByPulseIqScore } from '../utils/pulseIqRanking';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 import { PulseIqLeadFactorBars } from './PulseIqLeadFactorBars';
+import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -940,10 +941,12 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           : 'Not calculated'}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
-                        {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} modeled CapEx` : 'Opportunity model not validated'}
+                        {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} pipeline estimate` : 'Opportunity model not validated'}
                       </div>
                     </div>
                   </div>
+
+                  <PlanningValueDisclosure agency={agency} compact />
 
                   <details
                     className="pulseiq-factor-disclosure border-t border-slate-200 pt-2 dark:border-slate-800"

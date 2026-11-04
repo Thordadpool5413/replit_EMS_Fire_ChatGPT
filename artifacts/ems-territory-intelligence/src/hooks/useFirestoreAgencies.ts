@@ -91,8 +91,12 @@ export function useFirestoreAgencies({
     };
   }, []);
 
-  // 2. Real-time subscription to Firestore changes with automatic mock filtering
+  // 2. Subscribe only after a state is selected. A national subscription would
+  // download every agency document on each fresh browser session and can exhaust
+  // Firestore's daily read quota. National browsing uses the existing local cache.
   useEffect(() => {
+    if (globalState === 'all') return;
+
     let unsubscribe: (() => void) | undefined;
 
     try {
@@ -146,7 +150,7 @@ export function useFirestoreAgencies({
             return merged;
           });
         }
-      }, globalState !== 'all' ? globalState : undefined);
+      }, globalState, () => setIsCloudConnected(false));
     } catch (err) {
       console.warn('Real-time Firestore listener offline fallback:', err);
     }

@@ -16,7 +16,7 @@ interface PulseIqEvidencePanelProps {
 }
 
 const statusLabel = (agency: Agency, key: AgencyFactEvidenceKey) => {
-  if (hasReviewedAgencyFactEvidence(agency, key)) return 'Source reviewed';
+  if (hasReviewedAgencyFactEvidence(agency, key)) return 'Review marker recorded';
   if (hasMappedAgencyFactEvidence(agency, key)) return 'Source linked';
   return 'Profile estimate';
 };

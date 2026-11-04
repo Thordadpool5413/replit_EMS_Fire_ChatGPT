@@ -1220,7 +1220,7 @@ async function checkProfileAtViewport(cdp, viewport) {
     await waitFor(
       cdp,
       `document.querySelector('[data-testid="select-profile-section-mobile"]')?.value === 'evidence' &&
-        document.body.innerText.includes('Source Evidence & Verification Ledger')`,
+        document.body.innerText.includes('Source Evidence & Data Mapping')`,
       `the evidence section at ${viewport.width}px`,
     );
     await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
@@ -1540,7 +1540,7 @@ async function checkFireProfileDetailsAtViewport(cdp, viewport, agencyName) {
     {
       value: 'evidence',
       description: 'source evidence',
-      expectedText: ['Source Evidence & Verification Ledger'],
+      expectedText: ['Source Evidence & Data Mapping'],
     },
   ];
 
@@ -1613,7 +1613,7 @@ async function checkFireProfileDetailsAtViewport(cdp, viewport, agencyName) {
         const evidence = document.querySelector('#profile-source-evidence');
         const tableWrap = evidence?.querySelector('.scannable-table-wrap');
         const verify = [...(evidence?.querySelectorAll('button') ?? [])]
-          .find((button) => button.innerText.trim() === 'Check NPPES identity');
+          .find((button) => button.innerText.trim() === 'Search CMS NPPES');
         const sourceLinks = [...(tableWrap?.querySelectorAll('a[href]') ?? [])];
         if (!evidence || !tableWrap || !verify || sourceLinks.length === 0) return null;
 

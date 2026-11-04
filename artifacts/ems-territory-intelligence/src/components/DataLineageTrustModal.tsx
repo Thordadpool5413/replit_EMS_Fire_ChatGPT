@@ -136,7 +136,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
       `Department: ${activeAgency.name}`,
       `Jurisdiction: ${activeAgency.city}, ${activeAgency.stateCode} (${activeAgency.county})`,
       `FDID: ${activeAgency.fdid || 'Not recorded'}`,
-      `Evidence Coverage: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (${auditReport.verifiedSupportedFields} of ${auditReport.applicableAuditedFields} fields have reviewed evidence)`,
+      `Automated source-mapping estimate: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (not end-user verification)`,
       `Audit Date: ${new Date().toISOString().split('T')[0]}`,
       ``,
       `FIELD-BY-FIELD DATA CHAIN & CITATIONS:`,
@@ -146,7 +146,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
     auditReport.records.forEach(r => {
       lines.push(`• [${r.category}] ${r.fieldName}: ${r.fieldValue}`);
       lines.push(`  Source: ${r.sourceRegistry} | Schema: ${r.schemaIdentifier}`);
-      lines.push(`  Status: ${r.verificationStatus}`);
+      lines.push(`  Status: ${r.verificationStatus === 'Verified Official' ? 'Official source listed; end-user review needed' : r.verificationStatus}`);
       lines.push(`  Documentation: ${r.documentationQuote}`);
       lines.push(``);
     });
@@ -326,17 +326,14 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                 {activeAgency && (
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
-                      <span className="text-[10px] text-slate-400 block font-semibold">Evidence Integrity</span>
-                      <span className={`font-semibold text-sm tabular-nums ${
-                        auditReport?.integrityStatus === 'VERIFIED_CORROBORATED'
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : auditReport?.integrityStatus === 'PARTIALLY_CORROBORATED'
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-amber-600 dark:text-amber-400'
-                      }`}>
+                      <span className="text-[10px] text-slate-400 block font-semibold">Source mapping estimate</span>
+                      <span className="font-semibold text-sm tabular-nums text-slate-700 dark:text-slate-200">
                         {auditReport?.overallIntegrityScore && auditReport.overallIntegrityScore > 0
-                          ? `${auditReport.overallIntegrityScore}% (${auditReport.integrityStatusLabel})`
-                          : (auditReport?.integrityStatusLabel || 'Incomplete Evidence')}
+                          ? `${auditReport.overallIntegrityScore}% · automated`
+                          : 'Not available'}
+                      </span>
+                      <span className="block text-[9px] text-slate-500 dark:text-slate-400">
+                        Source mapping only; end-user review is still needed.
                       </span>
                     </div>
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
@@ -346,9 +343,21 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
                       <span className="text-[10px] text-slate-400 block font-semibold">NEMSIS / CMS Match</span>
                       <span className={`font-semibold text-xs ${
-                        activeAgency.isVerifiedRecord ? 'text-[#1E3A8A] dark:text-blue-400' : 'text-slate-500'
+                        activeAgency.sourceRecordAssociations?.some(
+                          (association) =>
+                            association.sourceName.toLowerCase().includes('nppes') &&
+                            association.decision === 'confirmed',
+                        ) ? 'text-[#1E3A8A] dark:text-blue-400' : 'text-slate-500'
                       }`}>
-                        {activeAgency.isVerifiedRecord ? 'NPPES legal-entity match only' : activeAgency.npiNumber ? 'Unmatched NPI candidate' : 'Sourcing Required'}
+                        {activeAgency.sourceRecordAssociations?.some(
+                          (association) =>
+                            association.sourceName.toLowerCase().includes('nppes') &&
+                            association.decision === 'confirmed',
+                        )
+                          ? 'NPPES record linked by user'
+                          : activeAgency.npiNumber
+                            ? 'NPI listed · no user association'
+                            : 'No NPI listed'}
                       </span>
                     </div>
                   </div>
@@ -454,7 +463,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                           )}
                           {r.sourceRecordId && (
                             <span className="block text-[10px] text-slate-500 dark:text-slate-400">
-                              Record: {r.sourceRecordId}{r.reviewedAt ? ` · Reviewed ${r.reviewedAt.slice(0, 10)}` : ''}
+                              Record: {r.sourceRecordId}{r.reviewedAt ? ` · Review marker ${r.reviewedAt.slice(0, 10)}` : ''}
                             </span>
                           )}
                         </td>
@@ -464,17 +473,19 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <td className="py-2.5 px-3">
                           <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
                             r.verificationStatus === 'Verified Official'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                               : r.verificationStatus === 'Legal Public Record'
                                 ? 'bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                                 : r.verificationStatus === 'HIPAA De-Identified'
                                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                                   : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                           }`}>
-                            {r.isFieldVerified
-                              ? <CheckCircle2 className="w-3 h-3" />
-                              : <Lock className="w-3 h-3" />}
-                            <span>{r.verificationStatus}</span>
+                            <Database className="w-3 h-3" />
+                            <span>
+                              {r.verificationStatus === 'Verified Official'
+                                ? 'Official source listed · end-user review needed'
+                                : r.verificationStatus}
+                            </span>
                           </span>
                         </td>
                       </tr>

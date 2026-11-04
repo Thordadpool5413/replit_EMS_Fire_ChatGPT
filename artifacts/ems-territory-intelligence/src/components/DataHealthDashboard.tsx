@@ -913,7 +913,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                       <div className="text-[10px] font-mono text-slate-400 mt-0.5">
                         {agency._syncedAt
                           ? `Synced ${new Date(agency._syncedAt).toLocaleTimeString()}`
-                          : agency.verificationSource || 'USFA & Census Verified'}
+                          : agency.verificationSource || 'USFA & Census source references'}
                       </div>
                     </td>
 

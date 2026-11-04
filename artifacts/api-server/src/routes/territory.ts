@@ -314,10 +314,10 @@ router.post(
 
       res.json({
         outcome: "MATCHED",
-        verified: true,
+        verified: false,
         matchConfidence: 1,
         matchReasons: [
-          "Exact legal-organization name and requested geography matched CMS NPPES.",
+          "The registry name and requested geography fields match the search inputs; end-user review is still required.",
         ],
         verificationSource: "CMS NPPES NPI Registry",
         npiNumber: exactMatch.number ?? "",
@@ -333,7 +333,7 @@ router.post(
         nppesLastUpdated: exactMatch.basic?.last_updated ?? "",
         googleMapsUri: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${input.agencyName} ${input.city ?? ""} ${stateCode ?? ""}`)}`,
         details:
-          "CMS NPPES confirms this legal-organization identity only; operational status, installed equipment, procurement authority, contract status, grants, and clinical outcomes are not verified by this match.",
+          "CMS NPPES returned a record matching the requested name and geography fields. This is an unconfirmed source candidate for end-user review; no operational facts are verified.",
         usfaRegistryUrl: "https://apps.usfa.fema.gov/registry/",
         liveFemaAwards: [],
         authorizedOfficial,

@@ -569,7 +569,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           npiNumber: rawAgency.npiNumber || undefined
         }
       });
-      const data = response as typeof response & {
+      const data = response as unknown as {
         outcome?: string;
         details?: string;
         address?: string;
@@ -1387,14 +1387,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="break-words [overflow-wrap:anywhere]">Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
-                  {hasVerifiedNppesIdentity ? (
+                  {hasUserLinkedNppesRecord ? (
                     <button
                       type="button"
                       onClick={() => setIsSourceDrawerOpen(true)}
                       className="inline-flex min-h-8 items-center gap-1 font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-                      <span>NPPES identity match</span>
+                      <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                      <span>NPPES record linked by user</span>
                     </button>
                   ) : (
                     <button
@@ -1403,7 +1403,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       className="inline-flex min-h-8 items-center gap-1 font-medium text-[#53657B] hover:underline dark:text-slate-300"
                     >
                       <HelpCircle className="h-3.5 w-3.5 shrink-0" />
-                      <span>No exact NPPES match reviewed</span>
+                      <span>No NPPES record linked by user</span>
                     </button>
                   )}
                 </div>
@@ -2134,72 +2134,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </section>
             </div>
-          )}
-
-          {/* Live Federal CMS NPPES NPI Registered Sub-Records (Only shown when multiple federal NPI records exist in city) */}
-          {showSection('leadership') && cityNpiProviders.length > 0 && (
-            <section className="bg-white rounded-xl border border-[#E5E4DF] p-6 shadow-[0_1px_3px_rgba(17,24,39,0.03)] space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-bold text-[#111827] flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Additional Federal CMS NPPES NPI Registered Providers in {agency.city}, {agency.stateCode}</span>
-                  </h2>
-                  <p className="text-xs text-slate-600">
-                    Verified organizational NPI records from the U.S. Department of Health &amp; Human Services Registry
-                  </p>
-                </div>
-                <span className="text-xs font-mono tabular-nums font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
-                  {cityNpiProviders.length} Federal NPI Records
-                </span>
-              </div>
-
-              <div className="overflow-x-auto border border-[#E5E4DF] rounded-lg">
-                <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[#F8F7F4] border-b border-[#E5E4DF] text-slate-700 font-bold">
-                      <th className="py-2.5 px-3">Federal NPI #</th>
-                      <th className="py-2.5 px-3">Registered Legal Organization Name</th>
-                      <th className="py-2.5 px-3">Practice Street Address</th>
-                      <th className="py-2.5 px-3">Authorized Official</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E5E4DF]">
-                    {cityNpiProviders.map((npiRec) => (
-                      <tr key={npiRec.npi} className="hover:bg-[#F8F7F4]/60">
-                        <td className="py-2.5 px-3 font-mono tabular-nums font-bold text-[#1E3A8A]">
-                          <a
-                            href={`https://npiregistry.cms.hhs.gov/provider-view/${npiRec.npi}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:underline inline-flex items-center gap-1"
-                          >
-                            <span>{npiRec.npi}</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-[#111827]">
-                          {npiRec.name}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-700">
-                          {npiRec.address}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-700">
-                          {npiRec.official ? (
-                            <span>
-                              <strong className="text-[#111827]">{npiRec.official}</strong>
-                              {npiRec.officialTitle ? ` · ${npiRec.officialTitle}` : ''}
-                            </span>
-                          ) : (
-                            'Organizational Enrollment'
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
           )}
 
         {/* SECTION: CLINICAL EMERGENCY PERFORMANCE, QUALITY & PATIENT OUTCOMES */}
@@ -3512,10 +3446,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
               <div>
                   <h2 className="pi-section-heading">
-                    Source Evidence &amp; Verification Ledger
+                    Source Evidence &amp; Data Mapping
                   </h2>
                 <p className="pi-supporting mt-0.5">
-                    Each field can show a mapped source separately from a source check. A registry match does not verify operational details for {agency.name}; use the attached link and confirm its date and scope.
+                    This page maps available values and source records to {agency.name}. API results are candidates only; the end user decides whether a record belongs to this agency and whether its information is accurate. Search results never overwrite profile fields.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -3525,7 +3459,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   disabled={isVerifyingLive}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white cursor-pointer disabled:opacity-50"
                 >
-                    {isVerifyingLive ? 'Checking NPPES identity...' : 'Check NPPES identity'}
+                    {isVerifyingLive ? 'Searching NPPES…' : 'Search CMS NPPES'}
                 </button>
                 {onOpenDataLineage && (
                   <button
@@ -3538,6 +3472,111 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 )}
               </div>
             </div>
+
+            {liveNppesError && (
+              <p
+                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                role="status"
+                data-testid="nppes-search-error"
+              >
+                {liveNppesError}
+              </p>
+            )}
+            {liveNppesResult && (
+              <section
+                className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-950/60"
+                aria-labelledby={`nppes-search-results-${agency.id}`}
+                data-testid="nppes-search-results"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3
+                      id={`nppes-search-results-${agency.id}`}
+                      className="text-xs font-semibold text-slate-800 dark:text-slate-100"
+                    >
+                      CMS NPPES search results
+                    </h3>
+                    <p className="mt-1 max-w-3xl text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
+                      Candidate records only. The API did not verify this provider or its operations. Linking a record is your association decision and does not change profile values.
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {liveNppesResult.candidateCount} candidate{liveNppesResult.candidateCount === 1 ? '' : 's'} · searched {new Date(liveNppesResult.fetchedAt).toLocaleString()}
+                  </span>
+                </div>
+                {liveNppesResult.details && (
+                  <p className="mt-2 text-[10px] text-slate-600 dark:text-slate-400">
+                    {liveNppesResult.details}
+                  </p>
+                )}
+                {liveNppesResult.candidates.length === 0 ? (
+                  <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+                    No candidate records were returned. No profile values were changed.
+                  </p>
+                ) : (
+                  <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-800">
+                    {liveNppesResult.candidates.map((candidate) => {
+                      const association = agency.sourceRecordAssociations?.find(
+                        (record) =>
+                          record.sourceName.toLowerCase().includes('nppes') &&
+                          record.sourceRecordId === candidate.npiNumber,
+                      );
+                      return (
+                        <li
+                          key={candidate.npiNumber}
+                          className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                          data-testid={`nppes-candidate-${candidate.npiNumber}`}
+                        >
+                          <div className="min-w-0">
+                            <a
+                              href={candidate.registryUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                            >
+                              {candidate.officialName || 'Name not stated'}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <p className="mt-0.5 break-words text-[10px] text-slate-600 dark:text-slate-400">
+                              NPI {candidate.npiNumber}
+                              {[candidate.address, candidate.city, candidate.stateCode, candidate.zipCode, candidate.taxonomyDescription]
+                                .filter(Boolean)
+                                .map((value) => ` · ${value}`)
+                                .join('')}
+                            </p>
+                            <p className="mt-0.5 text-[9px] text-slate-500 dark:text-slate-500">
+                              {association?.decision === 'confirmed'
+                                ? 'User linked this source record to the agency'
+                                : association?.decision === 'rejected'
+                                  ? 'User marked this source record as a different agency'
+                                  : 'Not yet associated with this agency'}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => decideNppesCandidate(candidate, 'confirmed')}
+                              className="min-h-8 rounded-md border border-slate-300 bg-white px-2.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                              data-testid={`button-link-nppes-${candidate.npiNumber}`}
+                            >
+                              Link to agency
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => decideNppesCandidate(candidate, 'rejected')}
+                              className="min-h-8 rounded-md border border-slate-200 px-2.5 text-[10px] font-medium text-slate-600 hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+                              data-testid={`button-reject-nppes-${candidate.npiNumber}`}
+                            >
+                              Not this agency
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            )}
 
             <div className="scannable-table-wrap">
               <table className="scannable-table">
@@ -3553,10 +3592,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <tbody>
                   <tr>
                     <td className="font-semibold text-[#14283F] dark:text-white">Provider Identity &amp; NPI</td>
-                    <td className="pi-metric-id">{hasVerifiedNppesIdentity ? `NPI ${agency.npiNumber} · ${agency.nppesOfficialName || 'NPPES organization'}` : 'No exact NPPES organization match reviewed'}</td>
+                    <td className="pi-metric-id">{hasUserLinkedNppesRecord ? `NPI ${linkedNppesAssociation?.sourceRecordId} · user-linked source record` : agency.npiNumber ? `Profile lists NPI ${agency.npiNumber}; no source record linked by user` : 'No NPPES source record linked by user'}</td>
                     <td>
                       <span className="profile-evidence-tag px-2 py-0.5 text-[11px] font-semibold">
-                        {hasVerifiedNppesIdentity ? 'Exact registry match' : 'Candidate record'}
+                        {hasUserLinkedNppesRecord ? 'User associated with agency' : 'Source candidate'}
                       </span>
                     </td>
                     <td>U.S. HHS CMS NPPES Provider Registry</td>
@@ -3582,7 +3621,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td>
                       <span className="profile-evidence-tag px-2 py-0.5 text-[11px] font-semibold">
                         {hasReviewedAgencyFactEvidence(agency, 'departmentRegistry') && agency.isFdidVerified && hasReviewedAgencyFactEvidence(agency, 'stationCount')
-                          ? 'Source reviewed'
+                          ? 'Review marker recorded'
                           : hasMappedAgencyFactEvidence(agency, 'departmentRegistry') || hasMappedAgencyFactEvidence(agency, 'stationCount')
                             ? 'Source available'
                             : '—'}
@@ -3611,7 +3650,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td>
                       <span className="profile-evidence-tag px-2 py-0.5 text-[11px] font-semibold">
                         {getAgencyFactEvidenceStatus(agency, 'federalGrant') === 'source-reviewed'
-                          ? 'Source reviewed'
+                          ? 'Review marker recorded'
                           : hasMappedAgencyFactEvidence(agency, 'federalGrant')
                             ? 'Source available'
                             : '—'}
@@ -3636,7 +3675,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td>
                       <span className="profile-evidence-tag px-2 py-0.5 text-[11px] font-semibold">
                         {getAgencyFactEvidenceStatus(agency, 'cmsClaims') === 'source-reviewed'
-                          ? 'Source reviewed'
+                          ? 'Review marker recorded'
                           : hasMappedAgencyFactEvidence(agency, 'cmsClaims')
                             ? 'Source available'
                             : '—'}
@@ -3873,10 +3912,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
                 <div className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>{hasVerifiedNppesIdentity ? 'NPPES legal-organization match' : 'Registry match not established'}</span>
+                  <span>{hasUserLinkedNppesRecord ? 'NPPES record linked by user' : 'No NPPES record linked by user'}</span>
                 </div>
                 <p className="text-emerald-900/80 dark:text-emerald-200/80 leading-relaxed">
-                  NPPES can confirm a matched legal organization and its registry listing. It does not establish that the organization is an operating EMS or fire agency, that the listed address is an operating station, or that an authorized official is operational command.
+                  The NPPES registry can return a legal-organization record for review. The app does not determine whether it belongs to this EMS or fire agency, whether an address is an operating station, or whether a listed official is operational command.
                 </p>
               </div>
 
@@ -3956,7 +3995,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 disabled={isVerifyingLive}
                 className="flex-1 h-9 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white cursor-pointer disabled:opacity-50"
               >
-                {isVerifyingLive ? 'Refreshing...' : 'Refresh Live Federal Record'}
+                {isVerifyingLive ? 'Searching…' : 'Search CMS NPPES'}
               </button>
               <button
                 type="button"

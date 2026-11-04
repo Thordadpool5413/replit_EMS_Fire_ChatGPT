@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import {
   AGENCY_FACT_EVIDENCE_FIELDS,
+  getAgencyFactValues,
 } from "../data/agencyFactEvidence";
 import type {
   Agency,
@@ -58,6 +59,33 @@ function factLabel(key: AgencySourceFact["fieldKey"]): string {
   );
 }
 
+function summarizeValue(value: unknown): string {
+  if (typeof value === "string") return value.trim() || "—";
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(summarizeValue).filter(Boolean).join(" · ");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, nested]) => nested !== null && nested !== undefined && nested !== "")
+      .map(([key, nested]) => `${key}: ${summarizeValue(nested)}`)
+      .join(" · ");
+  }
+  return "—";
+}
+
+function safeSourceUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function profileFactSnapshot(
   agency: Agency,
   fieldKey: AgencySourceFact["fieldKey"],
@@ -97,6 +125,16 @@ export function AgencySourceRecordWorkspace({
 }: AgencySourceRecordWorkspaceProps) {
   const associations = agency.sourceRecordAssociations ?? [];
   const facts = agency.sourceFacts ?? [];
+  const fieldMapRows = AGENCY_FACT_EVIDENCE_FIELDS.map((field) => ({
+    ...field,
+    values: getAgencyFactValues(agency, field.key),
+    evidence: agency.factEvidence?.[field.key],
+    sourceFacts: facts.filter((fact) => fact.fieldKey === field.key),
+  }));
+  const populatedFieldCount = fieldMapRows.filter((row) => row.values.length > 0).length;
+  const mappedFieldCount = fieldMapRows.filter(
+    (row) => Boolean(row.evidence?.sourceName || row.evidence?.sourceRecordId || row.sourceFacts.length),
+  ).length;
   const [isAdding, setIsAdding] = useState(false);
   const [entryMode, setEntryMode] = useState<"fact" | "correction">("fact");
   const [fieldKey, setFieldKey] =
@@ -339,6 +377,134 @@ export function AgencySourceRecordWorkspace({
       </div>
 
       <div className="space-y-4 p-3.5">
+        <details
+          className="rounded-md border border-slate-200 dark:border-slate-700"
+          data-testid="agency-data-map"
+        >
+          <summary className="cursor-pointer list-none px-3 py-2.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+            Agency data map · {populatedFieldCount} of {fieldMapRows.length} categories have profile values · {mappedFieldCount} have source references
+          </summary>
+          <div className="border-t border-slate-100 p-3 dark:border-slate-800">
+            <p className="mb-3 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+              This maps values and source references already attached to this profile. It does not check whether a source is accurate or applies to this agency; the end user makes that determination.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] border-collapse text-left text-[10px]">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <th scope="col" className="px-2 py-1.5 font-semibold">Data category</th>
+                    <th scope="col" className="px-2 py-1.5 font-semibold">Current profile value</th>
+                    <th scope="col" className="px-2 py-1.5 font-semibold">Mapped source records</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fieldMapRows.map((row) => {
+                    const evidenceUrl = safeSourceUrl(row.evidence?.sourceUrl);
+                    return (
+                      <tr
+                        key={row.key}
+                        className="border-b border-slate-100 align-top last:border-0 dark:border-slate-800"
+                        data-testid={`agency-data-map-row-${row.key}`}
+                      >
+                        <th scope="row" className="w-[23%] px-2 py-2 font-medium text-slate-700 dark:text-slate-200">
+                          {row.label}
+                        </th>
+                        <td className="max-w-[360px] px-2 py-2 text-slate-600 dark:text-slate-300">
+                          {row.values.length === 0 ? (
+                            <span className="text-slate-400 dark:text-slate-500">Not reported in this profile</span>
+                          ) : (
+                            <ul className="space-y-1.5">
+                              {row.values.map((value, index) => {
+                                const summary = summarizeValue(value);
+                                const needsDetails = typeof value === "object" && value !== null || summary.length > 180;
+                                return (
+                                  <li key={`${row.key}-${index}`} className="break-words">
+                                    {needsDetails ? (
+                                      <details>
+                                        <summary className="cursor-pointer">{summary.slice(0, 180)}{summary.length > 180 ? "…" : ""}</summary>
+                                        <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-2 text-[9px] dark:bg-slate-950">
+                                          {JSON.stringify(value, null, 2)}
+                                        </pre>
+                                      </details>
+                                    ) : summary}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </td>
+                        <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                          {!row.evidence?.sourceName && !row.evidence?.sourceRecordId && row.sourceFacts.length === 0 ? (
+                            <span className="text-slate-400 dark:text-slate-500">No source reference attached</span>
+                          ) : (
+                            <div className="space-y-2">
+                              {(row.evidence?.sourceName || row.evidence?.sourceRecordId) && (
+                                <div>
+                                  <p className="font-medium text-slate-700 dark:text-slate-200">
+                                    {row.evidence.sourceName || "Source name not recorded"}
+                                    {row.evidence.sourceRecordId ? ` · ${row.evidence.sourceRecordId}` : ""}
+                                  </p>
+                                  <p className="text-slate-500 dark:text-slate-400">
+                                    {[
+                                      row.evidence.sourceKind?.toUpperCase(),
+                                      row.evidence.reportingPeriod,
+                                      row.evidence.geographicLevel,
+                                      row.evidence.geographicId,
+                                    ].filter(Boolean).join(" · ") || "Period and geography not recorded"}
+                                  </p>
+                                  {evidenceUrl && (
+                                    <a
+                                      className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                                      href={evidenceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Open source <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              {row.sourceFacts.map((fact) => {
+                                const factUrl = safeSourceUrl(fact.sourceUrl);
+                                return (
+                                  <div key={fact.id} className="border-t border-slate-100 pt-1.5 dark:border-slate-800">
+                                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                                      {fact.sourceName} · {fact.sourceRecordId}
+                                    </p>
+                                    <p className="text-slate-500 dark:text-slate-400">
+                                      {[
+                                        fact.basis,
+                                        fact.reportingPeriod,
+                                        fact.effectivePeriod,
+                                        fact.geographicLevel,
+                                        fact.geographicId,
+                                      ].filter(Boolean).join(" · ")}
+                                    </p>
+                                    {factUrl && (
+                                      <a
+                                        className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                                        href={factUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        Open source <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
         <div>
           <h4 className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
             Registry match decisions ({associations.length})

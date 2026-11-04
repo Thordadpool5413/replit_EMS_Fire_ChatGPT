@@ -102,10 +102,10 @@ function containsDisplayableValue(value: unknown): boolean {
   return false;
 }
 
-export function hasAgencyFactData(
+export function getAgencyFactValues(
   agency: Agency,
   key: AgencyFactEvidenceKey,
-): boolean {
+): unknown[] {
   const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
     providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
     departmentRegistry: [agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],
@@ -135,7 +135,14 @@ export function hasAgencyFactData(
     monitorModelTransition: [agency.installedFleet?.defibBrand, agency.fleet?.currentDefibVendor],
     serviceArea: [agency.populationServed, agency.responseAreaSqMiles, agency.gisData],
   };
-  return facts[key].some(containsDisplayableValue);
+  return facts[key].filter(containsDisplayableValue);
+}
+
+export function hasAgencyFactData(
+  agency: Agency,
+  key: AgencyFactEvidenceKey,
+): boolean {
+  return getAgencyFactValues(agency, key).length > 0;
 }
 
 export function getAgencyFactEvidenceStatus(

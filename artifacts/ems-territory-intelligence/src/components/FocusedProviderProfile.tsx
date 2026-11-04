@@ -118,7 +118,7 @@ const FactVerificationTag: React.FC<{
   const status = getAgencyFactEvidenceStatus(agency, field);
   const evidence = agency.factEvidence?.[field];
   const label = status === 'source-reviewed'
-    ? 'Source reviewed'
+    ? 'Review marker recorded'
     : status === 'source-mapped'
       ? 'Source available'
       : unverifiedLabel;
@@ -180,7 +180,26 @@ type ProfileSection =
   | 'evidence'
   | 'all';
 
-import { nationalProviderDb } from '../services/nationalProviderDatabase';
+type NppesSourceCandidate = {
+  npiNumber: string;
+  officialName: string;
+  city: string;
+  stateCode: string;
+  zipCode: string;
+  taxonomyDescription: string;
+  registryUrl: string;
+  address?: string;
+  nppesLastUpdated?: string;
+};
+
+type NppesLookupResult = {
+  outcome: string;
+  details: string;
+  fetchedAt: string;
+  candidates: NppesSourceCandidate[];
+  candidateCount: number;
+};
+
 import { ExternalLink, RefreshCw, Globe, ChevronDown, ChevronUp, X, ArrowRight } from 'lucide-react';
 const ExecutiveBriefingDossier = React.lazy(() =>
   import('./ExecutiveBriefingDossier').then((module) => ({
@@ -413,28 +432,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   onDecideAgencySourceRecord
 }) => {
   const verifyProviderMutation = useVerifyProviderLive();
-  const [livePatch, setLivePatch] = useState<Partial<Agency>>({});
   const [isVerifyingLive, setIsVerifyingLive] = useState(false);
+  const [liveNppesResult, setLiveNppesResult] = useState<NppesLookupResult | null>(null);
+  const [liveNppesError, setLiveNppesError] = useState('');
   const [showDossierModal, setShowDossierModal] = useState(false);
-  const [cityNpiProviders, setCityNpiProviders] = useState<Array<{
-    npi: string;
-    name: string;
-    address: string;
-    phone: string;
-    official: string;
-    officialTitle: string;
-  }>>([]);
 
-  // Reset live patch when switching agencies
+  // Clear transient source search results when switching agency profiles.
   useEffect(() => {
-    setLivePatch({});
-    setCityNpiProviders([]);
+    setLiveNppesResult(null);
+    setLiveNppesError('');
   }, [rawAgency.id]);
 
-  const agency = useMemo(
-    () => ensureCompleteAgencyData({ ...rawAgency, ...livePatch }),
-    [rawAgency, livePatch]
-  );
+  const agency = useMemo(() => ensureCompleteAgencyData(rawAgency), [rawAgency]);
   const suppliers = useMemo(() => resolveEquipmentSuppliers(agency), [agency]);
   const geographicLinks = useMemo(
     () => getAgencyGeographicLinks(agency),
@@ -490,14 +499,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [customDenialCapturePct, setCustomDenialCapturePct] = useState<number>(65);
 
   const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
-  const hasVerifiedNppesIdentity = Boolean(
-    agency.isVerifiedRecord &&
-    agency.npiNumber &&
-    validateNpiCheckDigit(agency.npiNumber).isValid &&
-    agency.lastVerifiedAt &&
-    agency.nppesRegistryUrl
+  const linkedNppesAssociation = agency.sourceRecordAssociations?.find(
+    (association) =>
+      association.sourceName.toLowerCase().includes('nppes') &&
+      validateNpiCheckDigit(association.sourceRecordId).isValid &&
+      association.decision === 'confirmed'
   );
-  const medicareDenialMetric = hasVerifiedNppesIdentity
+  const hasUserLinkedNppesRecord = Boolean(linkedNppesAssociation);
+  const medicareDenialMetric = hasUserLinkedNppesRecord
     ? getAgencyMedicareDenialMetricForDisplay(agency)
     : null;
   const actuarialForecast = useMemo(() => {
@@ -550,6 +559,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const triggerLiveVerification = async () => {
     if (isVerifyingLive) return;
     setIsVerifyingLive(true);
+    setLiveNppesError('');
     try {
       const response = await verifyProviderMutation.mutateAsync({
         data: {
@@ -560,109 +570,105 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         }
       });
       const data = response as typeof response & {
-        outcome?: string; details?: string; address?: string; zipCode?: string;
-        npiNumber?: string; taxonomyCode?: string; taxonomyDescription?: string;
-        nppesOfficialName?: string; nppesOfficialTitle?: string; nppesLastUpdated?: string;
-        authorizedOfficial?: { name?: string; title?: string; phone?: string; verificationSource?: string };
-        legalOrganizationName?: string; verificationSource?: string; isVerifiedRecord?: boolean;
-        lastVerifiedAt?: string; allCityNpiProviders?: typeof cityNpiProviders;
-        usfaRegistryUrl?: string; liveFemaAwards?: Agency['liveFemaAwards'];
-        officialWebsite?: string; googleMapsUri?: string;
+        outcome?: string;
+        details?: string;
+        address?: string;
+        zipCode?: string;
+        npiNumber?: string;
+        taxonomyDescription?: string;
+        nppesOfficialName?: string;
+        nppesLastUpdated?: string;
+        allCityNpiProviders?: Array<{
+          npiNumber?: string;
+          officialName?: string;
+          city?: string;
+          stateCode?: string;
+          zipCode?: string;
+          taxonomyDescription?: string;
+          registryUrl?: string;
+        }>;
       };
-      if (data.allCityNpiProviders && Array.isArray(data.allCityNpiProviders)) {
-        setCityNpiProviders(data.allCityNpiProviders);
-      }
+      const fetchedAt = new Date().toISOString();
+      const candidates: NppesSourceCandidate[] = (data.allCityNpiProviders ?? [])
+        .filter((candidate) => Boolean(candidate.npiNumber))
+        .map((candidate) => ({
+          npiNumber: candidate.npiNumber ?? '',
+          officialName: candidate.officialName ?? '',
+          city: candidate.city ?? '',
+          stateCode: candidate.stateCode ?? '',
+          zipCode: candidate.zipCode ?? '',
+          taxonomyDescription: candidate.taxonomyDescription ?? '',
+          registryUrl: candidate.registryUrl || `https://npiregistry.cms.hhs.gov/provider-view/${encodeURIComponent(candidate.npiNumber ?? '')}`,
+        }));
 
-      const isMatched = data.outcome === 'MATCHED' && data.verified === true;
-      const verifiedAt = new Date().toISOString();
-      const verifiedNpi = data.npiNumber || rawAgency.npiNumber;
-      const nppesSourceUrl = verifiedNpi
-        ? `https://npiregistry.cms.hhs.gov/provider-view/${verifiedNpi}`
-        : '';
-      const patch: Partial<Agency> = {
-        address: data.address || rawAgency.address,
-        zipCode: data.zipCode || rawAgency.zipCode,
-        // P0 Protection: Never wipe existing NPI or identifiers on non-match/failure
-        npiNumber: isMatched ? (data.npiNumber || rawAgency.npiNumber) : rawAgency.npiNumber,
-        taxonomyCode: isMatched ? (data.taxonomyCode || rawAgency.taxonomyCode) : rawAgency.taxonomyCode,
-        taxonomyDescription: isMatched ? (data.taxonomyDescription || rawAgency.taxonomyDescription) : rawAgency.taxonomyDescription,
-        nppesOfficialName: isMatched ? (data.nppesOfficialName || rawAgency.nppesOfficialName) : rawAgency.nppesOfficialName,
-        nppesOfficialTitle: isMatched ? (data.nppesOfficialTitle || data.authorizedOfficial?.title || rawAgency.nppesOfficialTitle) : rawAgency.nppesOfficialTitle,
-        nppesLastUpdated: isMatched ? (data.nppesLastUpdated || rawAgency.nppesLastUpdated) : rawAgency.nppesLastUpdated,
-        nppesRegistryUrl: isMatched && (data.npiNumber || rawAgency.npiNumber)
-          ? nppesSourceUrl
-          : rawAgency.nppesRegistryUrl,
-        factEvidence: isMatched && data.address && verifiedNpi
-          ? {
-              ...rawAgency.factEvidence,
-              providerAddress: {
-                reviewed: true,
-                sourceName: 'CMS NPPES NPI Registry',
-                sourceUrl: nppesSourceUrl,
-                sourceRecordId: `NPI ${verifiedNpi}`,
-                reviewedAt: verifiedAt,
-                reportingPeriod: data.nppesLastUpdated || 'Current NPPES registry response',
-                note: 'Exact legal-organization name and requested geography matched.'
-              }
-            }
-          : rawAgency.factEvidence,
-        usfaRegistryUrl: data.usfaRegistryUrl || rawAgency.usfaRegistryUrl || 'https://apps.usfa.fema.gov/registry/',
-        liveFemaAwards: Array.isArray(data.liveFemaAwards) && data.liveFemaAwards.length > 0 ? data.liveFemaAwards : rawAgency.liveFemaAwards,
-        officialWebsite: data.officialWebsite || rawAgency.officialWebsite,
-        googleMapsUri: data.googleMapsUri || rawAgency.googleMapsUri,
-        verificationSource: isMatched ? (data.verificationSource || 'Federal CMS NPI & OpenFEMA Verified') : rawAgency.verificationSource || 'Unverified — Corroborating Source Required',
-        isVerifiedRecord: isMatched ? true : (rawAgency.isVerifiedRecord ?? false),
-        lastVerifiedAt: isMatched ? verifiedAt : rawAgency.lastVerifiedAt,
-        verificationAttempt: {
-          timestamp: verifiedAt,
-          outcome: data.outcome || (isMatched ? 'MATCHED' : 'NOT_MATCHED'),
-          status: data.outcome || (isMatched ? 'MATCHED' : 'NOT_MATCHED'),
-          details: data.details || (isMatched ? 'Live CMS NPPES match confirmed.' : 'Query completed without corroborated match; existing records preserved.')
+      if (data.npiNumber) {
+        const exactCandidate: NppesSourceCandidate = {
+          npiNumber: data.npiNumber,
+          officialName: data.nppesOfficialName ?? '',
+          city: rawAgency.city,
+          stateCode: rawAgency.stateCode,
+          zipCode: data.zipCode ?? '',
+          taxonomyDescription: data.taxonomyDescription ?? '',
+          registryUrl: `https://npiregistry.cms.hhs.gov/provider-view/${encodeURIComponent(data.npiNumber)}`,
+          address: data.address,
+          nppesLastUpdated: data.nppesLastUpdated,
+        };
+        const existingIndex = candidates.findIndex(
+          (candidate) => candidate.npiNumber === exactCandidate.npiNumber,
+        );
+        if (existingIndex >= 0) {
+          candidates[existingIndex] = {
+            ...candidates[existingIndex],
+            ...exactCandidate,
+          };
+        } else {
+          candidates.unshift(exactCandidate);
         }
-      };
-
-      if (isMatched && data.authorizedOfficial && data.authorizedOfficial.name) {
-        patch.keyContacts = [
-          {
-            id: `kc-${rawAgency.id}-npi`,
-            name: data.authorizedOfficial.name,
-            title: data.authorizedOfficial.title || 'NPPES Authorized Administrative Official',
-            role: 'NPPES Authorized Official',
-            email: rawAgency.keyContacts?.[0]?.email || '',
-            phone: data.authorizedOfficial.phone || '',
-            officialWebsite: patch.officialWebsite,
-            headquartersAddress: patch.address,
-            isVerifiedOfficial: true,
-            verificationSource: data.authorizedOfficial.verificationSource || data.verificationSource,
-            notes: `NPPES Practice Location. Verified Registered Authorized Official (${data.legalOrganizationName || rawAgency.name}).`
-          },
-          ...(rawAgency.keyContacts || []).filter(c => !c.id.includes('npi'))
-        ];
       }
 
-      setLivePatch(patch);
-      nationalProviderDb.saveLiveVerification(rawAgency.id, patch);
+      setLiveNppesResult({
+        outcome: data.outcome ?? 'SOURCE_RESPONSE',
+        details: data.details ?? 'NPPES returned source records for end-user review.',
+        fetchedAt,
+        candidates,
+        candidateCount: candidates.length,
+      });
     } catch {
-      // P0 Data Protection: Preserve all existing data and log the unsuccessful attempt
-      const timeoutPatch: Partial<Agency> = {
-        verificationAttempt: {
-          timestamp: new Date().toISOString(),
-          outcome: 'SOURCE_UNAVAILABLE',
-          status: 'TIMEOUT_OR_NETWORK_ERROR',
-          details: 'Live federal verification service query timed out or was temporarily unavailable. All existing records preserved.'
-        }
-      };
-      setLivePatch(timeoutPatch);
-      nationalProviderDb.saveLiveVerification(rawAgency.id, timeoutPatch);
+      setLiveNppesResult(null);
+      setLiveNppesError('CMS NPPES search did not complete. No profile fields were changed.');
     } finally {
       setIsVerifyingLive(false);
     }
   };
 
-  // Automatically trigger live Federal NPI & Google Maps verification when opening a department profile
-  useEffect(() => {
-    triggerLiveVerification();
-  }, [rawAgency.id]);
+  const decideNppesCandidate = (
+    candidate: NppesSourceCandidate,
+    decision: AgencySourceRecordAssociation['decision'],
+  ) => {
+    const sourceUrl = candidate.registryUrl ||
+      `https://npiregistry.cms.hhs.gov/provider-view/${encodeURIComponent(candidate.npiNumber)}`;
+    onDecideAgencySourceRecord(agency.id, {
+      id: `cms-nppes-${agency.id}-${candidate.npiNumber}`,
+      sourceName: 'CMS NPPES',
+      sourceRecordId: candidate.npiNumber,
+      sourceUrl,
+      decision,
+      matchBasis: 'The CMS NPPES search returned this candidate using agency name and location inputs. This records only the end user’s association decision; it does not verify other profile information.',
+      sourceDate: candidate.nppesLastUpdated ?? null,
+      retrievedAt: liveNppesResult?.fetchedAt ?? new Date().toISOString(),
+      decidedAt: new Date().toISOString(),
+      sourceFields: {
+        npiNumber: candidate.npiNumber,
+        officialName: candidate.officialName,
+        address: candidate.address,
+        city: candidate.city,
+        stateCode: candidate.stateCode,
+        zipCode: candidate.zipCode,
+        taxonomyDescription: candidate.taxonomyDescription,
+        nppesLastUpdated: candidate.nppesLastUpdated,
+      },
+    });
+  };
 
   // Escape invokes the same app-level navigation as the profile Back action.
   useEffect(() => {

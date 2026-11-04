@@ -22,6 +22,13 @@ const readSource = (path: string) => readFileSync(resolve(sourceRoot, path), 'ut
 const contains = (source: string, pattern: RegExp, message: string) => {
   assert.ok(pattern.test(source), message);
 };
+const stripAllowedAlertContent = (source: string) => source
+  .replace(/^import[\s\S]*?;\s*/gm, '')
+  .replace(/<p\b(?=[^>]*\brole="alert")[^>]*>[\s\S]*?<\/p>/gi, '')
+  .replace(/<\/?ShieldAlert\b[^>]*\/?>/g, '')
+  .replace(/<\/?Alert(?:Circle|Triangle)\b[^>]*\/?>/g, '')
+  .replace(/Incumbent FDA Recall Alert|Active Alert:/gi, '')
+  .replace(/&amp; mock alerts/gi, '');
 
 test('workspace tab groups keep every requested view reachable and selected', () => {
   assert.deepEqual(OPPORTUNITIES_WORKSPACE_TABS.map(({ id }) => id), [
@@ -125,6 +132,62 @@ test('home and mobile tools do not seed or restore alert badges', () => {
   );
   assert.match(mobileTools, /pendingSyncCount > 0/, 'The mobile tools badge should only appear for pending sync work.');
   assert.match(mobileTools, /{pendingSyncCount}/, 'The mobile tools badge should show the pending sync count.');
+});
+
+test('agency profiles, Field Work, and system tools keep alerts record-backed', () => {
+  const profile = readSource('components/FocusedProviderProfile.tsx');
+  const fieldWork = readSource('components/FieldModeView.tsx');
+  const dataHealth = readSource('components/DataHealthDashboard.tsx');
+  const resilience = readSource('components/CloudBackupResilienceView.tsx');
+
+  // These existing uses are legitimate validation feedback or domain-specific recall information.
+  assert.match(profile, /role="alert">[\s\S]*?\{profileReviewError\}/);
+  assert.match(profile, /tcoModel\.matchedIntel\.fdaRecallId/);
+  assert.match(profile, /tcoModel\.matchedIntel\.fdaRecallSummary/);
+
+  // "Mock alerts" is permitted only as an explicitly excluded data-audit category, never as a feed.
+  assert.match(dataHealth, /5\. Mock \/ Sample \/ Test Data[\s\S]*?Blocked by DataSanitizationService[\s\S]*?&amp; mock alerts[\s\S]*?0 active \([\s\S]*?stripped\)/);
+
+  const screens = [
+    ['Agency profile', profile],
+    ['Field Work', fieldWork],
+    ['Data health system tool', dataHealth],
+    ['Resilience system tool', resilience],
+  ] as const;
+
+  for (const [screen, source] of screens) {
+    const normalizedSource = stripAllowedAlertContent(source);
+    const hasAlertUi = /\b(?:alerts?|notifications?|unread)\b/i.test(normalizedSource);
+
+    assert.doesNotMatch(
+      normalizedSource,
+      /\b(?:sample|mock|demo|fake)\s+(?:alerts?|notifications?)\b/i,
+      `${screen} must not show a sample alert or notification feed.`,
+    );
+    assert.doesNotMatch(
+      normalizedSource,
+      /\b(?:unread(?:Alert|Notification)?Count|alertBadgeCount|notificationBadgeCount)\s*[:=]\s*(?:\{\s*)?\d+\b|\b(?:unread|alerts?|notifications?)[^\n]{0,48}\b\d+\b|\b\d+\s+(?:unread\s+)?(?:alerts?|notifications?)\b/i,
+      `${screen} must not seed a hard-coded unread count.`,
+    );
+
+    if (hasAlertUi) {
+      assert.match(
+        source,
+        /\b(?:recordId|alertId|notificationId)\b/i,
+        `${screen} alert UI must identify its real source record.`,
+      );
+      assert.match(
+        source,
+        /\b(?:source|sourceName|sourceId|sourceUrl)\b/i,
+        `${screen} alert UI must expose source provenance.`,
+      );
+      assert.match(
+        source,
+        /\b(?:timestamp|createdAt|occurredAt|receivedAt)\b/i,
+        `${screen} alert UI must expose when its source record was created.`,
+      );
+    }
+  }
 });
 
 test('field dashboard opens Routes & notes and keeps visit actions there', () => {

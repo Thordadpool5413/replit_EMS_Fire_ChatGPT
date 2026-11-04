@@ -8,3 +8,9 @@ Use the installed Chromium binary with Node's built-in WebSocket and Chrome DevT
 **Why:** Browser testing must run in the Replit environment without adding a browser automation package just to cover a viewport regression.
 
 **How to apply:** Extend the existing profile overflow browser script for similar viewport checks. Return booleans and plain measurements from DevTools evaluations; do not return DOM nodes by value. Compare in-page values inside the evaluation or against measurements returned to Node.
+
+When selecting a named agency from the card directory, locate its exact heading and click the profile action within that heading's nearest card. Do not match the agency name against broad ancestor text, which can select another card when the ancestor contains multiple results.
+
+**Why:** A broad ancestor can contain a matching agency name elsewhere in the results while the first profile button belongs to a different agency.
+
+**How to apply:** Use exact visible heading text as the anchor for any browser test that opens a named agency from the directory.

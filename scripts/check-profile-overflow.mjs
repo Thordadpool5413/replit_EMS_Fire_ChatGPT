@@ -41,6 +41,11 @@ const fireProfileCases = [
   'Miami-Dade County Fire Rescue Department',
   'Chicago Fire Department - Bureau of EMS',
 ];
+const emsProfileCases = [
+  'Cleveland Division of Emergency Medical Service',
+  'Emergency Medical Services Authority (EMSA) - Oklahoma City',
+  'Richmond Ambulance Authority',
+];
 const specialistAndSystemViews = [
   {
     group: 'Specialist tools',
@@ -311,16 +316,8 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     assert(searchReady, 'Could not search for the requested Fire agency');
     await waitFor(
       cdp,
-      `Boolean([...document.querySelectorAll('button')]
-        .find((button) => {
-          if (!button.innerText.trim().startsWith('Open agency profile')) return false;
-          let entry = button.parentElement;
-          while (entry && entry !== document.body) {
-            if (entry.innerText.includes(${JSON.stringify(agencyName)})) return true;
-            entry = entry.parentElement;
-          }
-          return false;
-        }))`,
+      `Boolean([...document.querySelectorAll('h3')]
+        .find((heading) => heading.innerText.trim() === ${JSON.stringify(agencyName)}))`,
       `the ${agencyName} directory result`,
     );
   }
@@ -351,19 +348,22 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
   })()`);
   assert(estimateDetailsVisible, `The ${providerCategory} estimate does not explain its inputs or missing method`);
   const opened = await evaluate(cdp, `(() => {
-    const button = ${agencyName
-      ? `[...document.querySelectorAll('button')]
-          .find((candidate) => {
-            if (!candidate.innerText.trim().startsWith('Open agency profile')) return false;
-            let entry = candidate.parentElement;
-            while (entry && entry !== document.body) {
-              if (entry.innerText.includes(${JSON.stringify(agencyName)})) return true;
-              entry = entry.parentElement;
-            }
-            return false;
-          })`
-      : `[...document.querySelectorAll('button, a, [role="button"]')]
-          .find((candidate) => candidate.innerText.trim().includes('Open agency profile'))`};
+    const heading = ${agencyName
+      ? `[...document.querySelectorAll('h3')]
+          .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(agencyName)})`
+      : 'null'};
+    let button = null;
+    if (heading) {
+      let card = heading;
+      while (card && card !== document.body && !button) {
+        button = [...card.querySelectorAll('button, a, [role="button"]')]
+          .find((candidate) => candidate.innerText.trim().startsWith('Open agency profile'));
+        card = card.parentElement;
+      }
+    } else {
+      button = [...document.querySelectorAll('button, a, [role="button"]')]
+        .find((candidate) => candidate.innerText.trim().includes('Open agency profile'));
+    }
     if (!button) return false;
     button.scrollIntoView({ block: 'center' });
     button.click();
@@ -1124,6 +1124,150 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
   );
   console.log(
     `✓ ${viewport.width}px: ${agencyDescription}; operations="${operationsSummary.lead}", ${fireSourceLinks} source links, actions, drawer, and overflow`,
+  );
+}
+
+async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
+  console.log(`Checking ${agencyName} at ${viewport.width}px viewport...`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      document.body.innerText.includes('Interactive U.S. Territory Map')`,
+    `the app at ${viewport.width}px`,
+    60_000,
+  );
+  await openAgencyProfile(cdp, 'ems', agencyName);
+  const openedProfileLabel = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    return profile?.getAttribute('aria-label') ?? null;
+  })()`);
+  assert(
+    openedProfileLabel === `${agencyName} Account 360 Workspace`,
+    `Opened the wrong EMS profile instead of ${agencyName}: ${JSON.stringify(openedProfileLabel)}`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+
+  const operationsSummary = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const summary = profile?.querySelector('[aria-label="Agency operations summary"]');
+    if (!summary) return null;
+    summary.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = summary.getBoundingClientRect();
+    const lead = summary.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    return {
+      visible: bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.bottom > 0 && bounds.top < innerHeight,
+      fits: summary.scrollWidth <= summary.clientWidth + 1,
+      hasLead: Boolean(lead),
+      lead,
+    };
+  })()`);
+  assert(
+    operationsSummary?.visible && operationsSummary.fits && operationsSummary.hasLead,
+    `EMS operations summary is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(operationsSummary)}`,
+  );
+
+  const emsActions = await evaluate(cdp, `(() => {
+    const area = document.querySelector('[data-testid="profile-primary-actions"]');
+    if (!area) return null;
+    const selectors = {
+      meeting: '[aria-label="Prepare for meeting"]',
+      sources: '[aria-label="Inspect agency sources"]',
+      route: '[aria-label="Add agency to route"], [aria-label="Remove agency from today\\'s route"]',
+      saved: '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
+    };
+    const results = {};
+    for (const [name, selector] of Object.entries(selectors)) {
+      const button = area.querySelector(selector);
+      if (!button) {
+        results[name] = false;
+        continue;
+      }
+      button.scrollIntoView({ block: 'center', inline: 'center' });
+      const bounds = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      results[name] = !button.disabled && bounds.width > 0 && bounds.height > 0 &&
+        bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.bottom > 0 && bounds.top < innerHeight &&
+        style.visibility !== 'hidden' && style.display !== 'none';
+    }
+    return results;
+  })()`);
+  for (const [action, usable] of Object.entries(emsActions ?? {})) {
+    assert(usable, `EMS ${action} profile action is not reachable at ${viewport.width}px for ${agencyName}`);
+  }
+  assert(
+    emsActions && Object.keys(emsActions).length === 4,
+    `EMS profile actions are incomplete at ${viewport.width}px for ${agencyName}: ${JSON.stringify(emsActions)}`,
+  );
+
+  const openedSourceDrawer = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="profile-primary-actions"] [aria-label="Inspect agency sources"]');
+    if (!button) return false;
+    button.scrollIntoView({ block: 'center', inline: 'center' });
+    const bounds = button.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0 || bounds.right <= 0 || bounds.left >= innerWidth) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(openedSourceDrawer, `EMS source inspection was not reachable at ${viewport.width}px for ${agencyName}`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]'))`,
+    `the EMS source inspection drawer at ${viewport.width}px`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'drawer');
+  const drawerUsability = await evaluate(cdp, `(() => {
+    const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    if (!drawer) return null;
+    const close = [...drawer.querySelectorAll('button')]
+      .find((button) => button.innerText.trim() === 'Close');
+    close?.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = drawer.getBoundingClientRect();
+    const closeBounds = close?.getBoundingClientRect();
+    const closeStyle = close && getComputedStyle(close);
+    return {
+      withinViewport: bounds.width > 0 && bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+        bounds.top >= -1 && bounds.bottom <= innerHeight + 1,
+      fits: drawer.scrollWidth <= drawer.clientWidth + 1,
+      hasSourceContent: drawer.innerText.trim().length > 0,
+      hasUsableClose: Boolean(close && !close.disabled && closeBounds &&
+        closeBounds.width > 0 && closeBounds.height > 0 &&
+        closeBounds.left >= -1 && closeBounds.right <= innerWidth + 1 &&
+        closeBounds.top >= -1 && closeBounds.bottom <= innerHeight + 1 &&
+        closeStyle.visibility !== 'hidden' && closeStyle.display !== 'none'),
+    };
+  })()`);
+  assert(
+    drawerUsability?.withinViewport && drawerUsability.fits &&
+      drawerUsability.hasSourceContent && drawerUsability.hasUsableClose,
+    `EMS source drawer is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(drawerUsability)}`,
+  );
+  const closedSourceDrawer = await evaluate(cdp, `(() => {
+    const drawer = document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]');
+    const close = [...(drawer?.querySelectorAll('button') ?? [])]
+      .find((button) => button.innerText.trim() === 'Close');
+    if (!close) return false;
+    close.click();
+    return true;
+  })()`);
+  assert(closedSourceDrawer, `The EMS source drawer could not be closed at ${viewport.width}px for ${agencyName}`);
+  await waitFor(
+    cdp,
+    `!document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]')`,
+    `the EMS source inspection drawer to close at ${viewport.width}px`,
+  );
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+  console.log(
+    `✓ ${viewport.width}px: ${agencyName}; operations="${operationsSummary.lead}", primary actions, source drawer, and no horizontal overflow`,
   );
 }
 
@@ -2033,6 +2177,19 @@ async function main() {
       return;
     }
 
+    if (process.env.EMS_PROFILE_ONLY === '1') {
+      for (const viewport of [
+        { width: 320, height: 740, mobile: true },
+        { width: 360, height: 844, mobile: true },
+      ]) {
+        for (const agencyName of emsProfileCases) {
+          await checkEmsProfileAtViewport(cdp, viewport, agencyName);
+        }
+      }
+      console.log('Representative EMS profile responsive checks passed.');
+      return;
+    }
+
     for (const viewport of testViewports) {
       await checkProfileAtViewport(cdp, viewport);
     }
@@ -2040,6 +2197,9 @@ async function main() {
       { width: 320, height: 740, mobile: true },
       { width: 360, height: 844, mobile: true },
     ]) {
+      for (const agencyName of emsProfileCases) {
+        await checkEmsProfileAtViewport(cdp, viewport, agencyName);
+      }
       for (const agencyName of fireProfileCases) {
         await checkFireProfileAtViewport(cdp, viewport, agencyName);
       }

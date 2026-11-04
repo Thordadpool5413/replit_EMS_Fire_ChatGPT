@@ -206,26 +206,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
   }, [initialMode]);
 
-  // Browser History popstate integration for natural backward navigation
-  React.useEffect(() => {
-    const handlePopState = () => {
-      if (selectedCityName !== 'all') {
-        setSelectedCityName('all');
-        setMiddleTabState('cities');
-        if (onSyncGlobalGeography) onSyncGlobalGeography(selectedStateCode, selectedCountyName, 'all', agencyCategoryFilter);
-      } else if (selectedCountyName !== 'all') {
-        setSelectedCountyName('all');
-        setMiddleTabState('counties');
-        if (onSyncGlobalGeography) onSyncGlobalGeography(selectedStateCode, 'all', 'all', agencyCategoryFilter);
-      } else if (selectedStateCode !== 'all') {
-        handleResetFilters();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedCityName, selectedCountyName, selectedStateCode, agencyCategoryFilter, onSyncGlobalGeography]);
-
   // Synchronize when Global Selector Bar changes State, County, City, or Category
   React.useEffect(() => {
     if (globalState !== undefined && globalState !== selectedStateCode) {

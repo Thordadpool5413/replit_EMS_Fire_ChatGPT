@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Agency, 
   LeadStage, 
@@ -89,6 +89,18 @@ const GoogleMapsTerritoryExplorer = React.lazy(() => import('./components/Google
 const DataHealthDashboard = React.lazy(() => import('./components/DataHealthDashboard').then((module) => ({ default: module.DataHealthDashboard })));
 const MobileProviderSelectorDrawer = React.lazy(() => import('./components/MobileProviderSelectorDrawer').then((module) => ({ default: module.MobileProviderSelectorDrawer })));
 const AgencyComparisonPanel = React.lazy(() => import('./components/AgencyComparisonPanel').then((module) => ({ default: module.AgencyComparisonPanel })));
+
+type TerritoryNavigationEntry = {
+  workspace: string;
+  state: string;
+  county: string;
+  city: string;
+  category: 'all' | 'ems' | 'fire';
+  agencyId?: string;
+  comparisonOpen: boolean;
+  returnToComparison: boolean;
+  index: number;
+};
 
 export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' | 'error' } | null>(null);
@@ -189,6 +201,141 @@ export default function App() {
   const [comparisonAgencyIds, setComparisonAgencyIds] = useState<string[]>([]);
   const [isAgencyComparisonOpen, setIsAgencyComparisonOpen] = useState(false);
   const [returnToComparisonAfterProfile, setReturnToComparisonAfterProfile] = useState(false);
+  const navigationIndexRef = useRef(0);
+  const navigationEntriesRef = useRef(new Map<number, TerritoryNavigationEntry>());
+  const agenciesRef = useRef(agencies);
+  const pendingProfileAgencyIdRef = useRef<string | null>(null);
+  const navigationSnapshotRef = useRef<TerritoryNavigationEntry | null>(null);
+  agenciesRef.current = agencies;
+  navigationSnapshotRef.current = {
+    workspace: activeTab,
+    state: globalState,
+    county: globalCounty,
+    city: globalCity,
+    category: globalCategory,
+    agencyId: (selectedAgency || activeAccount)?.id,
+    comparisonOpen: isAgencyComparisonOpen,
+    returnToComparison: returnToComparisonAfterProfile,
+    index: navigationIndexRef.current,
+  };
+
+  const pushNavigationEntry = useCallback((next: Omit<TerritoryNavigationEntry, 'index'>) => {
+    const current = navigationSnapshotRef.current;
+    if (current &&
+      current.workspace === next.workspace &&
+      current.state === next.state &&
+      current.county === next.county &&
+      current.city === next.city &&
+      current.category === next.category &&
+      current.agencyId === next.agencyId &&
+      current.comparisonOpen === next.comparisonOpen &&
+      current.returnToComparison === next.returnToComparison) {
+      return current;
+    }
+
+    const entry: TerritoryNavigationEntry = {
+      ...next,
+      index: navigationIndexRef.current + 1,
+    };
+    try {
+      window.history.pushState(
+        { ...(window.history.state || {}), territoryNavigation: entry },
+        '',
+      );
+      navigationIndexRef.current = entry.index;
+      navigationEntriesRef.current.set(entry.index, entry);
+      navigationSnapshotRef.current = entry;
+      return entry;
+    } catch {
+      // Keep in-app navigation working if the browser blocks history updates.
+      return null;
+    }
+  }, []);
+
+  const replaceCurrentNavigationEntry = useCallback((
+    patch: Partial<Omit<TerritoryNavigationEntry, 'index'>>,
+  ) => {
+    const current = navigationSnapshotRef.current;
+    if (!current) return;
+    const entry: TerritoryNavigationEntry = { ...current, ...patch, index: current.index };
+    try {
+      window.history.replaceState(
+        { ...(window.history.state || {}), territoryNavigation: entry },
+        '',
+      );
+      navigationEntriesRef.current.set(entry.index, entry);
+      navigationSnapshotRef.current = entry;
+    } catch {
+      // Filter changes still apply if the browser blocks history updates.
+    }
+  }, []);
+
+  const restoreNavigationEntry = useCallback((entry: TerritoryNavigationEntry) => {
+    const restoredEntry = {
+      ...entry,
+      category: navigationSnapshotRef.current?.category ?? entry.category,
+    };
+    const agency = restoredEntry.agencyId
+      ? agenciesRef.current.find((candidate) => candidate.id === restoredEntry.agencyId) ?? null
+      : null;
+    pendingProfileAgencyIdRef.current = restoredEntry.agencyId && !agency ? restoredEntry.agencyId : null;
+    navigationIndexRef.current = restoredEntry.index;
+    navigationEntriesRef.current.set(restoredEntry.index, restoredEntry);
+    navigationSnapshotRef.current = restoredEntry;
+    try {
+      window.history.replaceState(
+        { ...(window.history.state || {}), territoryNavigation: restoredEntry },
+        '',
+      );
+    } catch {
+      // The in-memory navigation still restores when history updates are unavailable.
+    }
+    setActiveTab(restoredEntry.workspace);
+    setGlobalState(restoredEntry.state);
+    setGlobalCounty(restoredEntry.county);
+    setGlobalCity(restoredEntry.city);
+    setGlobalCategory(restoredEntry.category);
+    setSelectedAgency(agency);
+    setActiveAccount(agency);
+    setReturnToComparisonAfterProfile(restoredEntry.returnToComparison);
+    setIsAgencyComparisonOpen(restoredEntry.comparisonOpen);
+  }, []);
+
+  useEffect(() => {
+    const pendingId = pendingProfileAgencyIdRef.current;
+    if (!pendingId) return;
+    const agency = agencies.find((candidate) => candidate.id === pendingId);
+    if (!agency) return;
+    pendingProfileAgencyIdRef.current = null;
+    setSelectedAgency(agency);
+    setActiveAccount(agency);
+  }, [agencies]);
+
+  useEffect(() => {
+    const initialEntry: TerritoryNavigationEntry = {
+      ...(navigationSnapshotRef.current as TerritoryNavigationEntry),
+      index: 0,
+    };
+    navigationIndexRef.current = 0;
+    navigationEntriesRef.current.set(0, initialEntry);
+    try {
+      window.history.replaceState(
+        { ...(window.history.state || {}), territoryNavigation: initialEntry },
+        '',
+      );
+    } catch {
+      // History may be unavailable in an embedded browser; the app remains usable.
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const entry = event.state?.territoryNavigation as TerritoryNavigationEntry | undefined;
+      if (!entry || typeof entry.workspace !== 'string' || !Number.isInteger(entry.index)) return;
+      restoreNavigationEntry(entry);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [restoreNavigationEntry]);
+
   const [previewAgency, setPreviewAgency] = useState<Agency | null>(null);
   const [rfpAgency, setRfpAgency] = useState<Agency | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
@@ -488,6 +635,31 @@ export default function App() {
 
   const handleOpenAgencyProfile = useCallback((agency: Agency, returnToComparison = false) => {
     const profileAgency = agencies.find((candidate) => candidate.id === agency.id) ?? agency;
+    if (navigationSnapshotRef.current?.agencyId !== profileAgency.id) {
+      const current = navigationSnapshotRef.current;
+      if (current) {
+        replaceCurrentNavigationEntry({
+          workspace: current.workspace,
+          state: current.state,
+          county: current.county,
+          city: current.city,
+          category: current.category,
+          agencyId: current.agencyId,
+          comparisonOpen: current.comparisonOpen,
+          returnToComparison: current.returnToComparison,
+        });
+        pushNavigationEntry({
+          workspace: current.workspace,
+          state: current.state,
+          county: current.county,
+          city: current.city,
+          category: current.category,
+          agencyId: profileAgency.id,
+          comparisonOpen: false,
+          returnToComparison,
+        });
+      }
+    }
 
     setPreviewAgency(null);
     setIsAgencyComparisonOpen(false);
@@ -497,7 +669,7 @@ export default function App() {
     setIsCommandPaletteOpen(false);
     setIsMobileProviderFinderOpen(false);
     setIsNotificationsOpen(false);
-  }, [agencies]);
+  }, [agencies, pushNavigationEntry, replaceCurrentNavigationEntry]);
 
   const handleToggleAgencyComparison = useCallback((agency: Agency) => {
     setComparisonAgencyIds((current) => {
@@ -568,6 +740,16 @@ export default function App() {
     .filter((agency): agency is Agency => Boolean(agency));
 
   const handleGoHome = useCallback(() => {
+    const current = navigationSnapshotRef.current;
+    if (current) {
+      pushNavigationEntry({
+        ...current,
+        workspace: 'home',
+        agencyId: undefined,
+        comparisonOpen: false,
+        returnToComparison: false,
+      });
+    }
     setSelectedAgency(null);
     setActiveAccount(null);
     setIsAgencyComparisonOpen(false);
@@ -579,15 +761,19 @@ export default function App() {
     setIsNotificationsOpen(false);
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  const handleClearGeography = useCallback(() => {
-    setGlobalState('all');
-    setGlobalCounty('all');
-    setGlobalCity('all');
-  }, []);
+  }, [pushNavigationEntry]);
 
   const handleNavigateTab = useCallback((tab: string) => {
+    const current = navigationSnapshotRef.current;
+    if (current) {
+      pushNavigationEntry({
+        ...current,
+        workspace: tab,
+        agencyId: undefined,
+        comparisonOpen: false,
+        returnToComparison: false,
+      });
+    }
     setSelectedAgency(null);
     setActiveAccount(null);
     setIsAgencyComparisonOpen(false);
@@ -595,9 +781,103 @@ export default function App() {
     setPreviewAgency(null);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [pushNavigationEntry]);
+
+  const handleSyncGlobalGeography = useCallback((
+    state: string,
+    county: string,
+    city: string,
+    category?: 'all' | 'ems' | 'fire',
+  ) => {
+    const current = navigationSnapshotRef.current;
+    if (!current) return;
+
+    const nextState = state || 'all';
+    const nextCounty = county || 'all';
+    const nextCity = city || 'all';
+    const nextCategory = category ?? current.category;
+    const geographyChanged =
+      current.state !== nextState ||
+      current.county !== nextCounty ||
+      current.city !== nextCity;
+
+    if (geographyChanged) {
+      const previousEntry = navigationEntriesRef.current.get(current.index - 1);
+      const isAncestorStep = (
+        current.state === nextState &&
+        ((current.city !== 'all' && nextCity === 'all' && current.county === nextCounty) ||
+          (current.county !== 'all' && nextCounty === 'all' && nextCity === 'all'))
+      ) || (
+        current.state !== 'all' &&
+        nextState === 'all' &&
+        nextCounty === 'all' &&
+        nextCity === 'all'
+      );
+      const previousMatchesTarget = previousEntry &&
+        previousEntry.workspace === current.workspace &&
+        previousEntry.state === nextState &&
+        previousEntry.county === nextCounty &&
+        previousEntry.city === nextCity &&
+        !previousEntry.agencyId;
+
+      if (isAncestorStep && previousMatchesTarget) {
+        window.history.back();
+        return;
+      }
+
+      pushNavigationEntry({
+        workspace: current.workspace,
+        state: nextState,
+        county: nextCounty,
+        city: nextCity,
+        category: nextCategory,
+        agencyId: undefined,
+        comparisonOpen: false,
+        returnToComparison: false,
+      });
+    } else if (nextCategory !== current.category) {
+      replaceCurrentNavigationEntry({ category: nextCategory });
+    }
+
+    setGlobalState(nextState);
+    setGlobalCounty(nextCounty);
+    setGlobalCity(nextCity);
+    setGlobalCategory(nextCategory);
+  }, [pushNavigationEntry, replaceCurrentNavigationEntry]);
+
+  const handleSelectGlobalGeography = useCallback((
+    state: string,
+    county: string,
+    city: string,
+  ) => {
+    const current = navigationSnapshotRef.current;
+    if (!current) return;
+    handleSyncGlobalGeography(state, county, city, current.category);
+  }, [handleSyncGlobalGeography]);
+
+  const handleClearGeography = useCallback(() => {
+    handleSyncGlobalGeography('all', 'all', 'all');
+  }, [handleSyncGlobalGeography]);
+
+  const handleSetGlobalCategory = useCallback((category: 'all' | 'ems' | 'fire') => {
+    replaceCurrentNavigationEntry({ category });
+    setGlobalCategory(category);
+  }, [replaceCurrentNavigationEntry]);
 
   const handleNavigateGeography = useCallback((state: string, county = 'all', city = 'all') => {
+    const current = navigationSnapshotRef.current;
+    if (current) {
+      pushNavigationEntry({
+        workspace: 'states_directory',
+        state: state || 'all',
+        county: county || 'all',
+        city: city || 'all',
+        category: current.category,
+        agencyId: undefined,
+        comparisonOpen: false,
+        returnToComparison: false,
+      });
+    }
     setGlobalState(state || 'all');
     setGlobalCounty(county || 'all');
     setGlobalCity(city || 'all');
@@ -609,6 +889,18 @@ export default function App() {
     setReturnToComparisonAfterProfile(false);
     setActiveTab('states_directory');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pushNavigationEntry]);
+
+  const handleProfileBack = useCallback(() => {
+    const current = navigationSnapshotRef.current;
+    if (current?.agencyId && current.index > 0) {
+      window.history.back();
+      return;
+    }
+    setSelectedAgency(null);
+    setActiveAccount(null);
+    setReturnToComparisonAfterProfile(false);
+    setIsAgencyComparisonOpen(current?.returnToComparison ?? false);
   }, []);
 
   return (
@@ -639,7 +931,7 @@ export default function App() {
         setActiveTab={handleNavigateTab}
         onGoHome={handleGoHome}
         globalCategory={globalCategory}
-        setGlobalCategory={setGlobalCategory}
+        setGlobalCategory={handleSetGlobalCategory}
         isOnline={isOnline}
         toggleNetwork={handleCheckConnectivity}
         pendingSyncCount={outbox.length}
@@ -871,7 +1163,7 @@ export default function App() {
         )}
 
         <React.Suspense fallback={<div className="workspace-view-container min-h-40 flex items-center justify-center text-sm text-slate-500" role="status">Loading workspace…</div>}>
-        <ErrorBoundary onReset={() => setActiveTab('home')}>
+        <ErrorBoundary onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
@@ -883,10 +1175,7 @@ export default function App() {
               globalCounty={globalCounty}
               globalCity={globalCity}
               onSelectState={(st) => {
-                setGlobalState(st);
-                setGlobalCounty('all');
-                setGlobalCity('all');
-                setActiveTab('states_directory');
+                handleNavigateGeography(st, 'all', 'all');
               }}
             />
           </div>
@@ -900,7 +1189,7 @@ export default function App() {
               weights={weights}
               onSelectAgency={handleOpenAgencyProfile}
               onUpdateStage={handleUpdateStage}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onNavigateTab={handleNavigateTab}
               isOnline={isOnline}
               toggleNetwork={handleCheckConnectivity}
               outbox={outbox}
@@ -962,21 +1251,18 @@ export default function App() {
               globalCategory={globalCategory}
               activeAccount={currentActive}
               onSelectState={(st) => {
-                setGlobalState(st);
-                setGlobalCounty('all');
-                setGlobalCity('all');
+                handleSelectGlobalGeography(st, 'all', 'all');
               }}
               onSelectCounty={(c) => {
-                setGlobalCounty(c);
-                setGlobalCity('all');
+                handleSelectGlobalGeography(globalState, c, 'all');
               }}
               onSelectCity={(city) => {
-                setGlobalCity(city);
+                handleSelectGlobalGeography(globalState, globalCounty, city);
               }}
               onSelectCategory={(cat) => {
-                setGlobalCategory(cat);
+                handleSetGlobalCategory(cat);
               }}
-              onSwitchToGoogleMaps={() => setActiveTab('google_maps')}
+              onSwitchToGoogleMaps={() => handleNavigateTab('google_maps')}
             />
           </div>
         )}
@@ -999,21 +1285,18 @@ export default function App() {
               globalCategory={globalCategory}
               activeAccount={currentActive}
               onSelectState={(st) => {
-                setGlobalState(st);
-                setGlobalCounty('all');
-                setGlobalCity('all');
+                handleSelectGlobalGeography(st, 'all', 'all');
               }}
               onSelectCounty={(c) => {
-                setGlobalCounty(c);
-                setGlobalCity('all');
+                handleSelectGlobalGeography(globalState, c, 'all');
               }}
               onSelectCity={(city) => {
-                setGlobalCity(city);
+                handleSelectGlobalGeography(globalState, globalCounty, city);
               }}
               onSelectCategory={(cat) => {
-                setGlobalCategory(cat);
+                handleSetGlobalCategory(cat);
               }}
-              onSwitchToTacticalGis={() => setActiveTab('gis')}
+              onSwitchToTacticalGis={() => handleNavigateTab('gis')}
               comparedAgencyIds={comparisonAgencyIds}
               onToggleAgencyComparison={handleToggleAgencyComparison}
             />
@@ -1043,7 +1326,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('states_directory')}
+                  onClick={() => handleNavigateTab('states_directory')}
                   className="px-3.5 py-2 rounded-lg text-xs font-semibold text-[#53657B] dark:text-slate-200 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors border border-[#DFE6EF] dark:border-[#1E2D42] cursor-pointer whitespace-nowrap shrink-0"
                 >
                   &larr; Territory Explorer
@@ -1057,13 +1340,10 @@ export default function App() {
               agencies={agencies}
               weights={weights}
               onSelectCounty={(c) => {
-                setGlobalCounty(c);
-                setGlobalCity('all');
+                handleSelectGlobalGeography(globalState, c, 'all');
               }}
               onSelectState={(st) => {
-                setGlobalState(st);
-                setGlobalCounty('all');
-                setGlobalCity('all');
+                handleSelectGlobalGeography(st, 'all', 'all');
               }}
               onSelectAgency={handleOpenAgencyProfile}
               globalCategory={globalCategory}
@@ -1095,13 +1375,33 @@ export default function App() {
               onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onNavigateToQueueWithFilter={(stateCode, county, city, zip) => {
+                const nextState = stateCode ?? globalState;
+                const nextCounty = county ?? globalCounty;
+                const nextCity = city ?? globalCity;
+                const current = navigationSnapshotRef.current;
+                if (current) {
+                  pushNavigationEntry({
+                    ...current,
+                    workspace: 'queue',
+                    state: nextState,
+                    county: nextCounty,
+                    city: nextCity,
+                    agencyId: undefined,
+                    comparisonOpen: false,
+                    returnToComparison: false,
+                  });
+                }
                 setSelectedAgency(null);
                 setActiveAccount(null);
-                setGlobalState(stateCode ?? globalState);
-                setGlobalCounty(county ?? globalCounty);
-                setGlobalCity(city ?? globalCity);
+                setGlobalState(nextState);
+                setGlobalCounty(nextCounty);
+                setGlobalCity(nextCity);
                 setQueueFilterState({ state: stateCode, county, city, zip });
-                handleNavigateTab('queue');
+                setIsAgencyComparisonOpen(false);
+                setReturnToComparisonAfterProfile(false);
+                setPreviewAgency(null);
+                setActiveTab('queue');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onOpenRfpGenerator={(a) => setRfpAgency(a)}
               onOpenDataLineage={(a) => {
@@ -1115,10 +1415,7 @@ export default function App() {
               globalCategory={globalCategory}
               activeAccount={currentActive}
               onSyncGlobalGeography={(s, c, city, cat) => {
-                if (s !== undefined) setGlobalState(s);
-                if (c !== undefined) setGlobalCounty(c);
-                if (city !== undefined) setGlobalCity(city);
-                if (cat !== undefined) setGlobalCategory(cat);
+                handleSyncGlobalGeography(s, c, city, cat);
               }}
               comparedAgencyIds={comparisonAgencyIds}
               onToggleAgencyComparison={handleToggleAgencyComparison}
@@ -1159,10 +1456,23 @@ export default function App() {
             <PublicHealthcareExplorer
               agencies={agencies}
               onSelectStateFilter={(stateCode) => {
+                const current = navigationSnapshotRef.current;
+                if (current) {
+                  pushNavigationEntry({
+                    ...current,
+                    workspace: 'queue',
+                    state: stateCode,
+                    agencyId: undefined,
+                    comparisonOpen: false,
+                    returnToComparison: false,
+                  });
+                }
                 setGlobalState(stateCode);
+                setSelectedAgency(null);
+                setActiveAccount(null);
                 setActiveTab('queue');
               }}
-              onNavigateToQueue={() => setActiveTab('queue')}
+              onNavigateToQueue={() => handleNavigateTab('queue')}
               globalState={globalState}
               globalCounty={globalCounty}
               globalCity={globalCity}
@@ -1245,7 +1555,7 @@ export default function App() {
               globalCounty={globalCounty}
               globalCity={globalCity}
               globalCategory={globalCategory}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onNavigateTab={handleNavigateTab}
               comparedAgencyIds={comparisonAgencyIds}
               onToggleAgencyComparison={handleToggleAgencyComparison}
             />
@@ -1267,7 +1577,7 @@ export default function App() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('field')}
+                  onClick={() => handleNavigateTab('field')}
                   className="px-3.5 py-2 rounded-lg text-xs font-semibold text-[#53657B] dark:text-slate-200 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors border border-[#DFE6EF] dark:border-[#1E2D42] cursor-pointer whitespace-nowrap shrink-0"
                 >
                   &larr; Route Planner
@@ -1339,13 +1649,7 @@ export default function App() {
           comparedAgencyIds={comparisonAgencyIds}
           onToggleAgencyComparison={handleToggleAgencyComparison}
           onOpenAgencyComparison={() => setIsAgencyComparisonOpen(true)}
-          onBack={() => {
-            const shouldReopenComparison = returnToComparisonAfterProfile;
-            setReturnToComparisonAfterProfile(false);
-            setSelectedAgency(null);
-            setActiveAccount(null);
-            setIsAgencyComparisonOpen(shouldReopenComparison);
-          }}
+          onBack={handleProfileBack}
           onGoHome={handleGoHome}
           onNavigateGeography={(state, county, city) => {
             handleNavigateGeography(state || globalState, county || 'all', city || 'all');
@@ -1440,11 +1744,11 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onToggleRoute={handleToggleRoute}
         activeCategory={globalCategory}
-        onCategoryChange={setGlobalCategory}
+        onCategoryChange={handleSetGlobalCategory}
         selectedState={globalState}
-        onSelectState={(st) => setGlobalState(st)}
+        onSelectState={(st) => handleSelectGlobalGeography(st, 'all', 'all')}
         selectedCounty={globalCounty}
-        onSelectCounty={(co) => setGlobalCounty(co)}
+        onSelectCounty={(co) => handleSelectGlobalGeography(globalState, co, 'all')}
       />}
       {isAgencyComparisonOpen && (
         <AgencyComparisonPanel

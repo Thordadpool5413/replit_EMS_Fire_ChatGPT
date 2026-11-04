@@ -664,32 +664,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     triggerLiveVerification();
   }, [rawAgency.id]);
 
-  // Support browser Back button (popstate) & Escape key to close modal cleanly
+  // Escape invokes the same app-level navigation as the profile Back action.
   useEffect(() => {
-    try {
-      window.history.pushState({ modal: 'profile', agencyId: rawAgency.id }, '');
-    } catch {
-      // Ignore history state errors in restricted iframes
-    }
-
-    const handlePopState = () => {
-      onBack();
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onBack();
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onBack, rawAgency.id]);
+  }, [onBack]);
 
   const stages: LeadStage[] = [
     'Target Lead',

@@ -18,3 +18,4 @@
 - [API checks through artifact proxies](api-proxy-local-vs-preview.md) — direct localhost Vite tests bypass Replit’s root `/api` proxy; verify API-backed UI through the artifact preview URL.
 - [Firestore read scope](firestore-read-scope.md) — keep nationwide browsing cache-first; only load live provider documents for an explicitly selected state.
 - [Landscape map breakpoints](landscape-map-breakpoints.md) — phone landscape widths can activate desktop CSS; test the layout each viewport width actually selects.
+- [Territory browser history](territory-browser-history.md) — keep one app-level history owner; filter-only changes replace the current snapshot instead of adding entries.

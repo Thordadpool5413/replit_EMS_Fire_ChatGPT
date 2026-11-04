@@ -1,3 +1,5 @@
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource-variable/manrope";
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -17,33 +19,33 @@
    ============================================================================ */
 :root {
   /* Typography Families: Display = Manrope Variable, Interface = Geist Variable, Numerical = Inter Variable */
-  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --pi-font-data: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Manrope Variable', 'Manrope', sans-serif;
+  --font-sans: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
+  --font-interface: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
+  --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Core Surfaces */
-  --pi-nav-bg: #0B1728;
-  --pi-nav-secondary: #172D49;
-  --pi-canvas-bg: #F3F6F8;
-  --pi-surface-bg: #FBFCFD;
-  --pi-surface-subtle: #F1F5F7;
-  --pi-surface-elevated: #FFFFFF;
+  --pi-nav-bg: #f7f8f5;
+  --pi-nav-secondary: #e9eeeb;
+  --pi-canvas-bg: #edf1ef;
+  --pi-surface-bg: #fbfcfa;
+  --pi-surface-subtle: #f1f4f1;
+  --pi-surface-elevated: #ffffff;
 
   /* Typography */
-  --pi-text-primary: #14283F;
-  --pi-text-secondary: #53657B;
-  --pi-text-muted: #6E8096;
+  --pi-text-primary: #1b302f;
+  --pi-text-secondary: #536766;
+  --pi-text-muted: #71817e;
 
   /* Borders & Dividers */
-  --pi-border: #DFE6EF;
-  --pi-border-strong: #C8D4E3;
+  --pi-border: #d9e1dc;
+  --pi-border-strong: #bbc9c2;
 
   /* Brand & Interactive */
-  --pi-action: #285EE8;
-  --pi-action-hover: #194BC8;
-  --pi-action-subtle: #EEF3FE;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-subtle: #e6f0ed;
 
   /* Evidence & Status Classification */
   --pi-verified-bg: #ECFDF5;
@@ -64,16 +66,16 @@
   --pi-critical-border: #FECACA;
 
   /* Legacy alias variables for compatibility across existing views */
-  --bg-canvas: #F3F6F8;
-  --bg-surface: #FBFCFD;
-  --bg-subtle: #F1F5F7;
-  --text-primary: #14283F;
-  --text-secondary: #53657B;
-  --text-muted: #6E8096;
-  --border-crisp: #DFE6EF;
-  --border-strong: #C8D4E3;
-  --brand-primary: #285EE8;
-  --brand-primary-hover: #194BC8;
+  --bg-canvas: #edf1ef;
+  --bg-surface: #fbfcfa;
+  --bg-subtle: #f1f4f1;
+  --text-primary: #1b302f;
+  --text-secondary: #536766;
+  --text-muted: #71817e;
+  --border-crisp: #d9e1dc;
+  --border-strong: #bbc9c2;
+  --brand-primary: #176568;
+  --brand-primary-hover: #105255;
 
   --radius-card: 0.75rem;
   --radius-control: 0.5rem;
@@ -82,10 +84,10 @@
 }
 
 .dark {
-  --font-display: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-interface: 'Geist Variable', 'Geist Sans Variable', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --pi-font-data: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Manrope Variable', 'Manrope', sans-serif;
+  --font-sans: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
+  --font-interface: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
+  --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --pi-nav-bg: #070F1C;
@@ -5158,4 +5160,360 @@ body {
   .home-territory-map-screen-v2 .home-map-palette-select {
     min-width: 0 !important;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Territory intelligence / field-briefing interface
+   Layout: evidence-first workspace with a calm, compact navigation rail.
+   Mood: measured cartographic instrument — warm mineral neutrals, deep ink,
+   and a single oxidized-teal action color. Motion is quiet and purposeful.
+   -------------------------------------------------------------------------- */
+:root {
+  --pi-canvas-bg: #edf1ef;
+  --pi-surface-bg: #fbfcfa;
+  --pi-surface-subtle: #f1f4f1;
+  --pi-surface-elevated: #ffffff;
+  --pi-text-primary: #1b302f;
+  --pi-text-secondary: #536766;
+  --pi-text-muted: #71817e;
+  --pi-border: #d9e1dc;
+  --pi-border-strong: #bbc9c2;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-subtle: #e6f0ed;
+  --bg-canvas: #edf1ef;
+  --bg-surface: #fbfcfa;
+  --bg-subtle: #f1f4f1;
+  --text-primary: #1b302f;
+  --text-secondary: #536766;
+  --text-muted: #71817e;
+  --border-crisp: #d9e1dc;
+  --border-strong: #bbc9c2;
+  --brand-primary: #176568;
+  --brand-primary-hover: #105255;
+  --radius-card: 0.72rem;
+  --radius-control: 0.48rem;
+  --shadow-card: 0 1px 2px rgba(28, 53, 48, 0.035);
+  --shadow-card-hover: 0 7px 18px -12px rgba(28, 53, 48, 0.22);
+}
+
+.dark {
+  --pi-canvas-bg: #111c1d;
+  --pi-surface-bg: #182526;
+  --pi-surface-subtle: #1d2c2d;
+  --pi-surface-elevated: #203031;
+  --pi-text-primary: #e5ece8;
+  --pi-text-secondary: #b1c0bb;
+  --pi-text-muted: #91a29d;
+  --pi-border: #304142;
+  --pi-border-strong: #425657;
+  --pi-action: #70b6ad;
+  --pi-action-hover: #8ac9bf;
+  --pi-action-subtle: #203b39;
+  --bg-canvas: #111c1d;
+  --bg-surface: #182526;
+  --bg-subtle: #1d2c2d;
+  --text-primary: #e5ece8;
+  --text-secondary: #b1c0bb;
+  --text-muted: #91a29d;
+  --border-crisp: #304142;
+  --border-strong: #425657;
+  --brand-primary: #70b6ad;
+  --brand-primary-hover: #8ac9bf;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 7px 18px -12px rgba(0, 0, 0, 0.5);
+}
+
+html, body, #root { min-height: 100%; }
+body { background: var(--pi-canvas-bg); }
+button, input, select, textarea { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+::selection { background: #b9d5cc; color: #183432; }
+.dark ::selection { background: #37625c; color: #f2f7f4; }
+
+.pi-app-shell {
+  background: var(--pi-canvas-bg) !important;
+  background-image:
+    radial-gradient(ellipse at 82% 0%, rgba(94, 145, 128, 0.075), transparent 34rem) !important;
+  color: var(--pi-text-primary) !important;
+}
+.dark .pi-app-shell {
+  background: var(--pi-canvas-bg) !important;
+  background-image: radial-gradient(ellipse at 82% 0%, rgba(80, 139, 128, 0.11), transparent 34rem) !important;
+}
+.pi-workspace-body { min-width: 0; }
+.workspace-grid-shell { padding-top: 1rem; padding-bottom: 1.5rem; }
+.workspace-view-container, .workspace-section-grid { gap: 1rem; }
+.workspace-grid-shell > nav {
+  background: color-mix(in srgb, var(--pi-surface-bg) 92%, transparent) !important;
+  border: 1px solid var(--pi-border) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 1px 2px rgba(28, 53, 48, 0.03) !important;
+  backdrop-filter: blur(12px);
+}
+.workspace-grid-shell > nav button { min-height: 2.65rem !important; }
+.workspace-grid-shell > nav button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-selected="true"] {
+  background-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+.dark .workspace-grid-shell > nav button[aria-current="page"],
+.dark .workspace-grid-shell > nav button[aria-selected="true"] { color: #102321 !important; }
+
+/* Desktop navigation is a light reference rail, not a second dark canvas. */
+.pi-primary-sidebar {
+  width: 13rem !important;
+  background: #f7f8f5 !important;
+  color: #344b48 !important;
+  border-color: #dbe2dd !important;
+  box-shadow: 8px 0 24px -24px rgba(26, 50, 46, 0.3) !important;
+}
+.dark .pi-primary-sidebar {
+  background: #172324 !important;
+  color: #c5d1cc !important;
+  border-color: #2e4141 !important;
+}
+.pi-primary-sidebar > div:first-child,
+.pi-primary-sidebar > div:last-child { border-color: var(--pi-border) !important; }
+.pi-primary-sidebar > div:last-child { background: #eff2ee !important; }
+.dark .pi-primary-sidebar > div:last-child { background: #142021 !important; }
+.pi-sidebar-logo {
+  width: 3.5rem !important;
+  height: 3.5rem !important;
+  background: #e8eeea !important;
+  border: 1px solid #d7e1da !important;
+  box-shadow: 0 2px 8px rgba(30, 59, 52, 0.08);
+}
+.pi-sidebar-logo img { object-position: center; }
+.pi-primary-sidebar [class*="text-slate-400"],
+.pi-primary-sidebar [class*="text-slate-300"] { color: #667875 !important; }
+.dark .pi-primary-sidebar [class*="text-slate-400"],
+.dark .pi-primary-sidebar [class*="text-slate-300"] { color: #a4b4af !important; }
+.pi-primary-sidebar [class*="bg-[#172D49]"],
+.pi-primary-sidebar [class*="bg-[#101F34]"],
+.pi-primary-sidebar [class*="bg-[#091322]"] {
+  background-color: #edf1ed !important;
+}
+.dark .pi-primary-sidebar [class*="bg-[#172D49]"],
+.dark .pi-primary-sidebar [class*="bg-[#101F34]"],
+.dark .pi-primary-sidebar [class*="bg-[#091322]"] {
+  background-color: #1c2a2a !important;
+}
+.pi-primary-sidebar [class*="border-[#172D49]"],
+.pi-primary-sidebar [class*="border-[#233B5E]"] { border-color: #dbe3dd !important; }
+.dark .pi-primary-sidebar [class*="border-[#172D49]"],
+.dark .pi-primary-sidebar [class*="border-[#233B5E]"] { border-color: #344747 !important; }
+.pi-primary-sidebar .pi-primary-nav button:not([class*="bg-[#285EE8]"]) {
+  color: #435b57 !important;
+  border-radius: 0.55rem !important;
+}
+.dark .pi-primary-sidebar .pi-primary-nav button:not([class*="bg-[#285EE8]"]) { color: #bdcbc5 !important; }
+.pi-primary-sidebar .pi-primary-nav button:hover:not([class*="bg-[#285EE8]"]) {
+  background: #e9efea !important;
+  color: #1b3835 !important;
+}
+.dark .pi-primary-sidebar .pi-primary-nav button:hover:not([class*="bg-[#285EE8]"]) {
+  background: #253635 !important;
+  color: #edf4ef !important;
+}
+.pi-primary-sidebar .pi-primary-nav button[class*="bg-[#285EE8]"],
+.pi-primary-sidebar .pi-primary-nav [class*="bg-[#285EE8]"] {
+  background: #dce9e3 !important;
+  color: #174f4c !important;
+  box-shadow: inset 2px 0 #176568 !important;
+}
+.dark .pi-primary-sidebar .pi-primary-nav button[class*="bg-[#285EE8]"],
+.dark .pi-primary-sidebar .pi-primary-nav [class*="bg-[#285EE8]"] {
+  background: #25413e !important;
+  color: #d8ece5 !important;
+  box-shadow: inset 2px 0 #70b6ad !important;
+}
+.pi-primary-sidebar .pi-sidebar-quick-actions button {
+  border-color: #d8e1db !important;
+  color: #425956 !important;
+}
+.dark .pi-primary-sidebar .pi-sidebar-quick-actions button {
+  border-color: #344747 !important;
+  color: #c0cec8 !important;
+}
+.pi-primary-sidebar .pi-sidebar-quick-actions button:hover { background: #e4ebe6 !important; }
+.dark .pi-primary-sidebar .pi-sidebar-quick-actions button:hover { background: #263736 !important; }
+.pi-primary-sidebar .pi-sidebar-quick-actions [class*="bg-blue-950"] {
+  background: #e5efeb !important;
+  border-color: #c6d9d1 !important;
+  color: #176568 !important;
+}
+.dark .pi-primary-sidebar .pi-sidebar-quick-actions [class*="bg-blue-950"] {
+  background: #203a38 !important;
+  border-color: #365853 !important;
+  color: #a8d4ca !important;
+}
+
+.pi-command-header {
+  background: color-mix(in srgb, var(--pi-surface-bg) 94%, transparent) !important;
+  border-color: var(--pi-border) !important;
+  box-shadow: 0 1px 6px rgba(27, 48, 47, 0.035);
+}
+.pi-mobile-logo { width: 2.55rem !important; height: 2.55rem !important; }
+.pi-mobile-logo img { border-radius: 50%; }
+.pi-mobile-nav {
+  background: color-mix(in srgb, #f8faf7 94%, transparent) !important;
+  color: #536766 !important;
+  border-color: #d6dfd9 !important;
+  box-shadow: 0 -8px 28px -22px rgba(26, 50, 46, 0.35) !important;
+  backdrop-filter: blur(16px);
+}
+.dark .pi-mobile-nav {
+  background: color-mix(in srgb, #172324 96%, transparent) !important;
+  color: #b4c2bc !important;
+  border-color: #344747 !important;
+}
+.pi-mobile-nav button { min-height: 48px !important; }
+.pi-mobile-nav button[aria-current="page"] { color: var(--pi-action) !important; }
+.pi-mobile-nav button span { font-size: 0.68rem !important; font-weight: 550; }
+
+/* Shared control language: comfortable tap targets, crisp borders, visible focus. */
+:focus-visible {
+  outline: 2px solid #39817b !important;
+  outline-offset: 2px !important;
+}
+.dark :focus-visible { outline-color: #8ac9bf !important; }
+.workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-grid-shell select,
+.workspace-grid-shell textarea {
+  border-color: var(--pi-border-strong);
+  border-radius: 0.48rem;
+}
+.workspace-grid-shell input:focus,
+.workspace-grid-shell select:focus,
+.workspace-grid-shell textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 15%, transparent);
+}
+.workspace-grid-shell [class~="bg-white"],
+.profile-workspace [class~="bg-white"] { background-color: var(--pi-surface-bg) !important; }
+.workspace-grid-shell [class~="bg-slate-50"],
+.profile-workspace [class~="bg-slate-50"] { background-color: var(--pi-surface-subtle) !important; }
+.workspace-grid-shell [class~="border-slate-200"],
+.workspace-grid-shell [class~="border-slate-200/90"],
+.profile-workspace [class~="border-slate-200"],
+.profile-workspace [class~="border-slate-200/90"] { border-color: var(--pi-border) !important; }
+.dark .workspace-grid-shell [class~="dark:bg-slate-900"],
+.dark .profile-workspace [class~="dark:bg-slate-900"] { background-color: var(--pi-surface-bg) !important; }
+.dark .workspace-grid-shell [class~="dark:bg-slate-800"],
+.dark .profile-workspace [class~="dark:bg-slate-800"] { background-color: var(--pi-surface-subtle) !important; }
+.dark .workspace-grid-shell [class~="dark:border-slate-800"],
+.dark .workspace-grid-shell [class~="dark:border-slate-700"],
+.dark .profile-workspace [class~="dark:border-slate-800"],
+.dark .profile-workspace [class~="dark:border-slate-700"] { border-color: var(--pi-border) !important; }
+.workspace-grid-shell button[class~="bg-slate-900"],
+.profile-workspace button[class~="bg-slate-900"] {
+  background-color: var(--pi-action) !important;
+  color: white !important;
+}
+.workspace-grid-shell button[class~="bg-sky-600"],
+.profile-workspace button[class~="bg-sky-600"] { background-color: var(--pi-action) !important; }
+.dark .workspace-grid-shell button[class~="dark:bg-blue-600"],
+.dark .profile-workspace button[class~="dark:bg-blue-600"] { background-color: var(--pi-action) !important; }
+.workspace-grid-shell [class*="rounded-2xl"][class*="border"],
+.profile-workspace [class*="rounded-2xl"][class*="border"] { border-radius: 0.75rem !important; }
+.pi-surface, .surface-card, .pi-surface-interactive {
+  border-color: var(--pi-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+.pi-surface-interactive:hover, .surface-card:hover { box-shadow: var(--shadow-card-hover); }
+.scannable-table-wrap { border-color: var(--pi-border); border-radius: 0.7rem; }
+.scannable-table th { letter-spacing: 0.045em; text-transform: uppercase; font-size: 0.68rem; }
+.scannable-table td { font-size: 0.82rem; }
+.workspace-grid-shell .pi-page-title { letter-spacing: -0.045em; }
+.workspace-grid-shell .pi-section-heading { letter-spacing: -0.035em; }
+
+/* The national map retains its distinctive dark cartographic stage and data
+   colors; surrounding controls are quieter and the canvas remains primary. */
+.home-territory-map-screen-v2 {
+  background: var(--pi-surface-bg) !important;
+  border-color: var(--pi-border) !important;
+  border-radius: 0.8rem !important;
+  box-shadow: 0 1px 3px rgba(25, 48, 43, 0.04), 0 16px 34px -30px rgba(25, 48, 43, 0.24) !important;
+  padding: clamp(0.8rem, 1.5vw, 1.25rem) !important;
+}
+.home-map-page-heading {
+  padding-bottom: 0.8rem !important;
+  border-color: var(--pi-border) !important;
+}
+.home-map-page-heading h2 { font-size: clamp(1.12rem, 1.6vw, 1.42rem) !important; }
+.home-map-page-heading p { font-size: 0.83rem !important; }
+.home-map-region-filter > div {
+  background: var(--pi-surface-subtle) !important;
+  border-color: var(--pi-border) !important;
+  border-radius: 0.6rem !important;
+  padding: 0.2rem !important;
+}
+.home-map-region-filter button { min-height: 2.3rem !important; padding-inline: 0.8rem !important; }
+.home-map-region-filter button[aria-pressed="true"] {
+  color: var(--pi-action) !important;
+  box-shadow: 0 1px 2px rgba(20, 51, 45, 0.08) !important;
+}
+.home-territory-map-panel {
+  border-radius: 0.72rem !important;
+  border-color: #29424c !important;
+  box-shadow: 0 10px 30px rgba(2, 12, 19, 0.16) !important;
+}
+.home-map-control-row { gap: 0.7rem !important; }
+.home-map-control-row label { letter-spacing: 0.1em !important; }
+.home-map-layer-select,
+.home-map-zoom-control {
+  border-radius: 0.5rem !important;
+}
+.home-map-layer-select { min-height: 2.55rem !important; }
+.home-map-zoom-control { padding: 0.2rem !important; }
+.home-map-zoom-control button { min-height: 2.35rem !important; min-width: 2.35rem !important; }
+.home-map-legend-v2 {
+  background: #10232d !important;
+  border-color: #29424c !important;
+  border-radius: 0.55rem !important;
+  padding-block: 0.58rem !important;
+}
+.home-map-viewport { border-radius: 0.55rem !important; }
+
+@media (min-width: 768px) {
+  .pi-primary-sidebar { width: 13rem !important; }
+  .pi-command-header, .pi-workspace-body { padding-left: 13rem !important; }
+}
+@media (min-width: 1024px) and (max-height: 900px) {
+  .pi-primary-sidebar { width: 12rem !important; }
+  .pi-command-header, .pi-workspace-body { padding-left: 12rem !important; }
+}
+@media (max-width: 767px) {
+  .workspace-grid-shell { padding: 0.7rem 0.7rem max(5.5rem, env(safe-area-inset-bottom)) !important; }
+  .home-territory-map-screen-v2 { padding: 0.7rem !important; }
+  .home-map-page-heading { align-items: flex-start !important; }
+  .home-map-legend-v2 { margin-inline: -0.05rem; }
+  .pi-mobile-nav { height: calc(4.1rem + env(safe-area-inset-bottom)) !important; }
+  .pi-mobile-nav > div { height: 4.1rem !important; padding-inline: 0.15rem !important; }
+  .pi-mobile-nav button { min-width: 0; }
+  .pi-mobile-nav button span { white-space: nowrap; }
+}
+@media (max-width: 360px) {
+  .pi-mobile-nav button span { font-size: 0.61rem !important; }
+  .pi-mobile-nav button svg { width: 1rem; height: 1rem; }
+  .home-map-region-filter button { padding-inline: 0.62rem !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-grid-shell { animation: workspace-arrive 240ms ease-out both; }
+  @keyframes workspace-arrive {
+    from { opacity: 0.88; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Keep the brand mark prominent in both navigation layouts. */
+.pi-sidebar-logo {
+  width: 8.5rem !important;
+  height: 8.5rem !important;
+}
+.pi-mobile-logo {
+  width: 4.25rem !important;
+  height: 4.25rem !important;
 }

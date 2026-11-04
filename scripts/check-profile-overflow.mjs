@@ -32,6 +32,11 @@ const interactionViewports = [
   { width: 390, height: 844, mobile: true },
 ];
 const testCorrectionRecordId = 'browser-check-2026';
+const fireProfileCases = [
+  'Fire Department of New York - Emergency Medical Service Command',
+  'Miami-Dade County Fire Rescue Department',
+  'Chicago Fire Department - Bureau of EMS',
+];
 const specialistAndSystemViews = [
   {
     group: 'Specialist tools',
@@ -211,7 +216,7 @@ async function clickVisibleButton(cdp, label, description = label) {
   assert(clicked, `Could not reach the ${description} button at this viewport`);
 }
 
-async function openAgencyProfile(cdp, providerCategory = 'all') {
+async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = null) {
   const isMobile = await evaluate(cdp, 'innerWidth < 768');
   if (isMobile) {
     const searchOpened = await evaluate(cdp, `(() => {
@@ -287,6 +292,34 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
       `the ${providerCategory} agency directory`,
     );
   }
+  if (agencyName) {
+    const searchReady = await evaluate(cdp, `(() => {
+      const input = document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]');
+      if (!input) return false;
+      const prototype = input instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, 'value')?.set?.call(input, ${JSON.stringify(agencyName)});
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()`);
+    assert(searchReady, 'Could not search for the requested Fire agency');
+    await waitFor(
+      cdp,
+      `Boolean([...document.querySelectorAll('button')]
+        .find((button) => {
+          if (!button.innerText.trim().startsWith('Open agency profile')) return false;
+          let entry = button.parentElement;
+          while (entry && entry !== document.body) {
+            if (entry.innerText.includes(${JSON.stringify(agencyName)})) return true;
+            entry = entry.parentElement;
+          }
+          return false;
+        }))`,
+      `the ${agencyName} directory result`,
+    );
+  }
   const viewportWidth = await evaluate(cdp, 'innerWidth');
   if (viewportWidth === 390 || viewportWidth === 1280) {
     const screenshot = await cdp.send('Page.captureScreenshot', {
@@ -314,8 +347,19 @@ async function openAgencyProfile(cdp, providerCategory = 'all') {
   })()`);
   assert(estimateDetailsVisible, `The ${providerCategory} estimate does not explain its inputs or missing method`);
   const opened = await evaluate(cdp, `(() => {
-    const button = [...document.querySelectorAll('button, a, [role="button"]')]
-      .find((candidate) => candidate.innerText.trim().includes('Open agency profile'));
+    const button = ${agencyName
+      ? `[...document.querySelectorAll('button')]
+          .find((candidate) => {
+            if (!candidate.innerText.trim().startsWith('Open agency profile')) return false;
+            let entry = candidate.parentElement;
+            while (entry && entry !== document.body) {
+              if (entry.innerText.includes(${JSON.stringify(agencyName)})) return true;
+              entry = entry.parentElement;
+            }
+            return false;
+          })`
+      : `[...document.querySelectorAll('button, a, [role="button"]')]
+          .find((candidate) => candidate.innerText.trim().includes('Open agency profile'))`};
     if (!button) return false;
     button.scrollIntoView({ block: 'center' });
     button.click();
@@ -806,8 +850,9 @@ async function checkProfileAtViewport(cdp, viewport) {
   console.log(`✓ ${viewport.width}px: profile, actions, section, registry details, briefing, and source drawer`);
 }
 
-async function checkFireProfileAtViewport(cdp, viewport) {
-  console.log(`Checking Fire profile at ${viewport.width}px viewport...`);
+async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
+  const agencyDescription = agencyName ?? 'the first Fire agency';
+  console.log(`Checking ${agencyDescription} at ${viewport.width}px viewport...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
     height: viewport.height,
@@ -822,7 +867,14 @@ async function checkFireProfileAtViewport(cdp, viewport) {
     `the app at ${viewport.width}px`,
     60_000,
   );
-  await openAgencyProfile(cdp, 'fire');
+  await openAgencyProfile(cdp, 'fire', agencyName);
+  if (agencyName) {
+    const expectedProfileName = await evaluate(cdp, `(() => {
+      const workspace = document.querySelector('main.profile-workspace');
+      return workspace?.getAttribute('aria-label') === ${JSON.stringify(`${agencyName} Account 360 Workspace`)};
+    })()`);
+    assert(expectedProfileName, `Opened the wrong Fire profile instead of ${agencyName}`);
+  }
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
   const operationsSummary = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
@@ -935,7 +987,9 @@ async function checkFireProfileAtViewport(cdp, viewport) {
     `!document.querySelector('[aria-label="Evidence and Source Inspection Drawer"]')`,
     `the Fire source inspection drawer to close at ${viewport.width}px`,
   );
-  console.log(`✓ ${viewport.width}px: Fire operations summary, profile actions, source drawer, and overflow`);
+  console.log(
+    `✓ ${viewport.width}px: ${agencyDescription}; operations="${operationsSummary.lead}", ${fireSourceLinks} source links, actions, drawer, and overflow`,
+  );
 }
 
 async function checkTerritoryAtViewport(cdp, viewport) {
@@ -1839,6 +1893,12 @@ async function main() {
     for (const viewport of [
       { width: 320, height: 740, mobile: true },
       { width: 360, height: 844, mobile: true },
+    ]) {
+      for (const agencyName of fireProfileCases) {
+        await checkFireProfileAtViewport(cdp, viewport, agencyName);
+      }
+    }
+    for (const viewport of [
       { width: 390, height: 844, mobile: true },
       { width: 1280, height: 900, mobile: false },
     ]) {

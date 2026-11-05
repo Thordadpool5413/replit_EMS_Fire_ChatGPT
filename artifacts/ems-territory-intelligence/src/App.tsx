@@ -1031,7 +1031,7 @@ export default function App() {
         {!currentActive && isTerritoryTab(activeTab) && (
           <nav
             aria-label="Territory views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="territory-workspace-nav mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {TERRITORY_WORKSPACE_TABS.map((item) => (
               <button

@@ -1734,7 +1734,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               No counties matched "{countyFilterInput}". Try clearing the search filter.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="county-directory-card-grid grid grid-cols-1 gap-3 lg:grid-cols-2">
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const mappedPlaceCount = c.cities?.length ?? 0;

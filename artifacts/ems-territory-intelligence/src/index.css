@@ -7651,3 +7651,223 @@ button { -webkit-tap-highlight-color: transparent; }
     font-size: .57rem;
   }
 }
+
+/* County reference figures: category color improves scanning without implying good/bad. */
+.county-profile-card {
+  border-color: #c8dce9 !important;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(34, 211, 238, .08), transparent 42%),
+    linear-gradient(145deg, #ffffff 0%, #f5fbff 100%) !important;
+  box-shadow: 0 12px 30px -25px rgba(14, 116, 144, .68) !important;
+}
+
+.county-directory-card::before {
+  width: 3px !important;
+  opacity: 1 !important;
+  background: linear-gradient(180deg, #22d3ee 0%, #3b82f6 54%, #8b5cf6 100%) !important;
+}
+
+.county-profile-metrics {
+  gap: .4rem;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.county-profile-metric {
+  position: relative;
+  overflow: hidden;
+  gap: .38rem;
+  padding: .58rem .52rem;
+  border: 1px solid transparent;
+  border-radius: .68rem;
+}
+
+.county-profile-metric + .county-profile-metric {
+  border-left: 1px solid transparent;
+}
+
+.county-profile-metric::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  content: "";
+  background: currentColor;
+  opacity: .8;
+}
+
+.county-profile-metric > span {
+  display: flex;
+  align-items: center;
+  gap: .32rem;
+}
+
+.county-profile-metric > span::before {
+  width: .34rem;
+  height: .34rem;
+  flex: 0 0 .34rem;
+  border-radius: 50%;
+  content: "";
+  background: currentColor;
+}
+
+.county-profile-metric-population {
+  border-color: #c9e5f7;
+  background: linear-gradient(145deg, #e8f6ff, #f4faff);
+  color: #1683bd;
+}
+
+.county-profile-metric-transport {
+  border-color: #bfeaf0;
+  background: linear-gradient(145deg, #e5fbff, #f2fdff);
+  color: #07869a;
+}
+
+.county-profile-metric-ohca {
+  border-color: #ddd5fc;
+  background: linear-gradient(145deg, #f1edff, #f9f7ff);
+  color: #7258c7;
+}
+
+.county-profile-metric-population > span::before {
+  background: #1683bd;
+}
+
+.county-profile-metric-transport > span::before {
+  background: #07869a;
+}
+
+.county-profile-metric-ohca > span::before {
+  background: #7258c7;
+}
+
+.county-profile-metric-population > strong {
+  color: #075985;
+}
+
+.county-profile-metric-transport > strong {
+  color: #08768a;
+}
+
+.county-profile-metric-ohca > strong {
+  color: #5b46b7;
+}
+
+.county-inspector-metrics {
+  gap: .42rem;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+
+.county-inspector-metric {
+  border: 1px solid transparent;
+  border-radius: .72rem;
+}
+
+.county-inspector-metric + .county-inspector-metric {
+  border-left: 1px solid transparent;
+}
+
+.county-inspector-metric-population {
+  border-color: #c9e5f7;
+  background: linear-gradient(145deg, #e8f6ff, #f4faff);
+}
+
+.county-inspector-metric-transport {
+  border-color: #bfeaf0;
+  background: linear-gradient(145deg, #e5fbff, #f2fdff);
+}
+
+.county-inspector-metric-population .county-inspector-metric-value {
+  color: #075985;
+}
+
+.county-inspector-metric-transport .county-inspector-metric-value {
+  color: #08768a;
+}
+
+.county-nri-panel {
+  border-left-width: 4px;
+}
+
+.county-nri-score {
+  border-width: 1.5px;
+  box-shadow: 0 3px 10px -8px rgba(15, 23, 42, .55);
+}
+
+.dark .county-profile-card {
+  border-color: rgba(56, 189, 248, .34) !important;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(34, 211, 238, .13), transparent 46%),
+    linear-gradient(145deg, #122b36 0%, #10232f 55%, #14233a 100%) !important;
+  box-shadow: 0 16px 34px -26px rgba(34, 211, 238, .38) !important;
+}
+
+.dark .county-profile-metric-population,
+.dark .county-inspector-metric-population {
+  border-color: rgba(56, 189, 248, .35);
+  background: linear-gradient(145deg, rgba(8, 89, 130, .48), rgba(15, 38, 55, .94));
+}
+
+.dark .county-profile-metric-transport,
+.dark .county-inspector-metric-transport {
+  border-color: rgba(34, 211, 238, .33);
+  background: linear-gradient(145deg, rgba(8, 106, 119, .44), rgba(13, 40, 50, .96));
+}
+
+.dark .county-profile-metric-ohca {
+  border-color: rgba(167, 139, 250, .34);
+  background: linear-gradient(145deg, rgba(91, 63, 160, .4), rgba(31, 30, 62, .96));
+}
+
+.dark .county-profile-metric-population > span::before {
+  background: #38bdf8;
+}
+
+.dark .county-profile-metric-transport > span::before {
+  background: #22d3ee;
+}
+
+.dark .county-profile-metric-ohca > span::before {
+  background: #a78bfa;
+}
+
+.dark .county-profile-metric-population,
+.dark .county-profile-metric-population > strong,
+.dark .county-inspector-metric-population .county-inspector-metric-value {
+  color: #8edaff;
+}
+
+.dark .county-profile-metric-transport,
+.dark .county-profile-metric-transport > strong,
+.dark .county-inspector-metric-transport .county-inspector-metric-value {
+  color: #7ce9f2;
+}
+
+.dark .county-profile-metric-ohca,
+.dark .county-profile-metric-ohca > strong {
+  color: #c6b6ff;
+}
+
+.dark .county-profile-metric > span,
+.dark .county-inspector-metric-label {
+  color: #c2d3e0;
+}
+
+.dark .county-nri-panel {
+  background: color-mix(in srgb, var(--pi-action-subtle) 76%, #102432);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .county-profile-metric,
+  .county-inspector-metric {
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  .county-profile-card:hover .county-profile-metric,
+  .county-inspector-panel:hover .county-inspector-metric {
+    box-shadow: 0 5px 14px -12px currentColor;
+  }
+}

@@ -8,3 +8,9 @@ For the Home territory map, make the map the visual focus and show the selected 
 **Why:** The user repeatedly said the territory and county screens did not feel visually impressive or professional, and explicitly corrected a map background that still appeared as a narrower inset.
 
 **How to apply:** Keep map texture and atmosphere on a full-bleed viewport layer rather than relying on the geometry SVG's opaque background. Reduce surrounding chrome before shrinking readable text. Fit the map without cropping, balance the map and inspector widths, and verify short-laptop and phone layouts for visible background coverage, horizontal overflow, or clipped legend labels. Preserve available data, citations, actions, and usable map controls.
+
+For county reference cards, use restrained cool hues to distinguish metric categories, not to signal good or bad performance. Use FEMA risk colors only for the risk category defined by the source.
+
+**Why:** population, transport time, and incident counts are descriptive measures, while a source-defined risk category has explicit severity semantics.
+
+**How to apply:** keep raw county metrics on blue/cyan/violet surfaces with clearly named labels; keep the FEMA rating aligned with its published category palette and scope note.

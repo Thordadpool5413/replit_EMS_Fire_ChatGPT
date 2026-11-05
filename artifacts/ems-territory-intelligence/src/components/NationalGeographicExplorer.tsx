@@ -1834,7 +1834,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </details>
 
                       <div className="county-profile-metrics" aria-label={`County reference figures for ${c.countyName}`}>
-                        <div className="county-profile-metric">
+                        <div className="county-profile-metric county-profile-metric-population">
                           <span>Population reference</span>
                           <strong>{c.population.toLocaleString()}</strong>
                         </div>
@@ -1938,11 +1938,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             </div>
                           )}
                         </div>
-                        <div className="county-profile-metric county-profile-metric-accent">
+                        <div className="county-profile-metric county-profile-metric-transport">
                           <span>Average transport</span>
                           <strong>{c.averageTransportMinutes}<small> min</small></strong>
                         </div>
-                        <div className="county-profile-metric">
+                        <div className="county-profile-metric county-profile-metric-ohca">
                           <span>Annual OHCA reference</span>
                           <strong>{c.annualCardiacArrestIncidents.toLocaleString()}</strong>
                         </div>

@@ -412,7 +412,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 </div>
 
                 <div className="county-inspector-metrics">
-                  <div className="county-inspector-metric">
+                  <div className="county-inspector-metric county-inspector-metric-population">
                     <span className="county-inspector-metric-label">Population reference</span>
                     <span className="county-inspector-metric-value">
                       {inspectedCounty.population.toLocaleString()}
@@ -489,7 +489,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       </span>
                     )}
                   </div>
-                  <div className="county-inspector-metric">
+                  <div className="county-inspector-metric county-inspector-metric-transport">
                     <span className="county-inspector-metric-label">Average transport</span>
                     <span className="county-inspector-metric-value county-inspector-metric-value-accent">
                       {inspectedCounty.averageTransportMinutes}<small> min</small>
@@ -497,7 +497,15 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </div>
                 </div>
 
-                <section className="county-nri-panel" aria-label="FEMA National Risk Index">
+                <section
+                  className="county-nri-panel"
+                  aria-label="FEMA National Risk Index"
+                  style={{
+                    borderLeftColor: inspectedNri?.riskRating
+                      ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B'
+                      : '#64748B',
+                  }}
+                >
                   <div className="county-nri-main">
                     <span
                       className="county-nri-marker"
@@ -509,7 +517,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       <strong>{inspectedNri?.riskRating ?? 'No NRI record'}</strong>
                     </div>
                   </div>
-                  <div className="county-nri-score">
+                  <div
+                    className="county-nri-score"
+                    style={{
+                      borderColor: inspectedNri?.riskRating
+                        ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B'
+                        : '#64748B',
+                    }}
+                  >
                     <span>Score</span>
                     <strong>{inspectedNri?.riskScore != null ? inspectedNri.riskScore.toFixed(2) : '—'}</strong>
                   </div>

@@ -875,6 +875,8 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       document: document.documentElement.scrollWidth,
       documentHeight: document.documentElement.scrollHeight,
       stage: rect('.home-map-stage-v2'),
+      commandHeader: rect('.pi-command-header'),
+      mobileLogo: rect('.pi-mobile-logo'),
       content: rect('.home-map-content-v2'),
       visual: rect('.home-map-visual-v2'),
       map: rect('.home-map-viewport'),
@@ -914,6 +916,15 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     `Map viewport escapes its panel at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
   );
   if (viewport.mobile && viewport.width < 768) {
+    assert(
+      dimensions.commandHeader &&
+        dimensions.mobileLogo &&
+        dimensions.mobileLogo.left >= dimensions.commandHeader.left + 1 &&
+        dimensions.mobileLogo.right <= dimensions.commandHeader.right - 1 &&
+        dimensions.mobileLogo.top >= dimensions.commandHeader.top + 1 &&
+        dimensions.mobileLogo.bottom <= dimensions.commandHeader.bottom - 1,
+      `Mobile logo frame is clipped by the command header at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
+    );
     const minimumMapHeight = viewport.height <= 500 ? 130 : 210;
     assert(
       dimensions.map.height >= minimumMapHeight,

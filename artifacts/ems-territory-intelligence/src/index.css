@@ -6891,3 +6891,42 @@ button { -webkit-tap-highlight-color: transparent; }
     aspect-ratio: 1.65;
   }
 }
+
+/* Keep the complete mobile badge inside the safe-area-aware command header.
+   Preserve the artwork and size; give its circular frame room to breathe. */
+@media (max-width: 767px) {
+  .pi-command-header {
+    box-sizing: border-box !important;
+    height: calc(4.75rem + env(safe-area-inset-top)) !important;
+    min-height: calc(4.75rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top) !important;
+    overflow: visible !important;
+  }
+
+  .pi-command-header > div {
+    height: 4.75rem !important;
+    min-height: 4.75rem !important;
+    overflow: visible !important;
+  }
+
+  .pi-command-header button[aria-label="Return to Territory Intelligence Home"] {
+    overflow: visible !important;
+  }
+
+  .pi-mobile-logo {
+    width: 4.25rem !important;
+    height: 4.25rem !important;
+    min-width: 4.25rem !important;
+    min-height: 4.25rem !important;
+    flex: 0 0 4.25rem !important;
+    overflow: visible !important;
+  }
+
+  .pi-mobile-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain !important;
+    border-radius: 50%;
+  }
+}

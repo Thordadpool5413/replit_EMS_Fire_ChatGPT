@@ -7,6 +7,10 @@ import path from 'node:path';
 const baseUrl =
   process.env.PROFILE_TEST_URL ??
   `http://127.0.0.1:${process.env.PORT ?? '24938'}/`;
+const routeSmokeUrls = [
+  new URL('/', baseUrl),
+  new URL('/ems-territory-intelligence/', baseUrl),
+];
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const testViewports = [
   { width: 360, height: 844, mobile: true },
@@ -116,6 +120,26 @@ const specialistAndSystemViews = [
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function checkPublishedRoutes() {
+  for (const url of routeSmokeUrls) {
+    const response = await fetch(url, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15_000),
+    });
+    const contentType = response.headers.get('content-type') ?? '';
+    const html = await response.text();
+    assert(
+      response.ok,
+      `${url.pathname} should return HTTP 200 (received ${response.status})`,
+    );
+    assert(
+      contentType.includes('text/html') && html.includes('id="root"'),
+      `${url.pathname} should return the EMS Territory Intelligence app HTML`,
+    );
+    console.log(`PASS published route: ${url.pathname} returned the app HTML`);
+  }
 }
 
 async function reservePort() {
@@ -2865,11 +2889,8 @@ function assertFireOperationsDifferAtViewport(viewport) {
 }
 
 async function main() {
-  const response = await fetch(baseUrl);
-  assert(
-    response.ok,
-    `Could not load ${baseUrl} (HTTP ${response.status}). Start the EMS Territory Intelligence web workflow first.`,
-  );
+  await checkPublishedRoutes();
+  if (process.env.ROUTES_ONLY === '1') return;
 
   const debuggingPort = await reservePort();
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'ems-profile-overflow-'));

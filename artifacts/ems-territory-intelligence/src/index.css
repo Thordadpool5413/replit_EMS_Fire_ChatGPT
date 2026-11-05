@@ -6512,3 +6512,121 @@ button { -webkit-tap-highlight-color: transparent; }
     max-height: 260px !important;
   }
 }
+
+/* County cards: compact record rows instead of oversized nested tiles. */
+@media (min-width: 768px) {
+  .territory-explorer-screen .county-drilldown-shell > div.grid.gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card {
+    min-height: 0 !important;
+    gap: 0.3rem !important;
+    padding: 0.45rem !important;
+    border-radius: 0.55rem !important;
+    box-shadow: 0 1px 3px rgba(24, 50, 60, 0.07) !important;
+  }
+
+  .territory-explorer-screen .county-directory-card:hover {
+    box-shadow: 0 4px 12px -8px rgba(24, 50, 60, 0.22) !important;
+    transform: translateY(-1px);
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.3rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div:first-child {
+    gap: 0.25rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div:first-child h3 {
+    font-size: 0.82rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div:first-child > div {
+    margin-top: 0.15rem !important;
+    gap: 0.2rem !important;
+    font-size: 0.59rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div:first-child + span {
+    padding: 0.15rem 0.35rem !important;
+    border-radius: 0.35rem !important;
+    font-size: 0.57rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div:nth-child(2) {
+    gap: 0.25rem !important;
+    padding-top: 0.22rem !important;
+    font-size: 0.57rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card .county-city-disclosure {
+    padding-top: 0.22rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card .county-city-disclosure summary {
+    min-height: 1.35rem !important;
+    font-size: 0.62rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card .county-city-list {
+    gap: 0.25rem !important;
+    margin-top: 0.3rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card .county-city-list button {
+    min-height: 1.5rem !important;
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.6rem !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div.grid.grid-cols-2 {
+    gap: 0.5rem !important;
+    padding: 0.3rem 0.4rem !important;
+    border-top-width: 1px !important;
+    border-radius: 0.4rem !important;
+    background: var(--pi-surface-subtle) !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div.grid.grid-cols-2 > div:not(.hidden) {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 0.3rem !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div.grid.grid-cols-2 > div:not(.hidden) > span:first-child {
+    font-size: 0.58rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:first-child > div.grid.grid-cols-2 > div:not(.hidden) > span:last-child {
+    margin-top: 0 !important;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:last-child {
+    gap: 0.45rem !important;
+    padding-top: 0.3rem !important;
+    font-size: 0.6rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .territory-explorer-screen .county-directory-card > div:last-child > span:last-child {
+    min-height: 1.5rem !important;
+    padding: 0.2rem 0.45rem !important;
+    border-radius: 0.35rem !important;
+    font-size: 0.61rem !important;
+  }
+}

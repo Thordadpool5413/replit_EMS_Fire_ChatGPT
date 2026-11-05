@@ -408,6 +408,7 @@
 .workspace-grid-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   gap: 1.25rem;
   width: 100%;
   max-width: 1640px;
@@ -8073,10 +8074,10 @@ button { -webkit-tap-highlight-color: transparent; }
     line-height: 1.1 !important;
   }
 
-  .workspace-grid-shell > .territory-workspace-nav button[aria-current="page"] {
-    background: var(--pi-action) !important;
-    color: #fff !important;
-    box-shadow: 0 2px 5px -3px var(--pi-action) !important;
+  .workspace-grid-shell > nav.territory-workspace-nav[aria-label="Territory views"] button[aria-current="page"] {
+    background: var(--pi-surface-bg) !important;
+    color: var(--pi-text-primary) !important;
+    box-shadow: 0 1px 2px rgba(24, 50, 60, .12) !important;
   }
 
   .dark .workspace-grid-shell > .territory-workspace-nav {

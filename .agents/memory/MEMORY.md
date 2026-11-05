@@ -19,3 +19,4 @@
 - [Firestore read scope](firestore-read-scope.md) — keep nationwide browsing cache-first; only load live provider documents for an explicitly selected state.
 - [Landscape map breakpoints](landscape-map-breakpoints.md) — phone landscape widths can activate desktop CSS; test the layout each viewport width actually selects.
 - [Territory browser history](territory-browser-history.md) — keep one app-level history owner; filter-only changes replace the current snapshot instead of adding entries.
+- [API startup health paths](api-startup-health-paths.md) — production probes may hit both the service base path and the configured readiness path; keep both aligned.

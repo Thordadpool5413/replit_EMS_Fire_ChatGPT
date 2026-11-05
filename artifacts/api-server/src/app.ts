@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { apiReadinessHandler } from "./routes/health";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -34,6 +35,9 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+// The artifact service's /api base path is also probed during startup.
+app.get("/api", apiReadinessHandler);
 
 app.use("/api", router);
 

@@ -43,6 +43,15 @@ export function hasMappedFactSource(
   }
 
   if (
+    evidence.geographicLevel &&
+    evidence.geographicLevel !== 'agency' &&
+    (!evidence.geographicRelationship ||
+      evidence.geographicMatchBasis !== 'user-confirmed')
+  ) {
+    return false;
+  }
+
+  if (
     (evidence.sourceKind === 'logic' ||
       evidence.sourceKind === 'mcp' ||
       evidence.sourceKind === 'dataset' ||

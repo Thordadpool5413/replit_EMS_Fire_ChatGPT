@@ -229,7 +229,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 ? `Loading county-equivalent records for ${stateNode.stateCode}…`
                 : nriQuery.isError
                   ? 'County risk data could not be loaded.'
-                  : `${nriByCountyFips.size} county-equivalent source records · ${nriQuery.data?.sourceVersion ?? 'version not stated'}`}
+                  : `${nriByCountyFips.size} county-equivalent records · native scope: county FIPS · reporting period not stated · FEMA NRI data vintage: ${nriQuery.data?.sourceVersion ?? 'version not stated'}`}
               {!nriQuery.isLoading && !nriQuery.isError && nriQuery.data?.sourceUrl && (
                 <>
                   {' · '}
@@ -284,7 +284,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   {record.countyName} · FIPS {record.countyFips}
                 </div>
                 <div className="mt-0.5">
-                  {record.riskRating ?? 'Risk rating not stated'} · risk score {record.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss {record.expectedAnnualLoss == null
+                  Native scope: {record.countyName}, {record.stateCode} county-equivalent · FIPS {record.countyFips} · reporting period not stated · data vintage {record.sourceVersion} · {record.riskRating ?? 'Risk rating not stated'} · risk score {record.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss {record.expectedAnnualLoss == null
                     ? 'not stated'
                     : `$${record.expectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
@@ -294,7 +294,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   rel="noopener noreferrer"
                   className="mt-0.5 inline-block font-medium text-blue-800 underline underline-offset-2"
                 >
-                  FEMA NRI source · {record.sourceVersion}
+                  FEMA NRI data vintage · {record.sourceVersion}
                 </a>
               </li>
             ))}
@@ -360,7 +360,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           }}
                         >
                           <title>
-                            {`${pc.countyName} (FIPS ${pc.countyFips}) · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}`}
+                            {`${pc.countyName}, ${stateNode.stateCode} · native scope: county-equivalent FIPS ${pc.countyFips} · Seat: ${pc.countySeat} · ${pc.citiesCount} Cities · ${pc.landAreaSqMiles} sq mi · FEMA NRI ${nriByCountyFips.get(pc.countyFips)?.riskRating ?? 'no county-equivalent record'} · risk score ${nriByCountyFips.get(pc.countyFips)?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${nriByCountyFips.get(pc.countyFips)?.expectedAnnualLoss == null ? 'not stated' : `$${nriByCountyFips.get(pc.countyFips)!.expectedAnnualLoss!.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} · reporting period not stated · data vintage ${nriByCountyFips.get(pc.countyFips)?.sourceVersion ?? 'version not stated'} · ${nriByCountyFips.get(pc.countyFips)?.sourceUrl ?? 'no source record'}`}
                           </title>
                         </path>
                       );
@@ -515,7 +515,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2">
                       <span className="text-[11px] text-slate-500">
-                        {inspectedNri?.riskScore != null ? `Risk score · ${inspectedNri.sourceVersion}` : 'No risk score reported'}
+                        {inspectedNri
+                          ? `Native scope: county-equivalent FIPS ${inspectedNri.countyFips} · reporting period not stated · FEMA NRI data vintage: ${inspectedNri.sourceVersion}`
+                          : 'No risk score reported'}
                       </span>
                       {inspectedNri?.sourceUrl && (
                         <a
@@ -535,7 +537,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600">
                     <summary className="cursor-pointer font-semibold text-slate-700">Additional FEMA context</summary>
                     <p className="mt-2 leading-relaxed">
-                      FEMA National Risk Index county context · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'} · {inspectedNri.sourceVersion}. These county-level measures are context only; they are not values for the city or an individual agency.
+                      FEMA National Risk Index context for {inspectedNri.countyName}, {inspectedNri.stateCode} · native scope: county-equivalent FIPS {inspectedNri.countyFips} · reporting period not stated · data vintage: {inspectedNri.sourceVersion} · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'}. These county-level measures are context only; they are not values for the city or an individual agency.
                     </p>
                   </details>
                 )}

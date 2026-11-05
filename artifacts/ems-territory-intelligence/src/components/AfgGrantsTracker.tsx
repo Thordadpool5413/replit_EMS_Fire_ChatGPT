@@ -249,6 +249,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
             : `State ${femaQueryState} query; showing up to 20 recent fiscal-year records.`}
           {(selectedCounty !== 'all' || selectedCity !== 'all') &&
             ' County and city filters do not apply to these federal award records.'}
+          {' '}Each record keeps OpenFEMA’s grantee location and award period; the API does not provide a county for these records.
         </p>
 
         <div className="overflow-x-auto max-h-64">
@@ -260,7 +261,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
                 <th className="py-2.5 px-3">Jurisdiction</th>
                 <th className="py-2.5 px-3">Program category</th>
                 <th className="py-2.5 px-3 text-right">Award amount</th>
-                <th className="py-2.5 px-3">Award date</th>
+                <th className="py-2.5 px-3">Reporting period / award date</th>
                 <th className="py-2.5 px-4 text-right">Source</th>
               </tr>
             </thead>
@@ -274,7 +275,13 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
                     {rec.grantee}
                   </td>
                   <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300">
-                    {rec.city}, {rec.stateCode}
+                    <span className="block">
+                      {rec.city ? `${rec.city}, ` : ""}
+                      {rec.stateCode}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] text-slate-500 dark:text-slate-400">
+                      Grantee location · county not stated
+                    </span>
                   </td>
                   <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">
                     {rec.programActivity}
@@ -283,7 +290,12 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
                     ${rec.federalShareAwarded.toLocaleString()}
                   </td>
                   <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 tabular-nums">
-                    {rec.awardDate}
+                    <span className="block">
+                      {rec.programYear > 0 ? `FY${rec.programYear}` : "Fiscal year not stated"}
+                    </span>
+                    <span className="mt-0.5 block text-[10px]">
+                      Award date · {rec.awardDate}
+                    </span>
                   </td>
                   <td className="py-2.5 px-4 text-right">
                     <a

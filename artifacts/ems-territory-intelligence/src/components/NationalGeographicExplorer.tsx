@@ -353,6 +353,22 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       staleTime: 6 * 60 * 60 * 1000,
     },
   });
+  const nriNationalVintageLabel = useMemo(() => {
+    const records = nriNationalQuery.data?.records ?? [];
+    const versions = new Set(
+      records
+        .map((record) => record.sourceVersion.trim())
+        .filter((version) => version && version !== 'Version not stated'),
+    );
+    const hasUnstatedVersion = records.some(
+      (record) =>
+        !record.sourceVersion.trim() ||
+        record.sourceVersion.trim() === 'Version not stated',
+    );
+    if (versions.size > 1) return 'varies across county records';
+    if (hasUnstatedVersion) return 'not stated for every county';
+    return versions.size === 1 ? [...versions][0] : 'version not stated';
+  }, [nriNationalQuery.data?.records]);
   const stateNriSummaryByCode = useMemo(() => {
     const byState = new Map<string, NriCountyContextRecord[]>();
     for (const record of nriNationalQuery.data?.records ?? []) {
@@ -366,6 +382,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       coverageComplete: boolean;
       duplicateFips: boolean;
       invalidFips: boolean;
+      sourceVersion: string | null;
+      mixedSourceVersions: boolean;
+      unstatedSourceVersion: boolean;
     }>();
     for (const state of Object.values(ALL_50_STATES_SUMMARIES)) {
       const rows = byState.get(state.code);
@@ -376,11 +395,26 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       const availableRecords = sourceRows.filter(
         (record) => Number.isFinite(record.expectedAnnualLoss),
       ).length;
+      const sourceVersions = new Set(
+        sourceRows
+          .map((record) => record.sourceVersion.trim())
+          .filter((version) => version && version !== 'Version not stated'),
+      );
+      const mixedSourceVersions = sourceVersions.size > 1;
+      const unstatedSourceVersion = sourceRows.some(
+        (record) => !record.sourceVersion.trim() || record.sourceVersion.trim() === 'Version not stated',
+      );
+      const sourceVersion =
+        sourceVersions.size === 1 &&
+        !unstatedSourceVersion
+          ? [...sourceVersions][0]
+          : null;
       const coverageComplete =
         sourceRows.length > 0 &&
         !duplicateFips &&
         !invalidFips &&
-        availableRecords === sourceRows.length;
+        availableRecords === sourceRows.length &&
+        sourceVersion !== null;
       const totalExpectedAnnualLoss = coverageComplete
         ? sourceRows.reduce(
             (total, record) => total + (record.expectedAnnualLoss ?? 0),
@@ -394,6 +428,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         coverageComplete,
         duplicateFips,
         invalidFips,
+        sourceVersion,
+        mixedSourceVersions,
+        unstatedSourceVersion,
       });
     }
     return summary;
@@ -1067,7 +1104,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       ? 'Loading FEMA county records…'
                       : nriNationalQuery.isError
                         ? 'FEMA risk layer unavailable'
-                        : `${nriNationalQuery.data?.records.length.toLocaleString() ?? 0} county records · ${nriNationalQuery.data?.sourceVersion ?? 'version not stated'}`}
+                        : `${nriNationalQuery.data?.records.length.toLocaleString() ?? 0} county-equivalent records · native scope: county FIPS · reporting period not stated · FEMA NRI data vintage: ${nriNationalVintageLabel}`}
                   </span>
                 )}
               </div>
@@ -1138,8 +1175,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       >
                         <title>{`${st.state} (${st.code}) · ${stateMapLayer === 'fema-loss'
                           ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
-                            ? `Sum of published NRI county-equivalent expected annual loss: $${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}; ${nriSummary.availableRecords}/${nriSummary.sourceRecordCount} source records; ${nriNationalQuery.data?.sourceVersion ?? 'FEMA NRI'}`
-                            : `State total not shown; ${nriSummary?.availableRecords ?? 0}/${nriSummary?.sourceRecordCount ?? 0} NRI source records with values${nriSummary?.duplicateFips ? ' · duplicate FIPS' : ''}${nriSummary?.invalidFips ? ' · malformed FIPS' : ''}`
+                            ? `State context only: sum of county-equivalent NRI expected annual loss ($${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}); native source scope is county FIPS; reporting period not stated; ${nriSummary.availableRecords}/${nriSummary.sourceRecordCount} source records; FEMA NRI data vintage ${nriSummary.sourceVersion}`
+                            : `State total not shown; ${nriSummary?.availableRecords ?? 0}/${nriSummary?.sourceRecordCount ?? 0} NRI county-equivalent records with values${nriSummary?.duplicateFips ? ' · duplicate FIPS' : ''}${nriSummary?.invalidFips ? ' · malformed FIPS' : ''}${nriSummary?.mixedSourceVersions ? ' · mixed FEMA NRI vintages' : ''}${nriSummary?.unstatedSourceVersion ? ' · FEMA NRI vintage not stated for every county' : ''}`
                           : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
                       </path>
                     );
@@ -1284,14 +1321,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         {stateMapLayer === 'fema-loss' ? (
                           <span className="text-slate-700 dark:text-slate-300">
-                            Sum of published NRI county-equivalent expected annual loss:{' '}
+                            State context: sum of county-equivalent NRI expected annual loss; native source scope is county FIPS; reporting period not stated:{' '}
                             <strong className="font-semibold">
                               {nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
                                 ? `$${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 : 'Not shown'}
                             </strong>
                             <span className="ml-1 text-[10px] text-slate-500">
-                              ({nriSummary?.availableRecords ?? 0}/{nriSummary?.sourceRecordCount ?? 0} source records have values; invalid/duplicate FIPS or missing values block the sum)
+                              ({nriSummary?.availableRecords ?? 0}/{nriSummary?.sourceRecordCount ?? 0} source records have values; invalid/duplicate FIPS, missing values, mixed/unstated FEMA NRI vintages block the sum; data vintage {nriSummary?.sourceVersion ?? 'not consistent'})
                             </span>
                           </span>
                         ) : (
@@ -1308,7 +1345,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             onClick={event => event.stopPropagation()}
                             className="text-[10px] text-blue-700 dark:text-blue-300 underline underline-offset-2"
                           >
-                            FEMA NRI source · {nriNationalQuery.data.sourceVersion}
+                            FEMA NRI source · data vintage {nriSummary.sourceVersion}
                           </a>
                         )}
                         <span className="text-slate-300 dark:text-slate-700">·</span>

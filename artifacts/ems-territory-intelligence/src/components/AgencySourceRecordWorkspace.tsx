@@ -15,7 +15,7 @@ import type {
 import type { AgencySourceRecordData } from "../services/agencySourceRecordStore";
 
 const GEOGRAPHIC_LEVELS: Array<{ value: GeographicLevel; label: string }> = [
-  { value: "agency", label: "This agency" },
+  { value: "agency", label: "This agency (source identifies it)" },
   { value: "station", label: "Station" },
   { value: "service-area", label: "Service area" },
   { value: "county", label: "County" },
@@ -25,6 +25,16 @@ const GEOGRAPHIC_LEVELS: Array<{ value: GeographicLevel; label: string }> = [
   { value: "state", label: "State" },
   { value: "national", label: "National" },
 ];
+
+function geographicLevelLabel(level?: GeographicLevel): string {
+  return GEOGRAPHIC_LEVELS.find((item) => item.value === level)?.label ?? "Scope not stated";
+}
+
+function geographicRelationshipLabel(
+  relationship?: GeographicRelationship,
+): string | undefined {
+  return GEOGRAPHIC_RELATIONSHIPS.find((item) => item.value === relationship)?.label;
+}
 
 const GEOGRAPHIC_RELATIONSHIPS: Array<{
   value: GeographicRelationship;
@@ -221,13 +231,7 @@ export function AgencySourceRecordWorkspace({
   const handleLevelChange = (next: GeographicLevel) => {
     setGeographicLevel(next);
     setGeographicId(next === "agency" ? agency.id : "");
-    setGeographicRelationship(
-      next === "agency"
-        ? ""
-        : next === "station"
-          ? "operates-station-in"
-          : "serves",
-    );
+    setGeographicRelationship("");
   };
 
   const handleAddFact = (event: FormEvent<HTMLFormElement>) => {
@@ -447,9 +451,17 @@ export function AgencySourceRecordWorkspace({
                                   <p className="text-slate-500 dark:text-slate-400">
                                     {[
                                       row.evidence.sourceKind?.toUpperCase(),
-                                      row.evidence.reportingPeriod,
-                                      row.evidence.geographicLevel,
+                                      row.evidence.reportingPeriod
+                                        ? `Reporting period: ${row.evidence.reportingPeriod}`
+                                        : "Reporting period not stated",
+                                      row.evidence.geographicLevel
+                                        ? `Scope: ${geographicLevelLabel(row.evidence.geographicLevel)}`
+                                        : "Scope not stated",
                                       row.evidence.geographicId,
+                                      geographicRelationshipLabel(row.evidence.geographicRelationship),
+                                      row.evidence.geographicMatchBasis
+                                        ? `Match: ${row.evidence.geographicMatchBasis}`
+                                        : undefined,
                                     ].filter(Boolean).join(" · ") || "Period and geography not recorded"}
                                   </p>
                                   {evidenceUrl && (
@@ -474,10 +486,13 @@ export function AgencySourceRecordWorkspace({
                                     <p className="text-slate-500 dark:text-slate-400">
                                       {[
                                         fact.basis,
-                                        fact.reportingPeriod,
-                                        fact.effectivePeriod,
-                                        fact.geographicLevel,
+                                        `Reporting period: ${fact.reportingPeriod || "not stated"}`,
+                                        fact.effectivePeriod
+                                          ? `Effective period: ${fact.effectivePeriod}`
+                                          : undefined,
+                                        `Scope: ${geographicLevelLabel(fact.geographicLevel)}`,
                                         fact.geographicId,
+                                        geographicRelationshipLabel(fact.geographicRelationship),
                                       ].filter(Boolean).join(" · ")}
                                     </p>
                                     {factUrl && (
@@ -678,23 +693,16 @@ export function AgencySourceRecordWorkspace({
                     )}
                   </p>
                   <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
-                    Scope: {fact.geographicLevel} · {fact.geographicId}
-                    {fact.geographicRelationship
-                      ? ` · ${fact.geographicRelationship}`
+                    Scope: {geographicLevelLabel(fact.geographicLevel)} · {fact.geographicId}
+                    {geographicRelationshipLabel(fact.geographicRelationship)
+                      ? ` · ${geographicRelationshipLabel(fact.geographicRelationship)}`
                       : ""}
                     {" · "}Basis: {fact.basis}
                   </p>
-                  {(fact.reportingPeriod || fact.effectivePeriod) && (
-                    <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
-                      {fact.reportingPeriod
-                        ? `Reporting period: ${fact.reportingPeriod}`
-                        : ""}
-                      {fact.reportingPeriod && fact.effectivePeriod ? " · " : ""}
-                      {fact.effectivePeriod
-                        ? `Effective period: ${fact.effectivePeriod}`
-                        : ""}
-                    </p>
-                  )}
+                  <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                    Reporting period: {fact.reportingPeriod || "Not stated"}
+                    {fact.effectivePeriod ? ` · Effective period: ${fact.effectivePeriod}` : ""}
+                  </p>
                   {fact.note && (
                     <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
                       {fact.note}
@@ -769,6 +777,9 @@ export function AgencySourceRecordWorkspace({
                   : "form-add-agency-source-fact"
               }
             >
+              <p className="rounded border border-blue-200 bg-white/70 p-2 text-[10px] leading-relaxed text-slate-600 dark:border-blue-900 dark:bg-slate-900/70 dark:text-slate-300">
+                Use “This agency” only when the source identifies this agency. County, state, and national values stay in their native scope; to relate one to the agency, enter its native geography ID and choose the relationship explicitly.
+              </p>
               {entryMode === "correction" && (
                 <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/70 p-2.5 dark:border-amber-900 dark:bg-amber-950/20">
                   <div>
@@ -1059,6 +1070,9 @@ export function AgencySourceRecordWorkspace({
                     ))}
                   </select>
                 </label>
+                <p className="sm:col-span-2 text-[9px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Source geography is recorded separately from the agency profile. A county or state value is not an agency-reported operational fact.
+                </p>
                 {geographicLevel !== "agency" && (
                   <>
                     <label>

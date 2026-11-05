@@ -6,7 +6,7 @@ import path from 'node:path';
 
 const baseUrl =
   process.env.PROFILE_TEST_URL ??
-  `http://127.0.0.1:${process.env.PORT ?? '24938'}/ems-territory-intelligence/`;
+  `http://127.0.0.1:${process.env.PORT ?? '24938'}/`;
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const testViewports = [
   { width: 360, height: 844, mobile: true },

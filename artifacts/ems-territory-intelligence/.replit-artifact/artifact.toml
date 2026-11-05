@@ -1,5 +1,5 @@
 kind = "web"
-previewPath = "/ems-territory-intelligence/"
+previewPath = "/"
 title = "EMS & Fire Territory Intelligence"
 description = "A field-sales and territory intelligence platform for EMS providers and fire departments, with agency management, healthcare insights, grant tracking, mapping, and mobile field workflows."
 version = "1.0.0"
@@ -8,7 +8,7 @@ router = "path"
 
 [[services]]
 name = "web"
-paths = [ "/ems-territory-intelligence/" ]
+paths = [ "/", "/ems-territory-intelligence/" ]
 localPort = 24938
 
 [services.development]
@@ -25,4 +25,4 @@ to = "/index.html"
 
 [services.env]
 PORT = "24938"
-BASE_PATH = "/ems-territory-intelligence/"
+BASE_PATH = "/"

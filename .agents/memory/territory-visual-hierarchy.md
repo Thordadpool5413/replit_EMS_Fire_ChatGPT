@@ -20,3 +20,9 @@ Do not modify the existing app logo during visual or responsive changes. If it a
 **Why:** The user repeatedly instructed that the logo must remain untouched.
 
 **How to apply:** Preserve the logo asset and its rendering; fix clipping through the containing header, spacing, or overflow behavior.
+
+On laptop Territory screens, align the explorer with the full workspace width and avoid centered narrow columns that leave large side gutters. Keep card columns wide enough for their labels and values to remain readable.
+
+**Why:** The user said the narrowed, multi-column laptop layout made the county map and cards worse to scan.
+
+**How to apply:** Compare the explorer edges with the shared workspace toolbar at laptop widths, and verify the card count and readability at both 1024px and 1366px.

@@ -12,6 +12,7 @@ import {
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
 import { getCountyDenialDisplay } from '../services/countyDenialProfileService';
+import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
@@ -417,9 +418,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     <span className="mt-0.5 block text-lg font-bold tabular-nums tracking-tight text-slate-950">
                       {inspectedCounty.population.toLocaleString()}
                     </span>
-                    <span className="mt-1 block text-[11px] text-slate-500">
-                      Source vintage not attached
-                    </span>
                   </div>
                   <div className="hidden">
                     <span className="text-[11px] font-sans text-slate-500 block">
@@ -533,6 +531,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </div>
                   </div>
                 </div>
+                <CountyFigureSourceDetails
+                  countyFips={inspectedCounty.countyFips}
+                  sources={inspectedCounty.node.countyRecord.figureSources}
+                />
                 {inspectedNri && (
                   <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600">
                     <summary className="cursor-pointer font-semibold text-slate-700">Additional FEMA context</summary>

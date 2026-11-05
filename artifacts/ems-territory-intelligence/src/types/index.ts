@@ -79,6 +79,19 @@ export interface CountyCityRecord {
   isCountySeat: boolean;
 }
 
+export type CountyFigureSourceKey =
+  | 'population'
+  | 'averageTransportMinutes'
+  | 'annualCardiacArrestIncidents';
+
+export interface CountyFigureSourceMetadata {
+  source?: string;
+  sourceUrl?: string;
+  vintage?: string;
+  scope?: string;
+  reportingPeriod?: string;
+}
+
 export interface CountyHealthRecord {
   countyFips: string;
   stateFips?: string;
@@ -98,6 +111,8 @@ export interface CountyHealthRecord {
   annualEmergencyTransports: number;
   annualCardiacArrestIncidents: number;
   averageTransportMinutes: number;
+  /** Per-figure provenance; absent metadata must be shown as unavailable, not inferred. */
+  figureSources?: Partial<Record<CountyFigureSourceKey, CountyFigureSourceMetadata>>;
   primaryCathLabDistanceMiles: number;
   activeEmsAgencies: number;
   primaryZipCodes: string[];

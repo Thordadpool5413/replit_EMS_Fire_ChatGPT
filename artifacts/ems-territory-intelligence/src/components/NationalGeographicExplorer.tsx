@@ -16,6 +16,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
+import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import {
   getCountyDenialDisplay,
   getCountyZipDenialProfiles,
@@ -1940,13 +1941,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                     <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
                       <span className="text-slate-600 pi-data-inline">
-                        <strong className="pi-data-number font-bold text-slate-900">{c.annualCardiacArrestIncidents.toLocaleString()}</strong> OHCA/yr · NEMSIS v3.5
+                        <strong className="pi-data-number font-bold text-slate-900">{c.annualCardiacArrestIncidents.toLocaleString()}</strong> OHCA/yr
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 font-semibold text-white transition-all group-hover:bg-blue-800">
                         Inspect county
                         <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
+                    <CountyFigureSourceDetails
+                      countyFips={c.countyFips}
+                      sources={c.figureSources}
+                    />
                   </div>
                 );
               })}

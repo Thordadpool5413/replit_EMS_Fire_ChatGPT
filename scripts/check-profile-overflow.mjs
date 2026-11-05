@@ -2893,6 +2893,7 @@ async function main() {
     if (process.env.HOME_MAP_ONLY === '1') {
       for (const viewport of [
         { width: 320, height: 740, mobile: true },
+        { width: 402, height: 700, mobile: true },
         { width: 390, height: 844, mobile: true },
         ...homeMapLandscapeViewports,
         { width: 1280, height: 900, mobile: false },

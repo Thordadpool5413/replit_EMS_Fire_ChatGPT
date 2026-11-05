@@ -10,9 +10,14 @@ interface CountyFigureSourceDetailsProps {
 }
 
 const FIGURES: Array<{ key: CountyFigureSourceKey; label: string }> = [
-  { key: 'population', label: 'Population' },
+  { key: 'population', label: 'Population reference' },
   { key: 'averageTransportMinutes', label: 'Average transport' },
-  { key: 'annualCardiacArrestIncidents', label: 'Annual OHCA' },
+  { key: 'annualCardiacArrestIncidents', label: 'Annual OHCA reference' },
+  { key: 'annualEmergencyTransports', label: 'Annual emergency transports' },
+  { key: 'seniorPopPct', label: 'Population age 65+' },
+  { key: 'medianIncome', label: 'Median income' },
+  { key: 'povertyRatePct', label: 'Poverty rate' },
+  { key: 'primaryCathLabDistanceMiles', label: 'Primary cath lab distance' },
 ];
 
 const safeSourceUrl = (value?: string) => {
@@ -30,17 +35,17 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
   sources,
 }) => (
   <details
-    className="group rounded-lg border border-slate-200 px-2.5 py-2 text-[10px] leading-relaxed text-slate-600"
+    className="county-figure-source-details group rounded-lg border border-slate-200 px-2.5 py-2 text-[10px] leading-relaxed text-slate-600"
     onClick={(event) => event.stopPropagation()}
   >
-    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
-      <span>Figure sources &amp; coverage</span>
-      <span className="shrink-0 text-[10px] font-medium text-slate-500">
+    <summary className="county-figure-source-summary flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
+      <span>Data sources &amp; coverage</span>
+      <span className="county-figure-source-toggle shrink-0 text-[10px] font-medium text-slate-500">
         <span className="group-open:hidden">Open details</span>
         <span className="hidden group-open:inline">Close details</span>
       </span>
     </summary>
-    <div className="mt-2 space-y-2">
+    <div className="county-figure-source-content mt-2 space-y-2">
       {FIGURES.map(({ key, label }) => {
         const metadata = sources?.[key];
         const sourceUrl = safeSourceUrl(metadata?.sourceUrl);

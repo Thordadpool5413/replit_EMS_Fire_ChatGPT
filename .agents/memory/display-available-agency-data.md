@@ -14,3 +14,9 @@ For missing agency metrics, show “Not reported” rather than substituting a t
 **Why:** sample fallbacks can be mistaken for agency-reported facts and impair user review.
 
 **How to apply:** use null-aware presence checks; label estimates, show their source inputs and formula, and never conflate absent data with zero.
+
+For county-directory provider totals, count unique agency records only when their county association uses an exact native geography ID or an explicitly confirmed link. Never derive provider totals from city or ZIP counts; omit the total when the county match is not supported.
+
+**Why:** a mapped-place count is not a provider count, and multiplying one by a constant presents fabricated coverage as a fact.
+
+**How to apply:** keep place coverage and provider-record coverage separate, and label any displayed record count by its actual match scope.

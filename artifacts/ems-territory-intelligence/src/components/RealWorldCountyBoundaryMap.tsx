@@ -389,33 +389,32 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
 
           {/* Right 5 Cols: Real-Time County Boundary & City Hierarchy Node Inspector */}
-          <div className="county-state-summary-panel lg:col-span-5 flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-4">
+          <div className="county-state-summary-panel county-inspector-panel lg:col-span-5 flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-4">
             {inspectedCounty ? (
-              <div className="space-y-3">
-                <div className="border-b border-slate-100 pb-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                      {hoveredCountyFips ? 'Map preview' : 'County overview'}
+              <div className="county-inspector-content">
+                <div className="county-inspector-heading">
+                  <div className="county-inspector-kicker-row">
+                    <span className="county-inspector-kicker">
+                      {hoveredCountyFips || !activeCountyNode ? 'Map preview' : 'Selected county'}
                     </span>
-                    <span className="font-mono text-[11px] font-medium tabular-nums text-slate-500">
+                    <span className="county-inspector-fips">
                       FIPS {inspectedCounty.countyFips}
                     </span>
                   </div>
-                  <h4 className="mt-1.5 text-xl font-bold tracking-tight text-slate-950">
+                  <h4 className="county-inspector-title">
                     {inspectedCounty.countyName}, {stateNode.stateName}
                   </h4>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
-                    <span>County seat <strong className="font-semibold text-slate-900">{inspectedCounty.countySeat}</strong></span>
-                    <span aria-hidden="true" className="text-slate-300">·</span>
+                  <div className="county-inspector-meta">
+                    <span>County seat <strong>{inspectedCounty.countySeat}</strong></span>
+                    <span aria-hidden="true">·</span>
                     <span>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</span>
                   </div>
                 </div>
 
-                {/* County context: large enough to scan, with source details kept accessible. */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                    <span className="block text-[11px] font-medium text-slate-500">Population reference</span>
-                    <span className="mt-0.5 block text-lg font-bold tabular-nums tracking-tight text-slate-950">
+                <div className="county-inspector-metrics">
+                  <div className="county-inspector-metric">
+                    <span className="county-inspector-metric-label">Population reference</span>
+                    <span className="county-inspector-metric-value">
                       {inspectedCounty.population.toLocaleString()}
                     </span>
                   </div>
@@ -490,72 +489,75 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       </span>
                     )}
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                    <span className="block text-[11px] font-medium text-slate-500">Average transport</span>
-                    <span className="mt-0.5 block text-lg font-bold tabular-nums tracking-tight text-blue-800">
-                      {inspectedCounty.averageTransportMinutes} min
+                  <div className="county-inspector-metric">
+                    <span className="county-inspector-metric-label">Average transport</span>
+                    <span className="county-inspector-metric-value county-inspector-metric-value-accent">
+                      {inspectedCounty.averageTransportMinutes}<small> min</small>
                     </span>
                   </div>
-                  <div className="col-span-2 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                    <div className="flex items-center justify-between gap-3 p-3">
-                      <div>
-                        <span className="block text-xs font-medium text-slate-500">FEMA risk rating</span>
-                        <span className="mt-1 block text-lg font-bold tracking-tight text-slate-950">
-                          {inspectedNri?.riskRating ?? 'No NRI record'}
-                        </span>
-                      </div>
-                      <span
-                        className="rounded-lg px-3 py-2 text-sm font-bold tabular-nums text-slate-950"
-                        style={{ backgroundColor: inspectedNri?.riskRating ? nriRatingColors[inspectedNri.riskRating] ?? '#CBD5E1' : '#E2E8F0' }}
-                      >
-                        {inspectedNri?.riskScore != null ? inspectedNri.riskScore.toFixed(2) : '—'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2">
-                      <span className="text-[11px] text-slate-500">
-                        {inspectedNri
-                          ? `Native scope: county-equivalent FIPS ${inspectedNri.countyFips} · reporting period not stated · FEMA NRI data vintage: ${inspectedNri.sourceVersion}`
-                          : 'No risk score reported'}
-                      </span>
-                      {inspectedNri?.sourceUrl && (
-                        <a
-                          href={inspectedNri.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline"
-                        >
-                          FEMA record
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
+                </div>
+
+                <section className="county-nri-panel" aria-label="FEMA National Risk Index">
+                  <div className="county-nri-main">
+                    <span
+                      className="county-nri-marker"
+                      style={{ backgroundColor: inspectedNri?.riskRating ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B' : '#64748B' }}
+                      aria-hidden="true"
+                    />
+                    <div className="county-nri-copy">
+                      <span className="county-inspector-metric-label">FEMA National Risk Index</span>
+                      <strong>{inspectedNri?.riskRating ?? 'No NRI record'}</strong>
                     </div>
                   </div>
-                </div>
+                  <div className="county-nri-score">
+                    <span>Score</span>
+                    <strong>{inspectedNri?.riskScore != null ? inspectedNri.riskScore.toFixed(2) : '—'}</strong>
+                  </div>
+                  <div className="county-nri-source">
+                    <span>
+                      {inspectedNri
+                        ? `County-equivalent FIPS ${inspectedNri.countyFips} · reporting period not stated · FEMA NRI vintage ${inspectedNri.sourceVersion}`
+                        : 'No risk score reported'}
+                    </span>
+                    {inspectedNri?.sourceUrl && (
+                      <a
+                        href={inspectedNri.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1 font-semibold"
+                      >
+                        FEMA record
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </section>
+
                 <CountyFigureSourceDetails
                   countyFips={inspectedCounty.countyFips}
                   sources={inspectedCounty.node.countyRecord.figureSources}
                 />
                 {inspectedNri && (
-                  <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600">
-                    <summary className="cursor-pointer font-semibold text-slate-700">Additional FEMA context</summary>
-                    <p className="mt-2 leading-relaxed">
+                  <details className="county-inspector-disclosure">
+                    <summary>Additional FEMA context</summary>
+                    <p>
                       FEMA National Risk Index context for {inspectedNri.countyName}, {inspectedNri.stateCode} · native scope: county-equivalent FIPS {inspectedNri.countyFips} · reporting period not stated · data vintage: {inspectedNri.sourceVersion} · population {inspectedNri.population?.toLocaleString() ?? 'not stated'} · expected annual loss ${inspectedNri.expectedAnnualLoss?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'not stated'} · social vulnerability {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · community resilience {inspectedNri.communityResilienceRating ?? 'not stated'}. These county-level measures are context only; they are not values for the city or an individual agency.
                     </p>
                   </details>
                 )}
 
                 {/* Mapped Real-World Cities in this County Node */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#0F172A]">
+                <div className="county-inspector-places">
+                  <div className="county-inspector-places-heading">
+                    <span className="county-inspector-subheading">
                       City/place reference labels ({inspectedCounty.node.citiesList.length})
                     </span>
-                    <span className="font-mono text-[11px] text-slate-500">
+                    <span className="county-inspector-zip">
                       ZIPs: {inspectedCounty.node.primaryZipCodes.slice(0, 4).join(', ')}
                     </span>
                   </div>
 
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+                  <div className="county-inspector-city-list max-h-48 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
                     {inspectedCounty.node.citiesList.map((cityNode) => (
                       <div
                         key={`${inspectedCounty.countyFips}-${cityNode.cityName}`}
@@ -563,13 +565,13 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-blue-50/60"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Building2 className="w-3.5 h-3.5 text-[#1E3A8A] shrink-0" />
-                          <span className="font-semibold text-[#0F172A] truncate">{cityNode.cityName}</span>
+                          <Building2 className="county-inspector-city-icon w-3.5 h-3.5 shrink-0" />
+                          <span className="county-inspector-city-name truncate">{cityNode.cityName}</span>
                           {cityNode.isCountySeat && (
-                            <span className="text-[10px] text-[#1E3A8A] font-medium shrink-0">(County Seat)</span>
+                            <span className="county-inspector-seat shrink-0">(County Seat)</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 tabular-nums shrink-0">
+                        <div className="county-inspector-city-meta flex items-center gap-2 font-mono text-[11px] tabular-nums shrink-0">
                           <span>ZIP {cityNode.zipCode}</span>
                           <span aria-hidden="true">·</span>
                           <span>{cityNode.latitude.toFixed(2)}°N</span>
@@ -582,12 +584,12 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
             ) : null}
 
             {inspectedCounty && (
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2 mt-4">
+              <div className="county-inspector-actions pt-4 border-t border-slate-100 flex items-center justify-between gap-2 mt-4">
                 <a
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${inspectedCounty.countyName}, ${stateNode.stateName}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#1E3A8A] hover:underline"
+                  className="county-inspector-map-link inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                 >
                   <span>Verify Boundary on Maps</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -596,7 +598,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 <button
                   type="button"
                   onClick={() => onSelectCounty(inspectedCounty.countyName, stateNode.stateCode)}
-                  className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-[#1E3A8A] text-white text-xs font-semibold transition-colors cursor-pointer"
+                  className="county-inspector-open-button px-4 py-2 rounded-lg text-white text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Open {inspectedCounty.countyName} Providers &rarr;
                 </button>

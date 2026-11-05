@@ -1722,7 +1722,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">County directory</p>
               <h3 className="mt-1 text-base font-bold tracking-tight text-slate-950">Browse {activeStateSummary?.state || selectedStateCode} counties</h3>
-              <p className="mt-0.5 text-xs text-slate-600">Open a county to review its cities and EMS/fire providers.</p>
+              <p className="mt-0.5 text-xs text-slate-600">County figures are reference context; review each source scope before applying them to a provider.</p>
             </div>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-slate-700">
               {paginatedCounties.length} shown · {availableCounties.length} total
@@ -1737,7 +1737,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
-                const cityCountInCounty = countyCities.length;
+                const mappedPlaceCount = c.cities?.length ?? 0;
                 const countyDenialDisplay = getCountyDenialDisplay(c);
                 const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
                 return (
@@ -1752,15 +1752,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
                       }
                     }}
-                    className="county-directory-card group relative flex min-h-0 cursor-pointer flex-col gap-2.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
+                    className="county-directory-card county-profile-card group relative flex min-h-0 cursor-pointer flex-col gap-2.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
+                    <div className="county-profile-card-content">
+                      <div className="county-profile-card-heading">
                         <div className="min-w-0">
-                          <h3 className="text-base font-bold tracking-tight text-slate-950 transition-colors group-hover:text-blue-800">
+                          <h3 className="county-profile-card-title">
                             {c.countyName}
                           </h3>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-slate-600">
+                          <div className="county-profile-card-meta">
                             <span>County seat <strong className="font-semibold text-slate-900">{c.countySeat}</strong></span>
                             <span aria-hidden="true">·</span>
                             <span className="pi-metric-id">FIPS {c.countyFips}</span>
@@ -1772,15 +1772,19 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             )}
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-800 pi-data-inline">
-                          {cityCountInCounty} {cityCountInCounty === 1 ? 'City' : 'Cities'} · {cityCountInCounty * 2} Providers
-                        </span>
+                        {mappedPlaceCount > 0 && (
+                          <span className="county-profile-place-count">
+                            {mappedPlaceCount} mapped {mappedPlaceCount === 1 ? 'place' : 'places'}
+                          </span>
+                        )}
                       </div>
 
                       {/* Real-World Boundary Coordinates & Verified USPS ZIPs */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-1.5 text-[10px] tabular-nums text-slate-500">
-                        <span>
-                          Centroid: {c.centroidLat ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng?.toFixed(3)}°W` : 'NAD83 Verified'}
+                      <div className="county-profile-geography">
+                        <span className="tabular-nums">
+                          Centroid: {c.centroidLat != null && c.centroidLng != null
+                            ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng.toFixed(3)}°W`
+                            : 'Not reported'}
                         </span>
                         {c.primaryZipCodes && c.primaryZipCodes.length > 0 && (
                           <span>ZIPs: {c.primaryZipCodes.slice(0, 3).join(', ')}</span>
@@ -1789,20 +1793,22 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                       {/* Connected Real US Census / USPS Cities in this County */}
                       <details
-                        className="county-city-disclosure group border-t border-slate-100 pt-2"
+                        className="county-city-disclosure county-profile-places group"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 [&::-webkit-details-marker]:hidden">
-                          <span>Cities and places</span>
-                          <span className="shrink-0 text-[10px] font-medium text-slate-500 group-open:text-blue-700">
-                            <span className="group-open:hidden">Show {cityCountInCounty}</span>
+                        <summary className="county-profile-places-summary">
+                          <span>{mappedPlaceCount > 0 ? 'Mapped places' : 'County seat reference'}</span>
+                          <span className="county-profile-places-toggle">
+                            <span className="group-open:hidden">
+                              {mappedPlaceCount > 0 ? `Show ${mappedPlaceCount}` : 'View seat'}
+                            </span>
                             <span className="hidden group-open:inline">Hide list</span>
                           </span>
                         </summary>
                         <div
-                          className="county-city-list mt-2 flex flex-wrap gap-1.5"
+                          className="county-city-list county-profile-city-list"
                           role="group"
-                          aria-label={`Cities and places in ${c.countyName}`}
+                          aria-label={`Mapped places and county seat reference for ${c.countyName}`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {countyCities.map(cityName => (
@@ -1819,7 +1825,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                   onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
                                 }
                               }}
-                              className="cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-medium leading-tight text-slate-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+                              className="county-profile-place-button"
                             >
                               {cityName}
                             </button>
@@ -1827,10 +1833,10 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                       </details>
 
-                      <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-xs tabular-nums">
-                        <div className="rounded-lg bg-slate-50 p-2">
-                          <span className="block text-[10px] font-medium text-slate-500">Population</span>
-                          <span className="mt-0.5 block text-base font-bold tracking-tight text-slate-950">{c.population.toLocaleString()}</span>
+                      <div className="county-profile-metrics" aria-label={`County reference figures for ${c.countyName}`}>
+                        <div className="county-profile-metric">
+                          <span>Population reference</span>
+                          <strong>{c.population.toLocaleString()}</strong>
                         </div>
                         <div className="hidden">
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
@@ -1932,18 +1938,53 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             </div>
                           )}
                         </div>
-                        <div className="rounded-xl bg-blue-50/70 p-3">
-                          <span className="block text-xs font-medium text-slate-500">Average transport</span>
-                          <span className="mt-1 block text-lg font-bold tracking-tight text-blue-800">{c.averageTransportMinutes} min</span>
+                        <div className="county-profile-metric county-profile-metric-accent">
+                          <span>Average transport</span>
+                          <strong>{c.averageTransportMinutes}<small> min</small></strong>
+                        </div>
+                        <div className="county-profile-metric">
+                          <span>Annual OHCA reference</span>
+                          <strong>{c.annualCardiacArrestIncidents.toLocaleString()}</strong>
                         </div>
                       </div>
+
+                      <details
+                        className="county-profile-context"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <summary>
+                          <span>More county context</span>
+                          <span>5 reference figures</span>
+                        </summary>
+                        <dl className="county-profile-context-grid">
+                          <div>
+                            <dt>Annual emergency transports</dt>
+                            <dd>{Number.isFinite(c.annualEmergencyTransports) ? c.annualEmergencyTransports.toLocaleString() : 'Not reported'}</dd>
+                          </div>
+                          <div>
+                            <dt>Population age 65+</dt>
+                            <dd>{Number.isFinite(c.seniorPopPct) ? `${c.seniorPopPct.toFixed(1)}%` : 'Not reported'}</dd>
+                          </div>
+                          <div>
+                            <dt>Median income</dt>
+                            <dd>{Number.isFinite(c.medianIncome) ? `$${c.medianIncome.toLocaleString()}` : 'Not reported'}</dd>
+                          </div>
+                          <div>
+                            <dt>Poverty rate</dt>
+                            <dd>{Number.isFinite(c.povertyRatePct) ? `${c.povertyRatePct.toFixed(1)}%` : 'Not reported'}</dd>
+                          </div>
+                          <div>
+                            <dt>Primary cath lab distance</dt>
+                            <dd>{Number.isFinite(c.primaryCathLabDistanceMiles) ? `${c.primaryCathLabDistanceMiles.toFixed(1)} mi` : 'Not reported'}</dd>
+                          </div>
+                        </dl>
+                        <p>County-level context only; it is not assigned to an individual provider.</p>
+                      </details>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
-                      <span className="text-slate-600 pi-data-inline">
-                        <strong className="pi-data-number font-bold text-slate-900">{c.annualCardiacArrestIncidents.toLocaleString()}</strong> OHCA/yr
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 font-semibold text-white transition-all group-hover:bg-blue-800">
+                    <div className="county-profile-card-footer">
+                      <span className="county-profile-data-note">County-level reference · review source scope</span>
+                      <span className="county-profile-card-action">
                         Inspect county
                         <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>

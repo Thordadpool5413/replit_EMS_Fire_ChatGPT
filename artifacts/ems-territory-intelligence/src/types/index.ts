@@ -82,7 +82,12 @@ export interface CountyCityRecord {
 export type CountyFigureSourceKey =
   | 'population'
   | 'averageTransportMinutes'
-  | 'annualCardiacArrestIncidents';
+  | 'annualCardiacArrestIncidents'
+  | 'annualEmergencyTransports'
+  | 'seniorPopPct'
+  | 'medianIncome'
+  | 'povertyRatePct'
+  | 'primaryCathLabDistanceMiles';
 
 export interface CountyFigureSourceMetadata {
   source?: string;

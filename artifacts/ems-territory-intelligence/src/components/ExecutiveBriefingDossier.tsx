@@ -254,12 +254,12 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           <div className="flex items-center gap-2">
             {downloadSuccess && (
               <span className="text-xs text-emerald-400 font-semibold bg-emerald-950/80 border border-emerald-700 px-2.5 py-1 rounded-md">
-                ✓ {downloadSuccess}
+                Saved · {downloadSuccess}
               </span>
             )}
             {errorMessage && (
               <span className="text-xs text-rose-300 font-semibold bg-rose-950/80 border border-rose-700 px-2.5 py-1 rounded-md">
-                ⚠ {errorMessage}
+                Issue · {errorMessage}
               </span>
             )}
 

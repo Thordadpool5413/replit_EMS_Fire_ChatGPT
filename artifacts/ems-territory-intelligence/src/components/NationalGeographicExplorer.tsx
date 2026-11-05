@@ -919,9 +919,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           </nav>
 
           {/* Right: Quick State & County Dropdown Pickers + Step Back Action */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="geography-drilldown-controls flex flex-wrap items-center gap-2">
             {/* Quick State Dropdown Picker */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
               <label htmlFor="breadcrumb-state-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
                 State:
               </label>
@@ -945,7 +945,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
             {/* Quick County Dropdown Picker (when a state is active) */}
             {selectedStateCode !== 'all' && availableCounties.length > 0 && (
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
                 <label htmlFor="breadcrumb-county-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
                   County:
                 </label>
@@ -978,6 +978,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               </div>
             )}
 
+            <div className="geography-drilldown-actions">
             {selectedCityName !== 'all' ? (
               <button
                 type="button"
@@ -1040,6 +1041,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             >
               Reset All
             </button>
+            </div>
           </div>
         </div>
       )}

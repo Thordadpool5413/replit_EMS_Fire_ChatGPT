@@ -560,9 +560,9 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
           {[
             { id: 'all', label: 'All Ranked', count: agencies.length },
-            { id: 'critical', label: '🚨 Critical (90d Expiry)', count: territoryStats.criticalCount },
+            { id: 'critical', label: 'Critical (90d expiry)', count: territoryStats.criticalCount },
             { id: 'high_priority', label: '⭐ PulseIQ estimate 80+', count: territoryStats.highPriorityCount },
-            { id: 'day_route', label: `🚗 Today's Route (${territoryStats.dayRouteCount})`, count: territoryStats.dayRouteCount },
+            { id: 'day_route', label: `Today's route (${territoryStats.dayRouteCount})`, count: territoryStats.dayRouteCount },
             { id: 'ems', label: 'EMS Providers', count: agencies.filter(a => a.providerCategory === 'EMS' || !a.agencyType.toLowerCase().includes('fire')).length },
             { id: 'fire', label: 'Fire Departments', count: agencies.filter(a => a.providerCategory === 'FIRE' || a.agencyType.toLowerCase().includes('fire')).length }
           ].map((pill) => {

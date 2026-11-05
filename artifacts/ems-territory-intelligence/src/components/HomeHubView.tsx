@@ -593,37 +593,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 aria-label={`Interactive United States map shaded by ${activeMapMetric.label}, zoom ${Math.round(mapZoom * 100)} percent`}
               >
                 <defs>
-                  <linearGradient id="home-map-ocean" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#153b4b" />
-                    <stop offset=".48" stopColor="#0d2939" />
-                    <stop offset="1" stopColor="#091c2b" />
-                  </linearGradient>
-                  <radialGradient id="home-map-atmosphere" cx=".53" cy=".43" r=".7">
-                    <stop offset="0" stopColor="#357888" stopOpacity=".4" />
-                    <stop offset=".55" stopColor="#1d4b5b" stopOpacity=".2" />
-                    <stop offset="1" stopColor="#071521" stopOpacity="0" />
-                  </radialGradient>
                   <filter id="home-map-land-glow" x="-12%" y="-12%" width="124%" height="124%">
                     <feGaussianBlur stdDeviation="9" />
                   </filter>
-                  <pattern id="home-map-bathymetry" width="260" height="180" patternUnits="userSpaceOnUse">
-                    <path d="M-34 111C12 58 67 47 110 72s79 29 136-15M-26 140C20 87 74 77 119 101s83 27 143-18M-9 168c39-43 84-48 126-27s78 24 129-12" fill="none" stroke="#85bdc4" strokeOpacity=".19" strokeWidth="1" />
-                    <path d="M189-25c-35 28-42 58-16 83s29 56 6 95M225-21c-35 28-42 58-16 83s29 56 6 95" fill="none" stroke="#85bdc4" strokeOpacity=".14" strokeWidth="1" />
-                  </pattern>
                   <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                     <rect width="7" height="7" fill="#172A3D" />
                     <path d="M 0 0 L 0 7" stroke="#8299AF" strokeWidth="2" />
                   </pattern>
                 </defs>
-                <rect width="920" height="500" fill="url(#home-map-ocean)" />
-                <rect width="920" height="500" fill="url(#home-map-atmosphere)" />
-                <rect width="920" height="500" fill="url(#home-map-bathymetry)" />
-                <g fill="none" stroke="#9bcbd0" strokeOpacity=".17" strokeWidth=".8" pointerEvents="none">
-                  <path d="M0 116C220 94 480 99 920 74M0 194C232 174 534 180 920 151M0 272C238 249 538 260 920 232M0 350C236 329 554 339 920 311M0 428C252 409 590 415 920 389" />
-                  <path d="M118 0C138 130 140 320 124 500M286 0C300 146 303 354 291 500M454 0C462 151 463 350 458 500M622 0C621 150 631 350 643 500M790 0C777 160 790 350 811 500" strokeDasharray="2 8" />
-                  <ellipse cx="465" cy="245" rx="400" ry="206" strokeOpacity=".12" strokeDasharray="3 8" />
-                  <ellipse cx="465" cy="245" rx="350" ry="178" strokeOpacity=".08" />
-                </g>
                 <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}

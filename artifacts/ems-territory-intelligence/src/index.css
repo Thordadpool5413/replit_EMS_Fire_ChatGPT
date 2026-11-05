@@ -6260,13 +6260,13 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .home-territory-map-screen-v2 .home-map-viewport {
   background:
-    radial-gradient(ellipse at 50% 48%, rgba(47, 110, 127, 0.32), transparent 68%),
-    radial-gradient(ellipse at 7% 78%, rgba(24, 91, 119, 0.16), transparent 38%),
-    radial-gradient(ellipse at 94% 18%, rgba(74, 137, 143, 0.14), transparent 38%),
-    repeating-radial-gradient(ellipse at 51% 47%, transparent 0 54px, rgba(127, 190, 196, 0.045) 55px 56px, transparent 57px 98px),
-    repeating-linear-gradient(0deg, rgba(144, 192, 197, 0.04) 0 1px, transparent 1px 52px),
-    repeating-linear-gradient(90deg, rgba(144, 192, 197, 0.035) 0 1px, transparent 1px 52px),
-    linear-gradient(150deg, #123344 0%, #0a1e2d 58%, #091a27 100%) !important;
+    radial-gradient(ellipse at 50% 44%, rgba(49, 123, 140, 0.3), transparent 58%),
+    radial-gradient(ellipse at 9% 20%, rgba(42, 113, 131, 0.18), transparent 36%),
+    radial-gradient(ellipse at 91% 78%, rgba(37, 103, 122, 0.2), transparent 38%),
+    repeating-radial-gradient(ellipse at 51% 48%, transparent 0 62px, rgba(145, 202, 205, 0.085) 63px 64px, transparent 65px 110px),
+    repeating-linear-gradient(0deg, rgba(159, 204, 208, 0.045) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, rgba(159, 204, 208, 0.04) 0 1px, transparent 1px 56px),
+    linear-gradient(150deg, #123748 0%, #0c2635 52%, #0a1d2b 100%) !important;
 }
 
 .home-territory-map-screen-v2 .home-map-viewport::after {

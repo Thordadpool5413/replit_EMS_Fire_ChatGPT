@@ -14,3 +14,9 @@ For county reference cards, use restrained cool hues to distinguish metric categ
 **Why:** population, transport time, and incident counts are descriptive measures, while a source-defined risk category has explicit severity semantics.
 
 **How to apply:** keep raw county metrics on blue/cyan/violet surfaces with clearly named labels; keep the FEMA rating aligned with its published category palette and scope note.
+
+Do not modify the existing app logo during visual or responsive changes. If it appears clipped, correct the surrounding layout rather than changing the logo asset or its styling.
+
+**Why:** The user repeatedly instructed that the logo must remain untouched.
+
+**How to apply:** Preserve the logo asset and its rendering; fix clipping through the containing header, spacing, or overflow behavior.

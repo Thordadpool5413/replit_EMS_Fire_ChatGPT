@@ -7875,18 +7875,33 @@ button { -webkit-tap-highlight-color: transparent; }
 
 /* Laptop density: keep county context scannable without oversized panels. */
 @media (min-width: 1024px) {
+  .territory-explorer-screen {
+    width: min(100%, 72rem);
+    margin-inline: auto;
+    gap: .65rem !important;
+  }
+
   .territory-explorer-screen .county-drilldown-shell {
-    gap: .55rem !important;
-    padding: .7rem !important;
+    gap: .45rem !important;
+    padding: .6rem !important;
   }
 
   .territory-explorer-screen .county-state-map-grid {
-    gap: .7rem !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: .6rem !important;
+  }
+
+  .territory-explorer-screen .county-state-map-grid > .county-state-map-panel {
+    grid-column: 1 !important;
+  }
+
+  .territory-explorer-screen .county-state-map-grid > .county-state-summary-panel {
+    grid-column: 2 !important;
   }
 
   .territory-explorer-screen .county-state-map-panel {
-    min-height: 330px !important;
-    padding: .8rem !important;
+    min-height: 290px !important;
+    padding: .65rem !important;
   }
 
   .territory-explorer-screen .county-state-map-panel > div:nth-child(2) {
@@ -7894,8 +7909,8 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .territory-explorer-screen .county-state-map-svg {
-    min-height: 235px !important;
-    max-height: 285px !important;
+    min-height: 215px !important;
+    max-height: 250px !important;
   }
 
   .territory-explorer-screen .county-state-map-panel > div:last-child {
@@ -7907,11 +7922,11 @@ button { -webkit-tap-highlight-color: transparent; }
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    padding: .8rem !important;
+    padding: .7rem !important;
   }
 
   .territory-explorer-screen .county-inspector-content {
-    gap: .65rem;
+    gap: .5rem;
   }
 
   .territory-explorer-screen .county-inspector-heading {
@@ -7919,21 +7934,21 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .territory-explorer-screen .county-inspector-title {
-    font-size: 1.1rem !important;
+    font-size: 1.08rem !important;
   }
 
   .territory-explorer-screen .county-inspector-meta {
     margin-top: .2rem;
-    font-size: .7rem;
+    font-size: .72rem;
   }
 
   .territory-explorer-screen .county-inspector-metric {
-    gap: .22rem;
-    padding: .55rem .62rem;
+    gap: .2rem;
+    padding: .48rem .55rem;
   }
 
   .territory-explorer-screen .county-inspector-metric-value {
-    font-size: 1.18rem;
+    font-size: 1.14rem;
   }
 
   .territory-explorer-screen .county-risk-explorer-header {
@@ -7950,9 +7965,9 @@ button { -webkit-tap-highlight-color: transparent; }
 
   .territory-explorer-screen .county-directory-card {
     min-height: 0 !important;
-    gap: .42rem !important;
-    padding: .72rem !important;
-    border-radius: .72rem !important;
+    gap: .36rem !important;
+    padding: .62rem !important;
+    border-radius: .68rem !important;
     box-shadow: 0 3px 12px -9px rgba(24, 50, 60, .28) !important;
   }
 
@@ -7961,62 +7976,62 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .territory-explorer-screen .county-profile-card-title {
-    font-size: 1rem !important;
+    font-size: 1.02rem !important;
   }
 
   .territory-explorer-screen .county-profile-card-meta {
-    margin-top: .2rem;
-    gap: .18rem .34rem;
-    font-size: .72rem;
+    margin-top: .16rem;
+    gap: .16rem .3rem;
+    font-size: .74rem;
   }
 
   .territory-explorer-screen .county-profile-place-count {
-    padding: .25rem .45rem;
+    padding: .22rem .42rem;
     font-size: .68rem;
   }
 
   .territory-explorer-screen .county-profile-geography {
-    gap: .25rem .5rem;
-    padding-top: .34rem;
-    font-size: .72rem;
+    gap: .2rem .4rem;
+    padding-top: .28rem;
+    font-size: .7rem;
   }
 
   .territory-explorer-screen .county-profile-places-summary {
-    min-height: 1.8rem;
+    min-height: 1.65rem;
     font-size: .75rem;
   }
 
   .territory-explorer-screen .county-profile-places-toggle {
-    font-size: .72rem;
+    font-size: .7rem;
   }
 
   .territory-explorer-screen .county-profile-metrics {
     gap: 0;
     overflow: hidden;
-    border: 1px solid #dce7eb;
-    border-radius: .68rem;
-    background: #f6fafb;
+    border: 1px solid #d8e3e8;
+    border-radius: .58rem;
+    background: #f8fafb;
   }
 
   .territory-explorer-screen .county-profile-metric {
-    gap: .32rem;
-    padding: .56rem .58rem;
+    gap: .26rem;
+    padding: .45rem .5rem;
     border: 0 !important;
     border-radius: 0;
     background: transparent !important;
   }
 
   .territory-explorer-screen .county-profile-metric > span {
-    font-size: .72rem;
+    font-size: .75rem;
     line-height: 1.25;
   }
 
   .territory-explorer-screen .county-profile-metric > strong {
-    font-size: 1.08rem;
+    font-size: 1.1rem;
   }
 
   .territory-explorer-screen .county-profile-metric + .county-profile-metric {
-    border-left: 1px solid #dce7eb !important;
+    border-left: 1px solid #d8e3e8 !important;
   }
 
   .territory-explorer-screen .county-profile-metric::before {
@@ -8024,52 +8039,52 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .territory-explorer-screen .county-profile-context > summary {
-    min-height: 1.8rem;
+    min-height: 1.65rem;
     font-size: .75rem;
   }
 
   .territory-explorer-screen .county-profile-context-grid > div {
-    padding: .46rem .54rem;
+    padding: .38rem .45rem;
   }
 
   .territory-explorer-screen .county-profile-context-grid dt {
-    font-size: .68rem;
+    font-size: .7rem;
   }
 
   .territory-explorer-screen .county-profile-context-grid dd {
-    margin-top: .16rem;
-    font-size: .9rem;
+    margin-top: .12rem;
+    font-size: .92rem;
   }
 
   .territory-explorer-screen .county-profile-card-footer {
-    gap: .45rem;
-    padding-top: .4rem;
+    gap: .35rem;
+    padding-top: .3rem;
   }
 
   .territory-explorer-screen .county-profile-data-note {
-    font-size: .68rem;
+    font-size: .66rem;
   }
 
   .territory-explorer-screen .county-profile-card-action {
-    min-height: 1.85rem;
-    padding: .35rem .56rem;
+    min-height: 1.75rem;
+    padding: .3rem .5rem;
     font-size: .72rem;
   }
 
   .territory-explorer-screen .county-directory-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    width: min(100%, 76rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22.5rem), 1fr)) !important;
+    width: min(100%, 72rem);
     margin-inline: auto;
-    gap: .75rem !important;
+    gap: .65rem !important;
   }
 
   .dark .territory-explorer-screen .county-profile-metrics {
-    border-color: #35505a;
-    background: #172b35;
+    border-color: #324852;
+    background: #17252e;
   }
 
   .dark .territory-explorer-screen .county-profile-metric + .county-profile-metric {
-    border-left-color: #35505a !important;
+    border-left-color: #324852 !important;
   }
 
   .workspace-grid-shell > .territory-workspace-nav {
@@ -8094,9 +8109,9 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .workspace-grid-shell > nav.territory-workspace-nav[aria-label="Territory views"] button[aria-current="page"] {
-    background: var(--pi-surface-bg) !important;
-    color: var(--pi-text-primary) !important;
-    box-shadow: 0 1px 2px rgba(24, 50, 60, .12) !important;
+    background: #285ee8 !important;
+    color: #fff !important;
+    box-shadow: 0 1px 3px rgba(40, 94, 232, .25) !important;
   }
 
   .dark .workspace-grid-shell > .territory-workspace-nav {

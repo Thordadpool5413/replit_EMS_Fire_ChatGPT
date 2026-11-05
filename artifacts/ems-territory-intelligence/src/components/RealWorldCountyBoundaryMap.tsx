@@ -306,8 +306,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       {/* Mode A: Statewide County Boundary Choropleth + Hierarchy Inspector */}
       {!activeCountyNode && (
         <div className="county-state-map-grid grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-          {/* Left 7 Cols: Interactive SVG County Boundary Map */}
-          <div className="county-state-map-panel relative isolate overflow-hidden rounded-xl border border-[#243751] bg-[#0A1526] p-3 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-4 lg:col-span-7 flex min-h-[320px] flex-col justify-between">
+          {/* Left 6 Cols: Interactive SVG County Boundary Map */}
+          <div className="county-state-map-panel relative isolate overflow-hidden rounded-xl border border-[#243751] bg-[#0A1526] p-3 shadow-[0_20px_50px_-30px_rgba(8,20,39,0.75)] sm:p-4 lg:col-span-6 flex min-h-[320px] flex-col justify-between">
             <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-medium text-slate-300">Select any county boundary to explore its cities and providers</span>
@@ -389,7 +389,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </div>
 
           {/* Right 5 Cols: Real-Time County Boundary & City Hierarchy Node Inspector */}
-          <div className="county-state-summary-panel county-inspector-panel lg:col-span-5 flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-4">
+          <div className="county-state-summary-panel county-inspector-panel lg:col-span-6 flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.42)] sm:p-4">
             {inspectedCounty ? (
               <div className="county-inspector-content">
                 <div className="county-inspector-heading">

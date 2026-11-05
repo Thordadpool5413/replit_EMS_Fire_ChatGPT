@@ -482,7 +482,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               title="Open Territory Strategy AI"
             >
               <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-300" />
-              <span className="truncate">Strategy AI</span>
+              <span className="pi-sidebar-long-label truncate">Strategy AI</span>
+              <span className="pi-sidebar-short-label">AI</span>
             </button>
           )}
 
@@ -511,7 +512,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               aria-expanded={isUtilityMenuOpen}
             >
               <CircleHelp className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span className="min-w-0 flex-1 truncate text-left">Help &amp; sources</span>
+              <span className="pi-sidebar-long-label min-w-0 flex-1 truncate text-left">Help &amp; sources</span>
+              <span className="pi-sidebar-short-label min-w-0 flex-1 truncate text-left">Help</span>
               <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
             </button>
             {isUtilityMenuOpen && (

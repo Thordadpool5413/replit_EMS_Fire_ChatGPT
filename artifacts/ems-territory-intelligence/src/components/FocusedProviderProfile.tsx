@@ -1079,10 +1079,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 }}
                 className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer shadow-2xs"
                 aria-label="Prepare for meeting"
+                data-testid="button-profile-prepare-meeting"
                 title="Open executive meeting strategy & discovery questions"
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>Prepare for Meeting</span>
+                <span>Meeting prep</span>
               </button>
 
               <button
@@ -1090,15 +1091,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 onClick={() => setIsSourceDrawerOpen(true)}
                 className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Inspect agency sources"
+                data-testid="button-profile-inspect-sources"
+                title="Inspect mapped agency source records"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Inspect Sources</span>
+                <span>Sources</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => onToggleRoute(agency.id)}
                 aria-label={agency.inDayRoute ? "Remove agency from today's route" : 'Add agency to route'}
+                data-testid="button-profile-toggle-route"
+                title={agency.inDayRoute ? "Remove from today's route" : 'Add to route'}
                 className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   agency.inDayRoute
                     ? 'bg-[#0B1728] dark:bg-blue-600 text-white'
@@ -1106,13 +1111,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 }`}
               >
                 <Navigation className="w-3.5 h-3.5 shrink-0" />
-                <span>{agency.inDayRoute ? 'In Route' : 'Add to Route'}</span>
+                <span>{agency.inDayRoute ? 'On route' : 'Add route'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => onToggleBookmark(agency.id)}
                 aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}
+                data-testid="button-profile-toggle-save"
                 className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   agency.isBookmarked
                     ? 'bg-[#285EE8] text-white'
@@ -1127,20 +1133,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDossierModal(true)}
+                data-testid="button-profile-print-brief"
+                title="Print agency brief"
                 className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] transition-colors cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Print Brief</span>
+                <span className="hidden sm:inline">Print</span>
               </button>
 
               {onOpenRfpGenerator && (
                 <button
                   type="button"
                   onClick={() => onOpenRfpGenerator(agency)}
+                  data-testid="button-profile-generate-rfp"
+                  title="Generate RFP specification"
                   className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer shadow-2xs"
                 >
                   <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span>Generate RFP Spec</span>
+                  <span>RFP spec</span>
                 </button>
               )}
         </div>
@@ -1207,7 +1217,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </p>
                 </div>
 
-                {/* Fast-review summary: contact, location, operations, and citations */}
+                {/* Fast-review summary: location is already in the identity line above. */}
                 <div className="profile-summary-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
                     <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Agency contact</h2>
@@ -1223,13 +1233,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {primaryContact.email}
                       </a>
                     )}
-                  </section>
-
-                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency location summary">
-                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Location</h2>
-                    <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white">{agency.address || 'Address not reported'}</p>
-                    <p className="mt-0.5 text-[#53657B] dark:text-slate-400">{[agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ') || 'Not reported'}</p>
-                    {safeExternalUrl(agency.googleMapsUri) && <a href={safeExternalUrl(agency.googleMapsUri)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-8 items-center gap-1 font-semibold text-[#285EE8] dark:text-blue-300"><MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Open map</a>}
                   </section>
 
                   <section className="profile-summary-panel profile-operations-summary min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency operations summary">

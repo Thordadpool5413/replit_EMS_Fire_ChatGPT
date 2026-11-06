@@ -2503,6 +2503,179 @@ textarea:disabled {
   padding: .75rem !important;
 }
 
+/* Provider dossier: evidence-first field briefing, tuned for laptop scan speed. */
+.provider-profile-overlay {
+  background: var(--pi-canvas-bg) !important;
+  overscroll-behavior-y: contain;
+}
+
+.profile-workspace {
+  --briefing-line: #d7e2df;
+  --briefing-paper: #fbfcf8;
+  --briefing-wash: #f0f5f2;
+}
+
+.profile-workspace > header {
+  min-height: 3.35rem !important;
+  padding-block: .35rem !important;
+}
+
+.profile-workspace > header > div {
+  max-width: 1580px;
+}
+
+.profile-workspace .profile-action-dock {
+  z-index: 29;
+  justify-content: flex-end;
+  max-width: 1580px;
+  width: 100%;
+  margin-inline: auto;
+  padding: .35rem clamp(.75rem, 1.6vw, 1.5rem) !important;
+  border-color: var(--briefing-line);
+  background: color-mix(in srgb, var(--pi-canvas-bg) 95%, transparent);
+}
+
+.profile-workspace > div:last-of-type {
+  max-width: 1580px !important;
+  padding-top: .65rem !important;
+  padding-bottom: 1rem !important;
+  row-gap: .75rem !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child {
+  padding: .95rem !important;
+  gap: .8rem !important;
+  border-radius: .85rem;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--pi-action-subtle) 45%, transparent), transparent 38%),
+    var(--briefing-paper) !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child > div:first-child {
+  gap: .75rem !important;
+  padding-bottom: .75rem !important;
+}
+
+.profile-workspace .profile-executive-header .pi-page-title {
+  font-size: clamp(1.35rem, 1.7vw, 1.75rem) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.035em !important;
+}
+
+.profile-workspace .profile-summary-grid {
+  gap: .55rem !important;
+}
+
+.profile-workspace .profile-summary-panel {
+  padding: .65rem !important;
+  line-height: 1.4;
+}
+
+.profile-workspace .profile-summary-panel h2 {
+  margin-bottom: .2rem;
+  font-size: .66rem;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.profile-workspace .profile-operations-summary {
+  border-left: 2px solid color-mix(in srgb, var(--pi-action) 60%, var(--briefing-line)) !important;
+}
+
+.profile-workspace .profile-review-strip {
+  border-color: var(--briefing-line) !important;
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] {
+  top: 3.35rem !important;
+  min-height: 2.65rem;
+  padding: .22rem !important;
+  box-shadow: 0 5px 16px -14px rgba(24, 50, 70, .55);
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+  min-height: 2.15rem !important;
+  padding: .45rem .65rem !important;
+  font-size: .69rem !important;
+}
+
+.profile-workspace details > summary {
+  letter-spacing: -.005em;
+}
+
+.profile-workspace .pi-surface,
+.profile-workspace section[class*="rounded-lg"][class*="border"],
+.profile-workspace section[class*="rounded-xl"][class*="border"] {
+  border-color: var(--briefing-line) !important;
+}
+
+.dark .profile-workspace {
+  --briefing-line: #2b434d;
+  --briefing-paper: #142832;
+  --briefing-wash: #1a333b;
+}
+
+.dark .profile-workspace > div:last-of-type > section:first-child {
+  background:
+    linear-gradient(110deg, rgba(54, 112, 106, .14), transparent 42%),
+    var(--briefing-paper) !important;
+}
+
+@media (min-width: 768px) {
+  .profile-workspace .profile-summary-panel a,
+  .profile-workspace .profile-summary-panel button {
+    min-height: 1.8rem;
+  }
+
+  .profile-workspace .profile-summary-panel p {
+    overflow-wrap: anywhere;
+  }
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] > div.hidden.md\:flex {
+    gap: .18rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .profile-workspace {
+    --briefing-paper: #fbfcf8;
+    padding-bottom: max(6rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .profile-workspace > header {
+    padding: .5rem .75rem !important;
+  }
+
+  .profile-workspace .profile-action-dock {
+    position: sticky;
+    top: calc(5.5rem + env(safe-area-inset-top));
+    z-index: 35;
+    justify-content: flex-start;
+    padding-inline: .7rem !important;
+    width: 100%;
+    margin-inline: 0;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .profile-workspace .profile-action-dock button,
+  .profile-workspace .profile-action-dock [data-testid="agency-compare-button"] {
+    min-height: 2.75rem !important;
+  }
+
+  .profile-workspace > div:last-of-type > section:first-child {
+    padding: .8rem !important;
+  }
+
+  .profile-workspace .profile-summary-panel {
+    padding: .75rem !important;
+  }
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] {
+    top: 0 !important;
+  }
+}
+
 .county-risk-explorer-header {
   gap: .75rem !important;
   padding: .75rem !important;
@@ -9372,5 +9545,107 @@ button { -webkit-tap-highlight-color: transparent; }
     padding: 0.25rem 0.48rem;
     font-size: 0.65rem;
     white-space: nowrap;
+  }
+}
+
+/* Provider profiles: remove duplicated location tiles and keep key facts on one scan line. */
+.profile-workspace .profile-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch;
+  gap: .35rem .75rem !important;
+}
+
+.profile-workspace .profile-summary-panel {
+  min-width: 0;
+  padding: .55rem .6rem !important;
+}
+
+.profile-workspace .profile-summary-panel h2 {
+  margin-bottom: .15rem;
+  font-size: .65rem;
+}
+
+.profile-workspace .profile-summary-panel ul {
+  margin-top: .25rem;
+  display: grid;
+  gap: .25rem;
+}
+
+.profile-workspace .profile-summary-panel li p,
+.profile-workspace .profile-summary-panel li a {
+  line-height: 1.3;
+}
+
+.profile-workspace .profile-operations-summary {
+  border-left: 2px solid color-mix(in srgb, var(--pi-action) 64%, var(--pi-border)) !important;
+}
+
+.profile-workspace .profile-review-strip {
+  padding-top: .55rem !important;
+}
+
+.profile-workspace .profile-review-strip > div > p {
+  margin-top: .15rem !important;
+  font-size: .65rem !important;
+}
+
+.profile-workspace .profile-executive-header > details {
+  padding: .45rem .65rem !important;
+}
+
+.profile-workspace .profile-executive-header > details > summary {
+  min-height: 1.8rem !important;
+  font-size: .76rem !important;
+}
+
+.profile-workspace .profile-action-dock {
+  flex-wrap: nowrap !important;
+  justify-content: flex-start;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.profile-workspace .profile-action-dock > * {
+  flex: 0 0 auto;
+}
+
+.profile-workspace .profile-action-dock button {
+  min-height: 2.1rem !important;
+  padding-inline: .6rem !important;
+}
+
+@media (min-width: 1200px) {
+  .profile-workspace .profile-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .profile-workspace .profile-action-dock {
+    max-width: 1580px;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .profile-workspace .profile-summary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: .25rem !important;
+  }
+
+  .profile-workspace .profile-action-dock {
+    position: sticky;
+    top: calc(5.5rem + env(safe-area-inset-top));
+    z-index: 35;
+    justify-content: flex-start;
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: .7rem !important;
+  }
+
+  .profile-workspace .profile-action-dock button,
+  .profile-workspace .profile-action-dock [data-testid="agency-compare-button"] {
+    min-height: 2.75rem !important;
   }
 }

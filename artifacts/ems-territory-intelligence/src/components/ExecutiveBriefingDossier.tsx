@@ -279,6 +279,17 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       ]);
 
       // Capture at 2x scale with guaranteed solid white background
+      const searchableText: Array<{
+        text: string;
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+        fontSize: number;
+        bold: boolean;
+        italic: boolean;
+      }> = [];
+      let searchableLayoutWidth = element.getBoundingClientRect().width;
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -290,6 +301,45 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           if (docEl) {
             docEl.style.backgroundColor = '#ffffff';
             docEl.style.color = '#0f172a';
+
+            const rootRect = docEl.getBoundingClientRect();
+            searchableLayoutWidth = rootRect.width;
+            const walker = clonedDoc.createTreeWalker(
+              docEl,
+              clonedDoc.defaultView?.NodeFilter.SHOW_TEXT ?? NodeFilter.SHOW_TEXT,
+            );
+            const range = clonedDoc.createRange();
+
+            while (walker.nextNode()) {
+              const textNode = walker.currentNode as Text;
+              const parent = textNode.parentElement;
+              const text = textNode.textContent ?? '';
+              if (!parent || !text.trim()) continue;
+
+              const style = clonedDoc.defaultView?.getComputedStyle(parent);
+              if (!style || style.display === 'none' || style.visibility === 'hidden') continue;
+
+              const words = /\S+/g;
+              let match: RegExpExecArray | null;
+              while ((match = words.exec(text))) {
+                range.setStart(textNode, match.index);
+                range.setEnd(textNode, match.index + match[0].length);
+                const rect = range.getBoundingClientRect();
+                if (!rect.width || !rect.height) continue;
+
+                searchableText.push({
+                  text: match[0],
+                  left: rect.left - rootRect.left,
+                  top: rect.top - rootRect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  fontSize: Number.parseFloat(style.fontSize) || rect.height,
+                  bold: Number.parseInt(style.fontWeight, 10) >= 600 || style.fontWeight === 'bold',
+                  italic: style.fontStyle === 'italic',
+                });
+              }
+            }
+            range.detach();
           }
         }
       });
@@ -304,23 +354,38 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       const pageHeight = 279.4; // Letter height in mm
       const margin = 8;
       const contentWidth = pageWidth - (margin * 2);
+      const contentHeight = pageHeight - (margin * 2);
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const cssPixelToMm = imgWidth / searchableLayoutWidth;
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      let heightLeft = imgHeight;
-      let position = margin;
+      const pageCount = Math.max(1, Math.ceil(imgHeight / contentHeight));
 
-      // Page 1
-      pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - (margin * 2));
+      // Keep the existing image-based appearance and page breaks.
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        if (pageIndex > 0) pdf.addPage('letter', 'p');
+        pdf.addImage(imgData, 'JPEG', margin, margin - pageIndex * contentHeight, imgWidth, imgHeight);
+      }
 
-      // Subsequent pages if content overflows
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + margin;
-        pdf.addPage('letter', 'p');
-        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-        heightLeft -= (pageHeight - (margin * 2));
+      // Add invisible positioned text so the PDF can be searched and copied.
+      for (const item of searchableText) {
+        const baselineMm = (item.top + item.height * 0.82) * cssPixelToMm;
+        const pageIndex = Math.floor(baselineMm / contentHeight);
+        if (pageIndex >= pageCount) continue;
+
+        pdf.setPage(pageIndex + 1);
+        pdf.setFont('helvetica', item.bold ? 'bold' : item.italic ? 'italic' : 'normal');
+        pdf.setFontSize(Math.max(1, item.fontSize * 0.75));
+        pdf.text(
+          item.text,
+          margin + item.left * cssPixelToMm,
+          margin + baselineMm - pageIndex * contentHeight,
+          {
+            renderingMode: 'invisible',
+            maxWidth: Math.max(0.1, item.width * cssPixelToMm),
+          },
+        );
       }
 
       const cleanFileName = agency.name.replace(/[^a-zA-Z0-9]/g, '_');

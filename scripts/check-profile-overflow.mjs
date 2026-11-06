@@ -674,11 +674,20 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     60_000,
   );
   await openAgencyProfile(cdp, providerCategory, agencyName);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="profile-bottom-details"]')?.querySelector(
+      '[data-testid^="panel-profile-review-"]'
+    ))`,
+    'the supplemental profile details at the end of the profile',
+  );
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
 
   const summary = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
     const executiveHeader = profile?.querySelector('[aria-label="Account 360 Executive Decision Header"]');
+    const bottomDetails = profile?.querySelector('[data-testid="profile-bottom-details"]');
+    const topicNavigation = profile?.querySelector('[data-testid="profile-topic-navigation"]');
     const title = executiveHeader?.querySelector('h1');
     const summaryGrid = executiveHeader?.querySelector('.profile-summary-grid');
     const summaries = [
@@ -725,6 +734,17 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
       summaryPanelCount: summaryGrid?.querySelectorAll('.profile-summary-panel').length ?? 0,
       operationsLead: profile?.querySelector('[aria-label="Agency operations summary"] .profile-operations-lead')
         ?.innerText.trim() ?? '',
+      bottomDetailsLabels: [...(bottomDetails?.querySelectorAll('summary') ?? [])]
+        .map((summary) => summary.innerText.trim()),
+      bottomReviewAction: bottomDetails?.querySelector('[data-testid^="button-mark-profile-reviewed-"]')
+        ?.innerText.trim() ?? '',
+      detailsAfterTopicNavigation: Boolean(topicNavigation && bottomDetails &&
+        (topicNavigation.compareDocumentPosition(bottomDetails) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      headerContainsDeferredSections: Boolean(executiveHeader?.innerText.includes(
+        'Registry identifiers and verification'
+      ) || executiveHeader?.innerText.includes('Planning scores and estimates') ||
+        executiveHeader?.innerText.includes('Assessment and planning context') ||
+        executiveHeader?.innerText.includes('I reviewed these details')),
       positions,
       panels,
     };
@@ -735,11 +755,29 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
       summary.summaryGridCount === 1 &&
       summary.summaryPanelCount === 3 &&
       summary.operationsLead.length > 0 &&
+      summary.bottomDetailsLabels.includes('Registry identifiers and verification') &&
+      summary.bottomDetailsLabels.includes('Planning scores and estimates') &&
+      summary.bottomDetailsLabels.includes('Assessment and planning context') &&
+      summary.bottomReviewAction.includes('I reviewed these details') &&
+      summary.detailsAfterTopicNavigation &&
+      !summary.headerContainsDeferredSections &&
       summary.positions.every((item) => item.present && item.visible && item.fits) &&
       summary.panels.every((panel) =>
         panel.count === 1 && panel.hasHeading && panel.hasContent && panel.visible && panel.fits),
     `${providerCategory.toUpperCase()} compact profile summary regressed at ${viewport.width}px for ${agencyName}: ${JSON.stringify(summary)}`,
   );
+  if (viewport.width === 390 || viewport.width === 1280) {
+    await evaluate(cdp, `document.querySelector('[data-testid="profile-bottom-details"]')
+      ?.scrollIntoView({ block: 'start' })`);
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile(
+      `/tmp/ems-${providerCategory}-profile-bottom-${viewport.width}.png`,
+      Buffer.from(screenshot.result.data, 'base64'),
+    );
+  }
 
   const toolbar = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Agency,
   LeadStage,
@@ -472,6 +473,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
   const [profileReviewError, setProfileReviewError] = useState('');
+  const [profileDetailsHost, setProfileDetailsHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setProfileReviewedAt(getAgencyProfileReviewedAt(rawAgency.id));
@@ -1301,7 +1303,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </section>
                 </div>
 
-                <div
+                {profileDetailsHost && createPortal(
+                  <div
                   className="profile-review-strip flex min-w-0 flex-col gap-2 border-t border-[#DFE6EF] pt-3 dark:border-[#1E2D42] sm:flex-row sm:items-center sm:justify-between"
                   data-testid={`panel-profile-review-${agency.id}`}
                 >
@@ -1350,9 +1353,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                     {profileReviewedAt ? 'Review again' : 'I reviewed these details'}
                   </button>
-                </div>
+                  </div>,
+                  profileDetailsHost,
+                )}
               </div>
 
+              {profileDetailsHost && createPortal(
               <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
                 <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Registry identifiers and verification</summary>
                 <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 text-xs text-[#53657B] dark:text-slate-400">
@@ -1398,9 +1404,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </button>
                   )}
                 </div>
-              </details>
+              </details>,
+              profileDetailsHost,
+              )}
 
               {/* Less-frequent commercial planning details remain available but collapsed by default. */}
+              {profileDetailsHost && createPortal(
               <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
                 <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Planning scores and estimates</summary>
                 <div className="mt-3 space-y-3">
@@ -1463,12 +1472,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   )}
                 </div>
                 </div>
-              </details>
+              </details>,
+              profileDetailsHost,
+              )}
             </div>
 
             {/* ================================================================
                 BLOCK 2: ACCOUNT ASSESSMENT (4 EVIDENCE-GROUNDED PILLARS)
                ================================================================ */}
+            {profileDetailsHost && createPortal(
             <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
               <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Assessment and planning context</summary>
               <div className="mt-3 space-y-5">
@@ -1751,7 +1763,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             )}
               </div>
-            </details>
+            </details>,
+            profileDetailsHost,
+            )}
           </section>
 
           {/* ================================================================
@@ -3737,6 +3751,25 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             />
           </section>
         )}
+
+        <section
+          aria-label="Additional profile details"
+          className="pi-surface space-y-4 p-4 sm:p-5"
+        >
+          <div>
+            <h2 className="text-sm font-semibold text-[#14283F] dark:text-white">
+              Additional profile details
+            </h2>
+            <p className="mt-1 text-xs text-[#53657B] dark:text-slate-400">
+              Registry identifiers, planning estimates, assessment context, and your review.
+            </p>
+          </div>
+          <div
+            ref={setProfileDetailsHost}
+            className="flex flex-col gap-4"
+            data-testid="profile-bottom-details"
+          />
+        </section>
 
       </div>
       </main>

@@ -9,6 +9,12 @@ Use the installed Chromium binary with Node's built-in WebSocket and Chrome DevT
 
 **How to apply:** Extend the existing profile overflow browser script for similar viewport checks. Return booleans and plain measurements from DevTools evaluations; do not return DOM nodes by value. Compare in-page values inside the evaluation or against measurements returned to Node.
 
+For rem-sized layout invariants, calculate expected geometry from the live root font size and compare the rendered box model, including borders, rather than assuming a fixed pixel size.
+
+**Why:** The app's root font size and box sizing affect measured dimensions, so hard-coded pixel assumptions can fail even when the visible layout has not changed.
+
+**How to apply:** Use `getComputedStyle(document.documentElement).fontSize` for rem conversions and measure both the frame and its rendered image or content.
+
 Run feature-specific profile checks from the app shell and navigate directly to the profile flow instead of waiting for home-map data. Keep route smoke checks and unrelated map readiness out of focused profile failures.
 
 **Why:** A profile layout regression should remain diagnosable even when territory-map services or published routes have unrelated loading problems.

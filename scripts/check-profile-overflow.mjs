@@ -48,6 +48,20 @@ const workspaceRegressionViewports = [
   { width: 768, height: 900, mobile: false },
   { width: 1280, height: 900, mobile: false },
 ];
+const sharedNavigationDesktopViewports = [1024, 1280, 1366].map((width) => ({
+  width,
+  height: 900,
+  mobile: false,
+}));
+const sharedNavigationMobileViewports = [
+  { width: 390, height: 844, mobile: true },
+];
+const sharedNavigationWorkspaces = [
+  { label: 'Home', navLabel: null },
+  { label: 'Territory', navLabel: 'Territory views' },
+  { label: 'Agencies', navLabel: null },
+  { label: 'Field Work', navLabel: 'Field Work views' },
+];
 const interactionViewports = [
   { width: 320, height: 740, mobile: true },
   { width: 360, height: 844, mobile: true },
@@ -276,6 +290,406 @@ async function clickVisibleButton(cdp, label, description = label) {
     return true;
   })()`);
   assert(clicked, `Could not reach the ${description} button at this viewport`);
+}
+
+async function openPrimaryWorkspace(cdp, label, navSelector) {
+  const clicked = await evaluate(cdp, `(() => {
+    const nav = document.querySelector(${JSON.stringify(navSelector)});
+    const button = [...(nav?.querySelectorAll('button') ?? [])].find((candidate) => {
+      const text = candidate.innerText.trim().replace(/\\s+/g, ' ');
+      return text === ${JSON.stringify(label)} || text.startsWith(${JSON.stringify(`${label} `)});
+    });
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(clicked, `Could not open "${label}" from ${navSelector}`);
+  await waitFor(
+    cdp,
+    `(() => {
+      const nav = document.querySelector(${JSON.stringify(navSelector)});
+      return [...(nav?.querySelectorAll('button') ?? [])].some((button) => {
+        const text = button.innerText.trim().replace(/\\s+/g, ' ');
+        return (text === ${JSON.stringify(label)} || text.startsWith(${JSON.stringify(`${label} `)})) &&
+          button.getAttribute('aria-current') === 'page';
+      });
+    })()`,
+    `"${label}" navigation selection`,
+  );
+}
+
+async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+
+  const pageLayout = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const sidebar = document.querySelector('.pi-primary-sidebar');
+    const primaryNav = sidebar?.querySelector('.pi-primary-nav');
+    const logo = sidebar?.querySelector('.pi-sidebar-logo');
+    const logoImage = logo?.querySelector('img');
+    const logoHeader = sidebar?.querySelector(':scope > div:first-child');
+    const logoRect = logo?.getBoundingClientRect();
+    const logoHeaderRect = logoHeader?.getBoundingClientRect();
+    const labels = ['Home', 'Agencies', 'Territory', 'Field Work'];
+    const primaryItems = labels.map((label) => {
+      const button = [...(primaryNav?.querySelectorAll('button') ?? [])].find((candidate) => {
+        const text = candidate.innerText.trim().replace(/\\s+/g, ' ');
+        return text === label || text.startsWith(label + ' ');
+      });
+      if (!button) return { label, missing: true };
+      const row = button.parentElement?.classList.contains('rounded-lg')
+        ? button.parentElement
+        : button;
+      const bounds = row.getBoundingClientRect();
+      const labelSpan = [...button.querySelectorAll('span')]
+        .find((span) => span.innerText.trim().startsWith(label));
+      const labelStyle = labelSpan ? getComputedStyle(labelSpan) : getComputedStyle(button);
+      const rowStyle = getComputedStyle(button);
+      const rect = bounds.toJSON();
+      return {
+        label,
+        selected: button.getAttribute('aria-current') === 'page',
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+        fontSize: Number.parseFloat(labelStyle.fontSize),
+        labelWidth: labelSpan?.clientWidth ?? button.clientWidth,
+        labelScrollWidth: labelSpan?.scrollWidth ?? button.scrollWidth,
+        visible: rect.width > 0 && rect.height > 0 &&
+          rect.left >= -1 && rect.right <= innerWidth + 1 &&
+          rect.top >= 0 && rect.bottom <= innerHeight,
+        buttonDisplay: rowStyle.display,
+      };
+    });
+    const tabs = document.querySelector(${JSON.stringify(
+      workspace.navLabel
+        ? `nav[aria-label="${workspace.navLabel}"]`
+        : 'nav[aria-label="__no_workspace_tabs__"]',
+    )});
+    const tabButtons = [...(tabs?.querySelectorAll('button') ?? [])].map((button) => {
+      const bounds = button.getBoundingClientRect();
+      const rect = bounds.toJSON();
+      const style = getComputedStyle(button);
+      return {
+        label: button.innerText.trim().replace(/\\s+/g, ' '),
+        selected: button.getAttribute('aria-current') === 'page',
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        height: rect.height,
+        minHeight: Number.parseFloat(style.minHeight),
+        fontSize: Number.parseFloat(style.fontSize),
+        width: rect.width,
+        scrollWidth: button.scrollWidth,
+        visible: rect.width > 0 && rect.height > 0 &&
+          rect.left >= -1 && rect.right <= innerWidth + 1,
+      };
+    });
+    return {
+      viewport: innerWidth,
+      documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
+      sidebar: sidebar ? {
+        width: sidebar.getBoundingClientRect().width,
+        clientWidth: sidebar.clientWidth,
+        scrollWidth: sidebar.scrollWidth,
+        visible: getComputedStyle(sidebar).display !== 'none',
+      } : null,
+      logo: logo && logoImage && logoRect && logoHeaderRect ? {
+        src: logoImage.currentSrc,
+        naturalWidth: logoImage.naturalWidth,
+        rootFontSize: Number.parseFloat(getComputedStyle(root).fontSize),
+        width: logoRect.width,
+        height: logoRect.height,
+        imageWidth: logoImage.getBoundingClientRect().width,
+        imageHeight: logoImage.getBoundingClientRect().height,
+        objectFit: getComputedStyle(logoImage).objectFit,
+        centeredX: Math.abs((logoRect.left + logoRect.right) / 2 -
+          (logoHeaderRect.left + logoHeaderRect.right) / 2) <= 1,
+        centeredY: Math.abs((logoRect.top + logoRect.bottom) / 2 -
+          (logoHeaderRect.top + logoHeaderRect.bottom) / 2) <= 1,
+      } : null,
+      primaryNav: primaryNav ? {
+        clientWidth: primaryNav.clientWidth,
+        scrollWidth: primaryNav.scrollWidth,
+      } : null,
+      primaryItems,
+      tabs: tabs ? {
+        clientWidth: tabs.clientWidth,
+        scrollWidth: tabs.scrollWidth,
+        buttons: tabButtons,
+      } : null,
+    };
+  })()`);
+
+  assert(pageLayout?.sidebar?.visible, `Desktop sidebar is not visible at ${viewport.width}px`);
+  assert(
+    pageLayout.documentWidth <= viewport.width + 1,
+    `Document horizontally overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout)}`,
+  );
+  assert(
+    pageLayout.sidebar.width > 0 &&
+      pageLayout.sidebar.scrollWidth <= pageLayout.sidebar.clientWidth + 1,
+    `Desktop sidebar overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.sidebar)}`,
+  );
+  assert(
+    pageLayout.logo?.src.includes('nicks_ems_logo_1792367124466.jpg') &&
+      pageLayout.logo.naturalWidth > 0 &&
+      Math.abs(pageLayout.logo.width - pageLayout.logo.rootFontSize * 8.5) < 0.1 &&
+      Math.abs(pageLayout.logo.height - pageLayout.logo.rootFontSize * 8.5) < 0.1 &&
+      Math.abs(pageLayout.logo.imageWidth - (pageLayout.logo.width - 2)) < 0.1 &&
+      Math.abs(pageLayout.logo.imageHeight - (pageLayout.logo.height - 2)) < 0.1 &&
+      pageLayout.logo.objectFit === 'cover' &&
+      pageLayout.logo.centeredX &&
+      pageLayout.logo.centeredY,
+    `Desktop logo asset, 8.5rem size, position, or crop changed at ${viewport.width}px: ${JSON.stringify(pageLayout.logo)}`,
+  );
+  assert(
+    pageLayout.primaryNav &&
+      pageLayout.primaryNav.scrollWidth <= pageLayout.primaryNav.clientWidth + 1,
+    `Primary navigation overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.primaryNav)}`,
+  );
+  assert(
+    pageLayout.primaryItems.every((item) =>
+      !item.missing && item.visible && item.fontSize >= 11 &&
+      item.labelScrollWidth <= item.labelWidth + 1 && item.height >= 28),
+    `Primary navigation buttons are clipped, too small, or unreadable at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.primaryItems)}`,
+  );
+  const primaryLeft = Math.min(...pageLayout.primaryItems.map(({ left }) => left));
+  const primaryRight = Math.max(...pageLayout.primaryItems.map(({ right }) => right));
+  const primaryHeights = pageLayout.primaryItems.map(({ height }) => height);
+  const primaryWorkspaceGaps = [
+    pageLayout.primaryItems[1].top - pageLayout.primaryItems[0].bottom,
+    pageLayout.primaryItems[3].top - pageLayout.primaryItems[2].bottom,
+  ];
+  assert(
+    pageLayout.primaryItems.every(({ left, right }) =>
+      Math.abs(left - primaryLeft) <= 1 && Math.abs(right - primaryRight) <= 1) &&
+      Math.max(...primaryHeights) - Math.min(...primaryHeights) <= 2 &&
+      primaryHeights.every((height) => height <= 40) &&
+      primaryWorkspaceGaps.every((gap) => gap > 0) &&
+      Math.abs(primaryWorkspaceGaps[0] - primaryWorkspaceGaps[1]) <= 2,
+    `Primary navigation buttons are not consistently aligned at ${viewport.width}px: ${JSON.stringify(pageLayout.primaryItems)}`,
+  );
+  assert(
+    pageLayout.primaryItems.find((item) => item.label === workspace.label)?.selected,
+    `"${workspace.label}" is not selected in the primary navigation at ${viewport.width}px`,
+  );
+
+  if (workspace.navLabel) {
+    const tabs = pageLayout.tabs;
+    const tabGaps = tabs?.buttons.slice(1).map((button, index) =>
+      button.left - tabs.buttons[index].right) ?? [];
+    assert(
+      tabs && tabs.buttons.length > 0,
+      `${workspace.navLabel} is missing at ${viewport.width}px`,
+    );
+    assert(
+      tabs.scrollWidth <= tabs.clientWidth + 1 &&
+        tabs.buttons.every((button) =>
+          button.visible && button.minHeight >= 28 && button.fontSize >= 10.5 &&
+          button.height <= 44 && button.scrollWidth <= button.width + 1) &&
+        tabGaps.every((gap) => gap >= 0) &&
+        (tabGaps.length < 2 || Math.max(...tabGaps) - Math.min(...tabGaps) <= 1.5),
+      `${workspace.navLabel} is overflowing or has undersized/clipped buttons at ${viewport.width}px: ${JSON.stringify(tabs)}`,
+    );
+    assert(
+      tabs.buttons.some((button) => button.selected),
+      `${workspace.navLabel} has no selected tab at ${viewport.width}px`,
+    );
+  } else {
+    assert(!pageLayout.tabs, `Unexpected workspace tabs appeared for ${workspace.label} at ${viewport.width}px`);
+  }
+
+  console.log(`✓ ${viewport.width}px: ${workspace.label} shared navigation, alignment, logo, and overflow`);
+}
+
+async function checkSharedNavigationMobile(cdp, viewport) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('nav[aria-label="Mobile primary workspaces"] button')) &&
+      document.querySelector('.pi-command-header')?.getBoundingClientRect().width > 0`,
+    `mobile navigation at ${viewport.width}px`,
+    60_000,
+  );
+
+  const logoLayout = await evaluate(cdp, `(() => {
+    const header = document.querySelector('.pi-command-header');
+    const logo = document.querySelector('.pi-mobile-logo');
+    const image = logo?.querySelector('img');
+    const bounds = logo?.getBoundingClientRect();
+    const headerBounds = header?.getBoundingClientRect();
+    return logo && image && bounds && headerBounds ? {
+      src: image.currentSrc,
+      naturalWidth: image.naturalWidth,
+      rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+      width: bounds.width,
+      height: bounds.height,
+      imageWidth: image.getBoundingClientRect().width,
+      imageHeight: image.getBoundingClientRect().height,
+      centeredX: Math.abs((bounds.left + bounds.right) / 2 -
+        (image.getBoundingClientRect().left + image.getBoundingClientRect().right) / 2) <= 1,
+      centeredImageY: Math.abs((bounds.top + bounds.bottom) / 2 -
+        (image.getBoundingClientRect().top + image.getBoundingClientRect().bottom) / 2) <= 1,
+      objectFit: getComputedStyle(image).objectFit,
+      centeredY: Math.abs((bounds.top + bounds.bottom) / 2 -
+        (headerBounds.top + headerBounds.bottom) / 2) <= 1,
+    } : null;
+  })()`);
+  assert(
+    logoLayout?.src.includes('nicks_ems_logo_1792367124466.jpg') &&
+      logoLayout.naturalWidth > 0 &&
+      Math.abs(logoLayout.width - logoLayout.rootFontSize * 4.25) < 0.1 &&
+      Math.abs(logoLayout.height - logoLayout.rootFontSize * 4.25) < 0.1 &&
+      Math.abs(logoLayout.imageWidth - (logoLayout.width - 2)) < 0.1 &&
+      Math.abs(logoLayout.imageHeight - (logoLayout.height - 2)) < 0.1 &&
+      logoLayout.centeredX &&
+      logoLayout.centeredImageY &&
+      logoLayout.objectFit === 'contain' &&
+      logoLayout.centeredY,
+    `Mobile logo asset, 4.25rem size, position, or crop changed at ${viewport.width}px: ${JSON.stringify(logoLayout)}`,
+  );
+
+  const navigation = await evaluate(cdp, `(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
+    if (!nav) return null;
+    const navBounds = nav.getBoundingClientRect();
+    const buttons = [...nav.querySelectorAll('button')].map((button) => {
+      const bounds = button.getBoundingClientRect();
+      const rect = bounds.toJSON();
+      const text = button.innerText.trim().replace(/\\s+/g, ' ');
+      return {
+        text,
+        selected: button.getAttribute('aria-current') === 'page',
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        visible: rect.width > 0 && rect.height > 0 &&
+          rect.left >= -1 && rect.right <= innerWidth + 1 &&
+          rect.top >= 0 && rect.bottom <= innerHeight,
+      };
+    });
+    return {
+      viewport: innerWidth,
+      documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
+      nav: {
+        left: navBounds.left,
+        right: navBounds.right,
+        clientWidth: nav.clientWidth,
+        scrollWidth: nav.scrollWidth,
+      },
+      buttons,
+    };
+  })()`);
+  assert(navigation, `Mobile navigation is missing at ${viewport.width}px`);
+  assert(
+    navigation.documentWidth <= viewport.width + 1 &&
+      navigation.nav.scrollWidth <= navigation.nav.clientWidth + 1 &&
+      navigation.nav.left >= -1 && navigation.nav.right <= viewport.width + 1,
+    `Mobile navigation overflows at ${viewport.width}px: ${JSON.stringify(navigation)}`,
+  );
+  assert(
+    navigation.buttons.length === 6 &&
+      navigation.buttons.every((button) =>
+        button.visible && button.width >= 44 && button.height >= 44),
+    `Mobile navigation has an unusable touch target at ${viewport.width}px: ${JSON.stringify(navigation.buttons)}`,
+  );
+
+  for (const { label, mobileLabel } of [
+    { label: 'Home', mobileLabel: 'Home' },
+    { label: 'Agencies', mobileLabel: 'Agencies' },
+    { label: 'Territory', mobileLabel: 'Territory' },
+    { label: 'Field Work', mobileLabel: 'Field work' },
+  ]) {
+    const clicked = await evaluate(cdp, `(() => {
+      const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
+      const button = [...(nav?.querySelectorAll('button') ?? [])].find((candidate) =>
+        candidate.innerText.trim().replace(/\\s+/g, ' ').includes(${JSON.stringify(mobileLabel)}));
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(clicked, `Could not open "${label}" from mobile navigation at ${viewport.width}px`);
+    await waitFor(
+      cdp,
+      `(() => {
+        const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
+        return [...(nav?.querySelectorAll('button') ?? [])].some((button) =>
+          button.innerText.trim().replace(/\\s+/g, ' ').includes(${JSON.stringify(mobileLabel)}) &&
+          button.getAttribute('aria-current') === 'page');
+      })()`,
+      `"${label}" mobile navigation selection at ${viewport.width}px`,
+    );
+  }
+  console.log(`✓ ${viewport.width}px: mobile navigation touch targets, logo, and workspace selection`);
+}
+
+async function checkSharedNavigation(cdp) {
+  for (const viewport of sharedNavigationDesktopViewports) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await cdp.send('Page.navigate', { url: baseUrl });
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('.pi-primary-sidebar .pi-primary-nav'))`,
+      `desktop navigation at ${viewport.width}px`,
+      60_000,
+    );
+    await waitFor(
+      cdp,
+      `(() => {
+        const image = document.querySelector('.pi-sidebar-logo img');
+        return Boolean(image?.complete && image.naturalWidth > 0);
+      })()`,
+      `the existing desktop logo at ${viewport.width}px`,
+    );
+
+    for (const workspace of sharedNavigationWorkspaces) {
+      await openPrimaryWorkspace(
+        cdp,
+        workspace.label,
+        '.pi-primary-sidebar .pi-primary-nav',
+      );
+      if (workspace.navLabel) {
+        await waitFor(
+          cdp,
+          `Boolean(document.querySelector(${JSON.stringify(`nav[aria-label="${workspace.navLabel}"]`)}))`,
+          `${workspace.navLabel} at ${viewport.width}px`,
+        );
+      }
+      await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+        requestAnimationFrame(resolve)))`);
+      await checkSharedNavigationDesktop(cdp, viewport, workspace);
+    }
+  }
+
+  for (const viewport of sharedNavigationMobileViewports) {
+    await checkSharedNavigationMobile(cdp, viewport);
+  }
+  console.log('Shared desktop and mobile navigation regression checks passed.');
 }
 
 async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = null) {
@@ -3797,7 +4211,8 @@ function assertFireOperationsDifferAtViewport(viewport) {
 async function main() {
   if (
     process.env.PROFILE_LAYOUT_ONLY !== '1' &&
-    process.env.PROFILE_PRINT_ONLY !== '1'
+    process.env.PROFILE_PRINT_ONLY !== '1' &&
+    process.env.NAV_LAYOUT_ONLY !== '1'
   ) {
     await checkPublishedRoutes();
     if (process.env.ROUTES_ONLY === '1') return;
@@ -3865,6 +4280,11 @@ async function main() {
         await checkProfilePrintCase(cdp, testCase, userDataDir);
       }
       console.log('EMS and Fire Letter-print regression checks passed.');
+      return;
+    }
+
+    if (process.env.NAV_LAYOUT_ONLY === '1') {
+      await checkSharedNavigation(cdp);
       return;
     }
 

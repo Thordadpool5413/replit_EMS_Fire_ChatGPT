@@ -460,8 +460,9 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
   }
   const profileSummaryChecks = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
-    const operations = profile?.querySelector('[aria-label="Agency operations summary"]');
-    const lead = operations?.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    const baseline = profile?.querySelector('[data-testid="agency-operational-baseline"]');
+    const operations = baseline?.querySelector('[data-testid="baseline-operational-metrics"]');
+    const lead = operations?.innerText.trim() || '';
     const sourceLinks = [...(profile?.querySelectorAll('a[href]') ?? [])]
       .filter((link) => {
         try {
@@ -473,11 +474,15 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     const actions = profile?.querySelector('[data-testid="profile-primary-actions"]');
     const isFire = ${JSON.stringify(providerCategory)} === 'fire';
     return {
-      operationsSummary: Boolean(operations),
+      baselinePresent: Boolean(baseline),
       operationsLead: lead,
       correctOperations: isFire
-        ? /\\bstations\\b/i.test(lead) && /fire engines/i.test(lead)
-        : /\\bambulances\\b/i.test(lead),
+        ? /\\bstations\\b/i.test(lead) &&
+          /fire suppression engines/i.test(baseline?.innerText ?? '') &&
+          /reported fire-rescue calls/i.test(baseline?.innerText ?? '')
+        : /active ambulances/i.test(baseline?.innerText ?? '') &&
+          !/fire suppression engines/i.test(baseline?.innerText ?? '') &&
+          /reported EMS calls/i.test(baseline?.innerText ?? ''),
       sourceReferencesPanel: Boolean(profile?.querySelector('[aria-label="Available source references"]')),
       sourceLinks: sourceLinks.length,
       sourceLinksAreHttps: sourceLinks.every((link) => new URL(link.href).protocol === 'https:'),
@@ -488,8 +493,8 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     };
   })()`);
   assert(
-    profileSummaryChecks.operationsSummary && profileSummaryChecks.correctOperations,
-    `${providerCategory} profile has the wrong primary operations summary: ${JSON.stringify(profileSummaryChecks)}`,
+    profileSummaryChecks.baselinePresent && profileSummaryChecks.correctOperations,
+    `${providerCategory} profile has the wrong top operational baseline: ${JSON.stringify(profileSummaryChecks)}`,
   );
   assert(
     profileSummaryChecks.sourceReferencesPanel &&
@@ -930,14 +935,15 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     const executiveHeader = profile?.querySelector('[aria-label="Account 360 Executive Decision Header"]');
     const bottomDetails = profile?.querySelector('[data-testid="profile-bottom-details"]');
     const topicNavigation = profile?.querySelector('[data-testid="profile-topic-navigation"]');
+    const baseline = profile?.querySelector('[data-testid="agency-operational-baseline"]');
     const title = executiveHeader?.querySelector('h1');
     const summaryGrid = executiveHeader?.querySelector('.profile-summary-grid');
     const overview = profile?.querySelector('[data-testid="agency-intelligence-overview"]');
-    const operationsLead = profile?.querySelector('[aria-label="Agency operations summary"] .profile-operations-lead')
+    const operationsLead = baseline?.querySelector('[data-testid="baseline-operational-metrics"]')
       ?.innerText.trim() ?? '';
     const summaries = [
       ['identity', executiveHeader?.querySelector('h1')],
-      ['operations', profile?.querySelector('[aria-label="Agency operations summary"]')],
+      ['baseline', baseline],
       ['sources', profile?.querySelector('[aria-label="Available source references"]')],
     ];
     const positions = summaries.map(([label, element]) => {
@@ -954,7 +960,6 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     });
     const labels = [
       'Agency contact summary',
-      'Agency operations summary',
       'Available source references',
     ];
     const panels = labels.map((label) => {
@@ -979,7 +984,7 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         executiveHeaders: profile?.querySelectorAll('[aria-label="Account 360 Executive Decision Header"]').length ?? 0,
         topicNavigations: profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length ?? 0,
         overviewPanels: profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length ?? 0,
-        operationsSummaries: profile?.querySelectorAll('[aria-label="Agency operations summary"]').length ?? 0,
+        operationalBaselines: profile?.querySelectorAll('[data-testid="agency-operational-baseline"]').length ?? 0,
         contactSummaries: profile?.querySelectorAll('[aria-label="Agency contact summary"]').length ?? 0,
         sourceSummaries: profile?.querySelectorAll('[aria-label="Available source references"]').length ?? 0,
         bottomDetailsHosts: profile?.querySelectorAll('[data-testid="profile-bottom-details"]').length ?? 0,
@@ -997,8 +1002,11 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
       identityCount: executiveHeader?.querySelectorAll('h1').length ?? 0,
       summaryGridCount: executiveHeader?.querySelectorAll('.profile-summary-grid').length ?? 0,
       summaryPanelCount: summaryGrid?.querySelectorAll('.profile-summary-panel').length ?? 0,
-      operationsLead: profile?.querySelector('[aria-label="Agency operations summary"] .profile-operations-lead')
-        ?.innerText.trim() ?? '',
+      operationsLead,
+      identityBeforeBaseline: Boolean(executiveHeader && baseline &&
+        (executiveHeader.compareDocumentPosition(baseline) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      baselineBeforeTopicNavigation: Boolean(baseline && topicNavigation &&
+        (baseline.compareDocumentPosition(topicNavigation) & Node.DOCUMENT_POSITION_FOLLOWING)),
       bottomDetailsLabels: [...(bottomDetails?.querySelectorAll('summary') ?? [])]
         .map((summary) => summary.innerText.trim()),
       bottomReviewAction: bottomDetails?.querySelector('[data-testid^="button-mark-profile-reviewed-"]')
@@ -1019,8 +1027,10 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
       Object.values(summary.regionCounts).every((count) => count === 1) &&
       summary.identityCount === 1 &&
       summary.summaryGridCount === 1 &&
-      summary.summaryPanelCount === 3 &&
+      summary.summaryPanelCount === 2 &&
       summary.operationsLead.length > 0 &&
+      summary.identityBeforeBaseline &&
+      summary.baselineBeforeTopicNavigation &&
       summary.bottomDetailsLabels.includes('Registry identifiers and verification') &&
       summary.bottomDetailsLabels.includes('Planning scores and estimates') &&
       summary.bottomDetailsLabels.includes('Assessment and planning context') &&
@@ -1298,7 +1308,7 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     );
   }
   console.log(
-    `✓ ${viewport.width}px: ${providerCategory.toUpperCase()} compact identity/operations/sources and ${toolbar.mode} action dock (${agencyName})`,
+    `✓ ${viewport.width}px: ${providerCategory.toUpperCase()} compact identity/baseline/sources and ${toolbar.mode} action dock (${agencyName})`,
   );
 }
 
@@ -2073,23 +2083,25 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
   const operationsSummary = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
-    const summary = profile?.querySelector('[aria-label="Agency operations summary"]');
-    if (!summary) return null;
-    summary.scrollIntoView({ block: 'center', inline: 'nearest' });
-    const bounds = summary.getBoundingClientRect();
-    const lead = summary.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    const baseline = profile?.querySelector('[data-testid="agency-operational-baseline"]');
+    const summary = baseline?.querySelector('[data-testid="baseline-operational-metrics"]');
+    if (!baseline || !summary) return null;
+    baseline.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = baseline.getBoundingClientRect();
+    const lead = summary.innerText.trim();
     return {
       visible: bounds.width > 0 && bounds.height > 0 &&
         bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
         bounds.bottom > 0 && bounds.top < innerHeight,
-      fits: summary.scrollWidth <= summary.clientWidth + 1,
-      fireMetrics: /\\bstations\\b/i.test(lead) && /fire engines/i.test(lead),
+      fits: baseline.scrollWidth <= baseline.clientWidth + 1,
+      fireMetrics: /\\bstations\\b/i.test(lead) &&
+        /fire suppression engines/i.test(baseline.innerText),
       lead,
     };
   })()`);
   assert(
     operationsSummary?.visible && operationsSummary.fits && operationsSummary.fireMetrics,
-    `Fire operations summary is not usable at ${viewport.width}px: ${JSON.stringify(operationsSummary)}`,
+    `Fire operational baseline is not usable at ${viewport.width}px: ${JSON.stringify(operationsSummary)}`,
   );
   if (agencyName && (viewport.width === 320 || viewport.width === 360)) {
     const observations = fireProfileOperationsByViewport.get(viewport.width) ?? new Map();
@@ -2205,7 +2217,7 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
     await checkFireProfileDetailsAtViewport(cdp, viewport, agencyName);
   }
   console.log(
-    `✓ ${viewport.width}px: ${agencyDescription}; operations="${operationsSummary.lead}", ${fireSourceLinks} source links, actions, drawer, and overflow`,
+    `✓ ${viewport.width}px: ${agencyDescription}; baseline operations="${operationsSummary.lead}", ${fireSourceLinks} source links, actions, drawer, and overflow`,
   );
 }
 
@@ -2375,23 +2387,26 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
 
   const operationsSummary = await evaluate(cdp, `(() => {
     const profile = document.querySelector('main.profile-workspace');
-    const summary = profile?.querySelector('[aria-label="Agency operations summary"]');
-    if (!summary) return null;
-    summary.scrollIntoView({ block: 'center', inline: 'nearest' });
-    const bounds = summary.getBoundingClientRect();
-    const lead = summary.querySelector('.profile-operations-lead')?.innerText.trim() || '';
+    const baseline = profile?.querySelector('[data-testid="agency-operational-baseline"]');
+    const summary = baseline?.querySelector('[data-testid="baseline-operational-metrics"]');
+    if (!baseline || !summary) return null;
+    baseline.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const bounds = baseline.getBoundingClientRect();
+    const lead = summary.innerText.trim();
     return {
       visible: bounds.width > 0 && bounds.height > 0 &&
         bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
         bounds.bottom > 0 && bounds.top < innerHeight,
-      fits: summary.scrollWidth <= summary.clientWidth + 1,
-      hasLead: Boolean(lead),
+      fits: baseline.scrollWidth <= baseline.clientWidth + 1,
+      hasLead: Boolean(lead) &&
+        /active ambulances/i.test(baseline.innerText) &&
+        !/fire suppression engines/i.test(baseline.innerText),
       lead,
     };
   })()`);
   assert(
     operationsSummary?.visible && operationsSummary.fits && operationsSummary.hasLead,
-    `EMS operations summary is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(operationsSummary)}`,
+    `EMS operational baseline is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(operationsSummary)}`,
   );
 
   const operationsSectionUsable = await evaluate(cdp, `(() => {
@@ -2680,7 +2695,7 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
   );
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
   console.log(
-    `✓ ${viewport.width}px: ${agencyName}; operations="${operationsSummary.lead}", source drawer, correction fields/save action, and no horizontal overflow`,
+    `✓ ${viewport.width}px: ${agencyName}; baseline operations="${operationsSummary.lead}", source drawer, correction fields/save action, and no horizontal overflow`,
   );
 }
 

@@ -27,6 +27,7 @@ interface RealWorldCountyBoundaryMapProps {
   selectedCountyName: string;
   selectedCityName: string;
   agencies: Agency[];
+  showExplorerHeader?: boolean;
   onSelectCounty: (countyName: string, stateCode: string) => void;
   onSelectCity: (cityName: string, countyName: string, stateCode: string) => void;
 }
@@ -36,6 +37,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   selectedCountyName,
   selectedCityName,
   agencies,
+  showExplorerHeader = true,
   onSelectCounty,
   onSelectCity,
 }) => {
@@ -175,29 +177,31 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
   return (
     <div className="space-y-3">
-      <header className="county-risk-explorer-header flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">
-            <Compass className="h-4 w-4" />
-            County risk explorer
+      {showExplorerHeader && (
+        <header className="county-risk-explorer-header flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.4)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700">
+              <Compass className="h-4 w-4" />
+              County risk explorer
+            </div>
+            <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-950 sm:text-xl">
+              {stateNode.stateName} county profiles
+            </h3>
+            <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-600">
+              Select a county on the map to inspect local context and connected cities.
+            </p>
           </div>
-          <h3 className="mt-1 text-lg font-bold tracking-tight text-slate-950 sm:text-xl">
-            {stateNode.stateName} county profiles
-          </h3>
-          <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-600">
-            Select a county on the map to inspect local context and connected cities.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            FEMA National Risk Index
-          </span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 tabular-nums">
-            {stateNode.countiesList.length} counties
-          </span>
-        </div>
-      </header>
+          <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              FEMA National Risk Index
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 tabular-nums">
+              {stateNode.countiesList.length} counties
+            </span>
+          </div>
+        </header>
+      )}
 
       <details className="group rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-[0_6px_20px_-18px_rgba(15,23,42,0.35)]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-700 marker:hidden">

@@ -26,3 +26,9 @@ On laptop Territory screens, align the explorer with the full workspace width an
 **Why:** The user said the narrowed, multi-column laptop layout made the county map and cards worse to scan.
 
 **How to apply:** Compare the explorer edges with the shared workspace toolbar at laptop widths, and verify the card count and readability at both 1024px and 1366px.
+
+On drilled-in Territory views, do not repeat the selected location when the shared app header already shows it. Keep one concise back action visible and put alternate state/county selectors, sharing, and reset actions in a secondary control menu.
+
+**Why:** Repeating the same geography in the global breadcrumb, page breadcrumb, selectors, and section headings made the top of state and county views hard to scan.
+
+**How to apply:** Let the shared breadcrumb provide current-location context; make the page title and next action the main focus, and keep less-used location tools available on demand.

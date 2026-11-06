@@ -1090,10 +1090,15 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     `(() => {
       const profile = document.querySelector('main.profile-workspace');
       return profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length === 1 &&
+        profile?.querySelectorAll('[aria-label="Account 360 Executive Decision Header"]').length === 1 &&
+        profile?.querySelectorAll('[data-testid="agency-operational-baseline"]').length === 1 &&
+        profile?.querySelectorAll('[aria-label="Agency contact summary"]').length === 1 &&
+        profile?.querySelectorAll('[aria-label="Available source references"]').length === 1 &&
+        profile?.querySelectorAll('[data-testid="profile-bottom-details"]').length === 1 &&
         profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length === 0 &&
         /Equipment|Technology/.test(profile?.innerText || '');
     })()`,
-    'the equipment topic to replace the overview without duplicating the profile',
+    'the equipment topic to replace the overview while keeping each profile summary singular',
   );
   await evaluate(cdp, `(() => {
     const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
@@ -1110,8 +1115,14 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
   })()`);
   await waitFor(
     cdp,
-    `document.querySelectorAll('main.profile-workspace [data-testid="agency-intelligence-overview"]').length === 1`,
-    'the overview topic to return exactly once',
+    `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      return profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length === 1 &&
+        profile?.querySelectorAll('[data-testid="agency-operational-baseline"]').length === 1 &&
+        profile?.querySelectorAll('[aria-label="Agency contact summary"]').length === 1 &&
+        profile?.querySelectorAll('[aria-label="Available source references"]').length === 1;
+    })()`,
+    'the overview topic to return with each summary exactly once',
   );
   if (viewport.width === 390 || viewport.width === 1024 || viewport.width === 1280) {
     await evaluate(cdp, `document.querySelector('.provider-profile-overlay')?.scrollTo({ top: 0 })`);
@@ -1295,6 +1306,10 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         headerCount: profile?.querySelectorAll('[aria-label="Account 360 Executive Decision Header"]').length ?? 0,
         topicCount: profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length ?? 0,
         overviewCount: profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length ?? 0,
+        baselineCount: profile?.querySelectorAll('[data-testid="agency-operational-baseline"]').length ?? 0,
+        contactSummaryCount: profile?.querySelectorAll('[aria-label="Agency contact summary"]').length ?? 0,
+        sourceSummaryCount: profile?.querySelectorAll('[aria-label="Available source references"]').length ?? 0,
+        bottomDetailsCount: profile?.querySelectorAll('[data-testid="profile-bottom-details"]').length ?? 0,
       };
     })()`);
     assert(
@@ -1303,7 +1318,11 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         nextAgencyChecks.profileCount === 1 &&
         nextAgencyChecks.headerCount === 1 &&
         nextAgencyChecks.topicCount === 1 &&
-        nextAgencyChecks.overviewCount === 1,
+        nextAgencyChecks.overviewCount === 1 &&
+        nextAgencyChecks.baselineCount === 1 &&
+        nextAgencyChecks.contactSummaryCount === 1 &&
+        nextAgencyChecks.sourceSummaryCount === 1 &&
+        nextAgencyChecks.bottomDetailsCount === 1,
       `${providerCategory.toUpperCase()} profile retained or duplicated content after changing agencies: ${JSON.stringify(nextAgencyChecks)}`,
     );
   }

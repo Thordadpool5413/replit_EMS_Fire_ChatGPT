@@ -745,51 +745,78 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     const profile = document.querySelector('main.profile-workspace');
     const dock = profile?.querySelector('[data-testid="profile-primary-actions"]');
     if (!dock) return null;
-    const selectors = [
-      '[aria-label="Prepare for meeting"]',
-      '[aria-label="Inspect agency sources"]',
-      '[aria-label="Add agency to route"], [aria-label^="Remove agency from"]',
-      '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
-    ];
-    const buttons = selectors.map((selector) => dock.querySelector(selector));
-    if (buttons.some((button) => !button)) return { missingAction: true };
-    const layoutControls = [...dock.querySelectorAll('button, select')].filter((control) => {
+    dock.scrollIntoView({ block: 'start', inline: 'nearest' });
+    const primary = dock.querySelector('[aria-label="Prepare for meeting"]');
+    const moreActions = dock.querySelector('.profile-more-actions');
+    const moreSummary = moreActions?.querySelector(':scope > summary');
+    if (!primary || !moreActions || !moreSummary) return { missingPrimaryOrDisclosure: true };
+    const layoutControls = [primary, moreSummary].filter((control) => {
       const rect = control.getBoundingClientRect();
       const style = getComputedStyle(control);
       return rect.width > 0 && rect.height > 0 &&
         style.visibility !== 'hidden' && style.display !== 'none';
     });
-    if (layoutControls.length < buttons.length) return { missingLayoutControls: true };
+    const secondarySelectors = [
+      '[aria-label="Inspect agency sources"]',
+      '[aria-label="Add agency to route"], [aria-label^="Remove agency from"]',
+      '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
+      '[data-testid="button-profile-print-brief"]',
+    ];
+    const secondaryActions = secondarySelectors.map((selector) =>
+      moreActions.querySelector(selector));
+    if (secondaryActions.some((action) => !action)) return { missingSecondaryAction: true };
     const dockStyle = getComputedStyle(dock);
     const dockBounds = dock.getBoundingClientRect();
     const overlay = document.querySelector('.provider-profile-overlay');
     const bottomNav = document.querySelector('.pi-mobile-nav');
+    const primaryActionVisible = layoutControls.length === 2;
+    const aligned = primaryActionVisible &&
+      Math.max(...layoutControls.map((control) => control.getBoundingClientRect().top)) -
+        Math.min(...layoutControls.map((control) => control.getBoundingClientRect().top)) <= 3;
+    const noPageOverflow = document.documentElement.scrollWidth <= innerWidth + 1;
+    moreActions.open = true;
+    const secondaryActionsVisible = secondaryActions.every((action) => {
+      const rect = action.getBoundingClientRect();
+      const style = getComputedStyle(action);
+      return rect.width > 0 && rect.height > 0 &&
+        style.visibility !== 'hidden' && style.display !== 'none';
+    });
+    const menu = moreActions.querySelector('.profile-more-actions-menu');
+    const menuBounds = menu?.getBoundingClientRect();
+    const menuInsideViewport = Boolean(menuBounds && menuBounds.left >= -1 &&
+      menuBounds.right <= innerWidth + 1 && menuBounds.top >= -1 &&
+      menuBounds.bottom <= innerHeight + 1);
+    const menuGeometry = menuBounds
+      ? { left: menuBounds.left, right: menuBounds.right, top: menuBounds.top, bottom: menuBounds.bottom }
+      : null;
+    const controlTops = layoutControls.map((control) => control.getBoundingClientRect().top);
+    const secondaryGeometry = secondaryActions.map((action) => {
+      const rect = action.getBoundingClientRect();
+      return { label: action.getAttribute('aria-label') || action.innerText.trim(), left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    });
     if (innerWidth >= 768) {
-      const tops = layoutControls.map((control) => control.getBoundingClientRect().top);
-      const aligned = Math.max(...tops) - Math.min(...tops) <= 3;
-      const noPageOverflow = document.documentElement.scrollWidth <= innerWidth + 1;
-      const initialFirstReachable = (() => {
-        const rect = layoutControls[0].getBoundingClientRect();
-        return rect.left >= dockBounds.left - 1 && rect.right <= dockBounds.right + 1;
-      })();
-      for (const control of layoutControls) {
-        control.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
-      const reachableAfterScroll = layoutControls.every((control) => {
+      const initialActionsReachable = layoutControls.every((control) => {
         const rect = control.getBoundingClientRect();
-        const bounds = dock.getBoundingClientRect();
-        return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+        return rect.left >= dockBounds.left - 1 && rect.right <= dockBounds.right + 1;
+      });
+      const secondaryActionsReachable = secondaryActions.every((action) => {
+        const rect = action.getBoundingClientRect();
+        return rect.left >= -1 && rect.right <= innerWidth + 1 &&
           rect.top >= -1 && rect.bottom <= innerHeight + 1;
       });
+      moreActions.open = false;
       return {
         mode: 'laptop',
         flexWrap: dockStyle.flexWrap,
         aligned,
         noPageOverflow,
-        initialFirstReachable,
-        reachableAfterScroll,
-        dockScrollWidth: dock.scrollWidth,
-        dockClientWidth: dock.clientWidth,
+        initialActionsReachable,
+        secondaryActionsVisible,
+        secondaryActionsReachable,
+        menuInsideViewport,
+        menuGeometry,
+        controlTops,
+        secondaryGeometry,
       };
     }
 
@@ -802,26 +829,28 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     const insideViewport = bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
       bounds.top >= -1 && bounds.top < innerHeight;
     const clearOfBottomNav = bounds.bottom <= navBounds.top - 1;
-    dock.scrollLeft = 0;
-    const actionBounds = layoutControls.map((control) => control.getBoundingClientRect());
-    const firstActionReachable = actionBounds[0].left >= bounds.left - 1 &&
-      actionBounds[0].right <= bounds.right + 1;
-    dock.scrollLeft = dock.scrollWidth;
-    const lastActionBounds = layoutControls.at(-1).getBoundingClientRect();
-    const endActionReachable = lastActionBounds.left >= bounds.left - 1 &&
-      lastActionBounds.right <= bounds.right + 1;
+    const initialActionsReachable = layoutControls.every((control) => {
+      const rect = control.getBoundingClientRect();
+      return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1;
+    });
+    const secondaryActionsReachable = secondaryActions.every((action) => {
+      const rect = action.getBoundingClientRect();
+      return rect.left >= -1 && rect.right <= innerWidth + 1 &&
+        rect.bottom > 0 && rect.top < navBounds.top;
+    });
+    moreActions.open = false;
     return {
       mode: 'phone',
       sticky,
       insideViewport,
       clearOfBottomNav,
-      firstActionReachable,
-      endActionReachable,
-      dockTop: bounds.top,
-      dockBottom: bounds.bottom,
-      navTop: navBounds.top,
-      dockScrollWidth: dock.scrollWidth,
-      dockClientWidth: dock.clientWidth,
+      initialActionsReachable,
+      secondaryActionsVisible,
+      secondaryActionsReachable,
+      menuInsideViewport,
+      menuGeometry,
+      controlTops,
+      secondaryGeometry,
     };
   })()`);
   if (viewport.width >= 768) {
@@ -830,9 +859,11 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         toolbar.flexWrap === 'nowrap' &&
         toolbar.aligned &&
         toolbar.noPageOverflow &&
-        toolbar.initialFirstReachable &&
-        toolbar.reachableAfterScroll,
-      `Profile laptop actions are not a reachable single row at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
+        toolbar.initialActionsReachable &&
+        toolbar.secondaryActionsVisible &&
+        toolbar.secondaryActionsReachable &&
+        toolbar.menuInsideViewport,
+      `Profile laptop primary action or secondary-action menu is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
     );
   } else {
     assert(
@@ -840,9 +871,11 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         toolbar.sticky &&
         toolbar.insideViewport &&
         toolbar.clearOfBottomNav &&
-        toolbar.firstActionReachable &&
-        toolbar.endActionReachable,
-      `Profile phone actions are not sticky, reachable, and clear of bottom navigation at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
+        toolbar.initialActionsReachable &&
+        toolbar.secondaryActionsVisible &&
+        toolbar.secondaryActionsReachable &&
+        toolbar.menuInsideViewport,
+      `Profile phone primary action or secondary-action menu is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
     );
   }
   console.log(
@@ -1406,6 +1439,7 @@ async function checkProfileAtViewport(cdp, viewport) {
     const dock = document.querySelector('[aria-label="Account Action Dock"]');
     const primaryActions = document.querySelector('[data-testid="profile-primary-actions"]');
     const actionArea = primaryActions || dock;
+    actionArea?.querySelector('.profile-more-actions')?.setAttribute('open', '');
     const visible = (element) => {
       if (!element) return false;
       const rect = element.getBoundingClientRect();
@@ -1646,6 +1680,9 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
   const fireActions = await evaluate(cdp, `(() => {
     const area = document.querySelector('[data-testid="profile-primary-actions"]');
     if (!area) return null;
+    const moreActions = area.querySelector('.profile-more-actions');
+    if (!moreActions) return null;
+    moreActions.open = true;
     const selectors = {
       meeting: '[aria-label="Prepare for meeting"]',
       sources: '[aria-label="Inspect agency sources"]',
@@ -1677,7 +1714,10 @@ async function checkFireProfileAtViewport(cdp, viewport, agencyName = null) {
     `Fire profile actions are incomplete at ${viewport.width}px: ${JSON.stringify(fireActions)}`,
   );
   const openedSourceDrawer = await evaluate(cdp, `(() => {
-    const button = document.querySelector('[data-testid="profile-primary-actions"] [aria-label="Inspect agency sources"]');
+    const area = document.querySelector('[data-testid="profile-primary-actions"]');
+    const moreActions = area?.querySelector('.profile-more-actions');
+    if (moreActions) moreActions.open = true;
+    const button = area?.querySelector('[aria-label="Inspect agency sources"]');
     if (!button) return false;
     button.scrollIntoView({ block: 'center', inline: 'center' });
     const rect = button.getBoundingClientRect();
@@ -2001,6 +2041,9 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
   const emsActions = await evaluate(cdp, `(() => {
     const area = document.querySelector('[data-testid="profile-primary-actions"]');
     if (!area) return null;
+    const moreActions = area.querySelector('.profile-more-actions');
+    if (!moreActions) return null;
+    moreActions.open = true;
     const selectors = {
       meeting: '[aria-label="Prepare for meeting"]',
       sources: '[aria-label="Inspect agency sources"]',
@@ -2033,7 +2076,10 @@ async function checkEmsProfileAtViewport(cdp, viewport, agencyName) {
   );
 
   const openedSourceDrawer = await evaluate(cdp, `(() => {
-    const button = document.querySelector('[data-testid="profile-primary-actions"] [aria-label="Inspect agency sources"]');
+    const area = document.querySelector('[data-testid="profile-primary-actions"]');
+    const moreActions = area?.querySelector('.profile-more-actions');
+    if (moreActions) moreActions.open = true;
+    const button = area?.querySelector('[aria-label="Inspect agency sources"]');
     if (!button) return false;
     button.scrollIntoView({ block: 'center', inline: 'center' });
     const bounds = button.getBoundingClientRect();

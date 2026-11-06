@@ -1026,29 +1026,45 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </div>
         </header>
 
-        {/* Primary actions stay available as a compact dock while reading the profile. */}
+        {/* One clear next step; the remaining tools stay together in a disclosure. */}
         <div
-          className="profile-action-dock flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar sm:gap-2"
+          className="profile-action-dock flex max-w-full items-center gap-2 py-2 no-scrollbar"
           data-testid="profile-primary-actions"
         >
-              <div className="hidden shrink-0 items-center gap-1.5 md:flex">
-                <label
-                  htmlFor="profile-sales-stage"
-                  className="text-[10px] font-bold uppercase tracking-wide text-[#53657B] dark:text-slate-400"
-                >
-                  Stage
-                </label>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSection('overview');
+              setTimeout(() => {
+                const el = document.getElementById('meeting-preparation-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+            className="profile-meeting-primary inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors"
+            aria-label="Prepare for meeting"
+            data-testid="button-profile-prepare-meeting"
+            title="Open executive meeting strategy & discovery questions"
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>Prepare for meeting</span>
+          </button>
+
+          <details className="profile-more-actions min-w-0">
+            <summary aria-label="Show secondary agency actions">
+              <span>More actions</span>
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            </summary>
+            <div className="profile-more-actions-menu">
+              <div className="profile-stage-control">
+                <label htmlFor="profile-sales-stage">Pipeline stage</label>
                 <select
                   id="profile-sales-stage"
                   aria-label="Update CRM Sales Pipeline Stage"
                   data-testid="profile-sales-stage"
                   value={agency.zollOpportunity.salesStage}
                   onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
-                  className="h-9 max-w-[170px] rounded-lg border border-[#DFE6EF] bg-white px-2 text-xs font-semibold text-[#14283F] focus:border-[#285EE8] focus:outline-none dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-slate-100"
                 >
-                  {stages.map((stage) => (
-                    <option key={stage} value={stage}>{stage}</option>
-                  ))}
+                  {stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}
                 </select>
               </div>
               <AgencyCompareButton
@@ -1062,7 +1078,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <button
                   type="button"
                   onClick={onOpenAgencyComparison}
-                  className="min-h-10 whitespace-nowrap rounded-lg bg-teal-700 px-3 text-xs font-bold text-white hover:bg-teal-800"
+                  className="profile-secondary-action"
                   data-testid="button-open-comparison-from-profile"
                 >
                   Compare {comparedAgencyIds.length}
@@ -1070,89 +1086,61 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               )}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveSection('overview');
-                  setTimeout(() => {
-                    const el = document.getElementById('meeting-preparation-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }, 50);
-                }}
-                className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer shadow-2xs"
-                aria-label="Prepare for meeting"
-                data-testid="button-profile-prepare-meeting"
-                title="Open executive meeting strategy & discovery questions"
-              >
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>Meeting prep</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setIsSourceDrawerOpen(true)}
-                className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Inspect agency sources"
                 data-testid="button-profile-inspect-sources"
                 title="Inspect mapped agency source records"
+                className="profile-secondary-action"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Sources</span>
+                <ShieldCheck className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                Sources
               </button>
-
               <button
                 type="button"
                 onClick={() => onToggleRoute(agency.id)}
                 aria-label={agency.inDayRoute ? "Remove agency from today's route" : 'Add agency to route'}
                 data-testid="button-profile-toggle-route"
                 title={agency.inDayRoute ? "Remove from today's route" : 'Add to route'}
-                className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  agency.inDayRoute
-                    ? 'bg-[#0B1728] dark:bg-blue-600 text-white'
-                    : 'bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA]'
-                }`}
+                className={`profile-secondary-action ${agency.inDayRoute ? 'is-selected' : ''}`}
               >
-                <Navigation className="w-3.5 h-3.5 shrink-0" />
-                <span>{agency.inDayRoute ? 'On route' : 'Add route'}</span>
+                <Navigation className="h-4 w-4" />
+                {agency.inDayRoute ? 'On route' : 'Add route'}
               </button>
-
               <button
                 type="button"
                 onClick={() => onToggleBookmark(agency.id)}
                 aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}
                 data-testid="button-profile-toggle-save"
-                className={`whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  agency.isBookmarked
-                    ? 'bg-[#285EE8] text-white'
-                    : 'bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA]'
-                }`}
                 title="Save account to My Work"
+                className={`profile-secondary-action ${agency.isBookmarked ? 'is-selected' : ''}`}
               >
-                <Bookmark className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">{agency.isBookmarked ? 'Saved' : 'Save'}</span>
+                <Bookmark className="h-4 w-4" />
+                {agency.isBookmarked ? 'Saved' : 'Save'}
               </button>
-
               <button
                 type="button"
                 onClick={() => setShowDossierModal(true)}
                 data-testid="button-profile-print-brief"
                 title="Print agency brief"
-                className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:bg-[#F5F7FA] transition-colors cursor-pointer"
+                className="profile-secondary-action"
               >
-                <Printer className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Print</span>
+                <Printer className="h-4 w-4" />
+                Print
               </button>
-
               {onOpenRfpGenerator && (
                 <button
                   type="button"
                   onClick={() => onOpenRfpGenerator(agency)}
                   data-testid="button-profile-generate-rfp"
                   title="Generate RFP specification"
-                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer shadow-2xs"
+                  className="profile-secondary-action"
                 >
-                  <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span>RFP spec</span>
+                  <FileText className="h-4 w-4" />
+                  RFP spec
                 </button>
               )}
+            </div>
+          </details>
         </div>
 
         {/* Main Account 360 Workspace Content */}

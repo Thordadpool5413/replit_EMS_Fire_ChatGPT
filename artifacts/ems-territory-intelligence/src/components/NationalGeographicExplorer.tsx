@@ -840,10 +840,99 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ? 'counties'
           : 'providers';
 
+  const geographyAreaMenu = (
+    <details className="geography-area-menu">
+      <summary>
+        <Filter className="h-3.5 w-3.5" />
+        <span>Change area</span>
+      </summary>
+      <div className="geography-drilldown-controls">
+        <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
+          <label htmlFor="breadcrumb-state-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
+            State:
+          </label>
+          <select
+            id="breadcrumb-state-dropdown"
+            value={selectedStateCode}
+            onChange={(e) => handleSelectState(e.target.value)}
+            className="h-8 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-lg px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A] cursor-pointer"
+            title="Switch state or jurisdiction"
+          >
+            <option value="all">All 50 States</option>
+            {Object.values(ALL_50_STATES_SUMMARIES)
+              .sort((a, b) => a.state.localeCompare(b.state))
+              .map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.state} ({st.code})
+                </option>
+              ))}
+          </select>
+        </div>
+
+        {selectedStateCode !== 'all' && availableCounties.length > 0 && (
+          <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
+            <label htmlFor="breadcrumb-county-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
+              County:
+            </label>
+            <select
+              id="breadcrumb-county-dropdown"
+              value={selectedCountyName}
+              onChange={(e) => {
+                const county = e.target.value;
+                if (county === 'all') {
+                  setSelectedCountyName('all');
+                  setSelectedCityName('all');
+                  setMiddleTab('counties');
+                  setCountyPage(1);
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) onSyncGlobalGeography(selectedStateCode, 'all', 'all', agencyCategoryFilter);
+                } else {
+                  handleSelectCounty(county, selectedStateCode);
+                }
+              }}
+              className="h-8 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-lg px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A] cursor-pointer max-w-[170px] truncate"
+              title="Switch county"
+            >
+              <option value="all">All {availableCounties.length} Counties</option>
+              {availableCounties.map((county) => (
+                <option key={county.countyFips || county.countyName} value={county.countyName}>
+                  {county.countyName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="geography-drilldown-actions">
+          {selectedStateCode !== 'all' && onShareTerritory && (
+            <button
+              type="button"
+              onClick={onShareTerritory}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#1E3A8A] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              aria-label="Copy territory link"
+            >
+              <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Copy territory link</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            title="Reset all geography and provider filters"
+          >
+            Reset filters
+          </button>
+        </div>
+      </div>
+    </details>
+  );
+
   return (
     <div className="workspace-section-grid territory-explorer-screen">
       {/* Contextual Drill-Down Breadcrumb Bar (Only shown when drilled into a State, County, or City) */}
-      {activeFocusLevel !== 'states' && (
+      {activeFocusLevel !== 'states' && activeFocusLevel !== 'counties' && (
         <div className="geography-drilldown-breadcrumb bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-2xs grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center justify-between gap-2 min-w-0">
           <nav aria-label="Geographic navigation" className="flex min-w-0 items-center text-xs">
             {selectedCityName !== 'all' ? (
@@ -892,93 +981,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             )}
           </nav>
 
-          {/* Secondary location tools stay available without competing with the active location. */}
-          <details className="geography-area-menu">
-            <summary>
-              <Filter className="h-3.5 w-3.5" />
-              <span>Change area</span>
-            </summary>
-            <div className="geography-drilldown-controls">
-              <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
-                <label htmlFor="breadcrumb-state-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
-                  State:
-                </label>
-                <select
-                  id="breadcrumb-state-dropdown"
-                  value={selectedStateCode}
-                  onChange={(e) => handleSelectState(e.target.value)}
-                  className="h-8 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-lg px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A] cursor-pointer"
-                  title="Switch state or jurisdiction"
-                >
-                  <option value="all">All 50 States</option>
-                  {Object.values(ALL_50_STATES_SUMMARIES)
-                    .sort((a, b) => a.state.localeCompare(b.state))
-                    .map((st) => (
-                      <option key={st.code} value={st.code}>
-                        {st.state} ({st.code})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {selectedStateCode !== 'all' && availableCounties.length > 0 && (
-                <div className="geography-drilldown-select flex items-center gap-1.5 shrink-0">
-                  <label htmlFor="breadcrumb-county-dropdown" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
-                    County:
-                  </label>
-                  <select
-                    id="breadcrumb-county-dropdown"
-                    value={selectedCountyName}
-                    onChange={(e) => {
-                      const c = e.target.value;
-                      if (c === 'all') {
-                        setSelectedCountyName('all');
-                        setSelectedCityName('all');
-                        setMiddleTab('counties');
-                        setCountyPage(1);
-                        setAgencyPage(1);
-                        if (onSyncGlobalGeography) onSyncGlobalGeography(selectedStateCode, 'all', 'all', agencyCategoryFilter);
-                      } else {
-                        handleSelectCounty(c, selectedStateCode);
-                      }
-                    }}
-                    className="h-8 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-lg px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#1E3A8A] cursor-pointer max-w-[170px] truncate"
-                    title="Switch county"
-                  >
-                    <option value="all">All {availableCounties.length} Counties</option>
-                    {availableCounties.map((c) => (
-                      <option key={c.countyFips || c.countyName} value={c.countyName}>
-                        {c.countyName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="geography-drilldown-actions">
-                {selectedStateCode !== 'all' && onShareTerritory && (
-                  <button
-                    type="button"
-                    onClick={onShareTerritory}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#1E3A8A] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                    aria-label="Copy territory link"
-                  >
-                    <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>Copy territory link</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                  title="Reset all geography and provider filters"
-                >
-                  Reset filters
-                </button>
-              </div>
-            </div>
-          </details>
+          {geographyAreaMenu}
         </div>
       )}
 
@@ -1575,21 +1578,33 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
       {activeFocusLevel === 'counties' && (
-        <div className="county-drilldown-shell grid min-w-0 grid-cols-1 gap-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_14px_45px_-36px_rgba(15,23,42,0.5)] sm:p-4">
+        <div className="county-drilldown-shell grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_14px_45px_-36px_rgba(15,23,42,0.5)] sm:p-4">
           <div className="county-selection-header grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] items-start lg:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800 min-w-0">
-            <div>
-              <div className="county-selection-eyebrow">
-                Selected jurisdiction
+            <div className="county-selection-copy min-w-0">
+              <div className="county-selection-context-row">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="county-selection-back"
+                  title="Return to the national state map"
+                >
+                  <span aria-hidden="true">&larr;</span>
+                  <span>All states</span>
+                </button>
+                <span className="county-selection-count">
+                  {availableCounties.length.toLocaleString()} counties
+                </span>
+                {geographyAreaMenu}
               </div>
               <h2 className="mt-0.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                 {activeStateSummary?.state || selectedStateCode}
               </h2>
               <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
-                {availableCounties.length.toLocaleString()} counties · Choose one to review local context and mapped EMS &amp; Fire providers.
+                Choose a county to inspect local context and mapped EMS &amp; Fire providers.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            <div className="county-selection-actions flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
               <div className="relative flex-1 sm:w-72">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -1599,7 +1614,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     setCountyFilterInput(e.target.value);
                     setCountyPage(1);
                   }}
-                  placeholder={`Search ${availableCounties.length} counties or county seats...`}
+                  placeholder="Search county or seat..."
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A] focus:bg-white dark:focus:bg-slate-900"
                 />
                 {countyFilterInput && (

@@ -65,6 +65,22 @@ const printableSourceUrl = (value?: string) => {
   }
 };
 
+const reportSections = [
+  { key: 'overview', label: 'Agency overview & operations' },
+  { key: 'clinical', label: 'Clinical, claims & contracts' },
+  { key: 'commercial', label: 'Fleet costs & purchasing' },
+  { key: 'sources', label: 'Source references' },
+] as const;
+
+type ReportSectionKey = (typeof reportSections)[number]['key'];
+
+const allReportSectionsIncluded = (): Record<ReportSectionKey, boolean> => ({
+  overview: true,
+  clinical: true,
+  commercial: true,
+  sources: true,
+});
+
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
@@ -126,6 +142,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
+  const [includedSections, setIncludedSections] = useState<Record<ReportSectionKey, boolean>>(
+    allReportSectionsIncluded,
+  );
   const documentRef = useRef<HTMLDivElement>(null);
   const denialMetric = agency ? getAgencyMedicareDenialMetricForDisplay(agency) : null;
 
@@ -133,6 +152,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   useEffect(() => {
     if (!isOpen) return;
     setProfileReviewedAt(getAgencyProfileReviewedAt(agency.id));
+    setIncludedSections(allReportSectionsIncluded());
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -177,6 +197,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     day: 'numeric',
     year: 'numeric'
   });
+  const includedSectionCount = Object.values(includedSections).filter(Boolean).length;
+  const toggleReportSection = (section: ReportSectionKey, included: boolean) => {
+    setIncludedSections((current) => {
+      const currentIncludedCount = Object.values(current).filter(Boolean).length;
+      if (!included && current[section] && currentIncludedCount === 1) return current;
+      return { ...current, [section]: included };
+    });
+  };
 
   const fleet = agency.apparatusFleet;
   const logistics = agency.hospitalLogistics;
@@ -489,11 +517,41 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           </div>
         </div>
 
+        <div className="no-print border-b border-slate-200 bg-slate-50 px-4 sm:px-6 py-3">
+          <fieldset>
+            <legend className="text-xs font-semibold text-slate-700 mb-2">
+              Choose sections to include
+            </legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {reportSections.map(({ key, label }) => (
+                <label key={key} className="inline-flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    data-testid={`checkbox-brief-section-${key}`}
+                    checked={includedSections[key]}
+                    disabled={includedSections[key] && includedSectionCount === 1}
+                    onChange={(event) => toggleReportSection(key, event.currentTarget.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600 disabled:cursor-not-allowed"
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">
+              These choices apply only to this brief export and do not change the agency profile.
+            </p>
+          </fieldset>
+        </div>
+
         {/* Printable Document Root (Captured by html2canvas and styled for @media print) */}
         <div ref={documentRef} className="p-6 sm:p-10 text-slate-900 bg-white print-dossier-document font-sans">
           
           {/* ================= PAGE 1: EXECUTIVE OVERVIEW, LEADERSHIP, FLEET & OPERATIONAL LOGISTICS ================= */}
-          <section className="space-y-5">
+          <section
+            data-report-section="overview"
+            hidden={!includedSections.overview}
+            className="space-y-5"
+          >
             
             {/* Top Dossier Header Banner */}
                 <div className="print-agency-identity flex items-start justify-between border-b-2 border-slate-900 pb-5 gap-4">
@@ -841,10 +899,16 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           </section>
 
           {/* ================= PAGE BREAK ================= */}
-          <div className="dossier-page-break my-8 border-b-2 border-dashed border-slate-300" />
+          {includedSections.overview && (includedSections.clinical || includedSections.commercial) && (
+            <div className="dossier-page-break my-8 border-b-2 border-dashed border-slate-300" />
+          )}
 
           {/* ================= PAGE 2: CLINICAL QUALITY, CMS REIMBURSEMENT & INCUMBENT CONTRACT ================= */}
-          <section className="space-y-5 pt-2">
+          <section
+            data-report-section="clinical"
+            hidden={!includedSections.clinical}
+            className="space-y-5 pt-2"
+          >
             
             {/* Header for Page 2 */}
             <div className="flex items-center justify-between border-b border-slate-300 pb-3">
@@ -1052,10 +1116,16 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           </section>
 
           {/* ================= PAGE BREAK ================= */}
-          <div className="dossier-page-break my-8 border-b-2 border-dashed border-slate-300" />
+          {includedSections.clinical && includedSections.commercial && (
+            <div className="dossier-page-break my-8 border-b-2 border-dashed border-slate-300" />
+          )}
 
           {/* ================= PAGE 3: COMMERCIAL TCO, MEDICARE HCPCS & COOPERATIVE PURCHASING ================= */}
-          <section className="space-y-5 pt-2">
+          <section
+            data-report-section="commercial"
+            hidden={!includedSections.commercial}
+            className="space-y-5 pt-2"
+          >
             
             {/* Header for Page 3 */}
             <div className="flex items-center justify-between border-b border-slate-300 pb-3">
@@ -1313,7 +1383,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               )}
             </div>
 
-            <section className="print-source-references pt-3 border-t-2 border-slate-900 text-xs text-slate-700">
+          </section>
+
+          <section
+            data-report-section="sources"
+            hidden={!includedSections.sources}
+            className="print-source-references pt-3 border-t-2 border-slate-900 text-xs text-slate-700"
+          >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-bold text-slate-900">Agency source references</h2>
                 <span className="text-[10px] text-slate-600">
@@ -1354,8 +1430,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="mt-3 border-t border-slate-300 pt-2 text-[10px] text-slate-600">
                 Nick&apos;s EMS &amp; Fire Territory Intelligence · Brief prepared {currentDate}
               </div>
-            </section>
-
           </section>
 
         </div>

@@ -4,8 +4,10 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Agency, PredictiveWeights } from '../types';
+import { Agency, AgencyFactEvidenceKey, PredictiveWeights } from '../types';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
+import { AGENCY_FACT_EVIDENCE_FIELDS, getAgencyFactEvidenceStatus } from '../data/agencyFactEvidence';
+import { getAgencyProfileReviewedAt } from '../services/agencyProfileReviewStore';
 import {
   Printer,
   Download,
@@ -50,6 +52,19 @@ interface ExecutiveBriefingDossierProps {
 const reportNumber = (value: number | null | undefined, suffix = '') =>
   value == null || !Number.isFinite(value) ? 'Not reported' : `${value.toLocaleString()}${suffix}`;
 
+const factLabel = (key: AgencyFactEvidenceKey) =>
+  AGENCY_FACT_EVIDENCE_FIELDS.find((field) => field.key === key)?.label ??
+  key.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+
+const printableSourceUrl = (value?: string) => {
+  try {
+    const url = new URL(value || '');
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> = ({
   agency,
   weights,
@@ -59,12 +74,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
   const documentRef = useRef<HTMLDivElement>(null);
   const denialMetric = agency ? getAgencyMedicareDenialMetricForDisplay(agency) : null;
 
   // Support closing with Escape key
   useEffect(() => {
     if (!isOpen) return;
+    setProfileReviewedAt(getAgencyProfileReviewedAt(agency.id));
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -72,7 +89,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [agency.id, isOpen, onClose]);
 
   // Derived 5-Year TCO Comparison Model
   const tcoModel = useMemo(() => {
@@ -113,6 +130,55 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const fleet = agency.apparatusFleet;
   const logistics = agency.hospitalLogistics;
   const femaGrants = agency.femaGrantHistory ?? [];
+  const sourceReferences = [
+    ...Object.entries(agency.factEvidence ?? {}).flatMap(([key, evidence]) => {
+      if (!evidence || (!evidence.sourceName?.trim() && !evidence.sourceUrl)) return [];
+      const fieldKey = key as AgencyFactEvidenceKey;
+      const status = getAgencyFactEvidenceStatus(agency, fieldKey);
+      return [{
+        label: factLabel(fieldKey),
+        sourceName: evidence.sourceName?.trim() || 'Source name not provided',
+        url: evidence.sourceUrl,
+        period: evidence.reportingPeriod,
+        periodLabel: 'Reporting period',
+        status: status === 'source-reviewed'
+          ? `Review marker recorded${evidence.reviewedAt ? ` · ${new Date(evidence.reviewedAt).toLocaleDateString()}` : ''}`
+          : status === 'source-mapped'
+            ? 'Source mapped; not marked reviewed'
+            : 'Source record incomplete',
+        detail: evidence.note,
+      }];
+    }),
+    ...(agency.sourceFacts ?? []).map((fact) => ({
+      label: factLabel(fact.fieldKey),
+      sourceName: fact.sourceName,
+      url: fact.sourceUrl,
+      period: fact.reportingPeriod || fact.effectivePeriod,
+      periodLabel: 'Reporting period',
+      status: fact.basis === 'user-entered'
+        ? 'User-entered source record'
+        : fact.basis === 'calculated'
+          ? 'Calculated source record'
+          : 'Source-reported record',
+      detail: fact.note,
+    })),
+    ...(agency.sourceRecordAssociations ?? []).map((association) => ({
+      label: 'Agency source match',
+      sourceName: association.sourceName,
+      url: association.sourceUrl,
+      period: association.sourceDate || undefined,
+      periodLabel: 'Source date',
+      status: association.decision === 'confirmed'
+        ? 'User-confirmed source match'
+        : 'User-rejected source match',
+      detail: association.matchBasis,
+    })),
+  ].filter((reference, index, references) => references.findIndex((candidate) =>
+    candidate.label === reference.label &&
+    candidate.sourceName === reference.sourceName &&
+    candidate.url === reference.url &&
+    candidate.period === reference.period,
+  ) === index);
 
   // ACTION 1: Trigger Native Browser Print Dialog (Scoped CSS ensures only document prints)
   const handlePrint = () => {
@@ -246,7 +312,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <h2 className="text-sm font-bold tracking-tight">Executive Account Briefing Dossier</h2>
               <p className="text-[11px] text-slate-300">
-                Printable 3-page on-site executive brief · Grounded in CMS, USFA, NEMSIS &amp; CARES registries
+                Printable agency brief · Review field-level sources before relying on reported values
               </p>
             </div>
           </div>
@@ -325,7 +391,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           <section className="space-y-5">
             
             {/* Top Dossier Header Banner */}
-            <div className="flex items-start justify-between border-b-2 border-slate-900 pb-5 gap-4">
+                <div className="print-agency-identity flex items-start justify-between border-b-2 border-slate-900 pb-5 gap-4">
               <div className="flex items-start gap-5">
                 <img
                   src={brandLogoAsset || `${import.meta.env.BASE_URL}logo.jpg`}
@@ -342,7 +408,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     }`}>
                       {isFire ? 'Fire department' : 'EMS provider'}
                     </span>
-                    <span className="text-xs text-slate-600 font-medium">
+                  <span className="text-xs text-slate-600 font-medium">
                       {agency.agencyType} &middot; {agency.jurisdictionLevel} jurisdiction
                     </span>
                   </div>
@@ -350,7 +416,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     {agency.name}
                   </h1>
                   <p className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-2">
-                    <span>{agency.address || `${agency.city}, ${agency.stateCode}`}, {agency.city}, {agency.county}, {agency.stateCode} {agency.zipCode}</span>
+                    <span>{agency.address || [agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ')}</span>
                     <span aria-hidden="true">&middot;</span>
                     <span className="text-slate-700">FDID: {agency.fdid || 'Not Recorded'}</span>
                     <span aria-hidden="true">&middot;</span>
@@ -364,27 +430,64 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="text-right shrink-0">
                 <div className="text-xs text-slate-500 font-medium">Dossier publication date</div>
                 <div className="text-xs font-semibold text-slate-900 mt-0.5">{currentDate}</div>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Verified public record</span>
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium">
+                  <FileText className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Agency profile · prepared {currentDate}</span>
                 </div>
               </div>
+            </div>
+
+            <div className="print-summary rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700">Operations summary</h2>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div>
+                  <div className="text-slate-500">{isFire ? 'Annual fire-rescue calls' : 'Annual EMS transports'}</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">
+                    {reportNumber(isFire ? agency.annualCallVolume : agency.annual911Transports)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-500">{isFire ? 'Stations' : 'Annual calls / dispatches'}</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">
+                    {reportNumber(isFire ? agency.stationsCount : agency.annualCallVolume)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-500">Population served</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">{reportNumber(agency.populationServed)}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500">Frontline units</div>
+                  <div className="font-semibold text-slate-900 tabular-nums">
+                    {reportNumber(agency.frontlineRescueUnitCount ?? fleet?.totalActiveUnits)}
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-[10px] text-slate-600">
+                Values are shown as recorded in this profile; see the source references below for field-level source and review status.
+              </p>
+            </div>
+
+            <div className="print-profile-review border-l-2 border-slate-400 pl-2 text-[10px] text-slate-600">
+              User review status in this browser: {profileReviewedAt
+                ? `profile marked reviewed ${new Date(profileReviewedAt).toLocaleDateString()} (user-recorded; not independent verification)`
+                : 'not marked reviewed (this is not a verification status)'}
             </div>
 
             {/* Official Leadership & Key Contacts Directory */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>Agency leadership and authorizing officials</span>
-                <span className="text-xs text-slate-500">CMS NPPES &amp; municipal records</span>
+                <span>Agency leadership and contact details</span>
+                <span className="text-xs text-slate-500">See source references for field-level status</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <div>
                   <div className="text-[11px] font-medium text-slate-500">Authorized official</div>
                   <div className="text-sm font-semibold text-slate-900 mt-0.5">
-                    {agency.nppesOfficialName || primaryContact?.name || 'Chief Executive Officer'}
+                    {agency.nppesOfficialName || primaryContact?.name || 'Not reported'}
                   </div>
                   <div className="text-xs text-slate-600">
-                    {agency.nppesOfficialTitle || primaryContact?.title || (isFire ? 'Fire Chief & Authorized Official' : 'EMS Director & Authorized Official')}
+                    {agency.nppesOfficialTitle || primaryContact?.title || primaryContact?.role || 'Not reported'}
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
                     Direct: {departmentPhone}
@@ -442,7 +545,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                             {contact.email ? (
                               <span className="text-blue-700">{contact.email}</span>
                             ) : (
-                              <span className="text-slate-400 italic">HQ Operator Verified</span>
+                              <span className="text-slate-500 italic">Not reported</span>
                             )}
                           </td>
                         </tr>
@@ -608,6 +711,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             </div>
 
             {/* Hospital Trauma & Cath Lab Logistics Strip */}
+            {(logistics?.primaryTraumaHospital || logistics?.distanceToTraumaMiles != null ||
+              logistics?.transportTimeMinutes != null || logistics?.primaryCathLabHospital ||
+              logistics?.cathLabDistanceMiles != null || logistics?.avgEdOffloadLatencyMinutes != null) && (
             <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               <div>
                 <div className="text-xs text-slate-500 font-medium">Primary receiving trauma hospital</div>
@@ -625,6 +731,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
               </div>
             </div>
+            )}
 
           </section>
 
@@ -648,6 +755,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             </div>
 
             {/* 1. Clinical Resuscitation Quality Metrics (CARES & NEMSQA Benchmarks) */}
+            {(agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct != null ||
+              agency.qualityMetrics?.nemsqaChestCompressionFractionPct != null ||
+              agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct != null ||
+              agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct != null ||
+              agency.qualityMetrics?.ahaMissionLifelineTier) && (
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>NEMSQA clinical quality measures &amp; CARES neurological survival</span>
@@ -698,6 +810,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
               </div>
             </div>
+            )}
 
             {/* 2. CMS Medicare & Commercial Insurance Reimbursement Analysis */}
             <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 space-y-3">
@@ -802,7 +915,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {agency.fieldNotes && agency.fieldNotes.length > 0 && (
               <div>
                 <div className="text-xs font-semibold text-slate-700 mb-2">
-                  Field activity and engagement history
+                  User-recorded field notes (not independently verified)
                 </div>
                 <div className="border border-slate-200 rounded-lg overflow-hidden text-xs">
                   <table className="w-full text-left border-collapse">
@@ -867,7 +980,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     ? 'Not calculated: 0 defibrillator units reported.'
                     : 'Not calculated: defibrillator unit count not reported.'}
               </p>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              {hasTcoInputs ? <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
@@ -922,7 +1035,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </div> : (
+                <p className="text-xs text-slate-600">
+                  Cost comparison omitted because a positive defibrillator unit count is not reported.
+                </p>
+              )}
             </div>
 
             {/* 2. Medicare HCPCS Procedure-Level Denial Breakdown */}
@@ -938,7 +1055,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   ? `Estimate inputs: ${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
                   : 'Not calculated: reported annual transports and Medicare payer share are required.'}
               </p>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              {hcpcsModel?.procedures.length ? <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
@@ -965,7 +1082,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </div> : (
+                <p className="text-xs text-slate-600">
+                  No procedure estimates are shown because required agency inputs are unavailable.
+                </p>
+              )}
             </div>
 
             {/* 3. Competitive Battlecard Specs & RFP Cooperative Purchasing Vehicles */}
@@ -1043,9 +1164,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>FEMA AFG &amp; federal grant awards (reported records)</span>
-                <span className="text-xs text-slate-500">Verified federal database records</span>
+                  <span className="text-xs text-slate-500">Record and review status vary; see source references</span>
               </div>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              {femaGrants.length > 0 ? <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
@@ -1080,23 +1201,55 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </div> : (
+                <p className="text-xs text-slate-600">
+                  No grant records are attached to this profile. This does not indicate that the agency has no awards.
+                </p>
+              )}
             </div>
 
-            {/* Official Government Registry Citations & Sign-Off Strip */}
-            <div className="pt-4 border-t-2 border-slate-900 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
-              <div className="space-y-0.5">
-                <div className="font-bold text-slate-900">Authoritative Public Data Sources:</div>
-                <div className="text-[11px]">
-                  CMS NPPES Registry ({agency.npiNumber ? `NPI #${agency.npiNumber}` : 'Pending Provider Lookup'}) · USFA National Fire Registry · NEMSIS v3.5 · CARES Cardiac Arrest Registry
-                </div>
+            <section className="print-source-references pt-3 border-t-2 border-slate-900 text-xs text-slate-700">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="font-bold text-slate-900">Agency source references</h2>
+                <span className="text-[10px] text-slate-600">
+                  A review marker records user activity; it does not independently verify a fact.
+                </span>
               </div>
-
-              <div className="text-right text-[11px]">
-                <div className="font-bold text-slate-900">Nick&apos;s EMS &amp; Fire Territory Intelligence</div>
-                <div className="text-slate-500">Confidential Account Intelligence Briefing · For Internal Field Strategy</div>
+              {sourceReferences.length > 0 ? (
+                <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  {sourceReferences.map((reference, index) => {
+                    const sourceUrl = printableSourceUrl(reference.url);
+                    return <li key={`${reference.label}-${reference.sourceName}-${index}`} className="min-w-0 break-words">
+                      <div className="font-semibold text-slate-900">
+                        {reference.label} · {reference.status}
+                      </div>
+                      <div>{reference.sourceName}</div>
+                      <div className="text-slate-600">
+                        {reference.periodLabel}: {reference.period || 'Not stated'}
+                      </div>
+                      {reference.detail && <div className="text-slate-600">{reference.detail}</div>}
+                      {sourceUrl ? (
+                        <a
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="print-source-url text-blue-800 underline"
+                        >
+                          {sourceUrl}
+                        </a>
+                      ) : (
+                        <div className="text-slate-500">Source link not provided</div>
+                      )}
+                    </li>
+                  })}
+                </ul>
+              ) : (
+                <p className="mt-2">No field-level source references are attached to this agency profile.</p>
+              )}
+              <div className="mt-3 border-t border-slate-300 pt-2 text-[10px] text-slate-600">
+                Nick&apos;s EMS &amp; Fire Territory Intelligence · Brief prepared {currentDate}
               </div>
-            </div>
+            </section>
 
           </section>
 
@@ -1109,12 +1262,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
         @media print {
           @page {
             size: letter portrait;
-            margin: 10mm 10mm 10mm 10mm;
+            margin: 12mm;
           }
 
-          /* Ensure body and html are pure white and visible */
           html, body {
-            visibility: visible !important;
             background: #ffffff !important;
             color: #0f172a !important;
             height: auto !important;
@@ -1124,15 +1275,39 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             padding: 0 !important;
           }
 
-          /* Hide everything outside the dossier modal container */
-          body > div:not(#root),
-          .no-print,
-          nav,
-          header,
-          footer,
-          aside {
+          .pi-app-shell {
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+
+          .pi-app-shell > :not(.provider-profile-overlay) {
             display: none !important;
+          }
+
+          .provider-profile-overlay {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+          }
+
+          .provider-profile-overlay > :not(#briefing-dossier-modal-container) {
+            display: none !important;
+          }
+
+          body * {
             visibility: hidden !important;
+          }
+
+          #briefing-dossier-modal-container,
+          #briefing-dossier-modal-container * {
+            visibility: visible !important;
           }
 
           #briefing-dossier-modal-container {
@@ -1147,6 +1322,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             overflow: visible !important;
             box-shadow: none !important;
             border: none !important;
+          }
+
+          #briefing-dossier-modal-container .no-print {
+            display: none !important;
           }
 
           #briefing-dossier-modal-container > div {
@@ -1169,26 +1348,87 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             color: #0f172a !important;
             box-shadow: none !important;
             border: none !important;
+            font-size: 9pt !important;
+            line-height: 1.3 !important;
           }
 
-          /* Page break control */
           .dossier-page-break {
-            page-break-before: always !important;
-            break-before: page !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            display: block !important;
+            display: none !important;
           }
 
-          /* Prevent awkward page breaks inside cards and tables */
-          table, tr, td, th, .grid {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+          .print-summary,
+          .print-profile-review,
+          .print-source-references li,
+          tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
 
-          /* Ensure exact background colors, borders, and badges print */
+          .print-dossier-document .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.55rem !important;
+          }
+
+          .print-dossier-document .p-3\\.5,
+          .print-dossier-document .p-4 {
+            padding: 0.5rem !important;
+          }
+
+          .print-dossier-document .text-\\[24px\\] {
+            font-size: 16pt !important;
+          }
+
+          .print-dossier-document .overflow-x-auto {
+            overflow: visible !important;
+          }
+
+          .print-dossier-document table {
+            width: 100% !important;
+            table-layout: fixed;
+            font-size: 7.5pt !important;
+          }
+
+          .print-dossier-document th,
+          .print-dossier-document td {
+            padding: 0.2rem 0.25rem !important;
+            overflow-wrap: anywhere;
+            vertical-align: top;
+          }
+
+          .print-dossier-document .print-source-url {
+            display: block;
+            color: #1e3a8a !important;
+            font-size: 7pt !important;
+            overflow-wrap: anywhere;
+          }
+
+          .print-agency-identity {
+            gap: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+          }
+
+          .print-agency-identity img {
+            width: 3rem !important;
+            height: 3rem !important;
+          }
+
+          .print-agency-identity h1 {
+            font-size: 20pt !important;
+          }
+
+          .print-dossier-document .grid {
+            gap: 0.35rem !important;
+          }
+
+          .print-dossier-document p,
+          .print-dossier-document li {
+            overflow-wrap: anywhere;
+          }
+
+          .print-dossier-document a {
+            text-decoration: underline;
+            color: #1e3a8a !important;
+          }
+
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;

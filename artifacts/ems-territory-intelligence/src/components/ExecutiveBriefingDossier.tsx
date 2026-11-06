@@ -405,6 +405,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       table { table-layout: fixed; }
       th, td { overflow-wrap: anywhere; font-size: 8pt; }
       a { color: #1e3a8a !important; }
+      .print-agency-identifiers { border-top: 1px solid #e2e8f0 !important; padding-top: 0.2rem !important; color: #64748b !important; font-size: 7pt !important; }
+      .print-summary { border-left: 4px solid #1e3a8a !important; background: #f8fafc !important; }
+      .print-summary-value { color: #0f172a !important; font-size: 11pt !important; font-weight: 700 !important; }
+      .print-profile-review { color: #64748b !important; font-size: 7pt !important; }
+      .print-planning-estimate { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #475569 !important; box-shadow: none !important; }
       #briefing-dossier-document .grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
@@ -578,14 +583,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <h1 className="text-[28px] sm:text-[32px] font-[650] text-slate-900 tracking-tight mt-1 leading-tight">
                     {agency.name}
                   </h1>
-                  <p className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-2">
+                  <p className="print-agency-location text-xs text-slate-700 mt-1">
                     <span>{agency.address || [agency.city, agency.county, agency.stateCode, agency.zipCode].filter(Boolean).join(', ')}</span>
-                    <span aria-hidden="true">&middot;</span>
-                    <span className="text-slate-700">FDID: {agency.fdid || 'Not Recorded'}</span>
-                    <span aria-hidden="true">&middot;</span>
-                    <span className="text-slate-700">NPI: {agency.npiNumber || 'Unassigned'}</span>
-                    <span aria-hidden="true">&middot;</span>
-                    <span className="text-slate-700">Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
                   </p>
                 </div>
               </div>
@@ -600,28 +599,28 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
             </div>
 
-            <div className="print-summary rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="print-summary rounded-lg border border-slate-200 border-l-4 border-l-blue-900 bg-slate-50 p-3">
               <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700">Operations summary</h2>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
                   <div className="text-slate-500">{isFire ? 'Annual fire-rescue calls' : 'Annual EMS transports'}</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">
+                  <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(isFire ? agency.annualCallVolume : agency.annual911Transports)}
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500">{isFire ? 'Stations' : 'Annual calls / dispatches'}</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">
+                  <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(isFire ? agency.stationsCount : agency.annualCallVolume)}
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500">Population served</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">{reportNumber(agency.populationServed)}</div>
+                  <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">{reportNumber(agency.populationServed)}</div>
                 </div>
                 <div>
                   <div className="text-slate-500">Frontline units</div>
-                  <div className="font-semibold text-slate-900 tabular-nums">
+                  <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(agency.frontlineRescueUnitCount ?? fleet?.totalActiveUnits)}
                   </div>
                 </div>
@@ -631,7 +630,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </p>
             </div>
 
-            <div className="print-profile-review border-l-2 border-slate-400 pl-2 text-[10px] text-slate-600">
+            <div className="print-agency-identifiers flex flex-wrap gap-x-2 text-[10px] text-slate-500">
+              <span>Registry IDs</span>
+              <span>FDID: {agency.fdid || 'Not recorded'}</span>
+              <span>NPI: {agency.npiNumber || 'Unassigned'}</span>
+              <span>Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
+            </div>
+
+            <div className="print-profile-review border-l-2 border-slate-300 pl-2 text-[9px] text-slate-500">
               User review status in this browser: {profileReviewedAt
                 ? `profile marked reviewed ${new Date(profileReviewedAt).toLocaleDateString()} (user-recorded; not independent verification)`
                 : 'not marked reviewed (this is not a verification status)'}
@@ -745,15 +751,15 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50">
+                <div className="print-planning-estimate p-3.5 rounded-lg border border-slate-200 bg-slate-50">
                   <div className="text-xs text-emerald-800 font-medium">Billing recovery potential</div>
-                  <div className="text-[24px] font-[650] text-emerald-700 mt-1 tabular-nums leading-none">
+                  <div className="text-sm font-semibold text-slate-700 mt-1 tabular-nums leading-tight">
                     Estimate unavailable
                   </div>
-                  <div className="text-xs text-emerald-800 mt-1.5 tabular-nums">
+                  <div className="text-xs text-slate-600 mt-1.5 tabular-nums">
                     Code {agency.cmsData?.topDenialReasonCode || 'Not reported'}
                   </div>
-                  <div className="text-[10px] text-emerald-900 mt-1">No estimate shown without its inputs and method.</div>
+                  <div className="text-[10px] text-slate-600 mt-1">No estimate shown without its inputs and method.</div>
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
@@ -769,21 +775,21 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             </div>
 
             {/* Pulse IQ Priority Score Breakdown */}
-            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 text-xs space-y-3">
+            <div className="print-planning-estimate p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-slate-900">
                     <PulseIqEstimateLabel /> · modeled priority index
                   </span>
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1E3A8A] text-white">
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-white">
                     {agency.zollOpportunity?.priorityTier || 'Not calculated'}
                   </span>
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-white text-blue-900 border border-blue-200">
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-white text-slate-700 border border-slate-300">
                     Stage: {agency.zollOpportunity?.salesStage || 'Not reported'}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-[24px] font-[650] text-[#1E3A8A] tabular-nums">
+                  <span className="text-lg font-semibold text-slate-800 tabular-nums">
                     {reportNumber(agency.zollOpportunity?.pulseIqScore)}
                   </span>
                   <span className="text-xs text-slate-500">/ 100</span>
@@ -791,14 +797,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
 
               {/* Four scored factors; the zero-weight claims explanation is not shown as a pillar. */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-blue-200/60 text-xs">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-1 border-t border-slate-300 text-xs">
                 {scoreExplanation?.factors.filter((factor) => factor.weightPct > 0).map((f) => (
-                  <div key={f.id} className="text-center p-2 rounded bg-white border border-blue-100">
+                  <div key={f.id} className="text-center p-2 rounded bg-white border border-slate-200">
                     <div className="text-slate-500 text-[11px] truncate">{f.name.split(' ')[0]} {f.name.split(' ')[1]}</div>
                     <div className="font-semibold text-slate-900 text-xs mt-0.5 tabular-nums">
                       +{f.pointsContributed} pts
                     </div>
-                    <div className="text-[10px] text-blue-700 font-medium tabular-nums">
+                    <div className="text-[10px] text-slate-600 font-medium tabular-nums">
                       ({f.weightPct}% wt)
                     </div>
                   </div>
@@ -806,7 +812,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
 
               {/* Strategic Rationale Narrative */}
-              <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-blue-200/50">
+              <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-slate-300">
                 <strong className="font-semibold text-slate-900">Strategic rationale:</strong> {agency.zollOpportunity?.scoreRationale || 'Agency-specific inputs and rationale are not reported.'}
               </div>
             </div>
@@ -998,8 +1004,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-600 font-medium">Estimated annual recoverable cash:</span>
-                  <div className="text-[24px] font-[650] text-emerald-700 tabular-nums leading-none mt-0.5">
+                  <span className="print-planning-estimate text-xs text-slate-600 font-medium">Estimated annual recoverable cash:</span>
+                  <div className="print-planning-estimate text-sm font-semibold text-slate-700 tabular-nums leading-tight mt-0.5">
                     Not reported: estimate inputs and method unavailable
                   </div>
                 </div>
@@ -1144,8 +1150,8 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>5-year total cost of ownership: ZOLL upgrade vs. incumbent fleet</span>
-                <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs tabular-nums">
-                  Net 5-year modeled savings: {tcoModel ? formatTcoValue(tcoModel.totalSavingsIncludingTradeIn) : 'Not calculated'}
+                <span className="print-planning-estimate font-medium text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[10px] tabular-nums">
+                  Modeled estimate · net 5-year savings: {tcoModel ? formatTcoValue(tcoModel.totalSavingsIncludingTradeIn) : 'Not calculated'}
                 </span>
               </div>
               <p className="text-xs text-slate-500">
@@ -1221,7 +1227,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>Medicare &amp; insurance reimbursement recovery (HCPCS fee schedule)</span>
-                <span className="text-rose-700 font-medium tabular-nums text-xs">
+                <span className="print-planning-estimate text-slate-600 font-medium tabular-nums text-[10px]">
                   Annual denial exposure: Not calculated from local claim percentages
                 </span>
               </div>
@@ -1592,6 +1598,36 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
           .print-agency-identity h1 {
             font-size: 20pt !important;
+          }
+
+          .print-agency-identifiers {
+            border-top: 1px solid #e2e8f0 !important;
+            padding-top: 0.2rem !important;
+            color: #64748b !important;
+            font-size: 7pt !important;
+          }
+
+          .print-summary {
+            border-left: 4px solid #1e3a8a !important;
+            background: #f8fafc !important;
+          }
+
+          .print-summary-value {
+            color: #0f172a !important;
+            font-size: 11pt !important;
+            font-weight: 700 !important;
+          }
+
+          .print-profile-review {
+            color: #64748b !important;
+            font-size: 7pt !important;
+          }
+
+          .print-planning-estimate {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #475569 !important;
+            box-shadow: none !important;
           }
 
           .print-dossier-document .grid {

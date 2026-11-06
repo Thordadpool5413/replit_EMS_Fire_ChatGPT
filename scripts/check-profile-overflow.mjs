@@ -673,6 +673,7 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
   const briefDetails = await evaluate(cdp, `(() => {
     const modal = document.querySelector('#briefing-dossier-modal-container');
     const documentRoot = modal?.querySelector('.print-dossier-document');
+    const overview = documentRoot?.querySelector('[data-report-section="overview"]');
     const references = [...(documentRoot?.querySelectorAll('.print-source-references li') ?? [])]
       .map((item) => ({
         text: item.innerText.trim(),
@@ -688,9 +689,22 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
     return {
       identity: documentRoot?.querySelector('.print-agency-identity h1')?.innerText.trim() ?? '',
       operations: documentRoot?.querySelector('.print-summary')?.innerText.trim() ?? '',
-      operationsValues: [...(documentRoot?.querySelectorAll('.print-summary .font-semibold') ?? [])]
+      operationsValues: [...(documentRoot?.querySelectorAll('.print-summary-value') ?? [])]
         .map((element) => element.innerText.trim())
         .filter(Boolean),
+      identifiers: documentRoot?.querySelector('.print-agency-identifiers')?.innerText.trim() ?? '',
+      overviewOrder: [
+        '.print-agency-identity',
+        '.print-summary',
+        '.print-agency-identifiers',
+        '.print-profile-review',
+      ].map((selector) => [...(overview?.children ?? [])].findIndex((element) =>
+        element.matches(selector))),
+      screenHierarchy: {
+        identity: Number.parseFloat(getComputedStyle(documentRoot?.querySelector('.print-agency-identity h1')).fontSize),
+        operations: Number.parseFloat(getComputedStyle(documentRoot?.querySelector('.print-summary-value')).fontSize),
+        identifiers: Number.parseFloat(getComputedStyle(documentRoot?.querySelector('.print-agency-identifiers')).fontSize),
+      },
       review: documentRoot?.querySelector('.print-profile-review')?.innerText.trim() ?? '',
       tableCells: [...(documentRoot?.querySelectorAll('table') ?? [])]
         .flatMap((table) => [...table.querySelectorAll('th, td')])
@@ -709,6 +723,18 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
     /Operations summary/i.test(briefDetails.operations) &&
       briefDetails.operations.includes(testCase.operationsLabel),
     `${testCase.category} brief is missing its operations summary: ${briefDetails.operations}`,
+  );
+  assert(
+    /Registry IDs/i.test(briefDetails.identifiers) &&
+      /FDID:/i.test(briefDetails.identifiers) &&
+      /NPI:/i.test(briefDetails.identifiers) &&
+      /Taxonomy:/i.test(briefDetails.identifiers) &&
+      briefDetails.overviewOrder.every((index) => index >= 0) &&
+      briefDetails.overviewOrder.every((index, order, indexes) =>
+        order === 0 || indexes[order - 1] < index) &&
+      briefDetails.screenHierarchy.identity > briefDetails.screenHierarchy.operations &&
+      briefDetails.screenHierarchy.operations > briefDetails.screenHierarchy.identifiers,
+    `${testCase.category} brief does not keep identity and operations ahead of subordinate identifiers`,
   );
   assert(
     briefDetails.references.length > 0 &&
@@ -742,6 +768,12 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
         .every((element) => getComputedStyle(element).display === 'none'),
       documentVisible: Boolean(doc && getComputedStyle(doc).visibility === 'visible' &&
         getComputedStyle(doc).display !== 'none'),
+      hierarchy: {
+        identity: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-agency-identity h1')).fontSize),
+        operations: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-summary-value')).fontSize),
+        identifiers: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-agency-identifiers')).fontSize),
+        review: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-profile-review')).fontSize),
+      },
       tables: [...(doc?.querySelectorAll('table') ?? [])].map((table) => {
         const bounds = table.getBoundingClientRect();
         const cellsFit = [...table.querySelectorAll('th, td')].every((cell) => {
@@ -761,6 +793,9 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
       printState.shellSiblingsHidden &&
       printState.noPrintHidden &&
       printState.documentVisible &&
+      printState.hierarchy.identity > printState.hierarchy.operations &&
+      printState.hierarchy.operations > printState.hierarchy.identifiers &&
+      printState.hierarchy.operations > printState.hierarchy.review &&
       printState.tables.every((table) => table.visible && table.fits),
     `${testCase.category} print media exposes unrelated workspace content: ${JSON.stringify(printState)}`,
   );
@@ -811,6 +846,7 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
     normalizedPdfText.includes(testCase.agency.toLowerCase()) &&
       normalizedPdfText.includes('operations summary') &&
       normalizedPdfText.includes(testCase.operationsLabel.toLowerCase()) &&
+      normalizedPdfText.includes('registry ids') &&
       briefDetails.operationsValues.some((value) =>
         normalizedPdfText.includes(value.replace(/\s+/g, ' ').toLowerCase())) &&
       normalizedPdfText.includes('agency source references') &&

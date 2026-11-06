@@ -32,3 +32,9 @@ On drilled-in Territory views, do not repeat the selected location when the shar
 **Why:** A separate row for only two controls left dead space and pushed the title, search, and provider action farther down the page.
 
 **How to apply:** Let the shared breadcrumb provide current-location context; keep the selected area, search, and primary provider action in one compact heading card, with secondary controls available on demand.
+
+County directory cards should show the county, seat, mapped-place count, and three primary reference metrics. Keep FIPS, area, centroid, ZIPs, extra context, and source records together behind one collapsed details row; leave the county-level-only scope note visible.
+
+**Why:** The prior cards stacked multiple metadata rows, two disclosure controls, three colored tiles, and a large action, making the primary county facts hard to scan.
+
+**How to apply:** Simplify the collapsed card first without deleting data or citations. Keep metric labels readable, use restrained category accents, and verify that expanded place selection and source links still work.

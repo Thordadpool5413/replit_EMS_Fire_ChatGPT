@@ -1699,36 +1699,29 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 const mappedPlaceCount = c.cities?.length ?? 0;
                 const countyDenialDisplay = getCountyDenialDisplay(c);
                 const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
+                const openCounty = () => {
+                  setSelectedCountyName(c.countyName);
+                  setSelectedCityName('all');
+                  setMiddleTab('cities');
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) {
+                    onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
+                  }
+                };
                 return (
-                  <div
+                  <article
                     key={`${c.stateCode}-${c.countyFips}`}
-                    onClick={() => {
-                      setSelectedCountyName(c.countyName);
-                      setSelectedCityName('all');
-                      setMiddleTab('cities');
-                      setAgencyPage(1);
-                      if (onSyncGlobalGeography) {
-                        onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
-                      }
-                    }}
-                    className="county-directory-card county-profile-card group relative flex min-h-0 cursor-pointer flex-col gap-2.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_40px_-28px_rgba(30,64,175,0.38)]"
+                    aria-labelledby={`county-card-title-${c.countyFips}`}
+                    className="county-directory-card county-profile-card group relative flex min-h-0 flex-col overflow-hidden"
                   >
                     <div className="county-profile-card-content">
                       <div className="county-profile-card-heading">
                         <div className="min-w-0">
-                          <h3 className="county-profile-card-title">
+                          <h3 id={`county-card-title-${c.countyFips}`} className="county-profile-card-title">
                             {c.countyName}
                           </h3>
                           <div className="county-profile-card-meta">
                             <span>County seat <strong className="font-semibold text-slate-900">{c.countySeat}</strong></span>
-                            <span aria-hidden="true">·</span>
-                            <span className="pi-metric-id">FIPS {c.countyFips}</span>
-                            {c.landAreaSqMiles && (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <span className="pi-data-number">{c.landAreaSqMiles.toLocaleString()} sq mi</span>
-                              </>
-                            )}
                           </div>
                         </div>
                         {mappedPlaceCount > 0 && (
@@ -1737,60 +1730,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </span>
                         )}
                       </div>
-
-                      {/* Real-World Boundary Coordinates & Verified USPS ZIPs */}
-                      <div className="county-profile-geography">
-                        <span className="tabular-nums">
-                          Centroid: {c.centroidLat != null && c.centroidLng != null
-                            ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng.toFixed(3)}°W`
-                            : 'Not reported'}
-                        </span>
-                        {c.primaryZipCodes && c.primaryZipCodes.length > 0 && (
-                          <span>ZIPs: {c.primaryZipCodes.slice(0, 3).join(', ')}</span>
-                        )}
-                      </div>
-
-                      {/* Connected Real US Census / USPS Cities in this County */}
-                      <details
-                        className="county-city-disclosure county-profile-places group"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <summary className="county-profile-places-summary">
-                          <span>{mappedPlaceCount > 0 ? 'Mapped places' : 'County seat reference'}</span>
-                          <span className="county-profile-places-toggle">
-                            <span className="group-open:hidden">
-                              {mappedPlaceCount > 0 ? `Show ${mappedPlaceCount}` : 'View seat'}
-                            </span>
-                            <span className="hidden group-open:inline">Hide list</span>
-                          </span>
-                        </summary>
-                        <div
-                          className="county-city-list county-profile-city-list"
-                          role="group"
-                          aria-label={`Mapped places and county seat reference for ${c.countyName}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {countyCities.map(cityName => (
-                            <button
-                              key={`${c.stateCode}-${c.countyName}-${cityName}`}
-                              type="button"
-                              onClick={() => {
-                                setSelectedStateCode(c.stateCode);
-                                setSelectedCountyName(c.countyName);
-                                setSelectedCityName(cityName);
-                                setMiddleTab('cities');
-                                setAgencyPage(1);
-                                if (onSyncGlobalGeography) {
-                                  onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
-                                }
-                              }}
-                              className="county-profile-place-button"
-                            >
-                              {cityName}
-                            </button>
-                          ))}
-                        </div>
-                      </details>
 
                       <div className="county-profile-metrics" aria-label={`County reference figures for ${c.countyName}`}>
                         <div className="county-profile-metric county-profile-metric-population">
@@ -1908,51 +1847,116 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </div>
 
                       <details
-                        className="county-profile-context"
+                        className="county-profile-details"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <summary>
-                          <span>More county context</span>
-                          <span>5 reference figures</span>
+                        <summary className="county-profile-details-summary">
+                          <span>Details &amp; sources</span>
+                          <span className="county-profile-details-count">
+                            {mappedPlaceCount > 0 ? `${mappedPlaceCount} places` : 'County seat'} · 5 figures
+                          </span>
+                          <span className="county-profile-details-indicator" aria-hidden="true">+</span>
                         </summary>
-                        <dl className="county-profile-context-grid">
-                          <div>
-                            <dt>Annual emergency transports</dt>
-                            <dd>{Number.isFinite(c.annualEmergencyTransports) ? c.annualEmergencyTransports.toLocaleString() : 'Not reported'}</dd>
+                        <div className="county-profile-details-content">
+                          <div className="county-profile-geography" aria-label={`Geographic identifiers for ${c.countyName}`}>
+                            <span><strong>FIPS</strong> {c.countyFips}</span>
+                            {c.landAreaSqMiles && (
+                              <span><strong>Area</strong> {c.landAreaSqMiles.toLocaleString()} sq mi</span>
+                            )}
+                            <span className="tabular-nums">
+                              <strong>Centroid</strong> {c.centroidLat != null && c.centroidLng != null
+                                ? `${c.centroidLat.toFixed(3)}°N, ${c.centroidLng.toFixed(3)}°W`
+                                : 'Not reported'}
+                            </span>
+                            {c.primaryZipCodes && c.primaryZipCodes.length > 0 && (
+                              <span><strong>ZIPs</strong> {c.primaryZipCodes.slice(0, 3).join(', ')}</span>
+                            )}
                           </div>
-                          <div>
-                            <dt>Population age 65+</dt>
-                            <dd>{Number.isFinite(c.seniorPopPct) ? `${c.seniorPopPct.toFixed(1)}%` : 'Not reported'}</dd>
+
+                          <div className="county-profile-detail-section">
+                            <div className="county-profile-detail-section-heading">
+                              <span>Mapped places</span>
+                              <span>{mappedPlaceCount > 0 ? `${mappedPlaceCount} places` : 'County seat reference'}</span>
+                            </div>
+                            <div
+                              className="county-city-list county-profile-city-list"
+                              role="group"
+                              aria-label={`Mapped places and county seat reference for ${c.countyName}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {countyCities.map(cityName => (
+                                <button
+                                  key={`${c.stateCode}-${c.countyName}-${cityName}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedStateCode(c.stateCode);
+                                    setSelectedCountyName(c.countyName);
+                                    setSelectedCityName(cityName);
+                                    setMiddleTab('cities');
+                                    setAgencyPage(1);
+                                    if (onSyncGlobalGeography) {
+                                      onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
+                                    }
+                                  }}
+                                  className="county-profile-place-button"
+                                >
+                                  {cityName}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div>
-                            <dt>Median income</dt>
-                            <dd>{Number.isFinite(c.medianIncome) ? `$${c.medianIncome.toLocaleString()}` : 'Not reported'}</dd>
+
+                          <div className="county-profile-context-block">
+                            <div className="county-profile-detail-section-heading">
+                              <span>Additional county context</span>
+                              <span>Reference only</span>
+                            </div>
+                            <dl className="county-profile-context-grid">
+                              <div>
+                                <dt>Annual emergency transports</dt>
+                                <dd>{Number.isFinite(c.annualEmergencyTransports) ? c.annualEmergencyTransports.toLocaleString() : 'Not reported'}</dd>
+                              </div>
+                              <div>
+                                <dt>Population age 65+</dt>
+                                <dd>{Number.isFinite(c.seniorPopPct) ? `${c.seniorPopPct.toFixed(1)}%` : 'Not reported'}</dd>
+                              </div>
+                              <div>
+                                <dt>Median income</dt>
+                                <dd>{Number.isFinite(c.medianIncome) ? `$${c.medianIncome.toLocaleString()}` : 'Not reported'}</dd>
+                              </div>
+                              <div>
+                                <dt>Poverty rate</dt>
+                                <dd>{Number.isFinite(c.povertyRatePct) ? `${c.povertyRatePct.toFixed(1)}%` : 'Not reported'}</dd>
+                              </div>
+                              <div>
+                                <dt>Primary cath lab distance</dt>
+                                <dd>{Number.isFinite(c.primaryCathLabDistanceMiles) ? `${c.primaryCathLabDistanceMiles.toFixed(1)} mi` : 'Not reported'}</dd>
+                              </div>
+                            </dl>
+                            <p>County-level context only; these figures are not assigned to individual providers.</p>
                           </div>
-                          <div>
-                            <dt>Poverty rate</dt>
-                            <dd>{Number.isFinite(c.povertyRatePct) ? `${c.povertyRatePct.toFixed(1)}%` : 'Not reported'}</dd>
-                          </div>
-                          <div>
-                            <dt>Primary cath lab distance</dt>
-                            <dd>{Number.isFinite(c.primaryCathLabDistanceMiles) ? `${c.primaryCathLabDistanceMiles.toFixed(1)} mi` : 'Not reported'}</dd>
-                          </div>
-                        </dl>
-                        <p>County-level context only; it is not assigned to an individual provider.</p>
+
+                          <CountyFigureSourceDetails
+                            countyFips={c.countyFips}
+                            sources={c.figureSources}
+                          />
+                        </div>
                       </details>
                     </div>
 
                     <div className="county-profile-card-footer">
-                      <span className="county-profile-data-note">County-level reference · review source scope</span>
-                      <span className="county-profile-card-action">
+                      <span className="county-profile-data-note">County reference only</span>
+                      <button
+                        type="button"
+                        onClick={openCounty}
+                        className="county-profile-card-action"
+                        aria-label={`Inspect ${c.countyName} county`}
+                      >
                         Inspect county
                         <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </span>
+                      </button>
                     </div>
-                    <CountyFigureSourceDetails
-                      countyFips={c.countyFips}
-                      sources={c.figureSources}
-                    />
-                  </div>
+                  </article>
                 );
               })}
             </div>

@@ -91,11 +91,7 @@ function Panel({
   summary?: string;
   initiallyExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(() =>
-    typeof window === 'undefined' ||
-    window.matchMedia('(min-width: 768px)').matches ||
-    initiallyExpanded,
-  );
+  const [expanded, setExpanded] = useState(initiallyExpanded);
 
   return (
     <section aria-labelledby={`${id}-heading`} data-testid={`section-${id}`} className="min-w-0 rounded-lg border border-[var(--pi-border)] bg-[var(--pi-surface-bg)]">
@@ -225,8 +221,7 @@ export default function AgencyIntelligenceOverview({
           id="identity"
           title="Identity & jurisdiction"
           icon={<Building2 aria-hidden="true" className="h-4 w-4" />}
-          summary={[agency.agencyType, agency.jurisdictionLevel, agency.fdid].filter(textAvailable).join(' · ')}
-          initiallyExpanded
+          summary={[agency.jurisdictionLevel, agency.fdid].filter(textAvailable).join(' · ')}
         >
           <dl>
             <Field label="Agency type" value={textAvailable(agency.agencyType) ? agency.agencyType : null} testId="value-agency-type" />
@@ -248,7 +243,6 @@ export default function AgencyIntelligenceOverview({
           title="Command contacts"
           icon={<Users aria-hidden="true" className="h-4 w-4" />}
           summary={contacts.length ? `${contacts.length} contact${contacts.length === 1 ? '' : 's'} listed` : undefined}
-          initiallyExpanded
           action={
             <button type="button" onClick={() => onNavigateSection?.('decision_makers')} data-testid="button-view-command-directory" className="text-xs font-semibold text-[var(--pi-action)] hover:underline">Directory <ArrowUpRight aria-hidden="true" className="inline h-3.5 w-3.5" /></button>
           }
@@ -275,11 +269,7 @@ export default function AgencyIntelligenceOverview({
           id="stations-apparatus"
           title="Stations & apparatus"
           icon={<Truck aria-hidden="true" className="h-4 w-4" />}
-          summary={[
-            numberLabel(agency.stationsCount) ? `${numberLabel(agency.stationsCount)} stations` : null,
-            numberLabel(agency.totalAmbulances) ? `${numberLabel(agency.totalAmbulances)} ambulances` : null,
-            numberLabel(agency.totalFireEngines) ? `${numberLabel(agency.totalFireEngines)} fire engines` : null,
-          ].filter(Boolean).join(' · ')}
+          summary="Station locations and apparatus details"
           action={
             <button type="button" onClick={() => onNavigateSection?.('operations')} data-testid="button-view-stations-operations" className="text-xs font-semibold text-[var(--pi-action)] hover:underline">Operations <ArrowUpRight aria-hidden="true" className="inline h-3.5 w-3.5" /></button>
           }
@@ -309,11 +299,7 @@ export default function AgencyIntelligenceOverview({
           id="operations-service-area"
           title="Operational volume & service area"
           icon={<MapPin aria-hidden="true" className="h-4 w-4" />}
-          summary={[
-            numberLabel(agency.annualCallVolume) ? `${numberLabel(agency.annualCallVolume)} calls` : null,
-            numberLabel(agency.annual911Transports) ? `${numberLabel(agency.annual911Transports)} transports` : null,
-          ].filter(Boolean).join(' · ')}
-          initiallyExpanded
+          summary="Call volume and service-area details"
           action={
             <button type="button" onClick={() => onNavigateSection?.('operations')} data-testid="button-view-service-area" className="text-xs font-semibold text-[var(--pi-action)] hover:underline">Operations <ArrowUpRight aria-hidden="true" className="inline h-3.5 w-3.5" /></button>
           }

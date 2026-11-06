@@ -603,6 +603,24 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     );
   })()`);
   assert(testCorrectionRemoved, 'The test-only source correction remains in browser storage');
+  await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (select) {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+        ?.set?.call(select, 'overview');
+      select.dispatchEvent(new Event('input', { bubbles: true }));
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      [...document.querySelectorAll('[data-testid="profile-topic-navigation"] button')]
+        .find((button) => button.innerText.trim() === '1. Overview')
+        ?.click();
+    }
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelectorAll('main.profile-workspace [data-testid="agency-intelligence-overview"]').length === 1`,
+    'the default overview to return after source-workspace checks',
+  );
 }
 
 async function assertNoHorizontalOverflow(cdp, width, area) {
@@ -690,6 +708,9 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     const topicNavigation = profile?.querySelector('[data-testid="profile-topic-navigation"]');
     const title = executiveHeader?.querySelector('h1');
     const summaryGrid = executiveHeader?.querySelector('.profile-summary-grid');
+    const overview = profile?.querySelector('[data-testid="agency-intelligence-overview"]');
+    const operationsLead = profile?.querySelector('[aria-label="Agency operations summary"] .profile-operations-lead')
+      ?.innerText.trim() ?? '';
     const summaries = [
       ['identity', executiveHeader?.querySelector('h1')],
       ['operations', profile?.querySelector('[aria-label="Agency operations summary"]')],
@@ -729,6 +750,26 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
     });
     return {
       title: title?.innerText.trim() ?? '',
+      regionCounts: {
+        profileWorkspaces: document.querySelectorAll('main.profile-workspace').length,
+        executiveHeaders: profile?.querySelectorAll('[aria-label="Account 360 Executive Decision Header"]').length ?? 0,
+        topicNavigations: profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length ?? 0,
+        overviewPanels: profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length ?? 0,
+        operationsSummaries: profile?.querySelectorAll('[aria-label="Agency operations summary"]').length ?? 0,
+        contactSummaries: profile?.querySelectorAll('[aria-label="Agency contact summary"]').length ?? 0,
+        sourceSummaries: profile?.querySelectorAll('[aria-label="Available source references"]').length ?? 0,
+        bottomDetailsHosts: profile?.querySelectorAll('[data-testid="profile-bottom-details"]').length ?? 0,
+      },
+      overviewPanelStates: [...(profile?.querySelectorAll(
+        '[data-testid="agency-intelligence-overview"] [data-testid^="button-toggle-"]',
+      ) ?? [])].map((button) => button.getAttribute('aria-expanded')),
+      overviewPanelSummaries: [...(overview?.querySelectorAll('[data-testid^="summary-"]') ?? [])]
+        .map((summary) => summary.innerText.trim()),
+      repeatedPrimaryOperations: Boolean(operationsLead && overview?.innerText.includes(operationsLead)),
+      selectedTopicButtons: [...(topicNavigation?.querySelectorAll('button') ?? [])]
+        .filter((button) => button.className.includes('bg-[#285EE8]'))
+        .map((button) => button.innerText.trim()),
+      mobileTopicValue: profile?.querySelector('[data-testid="select-profile-section-mobile"]')?.value ?? null,
       identityCount: executiveHeader?.querySelectorAll('h1').length ?? 0,
       summaryGridCount: executiveHeader?.querySelectorAll('.profile-summary-grid').length ?? 0,
       summaryPanelCount: summaryGrid?.querySelectorAll('.profile-summary-panel').length ?? 0,
@@ -751,6 +792,7 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
   })()`);
   assert(
     summary?.title === agencyName &&
+      Object.values(summary.regionCounts).every((count) => count === 1) &&
       summary.identityCount === 1 &&
       summary.summaryGridCount === 1 &&
       summary.summaryPanelCount === 3 &&
@@ -761,12 +803,92 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
       summary.bottomReviewAction.includes('I reviewed these details') &&
       summary.detailsAfterTopicNavigation &&
       !summary.headerContainsDeferredSections &&
+      summary.overviewPanelStates.length > 0 &&
+      summary.overviewPanelStates.every((expanded) => expanded === 'false') &&
+      !summary.repeatedPrimaryOperations &&
+      summary.overviewPanelSummaries.some((value) => value === 'Station locations and apparatus details') &&
+      summary.overviewPanelSummaries.some((value) => value === 'Call volume and service-area details') &&
       summary.positions.every((item) => item.present && item.visible && item.fits) &&
       summary.panels.every((panel) =>
         panel.count === 1 && panel.hasHeading && panel.hasContent && panel.visible && panel.fits),
     `${providerCategory.toUpperCase()} compact profile summary regressed at ${viewport.width}px for ${agencyName}: ${JSON.stringify(summary)}`,
   );
-  if (viewport.width === 390 || viewport.width === 1280) {
+  const overviewPanelToggle = await evaluate(cdp, `(() => {
+    const button = document.querySelector(
+      '[data-testid="agency-intelligence-overview"] [data-testid="button-toggle-identity"]',
+    );
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(overviewPanelToggle, `The ${providerCategory} identity details did not expand at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="agency-intelligence-overview"] [data-testid="button-toggle-identity"]')
+      ?.getAttribute('aria-expanded') === 'true'`,
+    'the identity details to expand',
+  );
+  await evaluate(cdp, `document.querySelector(
+    '[data-testid="agency-intelligence-overview"] [data-testid="button-toggle-identity"]',
+  )?.click()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="agency-intelligence-overview"] [data-testid="button-toggle-identity"]')
+      ?.getAttribute('aria-expanded') === 'false'`,
+    'the identity details to collapse again',
+  );
+  const topicSwitch = await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (select) {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+        ?.set?.call(select, 'equipment');
+      select.dispatchEvent(new Event('input', { bubbles: true }));
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      [...document.querySelectorAll('[data-testid="profile-topic-navigation"] button')]
+        .find((button) => button.innerText.trim() === '2. Equipment & Tech')
+        ?.click();
+    }
+    return true;
+  })()`);
+  assert(topicSwitch, `Could not switch the ${providerCategory} profile topic at ${viewport.width}px`);
+  await waitFor(
+    cdp,
+    `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      return profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length === 1 &&
+        profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length === 0 &&
+        /Equipment|Technology/.test(profile?.innerText || '');
+    })()`,
+    'the equipment topic to replace the overview without duplicating the profile',
+  );
+  await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (select) {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+        ?.set?.call(select, 'overview');
+      select.dispatchEvent(new Event('input', { bubbles: true }));
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      [...document.querySelectorAll('[data-testid="profile-topic-navigation"] button')]
+        .find((button) => button.innerText.trim() === '1. Overview')
+        ?.click();
+    }
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelectorAll('main.profile-workspace [data-testid="agency-intelligence-overview"]').length === 1`,
+    'the overview topic to return exactly once',
+  );
+  if (viewport.width === 390 || viewport.width === 1024 || viewport.width === 1280) {
+    await evaluate(cdp, `document.querySelector('.provider-profile-overlay')?.scrollTo({ top: 0 })`);
+    const profileScreenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile(
+      `/tmp/ems-${providerCategory}-profile-top-${viewport.width}.png`,
+      Buffer.from(profileScreenshot.result.data, 'base64'),
+    );
     await evaluate(cdp, `document.querySelector('[data-testid="profile-bottom-details"]')
       ?.scrollIntoView({ block: 'start' })`);
     const screenshot = await cdp.send('Page.captureScreenshot', {
@@ -914,6 +1036,41 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
         toolbar.secondaryActionsReachable &&
         toolbar.menuInsideViewport,
       `Profile phone primary action or secondary-action menu is not usable at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
+    );
+  }
+  if (viewport.width === 1280) {
+    const backToDirectory = await evaluate(cdp, `(() => {
+      const button = document.querySelector('[data-testid="profile-back-button"]');
+      button?.click();
+      return Boolean(button);
+    })()`);
+    assert(backToDirectory, `Could not leave the ${providerCategory} profile before changing agencies`);
+    await waitFor(
+      cdp,
+      `!document.querySelector('main.profile-workspace')`,
+      'the agency profile to close before switching records',
+    );
+    const nextAgencyName = providerCategory === 'fire' ? fireProfileCases[1] : emsProfileCases[1];
+    await openAgencyProfile(cdp, providerCategory, nextAgencyName);
+    const nextAgencyChecks = await evaluate(cdp, `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      return {
+        title: profile?.querySelector('[aria-label="Account 360 Executive Decision Header"] h1')?.innerText.trim(),
+        previousAgencyStillVisible: profile?.innerText.includes(${JSON.stringify(agencyName)}) ?? false,
+        profileCount: document.querySelectorAll('main.profile-workspace').length,
+        headerCount: profile?.querySelectorAll('[aria-label="Account 360 Executive Decision Header"]').length ?? 0,
+        topicCount: profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length ?? 0,
+        overviewCount: profile?.querySelectorAll('[data-testid="agency-intelligence-overview"]').length ?? 0,
+      };
+    })()`);
+    assert(
+      nextAgencyChecks.title === nextAgencyName &&
+        !nextAgencyChecks.previousAgencyStillVisible &&
+        nextAgencyChecks.profileCount === 1 &&
+        nextAgencyChecks.headerCount === 1 &&
+        nextAgencyChecks.topicCount === 1 &&
+        nextAgencyChecks.overviewCount === 1,
+      `${providerCategory.toUpperCase()} profile retained or duplicated content after changing agencies: ${JSON.stringify(nextAgencyChecks)}`,
     );
   }
   console.log(
@@ -3382,6 +3539,7 @@ async function main() {
     if (process.env.PROFILE_LAYOUT_ONLY === '1') {
       const profileLayoutViewports = [
         { width: 390, height: 844, mobile: true },
+        { width: 1024, height: 900, mobile: false },
         { width: 1280, height: 900, mobile: false },
       ];
       for (const viewport of profileLayoutViewports) {

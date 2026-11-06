@@ -1670,6 +1670,7 @@ export default function App() {
       {/* Full Actuarial Department Dossier */}
       {currentActive && (
         <FocusedProviderProfile
+          key={currentActive.id}
           agency={currentActive}
           weights={weights}
           backLabel={profileBackLabel}

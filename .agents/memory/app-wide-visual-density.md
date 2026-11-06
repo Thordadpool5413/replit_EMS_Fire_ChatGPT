@@ -8,3 +8,9 @@ Keep the entire app compact, clean, and scannable on laptop and phone. Reduce ov
 **Why:** The user said the full app looked too large and overwhelming on a laptop and asked for a cleaner experience throughout the app, then asked to remove warnings and notifications that do not help end users. They later called out that over-compressed county cards and hidden sidebar destinations looked unprofessional.
 
 **How to apply:** Tune shared shell and component density consistently across workspaces; check laptop and phone layouts, maintain readable type and tap targets, and keep all secondary information accessible rather than deleting it. Do not seed simulated alert feeds or show repeated network-state toasts; keep genuine errors, sync/offline consequences, and data-source or estimate disclosures.
+
+For EMS and Fire profiles, keep the executive header as the single summary of agency type, location, core operations, and source access. Start detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain the full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
+
+**Why:** The user said profile sheets looked repetitive and oversized, and asked for essentials first with secondary material moved to the bottom.
+
+**How to apply:** Keep one identity header, one operations summary, and one topic bar; collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop.

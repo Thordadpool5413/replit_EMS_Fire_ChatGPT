@@ -35,12 +35,12 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
   sources,
 }) => (
   <details
-    className="county-figure-source-details group rounded-lg border border-slate-200 px-2.5 py-2 text-[10px] leading-relaxed text-slate-600"
+    className="county-figure-source-details group min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs leading-relaxed text-slate-600"
     onClick={(event) => event.stopPropagation()}
   >
     <summary className="county-figure-source-summary flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
       <span>Data sources &amp; coverage</span>
-      <span className="county-figure-source-toggle shrink-0 text-[10px] font-medium text-slate-500">
+      <span className="county-figure-source-toggle shrink-0 text-[11px] font-medium text-slate-500">
         <span className="group-open:hidden">Open details</span>
         <span className="hidden group-open:inline">Close details</span>
       </span>
@@ -50,36 +50,46 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
         const metadata = sources?.[key];
         const sourceUrl = safeSourceUrl(metadata?.sourceUrl);
         return (
-          <div key={key} className="grid grid-cols-[minmax(5rem,auto)_1fr] gap-x-2 gap-y-0.5 border-t border-slate-100 pt-1.5 first:border-0 first:pt-0">
-            <span className="font-semibold text-slate-700">{label}</span>
-            <span>
-              Source:{' '}
-              {sourceUrl ? (
-                <a
-                  href={sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-700 underline underline-offset-2"
-                >
-                  {metadata?.source?.trim() || 'Open source'}
-                </a>
-              ) : (
-                metadata?.source?.trim() || 'Unavailable'
+          <section key={key} className="county-figure-source-record">
+            <h4 className="county-figure-source-record-title">{label}</h4>
+            <dl className="county-figure-source-fields">
+              <div className="county-figure-source-field">
+                <dt>Source</dt>
+                <dd>
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 underline underline-offset-2"
+                    >
+                      {metadata?.source?.trim() || 'Open source'}
+                    </a>
+                  ) : (
+                    metadata?.source?.trim() || 'Unavailable'
+                  )}
+                </dd>
+              </div>
+              <div className="county-figure-source-field">
+                <dt>Vintage</dt>
+                <dd>{metadata?.vintage?.trim() || 'Unavailable'}</dd>
+              </div>
+              <div className="county-figure-source-field">
+                <dt>Source scope</dt>
+                <dd>{metadata?.scope?.trim() || 'Unavailable'}</dd>
+              </div>
+              <div className="county-figure-source-field">
+                <dt>Reporting period</dt>
+                <dd>{metadata?.reportingPeriod?.trim() || 'Unavailable'}</dd>
+              </div>
+              {key === 'annualCardiacArrestIncidents' && (
+                <div className="county-figure-source-field">
+                  <dt>Note</dt>
+                  <dd>NEMSIS v3.5 is a data standard, not a citation for this county figure.</dd>
+                </div>
               )}
-            </span>
-            <span className="text-slate-500">Vintage</span>
-            <span>{metadata?.vintage?.trim() || 'Unavailable'}</span>
-            <span className="text-slate-500">Source scope</span>
-            <span>{metadata?.scope?.trim() || 'Unavailable'}</span>
-            <span className="text-slate-500">Reporting period</span>
-            <span>{metadata?.reportingPeriod?.trim() || 'Unavailable'}</span>
-            {key === 'annualCardiacArrestIncidents' && (
-              <>
-                <span className="text-slate-500">Note</span>
-                <span>NEMSIS v3.5 is a data standard, not a citation for this county figure.</span>
-              </>
-            )}
-          </div>
+            </dl>
+          </section>
         );
       })}
       <p className="border-t border-slate-100 pt-1.5 text-slate-500">

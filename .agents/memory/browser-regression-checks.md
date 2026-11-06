@@ -32,3 +32,9 @@ When a screen contains multiple native disclosure elements, select the one being
 **Why:** County cards added their own disclosures ahead of the existing FEMA boundary/source disclosure, making a first-match selector read the wrong content and wait forever.
 
 **How to apply:** Scope browser assertions to the intended component and use its visible summary text to identify nested or neighboring disclosures.
+
+For Letter-print regressions, capture PDFs with Chromium's DevTools print command and verify page size, text, and non-empty pagination. `pdftotext -layout` may interleave text from adjacent table columns, so check print-layout geometry and meaningful content tokens instead of requiring every multi-column cell to extract as one exact phrase.
+
+**Why:** Multi-column PDF extraction order is not a reliable representation of the visual cell boundaries, even when the printed table is intact.
+
+**How to apply:** Use the installed `pdfinfo` and `pdftotext` tools alongside DOM measurements under print media when validating agency brief output.

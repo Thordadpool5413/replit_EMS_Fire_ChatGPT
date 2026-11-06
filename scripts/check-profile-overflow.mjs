@@ -1,8 +1,11 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 const baseUrl =
   process.env.PROFILE_TEST_URL ??
@@ -51,6 +54,18 @@ const interactionViewports = [
   { width: 390, height: 844, mobile: true },
 ];
 const testCorrectionRecordId = 'browser-check-2026';
+const profilePrintCases = [
+  {
+    category: 'ems',
+    agency: 'Cleveland Division of Emergency Medical Service',
+    operationsLabel: 'Annual EMS transports',
+  },
+  {
+    category: 'fire',
+    agency: 'Miami-Dade County Fire Rescue Department',
+    operationsLabel: 'Annual fire-rescue calls',
+  },
+];
 const fireProfileCases = [
   'Fire Department of New York - Emergency Medical Service Command',
   'Miami-Dade County Fire Rescue Department',
@@ -620,6 +635,215 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     cdp,
     `document.querySelectorAll('main.profile-workspace [data-testid="agency-intelligence-overview"]').length === 1`,
     'the default overview to return after source-workspace checks',
+  );
+}
+
+async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      Boolean([...document.querySelectorAll('button')].find((button) =>
+        button.innerText.trim() === 'Agencies'))`,
+    'the app shell before opening a printable profile',
+    60_000,
+  );
+  await openAgencyProfile(cdp, testCase.category, testCase.agency);
+
+  const briefOpened = await evaluate(cdp, `(() => {
+    const actions = document.querySelector('.profile-more-actions');
+    const button = document.querySelector('[data-testid="button-profile-print-brief"]');
+    if (!actions || !button) return false;
+    actions.open = true;
+    button.click();
+    return true;
+  })()`);
+  assert(briefOpened, `Could not open the ${testCase.category} print brief`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('#briefing-dossier-modal-container .print-source-references'))`,
+    `the ${testCase.category} agency brief`,
+  );
+
+  const briefDetails = await evaluate(cdp, `(() => {
+    const modal = document.querySelector('#briefing-dossier-modal-container');
+    const documentRoot = modal?.querySelector('.print-dossier-document');
+    const references = [...(documentRoot?.querySelectorAll('.print-source-references li') ?? [])]
+      .map((item) => ({
+        text: item.innerText.trim(),
+        sourceName: item.querySelectorAll('div')[1]?.innerText.trim() ?? '',
+        period: [...item.querySelectorAll('div')]
+          .map((element) => element.innerText.trim())
+          .find((text) => /^Reporting period:/i.test(text)) ?? '',
+        links: [...item.querySelectorAll('a[href]')].map((link) => ({
+          href: link.href,
+          text: link.innerText.trim(),
+        })),
+      }));
+    return {
+      identity: documentRoot?.querySelector('.print-agency-identity h1')?.innerText.trim() ?? '',
+      operations: documentRoot?.querySelector('.print-summary')?.innerText.trim() ?? '',
+      operationsValues: [...(documentRoot?.querySelectorAll('.print-summary .font-semibold') ?? [])]
+        .map((element) => element.innerText.trim())
+        .filter(Boolean),
+      review: documentRoot?.querySelector('.print-profile-review')?.innerText.trim() ?? '',
+      tableCells: [...(documentRoot?.querySelectorAll('table') ?? [])]
+        .flatMap((table) => [...table.querySelectorAll('th, td')])
+        .map((cell) => cell.innerText.trim())
+        .filter((text) => text.length >= 3),
+      references,
+      hasPrintAction: [...(modal?.querySelectorAll('button') ?? [])]
+        .some((button) => button.innerText.trim() === 'Print / Save PDF'),
+    };
+  })()`);
+  assert(
+    briefDetails?.identity === testCase.agency,
+    `${testCase.category} brief identity does not match ${testCase.agency}`,
+  );
+  assert(
+    /Operations summary/i.test(briefDetails.operations) &&
+      briefDetails.operations.includes(testCase.operationsLabel),
+    `${testCase.category} brief is missing its operations summary: ${briefDetails.operations}`,
+  );
+  assert(
+    briefDetails.references.length > 0 &&
+      briefDetails.references.some((reference) => reference.text && reference.links.length > 0),
+    `${testCase.category} brief has no field-level linked source references`,
+  );
+  assert(
+    /not marked reviewed|not independent verification/i.test(briefDetails.review),
+    `${testCase.category} brief is missing user-review wording: ${briefDetails.review}`,
+  );
+  assert(briefDetails.hasPrintAction, `${testCase.category} brief has no print action`);
+
+  await cdp.send('Emulation.setEmulatedMedia', { media: 'print' });
+  const printState = await evaluate(cdp, `(() => {
+    const modal = document.querySelector('#briefing-dossier-modal-container');
+    const shell = document.querySelector('.pi-app-shell');
+    const doc = modal?.querySelector('.print-dossier-document');
+    const outsideVisibleText = [...document.body.querySelectorAll('*')]
+      .filter((element) => !modal?.contains(element) && element.children.length === 0)
+      .filter((element) => element.textContent?.trim())
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      });
+    return {
+      outsideVisibleText: outsideVisibleText.map((element) => element.textContent.trim()).slice(0, 5),
+      shellSiblingsHidden: [...(shell?.children ?? [])]
+        .filter((element) => !element.classList.contains('provider-profile-overlay'))
+        .every((element) => getComputedStyle(element).display === 'none'),
+      noPrintHidden: [...(modal?.querySelectorAll('.no-print') ?? [])]
+        .every((element) => getComputedStyle(element).display === 'none'),
+      documentVisible: Boolean(doc && getComputedStyle(doc).visibility === 'visible' &&
+        getComputedStyle(doc).display !== 'none'),
+      tables: [...(doc?.querySelectorAll('table') ?? [])].map((table) => {
+        const bounds = table.getBoundingClientRect();
+        const cellsFit = [...table.querySelectorAll('th, td')].every((cell) => {
+          const cellBounds = cell.getBoundingClientRect();
+          return cellBounds.left >= bounds.left - 1 && cellBounds.right <= bounds.right + 1 &&
+            cell.scrollWidth <= cell.clientWidth + 2;
+        });
+        return {
+          visible: bounds.width > 0 && bounds.height > 0,
+          fits: table.scrollWidth <= table.clientWidth + 2 && cellsFit,
+        };
+      }),
+    };
+  })()`);
+  assert(
+    printState.outsideVisibleText.length === 0 &&
+      printState.shellSiblingsHidden &&
+      printState.noPrintHidden &&
+      printState.documentVisible &&
+      printState.tables.every((table) => table.visible && table.fits),
+    `${testCase.category} print media exposes unrelated workspace content: ${JSON.stringify(printState)}`,
+  );
+
+  const printButtonClicked = await evaluate(cdp, `(() => {
+    const modal = document.querySelector('#briefing-dossier-modal-container');
+    const button = [...(modal?.querySelectorAll('button') ?? [])]
+      .find((candidate) => candidate.innerText.trim() === 'Print / Save PDF');
+    if (!button) return false;
+    window.__profilePrintRequested = false;
+    window.print = () => { window.__profilePrintRequested = true; };
+    button.click();
+    return window.__profilePrintRequested === true;
+  })()`);
+  assert(printButtonClicked, `${testCase.category} brief print action did not request browser printing`);
+
+  const pdfResult = await cdp.send('Page.printToPDF', {
+    paperWidth: 8.5,
+    paperHeight: 11,
+    preferCSSPageSize: true,
+    printBackground: true,
+    transferMode: 'ReturnAsBase64',
+  });
+  const pdfPath = path.join(pdfDirectory, `${testCase.category}-agency-brief.pdf`);
+  await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
+  const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
+    execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+    execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+  ]);
+  const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+  const pageSize = pdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+  const pages = extractedText.split('\f').map((page) => page.trim()).filter(Boolean);
+  const compactPdfText = extractedText.replace(/\s+/g, '').toLowerCase();
+  const normalizedPdfText = extractedText.replace(/\s+/g, ' ').toLowerCase();
+  const tableWords = [...new Set(briefDetails.tableCells.flatMap((cell) =>
+    cell.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []))];
+  const missingTableWords = tableWords.filter((word) => !normalizedPdfText.includes(word));
+  assert(
+    /612 x 792 pts \(letter\)/i.test(pageSize),
+    `${testCase.category} PDF is not Letter portrait paper: ${pageSize}`,
+  );
+  assert(
+    pageCount > 0 && pageCount <= 16 && pages.length === pageCount &&
+      pages.every((page) => page.trim().length > 0),
+    `${testCase.category} PDF has empty or unexpected pages (${pageCount} pages, ${pages.length} with text)`,
+  );
+  assert(
+    normalizedPdfText.includes(testCase.agency.toLowerCase()) &&
+      normalizedPdfText.includes('operations summary') &&
+      normalizedPdfText.includes(testCase.operationsLabel.toLowerCase()) &&
+      briefDetails.operationsValues.some((value) =>
+        normalizedPdfText.includes(value.replace(/\s+/g, ' ').toLowerCase())) &&
+      normalizedPdfText.includes('agency source references') &&
+      /not marked reviewed|not independent verification/.test(normalizedPdfText),
+    `${testCase.category} printed PDF lost agency identity, operations, source heading, or user-review wording`,
+  );
+  assert(
+    briefDetails.tableCells.length > 0 &&
+      tableWords.length > 0 &&
+      missingTableWords.length / tableWords.length <= 0.05,
+    `${testCase.category} printed PDF lost or clipped table content: ${JSON.stringify({
+      cellCount: briefDetails.tableCells.length,
+      missingWords: missingTableWords.slice(0, 20),
+      wordCount: tableWords.length,
+    })}`,
+  );
+  assert(
+    briefDetails.references.some((reference) =>
+      normalizedPdfText.includes(reference.sourceName.replace(/\s+/g, ' ').toLowerCase()) &&
+      normalizedPdfText.includes(reference.period.replace(/\s+/g, ' ').toLowerCase()) &&
+      reference.links.some((link) => compactPdfText.includes(link.href.replace(/\s+/g, '').toLowerCase())),
+    ),
+    `${testCase.category} printed PDF lost its visible source citation, link, or reporting period: ${JSON.stringify({
+      expected: briefDetails.references.map(({ sourceName, period, links }) => ({
+        sourceName,
+        period,
+        links: links.map((link) => link.href),
+      })),
+      pdfSourceText: normalizedPdfText.slice(-1600),
+    })}`,
+  );
+  assert(
+    !/interactive u\.s\. territory map|prepare for meeting/i.test(normalizedPdfText),
+    `${testCase.category} printed PDF includes unrelated workspace content`,
+  );
+  await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
+  console.log(
+    `✓ ${testCase.category}: ${pageCount} non-empty Letter page(s), agency details and linked source periods retained`,
   );
 }
 
@@ -3501,7 +3725,10 @@ function assertFireOperationsDifferAtViewport(viewport) {
 }
 
 async function main() {
-  if (process.env.PROFILE_LAYOUT_ONLY !== '1') {
+  if (
+    process.env.PROFILE_LAYOUT_ONLY !== '1' &&
+    process.env.PROFILE_PRINT_ONLY !== '1'
+  ) {
     await checkPublishedRoutes();
     if (process.env.ROUTES_ONLY === '1') return;
   }
@@ -3535,6 +3762,41 @@ async function main() {
       behavior: 'allow',
       downloadPath,
     });
+
+    if (process.env.PROFILE_PRINT_ONLY === '1') {
+      const emsSourceFixture = {
+        'zoll-agency-oh-cleveland': {
+          sourceRecordAssociations: [],
+          sourceFacts: [{
+            id: 'browser-print-regression-source',
+            fieldKey: 'annualEmergencyVolume',
+            value: '108,000',
+            sourceName: 'Cleveland EMS Annual Report',
+            sourceRecordId: 'annual-report-fy2025',
+            sourceUrl: 'https://www.cleveland-oh.gov/ems/annual-report',
+            reportingPeriod: 'FY2025',
+            geographicLevel: 'agency',
+            geographicId: 'zoll-agency-oh-cleveland',
+            basis: 'source-reported',
+            enteredAt: '2026-11-06T00:00:00.000Z',
+          }],
+        },
+      };
+      await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+        source: `(() => {
+          if (location.origin === 'null') return;
+          localStorage.setItem(
+            'ems_territory_agency_source_records_v1',
+            ${JSON.stringify(JSON.stringify(emsSourceFixture))}
+          );
+        })();`,
+      });
+      for (const testCase of profilePrintCases) {
+        await checkProfilePrintCase(cdp, testCase, userDataDir);
+      }
+      console.log('EMS and Fire Letter-print regression checks passed.');
+      return;
+    }
 
     if (process.env.PROFILE_LAYOUT_ONLY === '1') {
       const profileLayoutViewports = [

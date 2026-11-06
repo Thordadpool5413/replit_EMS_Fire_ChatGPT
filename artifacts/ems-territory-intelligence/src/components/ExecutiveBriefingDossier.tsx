@@ -65,6 +65,57 @@ const printableSourceUrl = (value?: string) => {
   }
 };
 
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] ?? character);
+
+const standaloneStyleProperties = [
+  'align-content', 'align-items', 'align-self', 'background-color', 'background-image',
+  'background-position', 'background-repeat', 'background-size', 'border', 'border-bottom',
+  'border-bottom-color', 'border-bottom-left-radius', 'border-bottom-right-radius',
+  'border-bottom-style', 'border-bottom-width', 'border-collapse', 'border-color',
+  'border-left', 'border-left-color', 'border-left-style', 'border-left-width',
+  'border-radius', 'border-right', 'border-right-color', 'border-right-style',
+  'border-right-width', 'border-spacing', 'border-style', 'border-top', 'border-top-color',
+  'border-top-left-radius', 'border-top-right-radius', 'border-top-style', 'border-top-width',
+  'border-width', 'box-shadow', 'box-sizing', 'color', 'column-gap', 'display', 'fill',
+  'flex', 'flex-basis', 'flex-direction', 'flex-grow', 'flex-shrink', 'flex-wrap',
+  'font-family', 'font-size', 'font-style', 'font-weight', 'gap', 'grid-auto-columns',
+  'grid-auto-flow', 'grid-auto-rows', 'grid-column', 'grid-column-gap', 'grid-row',
+  'grid-row-gap', 'grid-template-columns', 'grid-template-rows', 'height', 'justify-content',
+  'justify-items', 'justify-self', 'letter-spacing', 'line-height', 'list-style',
+  'margin', 'margin-bottom', 'margin-left', 'margin-right', 'margin-top', 'max-height',
+  'max-width', 'min-height', 'min-width', 'object-fit', 'object-position', 'opacity',
+  'overflow', 'overflow-wrap', 'overflow-x', 'overflow-y', 'padding', 'padding-bottom',
+  'padding-left', 'padding-right', 'padding-top', 'page-break-after', 'page-break-before',
+  'page-break-inside', 'position', 'stroke', 'text-align', 'text-decoration',
+  'text-overflow', 'text-transform', 'transform', 'vertical-align', 'white-space',
+  'width', 'word-break',
+];
+
+const imageToDataUrl = async (image: HTMLImageElement): Promise<string | undefined> => {
+  const source = image.currentSrc || image.src;
+  if (!source || source.startsWith('data:')) return source || undefined;
+  try {
+    const response = await fetch(source);
+    if (!response.ok) return undefined;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : undefined);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
+};
+
 export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> = ({
   agency,
   weights,
@@ -260,25 +311,79 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   };
 
   // ACTION 3: Standalone HTML Briefing Report Download (Instant Offline Archival)
-  const handleDownloadHtml = () => {
+  const handleDownloadHtml = async () => {
     if (!documentRef.current) return;
     const cleanFileName = agency.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const sourceRoot = documentRef.current;
+    const exportedRoot = sourceRoot.cloneNode(true) as HTMLElement;
+    exportedRoot.id = 'briefing-dossier-document';
+
+    const sourceElements = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll<HTMLElement>('*'))];
+    const exportedElements = [exportedRoot, ...Array.from(exportedRoot.querySelectorAll<HTMLElement>('*'))];
+    sourceElements.forEach((sourceElement, index) => {
+      const exportedElement = exportedElements[index];
+      if (!exportedElement) return;
+      const computedStyle = window.getComputedStyle(sourceElement);
+      standaloneStyleProperties.forEach((property) => {
+        const value = computedStyle.getPropertyValue(property);
+        if (value) exportedElement.style.setProperty(property, value);
+      });
+    });
+
+    const sourceImages = Array.from(sourceRoot.querySelectorAll('img'));
+    const exportedImages = Array.from(exportedRoot.querySelectorAll('img'));
+    await Promise.all(sourceImages.map(async (image, index) => {
+      const dataUrl = await imageToDataUrl(image);
+      const exportedImage = exportedImages[index];
+      if (dataUrl && exportedImage) {
+        exportedImage.src = dataUrl;
+        exportedImage.removeAttribute('srcset');
+      } else if (exportedImage) {
+        const fallback = document.createElement('span');
+        fallback.textContent = image.alt;
+        exportedImage.replaceWith(fallback);
+      }
+    }));
+
     const content = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${agency.name} — ZOLL Executive Account Briefing Dossier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(agency.name)} — ZOLL Executive Account Briefing Dossier</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: #0f172a; background: #ffffff; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 8px; }
-    th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 11px; }
-    th { background-color: #f1f5f9; font-weight: bold; }
-    .dossier-page-break { page-break-before: always; break-before: page; margin-top: 32px; border-top: 2px dashed #94a3b8; padding-top: 24px; }
-    @media print { body { padding: 0; } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #fff; color: #0f172a; }
+    body { padding: 24px; font-family: Arial, Helvetica, sans-serif; }
+    #briefing-dossier-document { width: 100% !important; max-width: 1100px !important; margin: 0 auto !important; padding: 24px !important; background: #fff !important; color: #0f172a !important; }
+    table { width: 100% !important; border-collapse: collapse !important; margin: 8px 0 !important; }
+    th, td { border: 1px solid #cbd5e1 !important; padding: 7px 8px !important; text-align: left; font-size: 10pt; vertical-align: top; }
+    th { background: #f1f5f9 !important; font-weight: 700; }
+    img { max-width: 100%; }
+    a { color: #1e3a8a !important; text-decoration: underline; overflow-wrap: anywhere; }
+    .dossier-page-break { page-break-before: always; break-before: page; margin-top: 32px !important; border-top: 2px dashed #94a3b8 !important; padding-top: 24px !important; }
+    .print-summary, .print-profile-review, .print-source-references li, tr { page-break-inside: avoid; break-inside: avoid; }
+    @media (max-width: 640px) {
+      body { padding: 8px; }
+      #briefing-dossier-document { padding: 12px !important; }
+      table { font-size: 9pt; }
+      th, td { padding: 5px !important; }
+    }
+    @page { size: letter portrait; margin: 12mm; }
+    @media print {
+      html, body { width: auto; min-height: 0; padding: 0 !important; background: #fff !important; }
+      #briefing-dossier-document { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+      .dossier-page-break { margin-top: 0 !important; }
+      table { table-layout: fixed; }
+      th, td { overflow-wrap: anywhere; font-size: 8pt; }
+      a { color: #1e3a8a !important; }
+      #briefing-dossier-document .grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
   </style>
 </head>
 <body>
-  ${documentRef.current.innerHTML}
+  ${exportedRoot.outerHTML}
 </body>
 </html>`;
 
@@ -1212,7 +1317,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-bold text-slate-900">Agency source references</h2>
                 <span className="text-[10px] text-slate-600">
-                  A review marker records user activity; it does not independently verify a fact.
+                  Source citations show provenance. A review marker records user activity; neither independently verifies a fact.
                 </span>
               </div>
               {sourceReferences.length > 0 ? (

@@ -45,13 +45,11 @@ interface LiveOpenFemaAward {
 interface NationwideDataGatewayViewProps {
   agencies?: Agency[];
   onSelectAgency?: (agency: Agency) => void;
-  showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps> = ({
   agencies = [],
-  onSelectAgency,
-  showToast
+  onSelectAgency
 }) => {
   const [activeTab, setActiveTab] = useState<'claims_ingest' | 'procurement' | 'confidential_outcomes' | 'installed_base'>('claims_ingest');
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
@@ -664,7 +662,6 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             <button
               onClick={() => {
                 setAnonymizedResult(executeSafeHarborAnonymization(rawClinicalInput));
-                showToast('Executed HIPAA 45 CFR § 164.514(b) Safe Harbor transformation.', 'success');
               }}
               className="px-4 py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold cursor-pointer"
             >

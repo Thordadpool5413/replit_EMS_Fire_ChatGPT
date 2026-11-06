@@ -49,6 +49,10 @@ import {
 } from './navigation/territoryUrl';
 import { territoryEngine } from './services/territoryIntelligenceEngine';
 import {
+  shouldShowTransientNotice,
+  type TransientNoticeType,
+} from './utils/transientNoticePolicy';
+import {
   FIELD_WORKSPACE_TABS,
   isFieldWorkTab,
   isOpportunitiesTab,
@@ -61,7 +65,7 @@ import {
   SYSTEM_WORKSPACE_TABS,
   TERRITORY_WORKSPACE_TABS
 } from './navigation/workspaceNavigation';
-import { CheckCircle2, AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
 
 const PredictiveLeadQueue = React.lazy(() => import('./components/PredictiveLeadQueue').then((module) => ({ default: module.PredictiveLeadQueue })));
 const GisTerritoryHeatmap = React.lazy(() => import('./components/GisTerritoryHeatmap').then((module) => ({ default: module.GisTerritoryHeatmap })));
@@ -112,11 +116,21 @@ export default function App() {
   const [initialTerritoryUrl] = useState(() =>
     parseTerritoryUrl(window.location.search, territoryUrlValidators),
   );
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: TransientNoticeType } | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string, type: 'success' | 'info' | 'warn' | 'error' = 'success'): void => {
+  const showToast = useCallback((message: string, type: TransientNoticeType = 'success'): void => {
+    if (!shouldShowTransientNotice(type)) return;
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 3500);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimeoutRef.current !== null) clearTimeout(toastTimeoutRef.current);
   }, []);
 
   // Global Cascading Geographic & Account Selectors State
@@ -462,7 +476,7 @@ export default function App() {
       ),
     );
     if (previewAgency?.id === agencyId) setPreviewAgency(updatedAgency);
-    showToast('Saved to this browser only; it was not shared with other users.', 'success');
+    showToast('Saved to this browser only; it was not shared with other users.', 'boundary');
     return true;
   }, [agencies, updateAgenciesState, previewAgency, showToast]);
 
@@ -733,7 +747,7 @@ export default function App() {
     }
     setOutbox([]);
     saveOutbox([]);
-    showToast('Local change queue cleared. No cloud write was performed; use Data Health to opt in to Firestore writes.', 'info');
+    showToast('Local change queue cleared. No cloud write was performed; use Data Health to opt in to Firestore writes.', 'boundary');
   }, [isOnline, showToast]);
 
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
@@ -968,7 +982,6 @@ export default function App() {
         openCommandPalette={() => setIsCommandPaletteOpen(true)}
         openDataLineageModal={() => setIsDataLineageOpen(true)}
         openChatbot={() => setIsChatbotOpen(true)}
-        isCloudConnected={isCloudConnected}
         showGuide={showWorkflowGuide}
         onToggleGuide={() => handleToggleWorkflowGuide()}
         isDarkMode={isDarkMode}
@@ -1555,7 +1568,6 @@ export default function App() {
             <NationwideDataGatewayView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
-              showToast={showToast}
             />
           </div>
         )}
@@ -1771,18 +1783,21 @@ export default function App() {
       {/* Toast Notification Pill */}
       {toast && (
         <div className="fixed bottom-20 md:bottom-12 right-4 sm:right-6 z-50">
-          <div className={`px-4 py-3 rounded-xl border shadow-sm flex items-center gap-2.5 text-xs font-semibold ${
-            toast.type === 'success' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800' :
-            toast.type === 'warn' ? 'bg-white dark:bg-slate-900 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
-            toast.type === 'error' ? 'bg-white dark:bg-slate-900 text-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800' :
-            'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800'
-          }`}>
-            {toast.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : toast.type === 'warn' ? (
+          <div
+            role={toast.type === 'boundary' ? 'status' : 'alert'}
+            aria-live={toast.type === 'boundary' ? 'polite' : 'assertive'}
+            className={`px-4 py-3 rounded-xl border shadow-sm flex items-center gap-2.5 text-xs font-semibold ${
+              toast.type === 'warn' ? 'bg-white dark:bg-slate-900 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
+              toast.type === 'error' ? 'bg-white dark:bg-slate-900 text-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800' :
+              'bg-white dark:bg-slate-900 text-sky-950 dark:text-sky-200 border-sky-200 dark:border-sky-800'
+            }`}
+          >
+            {toast.type === 'warn' ? (
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            ) : (
+            ) : toast.type === 'error' ? (
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            ) : (
+              <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-300 shrink-0" />
             )}
             <span>{toast.message}</span>
           </div>

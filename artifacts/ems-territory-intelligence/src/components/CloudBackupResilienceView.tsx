@@ -46,7 +46,7 @@ interface CloudBackupResilienceViewProps {
   onImportAgencySourceRecords: (
     serializedBackup: string,
   ) => AgencySourceRecordRestoreResult;
-  showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  showToast: (msg: string, type: 'error') => void;
 }
 
 const STORAGE_KEY_SNAPSHOTS = 'zoll_pulseiq_snapshots_v2';
@@ -95,6 +95,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
   const [isWriting, setIsWriting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImportingSourceRecords, setIsImportingSourceRecords] = useState(false);
+  const [sourceRecordImportNotice, setSourceRecordImportNotice] = useState('');
   const [activeTab, setActiveTab] = useState<'snapshots' | 'console'>('snapshots');
   const [copiedChecksum, setCopiedChecksum] = useState<string | null>(null);
   const sourceBackupInputRef = useRef<HTMLInputElement>(null);
@@ -114,9 +115,12 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     try {
       localStorage.setItem(STORAGE_KEY_SNAPSHOTS, JSON.stringify(snapshots));
     } catch {
-      // Storage quota or restriction fallback
+      showToast(
+        'Snapshots could not be saved in this browser. Check available storage; they may be lost when this page closes.',
+        'error',
+      );
     }
-  }, [snapshots]);
+  }, [snapshots, showToast]);
 
   const addLog = (step: string, status: 'info' | 'pass', detail: string) => {
     setAuditLogs(prev => [
@@ -167,7 +171,6 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     setSnapshots([newSnapshot, ...snapshots]);
     setIsWriting(false);
     addLog('LOCAL_SNAPSHOT_SAVED', 'pass', `Snapshot ${newVersion} saved in this browser (${payloadSize.toLocaleString()} bytes, ${agencies.length} agencies). SHA-256: ${checksum.slice(0, 24)}...`);
-    showToast(`Local snapshot ${newVersion} saved in this browser. No cloud write was performed.`, 'success');
   };
 
   // Export real JSON backup file
@@ -183,7 +186,6 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       downloadAnchor.remove();
 
       addLog('LOCAL_BACKUP_EXPORT', 'pass', `Exported ${agencies.length} local territory records to a JSON file.`);
-      showToast('Local JSON archive exported successfully.', 'success');
     } catch (err) {
       showToast('Failed to export backup JSON.', 'error');
     } finally {
@@ -209,9 +211,9 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
 
   const handleExportSourceRecords = () => {
     if (sourceRecordCounts.associations + sourceRecordCounts.facts === 0) {
-      showToast('There are no agency source records saved in this browser yet.', 'info');
       return;
     }
+    setSourceRecordImportNotice('');
     try {
       const json = createAgencySourceRecordBackup(sourceRecordData);
       const fileUrl = URL.createObjectURL(
@@ -230,7 +232,6 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
         'pass',
         `Exported ${sourceRecordCounts.associations} source matches and ${sourceRecordCounts.facts} agency facts.`,
       );
-      showToast('Agency source-record backup exported. It stays under your control.', 'success');
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : 'Could not export the source-record backup.',
@@ -246,6 +247,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
+    setSourceRecordImportNotice('');
     if (file.size > 5_000_000) {
       showToast('Choose a source-record backup no larger than 5 MB.', 'error');
       return;
@@ -282,7 +284,9 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
         'pass',
         `${message} No agency profile fields were replaced.`,
       );
-      showToast(`${message} Existing agency fields were not changed.`, 'success');
+      setSourceRecordImportNotice(
+        `${message} Existing agency fields were not changed. This data stays in this browser; no cloud write was performed.`,
+      );
     } catch {
       showToast('Could not read the selected source-record backup.', 'error');
     } finally {
@@ -303,7 +307,6 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     })));
 
     addLog('LOCAL_SNAPSHOT_RESTORED', 'pass', `Restored ${snap.recordCount} local agency records from ${snap.version}. No Firestore write was performed.`);
-    showToast(`Local workspace restored from snapshot ${snap.version}. No cloud write was performed.`, 'success');
   };
 
   const handleCopyChecksum = (hash: string) => {
@@ -443,6 +446,16 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
             />
           </div>
         </div>
+        {sourceRecordImportNotice && (
+          <p
+            className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+            role="status"
+            aria-live="polite"
+            data-testid="notice-source-record-import"
+          >
+            {sourceRecordImportNotice}
+          </p>
+        )}
       </section>
 
       {/* Tabs: Snapshot History vs Live Audit Stream */}

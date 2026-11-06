@@ -26,7 +26,8 @@ import {
   CircleHelp,
   MapPin,
   RefreshCw,
-  Download
+  Download,
+  WifiOff
 } from 'lucide-react';
 import {
   isFieldWorkTab,
@@ -49,7 +50,6 @@ interface TopBarProps {
   openCommandPalette?: () => void;
   openDataLineageModal?: () => void;
   openChatbot?: () => void;
-  isCloudConnected?: boolean;
   showGuide?: boolean;
   onToggleGuide?: () => void;
   isDarkMode?: boolean;
@@ -81,7 +81,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   openCommandPalette,
   openDataLineageModal,
   openChatbot,
-  isCloudConnected = false,
   showGuide = false,
   onToggleGuide,
   isDarkMode = false,
@@ -564,42 +563,20 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
 
-        {/* Quiet connection context; actionable sync work appears above only when needed. */}
-        <div className="p-3 border-t border-[#172D49] bg-[#091322] shrink-0">
-          <div
-            className="flex items-center gap-1.5 px-1 text-[10px] text-slate-400"
-            role="status"
-            aria-live="polite"
-            title={
-              !isOnline
-                ? 'The app is offline. Local changes remain on this device until they can be synced.'
-                : globalState === 'all'
-                  ? 'National browsing uses this device’s cache. Select a state to load live cloud records.'
-                  : isCloudConnected
-                    ? 'Cloud records are available for the selected state.'
-                    : 'Showing locally available data for the selected state.'
-            }
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                !isOnline
-                  ? 'bg-amber-400'
-                  : isCloudConnected
-                    ? 'bg-emerald-400'
-                    : 'bg-blue-400'
-              }`}
-            />
-            <span className="font-medium">
-              {!isOnline
-                ? 'Offline · local data'
-                : globalState === 'all'
-                  ? 'Online · national cache'
-                  : isCloudConnected
-                    ? 'Online · state records'
-                    : 'Online · local data'}
-            </span>
+        {!isOnline && (
+          <div className="p-3 border-t border-[#172D49] bg-[#091322] shrink-0">
+            <div
+              className="flex items-center gap-2 rounded-lg border border-amber-800 bg-amber-950/40 px-2.5 py-2 text-[10px] text-amber-200"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />
+              <span className="font-medium">
+                Offline: local changes stay on this device until sync resumes.
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* Mobile-only utility header; desktop actions are integrated into the sidebar. */}
@@ -654,6 +631,16 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           {/* Center/Right: Universal Search Trigger + Action Controls */}
           <div className="pi-header-actions flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {!isOnline && (
+              <span
+                className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-1 text-[10px] font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
+                role="status"
+                aria-label="Offline: local changes stay on this device until sync resumes."
+              >
+                <WifiOff className="h-3 w-3 shrink-0" />
+                Offline
+              </span>
+            )}
             {/* Universal Agency & Territory Search (⌘K) */}
             {openCommandPalette && (
               <button

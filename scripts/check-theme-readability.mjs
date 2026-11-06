@@ -428,6 +428,149 @@ async function checkProfileAndSources(cdp, dark) {
   await evaluate(cdp, `document.querySelector('[aria-label="Evidence and Source Inspection Drawer"] button')?.click()`);
 }
 
+async function openAgencyComparison(cdp) {
+  await clickVisible(cdp, 'Agencies', true);
+  await waitFor(
+    cdp,
+    `Boolean([...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
+      .find((button) => {
+        const rect = button.getBoundingClientRect();
+        return !button.disabled && rect.width > 0 && rect.height > 0;
+      }))`,
+    'agency comparison controls',
+  );
+
+  const selectedIds = await evaluate(cdp, `(() => [...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
+    .filter((button) => {
+      const rect = button.getBoundingClientRect();
+      return !button.disabled && rect.width > 0 && rect.height > 0 &&
+        getComputedStyle(button).visibility !== 'hidden' && button.getAttribute('aria-pressed') !== 'true';
+    })
+    .slice(0, 3)
+    .map((button) => button.dataset.testid.replace('button-toggle-comparison-', '')))()`);
+  assert(selectedIds.length === 3, `Expected three visible agency comparison choices, received ${JSON.stringify(selectedIds)}`);
+
+  const sourceAgencyId = selectedIds[0];
+  await evaluate(cdp, `(() => {
+    const storageKey = 'ems_territory_agency_source_records_v1';
+    const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const agencyId = ${JSON.stringify(sourceAgencyId)};
+    const sourceFacts = saved[agencyId]?.sourceFacts ?? [];
+    saved[agencyId] = {
+      sourceRecordAssociations: saved[agencyId]?.sourceRecordAssociations ?? [],
+      sourceFacts: [
+        ...sourceFacts.filter((fact) => fact.id !== 'theme-readability-source-note'),
+        {
+          id: 'theme-readability-source-note',
+          fieldKey: 'providerAddress',
+          value: 'Source-listed address',
+          sourceName: 'Theme readability test source',
+          sourceRecordId: 'theme-readability-record',
+          sourceUrl: 'https://example.org/theme-readability-record',
+          reportingPeriod: '2025 source record',
+          geographicLevel: 'agency',
+          geographicId: agencyId,
+          basis: 'source-reported',
+          note: 'Source note added by the isolated browser readability check.',
+          enteredAt: '2026-11-06T00:00:00.000Z',
+        },
+      ],
+    };
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+  })()`);
+
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before agency comparison');
+  await clickVisible(cdp, 'Agencies', true);
+  await waitFor(
+    cdp,
+    `Boolean([...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
+      .find((button) => {
+        const rect = button.getBoundingClientRect();
+        return !button.disabled && rect.width > 0 && rect.height > 0;
+      }))`,
+    'agency comparison controls after reloading source evidence',
+  );
+  for (const agencyId of selectedIds) {
+    const selected = await evaluate(cdp, `(() => {
+      const button = [...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
+        .find((candidate) => candidate.dataset.testid === ${JSON.stringify(`button-toggle-comparison-${agencyId}`)});
+      if (!button || button.disabled || button.getAttribute('aria-pressed') === 'true') return false;
+      button.click();
+      return true;
+    })()`);
+    assert(selected, `Could not select agency ${agencyId} for comparison`);
+    await waitFor(
+      cdp,
+      `document.querySelector('[data-testid="button-toggle-comparison-${agencyId}"]')?.getAttribute('aria-pressed') === 'true'`,
+      `agency ${agencyId} selected for comparison`,
+    );
+  }
+  await clickVisible(cdp, '[data-testid="button-open-agency-comparison"]');
+  await waitFor(cdp, `Boolean(document.querySelector('[data-testid="agency-comparison-panel"]'))`, 'agency comparison panel');
+  return selectedIds;
+}
+
+async function checkAgencyComparison(cdp, dark, selectedIds) {
+  await setTheme(cdp, dark);
+  const cues = await evaluate(cdp, `(() => {
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+    };
+    const ranks = [...document.querySelectorAll('[data-testid^="comparison-agency-rank-"]')]
+      .filter(visible)
+      .map((element) => element.innerText.trim());
+    const reported = [...document.querySelectorAll('[data-value-status="reported"]')].some(visible);
+    const unavailable = [...document.querySelectorAll('[data-value-status="unavailable"]')].some(visible);
+    const sourceNote = [...document.querySelectorAll('[data-testid^="source-fact-"]')]
+      .filter(visible)
+      .find((element) => element.innerText.includes('Source note added by the isolated browser readability check.'));
+    const sourceText = sourceNote?.innerText ?? '';
+    const panel = document.querySelector('[data-testid="agency-comparison-panel"]');
+    return {
+      ranks,
+      reported,
+      unavailable,
+      sourceText,
+      selectedNames: [...document.querySelectorAll('[data-testid^="button-open-profile-"]')]
+        .filter(visible)
+        .map((button) => button.innerText.trim()),
+      panelPresent: Boolean(panel),
+      documentOverflow: document.documentElement.scrollWidth > innerWidth,
+    };
+  })()`);
+  assert(cues.panelPresent, 'Agency comparison panel is missing');
+  assert(
+    cues.ranks.length === selectedIds.length &&
+      cues.ranks.includes('Agency 1') &&
+      cues.ranks.includes('Agency 2') &&
+      cues.ranks.includes('Agency 3'),
+    `${dark ? 'Dark' : 'Light'} comparison selected-agency labels are missing or indistinguishable: ${JSON.stringify(cues.ranks)}`,
+  );
+  assert(cues.selectedNames.length === selectedIds.length, 'Selected agency names are missing from the comparison');
+  assert(cues.reported, 'Agency comparison has no reported value to check');
+  assert(cues.unavailable, 'Agency comparison has no unavailable field to check');
+  assert(
+    cues.sourceText.includes('Theme readability test source') &&
+      cues.sourceText.includes('2025 source record') &&
+      cues.sourceText.includes('Source note added by the isolated browser readability check.'),
+    `Agency comparison source note is incomplete: ${JSON.stringify(cues.sourceText)}`,
+  );
+  assert(!cues.documentOverflow, 'Agency comparison causes page-level horizontal overflow');
+
+  await checkReadable(cdp, `${dark ? 'dark' : 'light'} agency comparison`, [
+    { name: 'selected agency label', selector: '[data-testid^="comparison-agency-rank-"]' },
+    { name: 'selected agency name', selector: '[data-testid^="button-open-profile-"] .font-display' },
+    { name: 'reported comparison value', selector: '[data-value-status="reported"]' },
+    { name: 'unavailable comparison value', selector: '[data-value-status="unavailable"]' },
+    { name: 'source evidence note', selector: '[data-testid^="source-fact-"] p:last-child' },
+  ]);
+  console.log(
+    `  ${dark ? 'dark' : 'light'} agency comparison: ${cues.ranks.join(', ')}; ${cues.selectedNames.map((name) => name.split('\n')[0]).join(' vs ')}; reported, unavailable, and source-note values present`,
+  );
+}
+
 async function runViewport(cdp, viewport) {
   console.log(`Checking ${viewport.width}×${viewport.height}...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -467,7 +610,13 @@ async function runViewport(cdp, viewport) {
   await openProfile(cdp);
   await checkProfileAndSources(cdp, false);
   await checkProfileAndSources(cdp, true);
-  console.log(`PASS ${viewport.width}×${viewport.height}: Home, counties, provider profile, and source panel in both themes`);
+
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before agency comparison checks');
+  const selectedIds = await openAgencyComparison(cdp);
+  await checkAgencyComparison(cdp, false, selectedIds);
+  await checkAgencyComparison(cdp, true, selectedIds);
+  console.log(`PASS ${viewport.width}×${viewport.height}: Home, counties, provider profile, source panel, and agency comparison in both themes`);
 }
 
 async function main() {

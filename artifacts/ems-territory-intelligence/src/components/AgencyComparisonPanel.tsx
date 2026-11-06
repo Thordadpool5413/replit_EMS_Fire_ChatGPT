@@ -172,6 +172,12 @@ const displayRowValue = (row: ComparisonRow, agency: Agency): string => {
   return displayValue(value);
 };
 
+function comparisonRankClasses(index: number) {
+  if (index === 0) return 'bg-[#E1ECEC] text-[#176568] dark:bg-[#163638] dark:text-teal-200';
+  if (index === 1) return 'bg-[#F7F0E9] text-[#8B4E22] dark:bg-[#30271F] dark:text-orange-100';
+  return 'bg-[#E8EDF3] text-[#52677B] dark:bg-[#1D2A3A] dark:text-slate-200';
+}
+
 const normalizedValue = (value: unknown) => {
   const formatted = displayValue(value);
   return formatted === 'Not reported' ? null : formatted.trim().toLocaleLowerCase();
@@ -365,9 +371,12 @@ function ValueCell({ agency, row, compact = false }: { agency: Agency; row: Comp
   return (
     <div className={`min-w-0 ${compact ? 'px-3 py-2' : 'px-3 py-3 sm:px-4'}`} data-testid={`comparison-value-${agency.id}-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
       {compact && <p className="mb-1 truncate text-[10px] font-bold text-[#667B8F] dark:text-slate-400" title={agency.name}>{agency.name}</p>}
-      <div className={`break-words text-[13px] font-semibold leading-5 ${isNotReported ? 'text-[#8997A8] dark:text-slate-500' : 'text-[#1B3047] dark:text-slate-100'}`}>
+        <div
+          className={`break-words text-[13px] font-semibold leading-5 ${isNotReported ? 'text-[#5F7185] dark:text-slate-300' : 'text-[#1B3047] dark:text-slate-100'}`}
+          data-value-status={isNotReported ? 'unavailable' : 'reported'}
+        >
         {row.isEstimate && <PulseIqEstimateLabel className="mb-1 block text-[10px] font-medium text-[#617488] dark:text-slate-400" />}
-        {formattedValue}{row.unit && !isNotReported ? <span className="ml-1 font-normal text-[#78889B] dark:text-slate-400">{row.unit}</span> : null}
+          {formattedValue}{row.unit && !isNotReported ? <span className="ml-1 font-normal text-[#5F7185] dark:text-slate-300">{row.unit}</span> : null}
       </div>
       {row.showEvidence !== false && <EvidenceDetails agency={agency} factKey={row.key as AgencyFactEvidenceKey} />}
     </div>
@@ -529,7 +538,10 @@ export function AgencyComparisonPanel({ agencies, weights, onClose, onRemoveAgen
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
-                    <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-[#6C7D8E] dark:text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-[#16888A]" />{agency.agencyType}</div>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${comparisonRankClasses(index)}`} data-testid={`comparison-agency-rank-${agency.id}`}>Agency {index + 1}</span>
+                      <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-[#566B80] dark:text-slate-300"><span className="h-1.5 w-1.5 rounded-full bg-[#16888A]" />{agency.agencyType}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -555,11 +567,14 @@ export function AgencyComparisonPanel({ agencies, weights, onClose, onRemoveAgen
 
             <div className="space-y-4 md:hidden" data-testid="comparison-mobile-layout">
               <div className="space-y-2" aria-label="Compared agencies">
-              {orderedAgencies.map((agency) => (
-                <div key={agency.id} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D5DFE8] border-l-[3px] border-l-[#176568] bg-[#F5F8FA] px-3 py-2.5 dark:border-[#263951] dark:bg-[#142238]" data-testid={`comparison-agency-card-${agency.id}`}>
+              {orderedAgencies.map((agency, index) => (
+                <div key={agency.id} className={`flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#D5DFE8] border-l-[3px] ${index === 0 ? 'border-l-[#176568]' : index === 1 ? 'border-l-[#B66A35]' : 'border-l-[#647891]'} bg-[#F5F8FA] px-3 py-2.5 dark:border-[#263951] dark:bg-[#142238]`} data-testid={`comparison-agency-card-${agency.id}`}>
                     <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                       <button type="button" onClick={() => onOpenProfile(agency)} className="min-w-0 text-left" data-testid={`button-open-profile-mobile-${agency.id}`}>
-                        <span className="block truncate font-display text-base font-bold text-[#20354B] dark:text-slate-100">{agency.name}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${comparisonRankClasses(index)}`} data-testid={`comparison-agency-rank-${agency.id}`}>Agency {index + 1}</span>
+                          <span className="block truncate font-display text-base font-bold text-[#20354B] dark:text-slate-100">{agency.name}</span>
+                        </span>
                         <span className="mt-0.5 block truncate text-xs text-[#6B7F92] dark:text-slate-400">{[agency.city, agency.stateCode].filter(Boolean).join(', ') || 'Location not reported'}</span>
                       </button>
                     </div>

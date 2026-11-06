@@ -9,6 +9,12 @@ Use the installed Chromium binary with Node's built-in WebSocket and Chrome DevT
 
 **How to apply:** Extend the existing profile overflow browser script for similar viewport checks. Return booleans and plain measurements from DevTools evaluations; do not return DOM nodes by value. Compare in-page values inside the evaluation or against measurements returned to Node.
 
+Run feature-specific profile checks from the app shell and navigate directly to the profile flow instead of waiting for home-map data. Keep route smoke checks and unrelated map readiness out of focused profile failures.
+
+**Why:** A profile layout regression should remain diagnosable even when territory-map services or published routes have unrelated loading problems.
+
+**How to apply:** Give focused profile checks their own mode and wait only for the app shell and profile directory controls they need.
+
 When selecting a named agency from the card directory, locate its exact heading and click the profile action within that heading's nearest card. Do not match the agency name against broad ancestor text, which can select another card when the ancestor contains multiple results.
 
 **Why:** A broad ancestor can contain a matching agency name elsewhere in the results while the first profile button belongs to a different agency.

@@ -12,6 +12,7 @@
     "test:territory-url": "tsx --test src/navigation/territoryUrl.test.ts",
     "test:territory-links:browser": "node ../../scripts/check-shared-territory-links.mjs",
     "test:theme-readability": "node ../../scripts/check-theme-readability.mjs",
+    "test:profile-layout": "PROFILE_LAYOUT_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "test:profile-overflow": "node ../../scripts/check-profile-overflow.mjs",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"

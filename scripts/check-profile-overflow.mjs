@@ -657,6 +657,199 @@ async function assertNoHorizontalOverflow(cdp, width, area) {
   );
 }
 
+async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCategory, agencyName) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      Boolean([...document.querySelectorAll('button')].find((button) =>
+        button.innerText.trim() === 'Agencies'))`,
+    `the app shell at ${viewport.width}px`,
+    60_000,
+  );
+  await openAgencyProfile(cdp, providerCategory, agencyName);
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
+
+  const summary = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const executiveHeader = profile?.querySelector('[aria-label="Account 360 Executive Decision Header"]');
+    const title = executiveHeader?.querySelector('h1');
+    const summaryGrid = executiveHeader?.querySelector('.profile-summary-grid');
+    const summaries = [
+      ['identity', executiveHeader?.querySelector('h1')],
+      ['operations', profile?.querySelector('[aria-label="Agency operations summary"]')],
+      ['sources', profile?.querySelector('[aria-label="Available source references"]')],
+    ];
+    const positions = summaries.map(([label, element]) => {
+      if (!element) return { label, present: false };
+      const bounds = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        label,
+        present: true,
+        visible: bounds.width > 0 && bounds.height > 0 &&
+          style.visibility !== 'hidden' && style.display !== 'none',
+        fits: element.scrollWidth <= element.clientWidth + 1,
+      };
+    });
+    const labels = [
+      'Agency contact summary',
+      'Agency operations summary',
+      'Available source references',
+    ];
+    const panels = labels.map((label) => {
+      const matches = profile?.querySelectorAll('[aria-label="' + label + '"]') ?? [];
+      const panel = matches[0];
+      const bounds = panel?.getBoundingClientRect();
+      const style = panel && getComputedStyle(panel);
+      return {
+        label,
+        count: matches.length,
+        hasHeading: Boolean(panel?.querySelector('h2')),
+        hasContent: Boolean(panel?.innerText.trim()),
+        visible: Boolean(bounds && bounds.width > 0 && bounds.height > 0 &&
+          style?.visibility !== 'hidden' && style?.display !== 'none'),
+        fits: Boolean(panel && panel.scrollWidth <= panel.clientWidth + 1),
+      };
+    });
+    return {
+      title: title?.innerText.trim() ?? '',
+      identityCount: executiveHeader?.querySelectorAll('h1').length ?? 0,
+      summaryGridCount: executiveHeader?.querySelectorAll('.profile-summary-grid').length ?? 0,
+      summaryPanelCount: summaryGrid?.querySelectorAll('.profile-summary-panel').length ?? 0,
+      operationsLead: profile?.querySelector('[aria-label="Agency operations summary"] .profile-operations-lead')
+        ?.innerText.trim() ?? '',
+      positions,
+      panels,
+    };
+  })()`);
+  assert(
+    summary?.title === agencyName &&
+      summary.identityCount === 1 &&
+      summary.summaryGridCount === 1 &&
+      summary.summaryPanelCount === 3 &&
+      summary.operationsLead.length > 0 &&
+      summary.positions.every((item) => item.present && item.visible && item.fits) &&
+      summary.panels.every((panel) =>
+        panel.count === 1 && panel.hasHeading && panel.hasContent && panel.visible && panel.fits),
+    `${providerCategory.toUpperCase()} compact profile summary regressed at ${viewport.width}px for ${agencyName}: ${JSON.stringify(summary)}`,
+  );
+
+  const toolbar = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const dock = profile?.querySelector('[data-testid="profile-primary-actions"]');
+    if (!dock) return null;
+    const selectors = [
+      '[aria-label="Prepare for meeting"]',
+      '[aria-label="Inspect agency sources"]',
+      '[aria-label="Add agency to route"], [aria-label^="Remove agency from"]',
+      '[aria-label="Save agency to My Work"], [aria-label="Remove agency from saved work"]',
+    ];
+    const buttons = selectors.map((selector) => dock.querySelector(selector));
+    if (buttons.some((button) => !button)) return { missingAction: true };
+    const layoutControls = [...dock.querySelectorAll('button, select')].filter((control) => {
+      const rect = control.getBoundingClientRect();
+      const style = getComputedStyle(control);
+      return rect.width > 0 && rect.height > 0 &&
+        style.visibility !== 'hidden' && style.display !== 'none';
+    });
+    if (layoutControls.length < buttons.length) return { missingLayoutControls: true };
+    const dockStyle = getComputedStyle(dock);
+    const dockBounds = dock.getBoundingClientRect();
+    const overlay = document.querySelector('.provider-profile-overlay');
+    const bottomNav = document.querySelector('.pi-mobile-nav');
+    if (innerWidth >= 768) {
+      const tops = layoutControls.map((control) => control.getBoundingClientRect().top);
+      const aligned = Math.max(...tops) - Math.min(...tops) <= 3;
+      const noPageOverflow = document.documentElement.scrollWidth <= innerWidth + 1;
+      const initialFirstReachable = (() => {
+        const rect = layoutControls[0].getBoundingClientRect();
+        return rect.left >= dockBounds.left - 1 && rect.right <= dockBounds.right + 1;
+      })();
+      for (const control of layoutControls) {
+        control.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+      const reachableAfterScroll = layoutControls.every((control) => {
+        const rect = control.getBoundingClientRect();
+        const bounds = dock.getBoundingClientRect();
+        return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+          rect.top >= -1 && rect.bottom <= innerHeight + 1;
+      });
+      return {
+        mode: 'laptop',
+        flexWrap: dockStyle.flexWrap,
+        aligned,
+        noPageOverflow,
+        initialFirstReachable,
+        reachableAfterScroll,
+        dockScrollWidth: dock.scrollWidth,
+        dockClientWidth: dock.clientWidth,
+      };
+    }
+
+    if (!overlay || !bottomNav) return { missingMobileShell: true };
+    dock.scrollIntoView({ block: 'start', inline: 'nearest' });
+    overlay.scrollTop += Math.max(0, dock.getBoundingClientRect().top - 88);
+    const bounds = dock.getBoundingClientRect();
+    const navBounds = bottomNav.getBoundingClientRect();
+    const sticky = getComputedStyle(dock).position === 'sticky';
+    const insideViewport = bounds.left >= -1 && bounds.right <= innerWidth + 1 &&
+      bounds.top >= -1 && bounds.top < innerHeight;
+    const clearOfBottomNav = bounds.bottom <= navBounds.top - 1;
+    dock.scrollLeft = 0;
+    const actionBounds = layoutControls.map((control) => control.getBoundingClientRect());
+    const firstActionReachable = actionBounds[0].left >= bounds.left - 1 &&
+      actionBounds[0].right <= bounds.right + 1;
+    dock.scrollLeft = dock.scrollWidth;
+    const lastActionBounds = layoutControls.at(-1).getBoundingClientRect();
+    const endActionReachable = lastActionBounds.left >= bounds.left - 1 &&
+      lastActionBounds.right <= bounds.right + 1;
+    return {
+      mode: 'phone',
+      sticky,
+      insideViewport,
+      clearOfBottomNav,
+      firstActionReachable,
+      endActionReachable,
+      dockTop: bounds.top,
+      dockBottom: bounds.bottom,
+      navTop: navBounds.top,
+      dockScrollWidth: dock.scrollWidth,
+      dockClientWidth: dock.clientWidth,
+    };
+  })()`);
+  if (viewport.width >= 768) {
+    assert(
+      toolbar?.mode === 'laptop' &&
+        toolbar.flexWrap === 'nowrap' &&
+        toolbar.aligned &&
+        toolbar.noPageOverflow &&
+        toolbar.initialFirstReachable &&
+        toolbar.reachableAfterScroll,
+      `Profile laptop actions are not a reachable single row at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
+    );
+  } else {
+    assert(
+      toolbar?.mode === 'phone' &&
+        toolbar.sticky &&
+        toolbar.insideViewport &&
+        toolbar.clearOfBottomNav &&
+        toolbar.firstActionReachable &&
+        toolbar.endActionReachable,
+      `Profile phone actions are not sticky, reachable, and clear of bottom navigation at ${viewport.width}px for ${agencyName}: ${JSON.stringify(toolbar)}`,
+    );
+  }
+  console.log(
+    `✓ ${viewport.width}px: ${providerCategory.toUpperCase()} compact identity/operations/sources and ${toolbar.mode} action dock (${agencyName})`,
+  );
+}
+
 async function checkMapPaletteAtViewport(cdp, viewport) {
   await evaluate(cdp, `(() => {
     const metric = document.querySelector('[data-testid="select-state-map-metric"]');
@@ -3067,8 +3260,10 @@ function assertFireOperationsDifferAtViewport(viewport) {
 }
 
 async function main() {
-  await checkPublishedRoutes();
-  if (process.env.ROUTES_ONLY === '1') return;
+  if (process.env.PROFILE_LAYOUT_ONLY !== '1') {
+    await checkPublishedRoutes();
+    if (process.env.ROUTES_ONLY === '1') return;
+  }
 
   const debuggingPort = await reservePort();
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'ems-profile-overflow-'));
@@ -3099,6 +3294,29 @@ async function main() {
       behavior: 'allow',
       downloadPath,
     });
+
+    if (process.env.PROFILE_LAYOUT_ONLY === '1') {
+      const profileLayoutViewports = [
+        { width: 390, height: 844, mobile: true },
+        { width: 1280, height: 900, mobile: false },
+      ];
+      for (const viewport of profileLayoutViewports) {
+        await checkCompactProfileLayoutAtViewport(
+          cdp,
+          viewport,
+          'ems',
+          emsProfileCases[0],
+        );
+        await checkCompactProfileLayoutAtViewport(
+          cdp,
+          viewport,
+          'fire',
+          fireProfileCases[0],
+        );
+      }
+      console.log('Independent EMS and Fire compact profile layout checks passed.');
+      return;
+    }
 
     if (process.env.HOME_MAP_ONLY === '1') {
       for (const viewport of [

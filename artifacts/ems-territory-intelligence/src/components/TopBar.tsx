@@ -28,7 +28,6 @@ import {
   RefreshCw,
   Download
 } from 'lucide-react';
-import { Agency } from '../types';
 import {
   isFieldWorkTab,
   isOpportunitiesTab as isOpportunitiesWorkspaceTab,
@@ -44,7 +43,6 @@ interface TopBarProps {
   globalCategory: 'all' | 'ems' | 'fire';
   setGlobalCategory: (cat: 'all' | 'ems' | 'fire') => void;
   isOnline: boolean;
-  toggleNetwork: () => void;
   pendingSyncCount: number;
   isSyncing: boolean;
   triggerManualSync: () => void;
@@ -52,7 +50,6 @@ interface TopBarProps {
   openDataLineageModal?: () => void;
   openChatbot?: () => void;
   isCloudConnected?: boolean;
-  cloudSyncCount?: number;
   showGuide?: boolean;
   onToggleGuide?: () => void;
   isDarkMode?: boolean;
@@ -63,7 +60,6 @@ interface TopBarProps {
   onClearGeography?: () => void;
   activeAccountName?: string | null;
   dayRouteCount?: number;
-  agencies?: Agency[];
   onOpenProviderFinder?: () => void;
 }
 
@@ -79,7 +75,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   globalCategory,
   setGlobalCategory,
   isOnline,
-  toggleNetwork,
   pendingSyncCount,
   isSyncing,
   triggerManualSync,
@@ -87,7 +82,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   openDataLineageModal,
   openChatbot,
   isCloudConnected = false,
-  cloudSyncCount = 0,
   showGuide = false,
   onToggleGuide,
   isDarkMode = false,
@@ -98,7 +92,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   onClearGeography,
   activeAccountName = null,
   dayRouteCount = 0,
-  agencies = [],
   onOpenProviderFinder
 }) => {
   const fallbackLogo = `${import.meta.env.BASE_URL}logo.jpg`;
@@ -571,39 +564,40 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
 
-        {/* Bottom Sidebar Footer: Data State */}
-        <div className="p-3 border-t border-[#172D49] bg-[#091322] space-y-2 shrink-0">
-          <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
-            <button
-              type="button"
-              onClick={toggleNetwork}
-              className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-              title={
-                globalState === 'all'
-                  ? 'Cloud is reachable. National browsing uses this device’s cache; select a state to load live cloud records.'
-                  : 'Check network and selected-state cloud sync status.'
-              }
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  !isOnline
-                    ? 'bg-amber-400'
-                    : isCloudConnected
-                      ? 'bg-emerald-400'
-                      : 'bg-blue-400'
-                }`}
-              />
-              <span className="font-mono text-[11px]">
-                {!isOnline
-                  ? 'Offline Cache'
+        {/* Quiet connection context; actionable sync work appears above only when needed. */}
+        <div className="p-3 border-t border-[#172D49] bg-[#091322] shrink-0">
+          <div
+            className="flex items-center gap-1.5 px-1 text-[10px] text-slate-400"
+            role="status"
+            aria-live="polite"
+            title={
+              !isOnline
+                ? 'The app is offline. Local changes remain on this device until they can be synced.'
+                : globalState === 'all'
+                  ? 'National browsing uses this device’s cache. Select a state to load live cloud records.'
                   : isCloudConnected
-                    ? globalState === 'all'
-                      ? `Cloud Ready (${cloudSyncCount})`
-                      : `Cloud Synced (${cloudSyncCount})`
-                    : 'Local Ready'}
-              </span>
-            </button>
-
+                    ? 'Cloud records are available for the selected state.'
+                    : 'Showing locally available data for the selected state.'
+            }
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                !isOnline
+                  ? 'bg-amber-400'
+                  : isCloudConnected
+                    ? 'bg-emerald-400'
+                    : 'bg-blue-400'
+              }`}
+            />
+            <span className="font-medium">
+              {!isOnline
+                ? 'Offline · local data'
+                : globalState === 'all'
+                  ? 'Online · national cache'
+                  : isCloudConnected
+                    ? 'Online · state records'
+                    : 'Online · local data'}
+            </span>
           </div>
         </div>
       </aside>

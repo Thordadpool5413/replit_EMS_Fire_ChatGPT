@@ -104,6 +104,26 @@ test('desktop and mobile entry points share workspace groups and expose selected
   }
 });
 
+test('desktop workspaces share compact tabs and quiet connection status', () => {
+  const topBar = readSource('components/TopBar.tsx');
+  const app = readSource('App.tsx');
+  const styles = readFileSync(resolve(sourceRoot, 'index.css'), 'utf8');
+  const sharedShellStyles = styles.slice(styles.lastIndexOf('Shared desktop shell sizing'));
+
+  assert.equal(
+    (app.match(/className="pi-workspace-tabs/g) || []).length,
+    5,
+    'Every secondary workspace toolbar should use the shared tab styling.',
+  );
+  assert.match(styles, /\.pi-workspace-tabs\s*\{[\s\S]*?min-height:\s*2\.4rem/);
+  assert.match(styles, /\.pi-workspace-tabs button\s*\{[\s\S]*?min-height:\s*2\.05rem/);
+  assert.doesNotMatch(sharedShellStyles, /pi-sidebar-logo|pi-mobile-logo/);
+  assert.match(topBar, /role="status"[\s\S]*?aria-live="polite"/);
+  assert.doesNotMatch(topBar, /Cloud Ready \(\$\{cloudSyncCount\}\)|Cloud Synced \(\$\{cloudSyncCount\}\)/);
+  assert.doesNotMatch(topBar, /<button[\s\S]{0,160}onClick=\{toggleNetwork\}/);
+  assert.doesNotMatch(app, /Choose an agency before generating a quote/);
+});
+
 test('home and mobile tools do not seed or restore alert badges', () => {
   const app = readSource('App.tsx');
   const topBar = readSource('components/TopBar.tsx');

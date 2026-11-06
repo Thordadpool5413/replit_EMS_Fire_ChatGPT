@@ -962,7 +962,6 @@ export default function App() {
         globalCategory={globalCategory}
         setGlobalCategory={handleSetGlobalCategory}
         isOnline={isOnline}
-        toggleNetwork={handleCheckConnectivity}
         pendingSyncCount={outbox.length}
         isSyncing={isSyncing}
         triggerManualSync={handleManualSync}
@@ -970,7 +969,6 @@ export default function App() {
         openDataLineageModal={() => setIsDataLineageOpen(true)}
         openChatbot={() => setIsChatbotOpen(true)}
         isCloudConnected={isCloudConnected}
-        cloudSyncCount={cloudSyncCount}
         showGuide={showWorkflowGuide}
         onToggleGuide={() => handleToggleWorkflowGuide()}
         isDarkMode={isDarkMode}
@@ -981,7 +979,6 @@ export default function App() {
         onClearGeography={handleClearGeography}
         activeAccountName={currentActive?.name || null}
         dayRouteCount={dayRouteCount}
-        agencies={agencies}
         onOpenProviderFinder={() => setIsMobileProviderFinderOpen(true)}
       />
 
@@ -1008,7 +1005,7 @@ export default function App() {
         {!currentActive && isOpportunitiesTab(activeTab) && (
           <nav
             aria-label="Opportunities views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="pi-workspace-tabs mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {OPPORTUNITIES_WORKSPACE_TABS.map((item) => (
               <button
@@ -1031,7 +1028,7 @@ export default function App() {
         {!currentActive && isTerritoryTab(activeTab) && (
           <nav
             aria-label="Territory views"
-            className="territory-workspace-nav mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="pi-workspace-tabs territory-workspace-nav mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {TERRITORY_WORKSPACE_TABS.map((item) => (
               <button
@@ -1054,7 +1051,7 @@ export default function App() {
         {!currentActive && isFieldWorkTab(activeTab) && (
           <nav
             aria-label="Field Work views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="pi-workspace-tabs mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {FIELD_WORKSPACE_TABS.map((item) => {
               const detail = item.id === 'field'
@@ -1085,7 +1082,7 @@ export default function App() {
         {!currentActive && isSpecialistTab(activeTab) && (
           <nav
             aria-label="Specialist tool views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="pi-workspace-tabs mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {SPECIALIST_WORKSPACE_TABS.map((item) => (
               <button
@@ -1108,7 +1105,7 @@ export default function App() {
         {!currentActive && isSystemTab(activeTab) && (
           <nav
             aria-label="Data and system views"
-            className="mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
+            className="pi-workspace-tabs mb-4 bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-2xs"
           >
             {SYSTEM_WORKSPACE_TABS.map((item) => (
               <button
@@ -1168,7 +1165,6 @@ export default function App() {
                     setRfpAgency(currentActive);
                     return;
                   }
-                  showToast('Choose an agency before generating a quote.', 'info');
                   handleNavigateTab('queue');
                 }}
                 className="inline-flex items-center gap-2 text-[#14283F] dark:text-slate-200 hover:text-[#285EE8] dark:hover:text-blue-400 font-medium transition-colors cursor-pointer"

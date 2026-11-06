@@ -1712,7 +1712,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <article
                     key={`${c.stateCode}-${c.countyFips}`}
                     aria-labelledby={`county-card-title-${c.countyFips}`}
-                    className="county-directory-card county-profile-card group relative flex min-h-0 flex-col overflow-hidden"
+                    className="county-directory-card county-profile-card group relative flex min-h-0 flex-col"
                   >
                     <div className="county-profile-card-content">
                       <div className="county-profile-card-heading">
@@ -1725,8 +1725,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </div>
                         </div>
                         {mappedPlaceCount > 0 && (
-                          <span className="county-profile-place-count">
-                            {mappedPlaceCount} mapped {mappedPlaceCount === 1 ? 'place' : 'places'}
+                          <span
+                            className="county-profile-place-count"
+                            aria-label={`${mappedPlaceCount} mapped ${mappedPlaceCount === 1 ? 'place' : 'places'}`}
+                          >
+                            {mappedPlaceCount} {mappedPlaceCount === 1 ? 'place' : 'places'}
                           </span>
                         )}
                       </div>

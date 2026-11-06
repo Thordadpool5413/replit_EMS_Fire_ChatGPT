@@ -9137,3 +9137,140 @@ button { -webkit-tap-highlight-color: transparent; }
     display: none;
   }
 }
+
+/* Laptop county directory: replace the repeated card wall with aligned records. */
+@media (min-width: 1024px) {
+  .territory-explorer-screen .county-directory-card-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--pi-border);
+    border-radius: 0.7rem;
+    background: var(--pi-surface-bg);
+  }
+
+  .territory-explorer-screen .county-profile-card {
+    display: grid !important;
+    grid-template-columns: minmax(10rem, 1.1fr) minmax(16rem, 2fr) minmax(8.5rem, 0.9fr) auto;
+    align-items: center;
+    gap: 0.72rem;
+    min-height: 3.55rem;
+    padding: 0.42rem 0.7rem !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--pi-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .territory-explorer-screen .county-profile-card:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .territory-explorer-screen .county-profile-card::before {
+    display: none !important;
+  }
+
+  .territory-explorer-screen .county-profile-card:hover {
+    transform: none;
+    background: var(--pi-surface-subtle) !important;
+    box-shadow: none !important;
+  }
+
+  .territory-explorer-screen .county-profile-card-content {
+    display: contents !important;
+  }
+
+  .territory-explorer-screen .county-profile-card-heading {
+    grid-column: 1;
+    grid-row: 1;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .territory-explorer-screen .county-profile-card-title {
+    font-size: 0.91rem !important;
+  }
+
+  .territory-explorer-screen .county-profile-card-meta {
+    margin-top: 0.1rem;
+    font-size: 0.68rem;
+  }
+
+  .territory-explorer-screen .county-profile-place-count {
+    padding: 0.16rem 0.3rem;
+    font-size: 0.61rem;
+  }
+
+  .territory-explorer-screen .county-profile-metrics {
+    grid-column: 2;
+    grid-row: 1;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+  }
+
+  .territory-explorer-screen .county-profile-metric {
+    min-height: 2.65rem;
+    gap: 0.16rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .territory-explorer-screen .county-profile-metric::before {
+    display: none;
+  }
+
+  .territory-explorer-screen .county-profile-metric > span {
+    font-size: 0.64rem;
+    line-height: 1.15;
+  }
+
+  .territory-explorer-screen .county-profile-metric > strong {
+    font-size: 0.91rem;
+  }
+
+  .territory-explorer-screen .county-profile-details {
+    grid-column: 3;
+    grid-row: 1;
+    border-top: 0;
+    border-left: 1px solid var(--pi-border);
+    padding-left: 0.6rem;
+  }
+
+  .territory-explorer-screen .county-profile-details-summary {
+    min-height: 1.8rem;
+    font-size: 0.67rem;
+    white-space: nowrap;
+  }
+
+  .territory-explorer-screen .county-profile-details-count {
+    display: none;
+  }
+
+  .territory-explorer-screen .county-profile-details-indicator {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .territory-explorer-screen .county-profile-card-footer {
+    grid-column: 4;
+    grid-row: 1;
+    justify-content: flex-end;
+    gap: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .territory-explorer-screen .county-profile-data-note {
+    display: none;
+  }
+
+  .territory-explorer-screen .county-profile-card-action {
+    min-height: 1.75rem;
+    padding: 0.25rem 0.48rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+}

@@ -33,8 +33,8 @@ On drilled-in Territory views, do not repeat the selected location when the shar
 
 **How to apply:** Let the shared breadcrumb provide current-location context; keep the selected area, search, and primary provider action in one compact heading card, with secondary controls available on demand.
 
-County directory cards should show the county, seat, mapped-place count, and three primary reference metrics. Keep FIPS, area, centroid, ZIPs, extra context, and source records together behind one collapsed details row; leave the county-level-only scope note visible.
+For county directories, use aligned comparison rows on laptops and compact stacked cards on phones. Emphasize county/seat and the three reference metrics; keep mapped places, geography metadata, extra context, and citations available in one collapsed details control. Keep the scope caveat visible at section level.
 
-**Why:** The prior cards stacked multiple metadata rows, two disclosure controls, three colored tiles, and a large action, making the primary county facts hard to scan.
+**Why:** A multi-column card grid repeated labels and controls across every county, making important facts difficult to compare and scan.
 
-**How to apply:** Simplify the collapsed card first without deleting data or citations. Keep metric labels readable, use restrained category accents, and verify that expanded place selection and source links still work.
+**How to apply:** On desktop, line up county/seat, population, transport time, OHCA reference, details, and action as rows rather than separate card tiles. On phones, retain one compact card per county. Do not delete data or citations; verify expanded place selection and source links.

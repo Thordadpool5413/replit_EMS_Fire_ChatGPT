@@ -1388,6 +1388,71 @@ const pulseIqChartModes = [
   },
 ];
 
+async function checkPulseIqTooltipAtEdge(cdp, dark, viewport, edge) {
+  const position = await evaluate(cdp, `(() => {
+    const chart = document.querySelector('.recharts-cartesian-grid')?.closest('.recharts-wrapper');
+    const marks = [...(chart?.querySelectorAll('.recharts-bar-rectangle, path.recharts-rectangle, rect.recharts-rectangle') ?? [])]
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 2 && rect.height > 2
+          ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+          : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.x - b.x);
+    const columns = [...new Map(marks.map((mark) => [Math.round(mark.x), mark])).values()];
+    return columns.length ? columns[${JSON.stringify(edge)} === 'first' ? 0 : columns.length - 1] : null;
+  })()`);
+  assert(position?.x != null,
+    `${themeLabel(dark)} PulseIQ chart has no visible ${edge} mark at ${viewport.width}px`);
+
+  await cdp.send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: position.x,
+    y: position.y,
+  });
+  await waitFor(cdp, `(() => {
+    const tooltip = document.querySelector('.recharts-tooltip-wrapper');
+    return Boolean(tooltip && getComputedStyle(tooltip).visibility !== 'hidden' && tooltip.innerText.trim());
+  })()`, `${themeLabel(dark)} PulseIQ ${edge} chart tooltip`);
+
+  for (const [labelType, longName] of [
+    ['regional', 'Northwest Regional Emergency Medical Services and Fire Protection Authority'],
+    ['agency', 'Metropolitan County Emergency Medical Services and Advanced Fire Response Department'],
+  ]) {
+    const state = await evaluate(cdp, `(() => {
+      const chart = document.querySelector('.recharts-cartesian-grid')?.closest('.recharts-wrapper');
+      const tooltip = document.querySelector('.recharts-tooltip-wrapper');
+      const card = tooltip?.firstElementChild;
+      const heading = tooltip?.querySelector('.font-semibold.text-slate-900');
+      if (!chart || !tooltip || !card || !heading) return null;
+      heading.textContent = ${JSON.stringify(longName)};
+      const cardRect = card.getBoundingClientRect();
+      const chartRect = chart.getBoundingClientRect();
+      const headingRect = heading.getBoundingClientRect();
+      return {
+        heading: heading.textContent,
+        headingWidth: headingRect.width,
+        headingScrollWidth: heading.scrollWidth,
+        card: { left: cardRect.left, right: cardRect.right, top: cardRect.top, bottom: cardRect.bottom },
+        chart: { left: chartRect.left, right: chartRect.right, top: chartRect.top, bottom: chartRect.bottom },
+        viewport: { width: innerWidth, height: innerHeight },
+      };
+    })()`);
+    assert(state && state.heading === longName,
+      `${themeLabel(dark)} ${labelType} tooltip name was not rendered at the ${edge} mark`);
+    assert(state.headingWidth > 0 && state.headingScrollWidth <= state.headingWidth + 1,
+      `${themeLabel(dark)} ${labelType} tooltip name is clipped at the ${edge} mark: ${JSON.stringify(state)}`);
+    assert(
+      state.card.left >= Math.max(0, state.chart.left) - 1 &&
+        state.card.right <= Math.min(state.viewport.width, state.chart.right) + 1 &&
+        state.card.top >= Math.max(0, state.chart.top) - 1 &&
+        state.card.bottom <= Math.min(state.viewport.height, state.chart.bottom) + 1,
+      `${themeLabel(dark)} ${labelType} tooltip escapes chart or viewport bounds at the ${edge} mark (${viewport.width}px): ${JSON.stringify(state)}`,
+    );
+  }
+}
+
 async function checkPulseIqCharts(cdp, dark, viewport) {
   await openPulseIqCharts(cdp);
   await setTheme(cdp, dark);
@@ -1488,50 +1553,7 @@ async function checkPulseIqCharts(cdp, dark, viewport) {
             return rect.width > 2 && rect.height > 2;
           });
       })()`, `${mode.name} visible bars`);
-      const position = await evaluate(cdp, `(() => {
-        const chartSvg = document.querySelector('.recharts-cartesian-grid')?.closest('svg');
-        const candidates = [...(chartSvg?.querySelectorAll('.recharts-bar-rectangle, path.recharts-rectangle, rect.recharts-rectangle') ?? [])];
-        const bar = candidates.find((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.width > 2 && rect.height > 2;
-        });
-        if (!bar) return {
-          candidates: candidates.length,
-          candidateDetails: candidates.slice(0, 12).map((element) => {
-            const rect = element.getBoundingClientRect();
-            return {
-              tag: element.tagName,
-              className: typeof element.className === 'string'
-                ? element.className
-                : element.className?.baseVal ?? '',
-              box: [rect.x, rect.y, rect.width, rect.height],
-              childCount: element.children.length,
-            };
-          }),
-          chartShapes: [...(chartSvg?.querySelectorAll('path, rect') ?? [])]
-            .slice(0, 20)
-            .map((element) => ({
-              className: element.getAttribute('class'),
-              fill: element.getAttribute('fill'),
-              box: (() => {
-                const rect = element.getBoundingClientRect();
-                return [rect.width, rect.height];
-              })(),
-            })),
-        };
-        const rect = bar.getBoundingClientRect();
-        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      })()`);
-      assert(position?.x != null, `${themeLabel(dark)} PulseIQ bar chart has no visible series mark to inspect: ${JSON.stringify(position)}`);
-      await cdp.send('Input.dispatchMouseEvent', {
-        type: 'mouseMoved',
-        x: position.x,
-        y: position.y,
-      });
-      await waitFor(cdp, `(() => {
-        const tooltip = document.querySelector('.recharts-tooltip-wrapper');
-        return Boolean(tooltip && getComputedStyle(tooltip).visibility !== 'hidden' && tooltip.innerText.trim());
-      })()`, `${themeLabel(dark)} PulseIQ chart tooltip`);
+      await checkPulseIqTooltipAtEdge(cdp, dark, viewport, 'first');
       const tooltipState = await evaluate(cdp, `(() => {
         const tooltip = document.querySelector('.recharts-tooltip-wrapper > div');
         if (!tooltip) return null;
@@ -1552,10 +1574,11 @@ async function checkPulseIqCharts(cdp, dark, viewport) {
         { name: 'tooltip heading', selector: '.recharts-tooltip-wrapper .font-semibold.text-slate-900' },
         { name: 'tooltip supporting text', selector: '.recharts-tooltip-wrapper .text-slate-700' },
       ]);
+      await checkPulseIqTooltipAtEdge(cdp, dark, viewport, 'last');
     }
 
     console.log(
-      `  ${themeLabel(dark)} ${viewport.width}px ${mode.name}: ${state.axisCount} axis labels, ${state.legend.length} distinct series, themed grid${mode.tooltip ? ', readable tooltip' : ''}`,
+      `  ${themeLabel(dark)} ${viewport.width}px ${mode.name}: ${state.axisCount} axis labels, ${state.legend.length} distinct series, themed grid${mode.tooltip ? ', readable tooltip at first and last marks with long names' : ''}`,
     );
   }
   await captureThemeScreenshot(cdp, dark, 'pulseiq-specialty-charts');

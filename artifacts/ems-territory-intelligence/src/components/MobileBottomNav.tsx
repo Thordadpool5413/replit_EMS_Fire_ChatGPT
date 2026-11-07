@@ -164,6 +164,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               if (onGoHome) onGoHome();
               else setActiveTab('home');
             }}
+            aria-label="Home"
             aria-current={isHome ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isHome ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
@@ -176,6 +177,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             type="button"
             onClick={() => navigate('queue')}
+            aria-label="Agencies"
             aria-current={isAgencies ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isAgencies ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
@@ -188,18 +190,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             type="button"
             onClick={() => navigate('contracts')}
+            aria-label="Opportunities"
             aria-current={isOpportunities ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isOpportunities ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <TrendingUp className={`w-4 h-4 ${isOpportunities ? 'text-[#285EE8]' : ''}`} />
-            <span className="text-[9px] tracking-tight mt-1">Opportunities</span>
+            <span aria-hidden="true" className="pi-mobile-label-full text-[9px] tracking-tight mt-1">Opportunities</span>
+            <span aria-hidden="true" className="pi-mobile-label-compact text-[9px] tracking-tight mt-1">Opps</span>
           </button>
 
           <button
             type="button"
             onClick={() => navigate('states_directory')}
+            aria-label="Territory"
             aria-current={isTerritory ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isTerritory ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
@@ -212,13 +217,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             type="button"
             onClick={() => navigate(isMyWork ? activeTab : 'field')}
+            aria-label="Field work"
             aria-current={isMyWork ? 'page' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
               isMyWork ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Briefcase className={`w-4 h-4 ${isMyWork ? 'text-[#285EE8]' : ''}`} />
-            <span className="text-[9px] tracking-tight mt-1">Field work</span>
+            <span aria-hidden="true" className="pi-mobile-label-full text-[9px] tracking-tight mt-1">Field work</span>
+            <span aria-hidden="true" className="pi-mobile-label-compact text-[9px] tracking-tight mt-1">Field</span>
             {dayRouteCount > 0 && (
               <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[9px] font-bold flex items-center justify-center">
                 {dayRouteCount}
@@ -229,6 +236,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             type="button"
             onClick={() => setIsMoreOpen((open) => !open)}
+            aria-label="More"
             aria-expanded={isMoreOpen}
             aria-controls={isMoreOpen ? 'mobile-more-tools' : undefined}
             className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${

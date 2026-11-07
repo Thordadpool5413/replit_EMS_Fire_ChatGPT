@@ -5946,6 +5946,13 @@ button { -webkit-tap-highlight-color: transparent; }
   .pi-mobile-nav button svg { width: 1rem; height: 1rem; }
   .home-map-region-filter button { padding-inline: 0.62rem !important; }
 }
+@media (max-width: 375px) {
+  .pi-mobile-nav .pi-mobile-label-full { display: none; }
+  .pi-mobile-nav .pi-mobile-label-compact { display: inline-block; }
+}
+@media (min-width: 376px) {
+  .pi-mobile-nav .pi-mobile-label-compact { display: none; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .workspace-grid-shell { animation: workspace-arrive 240ms ease-out both; }
   @keyframes workspace-arrive {

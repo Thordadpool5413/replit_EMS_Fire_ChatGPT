@@ -54,6 +54,8 @@ const sharedNavigationDesktopViewports = [1024, 1280, 1366].map((width) => ({
   mobile: false,
 }));
 const sharedNavigationMobileViewports = [
+  { width: 320, height: 740, mobile: true },
+  { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
 ];
 const sharedNavigationWorkspaces = [
@@ -573,8 +575,12 @@ async function checkSharedNavigationMobile(cdp, viewport) {
     const buttons = [...nav.querySelectorAll('button')].map((button) => {
       const bounds = button.getBoundingClientRect();
       const rect = bounds.toJSON();
-      const text = button.innerText.trim().replace(/\\s+/g, ' ');
+      const label = [...button.querySelectorAll('span:not(.pi-data-number)')]
+        .find((span) => getComputedStyle(span).display !== 'none');
+      const labelBounds = label?.getBoundingClientRect();
+      const text = label?.innerText.trim().replace(/\\s+/g, ' ') ?? '';
       return {
+        accessibleName: button.getAttribute('aria-label'),
         text,
         selected: button.getAttribute('aria-current') === 'page',
         left: rect.left,
@@ -586,6 +592,14 @@ async function checkSharedNavigationMobile(cdp, viewport) {
         visible: rect.width > 0 && rect.height > 0 &&
           rect.left >= -1 && rect.right <= innerWidth + 1 &&
           rect.top >= 0 && rect.bottom <= innerHeight,
+        labelLeft: labelBounds?.left ?? null,
+        labelRight: labelBounds?.right ?? null,
+        labelWidth: labelBounds?.width ?? 0,
+        labelScrollWidth: label?.scrollWidth ?? 0,
+        labelClientWidth: label?.clientWidth ?? 0,
+        labelVisible: Boolean(label && labelBounds && getComputedStyle(label).display !== 'none' &&
+          labelBounds.width > 0 && labelBounds.left >= rect.left - 1 &&
+          labelBounds.right <= rect.right + 1),
       };
     });
     return {
@@ -613,17 +627,39 @@ async function checkSharedNavigationMobile(cdp, viewport) {
         button.visible && button.width >= 44 && button.height >= 44),
     `Mobile navigation has an unusable touch target at ${viewport.width}px: ${JSON.stringify(navigation.buttons)}`,
   );
+  const expectedMobileLabels = [
+    { accessibleName: 'Home', visibleLabels: ['Home'] },
+    { accessibleName: 'Agencies', visibleLabels: ['Agencies'] },
+    { accessibleName: 'Opportunities', visibleLabels: ['Opportunities', 'Opps'] },
+    { accessibleName: 'Territory', visibleLabels: ['Territory'] },
+    { accessibleName: 'Field work', visibleLabels: ['Field work', 'Field'] },
+    { accessibleName: 'More', visibleLabels: ['More'] },
+  ];
+  assert(
+    navigation.buttons.every((button, index) => {
+      const expected = expectedMobileLabels[index];
+      return button.accessibleName === expected?.accessibleName &&
+        expected.visibleLabels.includes(button.text) &&
+        button.labelVisible &&
+        button.labelScrollWidth <= button.labelClientWidth + 1;
+    }) &&
+      new Set(navigation.buttons.map((button) => button.text)).size === 6 &&
+      navigation.buttons.slice(1).every((button, index) =>
+        button.labelLeft >= navigation.buttons[index].labelRight - 1),
+    `Mobile workspace labels are missing, clipped, or overlapping at ${viewport.width}px: ${JSON.stringify(navigation.buttons)}`,
+  );
 
-  for (const { label, mobileLabel } of [
-    { label: 'Home', mobileLabel: 'Home' },
-    { label: 'Agencies', mobileLabel: 'Agencies' },
-    { label: 'Territory', mobileLabel: 'Territory' },
-    { label: 'Field Work', mobileLabel: 'Field work' },
+  for (const { label, accessibleName } of [
+    { label: 'Home', accessibleName: 'Home' },
+    { label: 'Agencies', accessibleName: 'Agencies' },
+    { label: 'Opportunities', accessibleName: 'Opportunities' },
+    { label: 'Territory', accessibleName: 'Territory' },
+    { label: 'Field Work', accessibleName: 'Field work' },
   ]) {
     const clicked = await evaluate(cdp, `(() => {
       const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
       const button = [...(nav?.querySelectorAll('button') ?? [])].find((candidate) =>
-        candidate.innerText.trim().replace(/\\s+/g, ' ').includes(${JSON.stringify(mobileLabel)}));
+        candidate.getAttribute('aria-label') === ${JSON.stringify(accessibleName)});
       if (!button) return false;
       button.click();
       return true;
@@ -634,7 +670,7 @@ async function checkSharedNavigationMobile(cdp, viewport) {
       `(() => {
         const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
         return [...(nav?.querySelectorAll('button') ?? [])].some((button) =>
-          button.innerText.trim().replace(/\\s+/g, ' ').includes(${JSON.stringify(mobileLabel)}) &&
+          button.getAttribute('aria-label') === ${JSON.stringify(accessibleName)} &&
           button.getAttribute('aria-current') === 'page');
       })()`,
       `"${label}" mobile navigation selection at ${viewport.width}px`,

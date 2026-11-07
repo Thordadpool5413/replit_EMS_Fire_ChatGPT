@@ -1327,7 +1327,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#ffedd5',
           markerRadius: 5.5,
           heatRadius: hasReportedValue(agency.annualCardiacArrestCalls) ? Math.min(52, 26 + Math.round(agency.annualCardiacArrestCalls / 40)) : 0,
-          tierLabel: 'High Survival Deficit (22–26%)',
+          tierLabel: 'High Survival Deficit (22–<26%)',
           metricDisplay: `${survival}% Utstein survival`
         };
       }
@@ -1341,7 +1341,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#fef3c7',
           markerRadius: 4.5,
           heatRadius: 32,
-          tierLabel: 'Moderate Deficit (26–30%)',
+          tierLabel: 'Moderate Deficit (26–<30%)',
           metricDisplay: `${survival}% Utstein survival`
         };
       }
@@ -1385,7 +1385,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#e0f2fe',
           markerRadius: 5.5,
           heatRadius: Math.min(50, 24 + Math.round(deficit / 2)),
-          tierLabel: 'High AED Shortage (45–54%)',
+          tierLabel: 'High AED Shortage (45–<55%)',
           metricDisplay: `${deficit}% public access deficit`
         };
       }
@@ -1399,7 +1399,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#ccfbf1',
           markerRadius: 4.5,
           heatRadius: 30,
-          tierLabel: 'Moderate Shortage (35–44%)',
+          tierLabel: 'Moderate Shortage (35–<45%)',
           metricDisplay: `${deficit}% public access deficit`
         };
       }
@@ -1443,7 +1443,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#ffedd5',
           markerRadius: 5.5,
           heatRadius: Math.min(52, 24 + transportTime * 1.1),
-          tierLabel: 'Prolonged Transport (22–27 min)',
+          tierLabel: 'Prolonged Transport (22–<28 min)',
           metricDisplay: `${transportTime} min avg transport`
         };
       }
@@ -1457,7 +1457,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           markerStroke: '#d1fae5',
           markerRadius: 4.5,
           heatRadius: 30,
-          tierLabel: 'Standard Transport (16–21 min)',
+          tierLabel: 'Standard Transport (16–<22 min)',
           metricDisplay: `${transportTime} min avg transport`
         };
       }
@@ -2882,7 +2882,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
             {/* Scientific Spectrum & Layer Telemetry Legend Overlay */}
             {showLegend && (
-              <div className="absolute top-4 right-4 z-10 backdrop-blur-md bg-slate-950/90 border border-white/15 text-white rounded-xl p-3 shadow-2xl text-xs pointer-events-auto max-w-[260px] sm:min-w-[230px]">
+              <div data-testid="gis-layer-legend" className="absolute top-4 right-4 z-10 backdrop-blur-md bg-slate-950/90 border border-white/15 text-white rounded-xl p-3 shadow-2xl text-xs pointer-events-auto max-w-[260px] sm:min-w-[230px]">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-2 pb-1.5 border-b border-white/10 font-medium">
                   <span className="font-semibold text-slate-200">Layer details</span>
                   <button
@@ -2935,29 +2935,29 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
                 {selectedLayer === 'nemsis_cardiac' && (
                   <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="critical" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
                       <span className="font-semibold text-slate-100">
                         Top 10% · ≥{nationalOhcaRateThresholds.p90?.toFixed(1) ?? '—'} / 1,000
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="high" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
                       <span className="text-slate-300">
                         75th–90th percentile · {nationalOhcaRateThresholds.p75?.toFixed(1) ?? '—'}–{nationalOhcaRateThresholds.p90?.toFixed(1) ?? '—'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="moderate" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
                       <span className="text-slate-400">
                         50th–75th percentile · {nationalOhcaRateThresholds.p50?.toFixed(1) ?? '—'}–{nationalOhcaRateThresholds.p75?.toFixed(1) ?? '—'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="baseline" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0"></span>
                       <span className="text-slate-400">Below national median rate</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="unreported" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0"></span>
                       <span className="text-slate-400">No paired OHCA / transport report</span>
                     </div>
@@ -2981,40 +2981,40 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
                 {selectedLayer === 'cardiac' && (
                   <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="critical" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-400/40 shrink-0"></span>
                       <span className="font-semibold text-slate-100">&lt;22% Survival (Critical)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="high" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                      <span className="text-slate-300">22–26% Survival (High)</span>
+                      <span className="text-slate-300">22–&lt;26% Survival (High)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="moderate" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
-                      <span className="text-slate-400">26–30% Survival (Moderate)</span>
+                      <span className="text-slate-400">26–&lt;30% Survival (Moderate)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="benchmark" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      <span className="text-slate-400">&gt;30% Survival (Benchmark)</span>
+                      <span className="text-slate-400">≥30% Survival (Benchmark)</span>
                     </div>
                   </div>
                 )}
 
                 {selectedLayer === 'aed' && (
                   <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="critical" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
                       <span className="font-semibold text-slate-100">≥55% Deficit (Severe)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="high" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-                      <span className="text-slate-300">45–54% Deficit (High)</span>
+                      <span className="text-slate-300">45–&lt;55% Deficit (High)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="moderate" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0"></span>
-                      <span className="text-slate-400">35–44% Deficit (Moderate)</span>
+                      <span className="text-slate-400">35–&lt;45% Deficit (Moderate)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="baseline" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
                       <span className="text-slate-400">&lt;35% Deficit (Adequate)</span>
                     </div>
@@ -3023,21 +3023,21 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
                 {selectedLayer === 'transport' && (
                   <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="critical" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-400/40 shrink-0"></span>
                       <span className="font-semibold text-slate-100">≥28 min (Severe Delay)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="high" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0"></span>
-                      <span className="text-slate-300">20–27 min (Long Transit)</span>
+                      <span className="text-slate-300">22–&lt;28 min (Prolonged Transport)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="moderate" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
-                      <span className="text-slate-400">14–19 min (Standard)</span>
+                      <span className="text-slate-400">16–&lt;22 min (Standard Transport)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div data-risk-tier="baseline" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                      <span className="text-slate-400">&lt;14 min (Metro Rapid)</span>
+                      <span className="text-slate-400">&lt;16 min (Rapid Urban Transit)</span>
                     </div>
                   </div>
                 )}

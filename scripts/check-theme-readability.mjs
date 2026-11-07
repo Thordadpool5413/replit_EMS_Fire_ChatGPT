@@ -10,6 +10,53 @@ const allViewports = [
   { width: 390, height: 844, mobile: true },
   { width: 1280, height: 900, mobile: false },
 ];
+const gisLayers = [
+  {
+    name: 'OHCA',
+    button: 'OHCA Rate / 1k Transports',
+    tiers: [
+      { id: 'critical', label: 'Top 10%', swatchClass: 'bg-rose-500' },
+      { id: 'high', label: '75th–90th percentile', swatchClass: 'bg-orange-500' },
+      { id: 'moderate', label: '50th–75th percentile', swatchClass: 'bg-amber-400' },
+      { id: 'baseline', label: 'Below national median rate', swatchClass: 'bg-sky-400' },
+      { id: 'unreported', label: 'No paired OHCA / transport report', swatchClass: 'bg-slate-500' },
+    ],
+    markerColors: ['#be123c', '#ea580c', '#d97706', '#0284c7', '#64748b'],
+  },
+  {
+    name: 'Survival',
+    button: 'Survival Deficit',
+    tiers: [
+      { id: 'critical', label: '<22% Survival (Critical)', swatchClass: 'bg-red-500' },
+      { id: 'high', label: '22–<26% Survival (High)', swatchClass: 'bg-orange-500' },
+      { id: 'moderate', label: '26–<30% Survival (Moderate)', swatchClass: 'bg-amber-400' },
+      { id: 'benchmark', label: '≥30% Survival (Benchmark)', swatchClass: 'bg-emerald-500' },
+    ],
+    markerColors: ['#b91c1c', '#c2410c', '#d97706', '#059669', '#64748b'],
+  },
+  {
+    name: 'AED',
+    button: 'AED Need',
+    tiers: [
+      { id: 'critical', label: '≥55% Deficit (Severe)', swatchClass: 'bg-rose-500' },
+      { id: 'high', label: '45–<55% Deficit (High)', swatchClass: 'bg-amber-500' },
+      { id: 'moderate', label: '35–<45% Deficit (Moderate)', swatchClass: 'bg-teal-500' },
+      { id: 'baseline', label: '<35% Deficit (Adequate)', swatchClass: 'bg-slate-400' },
+    ],
+    markerColors: ['#a21caf', '#0369a1', '#0f766e', '#475569', '#64748b'],
+  },
+  {
+    name: 'Transport',
+    button: 'Long Transport (>20 min)',
+    tiers: [
+      { id: 'critical', label: '≥28 min (Severe Delay)', swatchClass: 'bg-amber-500' },
+      { id: 'high', label: '22–<28 min (Prolonged Transport)', swatchClass: 'bg-yellow-500' },
+      { id: 'moderate', label: '16–<22 min (Standard Transport)', swatchClass: 'bg-sky-500' },
+      { id: 'baseline', label: '<16 min (Rapid Urban Transit)', swatchClass: 'bg-emerald-500' },
+    ],
+    markerColors: ['#9a3412', '#c2410c', '#047857', '#0284c7', '#64748b'],
+  },
+];
 const requestedWidth = Number(process.env.THEME_TEST_WIDTH);
 const viewports = requestedWidth
   ? allViewports.filter((viewport) => viewport.width === requestedWidth)
@@ -1635,99 +1682,118 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
   await openGisHeatmap(cdp);
   await setTheme(cdp, dark);
   await clickButtonAndScroll(cdp, 'Station Vectors');
-  await waitFor(cdp, `Boolean(document.querySelector('svg circle[fill]'))`, 'GIS station vector markers');
+  await waitFor(cdp, `Boolean(document.querySelector('svg g.cursor-pointer.group[transform^="translate("] circle.transition-transform'))`, 'GIS station vector markers');
 
-  const state = await evaluate(cdp, `(() => {
-    const legend = [...document.querySelectorAll('.absolute.top-4.right-4 span')]
-      .filter((element) => element.textContent.trim())
-      .map((element) => ({
-        text: element.textContent.trim(),
-        color: getComputedStyle(element).color,
-        background: getComputedStyle(element).backgroundColor,
-      }));
-    const paletteLabels = ['Top 10%', '75th–90th percentile', '50th–75th percentile', 'Below national median rate', 'No paired OHCA / transport report'];
-    const legendText = document.querySelector('.absolute.top-4.right-4')?.innerText ?? '';
-    const colorFor = (label) => {
-      const text = [...document.querySelectorAll('.absolute.top-4.right-4 span')]
-        .find((element) => element.innerText.includes(label));
-      const swatch = text?.parentElement?.querySelector('span.rounded-full');
-      return swatch ? getComputedStyle(swatch).backgroundColor : '';
-    };
-    const riskColors = ['bg-rose-500', 'bg-orange-500', 'bg-amber-400', 'bg-sky-400', 'bg-slate-500']
-      .map((className) => {
-        const swatch = document.querySelector('.absolute.top-4.right-4 .' + CSS.escape(className));
-        return swatch ? getComputedStyle(swatch).backgroundColor : '';
-      });
-    const markerColors = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("] circle[fill]')]
-      .map((circle) => circle.getAttribute('fill'))
-      .filter((fill) => fill && fill !== 'none');
-    return {
-      legendVisible: Boolean(document.querySelector('.absolute.top-4.right-4')),
-      legendText,
-      paletteLabels,
-      riskColors,
-      markerColors: [...new Set(markerColors)],
-      pageOverflow: document.documentElement.scrollWidth > innerWidth,
-    };
-  })()`);
-  assert(state.legendVisible, `${themeLabel(dark)} GIS risk legend is missing`);
-  assert(state.paletteLabels.every((label) => state.legendText.includes(label)),
-    `${themeLabel(dark)} GIS risk legend labels are incomplete: ${JSON.stringify(state.legendText)}`);
-  const expectedRiskColors = [
-    'oklch(0.645 0.246 16.439)',
-    'oklch(0.705 0.213 47.604)',
-    'oklch(0.828 0.189 84.429)',
-    'oklch(0.746 0.16 232.661)',
-    'oklch(0.554 0.046 257.417)',
-  ];
-  assert(state.riskColors.length === expectedRiskColors.length &&
-    expectedRiskColors.every((color) => state.riskColors.includes(color)) &&
-    new Set(state.riskColors).size === expectedRiskColors.length,
-  `${themeLabel(dark)} GIS semantic risk colors changed or became indistinguishable: ${JSON.stringify(state.riskColors)}`);
-  assert(state.markerColors.length > 0, `${themeLabel(dark)} GIS station risk colors are not rendered`);
-  assert(!state.pageOverflow, `GIS heatmap overflows at ${viewport.width}px`);
-  await checkReadable(cdp, `${themeLabel(dark)} GIS legend`, [
-    { name: 'GIS legend heading', selector: '.absolute.top-4.right-4 .text-slate-200' },
-    { name: 'GIS highest-risk legend label', selector: '.absolute.top-4.right-4 .text-slate-100' },
-    { name: 'GIS supporting legend label', selector: '.absolute.top-4.right-4 .text-slate-300' },
-    { name: 'GIS muted legend label', selector: '.absolute.top-4.right-4 .text-slate-400' },
-  ]);
+  const basemapButton = 'button[title="Switch between Tactical Dark and Daylight Survey cartography"]';
+  for (const layer of gisLayers) {
+    await clickButtonAndScroll(cdp, layer.button);
+    await waitFor(
+      cdp,
+      `document.querySelectorAll('[data-testid="gis-layer-legend"] [data-risk-tier]').length === ${layer.tiers.length}`,
+      `${layer.name} risk legend`,
+    );
+    await evaluate(cdp, `document.querySelector('[data-testid="gis-layer-legend"]')?.scrollIntoView({ behavior: 'instant', block: 'start' })`);
 
-  const marker = await evaluate(cdp, `(() => {
-    const legend = document.querySelector('.absolute.top-4.right-4')?.getBoundingClientRect();
-    const candidates = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("]')]
-      .map((group) => ({
-        group,
-        circle: group.querySelector('circle[fill]:not([fill="none"])'),
-        rect: group.querySelector('circle[fill]:not([fill="none"])')?.getBoundingClientRect(),
-      }))
-      .filter(({ rect }) => rect && rect.width > 2 && rect.height > 2 &&
-        rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight);
-    const target = candidates.find(({ rect }) => !legend ||
-      rect.right < legend.left || rect.left > legend.right || rect.bottom < legend.top || rect.top > legend.bottom);
-    if (!target) return null;
-    const rect = target.rect;
-    target.circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-  })()`);
-  assert(marker, `${themeLabel(dark)} GIS map has no visible station marker to inspect`);
-  await cdp.send('Input.dispatchMouseEvent', {
-    type: 'mouseMoved',
-    x: marker.x,
-    y: marker.y,
-  });
-  await waitFor(cdp, `(() => {
-    const tooltip = [...document.querySelectorAll('.absolute')]
-      .find((element) => element.querySelector('h4') && element.innerText.includes('Annual OHCA'));
-    return Boolean(tooltip && tooltip.innerText.trim());
-  })()`, `${themeLabel(dark)} GIS station tooltip`);
-  await checkReadable(cdp, `${themeLabel(dark)} GIS station tooltip`, [
-    { name: 'GIS tooltip agency name', selector: '.absolute.bottom-12.left-4 h4.text-white' },
-    { name: 'GIS tooltip supporting text', selector: '.absolute.bottom-12.left-4 .text-slate-400' },
-  ]);
-  console.log(
-    `  ${themeLabel(dark)} ${viewport.width}px GIS risk legend: ${state.riskColors.length} distinct risk colors; ${state.markerColors.length} rendered marker colors; readable station tooltip`,
-  );
+    for (const basemap of ['Dark', 'Daylight']) {
+      const currentBasemap = await evaluate(cdp, `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim()`);
+      if (currentBasemap !== basemap) {
+        const clicked = await evaluate(cdp, `(() => {
+          const button = document.querySelector(${JSON.stringify(basemapButton)});
+          if (!button) return false;
+          button.scrollIntoView({ behavior: 'instant', block: 'center' });
+          button.click();
+          return true;
+        })()`);
+        assert(clicked, `Could not find the GIS basemap toggle`);
+        await waitFor(
+          cdp,
+          `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim() === ${JSON.stringify(basemap)}`,
+          `${basemap} GIS basemap`,
+        );
+      }
+      await evaluate(cdp, `document.querySelector('[data-testid="gis-layer-legend"]')?.scrollIntoView({ behavior: 'instant', block: 'start' })`);
+
+      const state = await evaluate(cdp, `(() => {
+        const legend = document.querySelector('[data-testid="gis-layer-legend"]');
+        const rows = [...(legend?.querySelectorAll('[data-risk-tier]') ?? [])].map((row) => ({
+          id: row.dataset.riskTier,
+          label: row.querySelector(':scope > span:last-child')?.innerText.trim() ?? '',
+          color: getComputedStyle(row.querySelector(':scope > span:first-child')).backgroundColor,
+          swatchClass: row.querySelector(':scope > span:first-child')?.className ?? '',
+        }));
+        const markerColors = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("] circle.transition-transform')]
+          .map((circle) => circle.getAttribute('fill'))
+          .filter(Boolean);
+        const bounds = legend?.getBoundingClientRect();
+        return {
+          legendVisible: Boolean(legend),
+          rows,
+          markerColors: [...new Set(markerColors)],
+          legendFits: Boolean(bounds && bounds.left >= 0 && bounds.top >= 0 &&
+            bounds.right <= innerWidth && bounds.bottom <= innerHeight),
+          legendBounds: bounds ? {
+            left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom,
+          } : null,
+          pageOverflow: document.documentElement.scrollWidth > innerWidth,
+        };
+      })()`);
+
+      assert(state.legendVisible, `${themeLabel(dark)} ${layer.name} GIS legend is missing`);
+      assert(state.rows.length === layer.tiers.length &&
+        layer.tiers.every((tier) => {
+          const row = state.rows.find((candidate) => candidate.id === tier.id);
+          return row && row.label.includes(tier.label) && row.swatchClass.split(/\s+/).includes(tier.swatchClass);
+        }),
+      `${themeLabel(dark)} ${layer.name} ${basemap} legend labels or source colors changed: ${JSON.stringify(state.rows)}`);
+      assert(new Set(state.rows.map((row) => row.color)).size === layer.tiers.length &&
+        state.rows.every((row) => row.color && row.swatchClass),
+      `${themeLabel(dark)} ${layer.name} ${basemap} risk colors are not distinct: ${JSON.stringify(state.rows)}`);
+      assert(state.markerColors.length > 0 &&
+        state.markerColors.every((color) => layer.markerColors.includes(color) || color === '#10B981'),
+      `${themeLabel(dark)} ${layer.name} ${basemap} station markers do not use the layer palette: ${JSON.stringify(state.markerColors)}`);
+      assert(state.legendFits, `${themeLabel(dark)} ${layer.name} legend is clipped at ${viewport.width}px: ${JSON.stringify(state)}`);
+      assert(!state.pageOverflow, `${layer.name} GIS heatmap overflows at ${viewport.width}px`);
+
+      await checkReadable(cdp, `${themeLabel(dark)} ${viewport.width}px ${layer.name} ${basemap} legend`, [
+        { name: `${layer.name} legend heading`, selector: '[data-testid="gis-layer-legend"] .text-slate-200' },
+        ...layer.tiers.map((tier) => ({
+          name: `${layer.name} ${tier.id} label`,
+          selector: `[data-testid="gis-layer-legend"] [data-risk-tier="${tier.id}"] > span:last-child`,
+        })),
+      ]);
+
+      if (layer.name === 'OHCA' && basemap === 'Dark') {
+        const marker = await evaluate(cdp, `(() => {
+          const legend = document.querySelector('[data-testid="gis-layer-legend"]')?.getBoundingClientRect();
+          const candidates = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("] circle.transition-transform')]
+            .map((circle) => ({ circle, rect: circle.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.width > 2 && rect.height > 2 &&
+              rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight);
+          const target = candidates.find(({ rect }) => !legend ||
+            rect.right < legend.left || rect.left > legend.right || rect.bottom < legend.top || rect.top > legend.bottom);
+          if (!target) return null;
+          const rect = target.rect;
+          target.circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        })()`);
+        assert(marker, `${themeLabel(dark)} GIS map has no visible station marker to inspect`);
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: marker.x, y: marker.y });
+        await waitFor(
+          cdp,
+          `Boolean(document.querySelector('.absolute.bottom-12.left-4 h4.text-white'))`,
+          `${themeLabel(dark)} GIS station tooltip`,
+        );
+        await checkReadable(cdp, `${themeLabel(dark)} GIS station tooltip`, [
+          { name: 'GIS tooltip agency name', selector: '.absolute.bottom-12.left-4 h4.text-white' },
+          { name: 'GIS tooltip supporting text', selector: '.absolute.bottom-12.left-4 .text-slate-400' },
+        ]);
+      }
+
+      console.log(
+        `  ${themeLabel(dark)} ${viewport.width}px GIS ${layer.name} ${basemap}: ${state.rows.length} distinct legend colors; ${state.markerColors.length} source-colored marker fills`,
+      );
+    }
+  }
 }
 
 async function runViewport(cdp, viewport) {
@@ -1744,6 +1810,12 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  if (process.env.THEME_GIS_ONLY === '1') {
+    await checkGisLegendAndRiskColors(cdp, false, viewport);
+    await checkGisLegendAndRiskColors(cdp, true, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: GIS layer palettes, basemaps, and light/dark themes`);
+    return;
+  }
   if (process.env.THEME_SPECIALTY_ONLY === '1') {
     await checkPulseIqCharts(cdp, false, viewport);
     await checkPulseIqCharts(cdp, true, viewport);

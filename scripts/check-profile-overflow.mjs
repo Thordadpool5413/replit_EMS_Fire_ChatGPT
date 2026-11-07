@@ -695,6 +695,140 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
   console.log(`✓ ${viewport.width}px: mobile navigation${enlargedText ? ' with enlarged text' : ''}, touch targets, logo, and workspace selection`);
 }
 
+async function checkMobileNavigationAccessibility(cdp, viewport) {
+  await cdp.send('DOM.enable');
+  await cdp.send('Accessibility.enable');
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('nav[aria-label="Mobile primary workspaces"] button')) &&
+      document.querySelector('.pi-command-header')?.getBoundingClientRect().width > 0`,
+    `mobile navigation accessibility at ${viewport.width}px`,
+    60_000,
+  );
+
+  const expectedNames = ['Home', 'Agencies', 'Opportunities', 'Territory', 'Field work', 'More'];
+  const navNode = await cdp.send('DOM.getDocument', { depth: -1 });
+  const nav = await cdp.send('DOM.querySelector', {
+    nodeId: navNode.result.root.nodeId,
+    selector: 'nav[aria-label="Mobile primary workspaces"]',
+  });
+  assert(nav.result.nodeId, `Mobile primary navigation is missing at ${viewport.width}px`);
+  const buttonNodes = await cdp.send('DOM.querySelectorAll', {
+    nodeId: nav.result.nodeId,
+    selector: 'button',
+  });
+  const buttons = [];
+  for (const nodeId of buttonNodes.result.nodeIds) {
+    const description = await cdp.send('DOM.describeNode', { nodeId });
+    const attributes = description.result.node.attributes;
+    const ariaLabelIndex = attributes?.indexOf('aria-label') ?? -1;
+    buttons.push({
+      nodeId,
+      backendNodeId: description.result.node.backendNodeId,
+      accessibleName: ariaLabelIndex >= 0
+        ? attributes[ariaLabelIndex + 1]
+        : null,
+    });
+  }
+  assert(
+    buttons.length === expectedNames.length &&
+      buttons.every((button, index) => button.accessibleName === expectedNames[index]),
+    `Mobile workspace buttons do not expose the six full accessible names in order: ${JSON.stringify(buttons)}`,
+  );
+
+  const getAccessibilityNodes = async () => {
+    const { nodes } = (await cdp.send('Accessibility.getFullAXTree')).result;
+    return buttons.map((button, index) => {
+      const node = nodes.find((candidate) =>
+        candidate.backendDOMNodeId === button.backendNodeId);
+      return {
+        expectedName: expectedNames[index],
+        role: node?.role?.value,
+        name: node?.name?.value,
+        expanded: node?.properties?.find((property) => property.name === 'expanded')?.value?.value,
+      };
+    });
+  };
+  const accessibleNodes = await getAccessibilityNodes();
+  assert(
+    accessibleNodes.every((node, index) =>
+      node.role === 'button' && node.name === expectedNames[index]),
+    `Chromium accessibility tree does not expose the intended mobile workspace button names: ${JSON.stringify(accessibleNodes)}`,
+  );
+
+  const firstButtonFocused = await evaluate(cdp, `(() => {
+    const buttons = [...document.querySelectorAll(
+      'nav[aria-label="Mobile primary workspaces"] button'
+    )];
+    buttons[0]?.focus();
+    return document.activeElement === buttons[0];
+  })()`);
+  assert(firstButtonFocused, 'Could not focus the first mobile workspace button');
+  const focusedNames = [];
+  for (let index = 0; index < expectedNames.length; index += 1) {
+    focusedNames.push(await evaluate(cdp, `document.activeElement?.getAttribute('aria-label') ?? null`));
+    if (index < expectedNames.length - 1) {
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        key: 'Tab',
+        code: 'Tab',
+        windowsVirtualKeyCode: 9,
+        nativeVirtualKeyCode: 9,
+      });
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key: 'Tab',
+        code: 'Tab',
+        windowsVirtualKeyCode: 9,
+        nativeVirtualKeyCode: 9,
+      });
+    }
+  }
+  assert(
+    focusedNames.every((name, index) => name === expectedNames[index]),
+    `Keyboard focus does not follow mobile workspace order: ${JSON.stringify(focusedNames)}`,
+  );
+
+  const moreButtonBackendNodeId = buttons.at(-1)?.backendNodeId;
+  const setMoreExpanded = async (expanded) => {
+    const expression = `(() => {
+      const button = document.querySelector(
+        'nav[aria-label="Mobile primary workspaces"] button[aria-label="More"]'
+      );
+      if (!button || button.getAttribute('aria-expanded') === ${JSON.stringify(String(expanded))}) {
+        return Boolean(button);
+      }
+      button.click();
+      return true;
+    })()`;
+    assert(await evaluate(cdp, expression), `Could not set More to ${expanded ? 'expanded' : 'collapsed'}`);
+    await waitFor(
+      cdp,
+      `document.querySelector('nav[aria-label="Mobile primary workspaces"] button[aria-label="More"]')
+        ?.getAttribute('aria-expanded') === ${JSON.stringify(String(expanded))}`,
+      `More to become ${expanded ? 'expanded' : 'collapsed'}`,
+    );
+    const { nodes } = (await cdp.send('Accessibility.getFullAXTree')).result;
+    const axNode = nodes.find((node) =>
+      node.backendDOMNodeId === moreButtonBackendNodeId);
+    const state = axNode?.properties?.find((property) => property.name === 'expanded')?.value?.value;
+    assert(
+      state === expanded,
+      `More ${expanded ? 'expanded' : 'collapsed'} state is absent from Chromium's accessibility tree: ${JSON.stringify(axNode)}`,
+    );
+  };
+  await setMoreExpanded(true);
+  await setMoreExpanded(false);
+  console.log(`✓ ${viewport.width}px: six accessible workspace names, keyboard focus order, and More expanded state`);
+}
+
 async function checkSharedNavigation(cdp) {
   for (const viewport of sharedNavigationDesktopViewports) {
     await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -4265,7 +4399,8 @@ async function main() {
   if (
     process.env.PROFILE_LAYOUT_ONLY !== '1' &&
     process.env.PROFILE_PRINT_ONLY !== '1' &&
-    process.env.NAV_LAYOUT_ONLY !== '1'
+    process.env.NAV_LAYOUT_ONLY !== '1' &&
+    process.env.MOBILE_NAV_A11Y_ONLY !== '1'
   ) {
     await checkPublishedRoutes();
     if (process.env.ROUTES_ONLY === '1') return;
@@ -4300,6 +4435,11 @@ async function main() {
       behavior: 'allow',
       downloadPath,
     });
+
+    if (process.env.MOBILE_NAV_A11Y_ONLY === '1') {
+      await checkMobileNavigationAccessibility(cdp, { width: 360, height: 844 });
+      return;
+    }
 
     if (process.env.PROFILE_PRINT_ONLY === '1') {
       const emsSourceFixture = {

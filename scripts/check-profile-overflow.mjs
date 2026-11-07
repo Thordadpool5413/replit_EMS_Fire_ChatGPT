@@ -513,7 +513,7 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
   console.log(`✓ ${viewport.width}px: ${workspace.label} shared navigation, alignment, logo, and overflow`);
 }
 
-async function checkSharedNavigationMobile(cdp, viewport) {
+async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) {
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
     height: viewport.height,
@@ -528,6 +528,17 @@ async function checkSharedNavigationMobile(cdp, viewport) {
     `mobile navigation at ${viewport.width}px`,
     60_000,
   );
+  if (enlargedText) {
+    await evaluate(cdp, `(() => {
+      const style = document.createElement('style');
+      style.id = 'mobile-navigation-enlarged-text-check';
+      style.textContent = 'nav[aria-label="Mobile primary workspaces"] button > span:not(.pi-data-number) { font-size: 16px !important; }';
+      document.head.append(style);
+      return true;
+    })()`);
+    await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+      requestAnimationFrame(resolve)))`);
+  }
 
   const logoLayout = await evaluate(cdp, `(() => {
     const header = document.querySelector('.pi-command-header');
@@ -597,9 +608,13 @@ async function checkSharedNavigationMobile(cdp, viewport) {
         labelWidth: labelBounds?.width ?? 0,
         labelScrollWidth: label?.scrollWidth ?? 0,
         labelClientWidth: label?.clientWidth ?? 0,
+        labelTop: labelBounds?.top ?? null,
+        labelBottom: labelBounds?.bottom ?? null,
+        labelFontSize: Number.parseFloat(label ? getComputedStyle(label).fontSize : '0'),
         labelVisible: Boolean(label && labelBounds && getComputedStyle(label).display !== 'none' &&
           labelBounds.width > 0 && labelBounds.left >= rect.left - 1 &&
-          labelBounds.right <= rect.right + 1),
+          labelBounds.right <= rect.right + 1 &&
+          labelBounds.top >= rect.top - 1 && labelBounds.bottom <= rect.bottom + 1),
       };
     });
     return {
@@ -625,7 +640,7 @@ async function checkSharedNavigationMobile(cdp, viewport) {
     navigation.buttons.length === 6 &&
       navigation.buttons.every((button) =>
         button.visible && button.width >= 44 && button.height >= 44),
-    `Mobile navigation has an unusable touch target at ${viewport.width}px: ${JSON.stringify(navigation.buttons)}`,
+    `Mobile navigation has an unusable touch target at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(navigation.buttons)}`,
   );
   const expectedMobileLabels = [
     { accessibleName: 'Home', visibleLabels: ['Home'] },
@@ -641,12 +656,13 @@ async function checkSharedNavigationMobile(cdp, viewport) {
       return button.accessibleName === expected?.accessibleName &&
         expected.visibleLabels.includes(button.text) &&
         button.labelVisible &&
+        button.labelFontSize >= (enlargedText ? 16 : 12) &&
         button.labelScrollWidth <= button.labelClientWidth + 1;
     }) &&
       new Set(navigation.buttons.map((button) => button.text)).size === 6 &&
       navigation.buttons.slice(1).every((button, index) =>
         button.labelLeft >= navigation.buttons[index].labelRight - 1),
-    `Mobile workspace labels are missing, clipped, or overlapping at ${viewport.width}px: ${JSON.stringify(navigation.buttons)}`,
+    `Mobile workspace labels are missing, clipped, or overlapping at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(navigation.buttons)}`,
   );
 
   for (const { label, accessibleName } of [
@@ -676,7 +692,7 @@ async function checkSharedNavigationMobile(cdp, viewport) {
       `"${label}" mobile navigation selection at ${viewport.width}px`,
     );
   }
-  console.log(`✓ ${viewport.width}px: mobile navigation touch targets, logo, and workspace selection`);
+  console.log(`✓ ${viewport.width}px: mobile navigation${enlargedText ? ' with enlarged text' : ''}, touch targets, logo, and workspace selection`);
 }
 
 async function checkSharedNavigation(cdp) {
@@ -724,6 +740,7 @@ async function checkSharedNavigation(cdp) {
 
   for (const viewport of sharedNavigationMobileViewports) {
     await checkSharedNavigationMobile(cdp, viewport);
+    await checkSharedNavigationMobile(cdp, viewport, true);
   }
   console.log('Shared desktop and mobile navigation regression checks passed.');
 }

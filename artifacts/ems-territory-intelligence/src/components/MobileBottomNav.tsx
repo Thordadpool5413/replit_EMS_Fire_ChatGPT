@@ -166,7 +166,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }}
             aria-label="Home"
             aria-current={isHome ? 'page' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isHome ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -179,7 +179,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             onClick={() => navigate('queue')}
             aria-label="Agencies"
             aria-current={isAgencies ? 'page' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isAgencies ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -192,7 +192,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             onClick={() => navigate('contracts')}
             aria-label="Opportunities"
             aria-current={isOpportunities ? 'page' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isOpportunities ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -206,7 +206,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             onClick={() => navigate('states_directory')}
             aria-label="Territory"
             aria-current={isTerritory ? 'page' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isTerritory ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -219,7 +219,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             onClick={() => navigate(isMyWork ? activeTab : 'field')}
             aria-label="Field work"
             aria-current={isMyWork ? 'page' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
               isMyWork ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -239,7 +239,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             aria-label="More"
             aria-expanded={isMoreOpen}
             aria-controls={isMoreOpen ? 'mobile-more-tools' : undefined}
-            className={`min-h-[48px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            className={`min-h-[48px] min-w-[44px] flex flex-col items-center justify-center transition-colors cursor-pointer ${
               isMoreActive || isMoreOpen ? 'text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >

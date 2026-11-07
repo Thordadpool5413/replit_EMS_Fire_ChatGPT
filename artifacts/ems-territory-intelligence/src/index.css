@@ -9865,6 +9865,23 @@ button { -webkit-tap-highlight-color: transparent; }
   color: var(--pi-action-ink) !important;
 }
 
+/* Keep mobile workspace labels readable and wrap them instead of clipping on
+   narrow screens or when users increase text size. */
+@media (max-width: 767px) {
+  .pi-mobile-nav button {
+    min-width: 44px !important;
+  }
+
+  .pi-mobile-nav button > span:not(.pi-data-number) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+    white-space: normal !important;
+    font-size: 0.8rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
 .pi-surface,
 .surface-card,
 .pi-surface-interactive,

@@ -952,14 +952,14 @@ export default function App() {
       
       {/* Google Maps Quota Defense Sticky Banner */}
       {gmpQuotaExceeded && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
+        <div className="pi-alert-banner pi-status-warning border-x-0 border-t-0 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50">
           <span>
             Google Maps Platform quota reached. If you are the app owner, visit{' '}
             <a
               href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline font-semibold text-amber-950 hover:text-amber-800"
+              className="underline font-semibold"
             >
               maps developer site
             </a>{' '}
@@ -1786,18 +1786,18 @@ export default function App() {
           <div
             role={toast.type === 'boundary' ? 'status' : 'alert'}
             aria-live={toast.type === 'boundary' ? 'polite' : 'assertive'}
-            className={`px-4 py-3 rounded-xl border shadow-sm flex items-center gap-2.5 text-xs font-semibold ${
-              toast.type === 'warn' ? 'bg-white dark:bg-slate-900 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
-              toast.type === 'error' ? 'bg-white dark:bg-slate-900 text-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800' :
-              'bg-white dark:bg-slate-900 text-sky-950 dark:text-sky-200 border-sky-200 dark:border-sky-800'
+            className={`pi-toast rounded-xl px-4 py-3 shadow-sm flex items-center gap-2.5 text-xs font-semibold ${
+              toast.type === 'warn' ? 'pi-status-warning' :
+              toast.type === 'error' ? 'pi-status-critical' :
+              'pi-status-info'
             }`}
           >
             {toast.type === 'warn' ? (
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <AlertCircle className="pi-status-icon pi-status-icon--warning w-4 h-4 shrink-0" />
             ) : toast.type === 'error' ? (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertCircle className="pi-status-icon pi-status-icon--critical w-4 h-4 shrink-0" />
             ) : (
-              <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-300 shrink-0" />
+              <ShieldCheck className="pi-status-icon pi-status-icon--info w-4 h-4 shrink-0" />
             )}
             <span>{toast.message}</span>
           </div>
@@ -1806,7 +1806,7 @@ export default function App() {
 
       {comparisonAgencies.length > 0 && activeTab !== 'home' && !currentActive && !isAgencyComparisonOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[4.25rem] z-40 px-3 md:bottom-4 md:left-64">
-          <div className="pointer-events-auto mx-auto flex max-w-4xl items-center gap-2 rounded-xl border border-teal-200 bg-white/95 p-2.5 shadow-lg shadow-slate-900/10 backdrop-blur dark:border-teal-900 dark:bg-[#101D2C]/95 sm:gap-3 sm:px-4">
+          <div className="pi-compare-dock pointer-events-auto mx-auto flex max-w-4xl items-center gap-2 rounded-xl border p-2.5 backdrop-blur sm:gap-3 sm:px-4">
             <div className="min-w-0 flex-1" aria-live="polite">
               <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Compare agencies <span className="ml-1 font-semibold text-teal-700 dark:text-teal-300">{comparisonAgencies.length}/3</span></p>
               <p className="truncate text-[11px] text-slate-600 dark:text-slate-300" title={comparisonAgencies.map((agency) => agency.name).join(' · ')}>

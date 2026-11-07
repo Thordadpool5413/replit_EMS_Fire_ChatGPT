@@ -5845,7 +5845,7 @@ button { -webkit-tap-highlight-color: transparent; }
   outline: 2px solid #39817b !important;
   outline-offset: 2px !important;
 }
-.dark :focus-visible { outline-color: #8ac9bf !important; }
+.dark :focus-visible { outline-color: var(--pi-focus-ring) !important; }
 .workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
 .workspace-grid-shell select,
 .workspace-grid-shell textarea {
@@ -9777,6 +9777,14 @@ button { -webkit-tap-highlight-color: transparent; }
   background: var(--pi-nav-secondary) !important;
 }
 
+.pi-primary-sidebar :is([class~="bg-[#101F34]"], [class~="bg-[#172D49]"], [class~="bg-[#091322]"]) {
+  background-color: var(--pi-nav-secondary) !important;
+}
+
+.pi-primary-sidebar :is([class~="border-[#233B5E]"], [class~="border-[#172D49]"], [class~="border-[#344B68]"]) {
+  border-color: var(--pi-nav-border) !important;
+}
+
 .pi-primary-nav button:not([aria-current="page"]),
 .pi-primary-nav > div > div > div:not(:has(button[aria-current="page"])) > button {
   color: var(--pi-nav-text) !important;
@@ -9834,15 +9842,18 @@ button { -webkit-tap-highlight-color: transparent; }
   color: #ffffff !important;
 }
 
-.pi-app-shell [class*="bg-[#285EE8]"] {
+.pi-app-shell [class~="bg-[#285EE8]"],
+.dark .pi-app-shell [class~="dark:bg-[#285EE8]"] {
   background-color: var(--pi-action) !important;
 }
 
-.pi-app-shell [class*="hover:bg-[#194BC8]"]:hover {
+.pi-app-shell [class~="hover:bg-[#194BC8]"]:hover,
+.dark .pi-app-shell [class~="dark:hover:bg-[#194BC8]"]:hover {
   background-color: var(--pi-action-hover) !important;
 }
 
-.pi-app-shell [class*="text-[#285EE8]"] {
+.pi-app-shell [class~="text-[#285EE8]"],
+.dark .pi-app-shell [class~="dark:text-[#285EE8]"] {
   color: var(--pi-action-ink) !important;
 }
 
@@ -10026,4 +10037,517 @@ button { -webkit-tap-highlight-color: transparent; }
 .territory-explorer-screen .county-inspector-metric-population .county-inspector-metric-value,
 .territory-explorer-screen .county-inspector-metric-transport .county-inspector-metric-value {
   color: var(--pi-text-primary) !important;
+}
+
+/* Normalize legacy utility colors onto the shared theme. Chart series and map
+   encodings remain data-driven; these rules style their surrounding UI only. */
+.pi-app-shell [class~="bg-white"],
+body [data-radix-portal] [class~="bg-white"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.pi-app-shell :is([class~="bg-[#F5F7FA]"], [class~="bg-[#F8FAFC]"], [class~="bg-[#F1F5F9]"]),
+body [data-radix-portal] :is([class~="bg-[#F5F7FA]"], [class~="bg-[#F8FAFC]"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.pi-app-shell :is([class~="bg-[#EEF3FE]"], [class~="bg-[#EEF3FE]/70"]) {
+  background-color: var(--pi-action-subtle) !important;
+}
+
+.pi-app-shell :is([class~="bg-slate-50"], [class~="bg-slate-50/60"], [class~="bg-slate-50/80"], [class~="bg-slate-100"]),
+body [data-radix-portal] :is([class~="bg-slate-50"], [class~="bg-slate-50/60"], [class~="bg-slate-100"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:bg-slate-900"], [class~="dark:bg-[#111C2D]"], [class~="dark:bg-[#0B1728]"]),
+.dark body [data-radix-portal] :is([class~="dark:bg-slate-900"], [class~="dark:bg-[#111C2D]"]) {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:bg-slate-800"], [class~="dark:bg-[#16243A]"], [class~="dark:bg-[#0E1B2E]"]),
+.dark body [data-radix-portal] :is([class~="dark:bg-slate-800"], [class~="dark:bg-[#16243A]"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.pi-app-shell :is([class~="border-slate-200"], [class~="border-slate-200/90"], [class~="border-[#DFE6EF]"], [class~="border-[#E5E4DF]"]),
+body [data-radix-portal] :is([class~="border-slate-200"], [class~="border-slate-200/90"]) {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:border-slate-700"], [class~="dark:border-slate-800"], [class~="dark:border-[#1E2D42]"], [class~="dark:border-[#33445A]"]),
+.dark body [data-radix-portal] :is([class~="dark:border-slate-700"], [class~="dark:border-slate-800"]) {
+  border-color: var(--pi-border) !important;
+}
+
+.pi-app-shell :is([class~="text-[#14283F]"], [class~="text-[#30465C]"], [class~="text-slate-950"], [class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"]),
+body [data-radix-portal] :is([class~="text-slate-900"], [class~="text-slate-800"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-app-shell :is([class~="text-[#53657B]"], [class~="text-[#718398]"], [class~="text-slate-600"], [class~="text-slate-500"]),
+body [data-radix-portal] :is([class~="text-slate-600"], [class~="text-slate-500"]) {
+  color: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell [class~="text-slate-400"],
+body [data-radix-portal] [class~="text-slate-400"] {
+  color: var(--pi-text-muted) !important;
+}
+
+.dark .pi-app-shell [class*="dark:text-slate-300"],
+.dark .pi-app-shell [class*="dark:text-slate-200"],
+.dark .pi-app-shell [class*="dark:text-slate-100"],
+.dark body [data-radix-portal] [class*="dark:text-slate-300"],
+.dark body [data-radix-portal] [class*="dark:text-slate-200"] {
+  color: var(--pi-text-secondary) !important;
+}
+
+.dark .pi-app-shell [class*="dark:text-slate-400"],
+.dark .pi-app-shell [class*="dark:text-slate-500"],
+.dark body [data-radix-portal] [class*="dark:text-slate-400"] {
+  color: var(--pi-text-muted) !important;
+}
+
+/* Blue/sky/indigo action utilities now share the brand action color. */
+.pi-app-shell button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+.pi-app-shell a:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+.pi-app-shell [role="button"]:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+body [data-radix-portal] button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover,
+.pi-app-shell a:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover,
+body [data-radix-portal] button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell a:is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+.pi-app-shell button:is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+body [data-radix-portal] :is(a, button):is([class^="text-blue-"], [class*=" text-blue-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+.dark .pi-app-shell :is([class^="dark:text-blue-"], [class*=" dark:text-blue-"], [class^="dark:text-sky-"], [class*=" dark:text-sky-"], [class^="dark:text-indigo-"], [class*=" dark:text-indigo-"]),
+body [data-radix-portal] :is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="border-blue-"], [class*=" border-blue-"], [class^="border-sky-"], [class*=" border-sky-"], [class^="border-indigo-"], [class*=" border-indigo-"]),
+.dark .pi-app-shell :is([class^="dark:border-blue-"], [class*=" dark:border-blue-"], [class^="dark:border-sky-"], [class*=" dark:border-sky-"], [class^="dark:border-indigo-"], [class*=" dark:border-indigo-"]),
+body [data-radix-portal] :is([class^="border-blue-"], [class*=" border-blue-"], [class^="border-sky-"], [class*=" border-sky-"], [class^="border-indigo-"], [class*=" border-indigo-"]) {
+  border-color: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell :is([class~="bg-blue-50"], [class~="bg-sky-50"], [class~="bg-indigo-50"], [class~="bg-blue-100"], [class~="bg-sky-100"], [class~="bg-indigo-100"], [class^="bg-blue-50/"], [class*=" bg-blue-50/"], [class^="bg-sky-50/"], [class*=" bg-sky-50/"], [class^="bg-indigo-50/"], [class*=" bg-indigo-50/"]),
+.dark .pi-app-shell :is([class*="dark:bg-blue-950"], [class*="dark:bg-sky-950"], [class*="dark:bg-indigo-950"]),
+body [data-radix-portal] :is([class~="bg-blue-50"], [class~="bg-sky-50"], [class~="bg-indigo-50"], [class^="bg-blue-50/"], [class*=" bg-blue-50/"], [class^="bg-sky-50/"], [class*=" bg-sky-50/"], [class^="bg-indigo-50/"], [class*=" bg-indigo-50/"]) {
+  background-color: var(--pi-info-bg) !important;
+}
+
+.pi-app-shell :is([class~="bg-teal-50"], [class~="bg-teal-100"], [class^="bg-teal-50/"], [class*=" bg-teal-50/"]),
+.dark .pi-app-shell [class*="dark:bg-teal-950"],
+body [data-radix-portal] :is([class~="bg-teal-50"], [class~="bg-teal-100"]) {
+  background-color: var(--pi-action-subtle) !important;
+}
+
+.pi-app-shell :is([class^="text-teal-"], [class*=" text-teal-"]),
+.dark .pi-app-shell :is([class^="dark:text-teal-"], [class*=" dark:text-teal-"]),
+body [data-radix-portal] :is([class^="text-teal-"], [class*=" text-teal-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="border-teal-"], [class*=" border-teal-"]),
+.dark .pi-app-shell :is([class^="dark:border-teal-"], [class*=" dark:border-teal-"]),
+body [data-radix-portal] :is([class^="border-teal-"], [class*=" border-teal-"]) {
+  border-color: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell button[aria-pressed="true"],
+.pi-app-shell button[aria-selected="true"],
+.pi-app-shell [role="tab"][aria-selected="true"] {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="bg-[#0F172A]"], [class~="bg-slate-950"]):not(:disabled) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="bg-[#1E3A8A]"], [class~="bg-slate-900"], [class~="bg-slate-950"]):not(:disabled) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="hover:bg-[#111827]"], [class~="hover:bg-[#172554]"], [class~="hover:bg-slate-800"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell :is([class~="text-[#1E3A8A]"], [class~="text-[#0F172A]"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+/* Teal action utilities share the same brand treatment as primary buttons. */
+.pi-app-shell button:is([class^="bg-teal-"], [class*=" bg-teal-"]),
+.pi-app-shell a:is([class^="bg-teal-"], [class*=" bg-teal-"]),
+body [data-radix-portal] button:is([class^="bg-teal-"], [class*=" bg-teal-"]) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover,
+.pi-app-shell a:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover,
+body [data-radix-portal] button:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+/* Semantic states use one token family rather than many near-duplicate hues. */
+.pi-app-shell :is([class~="bg-emerald-50"], [class~="bg-emerald-50/30"], [class~="bg-emerald-50/40"], [class~="bg-emerald-50/50"], [class~="bg-emerald-50/60"], [class~="bg-emerald-50/70"], [class~="bg-emerald-50/80"], [class~="bg-emerald-100"], [class~="bg-green-50"], [class~="bg-green-100"]),
+.dark .pi-app-shell [class*="dark:bg-emerald-950"],
+.dark .pi-app-shell [class*="dark:bg-green-950"],
+body [data-radix-portal] :is([class~="bg-emerald-50"], [class~="bg-green-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-emerald-950"],
+.dark body [data-radix-portal] [class*="dark:bg-green-950"] {
+  background-color: var(--pi-verified-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-emerald-"], [class*=" text-emerald-"], [class^="text-green-"], [class*=" text-green-"]),
+.dark .pi-app-shell :is([class^="dark:text-emerald-"], [class*=" dark:text-emerald-"], [class^="dark:text-green-"], [class*=" dark:text-green-"]),
+body [data-radix-portal] :is([class^="text-emerald-"], [class*=" text-emerald-"], [class^="text-green-"], [class*=" text-green-"]) {
+  color: var(--pi-verified-text) !important;
+}
+
+.pi-app-shell :is([class^="border-emerald-"], [class*=" border-emerald-"], [class^="border-green-"], [class*=" border-green-"]),
+.dark .pi-app-shell :is([class^="dark:border-emerald-"], [class*=" dark:border-emerald-"], [class^="dark:border-green-"], [class*=" dark:border-green-"]),
+body [data-radix-portal] :is([class^="border-emerald-"], [class*=" border-emerald-"], [class^="border-green-"], [class*=" border-green-"]) {
+  border-color: var(--pi-verified-border) !important;
+}
+
+.pi-app-shell :is([class~="bg-amber-50"], [class~="bg-amber-50/50"], [class~="bg-amber-50/60"], [class~="bg-amber-50/70"], [class~="bg-amber-100"], [class~="bg-yellow-50"], [class~="bg-yellow-100"]),
+.dark .pi-app-shell [class*="dark:bg-amber-950"],
+.dark .pi-app-shell [class*="dark:bg-yellow-950"],
+body [data-radix-portal] :is([class~="bg-amber-50"], [class~="bg-yellow-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-amber-950"],
+.dark body [data-radix-portal] [class*="dark:bg-yellow-950"] {
+  background-color: var(--pi-warning-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-amber-"], [class*=" text-amber-"], [class^="text-yellow-"], [class*=" text-yellow-"]),
+.dark .pi-app-shell :is([class^="dark:text-amber-"], [class*=" dark:text-amber-"], [class^="dark:text-yellow-"], [class*=" dark:text-yellow-"]),
+body [data-radix-portal] :is([class^="text-amber-"], [class*=" text-amber-"], [class^="text-yellow-"], [class*=" text-yellow-"]) {
+  color: var(--pi-warning-text) !important;
+}
+
+.pi-app-shell :is([class^="border-amber-"], [class*=" border-amber-"], [class^="border-yellow-"], [class*=" border-yellow-"]),
+.dark .pi-app-shell :is([class^="dark:border-amber-"], [class*=" dark:border-amber-"], [class^="dark:border-yellow-"], [class*=" dark:border-yellow-"]),
+body [data-radix-portal] :is([class^="border-amber-"], [class*=" border-amber-"], [class^="border-yellow-"], [class*=" border-yellow-"]) {
+  border-color: var(--pi-warning-border) !important;
+}
+
+.pi-app-shell :is([class~="bg-rose-50"], [class~="bg-rose-50/60"], [class~="bg-rose-50/70"], [class~="bg-rose-100"], [class~="bg-red-50"], [class~="bg-red-100"]),
+.dark .pi-app-shell [class*="dark:bg-rose-950"],
+.dark .pi-app-shell [class*="dark:bg-red-950"],
+body [data-radix-portal] :is([class~="bg-rose-50"], [class~="bg-red-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-rose-950"],
+.dark body [data-radix-portal] [class*="dark:bg-red-950"] {
+  background-color: var(--pi-critical-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-rose-"], [class*=" text-rose-"], [class^="text-red-"], [class*=" text-red-"]),
+.dark .pi-app-shell :is([class^="dark:text-rose-"], [class*=" dark:text-rose-"], [class^="dark:text-red-"], [class*=" dark:text-red-"]),
+body [data-radix-portal] :is([class^="text-rose-"], [class*=" text-rose-"], [class^="text-red-"], [class*=" text-red-"]) {
+  color: var(--pi-critical-text) !important;
+}
+
+.pi-app-shell :is([class^="border-rose-"], [class*=" border-rose-"], [class^="border-red-"], [class*=" border-red-"]),
+.dark .pi-app-shell :is([class^="dark:border-rose-"], [class*=" dark:border-rose-"], [class^="dark:border-red-"], [class*=" dark:border-red-"]),
+body [data-radix-portal] :is([class^="border-rose-"], [class*=" border-rose-"], [class^="border-red-"], [class*=" border-red-"]) {
+  border-color: var(--pi-critical-border) !important;
+}
+
+.pi-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.pi-app-shell select,
+.pi-app-shell textarea,
+body [data-radix-portal] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body [data-radix-portal] select,
+body [data-radix-portal] textarea {
+  border-color: var(--pi-border-strong);
+  background-color: var(--pi-surface-bg);
+  color: var(--pi-text-primary);
+}
+
+.pi-app-shell input::placeholder,
+.pi-app-shell textarea::placeholder,
+body [data-radix-portal] input::placeholder,
+body [data-radix-portal] textarea::placeholder {
+  color: var(--pi-text-muted);
+  opacity: 1;
+}
+
+.pi-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.pi-app-shell select:focus,
+.pi-app-shell textarea:focus,
+body [data-radix-portal] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+body [data-radix-portal] select:focus,
+body [data-radix-portal] textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 22%, transparent) !important;
+}
+
+.pi-app-shell :is(button, input, select, textarea):disabled,
+body [data-radix-portal] :is(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.pi-app-shell .pi-status-success,
+.pi-app-shell .pi-status-warning,
+.pi-app-shell .pi-status-critical,
+.pi-app-shell .pi-status-info,
+body [data-radix-portal] .pi-status-success,
+body [data-radix-portal] .pi-status-warning,
+body [data-radix-portal] .pi-status-critical,
+body [data-radix-portal] .pi-status-info {
+  border: 1px solid var(--pi-status-border);
+  background-color: var(--pi-status-bg);
+  color: var(--pi-status-text);
+}
+
+.pi-status-success {
+  --pi-status-bg: var(--pi-verified-bg);
+  --pi-status-text: var(--pi-verified-text);
+  --pi-status-border: var(--pi-verified-border);
+}
+
+.pi-status-warning {
+  --pi-status-bg: var(--pi-warning-bg);
+  --pi-status-text: var(--pi-warning-text);
+  --pi-status-border: var(--pi-warning-border);
+}
+
+.pi-status-critical {
+  --pi-status-bg: var(--pi-critical-bg);
+  --pi-status-text: var(--pi-critical-text);
+  --pi-status-border: var(--pi-critical-border);
+}
+
+.pi-status-info {
+  --pi-status-bg: var(--pi-info-bg);
+  --pi-status-text: var(--pi-info-text);
+  --pi-status-border: var(--pi-info-border);
+}
+
+.pi-app-shell .pi-status-success,
+.pi-app-shell .pi-status-warning,
+.pi-app-shell .pi-status-critical,
+.pi-app-shell .pi-status-info {
+  border-color: var(--pi-status-border) !important;
+  background: var(--pi-status-bg) !important;
+  color: var(--pi-status-text) !important;
+}
+
+.pi-app-shell .pi-alert-banner.pi-status-warning {
+  border-width: 0 0 1px !important;
+}
+
+.pi-status-icon--warning {
+  color: var(--pi-warning-text);
+}
+
+.pi-status-icon--critical {
+  color: var(--pi-critical-text);
+}
+
+.pi-status-icon--info {
+  color: var(--pi-info-text);
+}
+
+.pi-app-shell .pi-compare-dock {
+  background: color-mix(in srgb, var(--pi-surface-bg) 96%, transparent);
+  border-color: var(--pi-border);
+  box-shadow: var(--shadow-card);
+}
+
+.pi-app-shell .pi-compare-dock :is(.text-teal-700, .dark\:text-teal-300) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-workspace-tabs button:not([aria-current="page"]) {
+  color: var(--pi-text-secondary);
+}
+
+.pi-workspace-tabs button:not([aria-current="page"]):hover {
+  background-color: var(--pi-surface-subtle);
+  color: var(--pi-text-primary);
+}
+
+.pi-app-shell .recharts-cartesian-grid line {
+  stroke: var(--pi-border) !important;
+}
+
+.pi-app-shell .recharts-cartesian-axis-tick text,
+.pi-app-shell .recharts-cartesian-axis-tick-value,
+.pi-app-shell .recharts-label {
+  fill: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell .recharts-cartesian-axis-line,
+.pi-app-shell .recharts-reference-line line {
+  stroke: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell .animate-pulse,
+body [data-radix-portal] .animate-pulse {
+  animation-duration: 1.6s;
+}
+
+/* Remove older per-view palette aliases and decorative card treatments. */
+.territory-explorer-screen,
+.profile-workspace {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  --atlas-teal: var(--pi-action);
+  --briefing-line: var(--pi-border);
+  --briefing-paper: var(--pi-surface-bg);
+  --briefing-wash: var(--pi-surface-subtle);
+}
+
+.dark .profile-workspace {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  --atlas-teal: var(--pi-action);
+  --briefing-line: var(--pi-border);
+  --briefing-paper: var(--pi-surface-bg);
+  --briefing-wash: var(--pi-surface-subtle);
+}
+
+.dark .territory-explorer-screen :is(.county-directory-card, .agency-directory-card) {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  color: var(--pi-text-primary) !important;
+}
+
+.territory-explorer-screen .county-directory-heading > span {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-secondary) !important;
+}
+
+.territory-explorer-screen .county-directory-card,
+.territory-explorer-screen .agency-directory-card {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-bg) !important;
+  background-image: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.territory-explorer-screen .county-directory-card::before {
+  display: none !important;
+}
+
+.territory-explorer-screen .county-directory-card h3,
+.territory-explorer-screen .agency-directory-card h3 {
+  color: var(--pi-text-primary) !important;
+}
+
+.dark .territory-explorer-screen .county-directory-card h3,
+.dark .territory-explorer-screen .agency-directory-card h3,
+.dark .profile-workspace .pi-page-title,
+.dark .profile-workspace .pi-profile-title {
+  color: var(--pi-text-primary) !important;
+}
+
+.territory-explorer-screen .county-directory-card [class*="border-t"],
+.territory-explorer-screen .agency-directory-card .agency-identity-strip,
+.territory-explorer-screen .agency-directory-card .agency-card-footer {
+  border-color: var(--pi-border) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-metric-grid > div,
+.territory-explorer-screen .agency-directory-card .agency-context-panel {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-primary);
+}
+
+.territory-explorer-screen .agency-directory-card .agency-metric-grid > div > span:first-child {
+  color: var(--pi-text-secondary) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-card-primary-action {
+  background: var(--pi-action) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-card-primary-action:hover {
+  background: var(--pi-action-hover) !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-bg) !important;
+  background-image: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.profile-workspace .pi-surface,
+.profile-workspace .profile-summary-panel,
+.profile-workspace section[class*="rounded-lg"][class*="border"],
+.profile-workspace section[class*="rounded-xl"][class*="border"] {
+  border-color: var(--pi-border) !important;
+}
+
+.profile-workspace .profile-summary-panel,
+.profile-workspace [aria-label="Agency contact summary"],
+.profile-workspace [aria-label="Agency location summary"],
+.profile-workspace [aria-label="Agency evidence summary"] {
+  background: var(--pi-surface-subtle) !important;
+}
+
+.profile-workspace .profile-evidence-tag {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell :is(table, th, td),
+body [data-radix-portal] :is(table, th, td) {
+  border-color: var(--pi-border);
+}
+
+.pi-app-shell thead,
+body [data-radix-portal] thead {
+  background-color: var(--pi-surface-subtle);
+  color: var(--pi-text-secondary);
+}
+
+.pi-app-shell .recharts-tooltip-wrapper [class~="bg-white"],
+.pi-app-shell .recharts-default-tooltip,
+body [data-radix-portal] .recharts-default-tooltip {
+  background-color: var(--pi-surface-elevated) !important;
+  border-color: var(--pi-border) !important;
+  color: var(--pi-text-primary) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-500"],
+.pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-600"] {
+  color: var(--pi-text-secondary) !important;
 }

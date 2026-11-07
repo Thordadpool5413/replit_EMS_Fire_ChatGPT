@@ -254,6 +254,113 @@ async function checkReadable(cdp, themeName, selectors) {
   console.log(`  ${themeName}: ${readings.map(({ name, ratio }) => `${name} ${ratio}:1`).join(', ')}`);
 }
 
+async function checkThemeStates(cdp, dark, viewport) {
+  await setTheme(cdp, dark);
+  await evaluate(cdp, `(() => {
+    document.querySelector('#theme-state-fixture')?.remove();
+    const fixture = document.createElement('section');
+    fixture.id = 'theme-state-fixture';
+    fixture.style.cssText = 'position:fixed;left:0;top:0;width:620px;padding:12px;opacity:0;pointer-events:none;z-index:-1';
+    fixture.innerHTML = \`
+      <div data-testid="theme-card" class="bg-card text-card-foreground border border-border rounded-lg p-3">
+        <h2 data-testid="theme-heading" class="text-foreground font-semibold">Theme heading</h2>
+        <p data-testid="theme-supporting" class="text-muted-foreground">Supporting information remains readable.</p>
+        <button data-testid="theme-selected" aria-pressed="true" class="rounded px-3 py-2">Selected</button>
+        <button data-testid="theme-disabled" disabled class="rounded px-3 py-2">Unavailable</button>
+        <div data-testid="theme-loading" class="animate-pulse rounded p-2">Loading</div>
+        <div data-testid="theme-warning" class="pi-status-warning rounded p-2" role="alert">Action required</div>
+        <input data-testid="theme-input" aria-label="Theme test input" value="Focused control" />
+      </div>\`;
+    document.querySelector('.pi-app-shell')?.appendChild(fixture);
+    return Boolean(fixture.parentElement);
+  })()`);
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Tab',
+    code: 'Tab',
+    windowsVirtualKeyCode: 9,
+    nativeVirtualKeyCode: 9,
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Tab',
+    code: 'Tab',
+    windowsVirtualKeyCode: 9,
+    nativeVirtualKeyCode: 9,
+  });
+
+  const fixtureState = await evaluate(cdp, `(() => {
+    const fixture = document.querySelector('#theme-state-fixture');
+    const get = (selector) => fixture?.querySelector(selector);
+    const style = (selector) => getComputedStyle(get(selector));
+    const warning = get('[data-testid="theme-warning"]');
+    const resolveToken = (name, property) => {
+      const probe = document.createElement('span');
+      probe.style.setProperty(property, 'var(' + name + ')');
+      fixture.appendChild(probe);
+      return getComputedStyle(probe).getPropertyValue(property);
+    };
+    const loading = style('[data-testid="theme-loading"]');
+    const disabled = style('[data-testid="theme-disabled"]');
+    return {
+      attached: Boolean(fixture?.parentElement),
+      surfaceMatchesToken: style('[data-testid="theme-card"]').backgroundColor === resolveToken('--pi-surface-bg', 'background-color'),
+      borderMatchesToken: style('[data-testid="theme-card"]').borderTopColor === resolveToken('--pi-border', 'border-color'),
+      selectedMatchesBrand: style('[data-testid="theme-selected"]').backgroundColor === resolveToken('--pi-action', 'background-color') &&
+        style('[data-testid="theme-selected"]').color === 'rgb(255, 255, 255)',
+      disabledIsDimmed: get('[data-testid="theme-disabled"]').disabled && Number(disabled.opacity) < 1,
+      loadingIsAnimated: loading.animationName !== 'none' && loading.animationDuration !== '0s',
+      warningMatchesToken: style('[data-testid="theme-warning"]').backgroundColor === resolveToken('--pi-warning-bg', 'background-color') &&
+        style('[data-testid="theme-warning"]').color === resolveToken('--pi-warning-text', 'color'),
+      alertRole: warning.getAttribute('role'),
+      focusState: (() => {
+        const input = get('[data-testid="theme-input"]');
+        input.focus();
+        const computed = getComputedStyle(input);
+        return {
+          active: document.activeElement === input,
+          focusVisible: input.matches(':focus-visible'),
+          border: computed.borderColor,
+          action: resolveToken('--pi-action', 'border-color'),
+          outline: computed.outlineColor,
+          outlineWidth: computed.outlineWidth,
+          focusRing: resolveToken('--pi-focus-ring', 'outline-color'),
+        };
+      })(),
+    };
+  })()`);
+
+  assert(fixtureState.attached, 'Theme state fixture did not attach to the app');
+  assert(fixtureState.surfaceMatchesToken, `${dark ? 'Dark' : 'Light'} cards do not use the shared surface token`);
+  assert(fixtureState.borderMatchesToken, `${dark ? 'Dark' : 'Light'} cards do not use the shared border token`);
+  assert(fixtureState.selectedMatchesBrand, `${dark ? 'Dark' : 'Light'} selected controls do not use the brand action token`);
+  assert(fixtureState.disabledIsDimmed, `${dark ? 'Dark' : 'Light'} disabled controls are not visually distinct`);
+  assert(fixtureState.loadingIsAnimated, `${dark ? 'Dark' : 'Light'} loading state is not visibly animated`);
+  assert(fixtureState.warningMatchesToken && fixtureState.alertRole === 'alert', `${dark ? 'Dark' : 'Light'} warning state does not use semantic warning tokens`);
+  assert(
+    fixtureState.focusState.active && fixtureState.focusState.border === fixtureState.focusState.action,
+    `${dark ? 'Dark' : 'Light'} focused form control does not use the action token: ${JSON.stringify(fixtureState.focusState)}`,
+  );
+  assert(
+    fixtureState.focusState.focusVisible && fixtureState.focusState.outlineWidth !== '0px' &&
+      fixtureState.focusState.outline === fixtureState.focusState.focusRing,
+    `${dark ? 'Dark' : 'Light'} focus ring does not use the shared focus token: ${JSON.stringify(fixtureState.focusState)}`,
+  );
+
+  const readings = await contrastReadings(cdp, [
+    { name: 'theme heading', selector: '#theme-state-fixture [data-testid="theme-heading"]' },
+    { name: 'theme supporting text', selector: '#theme-state-fixture [data-testid="theme-supporting"]' },
+    { name: 'selected control', selector: '#theme-state-fixture [data-testid="theme-selected"]' },
+    { name: 'warning status', selector: '#theme-state-fixture [data-testid="theme-warning"]' },
+  ]);
+  for (const reading of readings) {
+    assert(!reading.missing && !reading.unavailable && reading.ratio >= 4.5,
+      `${dark ? 'Dark' : 'Light'} ${reading.name} contrast is below 4.5:1: ${JSON.stringify(reading)}`);
+  }
+  await evaluate(cdp, `document.querySelector('#theme-state-fixture')?.remove()`);
+  console.log(`  ${dark ? 'dark' : 'light'} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading and warning`);
+}
+
 async function checkHome(cdp, dark) {
   await setTheme(cdp, dark);
   const metrics = await evaluate(cdp, `(() => {
@@ -374,7 +481,12 @@ async function openProfile(cdp) {
   })()`);
   assert(clicked, 'Could not open a provider profile');
   await waitFor(cdp, `Boolean(document.querySelector('main.profile-workspace'))`, 'provider profile');
-  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Agency operations summary"]'))`, 'provider summary cards');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('main.profile-workspace [aria-label="Agency contact summary"]')) &&
+      Boolean(document.querySelector('main.profile-workspace [aria-label="Available source references"]'))`,
+    'provider identity and source summary',
+  );
 }
 
 async function checkProfileAndSources(cdp, dark) {
@@ -511,6 +623,36 @@ async function openAgencyComparison(cdp) {
   return selectedIds;
 }
 
+async function openFieldWork(cdp) {
+  const clicked = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('button')].find((candidate) => {
+      const label = (candidate.getAttribute('aria-label') || candidate.innerText).trim().toLowerCase();
+      const rect = candidate.getBoundingClientRect();
+      return label === 'field work' && rect.width > 0 && rect.height > 0 &&
+        getComputedStyle(candidate).visibility !== 'hidden';
+    });
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(clicked, 'Could not open Field Work');
+  await waitFor(cdp, `Boolean(document.querySelector('.workspace-section-grid h2'))`, 'Field Work workspace');
+}
+
+async function checkFieldWork(cdp, dark, viewport) {
+  await setTheme(cdp, dark);
+  const state = await evaluate(cdp, `(() => ({
+    title: document.querySelector('.workspace-section-grid h2')?.innerText.trim() ?? '',
+    overflow: document.documentElement.scrollWidth > innerWidth,
+  }))()`);
+  assert(state.title, 'Field Work heading is missing');
+  assert(!state.overflow, `Field Work overflows at ${viewport.width}px`);
+  await checkReadable(cdp, `${dark ? 'dark' : 'light'} Field Work`, [
+    { name: 'field work heading', selector: '.workspace-section-grid h2' },
+    { name: 'field work supporting text', selector: '.workspace-section-grid p' },
+  ]);
+}
+
 async function checkAgencyComparison(cdp, dark, selectedIds) {
   await setTheme(cdp, dark);
   const cues = await evaluate(cdp, `(() => {
@@ -586,7 +728,9 @@ async function runViewport(cdp, viewport) {
     `Home map at ${viewport.width}px`,
   );
   await checkHome(cdp, false);
+  await checkThemeStates(cdp, false, viewport);
   await checkHome(cdp, true);
+  await checkThemeStates(cdp, true, viewport);
 
   await clickVisible(cdp, 'Territory', true);
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen #home-state-picker'))`, 'Territory state selector');
@@ -616,7 +760,10 @@ async function runViewport(cdp, viewport) {
   const selectedIds = await openAgencyComparison(cdp);
   await checkAgencyComparison(cdp, false, selectedIds);
   await checkAgencyComparison(cdp, true, selectedIds);
-  console.log(`PASS ${viewport.width}×${viewport.height}: Home, counties, provider profile, source panel, and agency comparison in both themes`);
+  await openFieldWork(cdp);
+  await checkFieldWork(cdp, false, viewport);
+  await checkFieldWork(cdp, true, viewport);
+  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, and comparison in both themes`);
 }
 
 async function main() {

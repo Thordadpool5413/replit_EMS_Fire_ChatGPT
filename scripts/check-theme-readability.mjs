@@ -393,6 +393,75 @@ async function checkThemeModeSelection(cdp, viewport) {
   console.log(`  ${viewport.width}px: all three theme options, persistence, and legacy Daylight/Dark preference migration`);
 }
 
+async function checkThemeSelectionWithKeyboard(cdp, viewport) {
+  const selector = viewport.mobile
+    ? '[data-testid="theme-select-mobile"]'
+    : '[data-testid="theme-select-desktop"]';
+  if (viewport.mobile) {
+    await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
+    await waitFor(cdp, `Boolean(document.querySelector('#mobile-workspace-tools-menu'))`, 'mobile workspace tools menu');
+  }
+
+  for (const themeMode of ['dark', 'miami-vice']) {
+    const selectorState = await evaluate(cdp, `(() => {
+      const select = document.querySelector(${JSON.stringify(selector)});
+      if (!select) return null;
+      const rect = select.getBoundingClientRect();
+      const style = getComputedStyle(select);
+      if (rect.width <= 0 || rect.height <= 0 || style.display === 'none' || style.visibility === 'hidden') return null;
+      return { value: select.value, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    })()`);
+    assert(selectorState, `Could not locate visible ${viewport.mobile ? 'mobile' : 'desktop'} theme selector`);
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x: selectorState.x,
+      y: selectorState.y,
+    });
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      x: selectorState.x,
+      y: selectorState.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      x: selectorState.x,
+      y: selectorState.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    const options = ['daylight', 'dark', 'miami-vice'];
+    const distance = options.indexOf(themeMode) - options.indexOf(selectorState.value);
+    for (let step = 0; step < Math.abs(distance); step += 1) {
+      const key = distance > 0 ? 'ArrowDown' : 'ArrowUp';
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key });
+    }
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
+    await waitFor(
+      cdp,
+      `document.documentElement.dataset.theme === ${JSON.stringify(themeMode)} &&
+        localStorage.getItem('app_theme_mode') === ${JSON.stringify(themeMode)}`,
+      `${themeLabel(themeMode)} keyboard selection`,
+    );
+    if (viewport.mobile) {
+      await waitFor(cdp, `!document.querySelector('#mobile-workspace-tools-menu')`, 'mobile tools menu close after theme selection');
+      await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
+      await waitFor(cdp, `Boolean(document.querySelector('#mobile-workspace-tools-menu'))`, 'mobile workspace tools menu reopen');
+    }
+  }
+  await cdp.send('Page.reload');
+  await waitFor(
+    cdp,
+    `document.documentElement.dataset.theme === 'miami-vice' &&
+      localStorage.getItem('app_theme_mode') === 'miami-vice'`,
+    `${viewport.width}px Miami Vice persistence after keyboard selection and reload`,
+  );
+  console.log(`  ${viewport.width}px: pointer/keyboard selection and reload retained Miami Vice`);
+}
+
 async function contrastReadings(cdp, selectors) {
   return evaluate(cdp, `(() => {
     const parse = (value) => {
@@ -1814,6 +1883,11 @@ async function runViewport(cdp, viewport) {
     await checkGisLegendAndRiskColors(cdp, false, viewport);
     await checkGisLegendAndRiskColors(cdp, true, viewport);
     console.log(`PASS ${viewport.width}×${viewport.height}: GIS layer palettes, basemaps, and light/dark themes`);
+    return;
+  }
+  if (process.env.THEME_SELECTION_ONLY === '1') {
+    await checkThemeSelectionWithKeyboard(cdp, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: pointer/keyboard theme selection`);
     return;
   }
   if (process.env.THEME_SPECIALTY_ONLY === '1') {

@@ -171,7 +171,7 @@ async function captureThemeScreenshot(cdp, requestedThemeMode, name) {
 
 async function setTheme(cdp, requestedThemeMode) {
   const themeMode = themeModeName(requestedThemeMode);
-  const isDark = themeMode !== 'daylight';
+  const isDark = themeMode === 'dark';
   const isMobile = await evaluate(cdp, 'innerWidth < 768');
   const testId = isMobile ? 'theme-select-mobile' : 'theme-select-desktop';
 
@@ -264,6 +264,13 @@ async function checkThemeModeSelection(cdp, viewport) {
         selectedValue: localStorage.getItem('app_theme_mode'),
         legacyValue: localStorage.getItem('app_dark_mode'),
         accent: getComputedStyle(root).getPropertyValue('--pi-accent-highlight').trim(),
+        canvas: getComputedStyle(root).getPropertyValue('--pi-canvas-bg').trim(),
+        surface: getComputedStyle(root).getPropertyValue('--pi-surface-bg').trim(),
+        subtleSurface: getComputedStyle(root).getPropertyValue('--pi-surface-subtle').trim(),
+        primaryText: getComputedStyle(root).getPropertyValue('--pi-text-primary').trim(),
+        action: getComputedStyle(root).getPropertyValue('--pi-action').trim(),
+        legacyCanvas: getComputedStyle(root).getPropertyValue('--bg-canvas').trim(),
+        colorScheme: root.style.colorScheme,
         activeBorder: activeStyle?.borderLeftColor ?? '',
         activeBorderWidth: activeStyle?.borderLeftWidth ?? '',
         activeHtml: active?.outerHTML ?? '',
@@ -271,11 +278,21 @@ async function checkThemeModeSelection(cdp, viewport) {
       };
     })()`);
     assert(state.mode === themeMode, `Theme selector did not apply ${themeLabel(themeMode)}`);
-    assert(state.darkClass === (themeMode !== 'daylight'), `${themeLabel(themeMode)} did not set the expected color scheme`);
+    assert(state.darkClass === (themeMode === 'dark'), `${themeLabel(themeMode)} did not set the expected color scheme`);
     assert(state.selectedValue === themeMode, `${themeLabel(themeMode)} selection was not saved`);
-    assert(state.legacyValue === String(themeMode !== 'daylight'), `${themeLabel(themeMode)} did not preserve legacy preference compatibility`);
+    assert(state.legacyValue === String(themeMode === 'dark'), `${themeLabel(themeMode)} did not preserve legacy preference compatibility`);
     if (themeMode === 'miami-vice') {
-      assert(state.accent === '#ff789d', `Miami Vice accent token is missing: ${JSON.stringify(state)}`);
+      assert(!state.darkClass && state.colorScheme === 'light', `Miami Vice should not inherit Dark mode: ${JSON.stringify(state)}`);
+      assert(
+        state.canvas === '#f7f4eb' &&
+          state.surface === '#fffcfa' &&
+          state.subtleSurface === '#e9f6f5' &&
+          state.primaryText === '#18344b' &&
+          state.action === '#007f8b' &&
+          state.legacyCanvas === state.canvas,
+        `Miami Vice pastel palette or legacy aliases are missing: ${JSON.stringify(state)}`,
+      );
+      assert(state.accent === '#e94b8b', `Miami Vice pink accent token is missing: ${JSON.stringify(state)}`);
       assert(state.activeBorder === state.accentColor, `Miami Vice active navigation accent is missing: ${JSON.stringify(state)}`);
       await captureThemeScreenshot(cdp, themeMode, 'home');
     }
@@ -440,7 +457,9 @@ async function checkThemeStates(cdp, dark, viewport) {
         <button data-testid="theme-selected" aria-pressed="true" class="rounded px-3 py-2">Selected</button>
         <button data-testid="theme-disabled" disabled class="rounded px-3 py-2">Unavailable</button>
         <div data-testid="theme-loading" class="animate-pulse rounded p-2">Loading</div>
+        <div data-testid="theme-success" class="pi-status-success rounded p-2" role="status">Verified</div>
         <div data-testid="theme-warning" class="pi-status-warning rounded p-2" role="alert">Action required</div>
+        <div data-testid="theme-critical" class="pi-status-critical rounded p-2" role="alert">Critical issue</div>
         <input data-testid="theme-input" aria-label="Theme test input" value="Focused control" />
       </div>\`;
     document.querySelector('.pi-app-shell')?.appendChild(fixture);
@@ -465,7 +484,9 @@ async function checkThemeStates(cdp, dark, viewport) {
     const fixture = document.querySelector('#theme-state-fixture');
     const get = (selector) => fixture?.querySelector(selector);
     const style = (selector) => getComputedStyle(get(selector));
+    const success = get('[data-testid="theme-success"]');
     const warning = get('[data-testid="theme-warning"]');
+    const critical = get('[data-testid="theme-critical"]');
     const resolveToken = (name, property) => {
       const probe = document.createElement('span');
       probe.style.setProperty(property, 'var(' + name + ')');
@@ -482,9 +503,15 @@ async function checkThemeStates(cdp, dark, viewport) {
         style('[data-testid="theme-selected"]').color === 'rgb(255, 255, 255)',
       disabledIsDimmed: get('[data-testid="theme-disabled"]').disabled && Number(disabled.opacity) < 1,
       loadingIsAnimated: loading.animationName !== 'none' && loading.animationDuration !== '0s',
+      successMatchesToken: style('[data-testid="theme-success"]').backgroundColor === resolveToken('--pi-verified-bg', 'background-color') &&
+        style('[data-testid="theme-success"]').color === resolveToken('--pi-verified-text', 'color'),
+      successRole: success.getAttribute('role'),
       warningMatchesToken: style('[data-testid="theme-warning"]').backgroundColor === resolveToken('--pi-warning-bg', 'background-color') &&
         style('[data-testid="theme-warning"]').color === resolveToken('--pi-warning-text', 'color'),
       alertRole: warning.getAttribute('role'),
+      criticalMatchesToken: style('[data-testid="theme-critical"]').backgroundColor === resolveToken('--pi-critical-bg', 'background-color') &&
+        style('[data-testid="theme-critical"]').color === resolveToken('--pi-critical-text', 'color'),
+      criticalRole: critical.getAttribute('role'),
       focusState: (() => {
         const input = get('[data-testid="theme-input"]');
         input.focus();
@@ -508,7 +535,9 @@ async function checkThemeStates(cdp, dark, viewport) {
   assert(fixtureState.selectedMatchesBrand, `${themeLabel(dark)} selected controls do not use the brand action token`);
   assert(fixtureState.disabledIsDimmed, `${themeLabel(dark)} disabled controls are not visually distinct`);
   assert(fixtureState.loadingIsAnimated, `${themeLabel(dark)} loading state is not visibly animated`);
+  assert(fixtureState.successMatchesToken && fixtureState.successRole === 'status', `${themeLabel(dark)} success status lost its semantic treatment`);
   assert(fixtureState.warningMatchesToken && fixtureState.alertRole === 'alert', `${themeLabel(dark)} warning state does not use semantic warning tokens`);
+  assert(fixtureState.criticalMatchesToken && fixtureState.criticalRole === 'alert', `${themeLabel(dark)} critical status lost its semantic treatment`);
   assert(
     fixtureState.focusState.active && fixtureState.focusState.border === fixtureState.focusState.action,
     `${themeLabel(dark)} focused form control does not use the action token: ${JSON.stringify(fixtureState.focusState)}`,
@@ -523,14 +552,16 @@ async function checkThemeStates(cdp, dark, viewport) {
     { name: 'theme heading', selector: '#theme-state-fixture [data-testid="theme-heading"]' },
     { name: 'theme supporting text', selector: '#theme-state-fixture [data-testid="theme-supporting"]' },
     { name: 'selected control', selector: '#theme-state-fixture [data-testid="theme-selected"]' },
+    { name: 'success status', selector: '#theme-state-fixture [data-testid="theme-success"]' },
     { name: 'warning status', selector: '#theme-state-fixture [data-testid="theme-warning"]' },
+    { name: 'critical status', selector: '#theme-state-fixture [data-testid="theme-critical"]' },
   ]);
   for (const reading of readings) {
     assert(!reading.missing && !reading.unavailable && reading.ratio >= 4.5,
       `${themeLabel(dark)} ${reading.name} contrast is below 4.5:1: ${JSON.stringify(reading)}`);
   }
   await evaluate(cdp, `document.querySelector('#theme-state-fixture')?.remove()`);
-  console.log(`  ${themeLabel(dark)} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading and warning`);
+  console.log(`  ${themeLabel(dark)} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading, and semantic statuses`);
 }
 
 async function checkHome(cdp, dark) {
@@ -1240,9 +1271,11 @@ async function runViewport(cdp, viewport) {
   if (process.env.THEME_SPECIALTY_ONLY === '1') {
     await checkPulseIqCharts(cdp, false, viewport);
     await checkPulseIqCharts(cdp, true, viewport);
+    await checkPulseIqCharts(cdp, 'miami-vice', viewport);
     await checkGisLegendAndRiskColors(cdp, false, viewport);
     await checkGisLegendAndRiskColors(cdp, true, viewport);
-    console.log(`PASS ${viewport.width}×${viewport.height}: specialty charts and GIS legend in light and dark`);
+    await checkGisLegendAndRiskColors(cdp, 'miami-vice', viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: specialty charts and GIS legend in all three themes`);
     return;
   }
   await checkThemeModeSelection(cdp, viewport);
@@ -1290,9 +1323,11 @@ async function runViewport(cdp, viewport) {
   await checkFieldWork(cdp, 'miami-vice', viewport);
   await checkPulseIqCharts(cdp, false, viewport);
   await checkPulseIqCharts(cdp, true, viewport);
+  await checkPulseIqCharts(cdp, 'miami-vice', viewport);
   await checkGisLegendAndRiskColors(cdp, false, viewport);
   await checkGisLegendAndRiskColors(cdp, true, viewport);
-  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, comparison, and specialty charts in all themes`);
+  await checkGisLegendAndRiskColors(cdp, 'miami-vice', viewport);
+  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, comparison, charts, and GIS in all themes`);
 }
 
 async function main() {

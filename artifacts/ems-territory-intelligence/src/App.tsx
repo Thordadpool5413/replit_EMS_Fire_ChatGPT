@@ -204,7 +204,7 @@ export default function App() {
   };
 
   const [themeMode, setThemeMode] = useState<ThemeMode>(loadInitialThemeMode);
-  const isDarkMode = themeMode !== 'daylight';
+  const isDarkMode = themeMode === 'dark';
 
   useEffect(() => {
     const root = document.documentElement;

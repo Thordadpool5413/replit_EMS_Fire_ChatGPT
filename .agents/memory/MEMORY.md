@@ -13,6 +13,7 @@
 - [Territory visual hierarchy](territory-visual-hierarchy.md) — use shared theme tokens, neutral metric surfaces, semantic status colors, and readable map-led summaries.
 - [App-wide visual density](app-wide-visual-density.md) — keep screens compact and scannable; reduce oversized cards and chrome without making text or controls too small.
 - [Theme cascade and focus](theme-cascade-focus.md) — check legacy selector specificity and keyboard focus-visible styles when applying shared light/dark tokens.
+- [Miami Vice palette](miami-vice-palette.md) — use South Beach pastels and turquoise, not a dark teal shell; preserve map and semantic status colors.
 - [Translucent overlay contrast](translucent-overlay-contrast.md) — composite ancestor surfaces in painting order when measuring readability over semi-transparent cards.
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.
 - [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.

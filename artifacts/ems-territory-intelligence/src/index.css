@@ -158,27 +158,44 @@
 }
 
 html[data-theme="miami-vice"] {
-  --pi-nav-bg: #061a2b;
-  --pi-nav-secondary: #102b42;
-  --pi-nav-border: #24465c;
-  --pi-nav-text: #d8e8f1;
-  --pi-canvas-bg: #071a2a;
-  --pi-surface-bg: #0d2438;
-  --pi-surface-subtle: #132e43;
-  --pi-surface-elevated: #1a374d;
-  --pi-text-primary: #f3f8fc;
-  --pi-text-secondary: #ccdae5;
-  --pi-text-muted: #a7bdca;
-  --pi-border: #28495d;
-  --pi-border-strong: #456579;
-  --pi-action: #087987;
-  --pi-action-hover: #066673;
-  --pi-action-ink: #72e4e5;
-  --pi-action-subtle: #153b49;
-  --pi-focus-ring: #7ce8e8;
-  --pi-accent-highlight: #ff789d;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 5px 16px -10px rgba(0, 0, 0, 0.65);
+  /* Pastel South Beach surfaces; reserve midnight blue for map contrast areas. */
+  --pi-nav-bg: #fce7ef;
+  --pi-nav-secondary: #dff3f3;
+  --pi-nav-border: #bdd9de;
+  --pi-nav-text: #25485a;
+  --pi-canvas-bg: #f7f4eb;
+  --pi-surface-bg: #fffcfa;
+  --pi-surface-subtle: #e9f6f5;
+  --pi-surface-elevated: #fff0f5;
+  --pi-text-primary: #18344b;
+  --pi-text-secondary: #36586b;
+  --pi-text-muted: #526e7b;
+  --pi-border: #c5dde0;
+  --pi-border-strong: #8dbcc4;
+  --pi-action: #007f8b;
+  --pi-action-hover: #006975;
+  --pi-action-ink: #006d7a;
+  --pi-action-subtle: #d7f1f0;
+  --pi-focus-ring: #c13f73;
+  --pi-accent-highlight: #e94b8b;
+  --pi-accent-lavender: #8c77b9;
+  --pi-accent-peach: #c96f58;
+  --pi-accent-sand: #a66f1d;
+  --pi-accent-aqua: #00a9b7;
+
+  /* Rebind legacy aliases here too; custom properties otherwise retain root values. */
+  --bg-canvas: var(--pi-canvas-bg);
+  --bg-surface: var(--pi-surface-bg);
+  --bg-subtle: var(--pi-surface-subtle);
+  --text-primary: var(--pi-text-primary);
+  --text-secondary: var(--pi-text-secondary);
+  --text-muted: var(--pi-text-muted);
+  --border-crisp: var(--pi-border);
+  --border-strong: var(--pi-border-strong);
+  --brand-primary: var(--pi-action);
+  --brand-primary-hover: var(--pi-action-hover);
+  --shadow-card: 0 1px 2px rgba(24, 52, 75, 0.07);
+  --shadow-card-hover: 0 4px 14px -9px rgba(24, 52, 75, 0.2);
 }
 
 .pi-theme-select {

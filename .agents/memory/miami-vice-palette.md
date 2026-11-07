@@ -3,13 +3,13 @@ name: Miami Vice theme palette
 description: The visual direction and preservation rules for the app's Miami Vice theme.
 ---
 
-The Miami Vice theme should be light and pastel-forward: sand or warm off-white canvas, pale aqua surfaces, blush-pink accents, turquoise actions, and dark blue text. Keep navy for focused map or contrast panels rather than the whole application shell.
+The Miami Vice theme should evoke the show's cinematic night look with midnight indigo surfaces and vivid tropical turquoise/cyan, hot-pink, lavender, and peach accents. Avoid beige or earth-tone surfaces and avoid a pale pastel wash; reserve bright color for meaningful actions, selection, and focus. Keep the app's map/risk colors source-defined and leave the logo unchanged.
 
-**Why:** The earlier dark navy/teal treatment did not match the show's visual language. The Television Academy oral history describes pastel colors chosen to evoke heat, while a Los Angeles Times interview with the costume designer highlights aqua, pink, lavender, peach, and turquoise and the avoidance of earth tones.
+**Why:** The user rejected the earlier pale pastel-only treatment as not recognizable as Miami Vice. Historical reporting describes both the show's pastel tropical wardrobe and its cinematic, noir-like visual style, with no earth tones.
 
-**How to apply:** Keep this palette separate from the Dark theme, preserve the logo and source-defined map/risk colors, and keep green/amber/red tied to real semantic statuses. Verify legacy token aliases, focus states, and readable contrast across workspaces.
+**How to apply:** Give Miami Vice its own indigo-and-neon token set, distinct from the standard Dark theme. Use cyan for primary actions and pink for selection/focus; keep green/amber/red tied to real statuses. Keep navigation sizing consistent across themes, verify contrast and aliases across workspaces, and do not change the logo.
 
 Sources:
 - https://www.televisionacademy.com/features/emmy-magazine/articles/miami-vice-oral-history
 - https://www.latimes.com/archives/la-xpm-1985-06-21-vw-11694-story.html
-- https://mdpl.org/historic-threads/2025/07/how-miami-vice-transformed-the-demographics-and-landscape-of-miami-beach-1989
+- https://www.museum.tv/tv-encyclopedia-11/miami-vice

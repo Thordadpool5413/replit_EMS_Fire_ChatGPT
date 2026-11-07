@@ -39,6 +39,12 @@ When a screen contains multiple native disclosure elements, select the one being
 
 **How to apply:** Scope browser assertions to the intended component and use its visible summary text to identify nested or neighboring disclosures.
 
+The full theme-readability run is expensive because it sweeps charts and multiple GIS layers at each viewport. On a constrained run, the DevTools evaluation can time out late in the GIS sweep after the preceding theme, profile, chart, and dialog checks have passed.
+
+**Why:** Repeated full runs at laptop and phone widths reached the GIS layer sweep before hitting the DevTools command timeout; the focused selection checks remained reliable.
+
+**How to apply:** Run one viewport at a time. Diagnose with the selection-only or specialty-only mode first, and distinguish a late harness timeout from a specific visual assertion failure.
+
 For Letter-print regressions, capture PDFs with Chromium's DevTools print command and verify page size, text, and non-empty pagination. `pdftotext -layout` may interleave text from adjacent table columns, so check print-layout geometry and meaningful content tokens instead of requiring every multi-column cell to extract as one exact phrase.
 
 **Why:** Multi-column PDF extraction order is not a reliable representation of the visual cell boundaries, even when the printed table is intact.

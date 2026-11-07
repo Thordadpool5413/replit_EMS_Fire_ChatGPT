@@ -204,20 +204,21 @@ export default function App() {
   };
 
   const [themeMode, setThemeMode] = useState<ThemeMode>(loadInitialThemeMode);
-  const isDarkMode = themeMode === 'dark';
+  // Miami Vice uses dark appearance variants while keeping its own token scope.
+  const usesDarkColorScheme = themeMode !== 'daylight';
 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = themeMode;
-    root.classList.toggle('dark', isDarkMode);
-    root.style.colorScheme = isDarkMode ? 'dark' : 'light';
+    root.classList.toggle('dark', usesDarkColorScheme);
+    root.style.colorScheme = usesDarkColorScheme ? 'dark' : 'light';
     try {
       localStorage.setItem('app_theme_mode', themeMode);
-      localStorage.setItem('app_dark_mode', String(isDarkMode));
+      localStorage.setItem('app_dark_mode', String(usesDarkColorScheme));
     } catch {
       // Ignore storage errors
     }
-  }, [themeMode, isDarkMode]);
+  }, [themeMode, usesDarkColorScheme]);
   
   // Navigation & Modals - Open with Central Home & Guided Onboarding Hub by default
   const [activeTab, setActiveTab] = useState<string>(
@@ -949,7 +950,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`pi-app-shell min-h-[100dvh] w-full max-w-full overflow-x-hidden ${isDarkMode ? 'dark' : ''} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
+    <div className={`pi-app-shell min-h-[100dvh] w-full max-w-full overflow-x-hidden ${themeMode === 'dark' ? 'dark' : ''} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
 
       
       {/* Google Maps Quota Defense Sticky Banner */}

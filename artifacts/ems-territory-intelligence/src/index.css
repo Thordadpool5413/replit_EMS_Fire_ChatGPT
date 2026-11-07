@@ -158,30 +158,49 @@
 }
 
 html[data-theme="miami-vice"] {
-  /* Pastel South Beach surfaces; reserve midnight blue for map contrast areas. */
-  --pi-nav-bg: #fce7ef;
-  --pi-nav-secondary: #dff3f3;
-  --pi-nav-border: #bdd9de;
-  --pi-nav-text: #25485a;
-  --pi-canvas-bg: #f7f4eb;
-  --pi-surface-bg: #fffcfa;
-  --pi-surface-subtle: #e9f6f5;
-  --pi-surface-elevated: #fff0f5;
-  --pi-text-primary: #18344b;
-  --pi-text-secondary: #36586b;
-  --pi-text-muted: #526e7b;
-  --pi-border: #c5dde0;
-  --pi-border-strong: #8dbcc4;
-  --pi-action: #007f8b;
-  --pi-action-hover: #006975;
-  --pi-action-ink: #006d7a;
-  --pi-action-subtle: #d7f1f0;
-  --pi-focus-ring: #c13f73;
-  --pi-accent-highlight: #e94b8b;
-  --pi-accent-lavender: #8c77b9;
-  --pi-accent-peach: #c96f58;
-  --pi-accent-sand: #a66f1d;
-  --pi-accent-aqua: #00a9b7;
+  /* Miami Vice: cinematic midnight blue with vivid tropical neon accents.
+     Keep pastel pink, aqua, and peach as highlights rather than washing every
+     surface in pale color; avoid beige/earth-tone UI. */
+  --pi-nav-bg: #10172d;
+  --pi-nav-secondary: #1c2944;
+  --pi-nav-border: #3b4b68;
+  --pi-nav-text: #e5eaf4;
+  --pi-canvas-bg: #0e1428;
+  --pi-surface-bg: #171f38;
+  --pi-surface-subtle: #202a46;
+  --pi-surface-elevated: #28324f;
+  --pi-text-primary: #f7f3f7;
+  --pi-text-secondary: #d2d7e4;
+  --pi-text-muted: #b1bbce;
+  --pi-border: #3d4a65;
+  --pi-border-strong: #5c6b87;
+  --pi-action: #087d88;
+  --pi-action-hover: #0d98a2;
+  --pi-action-ink: #70e6e8;
+  --pi-action-subtle: #203b50;
+  --pi-focus-ring: #ff73b6;
+  --pi-accent-highlight: #ff5aa8;
+  --pi-accent-lavender: #b59af7;
+  --pi-accent-peach: #ffad91;
+  --pi-accent-sand: #f3d28b;
+  --pi-accent-aqua: #53e4e3;
+  --pi-verified-bg: #173a39;
+  --pi-verified-text: #8be5c3;
+  --pi-verified-border: #327767;
+  --pi-estimated-bg: #27314a;
+  --pi-estimated-text: #d2d7e4;
+  --pi-estimated-border: #4b5973;
+  --pi-info-bg: var(--pi-action-subtle);
+  --pi-info-text: var(--pi-action-ink);
+  --pi-info-border: var(--pi-border-strong);
+  --pi-warning-bg: #3b2c3b;
+  --pi-warning-text: #ffd17f;
+  --pi-warning-border: #8a674d;
+  --pi-critical-bg: #47263b;
+  --pi-critical-text: #ff9fbd;
+  --pi-critical-border: #985174;
+  --shadow-card: 0 2px 8px rgba(2, 5, 18, 0.22);
+  --shadow-card-hover: 0 8px 20px -12px rgba(2, 5, 18, 0.55);
 
   /* Rebind legacy aliases here too; custom properties otherwise retain root values. */
   --bg-canvas: var(--pi-canvas-bg);
@@ -194,8 +213,6 @@ html[data-theme="miami-vice"] {
   --border-strong: var(--pi-border-strong);
   --brand-primary: var(--pi-action);
   --brand-primary-hover: var(--pi-action-hover);
-  --shadow-card: 0 1px 2px rgba(24, 52, 75, 0.07);
-  --shadow-card-hover: 0 4px 14px -9px rgba(24, 52, 75, 0.2);
 }
 
 .pi-theme-select {
@@ -10660,4 +10677,89 @@ body [data-radix-portal] .recharts-default-tooltip {
 .pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-500"],
 .pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-600"] {
   color: var(--pi-text-secondary) !important;
+}
+
+/* Keep the desktop navigation readable and the same size across themes.
+   Preserve the existing short-viewport compact mode and leave the logo alone. */
+@media (min-width: 768px) and (min-height: 601px) {
+  .pi-primary-sidebar {
+    width: 14rem !important;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 14rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 14rem !important;
+  }
+
+  .pi-primary-nav button {
+    min-height: 2.4rem !important;
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  .pi-sidebar-quick-actions > button,
+  .pi-sidebar-quick-actions > div > button {
+    min-height: 2.15rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button[aria-current="page"] {
+  border-left: 3px solid var(--pi-accent-highlight) !important;
+}
+
+/* The app root receives .dark so existing dark-mode component variants work.
+   Give Miami's explicit token values precedence over legacy dark-shell colors. */
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar,
+html.dark[data-theme="miami-vice"] .pi-command-header,
+html.dark[data-theme="miami-vice"] .pi-mobile-nav {
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+  border-color: var(--pi-nav-border) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar > div:last-child {
+  background: var(--pi-nav-secondary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar :is([class*="bg-[#172D49]"], [class*="bg-[#101F34]"], [class*="bg-[#091322]"]) {
+  background-color: var(--pi-nav-secondary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar :is([class*="border-[#172D49]"], [class*="border-[#233B5E]"], [class*="border-[#344B68]"]) {
+  border-color: var(--pi-nav-border) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar [class*="text-slate-400"],
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar [class*="text-slate-300"] {
+  color: var(--pi-text-muted) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button:not([aria-current="page"]) {
+  color: var(--pi-nav-text) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button:hover:not([aria-current="page"]) {
+  background-color: var(--pi-nav-secondary) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button[aria-current="page"],
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions [class*="bg-[#285EE8]"] {
+  background-color: var(--pi-action) !important;
+  color: #ffffff !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions button {
+  background-color: var(--pi-nav-bg) !important;
+  border-color: var(--pi-nav-border) !important;
+  color: var(--pi-nav-text) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions button:hover {
+  background-color: var(--pi-nav-secondary) !important;
 }

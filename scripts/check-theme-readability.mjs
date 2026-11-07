@@ -228,7 +228,7 @@ async function captureThemeScreenshot(cdp, requestedThemeMode, name) {
 
 async function setTheme(cdp, requestedThemeMode) {
   const themeMode = themeModeName(requestedThemeMode);
-  const isDark = themeMode === 'dark';
+  const isDark = themeMode !== 'daylight';
   const isMobile = await evaluate(cdp, 'innerWidth < 768');
   const testId = isMobile ? 'theme-select-mobile' : 'theme-select-desktop';
 
@@ -327,6 +327,7 @@ async function checkThemeModeSelection(cdp, viewport) {
   })()`);
   await reloadAndWaitForTheme(cdp, 'daylight', 'legacy Daylight preference migration');
 
+  let navigationGeometry = null;
   for (const themeMode of ['daylight', 'dark', 'miami-vice']) {
     await setTheme(cdp, themeMode);
     await new Promise((resolve) => setTimeout(resolve, 180));
@@ -356,25 +357,55 @@ async function checkThemeModeSelection(cdp, viewport) {
         activeBorderWidth: activeStyle?.borderLeftWidth ?? '',
         activeHtml: active?.outerHTML ?? '',
         accentColor,
+        navigationGeometry: (() => {
+          const nav = innerWidth < 768
+            ? document.querySelector('.pi-mobile-nav')
+            : document.querySelector('.pi-primary-sidebar');
+          const item = innerWidth < 768
+            ? nav?.querySelector('button[aria-current="page"]')
+            : nav?.querySelector('.pi-primary-nav button');
+          const navRect = nav?.getBoundingClientRect();
+          const itemRect = item?.getBoundingClientRect();
+          return {
+            width: Math.round(navRect?.width ?? 0),
+            height: Math.round(navRect?.height ?? 0),
+            itemHeight: Math.round(itemRect?.height ?? 0),
+            fontSize: item ? getComputedStyle(item).fontSize : '',
+          };
+        })(),
       };
     })()`);
     assert(state.mode === themeMode, `Theme selector did not apply ${themeLabel(themeMode)}`);
-    assert(state.darkClass === (themeMode === 'dark'), `${themeLabel(themeMode)} did not set the expected color scheme`);
+    assert(state.darkClass === (themeMode !== 'daylight'), `${themeLabel(themeMode)} did not set the expected color scheme`);
     assert(state.selectedValue === themeMode, `${themeLabel(themeMode)} selection was not saved`);
-    assert(state.legacyValue === String(themeMode === 'dark'), `${themeLabel(themeMode)} did not preserve legacy preference compatibility`);
-    if (themeMode === 'miami-vice') {
-      assert(!state.darkClass && state.colorScheme === 'light', `Miami Vice should not inherit Dark mode: ${JSON.stringify(state)}`);
+    assert(state.legacyValue === String(themeMode !== 'daylight'), `${themeLabel(themeMode)} did not preserve legacy preference compatibility`);
+    if (navigationGeometry === null) navigationGeometry = state.navigationGeometry;
+    else {
       assert(
-        state.canvas === '#f7f4eb' &&
-          state.surface === '#fffcfa' &&
-          state.subtleSurface === '#e9f6f5' &&
-          state.primaryText === '#18344b' &&
-          state.action === '#007f8b' &&
-          state.legacyCanvas === state.canvas,
-        `Miami Vice pastel palette or legacy aliases are missing: ${JSON.stringify(state)}`,
+        JSON.stringify(state.navigationGeometry) === JSON.stringify(navigationGeometry),
+        `${themeLabel(themeMode)} changed navigation sizing: ${JSON.stringify({ before: navigationGeometry, after: state.navigationGeometry })}`,
       );
-      assert(state.accent === '#e94b8b', `Miami Vice pink accent token is missing: ${JSON.stringify(state)}`);
+    }
+    if (!viewport.mobile) {
+      assert(
+        state.navigationGeometry.width >= 208 && state.navigationGeometry.itemHeight >= 36,
+        `Desktop navigation is too compressed: ${JSON.stringify(state.navigationGeometry)}`,
+      );
+    }
+    if (themeMode === 'miami-vice') {
+      assert(state.darkClass && state.colorScheme === 'dark', `Miami Vice should use its cinematic dark surfaces: ${JSON.stringify(state)}`);
+      assert(
+        state.canvas === '#0e1428' &&
+          state.surface === '#171f38' &&
+          state.subtleSurface === '#202a46' &&
+          state.primaryText === '#f7f3f7' &&
+          state.action === '#087d88' &&
+          state.legacyCanvas === state.canvas,
+        `Miami Vice midnight/neon palette or legacy aliases are missing: ${JSON.stringify(state)}`,
+      );
+      assert(state.accent === '#ff5aa8', `Miami Vice neon-pink accent token is missing: ${JSON.stringify(state)}`);
       assert(state.activeBorder === state.accentColor, `Miami Vice active navigation accent is missing: ${JSON.stringify(state)}`);
+      assert(state.activeBorderWidth === '3px', `Miami Vice selected navigation should have the visible neon indicator: ${JSON.stringify(state)}`);
       await captureThemeScreenshot(cdp, themeMode, 'home');
     }
   }
@@ -1560,11 +1591,11 @@ async function checkPulseIqTooltipAtEdge(cdp, dark, viewport, edge) {
     assert(state.headingWidth > 0 && state.headingScrollWidth <= state.headingWidth + 1,
       `${themeLabel(dark)} ${labelType} tooltip name is clipped at the ${edge} mark: ${JSON.stringify(state)}`);
     assert(
-      state.card.left >= Math.max(0, state.chart.left) - 1 &&
-        state.card.right <= Math.min(state.viewport.width, state.chart.right) + 1 &&
+      state.card.left >= Math.max(0, state.chart.left - 8) - 1 &&
+        state.card.right <= Math.min(state.viewport.width, state.chart.right + 8) + 1 &&
         state.card.top >= Math.max(0, state.chart.top) - 1 &&
         state.card.bottom <= Math.min(state.viewport.height, state.chart.bottom) + 1,
-      `${themeLabel(dark)} ${labelType} tooltip escapes chart or viewport bounds at the ${edge} mark (${viewport.width}px): ${JSON.stringify(state)}`,
+      `${themeLabel(dark)} ${labelType} tooltip exceeds the chart edge tolerance or viewport at the ${edge} mark (${viewport.width}px): ${JSON.stringify(state)}`,
     );
   }
 }

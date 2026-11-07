@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme inline {
+  --color-background: var(--pi-canvas-bg);
+  --color-foreground: var(--pi-text-primary);
+  --color-card: var(--pi-surface-bg);
+  --color-card-foreground: var(--pi-text-primary);
+  --color-popover: var(--pi-surface-elevated);
+  --color-popover-foreground: var(--pi-text-primary);
+  --color-primary: var(--pi-action);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--pi-surface-subtle);
+  --color-secondary-foreground: var(--pi-text-primary);
+  --color-muted: var(--pi-surface-subtle);
+  --color-muted-foreground: var(--pi-text-muted);
+  --color-accent: var(--pi-action-subtle);
+  --color-accent-foreground: var(--pi-action-ink);
+  --color-destructive: var(--pi-critical-text);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--pi-border);
+  --color-input: var(--pi-border-strong);
+  --color-ring: var(--pi-focus-ring);
+}
+
 /* ============================================================================
    PRECISION INTELLIGENCE — SEMANTIC DESIGN TOKENS (LIGHT & DARK THEMES)
    Shared contract:
@@ -59,9 +81,9 @@
   --pi-estimated-bg: #f1f5f7;
   --pi-estimated-text: #425b63;
   --pi-estimated-border: #d2dfe3;
-  --pi-info-bg: #eff6ff;
-  --pi-info-text: #1d4ed8;
-  --pi-info-border: #bfdbfe;
+  --pi-info-bg: var(--pi-action-subtle);
+  --pi-info-text: var(--pi-action-ink);
+  --pi-info-border: var(--pi-border-strong);
   --pi-warning-bg: #fff7ed;
   --pi-warning-text: #c2410c;
   --pi-warning-border: #fed7aa;
@@ -112,9 +134,9 @@
   --pi-estimated-bg: rgba(71, 85, 105, 0.28);
   --pi-estimated-text: #cbd5e1;
   --pi-estimated-border: rgba(148, 163, 184, 0.3);
-  --pi-info-bg: rgba(30, 64, 175, 0.22);
-  --pi-info-text: #bfdbfe;
-  --pi-info-border: rgba(96, 165, 250, 0.38);
+  --pi-info-bg: var(--pi-action-subtle);
+  --pi-info-text: var(--pi-action-ink);
+  --pi-info-border: var(--pi-border-strong);
   --pi-warning-bg: rgba(146, 64, 14, 0.24);
   --pi-warning-text: #fed7aa;
   --pi-warning-border: rgba(251, 146, 60, 0.38);

@@ -10170,6 +10170,15 @@ body [data-radix-portal] [class~="text-slate-400"] {
   color: var(--pi-text-muted) !important;
 }
 
+.pi-app-shell .workspace-section-grid .absolute.top-4.right-4 [class~="text-slate-400"],
+.pi-app-shell .workspace-section-grid .absolute.bottom-12.left-4 [class~="text-slate-400"] {
+  color: #94a3b8 !important;
+}
+
+.pi-app-shell .workspace-section-grid .absolute.bottom-12.left-4 [class~="text-slate-300"] {
+  color: #cbd5e1 !important;
+}
+
 .dark .pi-app-shell [class*="dark:text-slate-300"],
 .dark .pi-app-shell [class*="dark:text-slate-200"],
 .dark .pi-app-shell [class*="dark:text-slate-100"],
@@ -10473,6 +10482,15 @@ body [data-radix-portal] .pi-status-info {
 .pi-app-shell .recharts-cartesian-axis-tick-value,
 .pi-app-shell .recharts-label {
   fill: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell .recharts-polar-angle-axis-tick-value,
+.pi-app-shell .recharts-polar-radius-axis-tick-value {
+  fill: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell .recharts-polar-grid :is(path, line, polygon) {
+  stroke: var(--pi-border) !important;
 }
 
 .pi-app-shell .recharts-cartesian-axis-line,

@@ -127,6 +127,20 @@ async function clickVisible(cdp, selectorOrLabel, exactText = false) {
   assert(clicked, `Could not click ${selectorOrLabel}`);
 }
 
+async function clickButtonAndScroll(cdp, label) {
+  const clicked = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('button')]
+      .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(label)});
+    if (!button) return false;
+    const style = getComputedStyle(button);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    button.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+    button.click();
+    return true;
+  })()`);
+  assert(clicked, `Could not click ${label}`);
+}
+
 function themeModeName(themeMode) {
   if (typeof themeMode === 'string') return themeMode;
   return themeMode ? 'dark' : 'daylight';
@@ -212,6 +226,7 @@ async function setTheme(cdp, requestedThemeMode) {
     legacyDarkMode: localStorage.getItem('app_dark_mode'),
   })`);
   assert(saved.legacyDarkMode === String(isDark), `${themeLabel(themeMode)} did not keep the legacy dark-mode preference in sync`);
+  await new Promise((resolve) => setTimeout(resolve, 180));
 }
 
 async function reloadAndWaitForTheme(cdp, themeMode, description) {
@@ -364,14 +379,23 @@ async function contrastReadings(cdp, selectors) {
       });
       if (!element) return { name, missing: true };
       element.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
-      const foreground = parse(getComputedStyle(element).color);
-      let background = null;
+      const computedStyle = getComputedStyle(element);
+      const foreground = parse(
+        element.namespaceURI === 'http://www.w3.org/2000/svg'
+          ? computedStyle.fill
+          : computedStyle.color,
+      );
+      const backgrounds = [];
       for (let current = element; current && current !== document.documentElement; current = current.parentElement) {
         const value = parse(getComputedStyle(current).backgroundColor);
         if (value && value.alpha > 0) {
-          background = background ? { rgb: composite(value, background), alpha: 1 } : value;
+          backgrounds.push(value);
           if (value.alpha === 1) break;
         }
+      }
+      let background = { rgb: [255, 255, 255], alpha: 1 };
+      for (const value of backgrounds.reverse()) {
+        background = { rgb: composite(value, background), alpha: 1 };
       }
       if (backgroundRgb) background = { rgb: backgroundRgb, alpha: 1 };
       if (!foreground || !background) return { name, missing: false, unavailable: true };
@@ -384,7 +408,7 @@ async function contrastReadings(cdp, selectors) {
         ratio: Number(ratio(resolvedForeground, background.rgb).toFixed(2)),
         foreground: getComputedStyle(element).color,
         background: 'rgb(' + background.rgb.map((channel) => Math.round(channel)).join(', ') + ')',
-        text: element.innerText.trim().slice(0, 100),
+        text: (element.innerText ?? element.textContent ?? '').trim().slice(0, 100),
       };
     });
   })()`);
@@ -865,6 +889,340 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
   await captureThemeScreenshot(cdp, dark, 'agency-comparison');
 }
 
+async function openPulseIqCharts(cdp) {
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before specialty chart checks');
+  await clickVisible(cdp, 'Opportunities', true);
+  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Opportunities views"]'))`, 'Opportunities views');
+  await clickVisible(cdp, 'Regional priority', true);
+  await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('Regional Priority Score Breakdown'))`, 'PulseIQ regional chart');
+  await waitFor(cdp, `Boolean(document.querySelector('svg.recharts-surface'))`, 'PulseIQ chart SVG');
+}
+
+const pulseIqChartModes = [
+  {
+    label: 'Factor Breakdown',
+    name: 'factor breakdown',
+    legend: [
+      ['Clinical acuity (weighted points)', '#1E3A8A'],
+      ['Fleet pressure (weighted points)', '#2563EB'],
+      ['Software whitespace (weighted points)', '#60A5FA'],
+      ['Grant readiness (weighted points)', '#059669'],
+    ],
+    polar: false,
+    tooltip: true,
+  },
+  {
+    label: 'Benchmark Bars',
+    name: 'benchmark bars',
+    legend: [
+      ['PulseIQ Score (Average / Account)', '#1E3A8A'],
+      ['Top Account Score in Region', '#059669'],
+    ],
+    polar: false,
+  },
+  {
+    label: 'Radar Profile',
+    name: 'radar profile',
+    legend: [
+      ['Current Region Score Profile', '#1E3A8A'],
+      ['National Clinical Baseline', '#64748B'],
+    ],
+    polar: true,
+  },
+  {
+    label: 'Score vs Pipeline',
+    name: 'score versus pipeline',
+    legend: [
+      ['PulseIQ Score (0–100)', '#1E3A8A'],
+      ['Pipeline Opportunity ($)', '#059669'],
+    ],
+    polar: false,
+  },
+];
+
+async function checkPulseIqCharts(cdp, dark, viewport) {
+  await openPulseIqCharts(cdp);
+  await setTheme(cdp, dark);
+
+  for (const mode of pulseIqChartModes) {
+    await clickButtonAndScroll(cdp, mode.label);
+    await waitFor(
+      cdp,
+      mode.polar
+        ? `Boolean(document.querySelector('.recharts-polar-grid'))`
+        : `Boolean(document.querySelector('.recharts-cartesian-grid'))`,
+      `${mode.name} chart grid`,
+    );
+    const state = await evaluate(cdp, `(() => {
+      const svg = document.querySelector('.recharts-cartesian-grid, .recharts-polar-grid')?.closest('svg') ??
+        document.querySelector('svg.recharts-surface');
+      const legend = [...document.querySelectorAll('.recharts-legend-item')].map((item) => {
+        const icon = item.querySelector('svg path, svg line, svg circle, svg polygon');
+        const iconStyle = icon ? getComputedStyle(icon) : null;
+        const rawColor = icon?.getAttribute('fill') || iconStyle?.fill ||
+          icon?.getAttribute('stroke') || iconStyle?.stroke || '';
+        const match = rawColor.match(/#([\\da-f]{6})/i) ||
+          rawColor.match(/rgb\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)/i);
+        const color = match
+          ? match[0].startsWith('#')
+            ? match[0].toUpperCase()
+            : '#' + match.slice(1).map((part) => Number(part).toString(16).padStart(2, '0')).join('').toUpperCase()
+          : rawColor;
+        return { label: item.innerText.trim(), color };
+      });
+      const gridElements = [...document.querySelectorAll(
+        ${JSON.stringify(mode.polar
+          ? '.recharts-polar-grid path, .recharts-polar-grid line, .recharts-polar-grid polygon'
+          : '.recharts-cartesian-grid line')}
+      )];
+      const grid = gridElements.find((element) => getComputedStyle(element).stroke !== 'none');
+      const tokenProbe = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      tokenProbe.style.stroke = 'var(--pi-border)';
+      svg?.appendChild(tokenProbe);
+      const expectedGridStroke = getComputedStyle(tokenProbe).stroke;
+      tokenProbe.remove();
+      const axisTexts = [...document.querySelectorAll(
+        ${JSON.stringify(mode.polar
+          ? '.recharts-polar-angle-axis text, .recharts-polar-radius-axis text'
+          : '.recharts-cartesian-axis-tick-value')}
+      )].filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && element.textContent.trim();
+      });
+      const pageOverflow = document.documentElement.scrollWidth > innerWidth;
+      return {
+        legend,
+        gridCount: gridElements.length,
+        gridStroke: grid ? getComputedStyle(grid).stroke : '',
+        expectedGridStroke,
+        axisCount: axisTexts.length,
+        svgText: [...document.querySelectorAll('svg.recharts-surface text')]
+          .slice(0, 12)
+          .map((element) => ({
+            className: element.getAttribute('class'),
+            text: element.textContent.trim(),
+            fill: getComputedStyle(element).fill,
+            parentClass: element.parentElement?.getAttribute('class') ?? '',
+          })),
+        pageOverflow,
+      };
+    })()`);
+
+    const expectedLegend = new Map(mode.legend);
+    assert(state.legend.length === mode.legend.length &&
+      new Set(state.legend.map((entry) => entry.label)).size === mode.legend.length &&
+      state.legend.every((entry) => expectedLegend.get(entry.label) === entry.color),
+    `${themeLabel(dark)} ${mode.name} legend or series palette changed: ${JSON.stringify(state.legend)}`);
+    assert(state.axisCount > 0, `${themeLabel(dark)} ${mode.name} axis labels are missing: ${JSON.stringify(state.svgText)}`);
+    assert(state.gridCount > 0 && state.gridStroke === state.expectedGridStroke,
+      `${themeLabel(dark)} ${mode.name} grid does not use the theme border token: ${JSON.stringify(state)}`);
+    assert(!state.pageOverflow, `${themeLabel(dark)} ${mode.name} overflows at ${viewport.width}px`);
+
+    await checkReadable(cdp, `${themeLabel(dark)} ${mode.name}`, [
+      {
+        name: `${mode.name} axis label`,
+        selector: mode.polar
+          ? '.recharts-polar-angle-axis text, .recharts-polar-radius-axis text'
+          : '.recharts-cartesian-axis-tick-value',
+      },
+      {
+        name: `${mode.name} legend`,
+        selector: '.recharts-legend-item',
+      },
+    ]);
+
+    if (mode.tooltip) {
+      await waitFor(cdp, `(() => {
+        const chartSvg = document.querySelector('.recharts-cartesian-grid')?.closest('svg');
+        return [...(chartSvg?.querySelectorAll('.recharts-bar-rectangle, path.recharts-rectangle, rect.recharts-rectangle') ?? [])]
+          .some((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.width > 2 && rect.height > 2;
+          });
+      })()`, `${mode.name} visible bars`);
+      const position = await evaluate(cdp, `(() => {
+        const chartSvg = document.querySelector('.recharts-cartesian-grid')?.closest('svg');
+        const candidates = [...(chartSvg?.querySelectorAll('.recharts-bar-rectangle, path.recharts-rectangle, rect.recharts-rectangle') ?? [])];
+        const bar = candidates.find((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.width > 2 && rect.height > 2;
+        });
+        if (!bar) return {
+          candidates: candidates.length,
+          candidateDetails: candidates.slice(0, 12).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              tag: element.tagName,
+              className: typeof element.className === 'string'
+                ? element.className
+                : element.className?.baseVal ?? '',
+              box: [rect.x, rect.y, rect.width, rect.height],
+              childCount: element.children.length,
+            };
+          }),
+          chartShapes: [...(chartSvg?.querySelectorAll('path, rect') ?? [])]
+            .slice(0, 20)
+            .map((element) => ({
+              className: element.getAttribute('class'),
+              fill: element.getAttribute('fill'),
+              box: (() => {
+                const rect = element.getBoundingClientRect();
+                return [rect.width, rect.height];
+              })(),
+            })),
+        };
+        const rect = bar.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      })()`);
+      assert(position?.x != null, `${themeLabel(dark)} PulseIQ bar chart has no visible series mark to inspect: ${JSON.stringify(position)}`);
+      await cdp.send('Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x: position.x,
+        y: position.y,
+      });
+      await waitFor(cdp, `(() => {
+        const tooltip = document.querySelector('.recharts-tooltip-wrapper');
+        return Boolean(tooltip && getComputedStyle(tooltip).visibility !== 'hidden' && tooltip.innerText.trim());
+      })()`, `${themeLabel(dark)} PulseIQ chart tooltip`);
+      const tooltipState = await evaluate(cdp, `(() => {
+        const tooltip = document.querySelector('.recharts-tooltip-wrapper > div');
+        if (!tooltip) return null;
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = 'var(--pi-surface-elevated)';
+        document.body.appendChild(probe);
+        const expectedSurface = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return {
+          surface: getComputedStyle(tooltip).backgroundColor,
+          expectedSurface,
+          text: tooltip.innerText.trim(),
+        };
+      })()`);
+      assert(tooltipState && tooltipState.surface === tooltipState.expectedSurface,
+        `${themeLabel(dark)} PulseIQ tooltip surface does not match the elevated theme token: ${JSON.stringify(tooltipState)}`);
+      await checkReadable(cdp, `${themeLabel(dark)} PulseIQ tooltip`, [
+        { name: 'tooltip heading', selector: '.recharts-tooltip-wrapper .font-semibold.text-slate-900' },
+        { name: 'tooltip supporting text', selector: '.recharts-tooltip-wrapper .text-slate-700' },
+      ]);
+    }
+
+    console.log(
+      `  ${themeLabel(dark)} ${viewport.width}px ${mode.name}: ${state.axisCount} axis labels, ${state.legend.length} distinct series, themed grid${mode.tooltip ? ', readable tooltip' : ''}`,
+    );
+  }
+  await captureThemeScreenshot(cdp, dark, 'pulseiq-specialty-charts');
+}
+
+async function openGisHeatmap(cdp) {
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before GIS heatmap checks');
+  await clickVisible(cdp, 'Territory', true);
+  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Territory views"]'))`, 'Territory views');
+  await clickVisible(cdp, 'Fleet & response map', true);
+  await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('High-Potential Territory Clusters'))`, 'GIS heatmap');
+  await waitFor(cdp, `Boolean(document.querySelector('button[title="Toggle Spatial Legend"]'))`, 'GIS spatial legend control');
+}
+
+async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
+  await openGisHeatmap(cdp);
+  await setTheme(cdp, dark);
+  await clickButtonAndScroll(cdp, 'Station Vectors');
+  await waitFor(cdp, `Boolean(document.querySelector('svg circle[fill]'))`, 'GIS station vector markers');
+
+  const state = await evaluate(cdp, `(() => {
+    const legend = [...document.querySelectorAll('.absolute.top-4.right-4 span')]
+      .filter((element) => element.textContent.trim())
+      .map((element) => ({
+        text: element.textContent.trim(),
+        color: getComputedStyle(element).color,
+        background: getComputedStyle(element).backgroundColor,
+      }));
+    const paletteLabels = ['Top 10%', '75th–90th percentile', '50th–75th percentile', 'Below national median rate', 'No paired OHCA / transport report'];
+    const legendText = document.querySelector('.absolute.top-4.right-4')?.innerText ?? '';
+    const colorFor = (label) => {
+      const text = [...document.querySelectorAll('.absolute.top-4.right-4 span')]
+        .find((element) => element.innerText.includes(label));
+      const swatch = text?.parentElement?.querySelector('span.rounded-full');
+      return swatch ? getComputedStyle(swatch).backgroundColor : '';
+    };
+    const riskColors = ['bg-rose-500', 'bg-orange-500', 'bg-amber-400', 'bg-sky-400', 'bg-slate-500']
+      .map((className) => {
+        const swatch = document.querySelector('.absolute.top-4.right-4 .' + CSS.escape(className));
+        return swatch ? getComputedStyle(swatch).backgroundColor : '';
+      });
+    const markerColors = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("] circle[fill]')]
+      .map((circle) => circle.getAttribute('fill'))
+      .filter((fill) => fill && fill !== 'none');
+    return {
+      legendVisible: Boolean(document.querySelector('.absolute.top-4.right-4')),
+      legendText,
+      paletteLabels,
+      riskColors,
+      markerColors: [...new Set(markerColors)],
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+    };
+  })()`);
+  assert(state.legendVisible, `${themeLabel(dark)} GIS risk legend is missing`);
+  assert(state.paletteLabels.every((label) => state.legendText.includes(label)),
+    `${themeLabel(dark)} GIS risk legend labels are incomplete: ${JSON.stringify(state.legendText)}`);
+  const expectedRiskColors = [
+    'oklch(0.645 0.246 16.439)',
+    'oklch(0.705 0.213 47.604)',
+    'oklch(0.828 0.189 84.429)',
+    'oklch(0.746 0.16 232.661)',
+    'oklch(0.554 0.046 257.417)',
+  ];
+  assert(state.riskColors.length === expectedRiskColors.length &&
+    expectedRiskColors.every((color) => state.riskColors.includes(color)) &&
+    new Set(state.riskColors).size === expectedRiskColors.length,
+  `${themeLabel(dark)} GIS semantic risk colors changed or became indistinguishable: ${JSON.stringify(state.riskColors)}`);
+  assert(state.markerColors.length > 0, `${themeLabel(dark)} GIS station risk colors are not rendered`);
+  assert(!state.pageOverflow, `GIS heatmap overflows at ${viewport.width}px`);
+  await checkReadable(cdp, `${themeLabel(dark)} GIS legend`, [
+    { name: 'GIS legend heading', selector: '.absolute.top-4.right-4 .text-slate-200' },
+    { name: 'GIS highest-risk legend label', selector: '.absolute.top-4.right-4 .text-slate-100' },
+    { name: 'GIS supporting legend label', selector: '.absolute.top-4.right-4 .text-slate-300' },
+    { name: 'GIS muted legend label', selector: '.absolute.top-4.right-4 .text-slate-400' },
+  ]);
+
+  const marker = await evaluate(cdp, `(() => {
+    const legend = document.querySelector('.absolute.top-4.right-4')?.getBoundingClientRect();
+    const candidates = [...document.querySelectorAll('svg g.cursor-pointer.group[transform^="translate("]')]
+      .map((group) => ({
+        group,
+        circle: group.querySelector('circle[fill]:not([fill="none"])'),
+        rect: group.querySelector('circle[fill]:not([fill="none"])')?.getBoundingClientRect(),
+      }))
+      .filter(({ rect }) => rect && rect.width > 2 && rect.height > 2 &&
+        rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight);
+    const target = candidates.find(({ rect }) => !legend ||
+      rect.right < legend.left || rect.left > legend.right || rect.bottom < legend.top || rect.top > legend.bottom);
+    if (!target) return null;
+    const rect = target.rect;
+    target.circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  })()`);
+  assert(marker, `${themeLabel(dark)} GIS map has no visible station marker to inspect`);
+  await cdp.send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: marker.x,
+    y: marker.y,
+  });
+  await waitFor(cdp, `(() => {
+    const tooltip = [...document.querySelectorAll('.absolute')]
+      .find((element) => element.querySelector('h4') && element.innerText.includes('Annual OHCA'));
+    return Boolean(tooltip && tooltip.innerText.trim());
+  })()`, `${themeLabel(dark)} GIS station tooltip`);
+  await checkReadable(cdp, `${themeLabel(dark)} GIS station tooltip`, [
+    { name: 'GIS tooltip agency name', selector: '.absolute.bottom-12.left-4 h4.text-white' },
+    { name: 'GIS tooltip supporting text', selector: '.absolute.bottom-12.left-4 .text-slate-400' },
+  ]);
+  console.log(
+    `  ${themeLabel(dark)} ${viewport.width}px GIS risk legend: ${state.riskColors.length} distinct risk colors; ${state.markerColors.length} rendered marker colors; readable station tooltip`,
+  );
+}
+
 async function runViewport(cdp, viewport) {
   console.log(`Checking ${viewport.width}×${viewport.height}...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -879,6 +1237,14 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  if (process.env.THEME_SPECIALTY_ONLY === '1') {
+    await checkPulseIqCharts(cdp, false, viewport);
+    await checkPulseIqCharts(cdp, true, viewport);
+    await checkGisLegendAndRiskColors(cdp, false, viewport);
+    await checkGisLegendAndRiskColors(cdp, true, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: specialty charts and GIS legend in light and dark`);
+    return;
+  }
   await checkThemeModeSelection(cdp, viewport);
   await checkHome(cdp, false);
   await checkThemeStates(cdp, false, viewport);
@@ -922,7 +1288,11 @@ async function runViewport(cdp, viewport) {
   await checkFieldWork(cdp, false, viewport);
   await checkFieldWork(cdp, true, viewport);
   await checkFieldWork(cdp, 'miami-vice', viewport);
-  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, and comparison in all three themes`);
+  await checkPulseIqCharts(cdp, false, viewport);
+  await checkPulseIqCharts(cdp, true, viewport);
+  await checkGisLegendAndRiskColors(cdp, false, viewport);
+  await checkGisLegendAndRiskColors(cdp, true, viewport);
+  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, comparison, and specialty charts in all themes`);
 }
 
 async function main() {
@@ -977,6 +1347,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`Theme readability check failed: ${error.message}`);
+  console.error(`Theme readability check failed: ${error.stack ?? error.message}`);
   process.exitCode = 1;
 });

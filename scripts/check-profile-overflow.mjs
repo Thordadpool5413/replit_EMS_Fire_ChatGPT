@@ -1244,7 +1244,24 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
   );
 }
 
-async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
+async function setPrintTheme(cdp, theme) {
+  const changed = await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="theme-select-desktop"]');
+    if (!select) return false;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+      ?.set?.call(select, ${JSON.stringify(theme)});
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert(changed, `Could not select the ${theme} appearance theme`);
+  await waitFor(
+    cdp,
+    `document.documentElement.dataset.theme === ${JSON.stringify(theme)}`,
+    `the ${theme} appearance theme`,
+  );
+}
+
+async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(
     cdp,
@@ -1254,6 +1271,7 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
     'the app shell before opening a printable profile',
     60_000,
   );
+  await setPrintTheme(cdp, theme);
   await openAgencyProfile(cdp, testCase.category, testCase.agency);
 
   const briefOpened = await evaluate(cdp, `(() => {
@@ -1375,6 +1393,46 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
         identifiers: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-agency-identifiers')).fontSize),
         review: Number.parseFloat(getComputedStyle(doc?.querySelector('.print-profile-review')).fontSize),
       },
+      colors: (() => {
+        const rgb = (color) => (color.match(/[\\d.]+/g) ?? []).slice(0, 3).map(Number);
+        const luminance = (color) => {
+          const channels = rgb(color).map((channel) => {
+            const value = channel / 255;
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+          });
+          return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+        };
+        const contrast = (foreground, background) => {
+          const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+          return (values[0] + 0.05) / (values[1] + 0.05);
+        };
+        const white = 'rgb(255, 255, 255)';
+        const heading = doc?.querySelector('.print-agency-identity h1');
+        const summaryValue = doc?.querySelector('.print-summary-value');
+        const sourceLink = doc?.querySelector('.print-source-references a');
+        const statuses = [...(doc?.querySelectorAll('.print-source-references .print-status-badge') ?? [])]
+          .map((element) => {
+            const style = getComputedStyle(element);
+            return {
+              kind: element.dataset.statusKind,
+              foreground: style.color,
+              background: style.backgroundColor,
+              contrast: contrast(style.color, style.backgroundColor),
+            };
+          });
+        return {
+          documentColor: getComputedStyle(doc).color,
+          documentBackground: getComputedStyle(doc).backgroundColor,
+          headingContrast: heading ? contrast(getComputedStyle(heading).color, white) : 0,
+          summaryContrast: summaryValue ? contrast(getComputedStyle(summaryValue).color, white) : 0,
+          sourceLinkContrast: sourceLink ? contrast(getComputedStyle(sourceLink).color, white) : 0,
+          statuses,
+        };
+      })(),
+      pageBreaks: [...(doc?.querySelectorAll('.dossier-page-break') ?? [])].map((element) => ({
+        display: getComputedStyle(element).display,
+        breakBefore: getComputedStyle(element).breakBefore,
+      })),
       tables: [...(doc?.querySelectorAll('table') ?? [])].map((table) => {
         const bounds = table.getBoundingClientRect();
         const cellsFit = [...table.querySelectorAll('th, td')].every((cell) => {
@@ -1397,8 +1455,20 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
       printState.hierarchy.identity > printState.hierarchy.operations &&
       printState.hierarchy.operations > printState.hierarchy.identifiers &&
       printState.hierarchy.operations > printState.hierarchy.review &&
+      printState.colors.documentColor === 'rgb(17, 24, 39)' &&
+      printState.colors.documentBackground === 'rgb(255, 255, 255)' &&
+      printState.colors.headingContrast >= 7 &&
+      printState.colors.summaryContrast >= 7 &&
+      printState.colors.sourceLinkContrast >= 4.5 &&
+      printState.colors.statuses.length > 0 &&
+      printState.colors.statuses.every((status) =>
+        status.background !== 'rgba(0, 0, 0, 0)' && status.contrast >= 4.5) &&
+      printState.pageBreaks.length > 0 &&
+      printState.pageBreaks.every((pageBreak) =>
+        pageBreak.display !== 'none' &&
+        ['page', 'always'].includes(pageBreak.breakBefore)) &&
       printState.tables.every((table) => table.visible && table.fits),
-    `${testCase.category} print media exposes unrelated workspace content: ${JSON.stringify(printState)}`,
+    `${testCase.category} print media is not legible or exposes unrelated workspace content: ${JSON.stringify(printState)}`,
   );
 
   const printButtonClicked = await evaluate(cdp, `(() => {
@@ -1420,7 +1490,7 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
     printBackground: true,
     transferMode: 'ReturnAsBase64',
   });
-  const pdfPath = path.join(pdfDirectory, `${testCase.category}-agency-brief.pdf`);
+  const pdfPath = path.join(pdfDirectory, `${testCase.category}-${theme}-agency-brief.pdf`);
   await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
   const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
     execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
@@ -1440,7 +1510,8 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
   );
   assert(
     pageCount > 0 && pageCount <= 16 && pages.length === pageCount &&
-      pages.every((page) => page.trim().length > 0),
+      pages.every((page) => page.trim().length > 0) &&
+      pageCount >= printState.pageBreaks.length + 1,
     `${testCase.category} PDF has empty or unexpected pages (${pageCount} pages, ${pages.length} with text)`,
   );
   assert(
@@ -1485,8 +1556,127 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory) {
   );
   await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
   console.log(
-    `✓ ${testCase.category}: ${pageCount} non-empty Letter page(s), agency details and linked source periods retained`,
+    `✓ ${testCase.category} / ${theme}: ${pageCount} non-empty Letter page(s), contrast, page breaks, agency details, and linked source periods retained`,
   );
+}
+
+async function checkFieldRoutePrint(cdp, pdfDirectory) {
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      Boolean([...document.querySelectorAll('button')].find((button) =>
+        button.innerText.trim() === 'Agencies'))`,
+    'the app shell before preparing a field route print check',
+    60_000,
+  );
+
+  const openedFieldWork = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('button')].find((candidate) =>
+      candidate.innerText.trim() === 'Field Work');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert(openedFieldWork, 'Could not open Field Work for the print check');
+  await waitFor(
+    cdp,
+    `document.querySelectorAll('#field-route-sheet .field-route-stop').length > 1`,
+    'multiple existing agencies in the field route sheet',
+  );
+  const routeAgencyNames = await evaluate(cdp, `[
+    ...document.querySelectorAll('#field-route-sheet .field-route-stop h3'),
+  ].map((heading) => heading.innerText.trim())`);
+  assert(routeAgencyNames.length > 1, 'The field route print check needs multiple route stops');
+
+  for (const theme of ['daylight', 'dark', 'miami-vice']) {
+    await setPrintTheme(cdp, theme);
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'print' });
+    const printState = await evaluate(cdp, `(() => {
+      const sheet = document.querySelector('#field-route-sheet');
+      if (!sheet) return null;
+      const rgb = (color) => (color.match(/[\\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = (color) => {
+        const channels = rgb(color).map((channel) => {
+          const value = channel / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+      };
+      const contrast = (foreground, background) => {
+        const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+        return (values[0] + 0.05) / (values[1] + 0.05);
+      };
+      const visibleStops = [...sheet.querySelectorAll('.field-route-stop')];
+      const score = sheet.querySelector('.field-route-score');
+      const scoreStyle = score ? getComputedStyle(score) : null;
+      const nonWhiteSurfaces = [...sheet.querySelectorAll('*')]
+        .filter((element) => !element.classList.contains('field-route-score'))
+        .filter((element) => {
+          const color = getComputedStyle(element).backgroundColor;
+          return color !== 'rgba(0, 0, 0, 0)' && color !== 'rgb(255, 255, 255)';
+        })
+        .map((element) => ({
+          tag: element.tagName,
+          className: String(element.className).slice(0, 120),
+          text: element.innerText.trim().slice(0, 80),
+          background: getComputedStyle(element).backgroundColor,
+        }));
+      return {
+        sheetVisible: getComputedStyle(sheet).display !== 'none' &&
+          getComputedStyle(sheet).visibility !== 'hidden',
+        printNavigationHidden: getComputedStyle(document.querySelector('nav[aria-label="Field Work views"]')).display === 'none',
+        text: sheet.innerText,
+        stopCount: visibleStops.length,
+        stopsAvoidBreak: visibleStops.every((stop) =>
+          ['avoid', 'avoid-page'].includes(getComputedStyle(stop).breakInside)),
+        scoreContrast: scoreStyle ? contrast(scoreStyle.color, scoreStyle.backgroundColor) : 0,
+        scoreBackground: scoreStyle?.backgroundColor ?? '',
+        nonWhiteSurfaces,
+        printButtonsHidden: [...sheet.querySelectorAll('button')].every((button) =>
+          getComputedStyle(button).display === 'none'),
+      };
+    })()`);
+    assert(
+      printState?.sheetVisible &&
+        printState.printNavigationHidden &&
+        printState.stopCount === routeAgencyNames.length &&
+        printState.stopsAvoidBreak &&
+        printState.scoreContrast >= 4.5 &&
+        printState.scoreBackground === 'rgb(219, 234, 254)' &&
+        printState.nonWhiteSurfaces.length === 0 &&
+        printState.printButtonsHidden,
+      `Field route print styling failed in ${theme}: ${JSON.stringify(printState)}`,
+    );
+
+    const pdfResult = await cdp.send('Page.printToPDF', {
+      paperWidth: 8.5,
+      paperHeight: 11,
+      preferCSSPageSize: true,
+      printBackground: true,
+      transferMode: 'ReturnAsBase64',
+    });
+    const pdfPath = path.join(pdfDirectory, `field-route-${theme}.pdf`);
+    await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
+    const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
+      execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+      execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+    ]);
+    const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+    const pageSize = pdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+    const normalizedPdfText = extractedText.replace(/\s+/g, ' ').toLowerCase();
+    assert(
+      /612 x 792 pts \(letter\)/i.test(pageSize) &&
+        pageCount > 0 && pageCount <= 6 &&
+        routeAgencyNames.every((agency) =>
+          normalizedPdfText.includes(agency.toLowerCase())) &&
+        normalizedPdfText.includes('google maps lookup') &&
+        !normalizedPdfText.includes('field clinical & financial battlecards'),
+      `Field route PDF lost content, printed unrelated panels, or paginated unexpectedly in ${theme}: ${pageCount} pages`,
+    );
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
+    console.log(`✓ Field Work / ${theme}: ${pageCount} non-empty Letter page(s), route details and status colors retained`);
+  }
 }
 
 async function assertNoHorizontalOverflow(cdp, width, area) {
@@ -4469,10 +4659,13 @@ async function main() {
           );
         })();`,
       });
-      for (const testCase of profilePrintCases) {
-        await checkProfilePrintCase(cdp, testCase, userDataDir);
+      for (const theme of ['daylight', 'dark', 'miami-vice']) {
+        for (const testCase of profilePrintCases) {
+          await checkProfilePrintCase(cdp, testCase, userDataDir, theme);
+        }
       }
-      console.log('EMS and Fire Letter-print regression checks passed.');
+      await checkFieldRoutePrint(cdp, userDataDir);
+      console.log('Provider and Field Work Letter-print regression checks passed in Daylight, Dark, and Miami Vice.');
       return;
     }
 

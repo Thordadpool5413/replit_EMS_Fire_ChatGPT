@@ -456,6 +456,17 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     a { color: #1e3a8a !important; text-decoration: underline; overflow-wrap: anywhere; }
     .dossier-page-break { page-break-before: always; break-before: page; margin-top: 32px !important; border-top: 2px dashed #94a3b8 !important; padding-top: 24px !important; }
     .print-summary, .print-profile-review, .print-source-references li, tr { page-break-inside: avoid; break-inside: avoid; }
+    .print-status-badge { display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+    .print-status-badge[data-status-kind="fire"] { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .print-status-badge[data-status-kind="ems"] { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
+    .print-status-badge[data-status-kind="reviewed"] { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .print-status-badge[data-status-kind="mapped"], .print-status-badge[data-status-kind="reported"] { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    .print-status-badge[data-status-kind="warning"] { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .print-status-badge[data-status-kind="calculated"] { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    .print-status-badge[data-status-kind="user-entered"] { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+    .print-status-badge[data-status-kind="disbursed"] { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .print-status-badge[data-status-kind="active"] { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    .print-status-badge[data-status-kind="planned"] { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
     @media (max-width: 640px) {
       body { padding: 8px; }
       #briefing-dossier-document { padding: 12px !important; }
@@ -466,8 +477,40 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     @media print {
       html, body { width: auto; min-height: 0; padding: 0 !important; background: #fff !important; }
       #briefing-dossier-document { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
-      .dossier-page-break { margin-top: 0 !important; }
+      .print-dossier-document {
+        color-scheme: light !important;
+        color: #111827 !important;
+        background: #ffffff !important;
+      }
+      .print-dossier-document * {
+        color: #334155;
+        background-color: transparent;
+        border-color: #cbd5e1;
+      }
+      .print-dossier-document h1,
+      .print-dossier-document h2,
+      .print-dossier-document h3,
+      .print-dossier-document strong,
+      .print-dossier-document th {
+        color: #111827 !important;
+      }
+      .print-dossier-document a {
+        color: #1d4ed8 !important;
+        text-decoration: underline !important;
+        overflow-wrap: anywhere !important;
+      }
+      .print-dossier-document .dossier-page-break {
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        border: 0 !important;
+      }
       table { table-layout: fixed; }
+      thead { display: table-header-group; }
       th, td { overflow-wrap: anywhere; font-size: 8pt; }
       a { color: #1e3a8a !important; }
       .print-agency-identifiers { border-top: 1px solid #e2e8f0 !important; padding-top: 0.2rem !important; color: #64748b !important; font-size: 7pt !important; }
@@ -476,7 +519,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       .print-profile-review { color: #64748b !important; font-size: 7pt !important; }
       .print-planning-estimate { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #475569 !important; box-shadow: none !important; }
       #briefing-dossier-document .grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .print-status-badge, .print-summary, .print-summary-value {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
     }
   </style>
 </head>
@@ -636,7 +682,9 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-semibold text-white ${
+                    <span
+                      data-status-kind={isFire ? 'fire' : 'ems'}
+                      className={`print-status-badge px-2.5 py-0.5 rounded text-xs font-semibold text-white ${
                       isFire ? 'bg-red-700' : 'bg-[#1E3A8A]'
                     }`}>
                       {isFire ? 'Fire department' : 'EMS provider'}
@@ -1433,7 +1481,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                           ${g.awardAmount.toLocaleString()}
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          <span
+                            data-status-kind={g.status.includes('Disbursed')
+                              ? 'disbursed'
+                              : g.status.includes('Active')
+                                ? 'active'
+                                : 'planned'}
+                            className={`print-status-badge px-2 py-0.5 rounded text-xs font-medium ${
                             g.status.includes('Disbursed')
                               ? 'bg-emerald-100 text-emerald-800'
                               : g.status.includes('Active')
@@ -1471,9 +1525,24 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   {sourceReferences.map((reference, index) => {
                     const sourceUrl = printableSourceUrl(reference.url);
+                    const normalizedStatus = reference.status.toLowerCase();
+                    const statusKind = /review marker|confirmed/.test(normalizedStatus)
+                      ? 'reviewed'
+                      : /incomplete|rejected/.test(normalizedStatus)
+                        ? 'warning'
+                        : normalizedStatus.includes('mapped')
+                          ? 'mapped'
+                          : normalizedStatus.includes('calculated')
+                            ? 'calculated'
+                            : normalizedStatus.includes('user-entered')
+                              ? 'user-entered'
+                              : 'reported';
                     return <li key={`${reference.label}-${reference.sourceName}-${index}`} className="min-w-0 break-words">
                       <div className="font-semibold text-slate-900">
-                        {reference.label} · {reference.status}
+                        {reference.label} ·{' '}
+                        <span className="print-status-badge" data-status-kind={statusKind}>
+                          {reference.status}
+                        </span>
                       </div>
                       <div>{reference.sourceName}</div>
                       <div className="text-slate-600">
@@ -1602,8 +1671,98 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             line-height: 1.3 !important;
           }
 
-          .dossier-page-break {
-            display: none !important;
+          #briefing-dossier-modal-container .print-dossier-document {
+            color-scheme: light !important;
+            color: #111827 !important;
+            background: #ffffff !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document * {
+            color: #334155 !important;
+            background-color: transparent !important;
+            border-color: #cbd5e1 !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document h1,
+          #briefing-dossier-modal-container .print-dossier-document h2,
+          #briefing-dossier-modal-container .print-dossier-document h3,
+          #briefing-dossier-modal-container .print-dossier-document strong,
+          #briefing-dossier-modal-container .print-dossier-document th {
+            color: #111827 !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document a {
+            color: #1d4ed8 !important;
+            text-decoration: underline !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge {
+            display: inline-flex !important;
+            align-items: center !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 4px !important;
+            padding: 2px 6px !important;
+            font-weight: 700 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="fire"] {
+            color: #991b1b !important;
+            background: #fee2e2 !important;
+            border-color: #fca5a5 !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="ems"] {
+            color: #1e3a8a !important;
+            background: #dbeafe !important;
+            border-color: #93c5fd !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="reviewed"],
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="disbursed"] {
+            color: #166534 !important;
+            background: #dcfce7 !important;
+            border-color: #86efac !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="mapped"],
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="reported"],
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="active"] {
+            color: #1e40af !important;
+            background: #dbeafe !important;
+            border-color: #93c5fd !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="warning"],
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="planned"] {
+            color: #92400e !important;
+            background: #fef3c7 !important;
+            border-color: #fcd34d !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="calculated"] {
+            color: #5b21b6 !important;
+            background: #ede9fe !important;
+            border-color: #c4b5fd !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .print-status-badge[data-status-kind="user-entered"] {
+            color: #6b21a8 !important;
+            background: #f3e8ff !important;
+            border-color: #d8b4fe !important;
+          }
+
+          #briefing-dossier-modal-container .print-dossier-document .dossier-page-break {
+            display: block !important;
+            break-before: page !important;
+            page-break-before: always !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            border: 0 !important;
           }
 
           .print-summary,

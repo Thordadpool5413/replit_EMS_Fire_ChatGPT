@@ -25,3 +25,4 @@
 - [API startup health paths](api-startup-health-paths.md) — production probes may hit both the service base path and the configured readiness path; keep both aligned.
 - [Custom modal focus lifecycle](custom-modal-focus-lifecycle.md) — conditionally mounted overlays restore focus from effect cleanup, not an `isOpen=false` effect.
 - [Browser contrast color sampling](browser-contrast-color-sampling.md) — parse Chromium's normalized `color(srgb ...)` values and anchor contrast checks to the rendered surface.
+- [Print theme readability](print-theme-readability.md) — use paper-first print colors, preserve semantic status contrast and page breaks, and validate actual PDFs across themes.

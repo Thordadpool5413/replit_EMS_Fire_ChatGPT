@@ -199,7 +199,10 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       </div>
 
       {/* Today's Route Stops */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] min-w-0">
+      <div
+        id="field-route-sheet"
+        className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] min-w-0"
+      >
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] items-start xl:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 min-w-0">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
@@ -217,7 +220,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                 href={googleMapsMultiStopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1E3A8A] text-white hover:bg-[#111827] dark:hover:bg-blue-600 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="field-route-launch-link min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1E3A8A] text-white hover:bg-[#111827] dark:hover:bg-blue-600 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
                 title="Open turn-by-turn multi-stop route in Google Maps"
               >
                 <Navigation className="w-3.5 h-3.5" />
@@ -271,7 +274,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
               const chief = agency.keyContacts.find(c => c.role.includes('Chief')) || agency.keyContacts[0];
 
               return (
-                <div key={agency.id} className="py-4 first:pt-3 last:pb-1">
+                <div key={agency.id} className="field-route-stop py-4 first:pt-3 last:pb-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     
                     <div className="flex items-start gap-3">
@@ -284,7 +287,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                           <h3 className="font-semibold text-slate-900 dark:text-white text-sm">
                             {agency.name}
                           </h3>
-                          <span className="text-xs font-medium text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md tabular-nums">
+                          <span className="field-route-score text-xs font-medium text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md tabular-nums">
                             Score {agency.zollOpportunity.pulseIqScore}/100
                           </span>
                         </div>
@@ -479,17 +482,109 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       {/* Field Route Sheet Print Styling */}
       <style>{`
         @media print {
-          nav, header, button, .no-print {
+          @page {
+            size: letter portrait;
+            margin: 12mm;
+          }
+
+          .pi-app-shell > :not(.pi-workspace-body),
+          .pi-workspace-body > :not(.workspace-grid-shell),
+          .workspace-grid-shell > :not(.workspace-view-container),
+          .workspace-view-container > :not(.workspace-section-grid),
+          .workspace-section-grid > :not(#field-route-sheet) {
             display: none !important;
           }
+
           body {
             background: #ffffff !important;
+            color: #111827 !important;
+            color-scheme: light !important;
+            width: auto !important;
+            min-height: 0 !important;
             margin: 0 !important;
-            padding: 12px !important;
+            padding: 0 !important;
+            overflow: visible !important;
           }
-          * {
+
+          .pi-app-shell,
+          .pi-workspace-body,
+          .workspace-grid-shell,
+          .workspace-view-container,
+          .workspace-section-grid {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-height: 0 !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+          }
+
+          #field-route-sheet {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+            box-shadow: none !important;
+            font-size: 9pt !important;
+            line-height: 1.35 !important;
+          }
+
+          #field-route-sheet * {
+            color: #334155 !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+          }
+
+          #field-route-sheet h2,
+          #field-route-sheet h3,
+          #field-route-sheet strong {
+            color: #111827 !important;
+          }
+
+          #field-route-sheet :not(.field-route-score) {
+            background-color: transparent !important;
+          }
+
+          #field-route-sheet .field-route-score {
+            color: #1e40af !important;
+            background: #dbeafe !important;
+            border: 1px solid #93c5fd !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+
+          #field-route-sheet a {
+            color: #1d4ed8 !important;
+            background-color: transparent !important;
+            border-color: transparent !important;
+            text-decoration: underline !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          #field-route-sheet h2 {
+            break-after: avoid;
+            page-break-after: avoid;
+          }
+
+          #field-route-sheet .field-route-stop {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          #field-route-sheet .divide-y > :not([hidden]) ~ :not([hidden]) {
+            border-top: 1px solid #cbd5e1 !important;
+          }
+
+          #field-route-sheet .no-print,
+          #field-route-sheet button,
+          #field-route-sheet .field-route-launch-link {
+            display: none !important;
           }
         }
       `}</style>

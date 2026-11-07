@@ -48,6 +48,7 @@ import {
   type TerritoryUrlValidators,
 } from './navigation/territoryUrl';
 import { territoryEngine } from './services/territoryIntelligenceEngine';
+import { isThemeMode, type ThemeMode } from './types/theme';
 import {
   shouldShowTransientNotice,
   type TransientNoticeType,
@@ -92,6 +93,21 @@ const GoogleMapsTerritoryExplorer = React.lazy(() => import('./components/Google
 const DataHealthDashboard = React.lazy(() => import('./components/DataHealthDashboard').then((module) => ({ default: module.DataHealthDashboard })));
 const MobileProviderSelectorDrawer = React.lazy(() => import('./components/MobileProviderSelectorDrawer').then((module) => ({ default: module.MobileProviderSelectorDrawer })));
 const AgencyComparisonPanel = React.lazy(() => import('./components/AgencyComparisonPanel').then((module) => ({ default: module.AgencyComparisonPanel })));
+
+function loadInitialThemeMode(): ThemeMode {
+  try {
+    const savedThemeMode = localStorage.getItem('app_theme_mode');
+    if (isThemeMode(savedThemeMode)) return savedThemeMode;
+
+    const legacyDarkMode = localStorage.getItem('app_dark_mode');
+    if (legacyDarkMode === 'true') return 'dark';
+    if (legacyDarkMode === 'false') return 'daylight';
+
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'daylight';
+  } catch {
+    return 'daylight';
+  }
+}
 
 type TerritoryNavigationEntry = {
   workspace: string;
@@ -187,35 +203,21 @@ export default function App() {
     });
   };
 
-  // Dark Mode State with LocalStorage Persistence
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('app_dark_mode');
-      if (saved !== null) return saved === 'true';
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } catch {
-      return false;
-    }
-  });
+  const [themeMode, setThemeMode] = useState<ThemeMode>(loadInitialThemeMode);
+  const isDarkMode = themeMode !== 'daylight';
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    }
+    const root = document.documentElement;
+    root.dataset.theme = themeMode;
+    root.classList.toggle('dark', isDarkMode);
+    root.style.colorScheme = isDarkMode ? 'dark' : 'light';
     try {
+      localStorage.setItem('app_theme_mode', themeMode);
       localStorage.setItem('app_dark_mode', String(isDarkMode));
     } catch {
       // Ignore storage errors
     }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => !prev);
-  }, []);
+  }, [themeMode, isDarkMode]);
   
   // Navigation & Modals - Open with Central Home & Guided Onboarding Hub by default
   const [activeTab, setActiveTab] = useState<string>(
@@ -984,8 +986,8 @@ export default function App() {
         openChatbot={() => setIsChatbotOpen(true)}
         showGuide={showWorkflowGuide}
         onToggleGuide={() => handleToggleWorkflowGuide()}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={toggleDarkMode}
+        themeMode={themeMode}
+        onThemeModeChange={setThemeMode}
         globalState={globalState}
         globalCounty={globalCounty}
         globalCity={globalCity}
@@ -1229,8 +1231,6 @@ export default function App() {
               isOnline={isOnline}
               toggleNetwork={handleCheckConnectivity}
               outbox={outbox}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={toggleDarkMode}
             />
           </div>
         )}

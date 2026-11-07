@@ -6,10 +6,14 @@ import path from 'node:path';
 
 const baseUrl = process.env.THEME_TEST_URL ?? `http://127.0.0.1:${process.env.PORT ?? '24938'}/`;
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
-const viewports = [
+const allViewports = [
   { width: 390, height: 844, mobile: true },
   { width: 1280, height: 900, mobile: false },
 ];
+const requestedWidth = Number(process.env.THEME_TEST_WIDTH);
+const viewports = requestedWidth
+  ? allViewports.filter((viewport) => viewport.width === requestedWidth)
+  : allViewports;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -123,13 +127,124 @@ async function clickVisible(cdp, selectorOrLabel, exactText = false) {
   assert(clicked, `Could not click ${selectorOrLabel}`);
 }
 
-async function setTheme(cdp, dark) {
-  await evaluate(cdp, `document.documentElement.classList.toggle('dark', ${dark})`);
+function themeModeName(themeMode) {
+  if (typeof themeMode === 'string') return themeMode;
+  return themeMode ? 'dark' : 'daylight';
+}
+
+function themeLabel(themeMode) {
+  const mode = themeModeName(themeMode);
+  if (mode === 'daylight') return 'light';
+  if (mode === 'dark') return 'dark';
+  return 'Miami Vice';
+}
+
+async function setTheme(cdp, requestedThemeMode) {
+  const themeMode = themeModeName(requestedThemeMode);
+  const isDark = themeMode !== 'daylight';
+  const isMobile = await evaluate(cdp, 'innerWidth < 768');
+  const testId = isMobile ? 'theme-select-mobile' : 'theme-select-desktop';
+
+  if (isMobile) {
+    await evaluate(cdp, 'window.scrollTo({ top: 0, behavior: "instant" })');
+    await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
+  }
   await waitFor(
     cdp,
-    `document.documentElement.classList.contains('dark') === ${dark}`,
-    `${dark ? 'dark' : 'light'} theme`,
+    `(() => {
+      const select = document.querySelector('[data-testid="${testId}"]');
+      const rect = select?.getBoundingClientRect();
+      return Boolean(select && rect && rect.width > 0 && rect.height > 0);
+    })()`,
+    `${themeLabel(themeMode)} theme selector`,
   );
+  const selectionDispatched = await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="${testId}"]');
+    if (!select || ![...select.options].some((option) => option.value === ${JSON.stringify(themeMode)})) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
+    if (!setter) return false;
+    setter.call(select, ${JSON.stringify(themeMode)});
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return select.value === ${JSON.stringify(themeMode)};
+  })()`);
+  assert(selectionDispatched, `Could not choose ${themeLabel(themeMode)} from the theme selector`);
+  await waitFor(
+    cdp,
+    `document.documentElement.dataset.theme === ${JSON.stringify(themeMode)} &&
+      document.documentElement.classList.contains('dark') === ${isDark} &&
+      localStorage.getItem('app_theme_mode') === ${JSON.stringify(themeMode)}`,
+    `${themeLabel(themeMode)} theme application and persistence`,
+  );
+  const saved = await evaluate(cdp, `({
+    mode: localStorage.getItem('app_theme_mode'),
+    legacyDarkMode: localStorage.getItem('app_dark_mode'),
+  })`);
+  assert(saved.legacyDarkMode === String(isDark), `${themeLabel(themeMode)} did not keep the legacy dark-mode preference in sync`);
+}
+
+async function reloadAndWaitForTheme(cdp, themeMode, description) {
+  await cdp.send('Page.reload');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.home-map-state-path')) &&
+      document.documentElement.dataset.theme === ${JSON.stringify(themeMode)}`,
+    description,
+  );
+}
+
+async function checkThemeModeSelection(cdp, viewport) {
+  await evaluate(cdp, `(() => {
+    localStorage.removeItem('app_theme_mode');
+    localStorage.setItem('app_dark_mode', 'false');
+  })()`);
+  await reloadAndWaitForTheme(cdp, 'daylight', 'legacy Daylight preference migration');
+
+  for (const themeMode of ['daylight', 'dark', 'miami-vice']) {
+    await setTheme(cdp, themeMode);
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    const state = await evaluate(cdp, `(() => {
+      const active = document.querySelector('.pi-primary-nav [aria-current="page"]');
+      const activeStyle = active ? getComputedStyle(active) : null;
+      const root = document.documentElement;
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--pi-accent-highlight)';
+      document.body.appendChild(probe);
+      const accentColor = getComputedStyle(probe).color;
+      probe.remove();
+      return {
+        mode: root.dataset.theme,
+        darkClass: root.classList.contains('dark'),
+        selectedValue: localStorage.getItem('app_theme_mode'),
+        legacyValue: localStorage.getItem('app_dark_mode'),
+        accent: getComputedStyle(root).getPropertyValue('--pi-accent-highlight').trim(),
+        activeBorder: activeStyle?.borderLeftColor ?? '',
+        activeBorderWidth: activeStyle?.borderLeftWidth ?? '',
+        activeHtml: active?.outerHTML ?? '',
+        accentColor,
+      };
+    })()`);
+    assert(state.mode === themeMode, `Theme selector did not apply ${themeLabel(themeMode)}`);
+    assert(state.darkClass === (themeMode !== 'daylight'), `${themeLabel(themeMode)} did not set the expected color scheme`);
+    assert(state.selectedValue === themeMode, `${themeLabel(themeMode)} selection was not saved`);
+    assert(state.legacyValue === String(themeMode !== 'daylight'), `${themeLabel(themeMode)} did not preserve legacy preference compatibility`);
+    if (themeMode === 'miami-vice') {
+      assert(state.accent === '#ff789d', `Miami Vice accent token is missing: ${JSON.stringify(state)}`);
+      assert(state.activeBorder === state.accentColor, `Miami Vice active navigation accent is missing: ${JSON.stringify(state)}`);
+    }
+  }
+
+  await reloadAndWaitForTheme(cdp, 'miami-vice', 'Miami Vice preference after reload');
+  await evaluate(cdp, `(() => {
+    localStorage.removeItem('app_theme_mode');
+    localStorage.setItem('app_dark_mode', 'false');
+  })()`);
+  await reloadAndWaitForTheme(cdp, 'daylight', 'legacy Daylight preference migration');
+  await evaluate(cdp, `(() => {
+    localStorage.removeItem('app_theme_mode');
+    localStorage.setItem('app_dark_mode', 'true');
+  })()`);
+  await reloadAndWaitForTheme(cdp, 'dark', 'legacy Dark preference migration');
+  console.log(`  ${viewport.width}px: all three theme options, persistence, and legacy Daylight/Dark preference migration`);
 }
 
 async function contrastReadings(cdp, selectors) {
@@ -331,20 +446,20 @@ async function checkThemeStates(cdp, dark, viewport) {
   })()`);
 
   assert(fixtureState.attached, 'Theme state fixture did not attach to the app');
-  assert(fixtureState.surfaceMatchesToken, `${dark ? 'Dark' : 'Light'} cards do not use the shared surface token`);
-  assert(fixtureState.borderMatchesToken, `${dark ? 'Dark' : 'Light'} cards do not use the shared border token`);
-  assert(fixtureState.selectedMatchesBrand, `${dark ? 'Dark' : 'Light'} selected controls do not use the brand action token`);
-  assert(fixtureState.disabledIsDimmed, `${dark ? 'Dark' : 'Light'} disabled controls are not visually distinct`);
-  assert(fixtureState.loadingIsAnimated, `${dark ? 'Dark' : 'Light'} loading state is not visibly animated`);
-  assert(fixtureState.warningMatchesToken && fixtureState.alertRole === 'alert', `${dark ? 'Dark' : 'Light'} warning state does not use semantic warning tokens`);
+  assert(fixtureState.surfaceMatchesToken, `${themeLabel(dark)} cards do not use the shared surface token`);
+  assert(fixtureState.borderMatchesToken, `${themeLabel(dark)} cards do not use the shared border token`);
+  assert(fixtureState.selectedMatchesBrand, `${themeLabel(dark)} selected controls do not use the brand action token`);
+  assert(fixtureState.disabledIsDimmed, `${themeLabel(dark)} disabled controls are not visually distinct`);
+  assert(fixtureState.loadingIsAnimated, `${themeLabel(dark)} loading state is not visibly animated`);
+  assert(fixtureState.warningMatchesToken && fixtureState.alertRole === 'alert', `${themeLabel(dark)} warning state does not use semantic warning tokens`);
   assert(
     fixtureState.focusState.active && fixtureState.focusState.border === fixtureState.focusState.action,
-    `${dark ? 'Dark' : 'Light'} focused form control does not use the action token: ${JSON.stringify(fixtureState.focusState)}`,
+    `${themeLabel(dark)} focused form control does not use the action token: ${JSON.stringify(fixtureState.focusState)}`,
   );
   assert(
     fixtureState.focusState.focusVisible && fixtureState.focusState.outlineWidth !== '0px' &&
       fixtureState.focusState.outline === fixtureState.focusState.focusRing,
-    `${dark ? 'Dark' : 'Light'} focus ring does not use the shared focus token: ${JSON.stringify(fixtureState.focusState)}`,
+    `${themeLabel(dark)} focus ring does not use the shared focus token: ${JSON.stringify(fixtureState.focusState)}`,
   );
 
   const readings = await contrastReadings(cdp, [
@@ -355,10 +470,10 @@ async function checkThemeStates(cdp, dark, viewport) {
   ]);
   for (const reading of readings) {
     assert(!reading.missing && !reading.unavailable && reading.ratio >= 4.5,
-      `${dark ? 'Dark' : 'Light'} ${reading.name} contrast is below 4.5:1: ${JSON.stringify(reading)}`);
+      `${themeLabel(dark)} ${reading.name} contrast is below 4.5:1: ${JSON.stringify(reading)}`);
   }
   await evaluate(cdp, `document.querySelector('#theme-state-fixture')?.remove()`);
-  console.log(`  ${dark ? 'dark' : 'light'} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading and warning`);
+  console.log(`  ${themeLabel(dark)} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading and warning`);
 }
 
 async function checkHome(cdp, dark) {
@@ -379,7 +494,7 @@ async function checkHome(cdp, dark) {
     await waitFor(
       cdp,
       `document.querySelector('[data-testid="select-state-map-metric"]')?.value === ${JSON.stringify(metricValue)}`,
-      `${metricValue} map layer in ${dark ? 'dark' : 'light'} theme`,
+      `${metricValue} map layer in ${themeLabel(dark)} theme`,
     );
     const missingCount = await evaluate(cdp, `(() => [...document.querySelectorAll('.home-map-state-path')]
       .filter((path) => path.getAttribute('fill')?.includes('home-map-missing-data')).length)()`);
@@ -415,14 +530,14 @@ async function checkHome(cdp, dark) {
       stateCue.missingHasText && stateCue.missingHasPattern && stateCue.missingHasHatch &&
       stateCue.regionHasSelection &&
       stateCue.controls,
-    `Home selected/missing/control cues are incomplete in ${dark ? 'dark' : 'light'} theme: ${JSON.stringify(stateCue)}`,
+    `Home selected/missing/control cues are incomplete in ${themeLabel(dark)} theme: ${JSON.stringify(stateCue)}`,
   );
   if (!missingLayer) {
-    console.log(`  ${dark ? 'dark' : 'light'} Home: no selected map layer currently has unavailable state data; missing fill definition and textual legend are present.`);
+    console.log(`  ${themeLabel(dark)} Home: no selected map layer currently has unavailable state data; missing fill definition and textual legend are present.`);
   } else {
-    console.log(`  ${dark ? 'dark' : 'light'} Home: ${missingLayer.missingCount} missing states use the hatched fill on ${missingLayer.metricValue}.`);
+    console.log(`  ${themeLabel(dark)} Home: ${missingLayer.missingCount} missing states use the hatched fill on ${missingLayer.metricValue}.`);
   }
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} Home`, [
+  await checkReadable(cdp, `${themeLabel(dark)} Home`, [
     { name: 'map metric control', selector: '[data-testid="select-state-map-metric"]' },
     { name: 'selected region label', selector: '.home-map-region-filter button[aria-pressed="true"]' },
     { name: 'map legend heading', selector: '.home-map-legend-title', backgroundRgb: [12, 29, 41] },
@@ -445,15 +560,15 @@ async function checkCounty(cdp, dark) {
       countyCount: document.querySelectorAll('.county-profile-card').length,
     };
   })()`);
-  assert(summary.summaryText.length > 20, `${dark ? 'Dark' : 'Light'} county summary is empty`);
-  assert(summary.cardTitle, `${dark ? 'Dark' : 'Light'} county card title is missing`);
-  assert(summary.countyCount > 0, `${dark ? 'Dark' : 'Light'} county cards are missing`);
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} county`, [
+  assert(summary.summaryText.length > 20, `${themeLabel(dark)} county summary is empty`);
+  assert(summary.cardTitle, `${themeLabel(dark)} county card title is missing`);
+  assert(summary.countyCount > 0, `${themeLabel(dark)} county cards are missing`);
+  await checkReadable(cdp, `${themeLabel(dark)} county`, [
     { name: 'county card title', selector: '.county-profile-card h3' },
     { name: 'county summary heading', selector: '.county-state-summary-panel h4' },
   ]);
   console.log(
-    `  ${dark ? 'dark' : 'light'} county state: ${summary.countyCount} cards; missing-data label ${summary.missingLabel || 'not present in first card'}`,
+    `  ${themeLabel(dark)} county state: ${summary.countyCount} cards; missing-data label ${summary.missingLabel || 'not present in first card'}`,
   );
 }
 
@@ -501,11 +616,11 @@ async function checkProfileAndSources(cdp, dark) {
         sourceAction: Boolean(source?.querySelector('button')),
     };
   })()`);
-  assert(profileCues.statusText, `${dark ? 'Dark' : 'Light'} profile status is missing`);
+  assert(profileCues.statusText, `${themeLabel(dark)} profile status is missing`);
   assert(profileCues.statusHasAccessibleState, 'Profile review status is not announced accessibly');
   assert(profileCues.sourcePanel, 'Available source references panel is missing');
   assert(profileCues.sourceAction, 'Available source references action is missing');
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} provider profile`, [
+  await checkReadable(cdp, `${themeLabel(dark)} provider profile`, [
     { name: 'profile review status', selector: '[data-testid^="status-profile-review-"]' },
     { name: 'source references heading', selector: '[aria-label="Available source references"] h2' },
     { name: 'source references action', selector: '[aria-label="Available source references"] button' },
@@ -531,12 +646,12 @@ async function checkProfileAndSources(cdp, dark) {
   })()`);
   assert(sourceCues.heading && sourceCues.body.length > 100, 'Provider source drawer has incomplete content');
   assert(sourceCues.statusText, 'Provider source match status is not expressed in text');
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} source panel`, [
+  await checkReadable(cdp, `${themeLabel(dark)} source panel`, [
     { name: 'source drawer title', selector: '[aria-label="Evidence and Source Inspection Drawer"] h3' },
     { name: 'source match status', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-800' },
     { name: 'source explanation', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-900\\/80' },
   ]);
-  console.log(`  ${dark ? 'dark' : 'light'} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
+  console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
   await evaluate(cdp, `document.querySelector('[aria-label="Evidence and Source Inspection Drawer"] button')?.click()`);
 }
 
@@ -647,7 +762,7 @@ async function checkFieldWork(cdp, dark, viewport) {
   }))()`);
   assert(state.title, 'Field Work heading is missing');
   assert(!state.overflow, `Field Work overflows at ${viewport.width}px`);
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} Field Work`, [
+  await checkReadable(cdp, `${themeLabel(dark)} Field Work`, [
     { name: 'field work heading', selector: '.workspace-section-grid h2' },
     { name: 'field work supporting text', selector: '.workspace-section-grid p' },
   ]);
@@ -688,7 +803,7 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
       cues.ranks.includes('Agency 1') &&
       cues.ranks.includes('Agency 2') &&
       cues.ranks.includes('Agency 3'),
-    `${dark ? 'Dark' : 'Light'} comparison selected-agency labels are missing or indistinguishable: ${JSON.stringify(cues.ranks)}`,
+    `${themeLabel(dark)} comparison selected-agency labels are missing or indistinguishable: ${JSON.stringify(cues.ranks)}`,
   );
   assert(cues.selectedNames.length === selectedIds.length, 'Selected agency names are missing from the comparison');
   assert(cues.reported, 'Agency comparison has no reported value to check');
@@ -701,7 +816,7 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
   );
   assert(!cues.documentOverflow, 'Agency comparison causes page-level horizontal overflow');
 
-  await checkReadable(cdp, `${dark ? 'dark' : 'light'} agency comparison`, [
+  await checkReadable(cdp, `${themeLabel(dark)} agency comparison`, [
     { name: 'selected agency label', selector: '[data-testid^="comparison-agency-rank-"]' },
     { name: 'selected agency name', selector: '[data-testid^="button-open-profile-"] .font-display' },
     { name: 'reported comparison value', selector: '[data-value-status="reported"]' },
@@ -709,7 +824,7 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
     { name: 'source evidence note', selector: '[data-testid^="source-fact-"] p:last-child' },
   ]);
   console.log(
-    `  ${dark ? 'dark' : 'light'} agency comparison: ${cues.ranks.join(', ')}; ${cues.selectedNames.map((name) => name.split('\n')[0]).join(' vs ')}; reported, unavailable, and source-note values present`,
+    `  ${themeLabel(dark)} agency comparison: ${cues.ranks.join(', ')}; ${cues.selectedNames.map((name) => name.split('\n')[0]).join(' vs ')}; reported, unavailable, and source-note values present`,
   );
 }
 
@@ -727,10 +842,13 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  await checkThemeModeSelection(cdp, viewport);
   await checkHome(cdp, false);
   await checkThemeStates(cdp, false, viewport);
   await checkHome(cdp, true);
   await checkThemeStates(cdp, true, viewport);
+  await checkHome(cdp, 'miami-vice');
+  await checkThemeStates(cdp, 'miami-vice', viewport);
 
   await clickVisible(cdp, 'Territory', true);
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen #home-state-picker'))`, 'Territory state selector');
@@ -750,20 +868,24 @@ async function runViewport(cdp, viewport) {
   );
   await checkCounty(cdp, false);
   await checkCounty(cdp, true);
+  await checkCounty(cdp, 'miami-vice');
 
   await openProfile(cdp);
   await checkProfileAndSources(cdp, false);
   await checkProfileAndSources(cdp, true);
+  await checkProfileAndSources(cdp, 'miami-vice');
 
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before agency comparison checks');
   const selectedIds = await openAgencyComparison(cdp);
   await checkAgencyComparison(cdp, false, selectedIds);
   await checkAgencyComparison(cdp, true, selectedIds);
+  await checkAgencyComparison(cdp, 'miami-vice', selectedIds);
   await openFieldWork(cdp);
   await checkFieldWork(cdp, false, viewport);
   await checkFieldWork(cdp, true, viewport);
-  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, and comparison in both themes`);
+  await checkFieldWork(cdp, 'miami-vice', viewport);
+  console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, and comparison in all three themes`);
 }
 
 async function main() {

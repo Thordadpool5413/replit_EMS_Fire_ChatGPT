@@ -31,8 +31,6 @@ import {
   SlidersHorizontal,
   Flame,
   Siren,
-  Moon,
-  Sun,
   Layers,
   ArrowUpRight,
   RotateCcw,
@@ -53,8 +51,6 @@ interface ZollMobileDashboardProps {
   isOnline: boolean;
   toggleNetwork: () => void;
   outbox: SyncOutboxItem[];
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
   weights?: PredictiveWeights;
 }
 
@@ -66,8 +62,6 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
   isOnline,
   toggleNetwork,
   outbox,
-  isDarkMode,
-  onToggleDarkMode,
   weights
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -208,45 +202,8 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
             </div>
           </div>
 
-          {/* Quick Actions & Dark Mode Toggle */}
+          {/* Quick action */}
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            {/* Dark Mode Switcher with Motion */}
-            <motion.button
-              whileTap={{ scale: 0.92 }}
-              onClick={onToggleDarkMode}
-              className="h-9 px-3 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer bg-[#F8F7F4] dark:bg-slate-800 text-[#111827] dark:text-slate-200 border-[#E5E4DF] dark:border-slate-700 hover:bg-[#F1EFEA] dark:hover:bg-slate-700"
-              title="Toggle Dark Mode"
-              aria-label="Toggle Dark Mode"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                {isDarkMode ? (
-                  <motion.div 
-                    key="sun" 
-                    initial={{ rotate: -90, opacity: 0 }} 
-                    animate={{ rotate: 0, opacity: 1 }} 
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-1.5 text-amber-400"
-                  >
-                    <Sun className="w-4 h-4" />
-                    <span className="hidden xs:inline text-slate-200">Light</span>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    key="moon" 
-                    initial={{ rotate: 90, opacity: 0 }} 
-                    animate={{ rotate: 0, opacity: 1 }} 
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-1.5 text-[#1E3A8A]"
-                  >
-                    <Moon className="w-4 h-4" />
-                    <span className="hidden xs:inline text-[#111827]">Dark</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
-
             <motion.button
               whileTap={{ scale: 0.95 }}
               type="button"

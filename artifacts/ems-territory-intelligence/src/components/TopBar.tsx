@@ -8,8 +8,6 @@ import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import {
   Search,
   ChevronDown,
-  Sun,
-  Moon,
   Home,
   Building2,
   TrendingUp,
@@ -36,6 +34,8 @@ import {
   isSystemTab as isSystemWorkspaceTab,
   isTerritoryTab as isTerritoryWorkspaceTab
 } from '../navigation/workspaceNavigation';
+import type { ThemeMode } from '../types/theme';
+import { ThemeModeSelect } from './ThemeModeSelect';
 
 interface TopBarProps {
   activeTab: string;
@@ -52,8 +52,8 @@ interface TopBarProps {
   openChatbot?: () => void;
   showGuide?: boolean;
   onToggleGuide?: () => void;
-  isDarkMode?: boolean;
-  onToggleDarkMode?: () => void;
+  themeMode: ThemeMode;
+  onThemeModeChange: (mode: ThemeMode) => void;
   globalState?: string;
   globalCounty?: string;
   globalCity?: string;
@@ -83,8 +83,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   openChatbot,
   showGuide = false,
   onToggleGuide,
-  isDarkMode = false,
-  onToggleDarkMode,
+  themeMode,
+  onThemeModeChange,
   globalState = 'all',
   globalCounty = 'all',
   globalCity = 'all',
@@ -480,18 +480,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
 
           <div className="grid grid-cols-1 gap-1.5">
-            {onToggleDarkMode && (
-              <button
-                type="button"
-                onClick={onToggleDarkMode}
-                aria-label={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
-                className="flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-1.5 text-[10px] font-medium text-slate-300 hover:bg-[#172D49]"
-                title={isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
-              >
-                {isDarkMode ? <Sun className="h-3.5 w-3.5 shrink-0 text-amber-300" /> : <Moon className="h-3.5 w-3.5 shrink-0" />}
-                <span className="truncate">Theme</span>
-              </button>
-            )}
+            <ThemeModeSelect
+              controlId="theme-select-desktop"
+              testId="theme-select-desktop"
+              themeMode={themeMode}
+              onChange={onThemeModeChange}
+            />
           </div>
 
           <div className="relative" ref={desktopUtilityRef}>
@@ -706,21 +700,20 @@ export const TopBar: React.FC<TopBarProps> = ({
                         Strategy AI
                       </button>
                     )}
-                    {onToggleDarkMode && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onToggleDarkMode();
+                    <div className="px-2 py-1">
+                      <div className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Appearance
+                      </div>
+                      <ThemeModeSelect
+                        controlId="theme-select-mobile"
+                        testId="theme-select-mobile"
+                        themeMode={themeMode}
+                        onChange={(mode) => {
+                          onThemeModeChange(mode);
                           setIsMobileToolsMenuOpen(false);
                         }}
-                        className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer flex items-center gap-2"
-                      >
-                        {isDarkMode
-                          ? <Sun className="h-4 w-4 text-amber-400" />
-                          : <Moon className="h-4 w-4 text-[#53657B] dark:text-slate-400" />}
-                        {isDarkMode ? 'Switch to Daylight Mode' : 'Switch to Dark Mode'}
-                      </button>
-                    )}
+                      />
+                    </div>
                     <button
                       type="button"
                       role="menuitem"

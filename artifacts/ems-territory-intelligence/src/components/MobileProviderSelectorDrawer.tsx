@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Agency, PriorityTier } from '../types';
 import { 
   Search, 
@@ -47,6 +47,8 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
   selectedCounty = 'all',
   onSelectCounty
 }) => {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'name'>('pulseIq');
   const [localCategory, setLocalCategory] = useState<'all' | 'ems' | 'fire'>(activeCategory);
@@ -61,6 +63,31 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
       setLocalCounty(selectedCounty);
     }
   }, [isOpen, activeCategory, selectedState, selectedCounty]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const focusFrame = requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      const previous = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (previous?.isConnected) requestAnimationFrame(() => previous.focus());
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Available counties for selected state
   const countiesInState = useMemo(() => {
@@ -208,12 +235,13 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search agency name, city, county, or ZIP code"
               placeholder="Search agency name, city, county, ZIP..."
               className="w-full h-11 pl-10 pr-9 rounded-xl text-sm font-medium bg-white dark:bg-[#111C2D] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#285EE8] focus:border-transparent transition-all shadow-xs"
-              autoFocus
             />
             {searchTerm && (
               <button

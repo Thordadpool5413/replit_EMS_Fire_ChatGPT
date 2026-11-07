@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { Agency, PredictiveWeights } from '../types';
 import { calculateScore, DEFAULT_WEIGHTS, evaluatePulseIqFactors, getPulseIqFormula } from '../utils/pulseIqScoring';
@@ -72,6 +72,20 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
   }, [initialSelectedAgency, agencies, selectedAgencyId]);
 
   const modalCardRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const focusFrame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      if (previouslyFocused?.isConnected) {
+        requestAnimationFrame(() => previouslyFocused.focus());
+      }
+    };
+  }, [isOpen]);
 
   // Close modal when clicking outside the card or pressing Escape
   useClickOutside(modalCardRef, onClose, { enabled: isOpen, closeOnEscape: true });
@@ -161,6 +175,9 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
   return (
     <div 
       className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="data-lineage-modal-title"
     >
       <div 
         ref={modalCardRef}
@@ -184,7 +201,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                   Evidence is evaluated per field; registry identity does not verify operations
                 </span>
               </div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+              <h2 id="data-lineage-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5 tracking-tight">
                 Field-by-field source evidence audit
               </h2>
             </div>
@@ -737,8 +754,10 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
             <span>{auditReport?.verifiedSupportedFields ?? 0} of {auditReport?.applicableAuditedFields ?? 0} fields have reviewed, field-specific evidence</span>
           </div>
           <button
+            ref={closeButtonRef}
+            data-testid="button-acknowledge-data-lineage"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold transition-colors shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold transition-colors shadow-xs cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400"
           >
             Acknowledge &amp; Close
           </button>

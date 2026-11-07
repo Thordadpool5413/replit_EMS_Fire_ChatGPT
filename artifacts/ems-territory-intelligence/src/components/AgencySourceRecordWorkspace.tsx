@@ -49,7 +49,7 @@ const GEOGRAPHIC_RELATIONSHIPS: Array<{
 const INPUT_CLASS =
   "h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
 const LABEL_CLASS =
-  "mb-1 block text-[10px] font-semibold text-slate-600 dark:text-slate-300";
+  "mb-1 block text-[11px] font-semibold text-slate-700 dark:text-slate-300";
 
 function formatDate(value?: string | null): string {
   if (!value) return "Not stated";
@@ -250,7 +250,7 @@ export function AgencySourceRecordWorkspace({
       (requiresGeographyLink && !geographicRelationship)
     ) {
       setFormError(
-        "Enter a value, source name, source record ID, and the selected geography details.",
+        "Add the reported value, source name, and source record ID. For a non-agency scope, add its geography ID and relationship.",
       );
       return;
     }
@@ -1142,7 +1142,7 @@ export function AgencySourceRecordWorkspace({
               </div>
               {formError && (
                 <p
-                  className="text-[10px] font-medium text-rose-700 dark:text-rose-300"
+                  className="text-xs font-medium text-rose-700 dark:text-rose-300"
                   role="alert"
                 >
                   {formError}

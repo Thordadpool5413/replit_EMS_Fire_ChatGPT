@@ -73,7 +73,7 @@ function createCdpClient(webSocketUrl) {
         const timeout = setTimeout(() => {
           pending.delete(id);
           reject(new Error(`Timed out waiting for Chromium command: ${method}`));
-        }, 10_000);
+        }, 30_000);
         pending.set(id, { resolve, reject, timeout, method });
         socket.send(JSON.stringify({ id, method, params }));
       });
@@ -85,11 +85,21 @@ function createCdpClient(webSocketUrl) {
 }
 
 async function evaluate(cdp, expression) {
-  const response = await cdp.send('Runtime.evaluate', {
-    expression,
-    awaitPromise: true,
-    returnByValue: true,
-  });
+  let response;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      response = await cdp.send('Runtime.evaluate', {
+        expression,
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('Inspected target navigated or closed') || attempt === 4) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
   if (response.result.exceptionDetails) {
     const details = response.result.exceptionDetails;
     const reason = details.exception?.description ?? details.exception?.value ?? details.text;
@@ -182,7 +192,8 @@ async function setTheme(cdp, requestedThemeMode) {
       const rect = select?.getBoundingClientRect();
       return Boolean(select && rect && rect.width > 0 && rect.height > 0);
     })()`);
-    if (!selectorAlreadyVisible) {
+    const toolsMenuAlreadyOpen = await evaluate(cdp, `document.querySelector('button[aria-label="Workspace tools"]')?.getAttribute('aria-expanded') === 'true'`);
+    if (!selectorAlreadyVisible && !toolsMenuAlreadyOpen) {
       await waitFor(
         cdp,
         `(() => {
@@ -195,15 +206,38 @@ async function setTheme(cdp, requestedThemeMode) {
       await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
     }
   }
-  await waitFor(
-    cdp,
-    `(() => {
+  const selectorExpression = `(() => {
+    const select = document.querySelector('[data-testid="${testId}"]');
+    const rect = select?.getBoundingClientRect();
+    return Boolean(select && rect && rect.width > 0 && rect.height > 0);
+  })()`;
+  try {
+    await waitFor(
+      cdp,
+      selectorExpression,
+      `${themeLabel(themeMode)} theme selector`,
+      10_000,
+    );
+  } catch (error) {
+    const state = await evaluate(cdp, `(() => {
       const select = document.querySelector('[data-testid="${testId}"]');
       const rect = select?.getBoundingClientRect();
-      return Boolean(select && rect && rect.width > 0 && rect.height > 0);
-    })()`,
-    `${themeLabel(themeMode)} theme selector`,
-  );
+      const style = select ? getComputedStyle(select) : null;
+      const menu = document.querySelector('#mobile-workspace-tools-menu');
+      const trigger = document.querySelector('button[aria-label="Workspace tools"]');
+      return {
+        selector: Boolean(select),
+        rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+        display: style?.display ?? null,
+        visibility: style?.visibility ?? null,
+        menu: Boolean(menu),
+        menuText: menu?.innerText.trim().slice(0, 120) ?? '',
+        triggerExpanded: trigger?.getAttribute('aria-expanded') ?? null,
+        viewport: { width: innerWidth, height: innerHeight },
+      };
+    })()`);
+    throw new Error(`${error.message}; mobile selector state: ${JSON.stringify(state)}`);
+  }
   const selectionDispatched = await evaluate(cdp, `(() => {
     const select = document.querySelector('[data-testid="${testId}"]');
     if (!select || ![...select.options].some((option) => option.value === ${JSON.stringify(themeMode)})) return false;
@@ -564,6 +598,203 @@ async function checkThemeStates(cdp, dark, viewport) {
   console.log(`  ${themeLabel(dark)} ${viewport.width}px theme states: shared surfaces, focus, selected, disabled, loading, and semantic statuses`);
 }
 
+async function checkActualDialogs(cdp, dark, viewport) {
+  await setTheme(cdp, dark);
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'k',
+    code: 'KeyK',
+    modifiers: 2,
+    windowsVirtualKeyCode: 75,
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'k',
+    code: 'KeyK',
+    modifiers: 2,
+    windowsVirtualKeyCode: 75,
+  });
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[role="dialog"][aria-label="Agency and tool search"]'))`,
+    'agency and tool search dialog',
+  );
+  await waitFor(
+    cdp,
+    `document.activeElement?.getAttribute('aria-label') === 'Search agencies and tools'`,
+    'focused command palette search',
+  );
+  const commandDialog = await evaluate(cdp, `(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-label="Agency and tool search"]');
+    const input = dialog?.querySelector('input[aria-label="Search agencies and tools"]');
+    const style = input && getComputedStyle(input);
+    return {
+      modal: dialog?.getAttribute('aria-modal'),
+      inputFocused: document.activeElement === input,
+      focusVisible: input?.matches(':focus-visible'),
+      outlineWidth: style?.outlineWidth ?? '0px',
+      outlineStyle: style?.outlineStyle ?? 'none',
+    };
+  })()`);
+  assert(
+    commandDialog.modal === 'true' &&
+      commandDialog.inputFocused &&
+      commandDialog.focusVisible &&
+      commandDialog.outlineStyle !== 'none' &&
+      commandDialog.outlineWidth !== '0px',
+    `${themeLabel(dark)} ${viewport.width}px command dialog semantics or keyboard focus are incomplete: ${JSON.stringify(commandDialog)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} search dialog`, [
+    { name: 'command palette input', selector: '[role="dialog"][aria-label="Agency and tool search"] input[aria-label="Search agencies and tools"]' },
+  ]);
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27,
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27,
+  });
+  await waitFor(cdp, `!document.querySelector('[role="dialog"][aria-label="Agency and tool search"]')`, 'search dialog to close with Escape');
+
+  const utilityTriggerSelector = viewport.mobile
+    ? 'button[aria-label="Workspace tools"]'
+    : 'button[aria-label="Help and sources"]';
+  const openedUtilityMenu = await evaluate(cdp, `(() => {
+    const trigger = document.querySelector(${JSON.stringify(utilityTriggerSelector)});
+    if (!trigger) return false;
+    trigger.focus();
+    trigger.click();
+    return true;
+  })()`);
+  assert(openedUtilityMenu, `Could not open the ${viewport.mobile ? 'mobile workspace tools' : 'desktop help'} menu`);
+  const lineageAction = viewport.mobile
+    ? 'Help, data lineage & sources'
+    : 'Federal data lineage & sources';
+  await clickVisible(cdp, lineageAction, true);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[role="dialog"][aria-labelledby="data-lineage-modal-title"]'))`,
+    'field-by-field data lineage dialog',
+  );
+  await waitFor(
+    cdp,
+    `document.activeElement?.getAttribute('data-testid') === 'button-acknowledge-data-lineage'`,
+    'focused data lineage dialog action',
+  );
+  const lineageDialog = await evaluate(cdp, `(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-labelledby="data-lineage-modal-title"]');
+    const title = document.getElementById('data-lineage-modal-title');
+    const rect = dialog?.getBoundingClientRect();
+    return {
+      modal: dialog?.getAttribute('aria-modal'),
+      title: title?.innerText.trim() ?? '',
+      focusInside: Boolean(dialog?.contains(document.activeElement)),
+      boundsFit: Boolean(rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight),
+      horizontalOverflow: Boolean(dialog && dialog.scrollWidth > dialog.clientWidth),
+    };
+  })()`);
+  assert(
+    lineageDialog.modal === 'true' &&
+      lineageDialog.title === 'Field-by-field source evidence audit' &&
+      lineageDialog.focusInside &&
+      lineageDialog.boundsFit,
+    `${themeLabel(dark)} ${viewport.width}px data lineage dialog is not clearly named, focused, or contained: ${JSON.stringify(lineageDialog)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} data lineage dialog`, [
+    { name: 'data lineage title', selector: '#data-lineage-modal-title' },
+  ]);
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27,
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27,
+  });
+  await waitFor(
+    cdp,
+    `!document.querySelector('[role="dialog"][aria-labelledby="data-lineage-modal-title"]')`,
+    'data lineage dialog to close with Escape',
+  );
+  await waitFor(
+    cdp,
+    `document.activeElement?.matches(${JSON.stringify(utilityTriggerSelector)})`,
+    'data lineage dialog to restore focus to its menu trigger',
+  );
+  console.log(`  ${themeLabel(dark)} ${viewport.width}px data lineage dialog: accessible name, contained layout, initial focus, and Escape behavior`);
+
+  if (viewport.mobile) {
+    const opened = await evaluate(cdp, `(() => {
+      const trigger = document.querySelector('[data-testid="button-mobile-provider-search"]');
+      if (!trigger) return false;
+      trigger.focus();
+      trigger.click();
+      return true;
+    })()`);
+    assert(opened, 'Could not open the mobile provider search dialog');
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('[role="dialog"][aria-labelledby="mobile-finder-title"]'))`,
+      'mobile provider search dialog',
+    );
+    await waitFor(
+      cdp,
+      `document.activeElement?.getAttribute('aria-label') === 'Search agency name, city, county, or ZIP code'`,
+      'focused mobile provider search',
+    );
+    const mobileDialog = await evaluate(cdp, `(() => {
+      const dialog = document.querySelector('[role="dialog"][aria-labelledby="mobile-finder-title"]');
+      const input = dialog?.querySelector('input[aria-label="Search agency name, city, county, or ZIP code"]');
+      return {
+        modal: dialog?.getAttribute('aria-modal'),
+        labelledBy: dialog?.getAttribute('aria-labelledby'),
+        title: document.getElementById('mobile-finder-title')?.innerText.trim() ?? '',
+        inputFocused: document.activeElement === input,
+        inputShadow: input ? getComputedStyle(input).boxShadow : 'none',
+      };
+    })()`);
+    assert(
+      mobileDialog.modal === 'true' &&
+        mobileDialog.labelledBy === 'mobile-finder-title' &&
+        mobileDialog.title &&
+        mobileDialog.inputFocused &&
+        mobileDialog.inputShadow !== 'none',
+      `Mobile provider dialog semantics or focus are incomplete: ${JSON.stringify(mobileDialog)}`,
+    );
+    await checkReadable(cdp, `${themeLabel(dark)} mobile provider dialog`, [
+      { name: 'provider search input', selector: '[role="dialog"][aria-labelledby="mobile-finder-title"] input[aria-label="Search agency name, city, county, or ZIP code"]' },
+    ]);
+    await cdp.send('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27,
+    });
+    await cdp.send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27,
+    });
+    await waitFor(cdp, `!document.querySelector('[role="dialog"][aria-labelledby="mobile-finder-title"]')`, 'mobile search dialog to close with Escape');
+    await waitFor(
+      cdp,
+      `document.activeElement?.getAttribute('data-testid') === 'button-mobile-provider-search'`,
+      'mobile provider dialog to restore focus to its trigger',
+    );
+  }
+  console.log(`  ${themeLabel(dark)} ${viewport.width}px live search dialog: accessible name, keyboard focus, Escape behavior${viewport.mobile ? ', mobile focus restoration' : ''}`);
+}
+
 async function checkHome(cdp, dark) {
   await setTheme(cdp, dark);
   const metrics = await evaluate(cdp, `(() => {
@@ -743,6 +974,168 @@ async function checkProfileAndSources(cdp, dark) {
   console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
   await captureThemeScreenshot(cdp, dark, 'agency-profile');
   await evaluate(cdp, `document.querySelector('[aria-label="Evidence and Source Inspection Drawer"] button')?.click()`);
+  const openedEvidenceSection = await evaluate(cdp, `(() => {
+    const mobileSelect = document.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (mobileSelect) {
+      mobileSelect.value = 'evidence';
+      mobileSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      return mobileSelect.value === 'evidence';
+    }
+    const evidenceTab = [...document.querySelectorAll('[data-testid="profile-topic-navigation"] button')]
+      .find((button) => button.innerText.trim().startsWith('7. Evidence'));
+    evidenceTab?.click();
+    return Boolean(evidenceTab);
+  })()`);
+  assert(openedEvidenceSection, 'Could not open the agency evidence and notes section');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="button-toggle-agency-source-fact-form"]'))`,
+    'source fact form action in the evidence section',
+  );
+
+  await clickButtonAndScroll(cdp, 'Add fact');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-fact"]'))`,
+    'agency source fact form',
+  );
+  const formState = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-fact"]');
+    const labels = [...(form?.querySelectorAll('label') ?? [])];
+    return {
+      formPresent: Boolean(form),
+      labelCount: labels.length,
+      labelsHaveControls: labels.every((label) => Boolean(label.control)),
+      labelsMeetReadableSize: labels.every((label) => Number.parseFloat(getComputedStyle(label.querySelector('span')).fontSize) >= 11),
+      warningCountBeforeSubmit: form?.querySelectorAll('[role="alert"]').length ?? 0,
+    };
+  })()`);
+  assert(
+    formState.formPresent &&
+      formState.labelCount >= 8 &&
+      formState.labelsHaveControls &&
+      formState.labelsMeetReadableSize &&
+      formState.warningCountBeforeSubmit === 0,
+    `${themeLabel(dark)} source form labels or initial warning state are unclear: ${JSON.stringify(formState)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} source form`, [
+    { name: 'source form label', selector: '[data-testid="form-add-agency-source-fact"] label > span' },
+  ]);
+  await evaluate(cdp, `document.querySelector('[data-testid="form-add-agency-source-fact"]')
+    ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-fact"] [role="alert"]'))`,
+    'actionable source form validation message',
+  );
+  const warning = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-fact"]');
+    const alerts = [...(form?.querySelectorAll('[role="alert"]') ?? [])];
+    const text = alerts[0]?.innerText.trim() ?? '';
+    return {
+      count: alerts.length,
+      text,
+      valueGuidance: text.includes('reported value'),
+      sourceGuidance: text.includes('source name') && text.includes('source record ID'),
+      geographyGuidance: text.includes('geography ID') && text.includes('relationship'),
+      repeatedCopy: text.length > 0 && (form?.innerText.split(text).length ?? 0) > 2,
+    };
+  })()`);
+  assert(
+    warning.count === 1 &&
+      warning.valueGuidance &&
+      warning.sourceGuidance &&
+      warning.geographyGuidance &&
+      !warning.repeatedCopy,
+    `${themeLabel(dark)} source form warning is missing, repeated, or not actionable: ${JSON.stringify(warning)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} source form validation`, [
+    { name: 'source form alert', selector: '[data-testid="form-add-agency-source-fact"] [role="alert"]' },
+  ]);
+  await clickButtonAndScroll(cdp, 'Close form');
+  await waitFor(
+    cdp,
+    `!document.querySelector('[data-testid="form-add-agency-source-fact"]')`,
+    'agency source fact form to close without saving',
+  );
+  console.log(`  ${themeLabel(dark)} source form: labelled fields and one actionable, readable validation alert`);
+
+  await clickButtonAndScroll(cdp, 'Add correction');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-correction"]'))`,
+    'agency source correction form',
+  );
+  const correctionForm = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    const labels = [...(form?.querySelectorAll('label') ?? [])];
+    return {
+      labelCount: labels.length,
+      labelsHaveControls: labels.every((label) => Boolean(label.control)),
+      labelsMeetReadableSize: labels.every((label) => Number.parseFloat(getComputedStyle(label.querySelector('span')).fontSize) >= 11),
+    };
+  })()`);
+  assert(
+    correctionForm.labelCount >= 10 &&
+      correctionForm.labelsHaveControls &&
+      correctionForm.labelsMeetReadableSize,
+    `${themeLabel(dark)} correction form labels are incomplete or hard to read: ${JSON.stringify(correctionForm)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} correction form`, [
+    { name: 'correction form label', selector: '[data-testid="form-add-agency-source-correction"] label > span' },
+  ]);
+  await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    const values = new Map([
+      ['Profile fact being corrected', 'Annual call volume'],
+      ['Previous value', 'Not reported'],
+      ['Reported value', '24000'],
+      ['Source name', 'Agency annual report'],
+      ['Source record ID or citation', 'Page 4'],
+    ]);
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    for (const [labelText, value] of values) {
+      const label = [...(form?.querySelectorAll('label') ?? [])]
+        .find((candidate) => candidate.innerText.trim().startsWith(labelText));
+      const input = label?.querySelector('input');
+      if (!input || !setter) continue;
+      setter.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  })()`);
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="form-add-agency-source-correction"] [role="alert"]'))`,
+    'actionable correction-period validation message',
+  );
+  const correctionWarning = await evaluate(cdp, `(() => {
+    const form = document.querySelector('[data-testid="form-add-agency-source-correction"]');
+    const alerts = [...(form?.querySelectorAll('[role="alert"]') ?? [])];
+    return {
+      count: alerts.length,
+      text: alerts[0]?.innerText.trim() ?? '',
+      role: alerts[0]?.getAttribute('role'),
+      repeated: alerts.length > 0 && (form?.innerText.split(alerts[0].innerText.trim()).length ?? 0) > 2,
+    };
+  })()`);
+  assert(
+    correctionWarning.count === 1 &&
+      correctionWarning.role === 'alert' &&
+      correctionWarning.text.includes('reporting or effective period') &&
+      !correctionWarning.repeated,
+    `${themeLabel(dark)} correction warning is missing, repeated, or not actionable: ${JSON.stringify(correctionWarning)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} correction validation`, [
+    { name: 'correction form alert', selector: '[data-testid="form-add-agency-source-correction"] [role="alert"]' },
+  ]);
+  await clickButtonAndScroll(cdp, 'Close form');
+  await waitFor(
+    cdp,
+    `!document.querySelector('[data-testid="form-add-agency-source-correction"]')`,
+    'agency correction form to close without saving',
+  );
+  console.log(`  ${themeLabel(dark)} correction form: labelled fields and one actionable, readable validation alert`);
 }
 
 async function openAgencyComparison(cdp) {
@@ -808,7 +1201,7 @@ async function openAgencyComparison(cdp) {
       }))`,
     'agency comparison controls after reloading source evidence',
   );
-  for (const agencyId of selectedIds) {
+  for (const [index, agencyId] of selectedIds.entries()) {
     const selected = await evaluate(cdp, `(() => {
       const button = [...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
         .find((candidate) => candidate.dataset.testid === ${JSON.stringify(`button-toggle-comparison-${agencyId}`)});
@@ -822,6 +1215,29 @@ async function openAgencyComparison(cdp) {
       `document.querySelector('[data-testid="button-toggle-comparison-${agencyId}"]')?.getAttribute('aria-pressed') === 'true'`,
       `agency ${agencyId} selected for comparison`,
     );
+    if (index === 0) {
+      const disabledState = await evaluate(cdp, `(() => {
+        const button = document.querySelector('[data-testid="button-open-agency-comparison"]');
+        return {
+          present: Boolean(button),
+          disabled: Boolean(button?.disabled),
+          ariaDisabled: button?.getAttribute('aria-disabled'),
+          panelClosed: !document.querySelector('[data-testid="agency-comparison-panel"]'),
+        };
+      })()`);
+      assert(
+        disabledState.present &&
+          disabledState.disabled &&
+          disabledState.ariaDisabled !== 'false' &&
+          disabledState.panelClosed,
+        `Compare action should remain disabled until two agencies are selected: ${JSON.stringify(disabledState)}`,
+      );
+      console.log('  agency comparison: the real Compare action stays disabled until a second agency is selected');
+    }
+    if (index === 1) {
+      const enabled = await evaluate(cdp, `document.querySelector('[data-testid="button-open-agency-comparison"]')?.disabled === false`);
+      assert(enabled, 'Compare action did not enable after selecting a second agency');
+    }
   }
   await clickVisible(cdp, '[data-testid="button-open-agency-comparison"]');
   await waitFor(cdp, `Boolean(document.querySelector('[data-testid="agency-comparison-panel"]'))`, 'agency comparison panel');
@@ -1155,6 +1571,43 @@ async function openGisHeatmap(cdp) {
   await waitFor(cdp, `Boolean(document.querySelector('button[title="Toggle Spatial Legend"]'))`, 'GIS spatial legend control');
 }
 
+async function checkQuotaWarning(cdp, dark) {
+  await setTheme(cdp, dark);
+  await evaluate(cdp, `(() => {
+    window.dispatchEvent(new Event('gmp-quota-exceeded'));
+    window.dispatchEvent(new Event('gmp-quota-exceeded'));
+  })()`);
+  await waitFor(cdp, `Boolean(document.querySelector('.pi-alert-banner[role="alert"]'))`, 'actionable Maps quota alert');
+  const warning = await evaluate(cdp, `(() => {
+    const banners = [...document.querySelectorAll('.pi-alert-banner')];
+    const banner = banners[0];
+    const text = banner?.innerText.trim() ?? '';
+    return {
+      count: banners.length,
+      role: banner?.getAttribute('role'),
+      live: banner?.getAttribute('aria-live'),
+      text,
+      actionable: text.includes('visit') && text.includes('update your account'),
+      link: banner?.querySelector('a')?.innerText.trim() ?? '',
+      linkTarget: banner?.querySelector('a')?.getAttribute('target') ?? '',
+    };
+  })()`);
+  assert(
+    warning.count === 1 &&
+      warning.role === 'alert' &&
+      warning.live === 'assertive' &&
+      warning.actionable &&
+      warning.link === 'maps developer site' &&
+      warning.linkTarget === '_blank',
+    `${themeLabel(dark)} Maps quota warning is not a single, actionable alert: ${JSON.stringify(warning)}`,
+  );
+  await checkReadable(cdp, `${themeLabel(dark)} Maps quota warning`, [
+    { name: 'quota warning copy', selector: '.pi-alert-banner span' },
+    { name: 'quota warning action', selector: '.pi-alert-banner a' },
+  ]);
+  console.log(`  ${themeLabel(dark)} Maps quota alert: one actionable warning with readable linked next step`);
+}
+
 async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
   await openGisHeatmap(cdp);
   await setTheme(cdp, dark);
@@ -1281,8 +1734,10 @@ async function runViewport(cdp, viewport) {
   await checkThemeModeSelection(cdp, viewport);
   await checkHome(cdp, false);
   await checkThemeStates(cdp, false, viewport);
+  await checkActualDialogs(cdp, false, viewport);
   await checkHome(cdp, true);
   await checkThemeStates(cdp, true, viewport);
+  await checkActualDialogs(cdp, true, viewport);
   await checkHome(cdp, 'miami-vice');
   await checkThemeStates(cdp, 'miami-vice', viewport);
 
@@ -1324,6 +1779,12 @@ async function runViewport(cdp, viewport) {
   await checkPulseIqCharts(cdp, false, viewport);
   await checkPulseIqCharts(cdp, true, viewport);
   await checkPulseIqCharts(cdp, 'miami-vice', viewport);
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before quota warning checks');
+  await checkQuotaWarning(cdp, false);
+  await checkQuotaWarning(cdp, true);
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before GIS checks');
   await checkGisLegendAndRiskColors(cdp, false, viewport);
   await checkGisLegendAndRiskColors(cdp, true, viewport);
   await checkGisLegendAndRiskColors(cdp, 'miami-vice', viewport);

@@ -954,7 +954,11 @@ export default function App() {
       
       {/* Google Maps Quota Defense Sticky Banner */}
       {gmpQuotaExceeded && (
-        <div className="pi-alert-banner pi-status-warning border-x-0 border-t-0 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50">
+        <div
+          className="pi-alert-banner pi-status-warning border-x-0 border-t-0 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50"
+          role="alert"
+          aria-live="assertive"
+        >
           <span>
             Google Maps Platform quota reached. If you are the app owner, visit{' '}
             <a

@@ -140,7 +140,12 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-start justify-center pt-16 sm:pt-20 p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-100">
+    <div
+      className="fixed inset-0 z-60 flex items-start justify-center pt-16 sm:pt-20 p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-100"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Agency and tool search"
+    >
       <div 
         ref={modalRef}
         className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col"
@@ -152,6 +157,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           <input
             ref={inputRef}
             type="text"
+            aria-label="Search agencies and tools"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -159,7 +165,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Search any agency name, city, county, state, 10-digit NPI, or monitor brand..."
-            className="w-full text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none bg-transparent"
+            className="w-full text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400 bg-transparent"
           />
           {query && (
             <button

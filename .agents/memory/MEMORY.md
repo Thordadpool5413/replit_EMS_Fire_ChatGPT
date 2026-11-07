@@ -23,3 +23,4 @@
 - [Landscape map breakpoints](landscape-map-breakpoints.md) — phone landscape widths can activate desktop CSS; test the layout each viewport width actually selects.
 - [Territory browser history](territory-browser-history.md) — keep one app-level history owner; filter-only changes replace the current snapshot instead of adding entries.
 - [API startup health paths](api-startup-health-paths.md) — production probes may hit both the service base path and the configured readiness path; keep both aligned.
+- [Custom modal focus lifecycle](custom-modal-focus-lifecycle.md) — conditionally mounted overlays restore focus from effect cleanup, not an `isOpen=false` effect.

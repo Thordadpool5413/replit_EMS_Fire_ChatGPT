@@ -10,7 +10,7 @@
 - [Florida EMS roster date mismatch](florida-ems-roster-date.md) — the DOH PDF's embedded processed date conflicts with its upload-path vintage; use each MQA record's own date.
 - [Browser-local data boundary](claim-summary-sharing-boundary.md) — keep claims and agency source evidence local until workspace-only access is verified; do not infer a blanket sign-in refusal.
 - [Local denial-rate visibility](local-denial-rate-visibility.md) — do not display local ambulance denial percentages at state, county, or provider scope; retain claim-source records.
-- [Territory visual hierarchy](territory-visual-hierarchy.md) — favor high-contrast map-led screens and readable summaries; tuck technical details away but keep sources accessible.
+- [Territory visual hierarchy](territory-visual-hierarchy.md) — use shared theme tokens, neutral metric surfaces, semantic status colors, and readable map-led summaries.
 - [App-wide visual density](app-wide-visual-density.md) — keep screens compact and scannable; reduce oversized cards and chrome without making text or controls too small.
 - [PulseIQ scoring explanations](pulseiq-scoring-explanations.md) — use the shared factor evaluator and active weights for every PulseIQ score, breakdown, regional chart, and methodology view.
 - [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.

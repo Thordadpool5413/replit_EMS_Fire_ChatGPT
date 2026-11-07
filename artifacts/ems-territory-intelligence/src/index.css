@@ -6,130 +6,133 @@
 
 /* ============================================================================
    PRECISION INTELLIGENCE — SEMANTIC DESIGN TOKENS (LIGHT & DARK THEMES)
-   Section 5 Specification:
-   - Primary navigation: #0B1728
-   - Secondary navy: #172D49
-   - Primary action: #285EE8
-   - Primary action hover: #194BC8
-   - Workspace canvas: #F3F6F8
-   - Content surface: #FBFCFD
-   - Primary typography: #14283F
-   - Secondary typography: #53657B
-   - Dividers: #DFE6EF
+   Shared contract:
+   - One canvas/surface/text/border/action palette for every workspace
+   - Teal is the shared action and selection color
+   - Green, amber, and red are reserved for semantic status
+   - Map encodings retain their source-specific legend colors
    ============================================================================ */
 :root {
-  /* Typography Families: Display = Manrope Variable, Interface = Geist Variable, Numerical = Inter Variable */
+  /* Single source of truth for the shared app theme. */
   --font-display: 'Manrope Variable', 'Manrope', sans-serif;
   --font-sans: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
   --font-interface: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
   --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Core Surfaces */
-  --pi-nav-bg: #f7f8f5;
-  --pi-nav-secondary: #e9eeeb;
-  --pi-canvas-bg: #edf1ef;
-  --pi-surface-bg: #fbfcfa;
-  --pi-surface-subtle: #f1f4f1;
+  /* Canvas and surfaces */
+  --pi-nav-bg: #f1f5f3;
+  --pi-nav-secondary: #e5ece8;
+  --pi-nav-border: #d6e0dc;
+  --pi-nav-text: #334d4b;
+  --pi-canvas-bg: #f1f4f5;
+  --pi-surface-bg: #ffffff;
+  --pi-surface-subtle: #f6f8f8;
   --pi-surface-elevated: #ffffff;
 
   /* Typography */
-  --pi-text-primary: #1b302f;
-  --pi-text-secondary: #536766;
-  --pi-text-muted: #71817e;
+  --pi-text-primary: #18313a;
+  --pi-text-secondary: #425b63;
+  --pi-text-muted: #5b7077;
+  --pi-font-page-title: clamp(1.45rem, 1.8vw, 1.8rem);
+  --pi-font-section-title: clamp(1.05rem, 1.25vw, 1.2rem);
+  --pi-font-body: 0.9rem;
+  --pi-font-supporting: 0.82rem;
+  --pi-font-meta: 0.75rem;
 
   /* Borders & Dividers */
-  --pi-border: #d9e1dc;
-  --pi-border-strong: #bbc9c2;
+  --pi-border: #d6e0e3;
+  --pi-border-strong: #afc0c5;
 
   /* Brand & Interactive */
   --pi-action: #176568;
   --pi-action-hover: #105255;
-  --pi-action-subtle: #e6f0ed;
+  --pi-action-ink: #176568;
+  --pi-action-subtle: #e8f1ef;
+  --pi-focus-ring: #176568;
 
-  /* Evidence & Status Classification */
-  --pi-verified-bg: #ECFDF5;
+  /* Evidence & status classification */
+  --pi-verified-bg: #ecfdf5;
   --pi-verified-text: #047857;
-  --pi-verified-border: #A7F3D0;
+  --pi-verified-border: #a7f3d0;
 
-  --pi-estimated-bg: #EEF3F7;
-  --pi-estimated-text: #536B7E;
-  --pi-estimated-border: #D5E0E8;
-  --pi-info-bg: #EFF6FF;
-  --pi-info-text: #1D4ED8;
-  --pi-info-border: #BFDBFE;
-  --pi-warning-bg: #FFF7ED;
-  --pi-warning-text: #C2410C;
-  --pi-warning-border: #FED7AA;
-  --pi-critical-bg: #FEF2F2;
-  --pi-critical-text: #B91C1C;
-  --pi-critical-border: #FECACA;
+  --pi-estimated-bg: #f1f5f7;
+  --pi-estimated-text: #425b63;
+  --pi-estimated-border: #d2dfe3;
+  --pi-info-bg: #eff6ff;
+  --pi-info-text: #1d4ed8;
+  --pi-info-border: #bfdbfe;
+  --pi-warning-bg: #fff7ed;
+  --pi-warning-text: #c2410c;
+  --pi-warning-border: #fed7aa;
+  --pi-critical-bg: #fef2f2;
+  --pi-critical-text: #b91c1c;
+  --pi-critical-border: #fecaca;
 
   /* Legacy alias variables for compatibility across existing views */
-  --bg-canvas: #edf1ef;
-  --bg-surface: #fbfcfa;
-  --bg-subtle: #f1f4f1;
-  --text-primary: #1b302f;
-  --text-secondary: #536766;
-  --text-muted: #71817e;
-  --border-crisp: #d9e1dc;
-  --border-strong: #bbc9c2;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
+  --bg-canvas: var(--pi-canvas-bg);
+  --bg-surface: var(--pi-surface-bg);
+  --bg-subtle: var(--pi-surface-subtle);
+  --text-primary: var(--pi-text-primary);
+  --text-secondary: var(--pi-text-secondary);
+  --text-muted: var(--pi-text-muted);
+  --border-crisp: var(--pi-border);
+  --border-strong: var(--pi-border-strong);
+  --brand-primary: var(--pi-action);
+  --brand-primary-hover: var(--pi-action-hover);
 
-  --radius-card: 0.75rem;
-  --radius-control: 0.5rem;
-  --shadow-card: 0 1px 2px 0 rgba(20, 40, 63, 0.04);
-  --shadow-card-hover: 0 4px 12px -2px rgba(20, 40, 63, 0.08);
+  --radius-card: 0.7rem;
+  --radius-control: 0.45rem;
+  --shadow-card: 0 1px 2px rgba(24, 49, 58, 0.045);
+  --shadow-card-hover: 0 4px 12px -8px rgba(24, 49, 58, 0.16);
 }
 
 .dark {
-  --font-display: 'Manrope Variable', 'Manrope', sans-serif;
-  --font-sans: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
-  --font-interface: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
-  --pi-font-data: 'Instrument Sans Variable', 'Instrument Sans', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  --pi-nav-bg: #070F1C;
-  --pi-nav-secondary: #112238;
-  --pi-canvas-bg: #0B1320;
-  --pi-surface-bg: #111C2D;
-  --pi-surface-subtle: #16243A;
-  --pi-surface-elevated: #17263C;
-
-  --pi-text-primary: #F1F5F9;
-  --pi-text-secondary: #94A3B8;
-  --pi-text-muted: #64748B;
-
-  --pi-border: #1E2D42;
-  --pi-border-strong: #2B3F5C;
-
-  --pi-action: #3B73F6;
-  --pi-action-hover: #285EE8;
-  --pi-action-subtle: rgba(40, 94, 232, 0.16);
-  --pi-info-bg: rgba(30, 64, 175, 0.2);
-  --pi-info-text: #93C5FD;
-  --pi-info-border: rgba(59, 130, 246, 0.4);
-  --pi-warning-bg: rgba(154, 52, 18, 0.2);
-  --pi-warning-text: #FDBA74;
-  --pi-warning-border: rgba(249, 115, 22, 0.35);
+  --pi-nav-bg: #152428;
+  --pi-nav-secondary: #203437;
+  --pi-nav-border: #30464a;
+  --pi-nav-text: #d1dfdc;
+  --pi-canvas-bg: #101b20;
+  --pi-surface-bg: #17272c;
+  --pi-surface-subtle: #1d3035;
+  --pi-surface-elevated: #22373c;
+  --pi-text-primary: #eff5f3;
+  --pi-text-secondary: #c0cfcc;
+  --pi-text-muted: #a2b5b0;
+  --pi-border: #30464a;
+  --pi-border-strong: #496166;
+  --pi-action: #176568;
+  --pi-action-hover: #105255;
+  --pi-action-ink: #83c9bf;
+  --pi-action-subtle: #203b3b;
+  --pi-focus-ring: #83c9bf;
+  --pi-verified-bg: rgba(6, 95, 70, 0.22);
+  --pi-verified-text: #86efac;
+  --pi-verified-border: rgba(52, 211, 153, 0.38);
+  --pi-estimated-bg: rgba(71, 85, 105, 0.28);
+  --pi-estimated-text: #cbd5e1;
+  --pi-estimated-border: rgba(148, 163, 184, 0.3);
+  --pi-info-bg: rgba(30, 64, 175, 0.22);
+  --pi-info-text: #bfdbfe;
+  --pi-info-border: rgba(96, 165, 250, 0.38);
+  --pi-warning-bg: rgba(146, 64, 14, 0.24);
+  --pi-warning-text: #fed7aa;
+  --pi-warning-border: rgba(251, 146, 60, 0.38);
   --pi-critical-bg: rgba(127, 29, 29, 0.24);
-  --pi-critical-text: #FCA5A5;
-  --pi-critical-border: rgba(248, 113, 113, 0.35);
-
-  --bg-canvas: #0B1320;
-  --bg-surface: #111C2D;
-  --bg-subtle: #16243A;
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --border-crisp: #1E2D42;
-  --border-strong: #2B3F5C;
-  --brand-primary: #3B73F6;
-  --brand-primary-hover: #285EE8;
-
-  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
-  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --pi-critical-text: #fecaca;
+  --pi-critical-border: rgba(248, 113, 113, 0.38);
+  --bg-canvas: var(--pi-canvas-bg);
+  --bg-surface: var(--pi-surface-bg);
+  --bg-subtle: var(--pi-surface-subtle);
+  --text-primary: var(--pi-text-primary);
+  --text-secondary: var(--pi-text-secondary);
+  --text-muted: var(--pi-text-muted);
+  --border-crisp: var(--pi-border);
+  --border-strong: var(--pi-border-strong);
+  --brand-primary: var(--pi-action);
+  --brand-primary-hover: var(--pi-action-hover);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-card-hover: 0 4px 12px -8px rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
@@ -749,46 +752,6 @@
    Compact, editorially quiet surfaces; preserve content and interaction area.
    Layout paradigm: evidence-first workspace. Mood: field-briefing precision.
    ========================================================================== */
-:root {
-  --pi-canvas-bg: #eef2f4;
-  --pi-surface-bg: #fbfcfc;
-  --pi-surface-subtle: #f1f5f5;
-  --pi-border: #d8e1e5;
-  --pi-border-strong: #b9c8cf;
-  --pi-action: #176568;
-  --pi-action-hover: #105255;
-  --pi-action-subtle: #e7f1f0;
-  --bg-canvas: #eef2f4;
-  --bg-surface: #fbfcfc;
-  --bg-subtle: #f1f5f5;
-  --border-crisp: #d8e1e5;
-  --border-strong: #b9c8cf;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
-  --radius-card: 0.7rem;
-  --radius-control: 0.45rem;
-  --shadow-card: 0 1px 2px rgba(22, 48, 60, 0.035);
-  --shadow-card-hover: 0 3px 10px -4px rgba(22, 48, 60, 0.14);
-}
-
-.dark {
-  --pi-canvas-bg: #0d1821;
-  --pi-surface-bg: #14232e;
-  --pi-surface-subtle: #192b37;
-  --pi-border: #2a3d49;
-  --pi-border-strong: #3b5360;
-  --pi-action: #5aa7a2;
-  --pi-action-hover: #74bbb5;
-  --pi-action-subtle: rgba(90, 167, 162, 0.15);
-  --bg-canvas: #0d1821;
-  --bg-surface: #14232e;
-  --bg-subtle: #192b37;
-  --border-crisp: #2a3d49;
-  --border-strong: #3b5360;
-  --brand-primary: #5aa7a2;
-  --brand-primary-hover: #74bbb5;
-}
-
 @media (min-width: 768px) {
   .pi-primary-sidebar {
     width: 13rem !important;
@@ -974,11 +937,6 @@
 }
 
 @media (max-width: 767px) {
-  :root:not(.dark) {
-    --pi-canvas-bg: #eef2f4;
-    --pi-surface-bg: #fbfcfc;
-  }
-
   .workspace-grid-shell {
     gap: 0.75rem;
     padding-inline: 0.75rem !important;
@@ -1081,58 +1039,6 @@
    Evidence-first layout / field-briefing precision.
    The map surface and brand mark remain intentionally untouched.
    ========================================================================== */
-:root {
-  --pi-canvas-bg: #edf2f3;
-  --pi-surface-bg: #fbfcfc;
-  --pi-surface-subtle: #f2f6f6;
-  --pi-surface-elevated: #ffffff;
-  --pi-text-primary: #1b302f;
-  --pi-text-secondary: #536766;
-  --pi-text-muted: #71817e;
-  --pi-border: #d8e1e2;
-  --pi-border-strong: #b8c8c8;
-  --pi-action: #176568;
-  --pi-action-hover: #105255;
-  --pi-action-subtle: #e6f0ee;
-  --bg-canvas: #edf2f3;
-  --bg-surface: #fbfcfc;
-  --bg-subtle: #f2f6f6;
-  --text-primary: #1b302f;
-  --text-secondary: #536766;
-  --text-muted: #71817e;
-  --border-crisp: #d8e1e2;
-  --border-strong: #b8c8c8;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
-  --radius-card: 0.7rem;
-  --radius-control: 0.45rem;
-}
-
-.dark {
-  --pi-canvas-bg: #0d1821;
-  --pi-surface-bg: #14232e;
-  --pi-surface-subtle: #192b37;
-  --pi-surface-elevated: #172a36;
-  --pi-text-primary: #e7efee;
-  --pi-text-secondary: #a6b9b7;
-  --pi-text-muted: #809594;
-  --pi-border: #2a3d49;
-  --pi-border-strong: #3b5360;
-  --pi-action: #65aaa5;
-  --pi-action-hover: #7dbdb7;
-  --pi-action-subtle: rgba(90, 167, 162, 0.14);
-  --bg-canvas: #0d1821;
-  --bg-surface: #14232e;
-  --bg-subtle: #192b37;
-  --text-primary: #e7efee;
-  --text-secondary: #a6b9b7;
-  --text-muted: #809594;
-  --border-crisp: #2a3d49;
-  --border-strong: #3b5360;
-  --brand-primary: #65aaa5;
-  --brand-primary-hover: #7dbdb7;
-}
-
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
@@ -3756,43 +3662,6 @@ textarea:disabled {
    Layout: compact command workspace. Mood: field-briefing precision.
    Scoped to the existing app shell and map; no data or map semantics altered.
    ========================================================================== */
-:root {
-  --pi-canvas-bg: #eef2f4;
-  --pi-surface-bg: #fbfcfc;
-  --pi-surface-subtle: #f1f5f5;
-  --pi-text-primary: #193246;
-  --pi-text-secondary: #526a78;
-  --pi-text-muted: #70838d;
-  --pi-border: #d8e1e5;
-  --pi-border-strong: #b9c8cf;
-  --pi-action: #176568;
-  --pi-action-hover: #105255;
-  --pi-action-subtle: #e7f1f0;
-  --bg-canvas: #eef2f4;
-  --bg-surface: #fbfcfc;
-  --bg-subtle: #f1f5f5;
-  --text-primary: #193246;
-  --text-secondary: #526a78;
-  --text-muted: #70838d;
-  --border-crisp: #d8e1e5;
-  --border-strong: #b9c8cf;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
-  --radius-card: 0.7rem;
-  --radius-control: 0.45rem;
-}
-
-.dark {
-  --pi-canvas-bg: #0d1821;
-  --pi-surface-bg: #14232e;
-  --pi-surface-subtle: #192b37;
-  --pi-text-primary: #e7eff1;
-  --pi-text-secondary: #a1b3bb;
-  --pi-text-muted: #8299a3;
-  --pi-border: #2a3d49;
-  --pi-border-strong: #3b5360;
-}
-
 html {
   min-height: 100%;
   scroll-padding-top: 4rem;
@@ -5801,62 +5670,6 @@ body {
    Mood: measured cartographic instrument — warm mineral neutrals, deep ink,
    and a single oxidized-teal action color. Motion is quiet and purposeful.
    -------------------------------------------------------------------------- */
-:root {
-  --pi-canvas-bg: #edf1ef;
-  --pi-surface-bg: #fbfcfa;
-  --pi-surface-subtle: #f1f4f1;
-  --pi-surface-elevated: #ffffff;
-  --pi-text-primary: #1b302f;
-  --pi-text-secondary: #536766;
-  --pi-text-muted: #71817e;
-  --pi-border: #d9e1dc;
-  --pi-border-strong: #bbc9c2;
-  --pi-action: #176568;
-  --pi-action-hover: #105255;
-  --pi-action-subtle: #e6f0ed;
-  --bg-canvas: #edf1ef;
-  --bg-surface: #fbfcfa;
-  --bg-subtle: #f1f4f1;
-  --text-primary: #1b302f;
-  --text-secondary: #536766;
-  --text-muted: #71817e;
-  --border-crisp: #d9e1dc;
-  --border-strong: #bbc9c2;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
-  --radius-card: 0.72rem;
-  --radius-control: 0.48rem;
-  --shadow-card: 0 1px 2px rgba(28, 53, 48, 0.035);
-  --shadow-card-hover: 0 7px 18px -12px rgba(28, 53, 48, 0.22);
-}
-
-.dark {
-  --pi-canvas-bg: #111c1d;
-  --pi-surface-bg: #182526;
-  --pi-surface-subtle: #1d2c2d;
-  --pi-surface-elevated: #203031;
-  --pi-text-primary: #e5ece8;
-  --pi-text-secondary: #b1c0bb;
-  --pi-text-muted: #91a29d;
-  --pi-border: #304142;
-  --pi-border-strong: #425657;
-  --pi-action: #70b6ad;
-  --pi-action-hover: #8ac9bf;
-  --pi-action-subtle: #203b39;
-  --bg-canvas: #111c1d;
-  --bg-surface: #182526;
-  --bg-subtle: #1d2c2d;
-  --text-primary: #e5ece8;
-  --text-secondary: #b1c0bb;
-  --text-muted: #91a29d;
-  --border-crisp: #304142;
-  --border-strong: #425657;
-  --brand-primary: #70b6ad;
-  --brand-primary-hover: #8ac9bf;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 7px 18px -12px rgba(0, 0, 0, 0.5);
-}
-
 html, body, #root { min-height: 100%; }
 body { background: var(--pi-canvas-bg); }
 button, input, select, textarea { font: inherit; }
@@ -6085,7 +5898,7 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .home-map-region-filter button { min-height: 2.3rem !important; padding-inline: 0.8rem !important; }
 .home-map-region-filter button[aria-pressed="true"] {
-  color: var(--pi-action) !important;
+  color: var(--pi-action-ink) !important;
   box-shadow: 0 1px 2px rgba(20, 51, 45, 0.08) !important;
 }
 .home-territory-map-panel {
@@ -6153,48 +5966,6 @@ button { -webkit-tap-highlight-color: transparent; }
 
 /* Final cohesion pass — one field-briefing language across territory, agency
    records, profiles, and the mobile shell. Map data colors remain untouched. */
-:root {
-  --pi-nav-bg: #18302f;
-  --pi-nav-secondary: #25423f;
-  --pi-action: #176568;
-  --pi-action-hover: #105255;
-  --pi-action-subtle: #e7f1ee;
-  --pi-canvas-bg: #eef2f1;
-  --pi-surface-bg: #fbfcfa;
-  --pi-surface-subtle: #f1f5f2;
-  --pi-border: #d8e2dc;
-  --pi-border-strong: #b8c9c0;
-  --bg-canvas: #eef2f1;
-  --bg-surface: #fbfcfa;
-  --bg-subtle: #f1f5f2;
-  --border-crisp: #d8e2dc;
-  --border-strong: #b8c9c0;
-  --brand-primary: #176568;
-  --brand-primary-hover: #105255;
-  --shadow-card: 0 1px 2px rgba(27, 48, 47, .035), 0 8px 22px -20px rgba(27, 48, 47, .28);
-  --shadow-card-hover: 0 5px 16px -9px rgba(27, 48, 47, .18);
-}
-
-.dark {
-  --pi-nav-bg: #101d20;
-  --pi-nav-secondary: #1a2b2e;
-  --pi-action: #66aaa2;
-  --pi-action-hover: #80bcb3;
-  --pi-action-subtle: rgba(102, 170, 162, .14);
-  --pi-canvas-bg: #111b1e;
-  --pi-surface-bg: #172528;
-  --pi-surface-subtle: #1c2d30;
-  --pi-border: #2d4143;
-  --pi-border-strong: #40585a;
-  --bg-canvas: #111b1e;
-  --bg-surface: #172528;
-  --bg-subtle: #1c2d30;
-  --border-crisp: #2d4143;
-  --border-strong: #40585a;
-  --brand-primary: #66aaa2;
-  --brand-primary-hover: #80bcb3;
-}
-
 .territory-explorer-screen {
   --atlas-paper: var(--pi-surface-bg);
   --atlas-wash: var(--pi-surface-subtle);
@@ -9950,4 +9721,280 @@ button { -webkit-tap-highlight-color: transparent; }
   .workspace-grid-shell .pi-section-heading {
     font-size: clamp(1rem, 1.1vw, 1.18rem);
   }
+}
+
+/* Shared theme application layer.
+   Keep workspace chrome and information surfaces on semantic tokens; map
+   layers and source-defined risk colors remain purpose-specific. */
+.pi-app-shell {
+  background-color: var(--pi-canvas-bg) !important;
+  background-image: none !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-primary-sidebar {
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+  border-color: var(--pi-nav-border) !important;
+  box-shadow: 4px 0 14px -14px rgba(24, 49, 58, 0.32) !important;
+}
+
+.pi-primary-sidebar > div:first-child,
+.pi-primary-sidebar > div:last-child {
+  border-color: var(--pi-nav-border) !important;
+}
+
+.pi-primary-sidebar > div:last-child {
+  background: var(--pi-nav-secondary) !important;
+}
+
+.pi-primary-nav button:not([aria-current="page"]),
+.pi-primary-nav > div > div > div:not(:has(button[aria-current="page"])) > button {
+  color: var(--pi-nav-text) !important;
+}
+
+.pi-primary-nav button:not([aria-current="page"]):hover,
+.pi-primary-nav > div > div > div:not(:has(button[aria-current="page"])) > button:hover {
+  background: var(--pi-nav-secondary) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-primary-nav button[aria-current="page"],
+.pi-primary-nav > div > div > div:has(> button[aria-current="page"]),
+.pi-primary-sidebar [class*="bg-[#285EE8]"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.pi-primary-sidebar .pi-primary-nav button[aria-current="page"],
+.pi-primary-sidebar .pi-primary-nav > div > div > div:has(> button[aria-current="page"]),
+.pi-primary-sidebar .pi-primary-nav [class*="bg-[#285EE8]"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.pi-sidebar-quick-actions button {
+  border-color: var(--pi-nav-border) !important;
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+}
+
+.pi-sidebar-quick-actions button:hover {
+  background: var(--pi-nav-secondary) !important;
+}
+
+.pi-command-header,
+.pi-mobile-nav {
+  background: color-mix(in srgb, var(--pi-surface-bg) 96%, transparent) !important;
+  color: var(--pi-text-secondary) !important;
+  border-color: var(--pi-border) !important;
+}
+
+.pi-workspace-tabs {
+  background: var(--pi-surface-bg) !important;
+  border-color: var(--pi-border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.pi-workspace-tabs button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-selected="true"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+}
+
+.pi-app-shell [class*="bg-[#285EE8]"] {
+  background-color: var(--pi-action) !important;
+}
+
+.pi-app-shell [class*="hover:bg-[#194BC8]"]:hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell [class*="text-[#285EE8]"] {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-mobile-nav button[aria-current="page"] {
+  color: var(--pi-action-ink) !important;
+}
+
+.dark .home-territory-map-screen-v2 .home-map-region-filter button[aria-pressed="true"] {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-surface,
+.surface-card,
+.pi-surface-interactive,
+.scannable-table-wrap,
+.county-directory-card,
+.agency-directory-card {
+  background-color: var(--pi-surface-bg);
+  border-color: var(--pi-border);
+  box-shadow: var(--shadow-card);
+}
+
+.pi-surface-interactive:hover,
+.surface-card:hover,
+.county-directory-card:hover,
+.agency-directory-card:hover {
+  border-color: var(--pi-border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.workspace-grid-shell [class~="bg-white"],
+.profile-workspace [class~="bg-white"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.workspace-grid-shell [class~="bg-slate-50"],
+.profile-workspace [class~="bg-slate-50"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.workspace-grid-shell [class~="border-slate-200"],
+.workspace-grid-shell [class~="border-slate-200/90"],
+.profile-workspace [class~="border-slate-200"],
+.profile-workspace [class~="border-slate-200/90"] {
+  border-color: var(--pi-border) !important;
+}
+
+.pi-app-shell :is(.pi-surface, .surface-card, .pi-surface-interactive, .county-directory-card, .agency-directory-card)
+  :is([class~="text-slate-950"], [class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-app-shell :is(.pi-surface, .surface-card, .pi-surface-interactive, .county-directory-card, .agency-directory-card)
+  :is([class~="text-slate-600"], [class~="text-slate-500"]) {
+  color: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell :is(.pi-surface, .surface-card, .pi-surface-interactive, .county-directory-card, .agency-directory-card)
+  [class~="text-slate-400"] {
+  color: var(--pi-text-muted) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-900"],
+.dark .profile-workspace [class~="dark:bg-slate-900"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-800"],
+.dark .profile-workspace [class~="dark:bg-slate-800"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:border-slate-800"],
+.dark .workspace-grid-shell [class~="dark:border-slate-700"],
+.dark .profile-workspace [class~="dark:border-slate-800"],
+.dark .profile-workspace [class~="dark:border-slate-700"] {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .pi-app-shell :is(.pi-surface, .surface-card, .pi-surface-interactive, .county-directory-card, .agency-directory-card)
+  :is([class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"], [class~="text-slate-600"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+.dark .pi-app-shell :is(.pi-surface, .surface-card, .pi-surface-interactive, .county-directory-card, .agency-directory-card)
+  :is([class~="text-slate-500"], [class~="text-slate-400"]) {
+  color: var(--pi-text-secondary) !important;
+}
+
+.dark .pi-app-shell a:not([class*="text-amber-"]):not([class*="text-red-"]) {
+  color: var(--pi-action-ink);
+}
+
+.pi-page-title,
+.profile-workspace .pi-page-title,
+.profile-workspace .pi-profile-title {
+  color: var(--pi-text-primary) !important;
+  font-size: var(--pi-font-page-title);
+}
+
+.pi-section-heading {
+  color: var(--pi-text-primary);
+  font-size: var(--pi-font-section-title);
+}
+
+.pi-body {
+  color: var(--pi-text-primary);
+  font-size: var(--pi-font-body);
+}
+
+.pi-supporting {
+  color: var(--pi-text-secondary);
+  font-size: var(--pi-font-supporting);
+}
+
+.pi-meta {
+  color: var(--pi-text-secondary);
+  font-size: var(--pi-font-meta);
+}
+
+.pi-data-number,
+.pi-data-inline,
+.pi-data-table,
+.pi-metric-hero,
+.pi-metric-executive,
+.pi-metric-large,
+.pi-metric-lg,
+.pi-metric-account,
+.pi-metric-card,
+.pi-metric-primary,
+.pi-metric-standard,
+.pi-metric-base,
+.pi-metric-table,
+.pi-metric-sm,
+.pi-metric-supporting {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+:focus-visible {
+  outline-color: var(--pi-focus-ring) !important;
+}
+
+.workspace-grid-shell input:focus,
+.workspace-grid-shell select:focus,
+.workspace-grid-shell textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 22%, transparent) !important;
+}
+
+/* Reference figures share one quiet surface; map shading and FEMA risk retain
+   their data-defined colors rather than inheriting decorative metric colors. */
+.territory-explorer-screen .county-profile-card {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-bg) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.territory-explorer-screen .county-profile-metric,
+.territory-explorer-screen .county-inspector-metric {
+  border: 1px solid var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.territory-explorer-screen .county-profile-metric::before,
+.territory-explorer-screen .county-profile-metric > span::before {
+  display: none !important;
+}
+
+.territory-explorer-screen .county-profile-metric > span,
+.territory-explorer-screen .county-inspector-metric-label {
+  color: var(--pi-text-secondary) !important;
+}
+
+.territory-explorer-screen .county-profile-metric > strong,
+.territory-explorer-screen .county-inspector-metric-value,
+.territory-explorer-screen .county-profile-metric-population > strong,
+.territory-explorer-screen .county-profile-metric-transport > strong,
+.territory-explorer-screen .county-profile-metric-ohca > strong,
+.territory-explorer-screen .county-inspector-metric-population .county-inspector-metric-value,
+.territory-explorer-screen .county-inspector-metric-transport .county-inspector-metric-value {
+  color: var(--pi-text-primary) !important;
 }

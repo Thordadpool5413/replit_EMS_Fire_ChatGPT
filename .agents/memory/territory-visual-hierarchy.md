@@ -9,11 +9,11 @@ For the Home territory map, make the map the visual focus and show the selected 
 
 **How to apply:** Keep map texture and atmosphere on a full-bleed viewport layer rather than relying on the geometry SVG's opaque background. Reduce surrounding chrome before shrinking readable text. Fit the map without cropping, balance the map and inspector widths, and verify short-laptop and phone layouts for visible background coverage, horizontal overflow, or clipped legend labels. Preserve available data, citations, actions, and usable map controls.
 
-For county reference cards, use restrained cool hues to distinguish metric categories, not to signal good or bad performance. Use FEMA risk colors only for the risk category defined by the source.
+Use the shared app theme tokens for county and provider surfaces. Keep descriptive metrics neutral rather than assigning each metric a distinct accent; reserve semantic colors for meaningful source/status states and map-specific data encoding. Use FEMA risk colors only for the risk category defined by the source.
 
-**Why:** population, transport time, and incident counts are descriptive measures, while a source-defined risk category has explicit severity semantics.
+**Why:** the user asked for a restrained, consistent theme across Home, Territory, Agencies, and Field Work, with color reserved for actions, selection, and meaningful status rather than decorative metric coding.
 
-**How to apply:** keep raw county metrics on blue/cyan/violet surfaces with clearly named labels; keep the FEMA rating aligned with its published category palette and scope note.
+**How to apply:** use the shared canvas, surface, text, border, and action tokens in light and dark themes. Keep population, transport time, and counts on quiet neutral surfaces; retain the source-defined FEMA risk palette and map metric shading.
 
 Do not modify the existing app logo during visual or responsive changes. If it appears clipped, correct the surrounding layout rather than changing the logo asset or its styling.
 

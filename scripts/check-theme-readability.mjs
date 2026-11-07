@@ -8,6 +8,8 @@ const baseUrl = process.env.THEME_TEST_URL ?? `http://127.0.0.1:${process.env.PO
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const allViewports = [
   { width: 390, height: 844, mobile: true },
+  { width: 820, height: 1180, mobile: false },
+  { width: 1024, height: 768, mobile: false },
   { width: 1280, height: 900, mobile: false },
 ];
 const gisLayers = [
@@ -546,6 +548,13 @@ async function contrastReadings(cdp, selectors) {
         });
         return { rgb, alpha: oklch[4] ? Number(oklch[4].replace('%', '')) / (oklch[4].includes('%') ? 100 : 1) : 1 };
       }
+      const srgb = value.match(/color\\(\\s*srgb\\s+([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)(?:\\s*\\/\\s*([\\d.]+)%?)?\\s*\\)/i);
+      if (srgb) {
+        return {
+          rgb: srgb.slice(1, 4).map((channel) => Math.max(0, Math.min(255, Number(channel) * 255))),
+          alpha: srgb[4] ? Number(srgb[4].replace('%', '')) / (srgb[4].includes('%') ? 100 : 1) : 1,
+        };
+      }
       const channels = value.match(/[\\d.]+/g)?.map(Number);
       if (!channels || channels.length < 3) return null;
       return { rgb: channels.slice(0, 3), alpha: channels.length > 3 ? channels[3] : 1 };
@@ -568,7 +577,7 @@ async function contrastReadings(cdp, selectors) {
       return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
     };
     const samples = ${JSON.stringify(selectors)};
-    return samples.map(({ name, selector, backgroundRgb }) => {
+    return samples.map(({ name, selector, backgroundRgb, backgroundSelector }) => {
       const element = [...document.querySelectorAll(selector)].find((candidate) => {
         const rect = candidate.getBoundingClientRect();
         const style = getComputedStyle(candidate);
@@ -594,6 +603,16 @@ async function contrastReadings(cdp, selectors) {
       let background = { rgb: [255, 255, 255], alpha: 1 };
       for (const value of backgrounds.reverse()) {
         background = { rgb: composite(value, background), alpha: 1 };
+      }
+      if (backgroundSelector) {
+        const backgroundElement = document.querySelector(backgroundSelector);
+        const backgroundStyle = backgroundElement && getComputedStyle(backgroundElement);
+        const explicitBackground = backgroundStyle && parse(backgroundStyle.backgroundColor);
+        if (explicitBackground) {
+          background = explicitBackground.alpha < 1
+            ? { rgb: composite(explicitBackground, background), alpha: 1 }
+            : { rgb: explicitBackground.rgb, alpha: 1 };
+        }
       }
       if (backgroundRgb) background = { rgb: backgroundRgb, alpha: 1 };
       if (!foreground || !background) return { name, missing: false, unavailable: true };
@@ -944,6 +963,96 @@ async function checkActualDialogs(cdp, dark, viewport) {
 
 async function checkHome(cdp, dark) {
   await setTheme(cdp, dark);
+  const shell = await evaluate(cdp, `(() => {
+    const desktopNavigation = document.querySelector('.pi-primary-sidebar');
+    const mobileNavigation = document.querySelector('.pi-mobile-nav');
+    const visible = (element) => {
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 &&
+        style.display !== 'none' && style.visibility !== 'hidden';
+    };
+    const currentDesktop = desktopNavigation?.querySelector('[aria-current="page"]');
+    const currentMobile = mobileNavigation?.querySelector('[aria-current="page"]');
+    const active = innerWidth < 768 ? currentMobile : currentDesktop;
+    return {
+      viewportWidth: innerWidth,
+      desktopVisible: visible(desktopNavigation),
+      mobileVisible: visible(mobileNavigation),
+      activeLabel: active?.innerText.trim() ?? active?.getAttribute('aria-label') ?? '',
+      activeColor: active ? getComputedStyle(active).color : '',
+      activeBackground: active ? getComputedStyle(active).backgroundColor : '',
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+    };
+  })()`);
+  assert(
+    shell.desktopVisible === (shell.viewportWidth >= 768) &&
+      shell.mobileVisible === (shell.viewportWidth < 768),
+    `${themeLabel(dark)} navigation does not match the ${shell.viewportWidth}px responsive breakpoint: ${JSON.stringify(shell)}`,
+  );
+  assert(
+    /Home/i.test(shell.activeLabel),
+    `${themeLabel(dark)} active Home navigation item is missing at ${shell.viewportWidth}px: ${JSON.stringify(shell)}`,
+  );
+  assert(!shell.pageOverflow, `${themeLabel(dark)} Home causes page-level horizontal overflow at ${shell.viewportWidth}px`);
+
+  await checkReadable(cdp, `${themeLabel(dark)} ${shell.viewportWidth}px navigation`, [
+    {
+      name: 'active workspace navigation',
+      selector: shell.viewportWidth < 768
+        ? '.pi-mobile-nav button[aria-current="page"]'
+        : '.pi-primary-sidebar [aria-current="page"]',
+      backgroundSelector: shell.viewportWidth < 768
+        ? '.pi-mobile-nav'
+        : '.pi-primary-sidebar .pi-primary-nav button[aria-current="page"]',
+    },
+  ]);
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Tab',
+    code: 'Tab',
+    windowsVirtualKeyCode: 9,
+    nativeVirtualKeyCode: 9,
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Tab',
+    code: 'Tab',
+    windowsVirtualKeyCode: 9,
+    nativeVirtualKeyCode: 9,
+  });
+  await evaluate(cdp, `(() => {
+    const selector = innerWidth < 768
+      ? '.pi-mobile-nav button[aria-current="page"]'
+      : '.pi-primary-sidebar [aria-current="page"]';
+    const active = document.querySelector(selector);
+    active?.focus();
+  })()`);
+  const navigationFocus = await evaluate(cdp, `(() => {
+    const selector = innerWidth < 768
+      ? '.pi-mobile-nav button[aria-current="page"]'
+      : '.pi-primary-sidebar [aria-current="page"]';
+    const active = document.querySelector(selector);
+    const style = active && getComputedStyle(active);
+    return {
+      focused: document.activeElement === active,
+      focusVisible: Boolean(active?.matches(':focus-visible')),
+      outlineWidth: style?.outlineWidth ?? '0px',
+      outlineStyle: style?.outlineStyle ?? 'none',
+      outlineColor: style?.outlineColor ?? '',
+    };
+  })()`);
+  assert(
+    navigationFocus.focused &&
+      navigationFocus.focusVisible &&
+      navigationFocus.outlineWidth !== '0px' &&
+      navigationFocus.outlineStyle !== 'none' &&
+      navigationFocus.outlineColor !== 'rgba(0, 0, 0, 0)',
+    `${themeLabel(dark)} navigation focus ring is missing or not theme-colored at ${shell.viewportWidth}px: ${JSON.stringify(navigationFocus)}`,
+  );
+  await evaluate(cdp, 'document.activeElement?.blur()');
+
   const metrics = await evaluate(cdp, `(() => {
     const metric = document.querySelector('[data-testid="select-state-map-metric"]');
     return metric ? [...metric.options].map((option) => option.value) : [];
@@ -989,13 +1098,15 @@ async function checkHome(cdp, dark) {
       regionHasSelection: Boolean(document.querySelector('.home-map-region-filter button[aria-pressed="true"]')),
       controls: Boolean(document.querySelector('[data-testid="select-state-map-metric"]') &&
         document.querySelector('[data-testid="button-map-zoom-in"]')),
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
     };
   })()`);
   assert(
     stateCue.selected && stateCue.selectedIsDescribed && stateCue.selectedHasDoubleOutline &&
       stateCue.missingHasText && stateCue.missingHasPattern && stateCue.missingHasHatch &&
       stateCue.regionHasSelection &&
-      stateCue.controls,
+      stateCue.controls &&
+      !stateCue.pageOverflow,
     `Home selected/missing/control cues are incomplete in ${themeLabel(dark)} theme: ${JSON.stringify(stateCue)}`,
   );
   if (!missingLayer) {
@@ -1024,11 +1135,18 @@ async function checkCounty(cdp, dark) {
       cardTitle: title?.innerText.trim() ?? '',
       missingLabel: missing?.textContent.trim() ?? '',
       countyCount: document.querySelectorAll('.county-profile-card').length,
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+      mainOverflow: Boolean(document.querySelector('main') &&
+        document.querySelector('main').scrollWidth > document.querySelector('main').clientWidth + 1),
     };
   })()`);
   assert(summary.summaryText.length > 20, `${themeLabel(dark)} county summary is empty`);
   assert(summary.cardTitle, `${themeLabel(dark)} county card title is missing`);
   assert(summary.countyCount > 0, `${themeLabel(dark)} county cards are missing`);
+  assert(
+    !summary.pageOverflow && !summary.mainOverflow,
+    `${themeLabel(dark)} county cards cause horizontal overflow: ${JSON.stringify(summary)}`,
+  );
   await checkReadable(cdp, `${themeLabel(dark)} county`, [
     { name: 'county card title', selector: '.county-profile-card h3' },
     { name: 'county summary heading', selector: '.county-state-summary-panel h4' },
@@ -1076,17 +1194,24 @@ async function checkProfileAndSources(cdp, dark) {
   const profileCues = await evaluate(cdp, `(() => {
     const status = document.querySelector('[data-testid^="status-profile-review-"]');
     const source = document.querySelector('[aria-label="Available source references"]');
+    const profile = document.querySelector('main.profile-workspace');
     return {
       statusText: status?.innerText.trim() ?? '',
       statusHasAccessibleState: Boolean(status?.getAttribute('aria-live')),
       sourcePanel: Boolean(source && source.innerText.trim()),
-        sourceAction: Boolean(source?.querySelector('button')),
+      sourceAction: Boolean(source?.querySelector('button')),
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+      profileOverflow: Boolean(profile && profile.scrollWidth > profile.clientWidth + 1),
     };
   })()`);
   assert(profileCues.statusText, `${themeLabel(dark)} profile status is missing`);
   assert(profileCues.statusHasAccessibleState, 'Profile review status is not announced accessibly');
   assert(profileCues.sourcePanel, 'Available source references panel is missing');
   assert(profileCues.sourceAction, 'Available source references action is missing');
+  assert(
+    !profileCues.pageOverflow && !profileCues.profileOverflow,
+    `${themeLabel(dark)} provider profile causes horizontal overflow: ${JSON.stringify(profileCues)}`,
+  );
   await checkReadable(cdp, `${themeLabel(dark)} provider profile`, [
     { name: 'profile review status', selector: '[data-testid^="status-profile-review-"]' },
     { name: 'source references heading', selector: '[aria-label="Available source references"] h2' },
@@ -2016,7 +2141,7 @@ async function main() {
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');
     for (const viewport of viewports) await runViewport(cdp, viewport);
-    console.log('Theme readability checks passed at phone and laptop sizes.');
+    console.log('Theme readability checks passed at phone, tablet, compact-laptop, and laptop sizes.');
   } finally {
     cdp?.close();
     const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));

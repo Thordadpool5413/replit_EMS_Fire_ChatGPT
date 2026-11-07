@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -139,6 +139,22 @@ function themeLabel(themeMode) {
   return 'Miami Vice';
 }
 
+async function captureThemeScreenshot(cdp, requestedThemeMode, name) {
+  const captureDirectory = process.env.THEME_TEST_CAPTURE_DIR;
+  if (!captureDirectory || themeModeName(requestedThemeMode) !== 'miami-vice') return;
+  await mkdir(captureDirectory, { recursive: true });
+  const image = await cdp.send('Page.captureScreenshot', {
+    format: 'png',
+    fromSurface: true,
+    captureBeyondViewport: false,
+  });
+  const width = await evaluate(cdp, 'innerWidth');
+  await writeFile(
+    path.join(captureDirectory, `${name}-${width}.png`),
+    Buffer.from(image.result.data, 'base64'),
+  );
+}
+
 async function setTheme(cdp, requestedThemeMode) {
   const themeMode = themeModeName(requestedThemeMode);
   const isDark = themeMode !== 'daylight';
@@ -147,7 +163,23 @@ async function setTheme(cdp, requestedThemeMode) {
 
   if (isMobile) {
     await evaluate(cdp, 'window.scrollTo({ top: 0, behavior: "instant" })');
-    await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
+    const selectorAlreadyVisible = await evaluate(cdp, `(() => {
+      const select = document.querySelector('[data-testid="${testId}"]');
+      const rect = select?.getBoundingClientRect();
+      return Boolean(select && rect && rect.width > 0 && rect.height > 0);
+    })()`);
+    if (!selectorAlreadyVisible) {
+      await waitFor(
+        cdp,
+        `(() => {
+          const button = document.querySelector('button[aria-label="Workspace tools"]');
+          const rect = button?.getBoundingClientRect();
+          return Boolean(button && rect && rect.width > 0 && rect.height > 0);
+        })()`,
+        'mobile workspace tools button',
+      );
+      await clickVisible(cdp, 'button[aria-label="Workspace tools"]');
+    }
   }
   await waitFor(
     cdp,
@@ -230,6 +262,7 @@ async function checkThemeModeSelection(cdp, viewport) {
     if (themeMode === 'miami-vice') {
       assert(state.accent === '#ff789d', `Miami Vice accent token is missing: ${JSON.stringify(state)}`);
       assert(state.activeBorder === state.accentColor, `Miami Vice active navigation accent is missing: ${JSON.stringify(state)}`);
+      await captureThemeScreenshot(cdp, themeMode, 'home');
     }
   }
 
@@ -570,6 +603,7 @@ async function checkCounty(cdp, dark) {
   console.log(
     `  ${themeLabel(dark)} county state: ${summary.countyCount} cards; missing-data label ${summary.missingLabel || 'not present in first card'}`,
   );
+  await captureThemeScreenshot(cdp, dark, 'territory');
 }
 
 async function openProfile(cdp) {
@@ -652,6 +686,7 @@ async function checkProfileAndSources(cdp, dark) {
     { name: 'source explanation', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-900\\/80' },
   ]);
   console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
+  await captureThemeScreenshot(cdp, dark, 'agency-profile');
   await evaluate(cdp, `document.querySelector('[aria-label="Evidence and Source Inspection Drawer"] button')?.click()`);
 }
 
@@ -766,6 +801,7 @@ async function checkFieldWork(cdp, dark, viewport) {
     { name: 'field work heading', selector: '.workspace-section-grid h2' },
     { name: 'field work supporting text', selector: '.workspace-section-grid p' },
   ]);
+  await captureThemeScreenshot(cdp, dark, 'field-work');
 }
 
 async function checkAgencyComparison(cdp, dark, selectedIds) {
@@ -826,6 +862,7 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
   console.log(
     `  ${themeLabel(dark)} agency comparison: ${cues.ranks.join(', ')}; ${cues.selectedNames.map((name) => name.split('\n')[0]).join(' vs ')}; reported, unavailable, and source-note values present`,
   );
+  await captureThemeScreenshot(cdp, dark, 'agency-comparison');
 }
 
 async function runViewport(cdp, viewport) {

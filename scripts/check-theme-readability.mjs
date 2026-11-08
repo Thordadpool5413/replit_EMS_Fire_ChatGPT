@@ -59,6 +59,53 @@ const gisLayers = [
     markerColors: ['#9a3412', '#c2410c', '#047857', '#0284c7', '#64748b'],
   },
 ];
+const gisRiskLayers = [
+  {
+    name: 'Survival',
+    button: 'Survival Deficit',
+    id: 'cardiac',
+    metric: 'survival deficit',
+    low: 'Lower survival deficit',
+    high: 'Higher survival deficit',
+    meaning: 'lower = higher risk',
+    stateColors: {
+      critical: { dark: '#7f1d1d', light: '#fee2e2' },
+      high: { dark: '#7c2d12', light: '#ffedd5' },
+      moderate: { dark: '#713f12', light: '#fef9c3' },
+      baseline: { dark: '#064e3b', light: '#d1fae5' },
+    },
+  },
+  {
+    name: 'AED',
+    button: 'AED Need',
+    id: 'aed',
+    metric: 'AED access deficit',
+    low: 'Lower AED access deficit',
+    high: 'Higher AED access deficit',
+    meaning: 'higher = greater need',
+    stateColors: {
+      critical: { dark: '#701a75', light: '#fae8ff' },
+      high: { dark: '#0c4a6e', light: '#e0f2fe' },
+      moderate: { dark: '#134e4a', light: '#ccfbf1' },
+      baseline: { dark: '#1e293b', light: '#f1f5f9' },
+    },
+  },
+  {
+    name: 'Transport',
+    button: 'Long Transport (>20 min)',
+    id: 'transport',
+    metric: 'transport time',
+    low: 'Shorter transport time',
+    high: 'Longer transport time',
+    meaning: 'longer = greater delay',
+    stateColors: {
+      critical: { dark: '#7c2d12', light: '#ffedd5' },
+      high: { dark: '#713f12', light: '#fef3c7' },
+      moderate: { dark: '#0c4a6e', light: '#e0f2fe' },
+      baseline: { dark: '#064e3b', light: '#f0fdf4' },
+    },
+  },
+];
 const requestedWidth = Number(process.env.THEME_TEST_WIDTH);
 const viewports = requestedWidth
   ? allViewports.filter((viewport) => viewport.width === requestedWidth)
@@ -198,6 +245,21 @@ async function clickButtonAndScroll(cdp, label) {
     return true;
   })()`);
   assert(clicked, `Could not click ${label}`);
+}
+
+async function clickTestIdAndScroll(cdp, testId) {
+  const result = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="${testId}"]');
+    if (!button) return { clicked: false, reason: 'missing test id' };
+    const style = getComputedStyle(button);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return { clicked: false, reason: 'button is hidden' };
+    }
+    button.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+    button.click();
+    return { clicked: true };
+  })()`);
+  assert(result.clicked, `Could not click ${testId}: ${result.reason}`);
 }
 
 function themeModeName(themeMode) {
@@ -2021,6 +2083,167 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
   }
 }
 
+async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
+  await openGisHeatmap(cdp);
+  await setTheme(cdp, dark);
+  const basemapButton = 'button[title="Switch between Tactical Dark and Daylight Survey cartography"]';
+  const views = [
+    { name: 'Thermal KDE', mode: 'kde' },
+    { name: 'H3 Hexbins', mode: 'hexbin' },
+    { name: 'Choropleth', mode: 'choropleth' },
+  ];
+
+  for (const layer of gisRiskLayers) {
+    await clickTestIdAndScroll(cdp, `gis-risk-layer-${layer.id}`);
+    for (const view of views) {
+      await clickTestIdAndScroll(cdp, `gis-map-mode-${view.mode}`);
+      await waitFor(
+        cdp,
+        `document.querySelector('[data-testid="gis-map-svg"]')?.dataset.displayMode === ${JSON.stringify(view.mode)} &&
+          document.querySelector('[data-testid="gis-map-svg"]')?.dataset.selectedLayer === ${JSON.stringify(layer.id)}`,
+        `${layer.name} ${view.name} selection`,
+      );
+
+      if (view.mode !== 'choropleth') {
+        await clickTestIdAndScroll(cdp, 'gis-spectrum-viridis');
+      }
+
+      for (const basemap of ['Dark', 'Daylight']) {
+        const currentBasemap = await evaluate(cdp, `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim()`);
+        if (currentBasemap !== basemap) {
+          const clicked = await evaluate(cdp, `(() => {
+            const button = document.querySelector(${JSON.stringify(basemapButton)});
+            if (!button) return false;
+            button.scrollIntoView({ behavior: 'instant', block: 'center' });
+            button.click();
+            return true;
+          })()`);
+          assert(clicked, `${themeLabel(dark)} ${layer.name} ${view.name}: GIS basemap toggle is missing`);
+          await waitFor(
+            cdp,
+            `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim() === ${JSON.stringify(basemap)}`,
+            `${basemap} GIS basemap`,
+          );
+        }
+
+        await waitFor(
+          cdp,
+          `document.querySelector('[data-testid="gis-map-svg"]')?.dataset.basemapTheme === ${JSON.stringify(basemap === 'Dark' ? 'dark' : 'light')}`,
+          `${basemap} ${layer.name} ${view.name} map`,
+        );
+        const rampLabels = await evaluate(cdp, `(() => ({
+          low: document.querySelector('[data-testid="gis-intensity-low-label"]')?.innerText.trim() ?? '',
+          middle: document.querySelector('[data-testid="gis-intensity-mid-label"]')?.innerText.trim() ?? '',
+          high: document.querySelector('[data-testid="gis-intensity-high-label"]')?.innerText.trim() ?? '',
+          explanation: document.querySelector('[data-testid="gis-intensity-explanation"]')?.innerText.trim() ?? '',
+        }))()`);
+
+        if (view.mode === 'choropleth') {
+          const stateColors = await evaluate(cdp, `(() => {
+            const states = [...document.querySelectorAll('[data-testid="gis-state-choropleth"]')]
+              .filter((path) => path.dataset.metricValue !== 'Not reported')
+              .map((path) => ({
+                state: path.dataset.gisState,
+                tier: path.dataset.riskTier,
+                label: path.dataset.metricLabel ?? '',
+                value: path.dataset.metricValue ?? '',
+                fill: path.getAttribute('fill')?.toLowerCase() ?? '',
+              }));
+            return {
+              count: states.length,
+              colors: [...new Set(states.map((state) => state.fill))],
+              states,
+            };
+          })()`);
+          assert(stateColors.count > 0,
+            `${themeLabel(dark)} ${viewport.width}px ${layer.name} ${basemap} choropleth has no reported state metrics`);
+          assert(new Set(Object.values(layer.stateColors)
+            .map((colors) => colors[basemap === 'Dark' ? 'dark' : 'light'])).size === 4,
+          `${themeLabel(dark)} ${layer.name} ${basemap} choropleth palette collapses distinct risk tiers`);
+          for (const state of stateColors.states) {
+            const expectedColor = layer.stateColors[state.tier]?.[basemap === 'Dark' ? 'dark' : 'light'];
+            assert(expectedColor && state.fill === expectedColor,
+              `${themeLabel(dark)} ${layer.name} ${basemap} ${state.state} ${state.tier} color is not risk-coded as expected: ${JSON.stringify(state)}`);
+            assert(state.label.includes(layer.meaning),
+              `${themeLabel(dark)} ${layer.name} ${basemap} state label does not explain risk direction: ${JSON.stringify(state)}`);
+          }
+          assert(!rampLabels.low && !rampLabels.high,
+            `${layer.name} choropleth should not display the continuous heat ramp: ${JSON.stringify(rampLabels)}`);
+          console.log(
+            `  ${themeLabel(dark)} ${viewport.width}px GIS ${layer.name} ${basemap} choropleth: ${stateColors.count} reported states, ${stateColors.colors.length} risk colors, labels explain ${layer.meaning}`,
+          );
+          continue;
+        }
+
+        assert(rampLabels.low === layer.low && rampLabels.high === layer.high &&
+          rampLabels.middle === 'Median intensity' &&
+          rampLabels.explanation.includes(layer.metric),
+        `${themeLabel(dark)} ${layer.name} ${basemap} ${view.name} risk labels do not match the layer meaning: ${JSON.stringify(rampLabels)}`);
+
+        if (view.mode === 'kde') {
+          const surface = await evaluate(cdp, `(() => {
+            const image = document.querySelector('[data-testid="gis-kde-surface"]');
+            return {
+              present: Boolean(image),
+              metric: image?.getAttribute('data-layer-risk-metric') ?? '',
+              href: image?.getAttribute('href') ?? '',
+            };
+          })()`);
+          assert(surface.present && surface.metric === layer.metric && surface.href.startsWith('data:image/png;base64,'),
+            `${themeLabel(dark)} ${layer.name} ${basemap} KDE surface is missing or detached from its risk metric: ${JSON.stringify(surface)}`);
+          const pixels = await evaluate(cdp, `(async () => {
+            const source = document.querySelector('[data-testid="gis-kde-surface"]')?.getAttribute('href');
+            if (!source) return null;
+            const image = new Image();
+            image.src = source;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+            const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+            const colors = new Set();
+            let visiblePixels = 0;
+            for (let index = 0; index < data.length; index += 4) {
+              if (data[index + 3] < 100) continue;
+              visiblePixels++;
+              colors.add(data[index] + ',' + data[index + 1] + ',' + data[index + 2]);
+            }
+            return { visiblePixels, distinctColors: colors.size };
+          })()`);
+          assert(pixels && pixels.visiblePixels > 20 && pixels.distinctColors > 4,
+            `${themeLabel(dark)} ${layer.name} ${basemap} KDE has no meaningful risk-weighted color surface: ${JSON.stringify(pixels)}`);
+        } else {
+          const bins = await evaluate(cdp, `(() => [...document.querySelectorAll('[data-testid="gis-risk-hex"]')]
+            .map((polygon) => ({
+              intensity: Number(polygon.dataset.riskIntensity),
+              fill: polygon.getAttribute('fill') ?? '',
+            }))
+            .filter((bin) => Number.isFinite(bin.intensity)))()`);
+          assert(bins.length > 1,
+            `${themeLabel(dark)} ${layer.name} ${basemap} hexbin view has too few risk cells to verify color direction`);
+          const sortedBins = bins.sort((first, second) => first.intensity - second.intensity);
+          const luminance = (fill) => {
+            const match = fill.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/i);
+            assert(match, `${layer.name} hexbin color is not a rendered RGB value: ${fill}`);
+            const [red, green, blue] = match.slice(1).map((channel) => Number(channel) / 255);
+            const linear = (channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+            return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
+          };
+          assert(sortedBins.at(-1).intensity > sortedBins[0].intensity &&
+            luminance(sortedBins.at(-1).fill) > luminance(sortedBins[0].fill),
+          `${themeLabel(dark)} ${layer.name} ${basemap} hexbin colors do not brighten with increasing risk intensity: ${JSON.stringify([sortedBins[0], sortedBins.at(-1)])}`);
+        }
+
+        console.log(
+          `  ${themeLabel(dark)} ${viewport.width}px GIS ${layer.name} ${basemap} ${view.name}: ${rampLabels.low} → ${rampLabels.high}`,
+        );
+      }
+    }
+  }
+}
+
 async function runViewport(cdp, viewport) {
   console.log(`Checking ${viewport.width}×${viewport.height}...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -2038,7 +2261,15 @@ async function runViewport(cdp, viewport) {
   if (process.env.THEME_GIS_ONLY === '1') {
     await checkGisLegendAndRiskColors(cdp, false, viewport);
     await checkGisLegendAndRiskColors(cdp, true, viewport);
-    console.log(`PASS ${viewport.width}×${viewport.height}: GIS layer palettes, basemaps, and light/dark themes`);
+    await checkGisHeatAndChoroplethRiskColors(cdp, false, viewport);
+    await checkGisHeatAndChoroplethRiskColors(cdp, true, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: GIS palettes, heat/hex/choropleth risk, basemaps, and light/dark themes`);
+    return;
+  }
+  if (process.env.THEME_GIS_RISK_ONLY === '1') {
+    await checkGisHeatAndChoroplethRiskColors(cdp, false, viewport);
+    await checkGisHeatAndChoroplethRiskColors(cdp, true, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: GIS heat, hexbin, and choropleth risk colors`);
     return;
   }
   if (process.env.THEME_SELECTION_ONLY === '1') {
@@ -2113,6 +2344,8 @@ async function runViewport(cdp, viewport) {
   await checkGisLegendAndRiskColors(cdp, false, viewport);
   await checkGisLegendAndRiskColors(cdp, true, viewport);
   await checkGisLegendAndRiskColors(cdp, 'miami-vice', viewport);
+  await checkGisHeatAndChoroplethRiskColors(cdp, false, viewport);
+  await checkGisHeatAndChoroplethRiskColors(cdp, true, viewport);
   console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, comparison, charts, and GIS in all themes`);
 }
 

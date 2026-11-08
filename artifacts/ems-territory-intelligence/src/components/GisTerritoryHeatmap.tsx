@@ -76,6 +76,24 @@ const getAgencyFleetAgeColor = (agency: Agency) => {
     : '#64748b';
 };
 
+const GIS_RISK_INTENSITY_LABELS = {
+  cardiac: {
+    metric: 'survival deficit',
+    low: 'Lower survival deficit',
+    high: 'Higher survival deficit'
+  },
+  aed: {
+    metric: 'AED access deficit',
+    low: 'Lower AED access deficit',
+    high: 'Higher AED access deficit'
+  },
+  transport: {
+    metric: 'transport time',
+    low: 'Shorter transport time',
+    high: 'Longer transport time'
+  }
+} as const;
+
 interface HexBinCell {
   id: string;
   cx: number;
@@ -745,17 +763,17 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         }
       } else if (selectedLayer === 'cardiac') {
         const survival = stats?.survivalCount ? +(stats.sumSurvival / stats.survivalCount).toFixed(1) : 0;
-        metricLabel = 'Utstein Survival Rate';
+        metricLabel = 'Utstein Survival Rate (lower = higher risk)';
         metricValue = stats?.survivalCount ? `${survival}%` : 'Not reported';
-        if (stats?.survivalCount && survival < 23) {
+        if (stats?.survivalCount && survival < 22) {
           tier = 'critical';
           fillColor = basemapTheme === 'dark' ? '#7f1d1d' : '#fee2e2';
           borderColor = basemapTheme === 'dark' ? '#ef4444' : '#dc2626';
-        } else if (stats?.survivalCount && survival < 27) {
+        } else if (stats?.survivalCount && survival < 26) {
           tier = 'high';
           fillColor = basemapTheme === 'dark' ? '#7c2d12' : '#ffedd5';
           borderColor = basemapTheme === 'dark' ? '#f97316' : '#ea580c';
-        } else if (stats?.survivalCount && survival < 31) {
+        } else if (stats?.survivalCount && survival < 30) {
           tier = 'moderate';
           fillColor = basemapTheme === 'dark' ? '#713f12' : '#fef9c3';
           borderColor = basemapTheme === 'dark' ? '#eab308' : '#d97706';
@@ -766,17 +784,17 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         }
       } else if (selectedLayer === 'aed') {
         const aedDeficit = stats?.aedCount ? Math.round(stats.sumAed / stats.aedCount) : 0;
-        metricLabel = 'AED Access Deficit';
+        metricLabel = 'AED Access Deficit (higher = greater need)';
         metricValue = stats?.aedCount ? `${aedDeficit}% deficit` : 'Not reported';
-        if (stats?.aedCount && aedDeficit >= 52) {
+        if (stats?.aedCount && aedDeficit >= 55) {
           tier = 'critical';
           fillColor = basemapTheme === 'dark' ? '#701a75' : '#fae8ff';
           borderColor = basemapTheme === 'dark' ? '#e879f9' : '#c026d3';
-        } else if (stats?.aedCount && aedDeficit >= 44) {
+        } else if (stats?.aedCount && aedDeficit >= 45) {
           tier = 'high';
           fillColor = basemapTheme === 'dark' ? '#0c4a6e' : '#e0f2fe';
           borderColor = basemapTheme === 'dark' ? '#38bdf8' : '#0284c7';
-        } else if (stats?.aedCount && aedDeficit >= 38) {
+        } else if (stats?.aedCount && aedDeficit >= 35) {
           tier = 'moderate';
           fillColor = basemapTheme === 'dark' ? '#134e4a' : '#ccfbf1';
           borderColor = basemapTheme === 'dark' ? '#2dd4bf' : '#0d9488';
@@ -787,9 +805,9 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         }
       } else if (selectedLayer === 'transport') {
         const transit = stats?.transportCount ? +(stats.sumTransport / stats.transportCount).toFixed(1) : 0;
-        metricLabel = 'Avg Transport Transit';
+        metricLabel = 'Average Transport Time (longer = greater delay)';
         metricValue = stats?.transportCount ? `${transit} min` : 'Not reported';
-        if (stats?.transportCount && transit >= 27) {
+        if (stats?.transportCount && transit >= 28) {
           tier = 'critical';
           fillColor = basemapTheme === 'dark' ? '#7c2d12' : '#ffedd5';
           borderColor = basemapTheme === 'dark' ? '#f97316' : '#c2410c';
@@ -797,7 +815,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           tier = 'high';
           fillColor = basemapTheme === 'dark' ? '#713f12' : '#fef3c7';
           borderColor = basemapTheme === 'dark' ? '#f59e0b' : '#d97706';
-        } else if (stats?.transportCount && transit >= 18) {
+        } else if (stats?.transportCount && transit >= 16) {
           tier = 'moderate';
           fillColor = basemapTheme === 'dark' ? '#0c4a6e' : '#e0f2fe';
           borderColor = basemapTheme === 'dark' ? '#38bdf8' : '#0284c7';
@@ -1536,6 +1554,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               </button>
               <button
                 type="button"
+                data-testid="gis-risk-layer-cardiac"
                 onClick={() => setSelectedLayer('cardiac')}
                 className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
                   selectedLayer === 'cardiac' ? 'bg-white dark:bg-[#111C2D] text-rose-700 dark:text-rose-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
@@ -1545,6 +1564,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               </button>
               <button
                 type="button"
+                data-testid="gis-risk-layer-aed"
                 onClick={() => setSelectedLayer('aed')}
                 className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
                   selectedLayer === 'aed' ? 'bg-white dark:bg-[#111C2D] text-[#285EE8] dark:text-blue-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
@@ -1554,6 +1574,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               </button>
               <button
                 type="button"
+                data-testid="gis-risk-layer-transport"
                 onClick={() => setSelectedLayer('transport')}
                 className={`whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg transition-colors font-semibold cursor-pointer ${
                   selectedLayer === 'transport' ? 'bg-white dark:bg-[#111C2D] text-amber-800 dark:text-amber-400 font-bold shadow-2xs' : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white'
@@ -2044,6 +2065,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 {/* Map Display Mode: Thermal KDE, H3 Hexbins, Choropleth, Tactical Pins & Kernel Tuning */}
                 <div className="flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-xl p-1 text-xs shrink-0">
                   <button
+                    data-testid="gis-map-mode-kde"
                     onClick={() => setMapDisplayMode('kde')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                       mapDisplayMode === 'kde'
@@ -2056,6 +2078,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     <span>Thermal KDE</span>
                   </button>
                   <button
+                    data-testid="gis-map-mode-hexbin"
                     onClick={() => setMapDisplayMode('hexbin')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                       mapDisplayMode === 'hexbin'
@@ -2068,6 +2091,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     <span>H3 Hexbins</span>
                   </button>
                   <button
+                    data-testid="gis-map-mode-choropleth"
                     onClick={() => setMapDisplayMode('choropleth')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                       mapDisplayMode === 'choropleth'
@@ -2102,6 +2126,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         {(['inferno', 'plasma', 'viridis'] as const).map((ramp) => (
                           <button
                             key={ramp}
+                            data-testid={`gis-spectrum-${ramp}`}
                             onClick={() => setColorSpectrum(ramp)}
                             className={`px-1.5 py-0.5 rounded text-xs capitalize transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                               colorSpectrum === ramp
@@ -2365,6 +2390,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
             <svg
               viewBox={`0 0 ${mapWidth} ${mapHeight}`}
+              data-testid="gis-map-svg"
+              data-display-mode={mapDisplayMode}
+              data-selected-layer={selectedLayer}
+              data-basemap-theme={basemapTheme}
               className={`w-full flex-1 select-none ${isDraggingMap ? 'cursor-grabbing' : zoomLevel > 1 ? 'cursor-grab' : 'cursor-crosshair'}`}
               onMouseDown={(e) => {
                 if (e.button !== 0) return;
@@ -2577,6 +2606,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       <path
                         key={`gis-poly-${sc}`}
                         d={boundary.d}
+                        data-testid={mapDisplayMode === 'choropleth' ? 'gis-state-choropleth' : undefined}
+                        data-gis-state={sc}
+                        data-risk-tier={acuity?.tier}
+                        data-metric-label={acuity?.metricLabel}
+                        data-metric-value={acuity?.metricValue}
                         fill={fill}
                         stroke={stroke}
                         strokeWidth={strokeWidth}
@@ -2615,6 +2649,10 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 {(mapDisplayMode === 'kde' || mapDisplayMode === 'hotspots') && kdeThermalDataUrl && (
                   <image
                     href={kdeThermalDataUrl}
+                    data-testid="gis-kde-surface"
+                    data-layer-risk-metric={selectedLayer === 'cardiac' || selectedLayer === 'aed' || selectedLayer === 'transport'
+                      ? GIS_RISK_INTENSITY_LABELS[selectedLayer].metric
+                      : undefined}
                     x={0}
                     y={0}
                     width={mapWidth}
@@ -2662,6 +2700,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                         >
                           <polygon
                             points={cell.points}
+                            data-testid="gis-risk-hex"
+                            data-risk-intensity={cell.normalizedIntensity.toFixed(4)}
                             fill={cell.fillColor}
                             fillOpacity={isHexHovered ? 0.96 : 0.82}
                             stroke={isHexHovered ? '#FFFFFF' : cell.strokeColor}
@@ -2926,10 +2966,24 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       }}
                     />
                     <div className="flex justify-between text-xs text-slate-400 mt-1 font-medium">
-                      <span>{selectedLayer === 'nemsis_cardiac' ? 'Lower rate' : 'Baseline'}</span>
-                      <span>{selectedLayer === 'nemsis_cardiac' ? 'National median' : 'Median'}</span>
-                      <span className="text-amber-300 font-semibold">{selectedLayer === 'nemsis_cardiac' ? 'Higher rate' : 'Peak'}</span>
+                      <span data-testid="gis-intensity-low-label">
+                        {selectedLayer === 'nemsis_cardiac' ? 'Lower rate' : GIS_RISK_INTENSITY_LABELS[selectedLayer].low}
+                      </span>
+                      <span data-testid="gis-intensity-mid-label">
+                        {selectedLayer === 'nemsis_cardiac' ? 'National median' : 'Median intensity'}
+                      </span>
+                      <span data-testid="gis-intensity-high-label" className="text-amber-300 font-semibold">
+                        {selectedLayer === 'nemsis_cardiac' ? 'Higher rate' : GIS_RISK_INTENSITY_LABELS[selectedLayer].high}
+                      </span>
                     </div>
+                    {selectedLayer !== 'nemsis_cardiac' && (
+                      <span data-testid="gis-intensity-explanation" className="block text-[10px] leading-snug text-slate-400">
+                        {mapDisplayMode === 'hexbin'
+                          ? 'Color intensity reflects combined '
+                          : 'Color intensity reflects station density weighted by '}
+                        {GIS_RISK_INTENSITY_LABELS[selectedLayer].metric}.
+                      </span>
+                    )}
                   </div>
                 )}
 

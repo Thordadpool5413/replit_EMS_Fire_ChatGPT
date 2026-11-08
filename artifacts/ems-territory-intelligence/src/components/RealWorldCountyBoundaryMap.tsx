@@ -13,6 +13,7 @@ import {
 } from '../services/countyBoundaryHierarchyService';
 import { getCountyDenialDisplay } from '../services/countyDenialProfileService';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
+import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
@@ -161,16 +162,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const inspectedNri = inspectedCounty
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
     : null;
-  const nriRatingColors: Record<string, string> = {
-    'Very Low': '#34D399',
-    'Relatively Low': '#10B981',
-    'Relatively Moderate': '#FACC15',
-    'Relatively High': '#FB923C',
-    'Very High': '#F43F5E',
-  };
   const nriColorFor = (fips: string) => {
     const rating = nriByCountyFips.get(fips)?.riskRating;
-    return rating ? nriRatingColors[rating] ?? '#475569' : '#475569';
+    return rating ? FEMA_NRI_RATING_COLORS[rating] ?? '#475569' : '#475569';
   };
 
   if (!stateNode) return null;
@@ -377,7 +371,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 text-[10px] text-slate-300">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                {Object.entries(nriRatingColors).map(([rating, color]) => (
+                {Object.entries(FEMA_NRI_RATING_COLORS).map(([rating, color]) => (
                   <span key={rating} className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-sm ring-1 ring-white/30" style={{ backgroundColor: color }} />
                     <span>{rating}</span>
@@ -506,14 +500,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   aria-label="FEMA National Risk Index"
                   style={{
                     borderLeftColor: inspectedNri?.riskRating
-                      ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B'
+                      ? FEMA_NRI_RATING_COLORS[inspectedNri.riskRating] ?? '#64748B'
                       : '#64748B',
                   }}
                 >
                   <div className="county-nri-main">
                     <span
                       className="county-nri-marker"
-                      style={{ backgroundColor: inspectedNri?.riskRating ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B' : '#64748B' }}
+                        style={{ backgroundColor: inspectedNri?.riskRating ? FEMA_NRI_RATING_COLORS[inspectedNri.riskRating] ?? '#64748B' : '#64748B' }}
                       aria-hidden="true"
                     />
                     <div className="county-nri-copy">
@@ -525,7 +519,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     className="county-nri-score"
                     style={{
                       borderColor: inspectedNri?.riskRating
-                        ? nriRatingColors[inspectedNri.riskRating] ?? '#64748B'
+                      ? FEMA_NRI_RATING_COLORS[inspectedNri.riskRating] ?? '#64748B'
                         : '#64748B',
                     }}
                   >

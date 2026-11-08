@@ -60,6 +60,7 @@ import {
 import { PulseIqRegionalBreakdownChart } from './PulseIqRegionalBreakdownChart';
 import { RealWorldCountyBoundaryMap } from './RealWorldCountyBoundaryMap';
 import { countyBoundaryHierarchy } from '../services/countyBoundaryHierarchyService';
+import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
@@ -71,6 +72,11 @@ import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 
 const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
+const COUNTY_REFERENCE_SOURCE_KEYS = [
+  'population',
+  'averageTransportMinutes',
+  'annualCardiacArrestIncidents',
+] as const;
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -354,6 +360,23 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       staleTime: 6 * 60 * 60 * 1000,
     },
   });
+  const selectedStateNriParams = useMemo(
+    () => selectedStateCode !== 'all' ? { stateCode: selectedStateCode } : undefined,
+    [selectedStateCode],
+  );
+  const selectedStateNriQuery = useGetNriCountyContext(selectedStateNriParams, {
+    query: {
+      enabled: selectedStateCode !== 'all' && middleTab === 'counties',
+      queryKey: getGetNriCountyContextQueryKey(selectedStateNriParams),
+      staleTime: 6 * 60 * 60 * 1000,
+    },
+  });
+  const selectedStateNriByCountyFips = useMemo(
+    () => new Map(
+      (selectedStateNriQuery.data?.records ?? []).map((record) => [record.countyFips, record]),
+    ),
+    [selectedStateNriQuery.data?.records],
+  );
   const nriNationalVintageLabel = useMemo(() => {
     const records = nriNationalQuery.data?.records ?? [];
     const versions = new Set(
@@ -1693,12 +1716,38 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               No counties matched "{countyFilterInput}". Try clearing the search filter.
             </div>
           ) : (
-            <div className="county-directory-card-grid grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <>
+            <div className="county-signal-scope-note" role="note" data-testid="county-signal-guidance">
+              <strong>How to read these signals:</strong> FEMA NRI colors show source-defined risk categories, not data quality or agency performance. Other figures are county-level working references; source, period, and scope details appear when available. User review is not recorded here.
+            </div>
+            <div className="county-signal-column-head" aria-hidden="true">
+              <span>County / geography</span>
+              <span>FEMA NRI · source rating</span>
+              <span>County reference context</span>
+              <span>End-user review</span>
+            </div>
+            <div className="county-signal-list">
               {paginatedCounties.map(c => {
                 const countyCities = c.cities && c.cities.length > 0 ? c.cities : [c.countySeat];
                 const mappedPlaceCount = c.cities?.length ?? 0;
                 const countyDenialDisplay = getCountyDenialDisplay(c);
                 const countyZipDenialProfiles = getCountyZipDenialProfiles(c.countyFips);
+                const countyNri = selectedStateNriByCountyFips.get(c.countyFips);
+                const countyNriSourceUrl = safeAgencyWebsiteUrl(countyNri?.sourceUrl);
+                const countyNriScore =
+                  typeof countyNri?.riskScore === 'number' && Number.isFinite(countyNri.riskScore)
+                    ? countyNri.riskScore.toFixed(2)
+                    : null;
+                const incompleteFigureSourceCount = COUNTY_REFERENCE_SOURCE_KEYS.filter(key => {
+                  const source = c.figureSources?.[key];
+                  return (
+                    !source ||
+                    !(source.source?.trim() || source.sourceUrl?.trim()) ||
+                    !source.vintage?.trim() ||
+                    !source.scope?.trim() ||
+                    !source.reportingPeriod?.trim()
+                  );
+                }).length;
                 const openCounty = () => {
                   setSelectedCountyName(c.countyName);
                   setSelectedCityName('all');
@@ -1712,32 +1761,92 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <article
                     key={`${c.stateCode}-${c.countyFips}`}
                     aria-labelledby={`county-card-title-${c.countyFips}`}
-                    className="county-directory-card county-profile-card group relative flex min-h-0 flex-col"
+                    className="county-signal-row"
+                    data-testid={`row-county-signals-${c.countyFips}`}
                   >
-                    <div className="county-profile-card-content">
-                      <div className="county-profile-card-heading">
-                        <div className="min-w-0">
-                          <h3 id={`county-card-title-${c.countyFips}`} className="county-profile-card-title">
-                            {c.countyName}
-                          </h3>
-                          <div className="county-profile-card-meta">
-                            <span>County seat <strong className="font-semibold text-slate-900">{c.countySeat}</strong></span>
-                          </div>
-                        </div>
+                    <div className="county-signal-row-main">
+                      <div className="county-signal-cell county-signal-identity">
+                        <span className="county-signal-geography">Display FIPS {c.countyFips}</span>
+                        <h3 id={`county-card-title-${c.countyFips}`} className="county-signal-title">
+                          {c.countyName}
+                        </h3>
+                        <p className="county-signal-locale">
+                          Seat <strong>{c.countySeat}</strong>
+                          {c.landAreaSqMiles ? <> · {c.landAreaSqMiles.toLocaleString()} sq mi</> : null}
+                        </p>
                         {mappedPlaceCount > 0 && (
-                          <span
-                            className="county-profile-place-count"
-                            aria-label={`${mappedPlaceCount} mapped ${mappedPlaceCount === 1 ? 'place' : 'places'}`}
-                          >
-                            {mappedPlaceCount} {mappedPlaceCount === 1 ? 'place' : 'places'}
+                          <span className="county-signal-place-count">
+                            {mappedPlaceCount} mapped {mappedPlaceCount === 1 ? 'place' : 'places'}
                           </span>
                         )}
                       </div>
 
-                      <div className="county-profile-metrics" aria-label={`County reference figures for ${c.countyName}`}>
+                      <div className="county-signal-cell county-signal-nri" role="group" aria-label="FEMA NRI source rating">
+                        <span className="county-signal-cell-label">FEMA NRI rating</span>
+                        {selectedStateNriQuery.isLoading ? (
+                          <span className="county-signal-nri-unavailable" role="status">
+                            Loading source record
+                          </span>
+                        ) : selectedStateNriQuery.isError ? (
+                          <span className="county-signal-nri-unavailable" role="status">
+                            FEMA NRI source unavailable
+                          </span>
+                        ) : countyNri ? (
+                          <>
+                            <div className="county-signal-nri-rating">
+                              {countyNri.riskRating && (
+                                <span
+                                  className="county-signal-nri-dot"
+                                  style={{
+                                    backgroundColor:
+                                      FEMA_NRI_RATING_COLORS[countyNri.riskRating] ?? 'var(--pi-text-muted)',
+                                  }}
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <strong data-testid={`text-fema-nri-rating-${c.countyFips}`}>
+                                {countyNri.riskRating || 'Rating not stated'}
+                              </strong>
+                            </div>
+                            <span
+                              className="county-signal-nri-score"
+                              data-testid={`text-fema-nri-score-${c.countyFips}`}
+                            >
+                              {countyNriScore ? `Risk score ${countyNriScore}` : 'Risk score not stated'}
+                            </span>
+                            <span className="county-signal-nri-vintage">
+                              {countyNri.sourceVersion && countyNri.sourceVersion !== 'Version not stated'
+                                ? `Source vintage · ${countyNri.sourceVersion}`
+                                : 'Source vintage not stated'}
+                            </span>
+                            {countyNriSourceUrl && (
+                              <a
+                                className="county-signal-source-link"
+                                href={countyNriSourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={event => event.stopPropagation()}
+                                data-testid={`link-fema-nri-${c.countyFips}`}
+                              >
+                                FEMA source <ExternalLink aria-hidden="true" />
+                              </a>
+                            )}
+                          </>
+                        ) : (
+                          <span className="county-signal-nri-unavailable">
+                            No county-equivalent record
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="county-signal-cell county-signal-reference" role="group" aria-label={`County reference context for ${c.countyName}`}>
+                        <span className="county-signal-cell-label">County reference context</span>
+                      <div className="county-profile-metrics county-signal-metrics" aria-label={`County reference figures for ${c.countyName}`}>
                         <div className="county-profile-metric county-profile-metric-population">
                           <span>Population reference</span>
-                          <strong>{c.population.toLocaleString()}</strong>
+                        <strong data-testid={`text-county-population-${c.countyFips}`}>
+                          {c.population.toLocaleString()}
+                        </strong>
                         </div>
                         <div className="hidden">
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-normal">
@@ -1841,17 +1950,52 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                         <div className="county-profile-metric county-profile-metric-transport">
                           <span>Average transport</span>
-                          <strong>{c.averageTransportMinutes}<small> min</small></strong>
+                          <strong data-testid={`text-county-transport-${c.countyFips}`}>
+                            {c.averageTransportMinutes}<small> min</small>
+                          </strong>
                         </div>
                         <div className="county-profile-metric county-profile-metric-ohca">
                           <span>Annual OHCA reference</span>
-                          <strong>{c.annualCardiacArrestIncidents.toLocaleString()}</strong>
+                          <strong data-testid={`text-county-ohca-${c.countyFips}`}>
+                            {c.annualCardiacArrestIncidents.toLocaleString()}
+                          </strong>
                         </div>
                       </div>
+                      </div>
+
+                      <div className="county-signal-cell county-signal-review" role="group" aria-label="End-user review status">
+                        <span className="county-signal-cell-label">End-user review</span>
+                        <span
+                          className="county-signal-review-state"
+                          data-testid={`status-county-review-${c.countyFips}`}
+                        >
+                          User review not recorded
+                        </span>
+                        <span
+                          className="county-signal-source-status"
+                          data-testid={`status-county-source-metadata-${c.countyFips}`}
+                        >
+                          {incompleteFigureSourceCount > 0
+                            ? `Source details unavailable · ${incompleteFigureSourceCount} figures`
+                            : 'Figure source details attached'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={openCounty}
+                          className="county-signal-inspect-action"
+                          aria-label={`Inspect ${c.countyName} county`}
+                          data-testid={`button-inspect-county-${c.countyFips}`}
+                        >
+                          Inspect county
+                          <ChevronRight aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
 
                       <details
                         className="county-profile-details"
                         onClick={(event) => event.stopPropagation()}
+                        data-testid={`details-county-context-${c.countyFips}`}
                       >
                         <summary className="county-profile-details-summary">
                           <span>Details &amp; sources</span>
@@ -1859,6 +2003,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {mappedPlaceCount > 0 ? `${mappedPlaceCount} places` : 'County seat'} · 5 figures
                           </span>
                           <span className="county-profile-details-indicator" aria-hidden="true">+</span>
+                          <span className="sr-only">Toggle details for {c.countyName}</span>
                         </summary>
                         <div className="county-profile-details-content">
                           <div className="county-profile-geography" aria-label={`Geographic identifiers for ${c.countyName}`}>
@@ -1945,24 +2090,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           />
                         </div>
                       </details>
-                    </div>
-
-                    <div className="county-profile-card-footer">
-                      <span className="county-profile-data-note">County reference only</span>
-                      <button
-                        type="button"
-                        onClick={openCounty}
-                        className="county-profile-card-action"
-                        aria-label={`Inspect ${c.countyName} county`}
-                      >
-                        Inspect county
-                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </button>
-                    </div>
                   </article>
                 );
               })}
             </div>
+            </>
           )}
 
           {totalCountyPages > 1 && (

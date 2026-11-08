@@ -1047,6 +1047,9 @@ async function checkHome(cdp, dark) {
       activeLabel: active?.innerText.trim() ?? active?.getAttribute('aria-label') ?? '',
       activeColor: active ? getComputedStyle(active).color : '',
       activeBackground: active ? getComputedStyle(active).backgroundColor : '',
+      themeColor: document.querySelector('meta[name="theme-color"]')?.content.trim() ?? '',
+      expectedThemeColor: getComputedStyle(document.documentElement)
+        .getPropertyValue('--pi-nav-bg').trim(),
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
     };
   })()`);
@@ -1058,6 +1061,10 @@ async function checkHome(cdp, dark) {
   assert(
     /Home/i.test(shell.activeLabel),
     `${themeLabel(dark)} active Home navigation item is missing at ${shell.viewportWidth}px: ${JSON.stringify(shell)}`,
+  );
+  assert(
+    shell.themeColor === shell.expectedThemeColor,
+    `${themeLabel(dark)} PWA browser chrome does not match the app theme at ${shell.viewportWidth}px: ${JSON.stringify(shell)}`,
   );
   assert(!shell.pageOverflow, `${themeLabel(dark)} Home causes page-level horizontal overflow at ${shell.viewportWidth}px`);
 

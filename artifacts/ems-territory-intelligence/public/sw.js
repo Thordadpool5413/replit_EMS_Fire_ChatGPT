@@ -1,4 +1,4 @@
-const CACHE_NAME = "ems-territory-shell-v2";
+const CACHE_NAME = "ems-territory-shell-v3";
 const APP_ROOT = new URL("./", self.location).href;
 const SHELL_ASSETS = [
   APP_ROOT,

@@ -151,8 +151,9 @@ export const TopBar: React.FC<TopBarProps> = ({
     && (/iPad|iPhone|iPod/.test(navigator.userAgent)
       || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const installHelpText = isIosBrowser
-    ? 'In Safari, tap Share, then choose “Add to Home Screen.”'
+    ? 'In Safari, tap Share, choose “Add to Home Screen,” then tap Add.'
     : 'Open your browser menu and choose “Install app” or “Add to Home Screen.”';
+  const installActionLabel = isIosBrowser ? 'Add to Home Screen' : 'Install app';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -525,15 +526,23 @@ export const TopBar: React.FC<TopBarProps> = ({
                       <button
                         type="button"
                         onClick={() => void handleInstallApp()}
+                        data-testid="button-install-pwa-desktop"
+                        aria-expanded={showInstallHelp}
+                        aria-controls={showInstallHelp ? 'install-pwa-help-desktop' : undefined}
                         className="w-full rounded-md px-2.5 py-1.5 text-left text-[#14283F] hover:bg-[#F5F7FA] dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         <span className="inline-flex items-center gap-2">
                           <Download className="h-3.5 w-3.5" />
-                          Install app
+                          {installActionLabel}
                         </span>
                       </button>
                       {showInstallHelp && (
-                        <p className="mx-2.5 rounded-md bg-[#F5F7FA] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:bg-[#16243A] dark:text-slate-300" role="status">
+                        <p
+                          id="install-pwa-help-desktop"
+                          className="mx-2.5 rounded-md bg-[#F5F7FA] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:bg-[#16243A] dark:text-slate-300"
+                          role="status"
+                          aria-live="polite"
+                        >
                           {installHelpText}
                         </p>
                       )}
@@ -748,15 +757,23 @@ export const TopBar: React.FC<TopBarProps> = ({
                         <button
                           type="button"
                           onClick={() => void handleInstallApp()}
+                          data-testid="button-install-pwa-mobile"
+                          aria-expanded={showInstallHelp}
+                          aria-controls={showInstallHelp ? 'install-pwa-help-mobile' : undefined}
                           className="w-full min-h-10 text-left px-2.5 py-2 rounded-md text-[#14283F] dark:text-slate-300 hover:bg-[#F5F7FA] dark:hover:bg-slate-800 cursor-pointer"
                         >
                           <span className="inline-flex items-center gap-2">
                             <Download className="h-3.5 w-3.5" />
-                            Install app
+                            {installActionLabel}
                           </span>
                         </button>
                         {showInstallHelp && (
-                          <p className="mx-2.5 rounded-md bg-[#F5F7FA] dark:bg-[#16243A] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:text-slate-300" role="status">
+                          <p
+                            id="install-pwa-help-mobile"
+                            className="mx-2.5 rounded-md bg-[#F5F7FA] dark:bg-[#16243A] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:text-slate-300"
+                            role="status"
+                            aria-live="polite"
+                          >
                             {installHelpText}
                           </p>
                         )}

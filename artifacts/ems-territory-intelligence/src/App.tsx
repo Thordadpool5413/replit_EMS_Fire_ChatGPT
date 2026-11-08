@@ -181,7 +181,9 @@ export default function App() {
 
   const [outbox, setOutbox] = useState<SyncOutboxItem[]>(loadStoredOutbox);
   const [weights, setWeights] = useState<PredictiveWeights>(loadStoredWeights);
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine,
+  );
   const isSyncing = false;
   const [showWorkflowGuide, setShowWorkflowGuide] = useState<boolean>(() => {
     try {
@@ -213,6 +215,9 @@ export default function App() {
     root.dataset.theme = themeMode;
     root.classList.toggle('dark', usesDarkColorScheme);
     root.style.colorScheme = usesDarkColorScheme ? 'dark' : 'light';
+    const themeColor = getComputedStyle(root).getPropertyValue('--pi-nav-bg').trim();
+    const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColorMeta && themeColor) themeColorMeta.content = themeColor;
     try {
       localStorage.setItem('app_theme_mode', themeMode);
       localStorage.setItem('app_dark_mode', String(usesDarkColorScheme));
@@ -404,6 +409,7 @@ export default function App() {
 
   // Listen to browser online/offline events
   useEffect(() => {
+    setIsOnline(navigator.onLine);
     const handleOnline = () => {
       setIsOnline(true);
     };

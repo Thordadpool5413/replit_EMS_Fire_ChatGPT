@@ -39,6 +39,12 @@ For county directories, use aligned comparison rows on laptops and compact stack
 
 **How to apply:** On desktop, align county identity, reference figures, FEMA risk, and the county action, with compact visible detail/source sections. On phones, retain one readable card per county. Do not delete data or citations; verify place selection and source links.
 
+Emphasize population, average EMS transport time, and annual cardiac arrests over supporting context and geography. Label FEMA as hazard risk, not an agency-performance grade or percentage. Explain general FIPS/NEMSIS limitations once at directory level; retain county-specific provenance with each county.
+
+**Why:** The user approved this hierarchy to make county cards easier to scan without hiding available data or inventing good/bad judgments.
+
+**How to apply:** Use stronger neutral numbers for the three key figures, quieter supporting/geographic rows, and low-chrome place links. Keep every figure and actual source, vintage, scope, and period visible.
+
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 
 **Why:** The user explicitly asked to return Daylight to the blue color previously used, rejecting the green appearance.

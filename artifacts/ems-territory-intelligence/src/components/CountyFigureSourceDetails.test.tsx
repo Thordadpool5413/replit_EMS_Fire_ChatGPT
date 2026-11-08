@@ -39,3 +39,16 @@ test('summary metrics can be shown above without duplicating their values in det
   assert(html.includes('1,500'));
   assert(html.includes('Not reported'));
 });
+
+test('directory cards can suppress only general explanations without hiding source metadata', () => {
+  const html = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" showValues={false} showGeneralNotes={false}
+    sources={{ population: { source: 'County population record', sourceUrl: 'https://example.org/population',
+      vintage: '2025', scope: 'County', reportingPeriod: '2024' } }} />);
+  for (const value of ['County population record', 'https://example.org/population', '2025', 'County', '2024',
+    'Average EMS transport time', 'Source details not attached for:']) {
+    assert(html.includes(value), `Source information lost: ${value}`);
+  }
+  assert(!html.includes('data standard'));
+  assert(!html.includes('does not establish'));
+  assert(!html.includes('<details'));
+});

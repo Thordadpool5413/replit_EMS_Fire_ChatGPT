@@ -1,0 +1,135 @@
+/* County directory brief card — scoped with .county-brief / .cb-* prefixes.
+   Widths: 1024 viewport w/ 210px sidebar ~ 760-790px card; 1366 ~ 1100px; 390 phone ~ 350px.
+   Uses container queries so layout follows the card's real width, not the viewport. */
+.county-brief {
+  container-type: inline-size;
+  display: grid; gap: .5rem;
+  padding: .8rem 1rem .7rem;
+  border: 1px solid var(--pi-border); border-radius: .75rem;
+  background: var(--pi-surface-bg);
+  scroll-margin-top: 5rem; min-width: 0;
+}
+.county-brief + .county-brief { margin-top: .6rem; }
+
+.county-brief .cb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.county-brief .cb-ident { min-width: 0; }
+.county-brief .cb-name {
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; line-height: 1.15;
+  letter-spacing: -.02em; color: var(--pi-text-primary); overflow-wrap: anywhere;
+}
+.county-brief .cb-seat { margin-top: .15rem; font-size: .84rem; color: var(--pi-text-secondary); }
+.county-brief .cb-seat strong { color: var(--pi-text-primary); font-weight: 600; }
+
+.county-brief .cb-inspect {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: .3rem;
+  min-height: 2.1rem; padding: 0 .75rem; border-radius: .5rem;
+  background: var(--pi-action); color: #fff; font-size: .82rem; font-weight: 650; white-space: nowrap; cursor: pointer;
+  transition: background-color 140ms ease;
+}
+.county-brief .cb-inspect:hover { background: var(--pi-action-hover); }
+.county-brief .cb-inspect svg { width: .95rem; height: .95rem; }
+
+/* Risk + metrics band */
+.county-brief .cb-band { display: grid; gap: .65rem; grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 640px) {
+  .county-brief .cb-band { grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr); align-items: stretch; }
+}
+.county-brief .cb-risk {
+  min-width: 0; padding: .55rem .7rem; border-radius: .55rem;
+  background: var(--pi-surface-subtle, color-mix(in srgb, var(--pi-text-primary) 4%, var(--pi-surface-bg)));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; align-items: center; gap: .2rem .35rem;
+}
+.county-brief .cb-risk-label { grid-column: 1 / -1; font-size: .8rem; font-weight: 600; color: var(--pi-text-muted); }
+.county-brief .cb-risk-status { grid-column: 1 / -1; font-size: .82rem; color: var(--pi-text-secondary); }
+.county-brief .cb-risk-chip {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-size: .9rem; font-weight: 650; color: var(--pi-text-primary);
+}
+.county-brief .cb-risk-chip::before {
+  content: ""; width: .85rem; height: .85rem; border-radius: 3px; flex-shrink: 0;
+  background: var(--cb-risk, #b6c1cf); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.county-brief .cb-risk-chip--none { --cb-risk: #b6c1cf; font-weight: 550; color: var(--pi-text-secondary); }
+.county-brief .cb-risk-meta {
+  display: contents; font-size: .8rem; color: var(--pi-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.county-brief .cb-risk-meta strong { color: var(--pi-text-primary); font-weight: 600; }
+.county-brief .cb-risk-meta > span:first-child { grid-column: 2; grid-row: 2; }
+.county-brief .cb-risk-meta > span:nth-child(2) { grid-column: 1; grid-row: 3; }
+.county-brief .cb-risk-meta > .cb-link { grid-column: 2; grid-row: 3; justify-self: end; }
+
+.county-brief .cb-metrics {
+  margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--pi-border); border-radius: .55rem; overflow: hidden;
+}
+.county-brief .cb-metric { min-width: 0; padding: .5rem .7rem; display: flex; flex-direction: column; justify-content: center; }
+.county-brief .cb-metric + .cb-metric { border-left: 1px solid var(--pi-border); }
+.county-brief .cb-metric dt { font-size: .8rem; color: var(--pi-text-muted); line-height: 1.25; }
+.county-brief .cb-metric dd {
+  margin: .15rem 0 0; font-size: 1.45rem; font-weight: 650; line-height: 1.15; color: var(--pi-text-primary);
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+.county-brief .cb-metric dd small, .county-brief .cb-context dd small { font-size: .78rem; font-weight: 500; color: var(--pi-text-secondary); }
+@container (max-width: 400px) {
+  .county-brief .cb-metric { padding: .45rem .5rem; }
+  .county-brief .cb-metric dd { font-size: 1.2rem; }
+}
+
+/* Body */
+.county-brief .cb-body { display: grid; gap: .45rem; min-width: 0; }
+.county-brief .cb-na { font-size: .8rem; font-weight: 500; color: var(--pi-text-muted); }
+
+.county-brief .cb-context {
+  margin: 0; display: grid; gap: .45rem .9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: .1rem 0 .55rem; border-bottom: 1px solid var(--pi-border);
+}
+@container (min-width: 560px) { .county-brief .cb-context { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.county-brief .cb-context > div { min-width: 0; }
+.county-brief .cb-context dt { font-size: .8rem; color: var(--pi-text-muted); line-height: 1.25; }
+.county-brief .cb-context dd {
+  margin: .1rem 0 0; font-size: .92rem; font-weight: 600; color: var(--pi-text-primary); font-variant-numeric: tabular-nums;
+}
+
+.county-brief .cb-geo {
+  margin: 0; display: flex; flex-wrap: wrap; gap: .2rem 1.1rem;
+  font-size: .8rem; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums;
+}
+.county-brief .cb-geo > div { display: flex; gap: .35rem; min-width: 0; }
+.county-brief .cb-geo dt { color: var(--pi-text-muted); flex-shrink: 0; }
+.county-brief .cb-geo dd { margin: 0; overflow-wrap: anywhere; }
+.county-brief .cb-geo .cb-geo-zips dd { line-height: 1.5; }
+
+.county-brief .cb-places { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .75rem; font-size: .84rem; }
+.county-brief .cb-places-label { font-size: .78rem; font-weight: 600; color: var(--pi-text-muted); flex-shrink: 0; }
+.county-brief .cb-count { font-weight: 500; font-variant-numeric: tabular-nums; }
+.county-brief .cb-places .cb-place-list { display: flex; flex-wrap: wrap; gap: .15rem .75rem !important; min-width: 0; flex: 1 1 14rem; }
+.county-brief .cb-place, .county-brief .cb-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--pi-action-ink); font-size: .84rem; font-weight: 550; line-height: 1.5;
+  text-decoration: underline; text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--pi-action) 35%, transparent);
+}
+.county-brief .cb-link { display: inline-flex; align-items: center; gap: .2rem; font-size: .8rem; }
+.county-brief .cb-link svg { width: .78rem; height: .78rem; }
+.county-brief .cb-place:hover, .county-brief .cb-link:hover { text-decoration-color: currentColor; }
+
+.county-brief .cb-inspect:focus-visible, .county-brief .cb-place:focus-visible, .county-brief .cb-link:focus-visible {
+  outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; border-radius: 3px;
+}
+
+.county-brief .cb-sources { padding-top: .5rem; border-top: 1px dashed var(--pi-border); }
+.county-brief .cb-sources:not(:has(table)) { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; }
+.county-brief .cb-sources .cv-sources-foot { margin: 0; font-size: .8rem; line-height: 1.4; flex: 1 1 16rem; }
+
+@media (max-width: 767px) {
+  .county-brief .cb-places { display: block; }
+  .county-brief .cb-place { min-height: 44px; display: inline-flex; align-items: center; }
+  .county-brief .cb-inspect { min-height: 44px; }
+}
+
+@container (max-width: 360px) {
+  .county-brief .cb-head { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .county-brief .cb-inspect { transition: none; } }

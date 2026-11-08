@@ -15,6 +15,10 @@ interface CountyFigureSourceDetailsProps {
   showValues?: boolean;
   /** Summary figures already shown immediately above this source section. */
   omitValuesFor?: readonly CountyFigureSourceKey[];
+  /** Show the general FIPS / NEMSIS scope notes. Defaults to true; set false when explained once elsewhere. */
+  showGeneralNotes?: boolean;
+  /** Optional extra class for layout hooks. */
+  className?: string;
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -47,6 +51,8 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
   record,
   showValues = true,
   omitValuesFor = [],
+  showGeneralNotes = true,
+  className,
 }) => {
   const values = (record ?? {}) as CountyFigureValues;
   const withValues = showValues && Boolean(record);
@@ -57,7 +63,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
   const attached = COUNTY_FIGURES.filter(({ key }) => hasMetadata(key));
   const missing = COUNTY_FIGURES.filter(({ key }) => !hasMetadata(key));
   return (
-    <div className="county-figure-source-details cv-sources" data-testid={`sources-county-${countyFips}`}>
+    <div className={`county-figure-source-details cv-sources${className ? ` ${className}` : ''}`} data-testid={`sources-county-${countyFips}`}>
       {withValues && (
         <dl className="cv-source-figures" aria-label="County reference figures">
           {COUNTY_FIGURES.filter(({ key }) => !omitValuesFor.includes(key)).map(({ key, label, format }) => (
@@ -109,8 +115,12 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
           : missing.length > 0
             ? `Source details not attached for: ${missing.map(({ label }) => label).join('; ')}.`
             : 'Source scope and reporting periods are shown for each figure.'}
-        {' '}Display geography: county FIPS {countyFips}; this does not establish a source&apos;s own scope.
-        {' '}NEMSIS v3.5 is a data standard, not a source citation.
+        {showGeneralNotes && (
+          <>
+            {' '}Display geography: county FIPS {countyFips}; this does not establish a source&apos;s own scope.
+            {' '}NEMSIS v3.5 is a data standard, not a source citation.
+          </>
+        )}
       </p>
     </div>
   );

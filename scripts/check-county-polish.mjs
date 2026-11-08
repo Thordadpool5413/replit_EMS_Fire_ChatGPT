@@ -130,8 +130,11 @@ async function framing(label, single = false) {
   console.log(`✓ ${label}: proportional map fit ${(result.fit * 100).toFixed(0)}%`);
 }
 async function pressEnter() {
-  for (const type of ['rawKeyDown', 'keyUp']) {
-    await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  // Native buttons activate on the character event; rawKeyDown alone only
+  // exercises custom SVG keydown handlers, not a real Enter keystroke.
+  for (const type of ['rawKeyDown', 'char', 'keyUp']) {
+    await send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13,
+      ...(type === 'char' ? { text: '\r', unmodifiedText: '\r' } : {}) });
   }
 }
 
@@ -155,8 +158,10 @@ try {
   });
   await send('Page.enable');
   await send('Runtime.enable');
-  const viewports = [{ width: 1024, height: 640 }, { width: 1366, height: 768 }, { width: 390, height: 844 }];
+  const viewports = [{ width: 1024, height: 640 }, { width: 1366, height: 768 }, { width: 390, height: 844 }]
+    .filter(viewport => !process.env.COUNTY_TEST_WIDTH || viewport.width === Number(process.env.COUNTY_TEST_WIDTH));
   const mapOnly = process.env.COUNTY_MAP_ONLY === '1';
+  const cardsOnly = process.env.COUNTY_CARDS_ONLY === '1';
   for (const viewport of viewports) {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
@@ -174,6 +179,7 @@ try {
       console.log(`✓ ${label}: readable map labels and unclipped Help menu`);
       continue;
     }
+    if (!cardsOnly) {
     await navigate('/', 'Boolean(document.querySelector(".home-map-state-path"))');
     await evaluate(`(() => {
       const theme = document.querySelector('[data-testid="theme-select-desktop"]');
@@ -181,12 +187,15 @@ try {
     })()`);
     await layout(`${label} Home`, desktop);
     await capture(`${label}-home`);
+    }
     await navigate('/?state=FL', 'Boolean(document.querySelector(\'[data-testid="row-county-signals-12001"]\'))');
-    await waitFor('Boolean(document.querySelector(\'.county-state-map-svg path\'))', 'Florida boundaries');
     await waitFor('document.querySelector(\'[data-testid="text-fema-nri-rating-12001"]\')?.textContent.includes("Moderate")', 'Florida source-defined FEMA rating');
     await layout(`${label} Florida`, desktop);
+    if (!cardsOnly) {
+    await waitFor('Boolean(document.querySelector(\'.county-state-map-svg path\'))', 'Florida boundaries');
     await framing(`${label} Florida`);
     await capture(`${label}-state`);
+    }
     const row = await evaluate(`(() => {
       const card = document.querySelector('[data-testid="row-county-signals-12001"]');
       const text = card.innerText;
@@ -204,6 +213,33 @@ try {
     assert(row.sourceText.includes('Source') || row.sourceText.includes('source'), 'Missing inline coverage');
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
+    if (cardsOnly) {
+      assert(!/data standard|does not establish/.test(row.text), 'Repeated general explanation still inside county card');
+      for (const value of ['184,943', '18.3', '318', '15,165', '24.3', '73,943', '18.3', '16.1', '32618', '32615']) {
+        assert(row.text.includes(value), `${label}: missing reference value ${value}`);
+      }
+      for (const theme of ['daylight', 'dark', 'miami-vice']) {
+        await evaluate(`(() => {
+          const select = document.querySelector('[data-testid="theme-select-desktop"]');
+          select.value = ${JSON.stringify(theme)};
+          select.dispatchEvent(new Event('change', {bubbles:true}));
+        })()`);
+        await pause(200);
+        await layout(`${label} ${theme} county`, desktop);
+        await capture(`${label}-directory-${theme}`, '[data-testid="row-county-signals-12001"]');
+      }
+      if (viewport.width === 1366) {
+        await evaluate('document.querySelector(\'[data-testid="button-inspect-county-12001"]\').click()');
+        await waitFor('Boolean(document.querySelector(".county-city-directory-panel"))', 'Inspect county action');
+        await evaluate('history.back()');
+        await waitFor('Boolean(document.querySelector(\'[data-testid="row-county-signals-12001"]\'))', 'county directory after Back');
+      }
+      await evaluate('document.querySelector(\'[data-testid="row-county-signals-12001"] .county-profile-city-list button\').focus()');
+      await pressEnter();
+      await waitFor('Boolean(document.querySelector(\'[data-testid="button-show-all-places"]\'))', 'place link keyboard activation');
+      console.log(`✓ ${label}: all eight figures, visible sources, all ZIPs, three themes and working place link`);
+      continue;
+    }
     await navigate('/?state=FL&county=Alachua%20County', 'Boolean(document.querySelector(".county-city-directory-panel"))');
     await layout(`${label} Alachua`, desktop);
     await framing(`${label} Alachua`, true);
@@ -227,7 +263,7 @@ try {
   }
   if (!mapOnly) {
   await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
-  for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
+  if (!cardsOnly) for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
     await navigate(`/?state=${code}`, 'Boolean(document.querySelector(".county-state-map-svg path"))');
     await framing(name);
     await capture(`1366x768-${code}`);

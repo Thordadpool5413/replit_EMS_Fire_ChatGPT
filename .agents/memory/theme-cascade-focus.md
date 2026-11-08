@@ -14,3 +14,9 @@ When changing a sidebar utility grid into a vertical list, audit legacy child pl
 **Why:** The footer still rendered uneven widths and overlapping labels until the old grid-placement behavior was removed from the new row layout.
 
 **How to apply:** Check live row widths, heights and icon alignment, not just page overflow. Use an unambiguous layout contract and verify the selected-geography state at short laptop heights.
+
+Include row and icon geometry in every theme's checks, not only contrast.
+
+**Why:** Daylight geometry and all-theme contrast checks missed a Miami Vice selected-state border that shifted only the active row's icon.
+
+**How to apply:** Keep selection indicators from changing row border geometry; check the selected workspace against inactive rows after switching themes.

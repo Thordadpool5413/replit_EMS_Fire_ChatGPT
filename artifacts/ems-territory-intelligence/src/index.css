@@ -10428,10 +10428,6 @@ body [data-radix-portal] .recharts-default-tooltip {
   color: var(--pi-text-secondary) !important;
 }
 
-html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button[aria-current="page"] {
-  border-left: 3px solid var(--pi-accent-highlight) !important;
-}
-
 /* The app root receives .dark so existing dark-mode component variants work.
    Give Miami's explicit token values precedence over legacy dark-shell colors. */
 html.dark[data-theme="miami-vice"] .pi-primary-sidebar,
@@ -10754,7 +10750,10 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
     height: 1.85rem !important; min-height: 1.85rem !important;
   }
 }
-html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"] { box-shadow: inset 3px 0 0 var(--pi-accent-highlight) !important; }
+html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"] {
+  border-width: 0 !important;
+  box-shadow: inset 3px 0 0 var(--pi-accent-highlight) !important;
+}
 
 /* ==========================================================================
    COUNTY VIEWS — state map, single county map, county directory

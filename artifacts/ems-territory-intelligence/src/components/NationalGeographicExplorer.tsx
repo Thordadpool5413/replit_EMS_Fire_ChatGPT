@@ -16,7 +16,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
-import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
+import { CountyDirectoryCard } from './CountyDirectoryCard';
 import {
   getStateZipDenialProfileSummary,
 } from '../services/countyDenialProfileService';
@@ -58,8 +58,6 @@ import {
 import { PulseIqRegionalBreakdownChart } from './PulseIqRegionalBreakdownChart';
 import { RealWorldCountyBoundaryMap } from './RealWorldCountyBoundaryMap';
 import { countyBoundaryHierarchy } from '../services/countyBoundaryHierarchyService';
-import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
-import { formatCoordinates, uniquePlaceNames } from '../utils/countyPresentation';
 import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
@@ -1731,7 +1729,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             <div>
               <h3 className="cv-title">County directory</h3>
               <p className="cv-note">
-                FEMA NRI categories are source-defined hazard risk, not data quality or agency performance. Other figures are county-level working references for your confirmation.
+                FEMA NRI categories are source-defined natural-hazard risk, not data quality or agency performance. Other figures are county-level working references for your confirmation. Cards are displayed by county FIPS, which does not establish a source&apos;s own scope; NEMSIS v3.5 is a data standard, not a source citation.
               </p>
             </div>
             {pagerControls('top')}
@@ -1745,157 +1743,35 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           ) : (
             <div className="county-signal-list">
               {paginatedCounties.map(c => {
-                const countyCities = uniquePlaceNames(c.cities && c.cities.length > 0 ? c.cities : [c.countySeat]);
-                const mappedPlaceCount = c.cities && c.cities.length > 0 ? countyCities.length : 0;
                 const countyNri = selectedStateNriByCountyFips.get(c.countyFips);
-                const countyNriSourceUrl = safeAgencyWebsiteUrl(countyNri?.sourceUrl);
-                const countyNriScore =
-                  typeof countyNri?.riskScore === 'number' && Number.isFinite(countyNri.riskScore)
-                    ? countyNri.riskScore.toFixed(2)
-                    : null;
-                const openCounty = () => {
-                  setSelectedCountyName(c.countyName);
-                  setSelectedCityName('all');
-                  setMiddleTab('cities');
-                  setAgencyPage(1);
-                  if (onSyncGlobalGeography) {
-                    onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
-                  }
-                };
-                const riskColor = countyNri?.riskRating ? FEMA_NRI_RATING_COLORS[countyNri.riskRating] : undefined;
                 return (
-                  <article
+                  <CountyDirectoryCard
                     key={`${c.stateCode}-${c.countyFips}`}
-                    aria-labelledby={`county-card-title-${c.countyFips}`}
-                    className="cv-county county-signal-row"
-                    data-testid={`row-county-signals-${c.countyFips}`}
-                  >
-                    <div className="cv-county-top">
-                      <div className="min-w-0">
-                        <h3 id={`county-card-title-${c.countyFips}`} className="cv-title">
-                          {c.countyName}
-                        </h3>
-                        <p className="cv-meta">
-                          Seat <strong>{c.countySeat}</strong>
-                          {c.landAreaSqMiles ? <> · {c.landAreaSqMiles.toLocaleString()} sq mi</> : null}
-                        </p>
-                      </div>
-
-                      <div className="min-w-0" role="group" aria-label="FEMA National Risk Index">
-                        <p className="cv-kicker mb-1">FEMA National Risk Index</p>
-                        {selectedStateNriQuery.isLoading ? (
-                          <span className="cv-note" role="status">Loading FEMA record</span>
-                        ) : selectedStateNriQuery.isError ? (
-                          <span className="cv-note" role="status">FEMA NRI source unavailable</span>
-                        ) : countyNri ? (
-                          <div className="cv-risk">
-                            <span
-                              className={`cv-risk-badge ${riskColor ? '' : 'cv-risk-badge--none'}`}
-                              style={{ '--risk': riskColor ?? '#b6c1cf' } as React.CSSProperties}
-                              data-testid={`text-fema-nri-rating-${c.countyFips}`}
-                            >
-                              {countyNri.riskRating || 'Rating not stated'}
-                            </span>
-                            <span className="cv-risk-score" data-testid={`text-fema-nri-score-${c.countyFips}`}>
-                              {countyNriScore ? <>Score <strong>{countyNriScore}</strong></> : 'Score not stated'}
-                            </span>
-                            <span className="cv-risk-score w-full">
-                              {countyNri.sourceVersion && countyNri.sourceVersion !== 'Version not stated'
-                                ? `Vintage ${countyNri.sourceVersion}`
-                                : 'Vintage not stated'}
-                              {countyNriSourceUrl && (
-                                <>
-                                  {' · '}
-                                  <a className="cv-link" href={countyNriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
-                                    FEMA source <ExternalLink aria-hidden="true" />
-                                  </a>
-                                </>
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="cv-risk-badge cv-risk-badge--none">No county-equivalent record</span>
-                        )}
-                      </div>
-
-                      <dl className="cv-facts" aria-label={`Key county figures for ${c.countyName}`}>
-                        <div>
-                          <dt>Population</dt>
-                          <dd data-testid={`text-county-population-${c.countyFips}`}>{c.population.toLocaleString()}</dd>
-                        </div>
-                        <div>
-                          <dt>Average EMS transport time</dt>
-                          <dd data-testid={`text-county-transport-${c.countyFips}`}>{c.averageTransportMinutes}<small> min</small></dd>
-                        </div>
-                        <div>
-                          <dt title="Out-of-hospital cardiac arrest incidents">Cardiac arrests / year</dt>
-                          <dd data-testid={`text-county-ohca-${c.countyFips}`}>{c.annualCardiacArrestIncidents.toLocaleString()}</dd>
-                        </div>
-                      </dl>
-
-                      <div>
-                        <button
-                          type="button"
-                          onClick={openCounty}
-                          className="cv-btn"
-                          aria-label={`Inspect ${c.countyName}`}
-                          data-testid={`button-inspect-county-${c.countyFips}`}
-                        >
-                          Inspect county <ChevronRight aria-hidden="true" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="cv-county-body county-profile-details-content" data-testid={`details-county-context-${c.countyFips}`}>
-                      <div className="cv-county-location grid gap-3 content-start min-w-0">
-                        <dl className="cv-geo" aria-label={`Geography for ${c.countyName}`}>
-                          <dt>FIPS</dt>
-                          <dd>{c.countyFips}</dd>
-                          <dt>Centroid</dt>
-                          <dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd>
-                          <dt>ZIPs{c.primaryZipCodes?.length ? ` (${c.primaryZipCodes.length})` : ''}</dt>
-                          <dd>{c.primaryZipCodes && c.primaryZipCodes.length > 0 ? c.primaryZipCodes.join(', ') : 'None listed'}</dd>
-                        </dl>
-                        <div>
-                          <div className="cv-section-label">
-                            <span>{mappedPlaceCount > 0 ? 'Mapped places' : 'County seat reference'}</span>
-                            <span>{mappedPlaceCount > 0 ? mappedPlaceCount : ''}</span>
-                          </div>
-                          <div
-                            className="cv-chips mt-1.5 county-profile-city-list"
-                            role="group"
-                            aria-label={`Mapped places for ${c.countyName}`}
-                          >
-                            {countyCities.map(cityName => (
-                              <button
-                                key={`${c.stateCode}-${c.countyName}-${cityName}`}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedStateCode(c.stateCode);
-                                  setSelectedCountyName(c.countyName);
-                                  setSelectedCityName(cityName);
-                                  setMiddleTab('cities');
-                                  setAgencyPage(1);
-                                  if (onSyncGlobalGeography) {
-                                    onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
-                                  }
-                                }}
-                                className="cv-chip county-profile-place-button"
-                              >
-                                {cityName}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <CountyFigureSourceDetails
-                        countyFips={c.countyFips}
-                        sources={c.figureSources}
-                        record={c}
-                        omitValuesFor={['population', 'averageTransportMinutes', 'annualCardiacArrestIncidents']}
-                      />
-                    </div>
-                  </article>
+                    county={c}
+                    nri={countyNri}
+                    nriSourceUrl={safeAgencyWebsiteUrl(countyNri?.sourceUrl)}
+                    nriLoading={selectedStateNriQuery.isLoading}
+                    nriError={selectedStateNriQuery.isError}
+                    onInspectCounty={() => {
+                      setSelectedCountyName(c.countyName);
+                      setSelectedCityName('all');
+                      setMiddleTab('cities');
+                      setAgencyPage(1);
+                      if (onSyncGlobalGeography) {
+                        onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
+                      }
+                    }}
+                    onSelectPlace={(cityName) => {
+                      setSelectedStateCode(c.stateCode);
+                      setSelectedCountyName(c.countyName);
+                      setSelectedCityName(cityName);
+                      setMiddleTab('cities');
+                      setAgencyPage(1);
+                      if (onSyncGlobalGeography) {
+                        onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
+                      }
+                    }}
+                  />
                 );
               })}
             </div>

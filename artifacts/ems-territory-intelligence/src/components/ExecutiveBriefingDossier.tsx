@@ -139,6 +139,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   onClose
 }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfPaperSize, setPdfPaperSize] = useState<'a4' | 'letter'>('a4');
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
@@ -404,25 +405,57 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
-        format: 'a4'
+        format: pdfPaperSize
       });
 
-      const pageWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const margin = 12;
+      const pageWidth = pdfPaperSize === 'a4' ? 210 : 215.9;
+      const pageHeight = pdfPaperSize === 'a4' ? 297 : 279.4;
+      const margin = 10;
       const contentWidth = pageWidth - (margin * 2);
       const contentHeight = pageHeight - (margin * 2);
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const cssPixelToMm = imgWidth / searchableLayoutWidth;
+      const lastTextPageIndex = searchableText.length > 0
+        ? searchableText.reduce((lastPage, item) => Math.max(
+          lastPage,
+          Math.floor(((item.top + item.height * 0.82) * cssPixelToMm) / contentHeight),
+        ), 0)
+        : Math.ceil(imgHeight / contentHeight) - 1;
+      const pageCount = Math.max(1, lastTextPageIndex + 1);
+      const sourcePixelsPerPage = (contentHeight * canvas.width) / imgWidth;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pageCount = Math.max(1, Math.ceil(imgHeight / contentHeight));
-
-      // Keep the existing image-based appearance and page breaks.
+      // Crop each page to its printable area so adjacent pages do not overlap.
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-        if (pageIndex > 0) pdf.addPage('a4', 'p');
-        pdf.addImage(imgData, 'JPEG', margin, margin - pageIndex * contentHeight, imgWidth, imgHeight);
+        if (pageIndex > 0) pdf.addPage(pdfPaperSize, 'p');
+        const sourceTop = pageIndex * sourcePixelsPerPage;
+        const sourceHeight = Math.min(sourcePixelsPerPage, canvas.height - sourceTop);
+        if (sourceHeight <= 0) continue;
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.ceil(sourceHeight);
+        const pageContext = pageCanvas.getContext('2d');
+        if (!pageContext) throw new Error('Could not prepare a PDF page image.');
+        pageContext.drawImage(
+          canvas,
+          0,
+          sourceTop,
+          canvas.width,
+          sourceHeight,
+          0,
+          0,
+          canvas.width,
+          sourceHeight,
+        );
+        const pageImageHeight = (sourceHeight * imgWidth) / canvas.width;
+        pdf.addImage(
+          pageCanvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          margin,
+          margin,
+          imgWidth,
+          pageImageHeight,
+        );
       }
 
       // Add invisible positioned text so the PDF can be searched and copied.
@@ -633,6 +666,19 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 Issue · {errorMessage}
               </span>
             )}
+
+            <label className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-200">
+              <span>Paper</span>
+              <select
+                aria-label="Direct PDF paper size"
+                value={pdfPaperSize}
+                onChange={(event) => setPdfPaperSize(event.target.value as 'a4' | 'letter')}
+                className="rounded-md border border-slate-600 bg-slate-800 px-2 py-1.5 text-xs text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+              >
+                <option value="a4">A4</option>
+                <option value="letter">US Letter</option>
+              </select>
+            </label>
 
             {/* Direct PDF Download Button */}
             <button

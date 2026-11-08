@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -1606,77 +1606,112 @@ async function checkProfilePrintCase(
   );
   await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
   if (testCase.category === 'ems' && theme === 'daylight' && paperSize.name === 'A4') {
-    const downloadClicked = await evaluate(cdp, `(() => {
-      const button = [...document.querySelectorAll(
-        '#briefing-dossier-modal-container button',
-      )].find((candidate) => candidate.innerText.trim() === 'Download PDF');
-      if (!button || button.disabled) return false;
-      button.click();
-      return true;
+    const paperSizeOptions = await evaluate(cdp, `(() => {
+      const select = document.querySelector(
+        '#briefing-dossier-modal-container select[aria-label="Direct PDF paper size"]',
+      );
+      return select ? [...select.options].map((option) => option.value) : [];
     })()`);
-    assert(downloadClicked, 'The direct agency PDF download action was not available');
-    const exportCompleted = await waitFor(
-      cdp,
-      `(() => {
-        const text = document.querySelector('#briefing-dossier-modal-container')?.innerText ?? '';
-        return text.includes('PDF file saved successfully!') ||
-          text.includes('Issue ·');
-      })()`,
-      'the direct agency PDF export to complete',
-      150_000,
-    );
-    const exportStatus = await evaluate(
-      cdp,
-      `document.querySelector('#briefing-dossier-modal-container')?.innerText ?? ''`,
-    );
     assert(
-      exportCompleted && exportStatus.includes('PDF file saved successfully!'),
-      `The direct agency PDF export did not complete: ${exportStatus.slice(0, 500)}`,
+      paperSizeOptions.includes('a4') && paperSizeOptions.includes('letter'),
+      `The direct agency PDF paper-size choices are missing: ${JSON.stringify(paperSizeOptions)}`,
     );
-    const fileName = `${testCase.agency.replace(/[^a-zA-Z0-9]/g, '_')}_ZOLL_Executive_Dossier.pdf`;
-    const directPdfPath = await waitForDownloadedFile(downloadDirectory, fileName, 15_000);
-    const [{ stdout: directPdfInfo }, { stdout: directPdfText }] = await Promise.all([
-      execFileAsync('pdfinfo', [directPdfPath], { maxBuffer: 2 * 1024 * 1024 }),
-      execFileAsync('pdftotext', ['-layout', directPdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
-    ]);
-    const directPageCount = Number(directPdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
-    const directPageSize = directPdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
-    const directPages = directPdfText.split('\f').map((page) => page.trim()).filter(Boolean);
-    const directNormalizedText = directPdfText.replace(/\s+/g, ' ').toLowerCase();
-    const directCompactText = directPdfText.replace(/\s+/g, '').toLowerCase();
-    const expectedSource = briefDetails.references.find((reference) => reference.links.length > 0);
-    const containsWords = (value) => value.toLowerCase().split(/\s+/)
-      .filter(Boolean)
-      .every((word) => directCompactText.includes(word.replace(/[^a-z0-9]/g, '')));
-    const directExportChecks = {
-      a4PageSize: printPaperSizes.find(({ name }) => name === 'A4').expectedSize.test(directPageSize),
-      pageCount: directPageCount,
-      pageTextCount: directPages.length,
-      allPagesHaveText: directPages.every((page) => page.length > 0),
-      agency: containsWords(testCase.agency),
-      operations: containsWords(testCase.operationsLabel),
-      sourceName: Boolean(expectedSource &&
-        containsWords(expectedSource.sourceName)),
-      sourceLink: Boolean(expectedSource && expectedSource.links.some((link) =>
-        directCompactText.includes(link.href.replace(/\s+/g, '').toLowerCase()))),
-      sourceNameExpected: expectedSource?.sourceName ?? '',
-      sourceUrlExpected: expectedSource?.links[0]?.href ?? '',
-      textSample: directNormalizedText.slice(-900),
-    };
-    assert(
-      directExportChecks.a4PageSize &&
-        directPageCount > 0 && directPageCount <= 16 &&
-        directPages.length === directPageCount &&
-        directExportChecks.allPagesHaveText &&
-        directExportChecks.agency &&
-        directExportChecks.operations &&
-        directExportChecks.sourceName &&
-        directExportChecks.sourceLink,
-      `Direct agency PDF lost A4 page sizing, readable pagination, agency details, or source links: ${JSON.stringify(directExportChecks)}`,
-    );
-    console.log(
-      `✓ Direct agency PDF / A4: ${directPageCount} non-empty page(s), agency details and source links retained`,
-    );
+
+    for (const directPaperSize of printPaperSizes) {
+      const selectedValue = directPaperSize.name === 'A4' ? 'a4' : 'letter';
+      const selectedPaperSize = await evaluate(cdp, `(() => {
+        const select = document.querySelector(
+          '#briefing-dossier-modal-container select[aria-label="Direct PDF paper size"]',
+        );
+        if (!select) return null;
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+          .set.call(select, ${JSON.stringify(selectedValue)});
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        return select.value;
+      })()`);
+      assert(
+        selectedPaperSize === selectedValue,
+        `Could not select ${directPaperSize.name} for the direct agency PDF`,
+      );
+
+      const downloadClicked = await evaluate(cdp, `(() => {
+        const button = [...document.querySelectorAll(
+          '#briefing-dossier-modal-container button',
+        )].find((candidate) => candidate.innerText.trim() === 'Download PDF');
+        if (!button || button.disabled) return false;
+        button.click();
+        return true;
+      })()`);
+      assert(downloadClicked, 'The direct agency PDF download action was not available');
+      const exportCompleted = await waitFor(
+        cdp,
+        `(() => {
+          const text = document.querySelector('#briefing-dossier-modal-container')?.innerText ?? '';
+          return text.includes('PDF file saved successfully!') ||
+            text.includes('Issue ·');
+        })()`,
+        `${directPaperSize.name} direct agency PDF export to complete`,
+        150_000,
+      );
+      const exportStatus = await evaluate(
+        cdp,
+        `document.querySelector('#briefing-dossier-modal-container')?.innerText ?? ''`,
+      );
+      assert(
+        exportCompleted && exportStatus.includes('PDF file saved successfully!'),
+        `The direct ${directPaperSize.name} agency PDF export did not complete: ${exportStatus.slice(0, 500)}`,
+      );
+      const fileName = `${testCase.agency.replace(/[^a-zA-Z0-9]/g, '_')}_ZOLL_Executive_Dossier.pdf`;
+      const downloadedPdfPath = await waitForDownloadedFile(downloadDirectory, fileName, 15_000);
+      const directPdfPath = path.join(
+        pdfDirectory,
+        `direct-${directPaperSize.name.toLowerCase()}-agency-brief.pdf`,
+      );
+      await rename(downloadedPdfPath, directPdfPath);
+      const [{ stdout: directPdfInfo }, { stdout: directPdfText }] = await Promise.all([
+        execFileAsync('pdfinfo', [directPdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+        execFileAsync('pdftotext', ['-layout', directPdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+      ]);
+      const directPageCount = Number(directPdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+      const directPageSize = directPdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+      const directPages = directPdfText.split('\f').map((page) => page.trim()).filter(Boolean);
+      const directNormalizedText = directPdfText.replace(/\s+/g, ' ').toLowerCase();
+      const directCompactText = directPdfText.replace(/\s+/g, '').toLowerCase();
+      const expectedSource = briefDetails.references.find((reference) => reference.links.length > 0);
+      const containsWords = (value) => value.toLowerCase().split(/\s+/)
+        .filter(Boolean)
+        .every((word) => directCompactText.includes(word.replace(/[^a-z0-9]/g, '')));
+      const directExportChecks = {
+        selectedPaperSize: selectedValue,
+        pageSizeMatchesChoice: directPaperSize.expectedSize.test(directPageSize),
+        pageCount: directPageCount,
+        pageTextCount: directPages.length,
+        allPagesHaveText: directPages.every((page) => page.length > 0),
+        agency: containsWords(testCase.agency),
+        operations: containsWords(testCase.operationsLabel),
+        sourceName: Boolean(expectedSource &&
+          containsWords(expectedSource.sourceName)),
+        sourceLink: Boolean(expectedSource && expectedSource.links.some((link) =>
+          directCompactText.includes(link.href.replace(/\s+/g, '').toLowerCase()))),
+        sourceNameExpected: expectedSource?.sourceName ?? '',
+        sourceUrlExpected: expectedSource?.links[0]?.href ?? '',
+        textSample: directNormalizedText.slice(-900),
+      };
+      assert(
+        directExportChecks.pageSizeMatchesChoice &&
+          directPageCount > 0 && directPageCount <= 16 &&
+          directPages.length === directPageCount &&
+          directExportChecks.allPagesHaveText &&
+          directExportChecks.agency &&
+          directExportChecks.operations &&
+          directExportChecks.sourceName &&
+          directExportChecks.sourceLink,
+        `Direct ${directPaperSize.name} agency PDF lost its selected page size, readable pagination, agency details, or source links: ${JSON.stringify(directExportChecks)}`,
+      );
+      console.log(
+        `✓ Direct agency PDF / ${directPaperSize.name}: ${directPageCount} non-empty page(s), selected paper size and agency details retained`,
+      );
+    }
   }
   console.log(
     `✓ ${testCase.category} / ${theme} / ${paperSize.name}: ${pageCount} non-empty page(s), contrast, page breaks, agency details, and linked source periods retained`,

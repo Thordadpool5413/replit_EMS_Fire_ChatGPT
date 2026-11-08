@@ -26,4 +26,4 @@
 - [Custom modal focus lifecycle](custom-modal-focus-lifecycle.md) — conditionally mounted overlays restore focus from effect cleanup, not an `isOpen=false` effect.
 - [Browser contrast color sampling](browser-contrast-color-sampling.md) — parse Chromium's normalized `color(srgb ...)` values and anchor contrast checks to the rendered surface.
 - [Print theme readability](print-theme-readability.md) — use paper-first print colors, preserve semantic status contrast and page breaks, and validate actual PDFs across themes.
-- [Direct PDF export compatibility](direct-pdf-export.md) — sanitize theme colors for html2canvas and avoid per-word width clamps in jsPDF's invisible search text.
+- [Direct PDF export compatibility](direct-pdf-export.md) — keep searchable, theme-safe agency PDFs with clean A4 and Letter page crops and margins.

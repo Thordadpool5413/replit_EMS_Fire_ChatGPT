@@ -33,8 +33,14 @@ On drilled-in Territory views, do not repeat the selected location when the shar
 
 **How to apply:** Let the shared breadcrumb provide current-location context; keep the selected area, search, and primary provider action in one compact heading card, with secondary controls available on demand.
 
-For county directories, use aligned comparison rows on laptops and compact stacked cards on phones. Emphasize county/seat and the three reference metrics; keep mapped places, geography metadata, extra context, and citations available in one collapsed details control. Keep the scope caveat visible at section level.
+For county directories, use aligned comparison rows on laptops and compact stacked cards on phones. Emphasize county/seat and the reference metrics. Display mapped places, geography metadata, extra context, and sources directly with each county rather than behind collapsed details. Remove the "User review not recorded" badge and its review-status column instead of replacing it with another verification notice.
 
-**Why:** A multi-column card grid repeated labels and controls across every county, making important facts difficult to compare and scan.
+**Why:** The user said the county figures were difficult to read, asked for Details & sources to be on display with individual counties, and explicitly asked to remove "User review not recorded."
 
-**How to apply:** On desktop, line up county/seat, population, transport time, OHCA reference, details, and action as rows rather than separate card tiles. On phones, retain one compact card per county. Do not delete data or citations; verify expanded place selection and source links.
+**How to apply:** On desktop, align county identity, reference figures, FEMA risk, and the county action, with compact visible detail/source sections. On phones, retain one readable card per county. Do not delete data or citations; verify place selection and source links.
+
+Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
+
+**Why:** The user explicitly asked to return Daylight to the blue color previously used, rejecting the green appearance.
+
+**How to apply:** Update the shared Daylight action, link, selection, focus, and related navigation tokens consistently; do not change the logo or infer new good/bad data thresholds.

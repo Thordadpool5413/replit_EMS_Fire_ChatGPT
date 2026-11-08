@@ -662,7 +662,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     name: string;
     metricLabel: string;
     metricValue: string;
-    tier: 'critical' | 'high' | 'moderate' | 'baseline';
+    tier: 'critical' | 'high' | 'moderate' | 'baseline' | 'unreported';
     fillColor: string;
     borderColor: string;
     agencyCount: number;
@@ -676,8 +676,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       agencyCount: number;
       sumSurvival: number;
       survivalCount: number;
-      sumAed: number;
-      aedCount: number;
       sumTransport: number;
       transportCount: number;
     }> = {};
@@ -687,7 +685,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
       if (!stateStats[sc]) {
         stateStats[sc] = {
           totalCardiac: 0, cardiacCount: 0, rateCalls: 0, rateTransports: 0, rateAgencyCount: 0, agencyCount: 0, sumSurvival: 0,
-          survivalCount: 0, sumAed: 0, aedCount: 0, sumTransport: 0,
+          survivalCount: 0, sumTransport: 0,
           transportCount: 0
         };
       }
@@ -711,10 +709,6 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
         st.sumSurvival += a.utsteinSurvivalRate;
         st.survivalCount++;
       }
-      if (hasReportedValue(a.gisData?.publicAccessAedDeficitPct)) {
-        st.sumAed += a.gisData!.publicAccessAedDeficitPct!;
-        st.aedCount++;
-      }
       if (hasReportedValue(a.gisData?.avgTransportTimeMinutes)) {
         st.sumTransport += a.gisData!.avgTransportTimeMinutes!;
         st.transportCount++;
@@ -731,7 +725,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
       let metricLabel = '';
       let metricValue = '';
-      let tier: 'critical' | 'high' | 'moderate' | 'baseline' = 'baseline';
+      let tier: 'critical' | 'high' | 'moderate' | 'baseline' | 'unreported' = 'baseline';
       let fillColor = '#e2e8f0';
       let borderColor = '#94a3b8';
 
@@ -783,26 +777,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           borderColor = basemapTheme === 'dark' ? '#10b981' : '#059669';
         }
       } else if (selectedLayer === 'aed') {
-        const aedDeficit = stats?.aedCount ? Math.round(stats.sumAed / stats.aedCount) : 0;
-        metricLabel = 'AED Access Deficit (higher = greater need)';
-        metricValue = stats?.aedCount ? `${aedDeficit}% deficit` : 'Not reported';
-        if (stats?.aedCount && aedDeficit >= 55) {
-          tier = 'critical';
-          fillColor = basemapTheme === 'dark' ? '#701a75' : '#fae8ff';
-          borderColor = basemapTheme === 'dark' ? '#e879f9' : '#c026d3';
-        } else if (stats?.aedCount && aedDeficit >= 45) {
-          tier = 'high';
-          fillColor = basemapTheme === 'dark' ? '#0c4a6e' : '#e0f2fe';
-          borderColor = basemapTheme === 'dark' ? '#38bdf8' : '#0284c7';
-        } else if (stats?.aedCount && aedDeficit >= 35) {
-          tier = 'moderate';
-          fillColor = basemapTheme === 'dark' ? '#134e4a' : '#ccfbf1';
-          borderColor = basemapTheme === 'dark' ? '#2dd4bf' : '#0d9488';
-        } else if (stats?.aedCount) {
-          tier = 'baseline';
-          fillColor = basemapTheme === 'dark' ? '#1e293b' : '#f1f5f9';
-          borderColor = basemapTheme === 'dark' ? '#64748b' : '#64748b';
-        }
+        // The baseline AED percentages are generated/modelled and lack metric-level
+        // source evidence or reporting coverage. Do not present their mean as a
+        // state comparison or classify it with fixed risk thresholds.
+        metricLabel = 'Source-verified AED access deficit';
+        metricValue = 'Not reported';
+        tier = 'unreported';
+        fillColor = basemapTheme === 'dark' ? '#0C1629' : '#E2E8F0';
+        borderColor = basemapTheme === 'dark' ? '#1E293B' : '#94A3B8';
       } else if (selectedLayer === 'transport') {
         const transit = stats?.transportCount ? +(stats.sumTransport / stats.transportCount).toFixed(1) : 0;
         metricLabel = 'Average Transport Time (longer = greater delay)';
@@ -3054,7 +3036,22 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   </div>
                 )}
 
-                {selectedLayer === 'aed' && (
+                {selectedLayer === 'aed' && mapDisplayMode === 'choropleth' && (
+                  <div
+                    data-testid="gis-aed-state-data-note"
+                    className="rounded-lg border border-slate-600/70 bg-slate-800/70 p-2.5 text-xs text-slate-200"
+                  >
+                    <div data-risk-tier="unreported" className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-500" />
+                      <span className="font-semibold text-slate-100">No source-verified state data</span>
+                    </div>
+                    <span className="mt-1 block leading-snug text-slate-300">
+                      State comparison unavailable. Baseline AED percentages are modeled or lack source and coverage evidence, so no risk tier is assigned.
+                    </span>
+                  </div>
+                )}
+
+                {selectedLayer === 'aed' && mapDisplayMode !== 'choropleth' && (
                   <div className="space-y-1.5 text-xs">
                     <div data-risk-tier="critical" className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40 shrink-0"></span>
@@ -3248,9 +3245,13 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                       : stateAcuityMap[hoveredStateCode].tier === 'high'
                       ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                       : stateAcuityMap[hoveredStateCode].tier === 'unreported'
+                       ? 'bg-slate-500/20 text-slate-300 border border-slate-500/40'
                       : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
                   }`}>
-                    {stateAcuityMap[hoveredStateCode].tier}
+                    {stateAcuityMap[hoveredStateCode].tier === 'unreported'
+                      ? 'Not reported'
+                      : stateAcuityMap[hoveredStateCode].tier}
                   </span>
                 </div>
 

@@ -1983,9 +1983,16 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
   const basemapButton = 'button[title="Switch between Tactical Dark and Daylight Survey cartography"]';
   for (const layer of gisLayers) {
     await clickButtonAndScroll(cdp, layer.button);
+    const displayMode = await evaluate(
+      cdp,
+      `document.querySelector('[data-testid="gis-map-svg"]')?.dataset.displayMode ?? ''`,
+    );
+    const legendTiers = layer.name === 'AED' && displayMode === 'choropleth'
+      ? [{ id: 'unreported', label: 'No source-verified state data', swatchClass: 'bg-slate-500' }]
+      : layer.tiers;
     await waitFor(
       cdp,
-      `document.querySelectorAll('[data-testid="gis-layer-legend"] [data-risk-tier]').length === ${layer.tiers.length}`,
+      `document.querySelectorAll('[data-testid="gis-layer-legend"] [data-risk-tier]').length === ${legendTiers.length}`,
       `${layer.name} risk legend`,
     );
     await evaluate(cdp, `document.querySelector('[data-testid="gis-layer-legend"]')?.scrollIntoView({ behavior: 'instant', block: 'start' })`);
@@ -2035,13 +2042,13 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
       })()`);
 
       assert(state.legendVisible, `${themeLabel(dark)} ${layer.name} GIS legend is missing`);
-      assert(state.rows.length === layer.tiers.length &&
-        layer.tiers.every((tier) => {
+      assert(state.rows.length === legendTiers.length &&
+        legendTiers.every((tier) => {
           const row = state.rows.find((candidate) => candidate.id === tier.id);
           return row && row.label.includes(tier.label) && row.swatchClass.split(/\s+/).includes(tier.swatchClass);
         }),
       `${themeLabel(dark)} ${layer.name} ${basemap} legend labels or source colors changed: ${JSON.stringify(state.rows)}`);
-      assert(new Set(state.rows.map((row) => row.color)).size === layer.tiers.length &&
+      assert(new Set(state.rows.map((row) => row.color)).size === legendTiers.length &&
         state.rows.every((row) => row.color && row.swatchClass),
       `${themeLabel(dark)} ${layer.name} ${basemap} risk colors are not distinct: ${JSON.stringify(state.rows)}`);
       assert(state.markerColors.length > 0 &&
@@ -2052,7 +2059,7 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
 
       await checkReadable(cdp, `${themeLabel(dark)} ${viewport.width}px ${layer.name} ${basemap} legend`, [
         { name: `${layer.name} legend heading`, selector: '[data-testid="gis-layer-legend"] .text-slate-200' },
-        ...layer.tiers.map((tier) => ({
+        ...legendTiers.map((tier) => ({
           name: `${layer.name} ${tier.id} label`,
           selector: `[data-testid="gis-layer-legend"] [data-risk-tier="${tier.id}"] > span:last-child`,
         })),
@@ -2086,7 +2093,7 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
       }
 
       console.log(
-        `  ${themeLabel(dark)} ${viewport.width}px GIS ${layer.name} ${basemap}: ${state.rows.length} distinct legend colors; ${state.markerColors.length} source-colored marker fills`,
+        `  ${themeLabel(dark)} ${viewport.width}px GIS ${layer.name} ${basemap}: ${state.rows.length} legend tiers; ${state.markerColors.length} source-colored marker fills`,
       );
     }
   }
@@ -2149,8 +2156,7 @@ async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
 
         if (view.mode === 'choropleth') {
           const stateColors = await evaluate(cdp, `(() => {
-            const states = [...document.querySelectorAll('[data-testid="gis-state-choropleth"]')]
-              .filter((path) => path.dataset.metricValue !== 'Not reported')
+            const allStates = [...document.querySelectorAll('[data-testid="gis-state-choropleth"]')]
               .map((path) => ({
                 state: path.dataset.gisState,
                 tier: path.dataset.riskTier,
@@ -2158,12 +2164,37 @@ async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
                 value: path.dataset.metricValue ?? '',
                 fill: path.getAttribute('fill')?.toLowerCase() ?? '',
               }));
+            const states = allStates.filter((state) => state.value !== 'Not reported');
             return {
               count: states.length,
+              allStateCount: allStates.length,
+              unreportedCount: allStates.filter((state) => state.value === 'Not reported').length,
               colors: [...new Set(states.map((state) => state.fill))],
               states,
+              allStates,
+              explanation: document.querySelector('[data-testid="gis-aed-state-data-note"]')?.innerText.trim() ?? '',
+              legendTier: document.querySelector('[data-testid="gis-layer-legend"] [data-risk-tier="unreported"]')?.innerText.trim() ?? '',
             };
           })()`);
+          if (layer.id === 'aed') {
+            const noDataFill = basemap === 'Dark' ? '#0c1629' : '#e2e8f0';
+            assert(stateColors.count === 0 &&
+              stateColors.allStateCount > 0 &&
+              stateColors.unreportedCount === stateColors.allStateCount &&
+              stateColors.allStates.every((state) =>
+                state.tier === 'unreported' &&
+                state.label.includes('Source-verified AED access deficit') &&
+                state.fill === noDataFill) &&
+              stateColors.explanation.includes('no risk tier is assigned') &&
+              stateColors.legendTier.includes('No source-verified state data'),
+            `${themeLabel(dark)} ${viewport.width}px AED ${basemap} choropleth shows unsupported state metrics or lacks its source-coverage warning: ${JSON.stringify(stateColors)}`);
+            assert(!rampLabels.low && !rampLabels.high,
+              `AED choropleth should not display the continuous heat ramp: ${JSON.stringify(rampLabels)}`);
+            console.log(
+              `  ${themeLabel(dark)} ${viewport.width}px AED ${basemap} choropleth: ${stateColors.allStateCount} states marked unreported; no unsupported risk tiers`,
+            );
+            continue;
+          }
           assert(stateColors.count > 0,
             `${themeLabel(dark)} ${viewport.width}px ${layer.name} ${basemap} choropleth has no reported state metrics`);
           assert(new Set(Object.values(layer.stateColors)

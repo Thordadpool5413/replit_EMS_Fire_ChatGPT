@@ -202,6 +202,7 @@ try {
       const placeButtons = [...card.querySelectorAll('.county-profile-city-list button')];
       const sources = card.querySelector('.county-figure-source-details');
       return {text, closedDetails:card.querySelectorAll('details:not([open])').length,
+        figureKeys:[...card.querySelectorAll('[data-figure-key]')].map(item=>item.getAttribute('data-figure-key')),
         placeNames:placeButtons.map(button=>button.innerText.trim()),sourceText:sources?.innerText ?? '',
         titleSize:parseFloat(getComputedStyle(card.querySelector('h3')).fontSize),
         titleHeight:card.querySelector('h3').getBoundingClientRect().height,
@@ -217,6 +218,10 @@ try {
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
+      assert.equal(row.figureKeys.length, 8, `${label}: county figures duplicated or removed`);
+      assert.equal(new Set(row.figureKeys).size, 8, `${label}: each county figure must appear once`);
+      assert(/Response activity/i.test(row.text) && /Community profile/i.test(row.text) && /Access/i.test(row.text),
+        `${label}: missing distinct response, community or access group`);
       assert(!/data standard|does not establish/.test(row.text), 'Repeated general explanation still inside county card');
       for (const value of ['184,943', '18.3', '318', '15,165', '24.3', '73,943', '18.3', '16.1', '32618', '32615']) {
         assert(row.text.includes(value), `${label}: missing reference value ${value}`);

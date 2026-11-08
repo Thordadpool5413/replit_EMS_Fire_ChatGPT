@@ -1491,7 +1491,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </div>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400">County Seat: {c.countySeat}</div>
                         </div>
-                        <span className="text-xs font-bold text-[#1E3A8A] dark:text-blue-400 shrink-0">Inspect &rarr;</span>
+                         <span className="text-xs font-bold text-[var(--pi-action-ink)] shrink-0">Inspect &rarr;</span>
                       </button>
                     ))
                   ) : (
@@ -1525,8 +1525,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     onMouseEnter={() => setHoveredMapStateCode(st.code)}
                     onMouseLeave={() => setHoveredMapStateCode(null)}
                     className={`px-2 py-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      hoveredMapStateCode === st.code
-                        ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]'
+                       hoveredMapStateCode === st.code
+                         ? 'bg-[var(--pi-action)] text-white border-[var(--pi-action)]'
                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700'
                     }`}
                     title={`${st.state} (${st.code})`}
@@ -1562,7 +1562,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     selectedCityName,
                     debouncedZipQuery || undefined,
                   )}
-                  className="w-full h-10 px-4 rounded-lg font-bold text-xs bg-[#1E3A8A] text-white hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                  className="w-full h-10 px-4 rounded-lg font-bold text-xs bg-[var(--pi-action)] text-white hover:bg-[var(--pi-action-hover)] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                 >
                   <ListOrdered className="w-4 h-4 text-white" />
                   <span>Browse Priority Lead Accounts Queue &rarr;</span>

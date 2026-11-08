@@ -964,7 +964,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     <div className="provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
-        className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24"
+        className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24 lg:pb-8"
       >
         {/* Top Sticky Account 360 Bar */}
         <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur border-b border-[#DFE6EF] dark:border-[#1E2D42] px-4 sm:px-6 lg:px-8 py-2 sm:py-0 min-h-16 flex items-center shadow-2xs">
@@ -3749,7 +3749,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       {/* Sticky Account Quick-Action Bar aligned with the 256px desktop sidebar */}
       <aside 
         aria-label="Account Action Dock"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#DFE6EF] bg-white/95 px-2.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-md transition-all dark:border-[#1E2D42] dark:bg-[#111C2D]/95 print:hidden sm:left-64 sm:px-6 sm:py-2.5"
+         className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#DFE6EF] bg-white/95 px-2.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-md transition-all dark:border-[#1E2D42] dark:bg-[#111C2D]/95 print:hidden sm:left-64 sm:px-6 sm:py-2.5 lg:hidden"
       >
         <div className="mx-auto flex max-w-[1600px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-x-auto sm:no-scrollbar">
           {/* Left: Department Identity & Quick Pipeline Stage Switcher */}

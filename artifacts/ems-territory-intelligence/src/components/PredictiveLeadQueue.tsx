@@ -815,15 +815,15 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               <div 
                 key={agency.id}
                 onClick={() => onSelectAgency(agency)}
-                className={`min-w-0 rounded-xl p-5 transition-colors cursor-pointer flex flex-col justify-between gap-4 group ${
+                 className={`relative min-w-0 rounded-xl p-3.5 sm:p-4 transition-colors cursor-pointer flex flex-col justify-between gap-3 group ${
                   activeAccount?.id === agency.id
-                    ? 'bg-blue-50/30 dark:bg-slate-800/80 border-2 border-[#1E3A8A] dark:border-blue-500 shadow-md'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 shadow-xs'
+                     ? 'bg-[var(--pi-action-subtle)] border-2 border-[var(--pi-action)] shadow-sm'
+                     : 'bg-[var(--pi-surface-bg)] border border-[var(--pi-border)] hover:border-[var(--pi-border-strong)] shadow-xs'
                 }`}
               >
                 {/* TIER 1: TOP ZONE — AGENCY TITLE + UNBOXED MONOSPACE METADATA + PULSEIQ COMPOSITE */}
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-4">
+                 <div className="space-y-2">
+                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2.5 min-w-0">
                       <button
                         onClick={(e) => {
@@ -865,7 +865,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           )}
                         </div>
 
-                        <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors leading-snug tracking-[-0.015em] truncate">
+                       <h3 className="min-w-0 text-sm sm:text-base font-semibold text-[var(--pi-text-primary)] group-hover:text-[var(--pi-action)] transition-colors leading-snug tracking-[-0.015em] line-clamp-2 break-words">
                           {agency.name}
                         </h3>
 
@@ -881,7 +881,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
                     {/* Clean Tabular Score Readout + 2px Progress Bar */}
                     <div
-                      className="shrink-0 pl-4 border-l border-slate-200 dark:border-slate-800 flex flex-col items-end text-right w-24"
+                     className="shrink-0 pl-3 border-l border-[var(--pi-border)] flex flex-col items-end text-right w-20"
                       onClick={(e) => e.stopPropagation()}
                       title="PulseIQ Composite Score"
                     >
@@ -895,7 +895,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         {(
                           <div className="w-full h-[2px] bg-slate-200 dark:bg-slate-800 mt-1.5 overflow-hidden">
                             <div
-                              className="h-full bg-[#1E3A8A] dark:bg-blue-400"
+                               className="h-full bg-[var(--pi-action)]"
                               style={{ width: `${Math.min(100, activePulseIqScore)}%` }}
                             />
                           </div>
@@ -905,22 +905,22 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   </div>
 
                   {/* TIER 2: CLEAN 2-COLUMN METRIC LEDGER */}
-                  <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden my-2">
+                  <div className="grid grid-cols-2 gap-px bg-[var(--pi-border)] border border-[var(--pi-border)] rounded-lg overflow-hidden my-2">
                     <div
-                      className="p-3 bg-slate-50/70 dark:bg-slate-900/90 space-y-0.5"
+                      className="p-2.5 bg-[var(--pi-surface-subtle)] space-y-0.5"
                       title="USFA Apparatus Baseline & Fleet Age"
                     >
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      <div className="text-xs font-medium text-[var(--pi-text-muted)]">
                         Frontline fleet
                       </div>
-                      <div className="font-semibold text-sm text-slate-900 dark:text-white tabular-nums truncate">
+                      <div className="font-semibold text-sm text-[var(--pi-text-primary)] tabular-nums line-clamp-2 break-words">
                         {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                           ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
                           : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                             ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
                             : 'Not source-verified'}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
+                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums line-clamp-2 break-words">
                         {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                           ? `Reported age: ${agency.installedFleet.defibAgeYears} yrs`
                           : 'Fleet age not source-verified'}
@@ -929,18 +929,18 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                     </div>
 
                     <div
-                      className="p-3 bg-slate-50/70 dark:bg-slate-900/90 space-y-0.5"
+                      className="p-2.5 bg-[var(--pi-surface-subtle)] space-y-0.5"
                       title={`CMS Part B PUF & Actuarial Recovery Forecast`}
                     >
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      <div className="text-xs font-medium text-[var(--pi-text-muted)]">
                         Est. Medicare recovery
                       </div>
-                      <div className="font-semibold text-sm text-[#1E3A8A] dark:text-blue-400 tabular-nums">
+                      <div className="font-semibold text-sm text-[var(--pi-text-primary)] tabular-nums">
                         {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                           ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
                           : 'Not calculated'}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums truncate">
+                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums line-clamp-2 break-words">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} pipeline estimate` : 'Opportunity model not validated'}
                       </div>
                     </div>
@@ -1090,41 +1090,51 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   </select>
 
                   {/* Action Group */}
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end">
-                    {onToggleAgencyComparison && (
-                      <AgencyCompareButton
-                        agency={agency}
-                        selected={comparedAgencyIds.includes(agency.id)}
-                        limitReached={comparedAgencyIds.length >= 3}
-                        onToggle={onToggleAgencyComparison}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
-                      title="Open Slide-Over Quick Preview Drawer"
-                      className="h-8 px-2.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors whitespace-nowrap cursor-pointer shrink-0"
-                    >
-                      Quick Preview
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggleRoute(agency.id)}
-                      className={`h-8 px-2.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
-                        agency.inDayRoute 
-                          ? 'bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-400 border-blue-200 dark:border-blue-800 font-semibold' 
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                      title={agency.inDayRoute ? 'Remove from today\'s driving itinerary' : 'Add to today\'s driving itinerary'}
-                    >
-                      {agency.inDayRoute ? 'On Route' : '+ Route'}
-                    </button>
-
+                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end">
+                     <details className="relative z-20">
+                       <summary className="list-none h-8 px-2.5 rounded-lg text-xs font-medium bg-[var(--pi-surface-subtle)] text-[var(--pi-text-secondary)] border border-[var(--pi-border)] hover:bg-[var(--pi-action-subtle)] cursor-pointer inline-flex items-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pi-action)]">
+                         More actions
+                       </summary>
+                       <div
+                         className="absolute bottom-full left-0 z-50 mb-2 w-48 rounded-xl border border-[var(--pi-border)] bg-[var(--pi-surface-elevated)] p-1.5 shadow-lg"
+                         onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}
+                       >
+                         {onToggleAgencyComparison && (
+                           <div className="flex min-h-10 items-center px-2">
+                             <AgencyCompareButton
+                               agency={agency}
+                               selected={comparedAgencyIds.includes(agency.id)}
+                               limitReached={comparedAgencyIds.length >= 3}
+                               onToggle={onToggleAgencyComparison}
+                             />
+                           </div>
+                         )}
+                         <button
+                           type="button"
+                           onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
+                           title="Open Slide-Over Quick Preview Drawer"
+                           className="flex min-h-10 w-full items-center rounded-lg px-2.5 text-left text-xs font-medium text-[var(--pi-text-secondary)] hover:bg-[var(--pi-surface-subtle)] cursor-pointer"
+                         >
+                           Quick Preview
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => onToggleRoute(agency.id)}
+                           className={`flex min-h-10 w-full items-center rounded-lg px-2.5 text-left text-xs font-medium cursor-pointer ${
+                             agency.inDayRoute
+                               ? 'bg-[var(--pi-action-subtle)] text-[var(--pi-action-ink)]'
+                               : 'text-[var(--pi-text-secondary)] hover:bg-[var(--pi-surface-subtle)]'
+                           }`}
+                           title={agency.inDayRoute ? 'Remove from today\'s driving itinerary' : 'Add to today\'s driving itinerary'}
+                         >
+                           {agency.inDayRoute ? 'Remove from route' : 'Add to route'}
+                         </button>
+                       </div>
+                     </details>
                     <button
                       type="button"
                       onClick={() => onSelectAgency(agency)}
-                      className="h-8 px-3.5 rounded-lg text-xs font-semibold bg-[#1E3A8A] hover:bg-[#172554] dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors whitespace-nowrap cursor-pointer shrink-0"
+                       className="h-8 px-3.5 rounded-lg text-xs font-semibold bg-[var(--pi-action)] hover:bg-[var(--pi-action-hover)] text-white transition-colors whitespace-nowrap cursor-pointer shrink-0"
                     >
                       Open agency profile &rarr;
                     </button>

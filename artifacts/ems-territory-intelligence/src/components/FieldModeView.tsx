@@ -14,6 +14,7 @@ import {
   Phone, 
   MapPin, 
   Navigation, 
+  ChevronDown,
   Wifi, 
   WifiOff, 
   Clock, 
@@ -214,13 +215,13 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {dayRouteAgencies.length > 0 && (
               <a
                 href={googleMapsMultiStopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="field-route-launch-link min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1E3A8A] text-white hover:bg-[#111827] dark:hover:bg-blue-600 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="field-route-launch-link min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--pi-action)] text-white hover:bg-[var(--pi-action-hover)] transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
                 title="Open turn-by-turn multi-stop route in Google Maps"
               >
                 <Navigation className="w-3.5 h-3.5" />
@@ -229,39 +230,57 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
               </a>
             )}
 
-            <button
-              type="button"
-              onClick={handleExportRouteCsv}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-              title="Download CSV Territory Call Sheet"
-            >
-              <Download className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-blue-400" />
-              <span>Export call sheet (CSV)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-              title="Print Territory Route Call Sheet"
-            >
-              <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-              <span>Print sheet</span>
-            </button>
-
-            {onNavigateTab && (
-              <button
-                type="button"
-                onClick={() => onNavigateTab('3d_studio')}
-                className="min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 dark:bg-blue-600 text-white hover:bg-[#1E3A8A] dark:hover:bg-blue-500 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-2xs"
-                title="Launch Interactive 3D Apparatus & Monitor Studio"
+            <details className="relative shrink-0">
+              <summary
+                aria-label="More route actions"
+                className="list-none min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--pi-surface-bg)] hover:bg-[var(--pi-surface-subtle)] text-[var(--pi-text-secondary)] border border-[var(--pi-border)] transition-colors inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pi-action)]"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>3D equipment demo</span>
-              </button>
-            )}
+                <span>More actions</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </summary>
+              <div className="absolute right-0 top-full z-40 mt-2 w-56 rounded-xl border border-[var(--pi-border)] bg-[var(--pi-surface-elevated)] p-1.5 shadow-lg">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.closest('details')?.removeAttribute('open');
+                    handleExportRouteCsv();
+                  }}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-[var(--pi-text-secondary)] hover:bg-[var(--pi-surface-subtle)] cursor-pointer"
+                  title="Download CSV Territory Call Sheet"
+                >
+                  <Download className="w-3.5 h-3.5 text-[var(--pi-action-ink)]" />
+                  <span>Export call sheet (CSV)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.closest('details')?.removeAttribute('open');
+                    window.print();
+                  }}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-[var(--pi-text-secondary)] hover:bg-[var(--pi-surface-subtle)] cursor-pointer"
+                  title="Print Territory Route Call Sheet"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[var(--pi-action-ink)]" />
+                  <span>Print sheet</span>
+                </button>
+                {onNavigateTab && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open');
+                      onNavigateTab('3d_studio');
+                    }}
+                    className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-[var(--pi-text-secondary)] hover:bg-[var(--pi-surface-subtle)] cursor-pointer"
+                    title="Launch Interactive 3D Apparatus & Monitor Studio"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>3D equipment demo</span>
+                  </button>
+                )}
+              </div>
+            </details>
 
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 pi-data-inline">
+            <div className="text-xs font-medium text-[var(--pi-text-secondary)] bg-[var(--pi-surface-subtle)] border border-[var(--pi-border)] px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 pi-data-inline">
               <strong className="pi-data-number font-semibold">{dayRouteAgencies.length}</strong> stops planned
             </div>
           </div>
@@ -305,7 +324,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                               href={agency.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-300 font-semibold inline-flex items-center gap-1"
+                              className="text-[var(--pi-action-ink)] hover:text-[var(--pi-action)] font-semibold inline-flex items-center gap-1"
                             >
                               <MapPin className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                               <span>Google Maps Lookup</span>
@@ -340,7 +359,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                       <button
                         onClick={() => onSelectAgency(agency)}
                         title={`Open agency profile for ${agency.name}`}
-                        className="min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 transition-colors shadow-sm cursor-pointer"
+                        className="min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[var(--pi-action)] text-white hover:bg-[var(--pi-action-hover)] transition-colors shadow-sm cursor-pointer"
                       >
                         Open agency profile
                       </button>

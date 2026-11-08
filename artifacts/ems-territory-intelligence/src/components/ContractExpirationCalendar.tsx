@@ -293,15 +293,16 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => onOpenRfpGenerator(agency)}
-                          className="h-7 px-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-[#1E3A8A] dark:text-blue-400 rounded-lg text-[11px] font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                          className="h-7 whitespace-nowrap rounded-lg border border-[var(--pi-border)] bg-[var(--pi-surface-elevated)] px-2.5 text-[11px] font-semibold text-[var(--pi-action-ink)] transition-colors hover:bg-[var(--pi-surface)] cursor-pointer"
                           title="Generate Pre-Emptive Technical RFP Specs"
+                          aria-label="Generate Pre-Emptive Technical RFP Specs"
                         >
-                          RFP Spec
+                          RFP
                         </button>
 
                         <button
                           onClick={() => onSelectAgency(agency)}
-                          className="h-7 px-3 bg-[#0F172A] dark:bg-blue-600 hover:bg-[#1E3A8A] dark:hover:bg-blue-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="h-7 rounded-lg bg-[var(--pi-action)] px-3 text-[11px] font-semibold text-white transition-colors hover:bg-[var(--pi-action-hover)] cursor-pointer flex items-center gap-1"
                         >
                           <span>Inspect</span>
                           <ChevronRight className="w-3 h-3" />

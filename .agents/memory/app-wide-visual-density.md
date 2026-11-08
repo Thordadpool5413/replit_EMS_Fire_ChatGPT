@@ -14,3 +14,9 @@ For EMS and Fire profiles, keep the executive header as the single summary of ag
 **Why:** The user said profile sheets looked repetitive and oversized, and asked for essentials first with secondary material moved to the bottom.
 
 **How to apply:** Keep one identity header, one operations summary, and one topic bar; collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop.
+
+The sidebar needs even layout, not merely enough space to fit. Keep navigation and utility rows aligned in width, height, icon position, and text baseline, with deliberate spacing between groups.
+
+**Why:** The user again rejected the sidebar after the no-scroll correction, saying that not everything was evenly displayed and laid out.
+
+**How to apply:** Check actual row and icon geometry as well as overflow. Avoid mixing cramped half-width utility controls with full-width destinations or introducing large gaps between related groups. Preserve the logo.

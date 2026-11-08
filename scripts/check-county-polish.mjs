@@ -77,6 +77,10 @@ async function layout(label, desktop) {
         const text = [...button.querySelectorAll('span')].find(span => /Specialist tools|Data & system/.test(span.innerText));
         return {label:button.innerText.trim(),width:text?.clientWidth,scrollWidth:text?.scrollWidth};
       }),
+      rows: [...(sidebar?.querySelectorAll('.pi-sb-item,.pi-sb-tool') ?? [])].map(row => {
+        const rect = row.getBoundingClientRect(), icon = row.querySelector('svg')?.getBoundingClientRect();
+        return {left:rect.left,width:rect.width,height:rect.height,iconX:icon?.left,iconWidth:icon?.width};
+      }),
       logo: logo ? {width:logo.getBoundingClientRect().width,rootSize:parseFloat(getComputedStyle(document.documentElement).fontSize),
         src:image?.currentSrc,fit:image && getComputedStyle(image).objectFit} : null,
     };
@@ -85,11 +89,15 @@ async function layout(label, desktop) {
   assert.deepEqual(result.clippedCountyContent, [], `${label}: internally clipped county content`);
   if (desktop) {
     assert(result.navScrollHeight <= result.navHeight + 1, `${label}: unnecessary nav scroll ${JSON.stringify(result)}`);
-    assert(result.sidebarScrollHeight <= result.sidebarHeight + 1, `${label}: unnecessary sidebar scroll`);
+    assert(result.sidebarScrollHeight <= result.sidebarHeight + 1, `${label}: unnecessary sidebar scroll ${JSON.stringify(result)}`);
     assert.equal(result.tools.length, 2, `${label}: missing tool destinations`);
     assert(result.tools.every(tool => tool.scrollWidth <= tool.width + 1), `${label}: truncated tools ${JSON.stringify(result.tools)}`);
     assert(Math.abs(result.logo.width - result.logo.rootSize * 8.5) < .2, `${label}: logo size changed`);
     assert(result.logo.src.includes('nicks_ems_logo_1792367124466.jpg') && result.logo.fit === 'cover', `${label}: logo asset/crop changed`);
+    const first = result.rows[0];
+    assert(result.rows.every(row => Math.abs(row.left-first.left)<1 && Math.abs(row.width-first.width)<1 &&
+      Math.abs(row.height-first.height)<1 && Math.abs(row.iconX-first.iconX)<1 && Math.abs(row.iconWidth-first.iconWidth)<1),
+    `${label}: uneven sidebar row or icon alignment ${JSON.stringify(result.rows)}`);
     if (label.endsWith(' Home')) {
       await evaluate('document.querySelector(\'.pi-primary-sidebar button[aria-label="Help and sources"]\').click()');
       await waitFor('Boolean(document.querySelector(".pi-sb-utility-menu"))', 'Help and sources menu');

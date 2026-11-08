@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   CircleHelp,
+  Palette,
   MapPin,
   RefreshCw,
   Download,
@@ -350,12 +351,15 @@ export const TopBar: React.FC<TopBarProps> = ({
             </button>
           )}
 
-          <ThemeModeSelect
-            controlId="theme-select-desktop"
-            testId="theme-select-desktop"
-            themeMode={themeMode}
-            onChange={onThemeModeChange}
-          />
+          <div className="pi-sb-tool pi-sb-appearance">
+            <Palette aria-hidden="true" />
+            <ThemeModeSelect
+              controlId="theme-select-desktop"
+              testId="theme-select-desktop"
+              themeMode={themeMode}
+              onChange={onThemeModeChange}
+            />
+          </div>
 
           <div className="relative" ref={desktopUtilityRef}>
             <button
@@ -367,7 +371,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               aria-expanded={isUtilityMenuOpen}
             >
               <CircleHelp aria-hidden="true" />
-              <span className="min-w-0 flex-1 truncate text-left">Help</span>
+              <span className="min-w-0 flex-1 text-left">Help &amp; sources</span>
               <ChevronDown className="h-3 w-3" aria-hidden="true" />
             </button>
             {isUtilityMenuOpen && (

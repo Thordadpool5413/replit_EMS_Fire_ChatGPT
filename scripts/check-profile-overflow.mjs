@@ -1605,7 +1605,7 @@ async function checkProfilePrintCase(
     `${testCase.category} printed PDF includes unrelated workspace content`,
   );
   await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
-  if (testCase.category === 'ems' && theme === 'daylight' && paperSize.name === 'A4') {
+  if (theme === 'daylight' && paperSize.name === 'A4') {
     const paperSizeOptions = await evaluate(cdp, `(() => {
       const select = document.querySelector(
         '#briefing-dossier-modal-container select[aria-label="Direct PDF paper size"]',
@@ -1668,9 +1668,14 @@ async function checkProfilePrintCase(
         `direct-${directPaperSize.name.toLowerCase()}-agency-brief.pdf`,
       );
       await rename(downloadedPdfPath, directPdfPath);
-      const [{ stdout: directPdfInfo }, { stdout: directPdfText }] = await Promise.all([
+      const [
+        { stdout: directPdfInfo },
+        { stdout: directPdfText },
+        { stdout: directPdfAnnotations },
+      ] = await Promise.all([
         execFileAsync('pdfinfo', [directPdfPath], { maxBuffer: 2 * 1024 * 1024 }),
         execFileAsync('pdftotext', ['-layout', directPdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+        execFileAsync('pdfinfo', ['-url', directPdfPath], { maxBuffer: 2 * 1024 * 1024 }),
       ]);
       const directPageCount = Number(directPdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
       const directPageSize = directPdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
@@ -1678,6 +1683,16 @@ async function checkProfilePrintCase(
       const directNormalizedText = directPdfText.replace(/\s+/g, ' ').toLowerCase();
       const directCompactText = directPdfText.replace(/\s+/g, '').toLowerCase();
       const expectedSource = briefDetails.references.find((reference) => reference.links.length > 0);
+      const expectedSourceUrls = [...new Set(
+        briefDetails.references.flatMap((reference) => reference.links.map((link) => link.href)),
+      )];
+      const directAnnotationTargets = directPdfAnnotations
+        .split(/\r?\n/)
+        .slice(1)
+        .map((line) => line.trim().split(/\s+/).slice(2).join(' '))
+        .filter(Boolean);
+      const missingSourceAnnotations = expectedSourceUrls.filter((url) =>
+        !directAnnotationTargets.includes(url));
       const containsWords = (value) => value.toLowerCase().split(/\s+/)
         .filter(Boolean)
         .every((word) => directCompactText.includes(word.replace(/[^a-z0-9]/g, '')));
@@ -1693,6 +1708,8 @@ async function checkProfilePrintCase(
           containsWords(expectedSource.sourceName)),
         sourceLink: Boolean(expectedSource && expectedSource.links.some((link) =>
           directCompactText.includes(link.href.replace(/\s+/g, '').toLowerCase()))),
+        sourceAnnotations: expectedSourceUrls.length > 0 && missingSourceAnnotations.length === 0,
+        missingSourceAnnotations,
         sourceNameExpected: expectedSource?.sourceName ?? '',
         sourceUrlExpected: expectedSource?.links[0]?.href ?? '',
         textSample: directNormalizedText.slice(-900),
@@ -1705,11 +1722,12 @@ async function checkProfilePrintCase(
           directExportChecks.agency &&
           directExportChecks.operations &&
           directExportChecks.sourceName &&
-          directExportChecks.sourceLink,
-        `Direct ${directPaperSize.name} agency PDF lost its selected page size, readable pagination, agency details, or source links: ${JSON.stringify(directExportChecks)}`,
+          directExportChecks.sourceLink &&
+          directExportChecks.sourceAnnotations,
+        `Direct ${directPaperSize.name} agency PDF lost its selected page size, readable pagination, agency details, visible source links, or clickable source annotations: ${JSON.stringify(directExportChecks)}`,
       );
       console.log(
-        `✓ Direct agency PDF / ${directPaperSize.name}: ${directPageCount} non-empty page(s), selected paper size and agency details retained`,
+        `✓ Direct agency PDF / ${testCase.category} / ${directPaperSize.name}: ${directPageCount} non-empty page(s), source link annotations and agency details retained`,
       );
     }
   }

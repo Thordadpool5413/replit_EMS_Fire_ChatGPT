@@ -289,6 +289,13 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
         bold: boolean;
         italic: boolean;
       }> = [];
+      const sourceLinkAnnotations: Array<{
+        url: string;
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      }> = [];
       let searchableLayoutWidth = element.getBoundingClientRect().width;
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -363,6 +370,20 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
             const rootRect = docEl.getBoundingClientRect();
             searchableLayoutWidth = rootRect.width;
+            docEl.querySelectorAll<HTMLAnchorElement>('.print-source-url[href]').forEach((anchor) => {
+              const url = printableSourceUrl(anchor.getAttribute('href') ?? undefined);
+              if (!url) return;
+              Array.from(anchor.getClientRects()).forEach((rect) => {
+                if (rect.width <= 0 || rect.height <= 0) return;
+                sourceLinkAnnotations.push({
+                  url,
+                  left: rect.left - rootRect.left,
+                  top: rect.top - rootRect.top,
+                  width: rect.width,
+                  height: rect.height,
+                });
+              });
+            });
             const walker = clonedDoc.createTreeWalker(
               docEl,
               clonedDoc.defaultView?.NodeFilter.SHOW_TEXT ?? NodeFilter.SHOW_TEXT,
@@ -474,6 +495,37 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           {
             renderingMode: 'invisible',
           },
+        );
+      }
+
+      // The page images preserve the visible URL text, while these annotations
+      // make each printed source reference clickable in the downloaded PDF.
+      for (const sourceLink of sourceLinkAnnotations) {
+        const topMm = sourceLink.top * cssPixelToMm;
+        const bottomMm = (sourceLink.top + sourceLink.height) * cssPixelToMm;
+        const pageIndex = Math.floor(((topMm + bottomMm) / 2) / contentHeight);
+        if (pageIndex >= pageCount) continue;
+
+        const pageOffsetMm = pageIndex * contentHeight;
+        const leftMm = Math.max(margin, margin + sourceLink.left * cssPixelToMm);
+        const rightMm = Math.min(
+          margin + contentWidth,
+          margin + (sourceLink.left + sourceLink.width) * cssPixelToMm,
+        );
+        const topOnPageMm = Math.max(margin, margin + topMm - pageOffsetMm);
+        const bottomOnPageMm = Math.min(
+          margin + contentHeight,
+          margin + bottomMm - pageOffsetMm,
+        );
+        if (rightMm <= leftMm || bottomOnPageMm <= topOnPageMm) continue;
+
+        pdf.setPage(pageIndex + 1);
+        pdf.link(
+          leftMm,
+          topOnPageMm,
+          rightMm - leftMm,
+          bottomOnPageMm - topOnPageMm,
+          { url: sourceLink.url },
         );
       }
 

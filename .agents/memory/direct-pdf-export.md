@@ -7,6 +7,8 @@ Direct agency PDF export must normalize computed theme colors before html2canvas
 
 Crop each rasterized document page to the printable content area instead of shifting one tall image by the printable height across full-size pages. The latter overlaps neighboring page content through the margins and can leave a duplicate sliver or blank trailing page, especially on Letter paper. Keep a consistent 10 mm margin and derive pagination from the final searchable text baseline so the last text page is included without adding a textless tail.
 
+Capture source-link client rectangles from the same cloned document used for the raster and searchable text layers. Scale and clip each rectangle to its cropped PDF page, then add a URI annotation with the exact sanitized href; verify both annotation targets and visible source URLs in the direct-export regression.
+
 **Why:** Real Daylight, Dark, and Miami Vice theme colors made the direct export fail before saving, CSS-sized maxWidth values truncated extracted words, and full-image page shifts duplicated the report footer across Letter page boundaries.
 
-**How to apply:** Preserve RGB fallbacks for html2canvas, unrestricted searchable-word placement, and per-page image crops. Keep the profile print regression checking both direct-download paper sizes, non-empty pages, agency/operations words, and source URLs.
+**How to apply:** Preserve RGB fallbacks for html2canvas, unrestricted searchable-word placement, and per-page image crops. Keep the profile print regression checking both direct-download paper sizes, non-empty pages, agency/operations words, visible source URLs, and matching URI annotations.

@@ -10908,13 +10908,25 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
   }
 }
 
-/* Short laptop viewports: keep every sidebar destination visible without a
-   nested scroll area. The logo block and mobile navigation remain untouched. */
-@media (min-width: 768px) and (max-height: 600px) {
-  .pi-primary-sidebar {
-    overflow: hidden;
+/* Desktop navigation uses the sidebar's available height instead of an
+   arbitrary 42vh scrolling window. */
+@media (min-width: 768px) {
+  .pi-primary-nav {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
   }
 
+  .pi-primary-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* Short laptop viewports: keep every sidebar destination visible without a
+   nested scroll area. The logo block and mobile navigation remain untouched. */
+@media (min-width: 768px) and (max-height: 700px) {
   .pi-primary-nav {
     flex: 1 1 0% !important;
     min-height: 0 !important;

@@ -204,6 +204,8 @@ try {
       return {text, closedDetails:card.querySelectorAll('details:not([open])').length,
         placeNames:placeButtons.map(button=>button.innerText.trim()),sourceText:sources?.innerText ?? '',
         titleSize:parseFloat(getComputedStyle(card.querySelector('h3')).fontSize),
+        titleHeight:card.querySelector('h3').getBoundingClientRect().height,
+        titleLineHeight:parseFloat(getComputedStyle(card.querySelector('h3')).lineHeight),
         titleFont:getComputedStyle(card.querySelector('h3')).fontFamily};
     })()`);
     assert(!/User review not recorded|End-user review/i.test(row.text), 'Review-status clutter remains');
@@ -214,6 +216,7 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
+      assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
       assert(!/data standard|does not establish/.test(row.text), 'Repeated general explanation still inside county card');
       for (const value of ['184,943', '18.3', '318', '15,165', '24.3', '73,943', '18.3', '16.1', '32618', '32615']) {
         assert(row.text.includes(value), `${label}: missing reference value ${value}`);

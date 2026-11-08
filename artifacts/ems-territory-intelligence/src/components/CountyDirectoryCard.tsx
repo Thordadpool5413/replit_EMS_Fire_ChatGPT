@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink, HeartPulse, MapPin, ShieldAlert, Timer, Users } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
@@ -52,14 +52,20 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
   const zips = c.primaryZipCodes ?? [];
   const titleId = `county-card-title-${c.countyFips}`;
 
-  const metric = (key: CountyFigureSourceKey, label: string, unit: string | null, testid: string, title?: string) => {
+  const metric = (
+    key: CountyFigureSourceKey, label: string, unit: string | null, testid: string,
+    Icon: React.ComponentType<{ 'aria-hidden'?: boolean | 'true' }>, title?: string,
+  ) => {
     const v = values[key];
     return (
       <div className="cb-metric" data-figure-key={key}>
-        <dt title={title}>{label}</dt>
-        <dd data-testid={testid}>
-          {isNum(v) ? <>{v.toLocaleString()}{unit && <small> {unit}</small>}</> : <span className="cb-na">{NOT_REPORTED}</span>}
-        </dd>
+        <span className="cb-metric-glyph"><Icon aria-hidden="true" /></span>
+        <dl className="cb-metric-text">
+          <dt title={title}>{label}</dt>
+          <dd data-testid={testid}>
+            {isNum(v) ? <>{v.toLocaleString()}{unit && <small> {unit}</small>}</> : <span className="cb-na">{NOT_REPORTED}</span>}
+          </dd>
+        </dl>
       </div>
     );
   };
@@ -68,23 +74,13 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
     <article aria-labelledby={titleId} className="county-brief county-signal-row" data-testid={`row-county-signals-${c.countyFips}`}>
       <header className="cb-head">
         <div className="cb-ident">
+          <p className="cb-eyebrow">County brief</p>
           <h3 id={titleId} className="cb-name">{c.countyName}</h3>
-          <p className="cb-seat">County seat <strong>{c.countySeat}</strong></p>
+          <p className="cb-seat"><MapPin aria-hidden="true" /> Seat <strong>{c.countySeat}</strong></p>
         </div>
-        <button
-          type="button"
-          className="cb-inspect"
-          onClick={onInspectCounty}
-          aria-label={`Inspect ${c.countyName}`}
-          data-testid={`button-inspect-county-${c.countyFips}`}
-        >
-          Inspect county <ChevronRight aria-hidden="true" />
-        </button>
-      </header>
 
-      <div className="cb-band">
         <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
-          <p className="cb-risk-label">FEMA hazard-risk category</p>
+          <p className="cb-risk-label"><ShieldAlert aria-hidden="true" /> FEMA hazard-risk category</p>
           {nriLoading ? (
             <span className="cb-risk-status" role="status">Loading FEMA record</span>
           ) : nriError ? (
@@ -100,11 +96,11 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
               </span>
               <p className="cb-risk-meta">
                 <span data-testid={`text-fema-nri-score-${c.countyFips}`}>
-                  {nriScore ? <>NRI score <strong>{nriScore}</strong></> : 'Score not stated'}
+                  {nriScore ? <>Score <strong>{nriScore}</strong></> : 'Score not stated'}
                 </span>
                 <span>{vintage ? `Vintage ${vintage}` : 'Vintage not stated'}</span>
                 {nriSourceUrl && (
-                  <a className="cb-link" href={nriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
+                  <a className="cb-link cb-link--onband" href={nriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
                     FEMA source <ExternalLink aria-hidden="true" />
                   </a>
                 )}
@@ -115,14 +111,26 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           )}
         </section>
 
-        <dl className="cb-metrics" aria-label={`Key county figures for ${c.countyName}`}>
-          {metric('population', 'Population', null, `text-county-population-${c.countyFips}`)}
-          {metric('averageTransportMinutes', 'Avg EMS transport', 'min', `text-county-transport-${c.countyFips}`)}
-          {metric('annualCardiacArrestIncidents', 'Cardiac arrests / yr', null, `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest incidents per year')}
-        </dl>
+        <button
+          type="button"
+          className="cb-inspect"
+          onClick={onInspectCounty}
+          aria-label={`Inspect ${c.countyName}`}
+          data-testid={`button-inspect-county-${c.countyFips}`}
+        >
+          Inspect county <ArrowRight aria-hidden="true" />
+        </button>
+      </header>
+
+      <div className="cb-metrics" role="group" aria-label={`Key county figures for ${c.countyName}`}>
+        {metric('population', 'Population', null, `text-county-population-${c.countyFips}`, Users)}
+        {metric('averageTransportMinutes', 'Avg EMS transport', 'min', `text-county-transport-${c.countyFips}`, Timer)}
+        {metric('annualCardiacArrestIncidents', 'Cardiac arrests / yr', null, `text-county-ohca-${c.countyFips}`, HeartPulse, 'Out-of-hospital cardiac arrest incidents per year')}
       </div>
 
       <div className="cb-body county-profile-details-content" data-testid={`details-county-context-${c.countyFips}`}>
+        <div className="cb-context-wrap">
+        <p className="cb-group-label">Operating context</p>
         <dl className="cb-context" aria-label={`Supporting figures for ${c.countyName}`}>
           {CONTEXT_FIGURES.map(({ key, label, format }) => {
             const v = values[key];
@@ -134,6 +142,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
             );
           })}
         </dl>
+        </div>
 
         <dl className="cb-geo" aria-label={`Geography for ${c.countyName}`}>
           <div><dt>FIPS</dt><dd>{c.countyFips}</dd></div>

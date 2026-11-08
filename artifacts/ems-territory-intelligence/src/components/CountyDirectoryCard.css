@@ -1,7 +1,6 @@
 /* County brief card — scoped .county-brief / .cb-*.
-   Concept: "dispatch brief". A solid shared-blue identity band (name, seat, FEMA badge,
-   Inspect) sits over an open vitals line of bold tabular numbers with neutral blue glyphs,
-   then a tinted "Operating context" ledger, then quiet geography / places / sources.
+   A shared-brand identity band sits above paired response and community groups,
+   followed by an access rail. Numeric hierarchy carries emphasis, not metric-specific color.
    All color derives from --pi-action tokens, so Daylight / Dark / Miami follow automatically.
    The only non-brand color is the FEMA source-defined category swatch.
    Card widths: ~770px at 1024 (210px sidebar), ~1100px at 1366, ~350px at 390 phone. */
@@ -131,18 +130,18 @@
   background: var(--cb-band);
 }
 @container (min-width: 600px) { .county-brief .cb-group--response { border-radius: .7rem 0 0 .7rem; } }
-.county-brief .cb-focal dt { font-size: .78rem; font-weight: 600; color: var(--pi-text-secondary); }
+.county-brief .cb-focal dt { font-size: .88rem; line-height: 1.35; font-weight: 600; color: var(--pi-text-secondary); }
 .county-brief .cb-focal dd {
-  font-family: var(--font-display); font-size: 2.35rem; font-weight: 780; line-height: 1; letter-spacing: -.035em;
+  font-family: var(--font-display); font-size: clamp(2rem, 4.8cqi, 2.65rem); font-weight: 780; line-height: 1.12; letter-spacing: -.035em;
   color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; margin-top: .15rem;
 }
 .county-brief .cb-focal dd small { font-size: .95rem; font-weight: 650; letter-spacing: 0; color: var(--pi-text-secondary); }
-.county-brief .cb-focal--sub dd { font-size: 1.6rem; letter-spacing: -.025em; }
+.county-brief .cb-focal--sub dd { font-size: clamp(2rem, 4.8cqi, 2.65rem); letter-spacing: -.025em; }
 .county-brief .cb-pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .9rem; padding-top: .5rem; border-top: 1px solid color-mix(in srgb, var(--pi-action) 22%, transparent); }
 .county-brief .cb-pairs > div { min-width: 0; }
-.county-brief .cb-pairs dt { display: flex; align-items: center; gap: .25rem; font-size: .8rem; color: var(--pi-text-secondary); line-height: 1.25; }
+.county-brief .cb-pairs dt { display: flex; align-items: center; gap: .25rem; font-size: .87rem; font-weight: 500; color: var(--pi-text-secondary); line-height: 1.35; }
 .county-brief .cb-pairs dt svg { width: .75rem; height: .75rem; color: var(--pi-action-ink); flex-shrink: 0; }
-.county-brief .cb-pairs dd { margin-top: .1rem; font-size: 1.05rem; font-weight: 700; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.county-brief .cb-pairs dd { margin-top: .2rem; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.2; letter-spacing: -.02em; font-weight: 750; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 /* Community: open, outlined counterpart joined to the response panel */
 .county-brief .cb-group--community {
@@ -158,6 +157,7 @@
 .county-brief .cb-access-grid { display: grid; gap: .5rem 1.2rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @container (min-width: 600px) { .county-brief .cb-access-grid { grid-template-columns: auto minmax(0, 1fr); } }
 .county-brief .cb-access-lead { padding-right: 1.2rem; }
+.county-brief .cb-access-lead dd { font-size: 1.7rem; }
 @container (min-width: 600px) { .county-brief .cb-access-lead { border-right: 1px solid var(--cb-rule); } }
 .county-brief .cb-geo {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: .35rem 1rem;

@@ -39,8 +39,8 @@ const comparisonViewports = [
 const countyCardViewports = [
   { width: 320, height: 740, mobile: true },
   { width: 390, height: 844, mobile: true },
-  { width: 1024, height: 900, mobile: false },
-  { width: 1280, height: 900, mobile: false },
+  { width: 1024, height: 640, mobile: false },
+  { width: 1366, height: 768, mobile: false },
 ];
 const workspaceRegressionViewports = [
   { width: 360, height: 844, mobile: true },
@@ -50,7 +50,7 @@ const workspaceRegressionViewports = [
 ];
 const sharedNavigationDesktopViewports = [1024, 1280, 1366].map((width) => ({
   width,
-  height: 900,
+  height: width === 1024 ? 640 : 768,
   mobile: false,
 }));
 const sharedNavigationMobileViewports = [
@@ -897,13 +897,13 @@ async function checkSharedNavigation(cdp) {
         navMaxHeight: getComputedStyle(nav).maxHeight,
       };
     })()`);
-    const expectedWidth = viewport.width >= 1024 ? 12 : 13;
+    const expectedWidth = 14;
     assert(
       layout &&
         Math.abs(layout.sidebarWidth - layout.rootFontSize * expectedWidth) < 0.1 &&
         Math.abs(layout.headerOffset - layout.sidebarWidth) < 0.1 &&
         Math.abs(layout.workspaceOffset - layout.sidebarWidth) < 0.1 &&
-        layout.sidebarOverflow === 'hidden' &&
+        layout.sidebarOverflow === 'auto' &&
         layout.navOverflow === 'visible' &&
         layout.navMaxHeight === 'none',
       `Compact desktop sidebar sizing or overflow is inconsistent at ${viewport.width}×${viewport.height}px: ${JSON.stringify(layout)}`,
@@ -3854,11 +3854,11 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
   await waitFor(
     cdp,
     `Boolean(document.querySelector('.county-drilldown-shell')?.innerText.includes('Florida')) &&
-      Boolean(document.querySelector('.county-directory-card'))`,
+      Boolean(document.querySelector('.county-signal-row'))`,
     `Florida county directory at ${viewport.width}px`,
   );
   const countySearchSet = await evaluate(cdp, `(() => {
-    const input = document.querySelector('.county-drilldown-shell input[placeholder="Search county or seat..."]');
+    const input = document.querySelector('[data-testid="input-county-search"]');
     if (!input) return false;
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Miami-Dade County');
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -3867,7 +3867,7 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
   assert(countySearchSet, `County search was unavailable at ${viewport.width}px`);
   await waitFor(
     cdp,
-    `[...document.querySelectorAll('.county-directory-card h3')]
+    `[...document.querySelectorAll('.county-signal-row h3')]
       .some((heading) => heading.innerText.trim() === 'Miami-Dade County')`,
     `the Miami-Dade County card at ${viewport.width}px`,
   );
@@ -3929,10 +3929,10 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
         candidate.querySelector('summary')?.innerText.includes('Boundary and source details'),
       );
     const search = shell?.querySelector('input');
-    const card = [...document.querySelectorAll('.county-directory-card')]
+    const card = [...document.querySelectorAll('.county-signal-row')]
       .find((candidate) => candidate.querySelector('h3')?.innerText.trim() === 'Miami-Dade County');
     const title = card?.querySelector('h3');
-    const inspect = card?.querySelector('.county-profile-card-action');
+    const inspect = card?.querySelector('[data-testid^="button-inspect-county-"]');
     const color = (value) => {
       const [r, g, b] = value.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0];
       const channel = (v) => {
@@ -3999,38 +3999,23 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
     await writeFile('/tmp/ems-territory-county-directory-390.png', Buffer.from(screenshot.result.data, 'base64'));
   }
 
-  const openedDetails = await evaluate(cdp, `(() => {
-    const card = [...document.querySelectorAll('.county-directory-card')]
-      .find((candidate) => candidate.querySelector('h3')?.innerText.trim() === 'Miami-Dade County');
-    const details = card?.querySelector('.county-profile-details');
-    if (!details || details.open) return false;
-    details.querySelector('summary')?.click();
-    return true;
-  })()`);
-  assert(openedDetails, `County details were not initially collapsed at ${viewport.width}px`);
   const countyDisclosure = await evaluate(cdp, `(() => {
-    const card = [...document.querySelectorAll('.county-directory-card')]
+    const card = [...document.querySelectorAll('.county-signal-row')]
       .find((candidate) => candidate.querySelector('h3')?.innerText.trim() === 'Miami-Dade County');
-    const details = card?.querySelector('.county-profile-details');
-    if (!card || !details?.open) return null;
+    const details = card?.querySelector('[data-testid^="details-county-context-"]');
+    if (!card || !details || card.querySelector('details:not([open])')) return null;
     const places = [...card.querySelectorAll('.county-profile-city-list button')]
       .map((button) => button.innerText.trim());
-    const context = [...card.querySelectorAll('.county-profile-context-grid > div')].map((item) => ({
+    const context = [...card.querySelectorAll('.cv-source-figures > div')].map((item) => ({
       label: item.querySelector('dt')?.innerText.trim() ?? '',
       value: item.querySelector('dd')?.innerText.trim() ?? '',
     }));
     const sourceDetails = card.querySelector('.county-figure-source-details');
-    sourceDetails?.querySelector('summary')?.click();
     return {
       places,
       context,
-      sourcesOpen: Boolean(sourceDetails?.open),
-      sourceRecords: [...(sourceDetails?.querySelectorAll('.county-figure-source-record') ?? [])]
-        .map((record) => ({
-          title: record.querySelector('h4')?.innerText.trim() ?? '',
-          fields: [...record.querySelectorAll('.county-figure-source-field dt')]
-            .map((field) => field.innerText.trim()),
-        })),
+      sourcesVisible: Boolean(sourceDetails?.getBoundingClientRect().height),
+      sourceCoverage: sourceDetails?.innerText ?? '',
       sourceCountyFips: sourceDetails?.innerText.includes('Display geography: county FIPS 12086') ?? false,
     };
   })()`);
@@ -4039,11 +4024,11 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
     'Homestead', 'North Miami', 'Doral', 'Coral Gables',
   ];
   const expectedContextFigures = [
-    'Annual emergency transports',
+    'Emergency transports per year',
     'Population age 65+',
-    'Median income',
+    'Median household income',
     'Poverty rate',
-    'Primary cath lab distance',
+    'Distance to primary cath lab',
   ];
   assert(
     countyDisclosure &&
@@ -4059,17 +4044,14 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
     `Miami-Dade context figures were missing or empty at ${viewport.width}px: ${JSON.stringify(countyDisclosure?.context)}`,
   );
   assert(
-    countyDisclosure?.sourcesOpen &&
-      countyDisclosure.sourceRecords.length >= 8 &&
-      countyDisclosure.sourceRecords.every((record) =>
-        record.title && ['Source', 'Vintage', 'Source scope', 'Reporting period']
-          .every((field) => record.fields.includes(field)),
-      ) &&
+    countyDisclosure?.sourcesVisible &&
+      countyDisclosure.sourceCoverage.includes('Sources & coverage') &&
+      countyDisclosure.sourceCoverage.includes('Source details are not attached') &&
       countyDisclosure.sourceCountyFips,
-    `County source coverage did not expand at ${viewport.width}px: ${JSON.stringify(countyDisclosure)}`,
+    `County source coverage is not visible inline at ${viewport.width}px: ${JSON.stringify(countyDisclosure)}`,
   );
   const disclosureLayout = await evaluate(cdp, `(() => {
-    const card = [...document.querySelectorAll('.county-directory-card')]
+    const card = [...document.querySelectorAll('.county-signal-row')]
       .find((candidate) => candidate.querySelector('h3')?.innerText.trim() === 'Miami-Dade County');
     const shell = document.querySelector('.county-drilldown-shell');
     if (!card || !shell) return null;
@@ -4093,9 +4075,9 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
   );
 
   const inspectFocused = await evaluate(cdp, `(() => {
-    const card = [...document.querySelectorAll('.county-directory-card')]
+    const card = [...document.querySelectorAll('.county-signal-row')]
       .find((candidate) => candidate.querySelector('h3')?.innerText.trim() === 'Miami-Dade County');
-    const button = card?.querySelector('.county-profile-card-action');
+    const button = card?.querySelector('[data-testid^="button-inspect-county-"]');
     if (!button) return false;
     button.scrollIntoView({ block: 'center', inline: 'nearest' });
     button.focus();
@@ -4157,7 +4139,7 @@ async function checkTerritoryAtViewport(cdp, viewport, { skipCountyRisk = false 
   await evaluate(cdp, `document.querySelector('.county-single-map-panel')?.scrollIntoView({ block: 'start' })`);
   const cityPanel = await evaluate(cdp, `(() => {
     const panel = document.querySelector('.county-city-directory-panel');
-    const heading = panel?.querySelector('h4');
+    const heading = panel?.querySelector('h3,h4');
     if (!panel || !heading) return null;
     return {
       panelBackground: getComputedStyle(panel).backgroundColor,

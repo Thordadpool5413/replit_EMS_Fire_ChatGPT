@@ -4,20 +4,30 @@ import type {
   CountyFigureSourceMetadata,
 } from '../types';
 
+type CountyFigureValues = Partial<Record<CountyFigureSourceKey, number | null | undefined>>;
+
 interface CountyFigureSourceDetailsProps {
   countyFips: string;
   sources?: Partial<Record<CountyFigureSourceKey, CountyFigureSourceMetadata>>;
+  /** Optional county record; when given, each row shows the figure value beside its source. */
+  record?: CountyFigureValues | object;
+  /** Hide the value column when values are already displayed elsewhere. */
+  showValues?: boolean;
+  /** Summary figures already shown immediately above this source section. */
+  omitValuesFor?: readonly CountyFigureSourceKey[];
 }
 
-const FIGURES: Array<{ key: CountyFigureSourceKey; label: string }> = [
-  { key: 'population', label: 'Population reference' },
-  { key: 'averageTransportMinutes', label: 'Average transport' },
-  { key: 'annualCardiacArrestIncidents', label: 'Annual OHCA reference' },
-  { key: 'annualEmergencyTransports', label: 'Annual emergency transports' },
-  { key: 'seniorPopPct', label: 'Population age 65+' },
-  { key: 'medianIncome', label: 'Median income' },
-  { key: 'povertyRatePct', label: 'Poverty rate' },
-  { key: 'primaryCathLabDistanceMiles', label: 'Primary cath lab distance' },
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+export const COUNTY_FIGURES: Array<{ key: CountyFigureSourceKey; label: string; format: (v: number) => string }> = [
+  { key: 'population', label: 'Population', format: (v) => v.toLocaleString() },
+  { key: 'averageTransportMinutes', label: 'Average EMS transport time', format: (v) => `${v} min` },
+  { key: 'annualCardiacArrestIncidents', label: 'Out-of-hospital cardiac arrests per year (OHCA)', format: (v) => v.toLocaleString() },
+  { key: 'annualEmergencyTransports', label: 'Emergency transports per year', format: (v) => v.toLocaleString() },
+  { key: 'seniorPopPct', label: 'Population age 65+', format: (v) => `${v.toFixed(1)}%` },
+  { key: 'medianIncome', label: 'Median household income', format: (v) => `$${v.toLocaleString()}` },
+  { key: 'povertyRatePct', label: 'Poverty rate', format: (v) => `${v.toFixed(1)}%` },
+  { key: 'primaryCathLabDistanceMiles', label: 'Distance to primary cath lab', format: (v) => `${v.toFixed(1)} mi` },
 ];
 
 const safeSourceUrl = (value?: string) => {
@@ -30,71 +40,78 @@ const safeSourceUrl = (value?: string) => {
   }
 };
 
+/** Always-visible, aligned figure/source table. No disclosure is used. */
 export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps> = ({
   countyFips,
   sources,
-}) => (
-  <details
-    className="county-figure-source-details group min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs leading-relaxed text-slate-600"
-    onClick={(event) => event.stopPropagation()}
-  >
-    <summary className="county-figure-source-summary flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">
-      <span>Data sources &amp; coverage</span>
-      <span className="county-figure-source-toggle shrink-0 text-[11px] font-medium text-slate-500">
-        <span className="group-open:hidden">Open details</span>
-        <span className="hidden group-open:inline">Close details</span>
-      </span>
-    </summary>
-    <div className="county-figure-source-content mt-2 space-y-2">
-      {FIGURES.map(({ key, label }) => {
-        const metadata = sources?.[key];
-        const sourceUrl = safeSourceUrl(metadata?.sourceUrl);
-        return (
-          <section key={key} className="county-figure-source-record">
-            <h4 className="county-figure-source-record-title">{label}</h4>
-            <dl className="county-figure-source-fields">
-              <div className="county-figure-source-field">
-                <dt>Source</dt>
-                <dd>
-                  {sourceUrl ? (
-                    <a
-                      href={sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-700 underline underline-offset-2"
-                    >
-                      {metadata?.source?.trim() || 'Open source'}
-                    </a>
-                  ) : (
-                    metadata?.source?.trim() || 'Unavailable'
-                  )}
-                </dd>
-              </div>
-              <div className="county-figure-source-field">
-                <dt>Vintage</dt>
-                <dd>{metadata?.vintage?.trim() || 'Unavailable'}</dd>
-              </div>
-              <div className="county-figure-source-field">
-                <dt>Source scope</dt>
-                <dd>{metadata?.scope?.trim() || 'Unavailable'}</dd>
-              </div>
-              <div className="county-figure-source-field">
-                <dt>Reporting period</dt>
-                <dd>{metadata?.reportingPeriod?.trim() || 'Unavailable'}</dd>
-              </div>
-              {key === 'annualCardiacArrestIncidents' && (
-                <div className="county-figure-source-field">
-                  <dt>Note</dt>
-                  <dd>NEMSIS v3.5 is a data standard, not a citation for this county figure.</dd>
-                </div>
-              )}
-            </dl>
-          </section>
-        );
-      })}
-      <p className="border-t border-slate-100 pt-1.5 text-slate-500">
-        Display geography: county FIPS {countyFips}. This does not establish the source record&apos;s scope.
+  record,
+  showValues = true,
+  omitValuesFor = [],
+}) => {
+  const values = (record ?? {}) as CountyFigureValues;
+  const withValues = showValues && Boolean(record);
+  const hasMetadata = (key: CountyFigureSourceKey) => {
+    const metadata = sources?.[key];
+    return Boolean(metadata && Object.values(metadata).some(value => typeof value === 'string' && value.trim()));
+  };
+  const attached = COUNTY_FIGURES.filter(({ key }) => hasMetadata(key));
+  const missing = COUNTY_FIGURES.filter(({ key }) => !hasMetadata(key));
+  return (
+    <div className="county-figure-source-details cv-sources" data-testid={`sources-county-${countyFips}`}>
+      {withValues && (
+        <dl className="cv-source-figures" aria-label="County reference figures">
+          {COUNTY_FIGURES.filter(({ key }) => !omitValuesFor.includes(key)).map(({ key, label, format }) => (
+            <div key={key} data-figure-key={key}>
+              <dt>{label}</dt>
+              <dd>{isNum(values[key]) ? format(values[key]) : 'Not reported'}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <div className="cv-section-label"><span>Sources &amp; coverage</span></div>
+      {attached.length > 0 && <table className="cv-sources-table">
+        <thead>
+          <tr>
+            <th scope="col">Figure</th>
+            <th scope="col">Source</th>
+            <th scope="col">Vintage</th>
+            <th scope="col">Source scope</th>
+            <th scope="col">Reporting period</th>
+          </tr>
+        </thead>
+        <tbody>
+          {attached.map(({ key, label }) => {
+            const m = sources?.[key];
+            const url = safeSourceUrl(m?.sourceUrl);
+            const name = m?.source?.trim();
+            const vintage = m?.vintage?.trim();
+            const scope = m?.scope?.trim();
+            const period = m?.reportingPeriod?.trim();
+            return (
+              <tr key={key} className="county-figure-source-record">
+                <th scope="row">{label}</th>
+                    <td data-label="Source">
+                      {url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="cv-link">{name || 'Open source'}</a>
+                      ) : name || <span className="cv-na">Not provided</span>}
+                    </td>
+                    <td data-label="Vintage">{vintage || <span className="cv-na">Not provided</span>}</td>
+                    <td data-label="Source scope">{scope || <span className="cv-na">Not provided</span>}</td>
+                    <td data-label="Reporting period">{period || <span className="cv-na">Not provided</span>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>}
+      <p className="cv-sources-foot">
+        {missing.length === COUNTY_FIGURES.length
+          ? 'Source details are not attached to the eight county figures displayed here.'
+          : missing.length > 0
+            ? `Source details not attached for: ${missing.map(({ label }) => label).join('; ')}.`
+            : 'Source scope and reporting periods are shown for each figure.'}
+        {' '}Display geography: county FIPS {countyFips}; this does not establish a source&apos;s own scope.
+        {' '}NEMSIS v3.5 is a data standard, not a source citation.
       </p>
     </div>
-  </details>
-);
+  );
+};

@@ -15,6 +15,8 @@
     "test:profile-layout": "PROFILE_LAYOUT_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "test:profile-print": "PROFILE_PRINT_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "test:profile-overflow": "node ../../scripts/check-profile-overflow.mjs",
+    "test:county-presentation": "tsx --test src/utils/countyPresentation.test.ts src/components/CountyFigureSourceDetails.test.tsx",
+    "test:county-polish": "node ../../scripts/check-county-polish.mjs",
     "test:navigation-layout": "NAV_LAYOUT_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "test:mobile-nav-a11y": "MOBILE_NAV_A11Y_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",

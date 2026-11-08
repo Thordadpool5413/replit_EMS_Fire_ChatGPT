@@ -3,6 +3,12 @@ name: Browser regression checks
 description: Browser automation constraints and conventions for the EMS territory app.
 ---
 
+Check component-level overflow as well as document width; an ancestor with hidden overflow can clip a source table while the page still passes a horizontal-overflow assertion.
+
+**Why:** A county source table visibly lost columns even though the document's measured width fit the laptop viewport.
+
+**How to apply:** Compare scroll width with client width on the county/source containers, then inspect the loaded screenshot. Do not equate absence of a page scrollbar with readable content.
+
 Use the installed Chromium binary with Node's built-in WebSocket and Chrome DevTools Protocol for browser-level layout checks. The workspace has no Playwright or Puppeteer dependency, so keep this harness dependency-free unless the project adopts a browser test framework.
 
 **Why:** Browser testing must run in the Replit environment without adding a browser automation package just to cover a viewport regression.

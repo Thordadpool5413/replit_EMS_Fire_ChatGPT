@@ -9,6 +9,7 @@ import { ALL_NATIONWIDE_COUNTIES, ComprehensiveCountyRecord, CityBoundaryRecord 
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { getCountyMedicareDenialMetric } from './countyMedicareDenialService';
 import { territoryEngine } from './territoryIntelligenceEngine';
+import { normalizePlaceName, uniqueAgencyRecords } from '../utils/countyPresentation';
 
 export interface GeoJsonGeometry {
   type: 'Polygon' | 'MultiPolygon';
@@ -45,6 +46,7 @@ export interface CityJurisdictionNode {
   stateFips: string;
   isCountySeat: boolean;
   zipCode: string;
+  zipCodes: string[];
   latitude: number;
   longitude: number;
   providers: Agency[];
@@ -120,6 +122,7 @@ export interface SvgProjectedCounty {
 export interface SvgProjectedCityPin {
   cityName: string;
   zipCode: string;
+  zipCodes: string[];
   isCountySeat: boolean;
   latitude: number;
   longitude: number;
@@ -180,8 +183,16 @@ class CountyBoundaryHierarchyService {
             }));
 
       for (const cr of rawCityRecords) {
+        const cityKey = normalizePlaceName(cr.name);
+        if (!cityKey) continue;
+        const existing = citiesByName[cityKey];
+        if (existing) {
+          existing.zipCodes = [...new Set([...existing.zipCodes, cr.zipCode].filter(Boolean))];
+          existing.isCountySeat ||= cr.isCountySeat;
+          continue;
+        }
         const cityNode: CityJurisdictionNode = {
-          cityName: cr.name,
+          cityName: cr.name.trim().replace(/\s+/g, ' '),
           countyFips: c.countyFips,
           countyName: c.countyName,
           stateCode: sc,
@@ -189,11 +200,12 @@ class CountyBoundaryHierarchyService {
           stateFips: c.stateFips || stNode.stateFips,
           isCountySeat: cr.isCountySeat,
           zipCode: cr.zipCode,
+          zipCodes: cr.zipCode ? [cr.zipCode] : [],
           latitude: cr.latitude,
           longitude: cr.longitude,
           providers: [],
         };
-        citiesByName[cr.name.toLowerCase()] = cityNode;
+        citiesByName[cityKey] = cityNode;
         citiesList.push(cityNode);
         totalCities++;
       }
@@ -282,7 +294,7 @@ class CountyBoundaryHierarchyService {
       const cRaw = cClean.replace(/ county| parish| borough/gi, '').trim();
       const coNode = stNode.countiesByName[cClean] || stNode.countiesByName[cRaw];
       if (!coNode) continue;
-      const cityKey = ag.city.toLowerCase().trim();
+      const cityKey = normalizePlaceName(ag.city);
       const ctNode = coNode.citiesByName[cityKey];
       if (ctNode) {
         ctNode.providers.push(ag);
@@ -482,6 +494,7 @@ class CountyBoundaryHierarchyService {
     svgPath: string;
     cityPins: SvgProjectedCityPin[];
     centroidSvg: [number, number];
+    providerRecordCount: number;
   } {
     const sc = countyNode.stateCode;
     const normalizeLng = (lng: number) => (sc === 'AK' && lng > 0 ? lng - 360 : lng);
@@ -527,18 +540,21 @@ class CountyBoundaryHierarchyService {
     const svgPath = countyNode.geometry ? this.geometryToSvgPath(countyNode.geometry, projectPoint) : '';
     const centroidSvg = projectPoint(countyNode.centroid.lng, countyNode.centroid.lat);
 
+    const matchedAgencyIds = new Set<string>();
     const cityPins: SvgProjectedCityPin[] = countyNode.citiesList.map((ct) => {
       const [svgX, svgY] = projectPoint(ct.longitude, ct.latitude);
-      const cityAgencies = territoryEngine.getAgenciesForJurisdiction(
+      const cityAgencies = uniqueAgencyRecords(territoryEngine.getAgenciesForJurisdiction(
         countyNode.stateCode,
         countyNode.countyName,
         ct.cityName,
         agencies,
         'all'
-      );
+      ));
+      cityAgencies.forEach((agency) => matchedAgencyIds.add(agency.id));
       return {
         cityName: ct.cityName,
         zipCode: ct.zipCode,
+        zipCodes: ct.zipCodes,
         isCountySeat: ct.isCountySeat,
         latitude: ct.latitude,
         longitude: ct.longitude,
@@ -552,6 +568,7 @@ class CountyBoundaryHierarchyService {
       svgPath,
       cityPins,
       centroidSvg,
+      providerRecordCount: matchedAgencyIds.size,
     };
   }
 

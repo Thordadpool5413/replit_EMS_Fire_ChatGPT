@@ -212,14 +212,13 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Primary left sidebar — desktop */}
       <aside
         aria-label="Primary Workspace Navigation"
-        className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
+        className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 z-50 select-none border-r"
       >
-        {/* Compact identity keeps the workspace navigation immediately in view. */}
-        <div className="px-4 py-3 flex items-center justify-center border-b border-[#172D49] shrink-0">
+        <div className="pi-sb-brand">
           <button
             type="button"
             onClick={onGoHome}
-            className="flex items-center justify-center group focus:outline-none cursor-pointer"
+            className="pi-sb-brand-button flex items-center justify-center group cursor-pointer"
             title="Return to Territory Intelligence Home"
             aria-label="Return to Territory Intelligence Home"
           >
@@ -241,202 +240,73 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* Provider Discipline Filter (All / EMS / Fire) inside Sidebar */}
-        <div className="px-3.5 pt-3.5 pb-2">
-          <div className="text-xs font-medium text-slate-400 px-1 mb-1.5">
-            Provider scope
-          </div>
-          <div
-            className="grid grid-cols-3 bg-[#172D49]/80 p-0.5 rounded-lg border border-[#233B5E]"
-            role="group"
-            aria-label="Provider Discipline Filter"
-          >
-            {(['all', 'ems', 'fire'] as const).map((cat) => {
-              const active = globalCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setGlobalCategory(cat)}
-                  className={`py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                    active
-                      ? 'bg-[#285EE8] text-white shadow-2xs font-semibold'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  {cat === 'all' ? 'All' : cat === 'ems' ? 'EMS' : 'Fire'}
-                </button>
-              );
-            })}
+        <div className="pi-sb-section">
+          <p className="pi-sb-heading" id="sidebar-provider-scope">Provider scope</p>
+          <div className="pi-sb-segment" role="group" aria-labelledby="sidebar-provider-scope">
+            {(['all', 'ems', 'fire'] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                aria-pressed={globalCategory === cat}
+                onClick={() => setGlobalCategory(cat)}
+                data-testid={`button-scope-${cat}`}
+              >
+                {cat === 'all' ? 'All' : cat === 'ems' ? 'EMS' : 'Fire'}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Primary 5 Workspaces Navigation */}
-        <nav className="pi-primary-nav flex-1 overflow-y-auto px-3 py-2 space-y-5 no-scrollbar">
-          <div>
-            <div className="text-xs font-medium text-slate-400 px-2.5 mb-1.5">
-              Workspaces
-            </div>
-            <div className="space-y-0.5">
-              {/* 1. Home */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('home')}
-                aria-current={isHomeActive ? 'page' : undefined}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                  isHomeActive
-                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Home className="w-4 h-4 shrink-0" />
-                  <span>Home</span>
-                </span>
+        <nav className="pi-primary-nav" aria-label="Workspaces and tools">
+          <div className="pi-sb-group">
+            <p className="pi-sb-heading">Workspaces</p>
+            <div className="pi-sb-list">
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab('home')} aria-current={isHomeActive ? 'page' : undefined}>
+                <Home aria-hidden="true" /><span className="pi-sb-label">Home</span>
               </button>
-
-              {/* 2. Agencies */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('queue')}
-                aria-current={isAccountsActive ? 'page' : undefined}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                  isAccountsActive
-                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 shrink-0" />
-                  <span>Agencies</span>
-                </span>
-                {activeAccountName && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white">
-                    360
-                  </span>
-                )}
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab('queue')} aria-current={isAccountsActive ? 'page' : undefined}>
+                <Building2 aria-hidden="true" /><span className="pi-sb-label">Agencies</span>
               </button>
-
-              {/* 3. Opportunities */}
-              <button
-                type="button"
-                onClick={() => setActiveTab(isOpportunities ? activeTab : 'contracts')}
-                aria-current={isOpportunitiesActive ? 'page' : undefined}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                  isOpportunitiesActive
-                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 shrink-0" />
-                <span className="truncate">Opportunities</span>
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isOpportunities ? activeTab : 'contracts')} aria-current={isOpportunitiesActive ? 'page' : undefined}>
+                <TrendingUp aria-hidden="true" /><span className="pi-sb-label">Opportunities</span>
               </button>
-
-              {/* 4. Territory Explorer */}
-              <div
-                className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
-                  isTerritoryActive
-                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(isTerritory ? activeTab : 'states_directory')}
-                  aria-current={isTerritoryActive ? 'page' : undefined}
-                  className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
-                >
-                  <Globe className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Territory</span>
-                </button>
-                {globalState !== 'all' && (
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 mr-2 rounded bg-[#172D49] text-blue-300">
-                    {globalState}
-                  </span>
-                )}
-              </div>
-
-              {/* 5. Field Work */}
-              <div
-                className={`w-full flex items-center justify-between rounded-lg text-[13px] font-medium transition-colors ${
-                  isMyWorkActive
-                    ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                    : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(isMyWorkTab ? activeTab : 'field')}
-                  aria-current={isMyWorkActive ? 'page' : undefined}
-                  className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left cursor-pointer focus:outline-none min-w-0"
-                >
-                  <Briefcase className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Field Work</span>
-                </button>
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isTerritory ? activeTab : 'states_directory')} aria-current={isTerritoryActive ? 'page' : undefined}>
+                <Globe aria-hidden="true" /><span className="pi-sb-label">Territory</span>
+                {globalState !== 'all' && <span className="pi-sb-badge" aria-label={`State ${globalState}`}>{globalState}</span>}
+              </button>
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isMyWorkTab ? activeTab : 'field')} aria-current={isMyWorkActive ? 'page' : undefined}>
+                <Briefcase aria-hidden="true" /><span className="pi-sb-label">Field Work</span>
                 {dayRouteCount > 0 && (
-                  <span aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`} className="text-xs font-semibold pi-data-number px-1.5 py-0.5 mr-2 rounded bg-[#172D49] text-slate-200">
-                    {dayRouteCount}
-                  </span>
+                  <span className="pi-sb-badge" aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>
                 )}
-              </div>
+              </button>
             </div>
           </div>
 
-          {/* Lower-frequency specialist and system tools stay separate from daily workspaces. */}
-          <div>
-            <div className="text-xs font-medium text-slate-400 px-2.5 mb-1.5">
-              Tools
-            </div>
-            <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => setActiveTab(isSpecialist ? activeTab : 'knowledge')}
-              aria-current={isSpecialistActive ? 'page' : undefined}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                isSpecialistActive
-                  ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                  : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-              }`}
-            >
-              <Database className="w-4 h-4 shrink-0" />
-              <span className="truncate">Specialist tools</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab(isSystem ? activeTab : 'data_health')}
-              aria-current={isSystemActive ? 'page' : undefined}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
-                isSystemActive
-                  ? 'bg-[#285EE8] text-white font-semibold shadow-2xs'
-                  : 'text-slate-300 hover:bg-[#172D49] hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span className="truncate">Data &amp; system</span>
-            </button>
+          <div className="pi-sb-group">
+            <p className="pi-sb-heading">Tools</p>
+            <div className="pi-sb-list">
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isSpecialist ? activeTab : 'knowledge')} aria-current={isSpecialistActive ? 'page' : undefined}>
+                <Database aria-hidden="true" /><span className="pi-sb-label">Specialist tools</span>
+              </button>
+              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isSystem ? activeTab : 'data_health')} aria-current={isSystemActive ? 'page' : undefined}>
+                <ShieldCheck aria-hidden="true" /><span className="pi-sb-label">Data &amp; system</span>
+              </button>
             </div>
           </div>
         </nav>
 
-        {/* Desktop command actions live in the sidebar instead of a separate top row. */}
-        <div className="pi-sidebar-quick-actions px-3 pb-3 space-y-2 shrink-0">
+        <div className="pi-sidebar-quick-actions">
           {hasActiveGeography && (
-            <div className="flex min-w-0 items-center gap-1.5 rounded-lg border border-[#233B5E] bg-[#101F34] px-2 py-1.5 text-[10px] text-slate-300">
-              <MapPin className="h-3 w-3 shrink-0 text-blue-300" />
-              <span className="min-w-0 flex-1 truncate" title={`${globalState !== 'all' ? globalState : 'US'}${globalCounty !== 'all' ? ` · ${globalCounty}` : ''}${globalCity !== 'all' ? ` · ${globalCity}` : ''}`}>
+            <div className="pi-sb-geo pi-sb-wide">
+              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 truncate" title={`${globalState !== 'all' ? globalState : 'US'}${globalCounty !== 'all' ? ` · ${globalCounty}` : ''}${globalCity !== 'all' ? ` · ${globalCity}` : ''}`}>
                 {globalState !== 'all' ? globalState : 'US'}
                 {globalCounty !== 'all' ? ` · ${globalCounty}` : ''}
                 {globalCity !== 'all' ? ` · ${globalCity}` : ''}
               </span>
               {onClearGeography && (
-                <button
-                  type="button"
-                  onClick={onClearGeography}
-                  className="shrink-0 text-blue-300 hover:text-white"
-                  title="Reset geography filter"
-                >
-                  Reset
-                </button>
+                <button type="button" onClick={onClearGeography} title="Reset geography filter">Reset</button>
               )}
             </div>
           )}
@@ -446,10 +316,10 @@ export const TopBar: React.FC<TopBarProps> = ({
               type="button"
               onClick={triggerManualSync}
               disabled={!isOnline || isSyncing}
-              className="flex h-8 w-full items-center gap-2 rounded-lg border border-amber-800 bg-amber-950/40 px-2.5 text-[11px] font-medium text-amber-200 hover:bg-amber-900/50 disabled:opacity-50"
+              className="pi-sb-tool pi-sb-tool--warn pi-sb-wide disabled:opacity-50"
               aria-label={`${pendingSyncCount} pending sync items${!isOnline ? ', offline' : ''}`}
             >
-              <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={isSyncing ? 'animate-spin' : ''} aria-hidden="true" />
               <span className="truncate">{isSyncing ? 'Syncing…' : `Sync ${pendingSyncCount} pending`}</span>
             </button>
           )}
@@ -458,12 +328,12 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               type="button"
               onClick={openCommandPalette}
-              className="flex h-8 w-full items-center gap-2 rounded-lg border border-[#233B5E] bg-[#101F34] px-2.5 text-[11px] font-medium text-slate-200 hover:bg-[#172D49]"
-              title="Search agencies, cities, ZIP codes, or NPIs"
+              className="pi-sb-tool"
+              title="Search agencies, cities, ZIP codes, or NPIs (Cmd/Ctrl+K)"
             >
-              <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span className="min-w-0 flex-1 truncate text-left">Search</span>
-              <kbd className="rounded border border-[#344B68] px-1 text-[9px] text-slate-400">⌘K</kbd>
+              <Search aria-hidden="true" />
+              <span>Search</span>
+              <kbd className="pi-sb-kbd">⌘K</kbd>
             </button>
           )}
 
@@ -471,44 +341,41 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               type="button"
               onClick={openChatbot}
-              className="flex h-8 w-full items-center gap-2 rounded-lg border border-blue-800/80 bg-blue-950/45 px-2.5 text-[11px] font-semibold text-blue-200 hover:bg-blue-900/60"
+              className="pi-sb-tool pi-sb-tool--accent"
               title="Open Territory Strategy AI"
+              aria-label="Open Strategy AI"
             >
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-blue-300" />
-              <span className="pi-sidebar-long-label truncate">Strategy AI</span>
-              <span className="pi-sidebar-short-label">AI</span>
+              <Sparkles aria-hidden="true" />
+              <span>Strategy AI</span>
             </button>
           )}
 
-          <div className="grid grid-cols-1 gap-1.5">
-            <ThemeModeSelect
-              controlId="theme-select-desktop"
-              testId="theme-select-desktop"
-              themeMode={themeMode}
-              onChange={onThemeModeChange}
-            />
-          </div>
+          <ThemeModeSelect
+            controlId="theme-select-desktop"
+            testId="theme-select-desktop"
+            themeMode={themeMode}
+            onChange={onThemeModeChange}
+          />
 
           <div className="relative" ref={desktopUtilityRef}>
             <button
               type="button"
               onClick={() => setIsUtilityMenuOpen((prev) => !prev)}
-              className="flex h-8 w-full items-center gap-2 rounded-lg border border-[#233B5E] bg-[#101F34] px-2.5 text-[11px] font-medium text-slate-300 hover:bg-[#172D49]"
+              className="pi-sb-tool"
               title="Help and sources"
               aria-label="Help and sources"
               aria-expanded={isUtilityMenuOpen}
             >
-              <CircleHelp className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span className="pi-sidebar-long-label min-w-0 flex-1 truncate text-left">Help &amp; sources</span>
-              <span className="pi-sidebar-short-label min-w-0 flex-1 truncate text-left">Help</span>
-              <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
+              <CircleHelp aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate text-left">Help</span>
+              <ChevronDown className="h-3 w-3" aria-hidden="true" />
             </button>
             {isUtilityMenuOpen && (
-              <div className="absolute bottom-full right-0 z-[60] mb-2 w-56 rounded-xl border border-[#DFE6EF] bg-white py-2 text-xs shadow-xl dark:border-[#1E2D42] dark:bg-[#111C2D]">
-                <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
+              <div className="pi-sb-utility-menu absolute bottom-full right-0 z-[60] mb-2 w-[12.5rem] max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-[#DFE6EF] bg-white py-2 text-sm shadow-xl dark:border-[#1E2D42] dark:bg-[#111C2D]">
+                <div className="px-3 pb-1.5 text-xs font-semibold text-[#53657B] dark:text-slate-400">
                   Help &amp; sources
                 </div>
-                <div className="space-y-0.5 px-2 pt-1">
+                <div className="space-y-0.5 px-2">
                   {onToggleGuide && (
                     <button
                       type="button"
@@ -539,7 +406,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                       {showInstallHelp && (
                         <p
                           id="install-pwa-help-desktop"
-                          className="mx-2.5 rounded-md bg-[#F5F7FA] px-2.5 py-2 text-[11px] leading-relaxed text-[#53657B] dark:bg-[#16243A] dark:text-slate-300"
+                          className="mx-2.5 rounded-md bg-[#F5F7FA] px-2.5 py-2 text-xs leading-relaxed text-[#53657B] dark:bg-[#16243A] dark:text-slate-300"
                           role="status"
                           aria-live="polite"
                         >
@@ -567,17 +434,8 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {!isOnline && (
-          <div className="p-3 border-t border-[#172D49] bg-[#091322] shrink-0">
-            <div
-              className="flex items-center gap-2 rounded-lg border border-amber-800 bg-amber-950/40 px-2.5 py-2 text-[10px] text-amber-200"
-              role="status"
-              aria-live="polite"
-            >
-              <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-              <span className="font-medium">
-                Offline: local changes stay on this device until sync resumes.
-              </span>
-            </div>
+          <div className="pi-sb-offline" role="status" aria-live="polite">
+            Offline: local changes stay on this device until sync resumes.
           </div>
         )}
       </aside>

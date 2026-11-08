@@ -212,7 +212,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Primary left sidebar — desktop */}
       <aside
         aria-label="Primary Workspace Navigation"
-        className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
+        className="pi-primary-sidebar hidden md:flex flex-col fixed top-0 left-0 bottom-0 bg-[#0B1728] text-slate-200 border-r border-[#172D49] z-50 select-none"
       >
         {/* Compact identity keeps the workspace navigation immediately in view. */}
         <div className="px-4 py-3 flex items-center justify-center border-b border-[#172D49] shrink-0">

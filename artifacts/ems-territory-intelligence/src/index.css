@@ -26,14 +26,14 @@
   --color-ring: var(--pi-focus-ring);
 }
 
-/* ============================================================================
+/* ----------------------------------------------------------------------------
    PRECISION INTELLIGENCE — SEMANTIC DESIGN TOKENS
    Shared contract:
    - One canvas/surface/text/border/action palette for every workspace
    - Teal is the shared action and selection color
    - Green, amber, and red are reserved for semantic status
    - Map encodings retain their source-specific legend colors
-   ============================================================================ */
+   ---------------------------------------------------------------------------- */
 :root {
   /* Single source of truth for the shared app theme. */
   --font-display: 'Manrope Variable', 'Manrope', sans-serif;
@@ -299,7 +299,7 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   }
 }
 
-/* ============================================================================
+/* ----------------------------------------------------------------------------
    PRECISION INTELLIGENCE TYPOGRAPHY SCALE (Section 2)
    - Page title: 30–34px, weight 650 (Manrope Variable)
    - Agency/profile title: 26–30px, weight 650 (Manrope Variable)
@@ -312,7 +312,7 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
    - Buttons: 14px, weight 550–600 (Geist Variable)
    - Important numerical value: 24–28px, weight 600–650 (Geist Variable)
    - Standard financial/table value: 14–16px, weight 500–600 (Geist Variable)
-   ============================================================================ */
+   ---------------------------------------------------------------------------- */
 .pi-page-title {
   font-family: var(--font-display);
   font-size: clamp(1.875rem, 2.3vw, 2.125rem); /* 30px -> 34px */
@@ -374,10 +374,10 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   color: var(--pi-text-secondary);
 }
 
-/* ============================================================================
+/* ----------------------------------------------------------------------------
    PRECISION INTELLIGENCE GLOBAL NUMERICAL DATA TYPOGRAPHY SYSTEM
    Using Inter Variable with OpenType lining and tabular figures.
-   ============================================================================ */
+   ---------------------------------------------------------------------------- */
 .pi-data-number {
   font-family: var(--pi-font-data);
   font-variant-numeric: lining-nums tabular-nums;
@@ -487,9 +487,9 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   font-variant-numeric: tabular-nums;
 }
 
-/* ============================================================================
+/* ----------------------------------------------------------------------------
    UNIFIED SURFACE & LAYOUT PRIMITIVES
-   ============================================================================ */
+   ---------------------------------------------------------------------------- */
 .pi-surface {
   background-color: var(--pi-surface-bg);
   border: 1px solid var(--pi-border);
@@ -861,23 +861,14 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   }
 }
 
-/* ==========================================================================
+/* --------------------------------------------------------------------------
    TERRITORY WORKSPACE — LAPTOP DENSITY PASS
    Compact, editorially quiet surfaces; preserve content and interaction area.
    Layout paradigm: evidence-first workspace. Mood: field-briefing precision.
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 @media (min-width: 768px) {
-  .pi-primary-sidebar {
-    width: 13rem !important;
-  }
-
   .pi-command-header {
-    padding-left: 13rem !important;
     height: 3.5rem !important;
-  }
-
-  .pi-workspace-body {
-    padding-left: 13rem !important;
   }
 
   .pi-sidebar-logo {
@@ -1018,15 +1009,6 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
 }
 
 @media (min-width: 1024px) and (max-height: 900px) {
-  .pi-primary-sidebar {
-    width: 11.75rem !important;
-  }
-
-  .pi-command-header,
-  .pi-workspace-body {
-    padding-left: 11.75rem !important;
-  }
-
   .pi-command-header {
     height: 3.25rem !important;
   }
@@ -1123,20 +1105,6 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   }
 }
 
-@media (min-width: 768px) and (max-width: 1100px) {
-  .pi-primary-sidebar {
-    width: 13rem !important;
-  }
-
-  .pi-command-header {
-    padding-left: 13rem !important;
-  }
-
-  .pi-workspace-body {
-    padding-left: 13rem !important;
-  }
-}
-
 @media (min-width: 768px) and (max-height: 820px) {
   .pi-sidebar-logo {
     width: 9rem;
@@ -1148,11 +1116,11 @@ html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before
   }
 }
 
-/* ==========================================================================
+/* --------------------------------------------------------------------------
    TERRITORY INTELLIGENCE — SHARED WORKSPACE FINISH
    Evidence-first layout / field-briefing precision.
    The map surface and brand mark remain intentionally untouched.
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
@@ -1586,18 +1554,6 @@ textarea:disabled {
 }
 
 @media (min-width: 1024px) and (max-height: 820px) {
-  .pi-primary-sidebar {
-    width: 12rem !important;
-  }
-
-  .pi-command-header {
-    padding-left: 12rem !important;
-  }
-
-  .pi-workspace-body {
-    padding-left: 12rem !important;
-  }
-
   .workspace-grid-shell {
     padding: 0.5rem 0.75rem 0.75rem !important;
   }
@@ -3771,11 +3727,11 @@ textarea:disabled {
   }
 }
 
-/* ==========================================================================
+/* --------------------------------------------------------------------------
    TERRITORY INTELLIGENCE — responsive design-system finish
    Layout: compact command workspace. Mood: field-briefing precision.
    Scoped to the existing app shell and map; no data or map semantics altered.
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 html {
   min-height: 100%;
   scroll-padding-top: 4rem;
@@ -3845,7 +3801,6 @@ body {
 }
 
 .pi-primary-sidebar {
-  width: 12rem !important;
   background: #0b1a29;
   border-color: #1b3445;
 }
@@ -3860,21 +3815,8 @@ body {
   border-width: 1px !important;
 }
 
-.pi-primary-nav {
-  gap: 0.8rem !important;
-}
-
-.pi-primary-nav button {
-  min-height: 2.35rem;
-}
-
 .pi-command-header {
-  padding-left: 12rem !important;
   height: 3.35rem !important;
-}
-
-.pi-workspace-body {
-  padding-left: 12rem !important;
 }
 
 .pi-command-header,
@@ -3951,15 +3893,6 @@ body {
 }
 
 @media (min-width: 768px) and (max-height: 820px) {
-  .pi-primary-sidebar {
-    width: 11.5rem !important;
-  }
-
-  .pi-command-header,
-  .pi-workspace-body {
-    padding-left: 11.5rem !important;
-  }
-
   .pi-command-header {
     height: 3rem !important;
   }
@@ -5108,11 +5041,11 @@ body {
   color: #a5b8b7 !important;
 }
 
-/* ==========================================================================
+/* --------------------------------------------------------------------------
    AGENCY RECORD SURFACES — field atlas / evidence-first briefing
    Teal identifies EMS, ember identifies fire, and planning figures remain
    visually subordinate to reported operational records.
-   ========================================================================== */
+   -------------------------------------------------------------------------- */
 .agency-directory-card {
   --agency-accent: #176568;
   border-radius: 0.8rem !important;
@@ -5822,7 +5755,6 @@ button { -webkit-tap-highlight-color: transparent; }
 
 /* Desktop navigation is a light reference rail, not a second dark canvas. */
 .pi-primary-sidebar {
-  width: 13rem !important;
   background: #f7f8f5 !important;
   color: #344b48 !important;
   border-color: #dbe2dd !important;
@@ -6037,14 +5969,6 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .home-map-viewport { border-radius: 0.55rem !important; }
 
-@media (min-width: 768px) {
-  .pi-primary-sidebar { width: 13rem !important; }
-  .pi-command-header, .pi-workspace-body { padding-left: 13rem !important; }
-}
-@media (min-width: 1024px) and (max-height: 900px) {
-  .pi-primary-sidebar { width: 12rem !important; }
-  .pi-command-header, .pi-workspace-body { padding-left: 12rem !important; }
-}
 @media (max-width: 767px) {
   .workspace-grid-shell { padding: 0.7rem 0.7rem max(5.5rem, env(safe-area-inset-bottom)) !important; }
   .home-territory-map-screen-v2 { padding: 0.7rem !important; }
@@ -6290,8 +6214,6 @@ button { -webkit-tap-highlight-color: transparent; }
   min-height: 0;
   gap: 0.65rem !important;
   padding: 0.5rem 0.7rem !important;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 
 .pi-primary-nav > div > div:first-child {
@@ -6407,10 +6329,6 @@ button { -webkit-tap-highlight-color: transparent; }
     padding-bottom: 0.85rem !important;
   }
 
-  .provider-profile-overlay {
-    left: 13rem !important;
-  }
-
   .agency-lead-cards-grid > div {
     padding: 0.85rem !important;
     gap: 0.5rem !important;
@@ -6477,18 +6395,8 @@ button { -webkit-tap-highlight-color: transparent; }
     padding: 0.45rem 0.65rem !important;
   }
 
-  .provider-profile-overlay {
-    left: 13rem !important;
-  }
-
   .profile-workspace > div:last-of-type {
     padding-inline: 1rem !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 900px) {
-  .provider-profile-overlay {
-    left: 12rem !important;
   }
 }
 
@@ -6632,7 +6540,6 @@ button { -webkit-tap-highlight-color: transparent; }
     flex: 0 1 auto !important;
     flex-direction: column;
     min-height: 0;
-    max-height: min(42vh, 24rem);
     gap: 0.65rem !important;
     padding-block: 0.45rem 0.25rem !important;
   }
@@ -6685,21 +6592,8 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 
   .pi-primary-nav {
-    max-height: none;
     gap: 0.4rem !important;
     padding-block: 0.25rem 0.1rem !important;
-    scrollbar-width: thin;
-    scrollbar-color: #aebbb5 transparent;
-  }
-
-  .pi-primary-nav::-webkit-scrollbar {
-    display: block;
-    width: 4px;
-  }
-
-  .pi-primary-nav::-webkit-scrollbar-thumb {
-    border-radius: 4px;
-    background: #aebbb5;
   }
 
   .pi-primary-nav > div > div:last-child {
@@ -7128,7 +7022,6 @@ button { -webkit-tap-highlight-color: transparent; }
     gap: 0.5rem !important;
     padding-top: 0.35rem !important;
     padding-bottom: 0.25rem !important;
-    scrollbar-width: thin;
   }
 
   .pi-primary-nav > div > div:first-child {
@@ -10679,22 +10572,8 @@ body [data-radix-portal] .recharts-default-tooltip {
   color: var(--pi-text-secondary) !important;
 }
 
-/* Keep the desktop navigation readable and the same size across themes.
-   Preserve the existing short-viewport compact mode and leave the logo alone. */
+/* Keep the desktop navigation readable and the same size across themes. */
 @media (min-width: 768px) and (min-height: 601px) {
-  .pi-primary-sidebar {
-    width: 14rem !important;
-  }
-
-  .pi-command-header,
-  .pi-workspace-body {
-    padding-left: 14rem !important;
-  }
-
-  .provider-profile-overlay {
-    left: 14rem !important;
-  }
-
   .pi-primary-nav button {
     min-height: 2.4rem !important;
     padding: 0.4rem 0.6rem !important;
@@ -10908,38 +10787,14 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
   }
 }
 
-/* Desktop navigation uses the sidebar's available height instead of an
-   arbitrary 42vh scrolling window. */
-@media (min-width: 768px) {
-  .pi-primary-nav {
-    flex: 1 1 0% !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-    scrollbar-width: none !important;
-  }
-
-  .pi-primary-nav::-webkit-scrollbar {
-    display: none !important;
-  }
-}
-
 /* Short laptop viewports: keep every sidebar destination visible without a
    nested scroll area. The logo block and mobile navigation remain untouched. */
 @media (min-width: 768px) and (max-height: 700px) {
   .pi-primary-nav {
     flex: 1 1 0% !important;
     min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overscroll-behavior: auto;
-    scrollbar-width: none !important;
     gap: 0.22rem !important;
     padding: 0.1rem 0.55rem !important;
-  }
-
-  .pi-primary-nav::-webkit-scrollbar {
-    display: none !important;
   }
 
   .pi-primary-nav > div + div {
@@ -11017,5 +10872,68 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
 
   .pi-sidebar-quick-actions kbd {
     display: none !important;
+  }
+}
+
+/* Desktop sidebar layout contract.
+   Keep sidebar width, content offsets, and navigation overflow breakpoints
+   together; theme colors and logo presentation remain owned by their rules. */
+@media (min-width: 768px) {
+  .pi-primary-sidebar {
+    width: 14rem !important;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 14rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 14rem !important;
+  }
+
+  .pi-primary-nav {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overscroll-behavior: auto;
+    scrollbar-width: none !important;
+  }
+
+  .pi-primary-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 600px) {
+  .pi-primary-sidebar {
+    width: 13rem !important;
+    overflow: hidden;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 13rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 13rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) and (max-height: 600px) {
+  .pi-primary-sidebar {
+    width: 12rem !important;
+  }
+
+  .pi-command-header,
+  .pi-workspace-body {
+    padding-left: 12rem !important;
+  }
+
+  .provider-profile-overlay {
+    left: 12rem !important;
   }
 }

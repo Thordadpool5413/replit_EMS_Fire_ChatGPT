@@ -349,6 +349,8 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
     const body = document.body;
     const sidebar = document.querySelector('.pi-primary-sidebar');
     const primaryNav = sidebar?.querySelector('.pi-primary-nav');
+    const commandHeader = document.querySelector('.pi-command-header');
+    const workspaceBody = document.querySelector('.pi-workspace-body');
     const logo = sidebar?.querySelector('.pi-sidebar-logo');
     const logoImage = logo?.querySelector('img');
     const logoHeader = sidebar?.querySelector(':scope > div:first-child');
@@ -420,6 +422,11 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
         scrollWidth: sidebar.scrollWidth,
         visible: getComputedStyle(sidebar).display !== 'none',
       } : null,
+      sidebarOffsets: {
+        rootFontSize: Number.parseFloat(getComputedStyle(root).fontSize),
+        header: Number.parseFloat(getComputedStyle(commandHeader).paddingLeft),
+        workspace: Number.parseFloat(getComputedStyle(workspaceBody).paddingLeft),
+      },
       logo: logo && logoImage && logoRect && logoHeaderRect ? {
         src: logoImage.currentSrc,
         naturalWidth: logoImage.naturalWidth,
@@ -456,6 +463,15 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
     pageLayout.sidebar.width > 0 &&
       pageLayout.sidebar.scrollWidth <= pageLayout.sidebar.clientWidth + 1,
     `Desktop sidebar overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.sidebar)}`,
+  );
+  assert(
+    Math.abs(pageLayout.sidebar.width - pageLayout.sidebarOffsets.rootFontSize * 14) < 0.1 &&
+      Math.abs(pageLayout.sidebarOffsets.header - pageLayout.sidebar.width) < 0.1 &&
+      Math.abs(pageLayout.sidebarOffsets.workspace - pageLayout.sidebar.width) < 0.1,
+    `Desktop sidebar width and content offsets disagree at ${viewport.width}px: ${JSON.stringify({
+      sidebar: pageLayout.sidebar,
+      offsets: pageLayout.sidebarOffsets,
+    })}`,
   );
   assert(
     pageLayout.logo?.src.includes('nicks_ems_logo_1792367124466.jpg') &&
@@ -846,6 +862,55 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
 }
 
 async function checkSharedNavigation(cdp) {
+  for (const viewport of [
+    { width: 844, height: 560, mobile: false },
+    { width: 1024, height: 560, mobile: false },
+  ]) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await cdp.send('Page.navigate', { url: baseUrl });
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('.pi-primary-sidebar .pi-primary-nav'))`,
+      `compact desktop navigation at ${viewport.width}px`,
+      60_000,
+    );
+    await evaluate(cdp, `new Promise((resolve) => requestAnimationFrame(() =>
+      requestAnimationFrame(resolve)))`);
+    const layout = await evaluate(cdp, `(() => {
+      const root = document.documentElement;
+      const sidebar = document.querySelector('.pi-primary-sidebar');
+      const nav = sidebar?.querySelector('.pi-primary-nav');
+      const header = document.querySelector('.pi-command-header');
+      const workspace = document.querySelector('.pi-workspace-body');
+      return {
+        rootFontSize: Number.parseFloat(getComputedStyle(root).fontSize),
+        sidebarWidth: sidebar?.getBoundingClientRect().width,
+        headerOffset: Number.parseFloat(getComputedStyle(header).paddingLeft),
+        workspaceOffset: Number.parseFloat(getComputedStyle(workspace).paddingLeft),
+        sidebarOverflow: getComputedStyle(sidebar).overflowY,
+        navOverflow: getComputedStyle(nav).overflowY,
+        navMaxHeight: getComputedStyle(nav).maxHeight,
+      };
+    })()`);
+    const expectedWidth = viewport.width >= 1024 ? 12 : 13;
+    assert(
+      layout &&
+        Math.abs(layout.sidebarWidth - layout.rootFontSize * expectedWidth) < 0.1 &&
+        Math.abs(layout.headerOffset - layout.sidebarWidth) < 0.1 &&
+        Math.abs(layout.workspaceOffset - layout.sidebarWidth) < 0.1 &&
+        layout.sidebarOverflow === 'hidden' &&
+        layout.navOverflow === 'visible' &&
+        layout.navMaxHeight === 'none',
+      `Compact desktop sidebar sizing or overflow is inconsistent at ${viewport.width}×${viewport.height}px: ${JSON.stringify(layout)}`,
+    );
+    console.log(`✓ ${viewport.width}×${viewport.height}px: compact desktop sidebar width, offsets, and overflow`);
+  }
+
   for (const viewport of sharedNavigationDesktopViewports) {
     await cdp.send('Emulation.setDeviceMetricsOverride', {
       width: viewport.width,

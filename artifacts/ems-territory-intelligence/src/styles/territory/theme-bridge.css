@@ -1,0 +1,68 @@
+/* Owner: territory. Cascade phase: theme-bridge. See ../README.md. */
+.agency-directory-card {
+  background-color: var(--pi-surface-bg);
+  border-color: var(--pi-border);
+  box-shadow: var(--shadow-card);
+}
+
+.agency-directory-card:hover {
+  border-color: var(--pi-border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.territory-explorer-screen {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  --atlas-teal: var(--pi-action);
+  --briefing-line: var(--pi-border);
+  --briefing-paper: var(--pi-surface-bg);
+  --briefing-wash: var(--pi-surface-subtle);
+}
+
+.territory-explorer-screen .county-directory-heading > span {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-secondary) !important;
+}
+
+.territory-explorer-screen .agency-directory-card {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-bg) !important;
+  background-image: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.territory-explorer-screen .agency-directory-card h3 {
+  color: var(--pi-text-primary) !important;
+}
+
+.dark .territory-explorer-screen .agency-directory-card h3 {
+  color: var(--pi-text-primary) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-identity-strip,
+.territory-explorer-screen .agency-directory-card .agency-card-footer {
+  border-color: var(--pi-border) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-metric-grid > div,
+.territory-explorer-screen .agency-directory-card .agency-context-panel {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-primary);
+}
+
+.territory-explorer-screen .agency-directory-card .agency-metric-grid > div > span:first-child {
+  color: var(--pi-text-secondary) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-card-primary-action {
+  background: var(--pi-action) !important;
+}
+
+.territory-explorer-screen .agency-directory-card .agency-card-primary-action:hover {
+  background: var(--pi-action-hover) !important;
+}

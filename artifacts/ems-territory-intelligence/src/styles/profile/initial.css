@@ -1,0 +1,359 @@
+/* Owner: profile. Cascade phase: initial. See ../README.md. */
+.profile-workspace {
+  scroll-padding-top: 7rem;
+}
+
+.profile-workspace .pi-surface {
+  border-radius: 0.9rem;
+}
+
+.profile-workspace section {
+  scroll-margin-top: 7rem;
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] {
+  box-shadow: 0 8px 24px -20px rgba(20, 40, 63, 0.35);
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+  min-height: 2.5rem;
+}
+
+.profile-workspace .pi-profile-title,
+.profile-workspace .pi-page-title {
+  overflow-wrap: anywhere;
+}
+
+.profile-workspace .pi-meta {
+  color: var(--pi-text-secondary);
+}
+
+@media (max-width: 767px) {
+  .profile-workspace {
+    padding-bottom: max(6rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] {
+    margin-inline: -0.25rem;
+    width: calc(100% + 0.5rem);
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+
+  .profile-workspace .pi-profile-title,
+.profile-workspace .pi-page-title {
+    font-size: clamp(1.45rem, 1.8vw, 1.75rem);
+  }
+}
+
+.profile-workspace {
+  --atlas-ink: #183246;
+  --atlas-muted: #657987;
+  --atlas-line: #d9e3e4;
+  --atlas-paper: #fbfcf8;
+  --atlas-wash: #f0f5f2;
+  --atlas-teal: #176b68;
+}
+
+.profile-workspace > header {
+  border-color: var(--atlas-line) !important;
+  background: color-mix(in srgb, var(--atlas-paper) 95%, transparent) !important;
+  box-shadow: 0 7px 22px -20px rgba(24, 50, 70, .6) !important;
+}
+
+.profile-workspace > header > div {
+  max-width: 1720px;
+}
+
+.profile-workspace > div > section:first-child {
+  border-color: var(--atlas-line);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(125deg, rgba(232, 242, 235, .7), transparent 40%),
+    var(--atlas-paper);
+  box-shadow: 0 12px 32px -28px rgba(24, 50, 70, .55);
+}
+
+.profile-workspace .pi-page-title,
+.profile-workspace .pi-profile-title {
+  color: var(--atlas-ink) !important;
+  letter-spacing: -.045em;
+}
+
+.profile-workspace .pi-surface {
+  border-color: var(--atlas-line);
+  box-shadow: 0 8px 24px -22px rgba(24, 50, 70, .55);
+}
+
+.profile-workspace section[class*="rounded-xl"][class*="border"],
+.profile-workspace section[class*="rounded-lg"][class*="border"] {
+  border-color: var(--atlas-line) !important;
+  border-radius: .9rem;
+}
+
+.profile-workspace section[class*="bg-white"],
+.profile-workspace section[class*="bg-slate-50"] {
+  background-color: var(--atlas-paper) !important;
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] {
+  border-color: var(--atlas-line) !important;
+  background: color-mix(in srgb, var(--atlas-paper) 96%, transparent) !important;
+}
+
+.profile-evidence-tag {
+  border: 1px solid #d8e4e1;
+  border-radius: 999px !important;
+  background: #eef4f1 !important;
+  color: #47615f !important;
+  font-weight: 600 !important;
+}
+
+.profile-workspace [aria-label="Agency contact summary"],
+.profile-workspace [aria-label="Agency location summary"],
+.profile-workspace [aria-label="Agency evidence summary"] {
+  border-color: var(--atlas-line) !important;
+  background: var(--atlas-wash) !important;
+}
+
+.dark .profile-workspace > div > section:first-child {
+  background:
+    linear-gradient(125deg, rgba(37, 81, 79, .2), transparent 45%),
+    #142832;
+}
+
+.dark .profile-workspace .pi-page-title,
+.dark .profile-workspace .pi-profile-title {
+  color: #e5efed !important;
+}
+
+.dark .profile-workspace section[class*="bg-white"],
+.dark .profile-workspace section[class*="bg-slate-50"] {
+  background-color: #192f39 !important;
+}
+
+.dark .profile-evidence-tag {
+  border-color: #36504f;
+  background: #203a3b !important;
+  color: #c0d5d0 !important;
+}
+
+.profile-workspace .profile-not-reported {
+  border-color: var(--atlas-line);
+  background: var(--atlas-wash);
+  color: var(--atlas-muted);
+}
+
+.dark .profile-workspace {
+  --atlas-ink: #e5efed;
+  --atlas-muted: #a5b8b7;
+  --atlas-line: #2b434d;
+  --atlas-paper: #142832;
+  --atlas-wash: #1a333b;
+  --atlas-teal: #70c5b4;
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace > div > section:first-child {
+    border-radius: .95rem;
+  }
+}
+
+.profile-workspace {
+  --briefing-line: #d7e2df;
+  --briefing-paper: #fbfcf8;
+  --briefing-wash: #f0f5f2;
+}
+
+.profile-workspace > header {
+  min-height: 3.35rem !important;
+  padding-block: .35rem !important;
+}
+
+.profile-workspace > header > div {
+  max-width: 1580px;
+}
+
+.profile-workspace .profile-action-dock {
+  z-index: 29;
+  justify-content: flex-end;
+  max-width: 1580px;
+  width: 100%;
+  margin-inline: auto;
+  padding: .35rem clamp(.75rem, 1.6vw, 1.5rem) !important;
+  border-color: var(--briefing-line);
+  background: color-mix(in srgb, var(--pi-canvas-bg) 95%, transparent);
+}
+
+.profile-workspace > div:last-of-type {
+  max-width: 1580px !important;
+  padding-top: .65rem !important;
+  padding-bottom: 1rem !important;
+  row-gap: .75rem !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child {
+  padding: .95rem !important;
+  gap: .8rem !important;
+  border-radius: .85rem;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--pi-action-subtle) 45%, transparent), transparent 38%),
+    var(--briefing-paper) !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child > div:first-child {
+  gap: .75rem !important;
+  padding-bottom: .75rem !important;
+}
+
+.profile-workspace .profile-executive-header .pi-page-title {
+  font-size: clamp(1.35rem, 1.7vw, 1.75rem) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.035em !important;
+}
+
+.profile-workspace .profile-summary-grid {
+  gap: .55rem !important;
+}
+
+.profile-workspace .profile-summary-panel {
+  padding: .65rem !important;
+  line-height: 1.4;
+}
+
+.profile-workspace .profile-summary-panel h2 {
+  margin-bottom: .2rem;
+  font-size: .66rem;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.profile-workspace .profile-review-strip {
+  border-color: var(--briefing-line) !important;
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] {
+  top: 3.35rem !important;
+  min-height: 2.65rem;
+  padding: .22rem !important;
+  box-shadow: 0 5px 16px -14px rgba(24, 50, 70, .55);
+}
+
+.profile-workspace [aria-label="Account 360 Topic Navigation"] button {
+  min-height: 2.15rem !important;
+  padding: .45rem .65rem !important;
+  font-size: .69rem !important;
+}
+
+.profile-workspace details > summary {
+  letter-spacing: -.005em;
+}
+
+.profile-workspace .pi-surface,
+.profile-workspace section[class*="rounded-lg"][class*="border"],
+.profile-workspace section[class*="rounded-xl"][class*="border"] {
+  border-color: var(--briefing-line) !important;
+}
+
+.dark .profile-workspace {
+  --briefing-line: #2b434d;
+  --briefing-paper: #142832;
+  --briefing-wash: #1a333b;
+}
+
+.dark .profile-workspace > div:last-of-type > section:first-child {
+  background:
+    linear-gradient(110deg, rgba(54, 112, 106, .14), transparent 42%),
+    var(--briefing-paper) !important;
+}
+
+@media (min-width: 768px) {
+  .profile-workspace .profile-summary-panel a,
+.profile-workspace .profile-summary-panel button {
+    min-height: 1.8rem;
+  }
+}
+
+@media (min-width: 768px) {
+
+  .profile-workspace .profile-summary-panel p {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 768px) {
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] > div.hidden.md\:flex {
+    gap: .18rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .profile-workspace {
+    --briefing-paper: #fbfcf8;
+    padding-bottom: max(6rem, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace > header {
+    padding: .5rem .75rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace .profile-action-dock {
+    position: sticky;
+    top: calc(5.5rem + env(safe-area-inset-top));
+    z-index: 35;
+    justify-content: flex-start;
+    padding-inline: .7rem !important;
+    width: 100%;
+    margin-inline: 0;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace .profile-action-dock button,
+.profile-workspace .profile-action-dock [data-testid="agency-compare-button"] {
+    min-height: 2.75rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace > div:last-of-type > section:first-child {
+    padding: .8rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace .profile-summary-panel {
+    padding: .75rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace [aria-label="Account 360 Topic Navigation"] {
+    top: 0 !important;
+  }
+}

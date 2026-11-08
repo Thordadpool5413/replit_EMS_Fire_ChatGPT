@@ -1,0 +1,115 @@
+/* Owner: specialist. Cascade phase: surfaces. See ../README.md. */
+.operations-workspace {
+  min-width: 0;
+  color: var(--pi-text-primary);
+  gap: 0.8rem;
+}
+
+.operations-workspace > .workspace-section-grid,
+.operations-workspace .workspace-section-grid,
+.operations-workspace .workspace-view-container {
+  min-width: 0;
+  gap: 0.8rem;
+}
+
+.operations-workspace h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2vw, 1.8rem);
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--pi-text-primary);
+}
+
+.operations-workspace h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.018em;
+  color: var(--pi-text-primary);
+}
+
+.operations-workspace h3,
+.operations-workspace h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.operations-workspace [class~="bg-white"],
+.operations-workspace [class~="dark:bg-slate-900"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.operations-workspace [class*="bg-slate-50"],
+.operations-workspace [class*="bg-slate-100"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .operations-workspace [class*="dark:bg-slate-800"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.operations-workspace [class*="border-slate-100"],
+.operations-workspace [class*="border-slate-200"],
+.operations-workspace [class*="border-slate-300"],
+.operations-workspace [class*="border-[#E5E4DF]"] {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .operations-workspace [class*="dark:border-slate-700"],
+.dark .operations-workspace [class*="dark:border-slate-800"] {
+  border-color: var(--pi-border) !important;
+}
+
+.operations-workspace [class~="text-slate-900"],
+.operations-workspace [class~="text-[#0F172A]"] {
+  color: var(--pi-text-primary);
+}
+
+.operations-workspace [class*="text-slate-600"],
+.operations-workspace [class*="text-slate-500"] {
+  color: var(--pi-text-secondary);
+}
+
+.operations-workspace [class*="text-slate-400"] {
+  color: var(--pi-text-muted);
+}
+
+.operations-workspace table {
+  min-width: 100%;
+}
+
+.operations-workspace [class*="overflow-x-auto"] {
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.operations-workspace input:not([type="checkbox"]):not([type="radio"]),
+.operations-workspace select,
+.operations-workspace textarea {
+  accent-color: var(--pi-action);
+}
+
+@media (max-width: 767px) {
+  .operations-workspace,
+.operations-workspace > .workspace-view-container,
+.operations-workspace .workspace-section-grid {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .operations-workspace h1 {
+    font-size: clamp(1.35rem, 6vw, 1.65rem);
+  }
+}
+
+@media (max-width: 767px) {
+
+  .operations-workspace [class*="grid-cols-"] {
+    min-width: 0;
+  }
+}
+
+.operations-workspace {
+  min-width: 0;
+}

@@ -1,0 +1,4 @@
+/* Owner: home. Cascade phase: theme-bridge. See ../README.md. */
+.dark .home-territory-map-screen-v2 .home-map-region-filter button[aria-pressed="true"] {
+  color: var(--pi-action-ink) !important;
+}

@@ -1,0 +1,79 @@
+/* Owner: profile. Cascade phase: surfaces. See ../README.md. */
+@media (max-width: 767px) {
+
+  .profile-workspace {
+    min-height: 100% !important;
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace section {
+    scroll-margin-top: calc(10rem + env(safe-area-inset-top));
+  }
+}
+
+.profile-workspace {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-top: calc(8rem + env(safe-area-inset-top));
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-workspace [data-testid="profile-topic-navigation"] {
+    top: calc(9.75rem + env(safe-area-inset-top)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-action-dock {
+    position: sticky;
+    top: calc(5.5rem + env(safe-area-inset-top));
+    z-index: 35;
+    width: calc(100% + 1.5rem);
+    margin: 0 -.75rem .25rem;
+    padding: .45rem .75rem !important;
+    border-bottom: 1px solid var(--pi-border);
+    background: color-mix(in srgb, var(--pi-surface-bg) 96%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 18px -18px rgba(24, 50, 70, .55);
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-action-dock::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-action-dock > button,
+.profile-action-dock [data-testid="agency-compare-button"] {
+    min-height: 2.75rem !important;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 380px) {
+
+  .profile-action-dock {
+    top: calc(5.5rem + env(safe-area-inset-top));
+    gap: .375rem !important;
+    padding-inline: .55rem !important;
+  }
+}

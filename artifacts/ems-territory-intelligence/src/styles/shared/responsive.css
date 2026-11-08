@@ -1,0 +1,197 @@
+/* Owner: shared. Cascade phase: responsive. See ../README.md. */
+html,
+body,
+#root { min-height: 100%; }
+
+body { background: var(--pi-canvas-bg); }
+
+button,
+input,
+select,
+textarea { font: inherit; }
+
+button { -webkit-tap-highlight-color: transparent; }
+
+::selection { background: #b9d5cc; color: #183432; }
+
+.dark ::selection { background: #37625c; color: #f2f7f4; }
+
+.pi-app-shell {
+  background: var(--pi-canvas-bg) !important;
+  background-image:
+    radial-gradient(ellipse at 82% 0%, rgba(94, 145, 128, 0.075), transparent 34rem) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.dark .pi-app-shell {
+  background: var(--pi-canvas-bg) !important;
+  background-image: radial-gradient(ellipse at 82% 0%, rgba(80, 139, 128, 0.11), transparent 34rem) !important;
+}
+
+.pi-workspace-body { min-width: 0; }
+
+.workspace-grid-shell { padding-top: 1rem; padding-bottom: 1.5rem; }
+
+.workspace-view-container,
+.workspace-section-grid { gap: 1rem; }
+
+.workspace-grid-shell > nav {
+  background: color-mix(in srgb, var(--pi-surface-bg) 92%, transparent) !important;
+  border: 1px solid var(--pi-border) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 1px 2px rgba(28, 53, 48, 0.03) !important;
+  backdrop-filter: blur(12px);
+}
+
+.workspace-grid-shell > nav button { min-height: 2.65rem !important; }
+
+.workspace-grid-shell > nav button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-selected="true"] {
+  background-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.dark .workspace-grid-shell > nav button[aria-current="page"],
+.dark .workspace-grid-shell > nav button[aria-selected="true"] { color: #102321 !important; }
+
+:focus-visible {
+  outline: 2px solid #39817b !important;
+  outline-offset: 2px !important;
+}
+
+.dark :focus-visible { outline-color: var(--pi-focus-ring) !important; }
+
+.workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-grid-shell select,
+.workspace-grid-shell textarea {
+  border-color: var(--pi-border-strong);
+  border-radius: 0.48rem;
+}
+
+.workspace-grid-shell input:focus,
+.workspace-grid-shell select:focus,
+.workspace-grid-shell textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 15%, transparent);
+}
+
+.workspace-grid-shell [class~="bg-white"] { background-color: var(--pi-surface-bg) !important; }
+
+.workspace-grid-shell [class~="bg-slate-50"] { background-color: var(--pi-surface-subtle) !important; }
+
+.workspace-grid-shell [class~="border-slate-200"],
+.workspace-grid-shell [class~="border-slate-200/90"] { border-color: var(--pi-border) !important; }
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-900"] { background-color: var(--pi-surface-bg) !important; }
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-800"] { background-color: var(--pi-surface-subtle) !important; }
+
+.dark .workspace-grid-shell [class~="dark:border-slate-800"],
+.dark .workspace-grid-shell [class~="dark:border-slate-700"] { border-color: var(--pi-border) !important; }
+
+.workspace-grid-shell button[class~="bg-slate-900"] {
+  background-color: var(--pi-action) !important;
+  color: white !important;
+}
+
+.workspace-grid-shell button[class~="bg-sky-600"] { background-color: var(--pi-action) !important; }
+
+.dark .workspace-grid-shell button[class~="dark:bg-blue-600"] { background-color: var(--pi-action) !important; }
+
+.workspace-grid-shell [class*="rounded-2xl"][class*="border"] { border-radius: 0.75rem !important; }
+
+.pi-surface,
+.surface-card,
+.pi-surface-interactive {
+  border-color: var(--pi-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+
+.pi-surface-interactive:hover,
+.surface-card:hover { box-shadow: var(--shadow-card-hover); }
+
+.scannable-table-wrap { border-color: var(--pi-border); border-radius: 0.7rem; }
+
+.scannable-table th { letter-spacing: 0.045em; text-transform: uppercase; font-size: 0.68rem; }
+
+.scannable-table td { font-size: 0.82rem; }
+
+.workspace-grid-shell .pi-page-title { letter-spacing: -0.045em; }
+
+.workspace-grid-shell .pi-section-heading { letter-spacing: -0.035em; }
+
+@media (max-width: 767px) {
+  .workspace-grid-shell { padding: 0.7rem 0.7rem max(5.5rem, env(safe-area-inset-bottom)) !important; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-grid-shell { animation: workspace-arrive 240ms ease-out both; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes workspace-arrive {
+    from { opacity: 0.88; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.workspace-grid-shell {
+  max-width: 1760px;
+  padding-inline: clamp(0.75rem, 1.65vw, 1.5rem) !important;
+  gap: 0.75rem;
+}
+
+.workspace-view-container,
+.workspace-section-grid {
+  gap: 0.75rem;
+}
+
+.workspace-grid-shell > nav {
+  margin-bottom: 0.35rem !important;
+  padding: 0.25rem !important;
+}
+
+.workspace-grid-shell > nav button {
+  min-height: 2.5rem;
+}
+
+.workspace-grid-shell .scannable-table th,
+.workspace-grid-shell .scannable-table td {
+  padding-block: 0.55rem;
+}
+
+@media (min-width: 768px) {
+  .workspace-grid-shell {
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .workspace-grid-shell {
+    padding-inline: 0.7rem !important;
+    padding-top: 0.65rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+
+  .workspace-grid-shell > nav[data-testid="territory-context-breadcrumb"] {
+    min-height: 1.7rem;
+    margin-bottom: 0.35rem !important;
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+
+  .workspace-grid-shell > nav[data-testid="territory-context-breadcrumb"] ol > li > button,
+.workspace-grid-shell > nav[data-testid="territory-context-breadcrumb"] ol > li > span {
+    padding-block: 0 !important;
+    font-size: 0.68rem !important;
+    line-height: 1rem !important;
+  }
+}

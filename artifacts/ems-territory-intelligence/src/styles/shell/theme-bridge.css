@@ -1,0 +1,140 @@
+/* Owner: shell. Cascade phase: theme-bridge. See ../README.md. */
+.pi-primary-sidebar {
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+  border-color: var(--pi-nav-border) !important;
+  box-shadow: 4px 0 14px -14px rgba(24, 49, 58, 0.32) !important;
+}
+
+.pi-primary-sidebar > div:first-child,
+.pi-primary-sidebar > div:last-child {
+  border-color: var(--pi-nav-border) !important;
+}
+
+.pi-primary-sidebar > div:last-child {
+  background: var(--pi-nav-secondary) !important;
+}
+
+.pi-primary-sidebar :is([class~="bg-[#101F34]"], [class~="bg-[#172D49]"], [class~="bg-[#091322]"]) {
+  background-color: var(--pi-nav-secondary) !important;
+}
+
+.pi-primary-sidebar :is([class~="border-[#233B5E]"], [class~="border-[#172D49]"], [class~="border-[#344B68]"]) {
+  border-color: var(--pi-nav-border) !important;
+}
+
+.pi-primary-nav button:not([aria-current="page"]),
+.pi-primary-nav > div > div > div:not(:has(button[aria-current="page"])) > button {
+  color: var(--pi-nav-text) !important;
+}
+
+.pi-primary-nav button:not([aria-current="page"]):hover,
+.pi-primary-nav > div > div > div:not(:has(button[aria-current="page"])) > button:hover {
+  background: var(--pi-nav-secondary) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-primary-nav button[aria-current="page"],
+.pi-primary-nav > div > div > div:has(> button[aria-current="page"]),
+.pi-primary-sidebar [class*="bg-[#285EE8]"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.pi-primary-sidebar .pi-primary-nav button[aria-current="page"],
+.pi-primary-sidebar .pi-primary-nav > div > div > div:has(> button[aria-current="page"]),
+.pi-primary-sidebar .pi-primary-nav [class*="bg-[#285EE8]"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.pi-sidebar-quick-actions button {
+  border-color: var(--pi-nav-border) !important;
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+}
+
+.pi-sidebar-quick-actions button:hover {
+  background: var(--pi-nav-secondary) !important;
+}
+
+.pi-command-header,
+.pi-mobile-nav {
+  background: color-mix(in srgb, var(--pi-surface-bg) 96%, transparent) !important;
+  color: var(--pi-text-secondary) !important;
+  border-color: var(--pi-border) !important;
+}
+
+.pi-mobile-nav button[aria-current="page"] {
+  color: var(--pi-action-ink) !important;
+}
+
+@media (max-width: 767px) {
+  .pi-mobile-nav button {
+    min-width: 44px !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .pi-mobile-nav button > span:not(.pi-data-number) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+    white-space: normal !important;
+    font-size: 0.8rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar,
+html.dark[data-theme="miami-vice"] .pi-command-header,
+html.dark[data-theme="miami-vice"] .pi-mobile-nav {
+  background: var(--pi-nav-bg) !important;
+  color: var(--pi-nav-text) !important;
+  border-color: var(--pi-nav-border) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar > div:last-child {
+  background: var(--pi-nav-secondary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar :is([class*="bg-[#172D49]"], [class*="bg-[#101F34]"], [class*="bg-[#091322]"]) {
+  background-color: var(--pi-nav-secondary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar :is([class*="border-[#172D49]"], [class*="border-[#233B5E]"], [class*="border-[#344B68]"]) {
+  border-color: var(--pi-nav-border) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar [class*="text-slate-400"],
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar [class*="text-slate-300"] {
+  color: var(--pi-text-muted) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button:not([aria-current="page"]) {
+  color: var(--pi-nav-text) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button:hover:not([aria-current="page"]) {
+  background-color: var(--pi-nav-secondary) !important;
+  color: var(--pi-text-primary) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button[aria-current="page"],
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions [class*="bg-[#285EE8]"] {
+  background-color: var(--pi-action) !important;
+  color: #ffffff !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions button {
+  background-color: var(--pi-nav-bg) !important;
+  border-color: var(--pi-nav-border) !important;
+  color: var(--pi-nav-text) !important;
+}
+
+html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions button:hover {
+  background-color: var(--pi-nav-secondary) !important;
+}

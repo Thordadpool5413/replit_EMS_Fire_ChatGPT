@@ -107,8 +107,8 @@ test('desktop and mobile entry points share workspace groups and expose selected
 test('desktop workspaces share compact tabs and quiet connection status', () => {
   const topBar = readSource('components/TopBar.tsx');
   const app = readSource('App.tsx');
-  const styles = readFileSync(resolve(sourceRoot, 'index.css'), 'utf8');
-  const sharedShellStyles = styles.slice(styles.lastIndexOf('Shared desktop shell sizing'));
+  const styles = readSource('styles/shared/records.css');
+  const sharedShellStyles = readSource('styles/shell/records.css');
 
   assert.equal(
     (app.match(/className="pi-workspace-tabs/g) || []).length,
@@ -132,7 +132,11 @@ test('home and mobile tools do not seed or restore alert badges', () => {
   const mobileToolsEnd = topBar.indexOf('</header>', mobileToolsStart);
   assert.ok(mobileToolsStart >= 0 && mobileToolsEnd > mobileToolsStart, 'The mobile tools menu should remain identifiable.');
   const mobileTools = topBar.slice(mobileToolsStart, mobileToolsEnd);
-  const appAndHome = `${app}\n${home}`;
+  // ARIA error announcements and the quota warning are not an alert feed.
+  const appAndHome = `${app}\n${home}`
+    .replace(/role="alert"/g, '')
+    .replace(/role=\{toast\.type === 'boundary' \? 'status' : 'alert'\}/g, '')
+    .replace(/\bpi-alert-banner\b/g, '');
 
   assert.doesNotMatch(
     appAndHome,

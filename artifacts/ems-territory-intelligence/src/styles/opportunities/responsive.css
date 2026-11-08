@@ -1,0 +1,33 @@
+/* Owner: Opportunities lead queue. Cascade phase: responsive. */
+.pulseiq-factor-disclosure > div > section[aria-label="PulseIQ factor scores and weighted contributions"] {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.pulseiq-factor-disclosure section[aria-label="PulseIQ factor scores and weighted contributions"] > div.grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+@media (min-width: 768px) {
+  .agency-lead-cards-grid > div {
+    padding: 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.4rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > div.grid.grid-cols-2 {
+    margin-block: 0.25rem !important;
+  }
+
+  .agency-lead-cards-grid > div > div:first-child > div.grid.grid-cols-2 > div {
+    padding: 0.5rem !important;
+  }
+
+  .agency-lead-cards-grid details {
+    padding-top: 0.35rem !important;
+  }
+}

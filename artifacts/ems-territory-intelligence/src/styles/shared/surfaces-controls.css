@@ -1,0 +1,8 @@
+/* Shared control sizing follows the earlier territory phone-control defaults.
+   This is the existing control rule, not another override layer. */
+.workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-grid-shell select,
+.workspace-grid-shell textarea {
+  min-height: 2.5rem;
+  border-radius: 0.45rem;
+}

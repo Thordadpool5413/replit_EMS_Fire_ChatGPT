@@ -39,6 +39,16 @@ For map palette contrast checks, sample the rendered SVG state `fill` values ins
 
 **How to apply:** Calculate contrast from actual state fills and use the legend's low/high endpoint labels to verify palette direction across responsive widths.
 
+When comparing stylesheet refactors, keep font-face definitions stable and compare
+the before/after computed styles synchronously on the same connected elements.
+
+**Why:** Replacing font-face rules can briefly measure fallback-font geometry;
+awaiting font readiness between snapshots lets asynchronous agency hydration
+replace the elements, producing false geometry and color differences.
+
+**How to apply:** Load fonts before collecting the elements, keep their definitions
+outside the swapped stylesheets, and avoid yielding between the two measurements.
+
 When a screen contains multiple native disclosure elements, select the one being tested by its summary label instead of using the first `details` element.
 
 **Why:** County cards added their own disclosures ahead of the existing FEMA boundary/source disclosure, making a first-match selector read the wrong content and wait forever.

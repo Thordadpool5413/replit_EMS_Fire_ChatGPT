@@ -1,0 +1,525 @@
+/* Owner: territory. Cascade phase: records. See ../README.md. */
+.territory-explorer-screen .county-inspector-panel {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-self: start;
+  gap: .85rem;
+  border-color: var(--pi-border) !important;
+  border-radius: .8rem !important;
+  background: var(--pi-surface-bg) !important;
+  color: var(--atlas-ink);
+  box-shadow: var(--shadow-card) !important;
+}
+
+.county-figure-source-details {
+  min-width: 0;
+  padding: .15rem 0 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--pi-border) !important;
+  border-radius: 0 !important;
+  color: var(--atlas-muted) !important;
+  font-size: .75rem !important;
+  line-height: 1.45 !important;
+}
+
+.county-figure-source-record {
+  min-width: 0;
+  padding-top: .55rem;
+  border-top: 1px solid var(--pi-border);
+}
+
+.county-figure-source-record:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.county-figure-source-details a {
+  color: var(--pi-action) !important;
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  padding-block: .35rem;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-underline-offset: 2px;
+  white-space: normal;
+}
+
+.county-figure-source-details a:focus-visible {
+  border-radius: .2rem;
+  outline: 2px solid var(--pi-action);
+  outline-offset: 2px;
+}
+
+.county-profile-city-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .32rem !important;
+  padding: .12rem 0 .2rem;
+}
+
+.county-profile-place-button {
+  min-height: 1.8rem;
+  padding: .28rem .52rem;
+  border: 1px solid var(--pi-border);
+  border-radius: 999px;
+  background: var(--pi-surface-subtle);
+  color: var(--atlas-ink);
+  cursor: pointer;
+  font-size: .64rem;
+  font-weight: 550;
+  line-height: 1.2;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.county-profile-place-button:hover,
+.county-profile-place-button:focus-visible {
+  border-color: var(--pi-border-strong);
+  background: var(--pi-action-subtle);
+  color: var(--pi-action);
+}
+
+.county-profile-place-button:focus-visible {
+  outline: 2px solid var(--pi-action);
+  outline-offset: 2px;
+}
+
+.county-directory-heading h3 {
+  font-size: 1.2rem !important;
+}
+
+.county-directory-heading > div > p:last-child {
+  max-width: 42rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 767px) {
+  .county-inspector-panel {
+    padding: .72rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .territory-explorer-screen {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    gap: .65rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-drilldown-shell {
+    gap: .45rem !important;
+    padding: .6rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: .6rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-grid > .county-state-map-panel {
+    grid-column: 1 !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-panel {
+    min-height: 290px !important;
+    padding: .65rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-panel > div:nth-child(2) {
+    margin-bottom: .25rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-svg {
+    min-height: 215px !important;
+    max-height: 250px !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-state-map-panel > div:last-child {
+    margin-top: .25rem !important;
+    padding-top: .25rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-directory-heading {
+    padding-bottom: .55rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-directory-heading h3 {
+    font-size: 1.15rem !important;
+  }
+
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .territory-explorer-screen .county-state-map-panel {
+    min-height: 300px !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+
+  .territory-explorer-screen .county-state-map-svg {
+    min-height: 210px !important;
+    max-height: 250px !important;
+  }
+}
+
+.territory-explorer-screen .geography-drilldown-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .territory-explorer-screen .geography-drilldown-breadcrumb {
+    gap: 0.45rem !important;
+    padding: 0.5rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-breadcrumb > div.geography-drilldown-controls {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem !important;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-select {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-select select {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 2.4rem !important;
+    padding-inline: 0.45rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-actions {
+    grid-column: 1 / -1;
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap !important;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-actions > button {
+    min-height: 2.2rem !important;
+    padding: 0.35rem 0.55rem !important;
+    font-size: 0.68rem !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+}
+
+.territory-explorer-screen .geography-drilldown-breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.65rem;
+}
+
+.territory-explorer-screen .geography-drilldown-breadcrumb > nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.territory-explorer-screen .geography-drilldown-breadcrumb > nav > button,
+.territory-explorer-screen .geography-drilldown-breadcrumb > nav > span {
+  min-height: 1.85rem;
+  padding-inline: 0.65rem;
+  font-size: 0.7rem;
+}
+
+.territory-explorer-screen .geography-area-menu {
+  position: relative;
+  z-index: 20;
+  flex: 0 0 auto;
+}
+
+.territory-explorer-screen .geography-area-menu > summary {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--pi-border);
+  border-radius: 0.55rem;
+  background: var(--pi-surface-bg);
+  color: var(--pi-text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 650;
+  list-style: none;
+  white-space: nowrap;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.territory-explorer-screen .geography-area-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.territory-explorer-screen .geography-area-menu > summary:hover,
+.territory-explorer-screen .geography-area-menu[open] > summary {
+  border-color: var(--pi-border-strong);
+  background: var(--pi-surface-subtle);
+  color: var(--pi-text-primary);
+}
+
+.territory-explorer-screen .geography-area-menu > .geography-drilldown-controls {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: flex;
+  width: min(35rem, calc(100vw - 2rem));
+  min-width: min(17rem, calc(100vw - 2rem));
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border: 1px solid var(--pi-border);
+  border-radius: 0.7rem;
+  background: var(--pi-surface-bg);
+  box-shadow: 0 14px 36px -20px rgba(15, 23, 42, 0.45);
+}
+
+.territory-explorer-screen .geography-area-menu .geography-drilldown-select select {
+  min-height: 2rem;
+  max-width: 13rem;
+  border-color: var(--pi-border);
+  border-radius: 0.5rem;
+  background: var(--pi-surface-subtle);
+  color: var(--pi-text-primary);
+  font-size: 0.7rem;
+}
+
+.territory-explorer-screen .geography-area-menu .geography-drilldown-actions {
+  flex: 1 1 100%;
+}
+
+.territory-explorer-screen .geography-area-menu .geography-drilldown-actions > button {
+  min-height: 1.9rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.68rem;
+}
+
+.territory-explorer-screen .county-selection-header {
+  border-color: var(--pi-border);
+}
+
+.territory-explorer-screen .county-selection-header h2 {
+  color: var(--pi-text-primary);
+  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+  letter-spacing: -0.035em;
+}
+
+.territory-explorer-screen .county-selection-header p {
+  color: var(--pi-text-secondary);
+}
+
+@media (max-width: 767px) {
+  .territory-explorer-screen .geography-drilldown-breadcrumb {
+    padding: 0.45rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-breadcrumb > nav {
+    gap: 0.2rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-breadcrumb > nav > button,
+.territory-explorer-screen .geography-drilldown-breadcrumb > nav > span {
+    padding-inline: 0.45rem;
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-area-menu > .geography-drilldown-controls {
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-area-menu .geography-drilldown-select {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-area-menu .geography-drilldown-select select {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .county-selection-header {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .county-selection-header > div:last-child {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) max-content !important;
+    align-items: center;
+    width: 100% !important;
+    gap: 0.45rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .county-selection-header > div:last-child > .relative {
+    grid-column: 1;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .county-selection-header > div:last-child > .relative input {
+    min-width: 0;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .county-selection-header > div:last-child > button {
+    grid-column: 2;
+    min-height: 2.1rem;
+    width: max-content !important;
+    max-width: max-content !important;
+    padding-inline: 0.6rem;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .territory-explorer-screen .county-selection-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+
+  .territory-explorer-screen .county-selection-actions {
+    width: 100%;
+  }
+}
+
+.territory-explorer-screen .county-profile-details {
+  min-width: 0;
+  border-top: 1px solid var(--pi-border);
+}
+
+.territory-explorer-screen .county-profile-details-content {
+  display: grid;
+  min-width: 0;
+  gap: 0.55rem;
+  padding: 0.5rem 0 0.12rem;
+  border-top: 1px solid var(--pi-border);
+}
+
+.territory-explorer-screen .county-profile-city-list {
+  gap: 0.3rem !important;
+  padding: 0.12rem 0 0.25rem;
+}
+
+.territory-explorer-screen .county-profile-place-button {
+  min-height: 1.7rem;
+  padding: 0.24rem 0.46rem;
+  font-size: 0.68rem;
+}
+
+.territory-explorer-screen .county-profile-details-content > .county-figure-source-details {
+  min-width: 0;
+  margin-top: 0;
+  padding-top: 0.3rem !important;
+}
+
+@media (min-width: 1024px) {
+
+  .territory-explorer-screen .county-profile-details {
+    grid-column: 3;
+    grid-row: 1;
+    border-top: 0;
+    border-left: 1px solid var(--pi-border);
+    padding-left: 0.6rem;
+  }
+}

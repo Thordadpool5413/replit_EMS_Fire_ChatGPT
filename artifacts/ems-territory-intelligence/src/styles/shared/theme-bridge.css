@@ -1,0 +1,543 @@
+/* Owner: shared. Cascade phase: theme-bridge. See ../README.md. */
+.pi-app-shell {
+  background-color: var(--pi-canvas-bg) !important;
+  background-image: none !important;
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-workspace-tabs {
+  background: var(--pi-surface-bg) !important;
+  border-color: var(--pi-border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.pi-workspace-tabs button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-current="page"],
+.workspace-grid-shell > nav button[aria-selected="true"] {
+  background: var(--pi-action) !important;
+  color: #ffffff !important;
+}
+
+.pi-app-shell [class~="bg-[#285EE8]"],
+.dark .pi-app-shell [class~="dark:bg-[#285EE8]"] {
+  background-color: var(--pi-action) !important;
+}
+
+.pi-app-shell [class~="hover:bg-[#194BC8]"]:hover,
+.dark .pi-app-shell [class~="dark:hover:bg-[#194BC8]"]:hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell [class~="text-[#285EE8]"],
+.dark .pi-app-shell [class~="dark:text-[#285EE8]"] {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-surface,
+.surface-card,
+.pi-surface-interactive,
+.scannable-table-wrap {
+  background-color: var(--pi-surface-bg);
+  border-color: var(--pi-border);
+  box-shadow: var(--shadow-card);
+}
+
+.pi-surface-interactive:hover,
+.surface-card:hover {
+  border-color: var(--pi-border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.workspace-grid-shell [class~="bg-white"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.workspace-grid-shell [class~="bg-slate-50"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.workspace-grid-shell [class~="border-slate-200"],
+.workspace-grid-shell [class~="border-slate-200/90"] {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-900"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:bg-slate-800"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .workspace-grid-shell [class~="dark:border-slate-800"],
+.dark .workspace-grid-shell [class~="dark:border-slate-700"] {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .pi-app-shell a:not([class*="text-amber-"]):not([class*="text-red-"]) {
+  color: var(--pi-action-ink);
+}
+
+.pi-page-title {
+  color: var(--pi-text-primary) !important;
+  font-size: var(--pi-font-page-title);
+}
+
+.pi-section-heading {
+  color: var(--pi-text-primary);
+  font-size: var(--pi-font-section-title);
+}
+
+.pi-body {
+  color: var(--pi-text-primary);
+  font-size: var(--pi-font-body);
+}
+
+.pi-supporting {
+  color: var(--pi-text-secondary);
+  font-size: var(--pi-font-supporting);
+}
+
+.pi-meta {
+  color: var(--pi-text-secondary);
+  font-size: var(--pi-font-meta);
+}
+
+.pi-data-number,
+.pi-data-inline,
+.pi-data-table,
+.pi-metric-hero,
+.pi-metric-executive,
+.pi-metric-large,
+.pi-metric-lg,
+.pi-metric-account,
+.pi-metric-card,
+.pi-metric-primary,
+.pi-metric-standard,
+.pi-metric-base,
+.pi-metric-table,
+.pi-metric-sm,
+.pi-metric-supporting {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+:focus-visible {
+  outline-color: var(--pi-focus-ring) !important;
+}
+
+.workspace-grid-shell input:focus,
+.workspace-grid-shell select:focus,
+.workspace-grid-shell textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 22%, transparent) !important;
+}
+
+.pi-app-shell [class~="bg-white"],
+body [data-radix-portal] [class~="bg-white"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.pi-app-shell :is([class~="bg-[#F5F7FA]"], [class~="bg-[#F8FAFC]"], [class~="bg-[#F1F5F9]"]),
+body [data-radix-portal] :is([class~="bg-[#F5F7FA]"], [class~="bg-[#F8FAFC]"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.pi-app-shell :is([class~="bg-[#EEF3FE]"], [class~="bg-[#EEF3FE]/70"]) {
+  background-color: var(--pi-action-subtle) !important;
+}
+
+.pi-app-shell :is([class~="bg-slate-50"], [class~="bg-slate-50/60"], [class~="bg-slate-50/80"], [class~="bg-slate-100"]),
+body [data-radix-portal] :is([class~="bg-slate-50"], [class~="bg-slate-50/60"], [class~="bg-slate-100"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:bg-slate-900"], [class~="dark:bg-[#111C2D]"], [class~="dark:bg-[#0B1728]"]),
+.dark body [data-radix-portal] :is([class~="dark:bg-slate-900"], [class~="dark:bg-[#111C2D]"]) {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:bg-slate-800"], [class~="dark:bg-[#16243A]"], [class~="dark:bg-[#0E1B2E]"]),
+.dark body [data-radix-portal] :is([class~="dark:bg-slate-800"], [class~="dark:bg-[#16243A]"]) {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.pi-app-shell :is([class~="border-slate-200"], [class~="border-slate-200/90"], [class~="border-[#DFE6EF]"], [class~="border-[#E5E4DF]"]),
+body [data-radix-portal] :is([class~="border-slate-200"], [class~="border-slate-200/90"]) {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .pi-app-shell :is([class~="dark:border-slate-700"], [class~="dark:border-slate-800"], [class~="dark:border-[#1E2D42]"], [class~="dark:border-[#33445A]"]),
+.dark body [data-radix-portal] :is([class~="dark:border-slate-700"], [class~="dark:border-slate-800"]) {
+  border-color: var(--pi-border) !important;
+}
+
+.pi-app-shell :is([class~="text-[#14283F]"], [class~="text-[#30465C]"], [class~="text-slate-950"], [class~="text-slate-900"], [class~="text-slate-800"], [class~="text-slate-700"]),
+body [data-radix-portal] :is([class~="text-slate-900"], [class~="text-slate-800"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-app-shell :is([class~="text-[#53657B]"], [class~="text-[#718398]"], [class~="text-slate-600"], [class~="text-slate-500"]),
+body [data-radix-portal] :is([class~="text-slate-600"], [class~="text-slate-500"]) {
+  color: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell [class~="text-slate-400"],
+body [data-radix-portal] [class~="text-slate-400"] {
+  color: var(--pi-text-muted) !important;
+}
+
+.pi-app-shell .workspace-section-grid .absolute.top-4.right-4 [class~="text-slate-400"],
+.pi-app-shell .workspace-section-grid .absolute.bottom-12.left-4 [class~="text-slate-400"] {
+  color: #94a3b8 !important;
+}
+
+.pi-app-shell .workspace-section-grid .absolute.bottom-12.left-4 [class~="text-slate-300"] {
+  color: #cbd5e1 !important;
+}
+
+.dark .pi-app-shell [class*="dark:text-slate-300"],
+.dark .pi-app-shell [class*="dark:text-slate-200"],
+.dark .pi-app-shell [class*="dark:text-slate-100"],
+.dark body [data-radix-portal] [class*="dark:text-slate-300"],
+.dark body [data-radix-portal] [class*="dark:text-slate-200"] {
+  color: var(--pi-text-secondary) !important;
+}
+
+.dark .pi-app-shell [class*="dark:text-slate-400"],
+.dark .pi-app-shell [class*="dark:text-slate-500"],
+.dark body [data-radix-portal] [class*="dark:text-slate-400"] {
+  color: var(--pi-text-muted) !important;
+}
+
+.pi-app-shell button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+.pi-app-shell a:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+.pi-app-shell [role="button"]:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]),
+body [data-radix-portal] button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover,
+.pi-app-shell a:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover,
+body [data-radix-portal] button:is([class^="bg-blue-"], [class*=" bg-blue-"], [class^="bg-sky-"], [class*=" bg-sky-"], [class^="bg-indigo-"], [class*=" bg-indigo-"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell a:is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+.pi-app-shell button:is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+body [data-radix-portal] :is(a, button):is([class^="text-blue-"], [class*=" text-blue-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]),
+.dark .pi-app-shell :is([class^="dark:text-blue-"], [class*=" dark:text-blue-"], [class^="dark:text-sky-"], [class*=" dark:text-sky-"], [class^="dark:text-indigo-"], [class*=" dark:text-indigo-"]),
+body [data-radix-portal] :is([class^="text-blue-"], [class*=" text-blue-"], [class^="text-sky-"], [class*=" text-sky-"], [class^="text-indigo-"], [class*=" text-indigo-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="border-blue-"], [class*=" border-blue-"], [class^="border-sky-"], [class*=" border-sky-"], [class^="border-indigo-"], [class*=" border-indigo-"]),
+.dark .pi-app-shell :is([class^="dark:border-blue-"], [class*=" dark:border-blue-"], [class^="dark:border-sky-"], [class*=" dark:border-sky-"], [class^="dark:border-indigo-"], [class*=" dark:border-indigo-"]),
+body [data-radix-portal] :is([class^="border-blue-"], [class*=" border-blue-"], [class^="border-sky-"], [class*=" border-sky-"], [class^="border-indigo-"], [class*=" border-indigo-"]) {
+  border-color: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell :is([class~="bg-blue-50"], [class~="bg-sky-50"], [class~="bg-indigo-50"], [class~="bg-blue-100"], [class~="bg-sky-100"], [class~="bg-indigo-100"], [class^="bg-blue-50/"], [class*=" bg-blue-50/"], [class^="bg-sky-50/"], [class*=" bg-sky-50/"], [class^="bg-indigo-50/"], [class*=" bg-indigo-50/"]),
+.dark .pi-app-shell :is([class*="dark:bg-blue-950"], [class*="dark:bg-sky-950"], [class*="dark:bg-indigo-950"]),
+body [data-radix-portal] :is([class~="bg-blue-50"], [class~="bg-sky-50"], [class~="bg-indigo-50"], [class^="bg-blue-50/"], [class*=" bg-blue-50/"], [class^="bg-sky-50/"], [class*=" bg-sky-50/"], [class^="bg-indigo-50/"], [class*=" bg-indigo-50/"]) {
+  background-color: var(--pi-info-bg) !important;
+}
+
+.pi-app-shell :is([class~="bg-teal-50"], [class~="bg-teal-100"], [class^="bg-teal-50/"], [class*=" bg-teal-50/"]),
+.dark .pi-app-shell [class*="dark:bg-teal-950"],
+body [data-radix-portal] :is([class~="bg-teal-50"], [class~="bg-teal-100"]) {
+  background-color: var(--pi-action-subtle) !important;
+}
+
+.pi-app-shell :is([class^="text-teal-"], [class*=" text-teal-"]),
+.dark .pi-app-shell :is([class^="dark:text-teal-"], [class*=" dark:text-teal-"]),
+body [data-radix-portal] :is([class^="text-teal-"], [class*=" text-teal-"]) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-app-shell :is([class^="border-teal-"], [class*=" border-teal-"]),
+.dark .pi-app-shell :is([class^="dark:border-teal-"], [class*=" dark:border-teal-"]),
+body [data-radix-portal] :is([class^="border-teal-"], [class*=" border-teal-"]) {
+  border-color: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell button[aria-pressed="true"],
+.pi-app-shell button[aria-selected="true"],
+.pi-app-shell [role="tab"][aria-selected="true"] {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="bg-[#0F172A]"], [class~="bg-slate-950"]):not(:disabled) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="bg-[#1E3A8A]"], [class~="bg-slate-900"], [class~="bg-slate-950"]):not(:disabled) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class~="hover:bg-[#111827]"], [class~="hover:bg-[#172554]"], [class~="hover:bg-slate-800"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell :is([class~="text-[#1E3A8A]"], [class~="text-[#0F172A]"]) {
+  color: var(--pi-text-primary) !important;
+}
+
+.pi-app-shell button:is([class^="bg-teal-"], [class*=" bg-teal-"]),
+.pi-app-shell a:is([class^="bg-teal-"], [class*=" bg-teal-"]),
+body [data-radix-portal] button:is([class^="bg-teal-"], [class*=" bg-teal-"]) {
+  background-color: var(--pi-action) !important;
+  border-color: var(--pi-action) !important;
+  color: #fff !important;
+}
+
+.pi-app-shell button:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover,
+.pi-app-shell a:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover,
+body [data-radix-portal] button:is([class^="bg-teal-"], [class*=" bg-teal-"]):hover {
+  background-color: var(--pi-action-hover) !important;
+}
+
+.pi-app-shell :is([class~="bg-emerald-50"], [class~="bg-emerald-50/30"], [class~="bg-emerald-50/40"], [class~="bg-emerald-50/50"], [class~="bg-emerald-50/60"], [class~="bg-emerald-50/70"], [class~="bg-emerald-50/80"], [class~="bg-emerald-100"], [class~="bg-green-50"], [class~="bg-green-100"]),
+.dark .pi-app-shell [class*="dark:bg-emerald-950"],
+.dark .pi-app-shell [class*="dark:bg-green-950"],
+body [data-radix-portal] :is([class~="bg-emerald-50"], [class~="bg-green-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-emerald-950"],
+.dark body [data-radix-portal] [class*="dark:bg-green-950"] {
+  background-color: var(--pi-verified-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-emerald-"], [class*=" text-emerald-"], [class^="text-green-"], [class*=" text-green-"]),
+.dark .pi-app-shell :is([class^="dark:text-emerald-"], [class*=" dark:text-emerald-"], [class^="dark:text-green-"], [class*=" dark:text-green-"]),
+body [data-radix-portal] :is([class^="text-emerald-"], [class*=" text-emerald-"], [class^="text-green-"], [class*=" text-green-"]) {
+  color: var(--pi-verified-text) !important;
+}
+
+.pi-app-shell :is([class^="border-emerald-"], [class*=" border-emerald-"], [class^="border-green-"], [class*=" border-green-"]),
+.dark .pi-app-shell :is([class^="dark:border-emerald-"], [class*=" dark:border-emerald-"], [class^="dark:border-green-"], [class*=" dark:border-green-"]),
+body [data-radix-portal] :is([class^="border-emerald-"], [class*=" border-emerald-"], [class^="border-green-"], [class*=" border-green-"]) {
+  border-color: var(--pi-verified-border) !important;
+}
+
+.pi-app-shell :is([class~="bg-amber-50"], [class~="bg-amber-50/50"], [class~="bg-amber-50/60"], [class~="bg-amber-50/70"], [class~="bg-amber-100"], [class~="bg-yellow-50"], [class~="bg-yellow-100"]),
+.dark .pi-app-shell [class*="dark:bg-amber-950"],
+.dark .pi-app-shell [class*="dark:bg-yellow-950"],
+body [data-radix-portal] :is([class~="bg-amber-50"], [class~="bg-yellow-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-amber-950"],
+.dark body [data-radix-portal] [class*="dark:bg-yellow-950"] {
+  background-color: var(--pi-warning-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-amber-"], [class*=" text-amber-"], [class^="text-yellow-"], [class*=" text-yellow-"]),
+.dark .pi-app-shell :is([class^="dark:text-amber-"], [class*=" dark:text-amber-"], [class^="dark:text-yellow-"], [class*=" dark:text-yellow-"]),
+body [data-radix-portal] :is([class^="text-amber-"], [class*=" text-amber-"], [class^="text-yellow-"], [class*=" text-yellow-"]) {
+  color: var(--pi-warning-text) !important;
+}
+
+.pi-app-shell :is([class^="border-amber-"], [class*=" border-amber-"], [class^="border-yellow-"], [class*=" border-yellow-"]),
+.dark .pi-app-shell :is([class^="dark:border-amber-"], [class*=" dark:border-amber-"], [class^="dark:border-yellow-"], [class*=" dark:border-yellow-"]),
+body [data-radix-portal] :is([class^="border-amber-"], [class*=" border-amber-"], [class^="border-yellow-"], [class*=" border-yellow-"]) {
+  border-color: var(--pi-warning-border) !important;
+}
+
+.pi-app-shell :is([class~="bg-rose-50"], [class~="bg-rose-50/60"], [class~="bg-rose-50/70"], [class~="bg-rose-100"], [class~="bg-red-50"], [class~="bg-red-100"]),
+.dark .pi-app-shell [class*="dark:bg-rose-950"],
+.dark .pi-app-shell [class*="dark:bg-red-950"],
+body [data-radix-portal] :is([class~="bg-rose-50"], [class~="bg-red-50"]),
+.dark body [data-radix-portal] [class*="dark:bg-rose-950"],
+.dark body [data-radix-portal] [class*="dark:bg-red-950"] {
+  background-color: var(--pi-critical-bg) !important;
+}
+
+.pi-app-shell :is([class^="text-rose-"], [class*=" text-rose-"], [class^="text-red-"], [class*=" text-red-"]),
+.dark .pi-app-shell :is([class^="dark:text-rose-"], [class*=" dark:text-rose-"], [class^="dark:text-red-"], [class*=" dark:text-red-"]),
+body [data-radix-portal] :is([class^="text-rose-"], [class*=" text-rose-"], [class^="text-red-"], [class*=" text-red-"]) {
+  color: var(--pi-critical-text) !important;
+}
+
+.pi-app-shell :is([class^="border-rose-"], [class*=" border-rose-"], [class^="border-red-"], [class*=" border-red-"]),
+.dark .pi-app-shell :is([class^="dark:border-rose-"], [class*=" dark:border-rose-"], [class^="dark:border-red-"], [class*=" dark:border-red-"]),
+body [data-radix-portal] :is([class^="border-rose-"], [class*=" border-rose-"], [class^="border-red-"], [class*=" border-red-"]) {
+  border-color: var(--pi-critical-border) !important;
+}
+
+.pi-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.pi-app-shell select,
+.pi-app-shell textarea,
+body [data-radix-portal] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body [data-radix-portal] select,
+body [data-radix-portal] textarea {
+  border-color: var(--pi-border-strong);
+  background-color: var(--pi-surface-bg);
+  color: var(--pi-text-primary);
+}
+
+.pi-app-shell input::placeholder,
+.pi-app-shell textarea::placeholder,
+body [data-radix-portal] input::placeholder,
+body [data-radix-portal] textarea::placeholder {
+  color: var(--pi-text-muted);
+  opacity: 1;
+}
+
+.pi-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.pi-app-shell select:focus,
+.pi-app-shell textarea:focus,
+body [data-radix-portal] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+body [data-radix-portal] select:focus,
+body [data-radix-portal] textarea:focus {
+  border-color: var(--pi-action) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pi-action) 22%, transparent) !important;
+}
+
+.pi-app-shell :is(button, input, select, textarea):disabled,
+body [data-radix-portal] :is(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.pi-app-shell .pi-status-success,
+.pi-app-shell .pi-status-warning,
+.pi-app-shell .pi-status-critical,
+.pi-app-shell .pi-status-info,
+body [data-radix-portal] .pi-status-success,
+body [data-radix-portal] .pi-status-warning,
+body [data-radix-portal] .pi-status-critical,
+body [data-radix-portal] .pi-status-info {
+  border: 1px solid var(--pi-status-border);
+  background-color: var(--pi-status-bg);
+  color: var(--pi-status-text);
+}
+
+.pi-status-success {
+  --pi-status-bg: var(--pi-verified-bg);
+  --pi-status-text: var(--pi-verified-text);
+  --pi-status-border: var(--pi-verified-border);
+}
+
+.pi-status-warning {
+  --pi-status-bg: var(--pi-warning-bg);
+  --pi-status-text: var(--pi-warning-text);
+  --pi-status-border: var(--pi-warning-border);
+}
+
+.pi-status-critical {
+  --pi-status-bg: var(--pi-critical-bg);
+  --pi-status-text: var(--pi-critical-text);
+  --pi-status-border: var(--pi-critical-border);
+}
+
+.pi-status-info {
+  --pi-status-bg: var(--pi-info-bg);
+  --pi-status-text: var(--pi-info-text);
+  --pi-status-border: var(--pi-info-border);
+}
+
+.pi-app-shell .pi-status-success,
+.pi-app-shell .pi-status-warning,
+.pi-app-shell .pi-status-critical,
+.pi-app-shell .pi-status-info {
+  border-color: var(--pi-status-border) !important;
+  background: var(--pi-status-bg) !important;
+  color: var(--pi-status-text) !important;
+}
+
+.pi-app-shell .pi-alert-banner.pi-status-warning {
+  border-width: 0 0 1px !important;
+}
+
+.pi-status-icon--warning {
+  color: var(--pi-warning-text);
+}
+
+.pi-status-icon--critical {
+  color: var(--pi-critical-text);
+}
+
+.pi-status-icon--info {
+  color: var(--pi-info-text);
+}
+
+.pi-app-shell .pi-compare-dock {
+  background: color-mix(in srgb, var(--pi-surface-bg) 96%, transparent);
+  border-color: var(--pi-border);
+  box-shadow: var(--shadow-card);
+}
+
+.pi-app-shell .pi-compare-dock :is(.text-teal-700, .dark\:text-teal-300) {
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-workspace-tabs button:not([aria-current="page"]) {
+  color: var(--pi-text-secondary);
+}
+
+.pi-workspace-tabs button:not([aria-current="page"]):hover {
+  background-color: var(--pi-surface-subtle);
+  color: var(--pi-text-primary);
+}
+
+.pi-app-shell .recharts-cartesian-grid line {
+  stroke: var(--pi-border) !important;
+}
+
+.pi-app-shell .recharts-cartesian-axis-tick text,
+.pi-app-shell .recharts-cartesian-axis-tick-value,
+.pi-app-shell .recharts-label {
+  fill: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell .recharts-polar-angle-axis-tick-value,
+.pi-app-shell .recharts-polar-radius-axis-tick-value {
+  fill: var(--pi-text-secondary) !important;
+}
+
+.pi-app-shell .recharts-polar-grid :is(path, line, polygon) {
+  stroke: var(--pi-border) !important;
+}
+
+.pi-app-shell .recharts-cartesian-axis-line,
+.pi-app-shell .recharts-reference-line line {
+  stroke: var(--pi-border-strong) !important;
+}
+
+.pi-app-shell .animate-pulse,
+body [data-radix-portal] .animate-pulse {
+  animation-duration: 1.6s;
+}
+
+.pi-app-shell :is(table, th, td),
+body [data-radix-portal] :is(table, th, td) {
+  border-color: var(--pi-border);
+}
+
+.pi-app-shell thead,
+body [data-radix-portal] thead {
+  background-color: var(--pi-surface-subtle);
+  color: var(--pi-text-secondary);
+}
+
+.pi-app-shell .recharts-tooltip-wrapper [class~="bg-white"],
+.pi-app-shell .recharts-default-tooltip,
+body [data-radix-portal] .recharts-default-tooltip {
+  background-color: var(--pi-surface-elevated) !important;
+  border-color: var(--pi-border) !important;
+  color: var(--pi-text-primary) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-500"],
+.pi-app-shell .recharts-tooltip-wrapper [class~="text-slate-600"] {
+  color: var(--pi-text-secondary) !important;
+}

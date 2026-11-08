@@ -1,0 +1,348 @@
+/* Owner: territory. Cascade phase: surfaces. See ../README.md. */
+@media (max-width: 767px) {
+
+  .territory-explorer-screen {
+    gap: 0.85rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen .geography-drilldown-breadcrumb {
+    padding: 0.7rem !important;
+    border-radius: 0.8rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen input:not([type="checkbox"]),
+.territory-explorer-screen select {
+    min-height: 2.75rem;
+    max-width: 100%;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen button {
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen [class*="grid-cols-"] {
+    min-width: 0;
+  }
+}
+
+.territory-explorer-screen .workspace-cards-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+}
+
+@media (max-width: 767px) {
+  .geography-drilldown-breadcrumb {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: .55rem !important;
+    padding: .65rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .geography-drilldown-breadcrumb > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .4rem !important;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .geography-drilldown-breadcrumb > div:last-child > div {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .geography-drilldown-breadcrumb select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .geography-drilldown-breadcrumb > div:last-child > button {
+    min-width: 0;
+    min-height: 2.5rem;
+    justify-content: center;
+    white-space: normal !important;
+    text-align: center;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .territory-explorer-screen,
+.county-drilldown-shell,
+.county-state-map-grid,
+.county-state-map-panel {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell {
+    overflow: visible !important;
+    padding: .65rem !important;
+    gap: .7rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child {
+    gap: .65rem !important;
+    padding-bottom: .65rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child > div:first-child p {
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child > div:last-child {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .5rem !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child > div:last-child > div {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child input {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 2.75rem;
+    padding-right: 3.25rem !important;
+    font-size: .8125rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-drilldown-shell > div:first-child > div:last-child > button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-state-map-panel {
+    min-height: 230px !important;
+    padding: .625rem !important;
+    border-radius: .8rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-state-map-svg {
+    max-height: 180px !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-single-map-panel {
+    min-height: 230px !important;
+    padding: .625rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-single-map-svg {
+    max-height: 190px !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-state-map-panel > div:nth-child(2) {
+    margin-bottom: .25rem !important;
+    font-size: .65rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-state-map-panel > div:last-child {
+    margin-top: .375rem !important;
+    padding-top: .375rem !important;
+    font-size: .58rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-state-map-panel > div:last-child > div {
+    gap: .35rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-directory-heading {
+    align-items: center !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .county-directory-heading > div p:last-child {
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 380px) {
+  .county-drilldown-shell {
+    padding: .55rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+
+  .county-drilldown-shell > div:first-child h2 {
+    font-size: .95rem !important;
+  }
+}
+
+.territory-explorer-screen .county-drilldown-shell {
+  border-color: #d9e3e4;
+  background-color: #fbfcf8;
+  color: #183246;
+}
+
+.dark .territory-explorer-screen .county-drilldown-shell {
+  border-color: #2b434d;
+  background-color: #142832;
+  color: #e5efed;
+}
+
+.dark .territory-explorer-screen .county-drilldown-shell h2,
+.dark .territory-explorer-screen .county-drilldown-shell h3 {
+  color: #e5efed !important;
+}
+
+.dark .territory-explorer-screen .county-drilldown-shell p {
+  color: #b3c5c4 !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel {
+  border-color: #2b434d !important;
+  background-color: #142832 !important;
+  color: #e5efed;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel h4,
+.dark .territory-explorer-screen .county-city-directory-panel .text-slate-950,
+.dark .territory-explorer-screen .county-city-directory-panel .text-slate-900,
+.dark .territory-explorer-screen .county-city-directory-panel .text-slate-700 {
+  color: #dce9e7 !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .text-slate-600,
+.dark .territory-explorer-screen .county-city-directory-panel .text-slate-500 {
+  color: #a5b8b7 !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .text-blue-700 {
+  color: #a9d8ff !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .border-slate-100,
+.dark .territory-explorer-screen .county-city-directory-panel .border-slate-200 {
+  border-color: #2b434d !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2b434d !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .bg-white,
+.dark .territory-explorer-screen .county-city-directory-panel .bg-slate-50,
+.dark .territory-explorer-screen .county-city-directory-panel .bg-slate-100 {
+  border-color: #2b434d !important;
+  background-color: #1a333b !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .bg-blue-50 {
+  background-color: #244252 !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .bg-cyan-50 {
+  background-color: #17434a !important;
+}
+
+.dark .territory-explorer-screen .county-city-directory-panel .text-cyan-800 {
+  color: #9ce4de !important;
+}
+
+.dark .geography-drilldown-breadcrumb {
+  border-color: #2b434d !important;
+  background-color: #142832 !important;
+  color: #e5efed;
+}
+
+.dark .geography-drilldown-breadcrumb .text-slate-700,
+.dark .geography-drilldown-breadcrumb .text-slate-900 {
+  color: #dce9e7 !important;
+}
+
+.dark .territory-explorer-screen .county-directory-heading > div > p:first-child {
+  color: #9bc8ff !important;
+}
+
+.dark .territory-explorer-screen details {
+  border-color: #2b434d !important;
+  background-color: #142832 !important;
+  color: #dce9e7 !important;
+}
+
+.dark .territory-explorer-screen details summary,
+.dark .territory-explorer-screen details .text-slate-700,
+.dark .territory-explorer-screen details .text-slate-600 {
+  color: #c8d8d7 !important;
+}
+
+.dark .territory-explorer-screen details .text-slate-500 {
+  color: #a5b8b7 !important;
+}

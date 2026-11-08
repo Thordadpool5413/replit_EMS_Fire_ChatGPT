@@ -1,0 +1,15 @@
+/* Owner: shell. Cascade phase: foundation. See ../README.md. */
+.pi-primary-sidebar .pi-theme-select {
+  border-color: var(--pi-nav-border);
+  background-color: var(--pi-nav-secondary);
+  color: var(--pi-nav-text);
+}
+
+html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav button[aria-current="page"] {
+  border-left: 2px solid var(--pi-accent-highlight) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="miami-vice"] .pi-mobile-nav button[aria-current="page"]::before {
+  background-color: var(--pi-accent-highlight) !important;
+}

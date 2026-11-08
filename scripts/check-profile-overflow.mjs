@@ -490,10 +490,13 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
       pageLayout.primaryNav.scrollWidth <= pageLayout.primaryNav.clientWidth + 1,
     `Primary navigation overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.primaryNav)}`,
   );
+  const expectedPrimaryHeight = pageLayout.sidebarOffsets.rootFontSize *
+    (viewport.height <= 680 ? 1.85 : viewport.height <= 760 ? 2 : 2.2);
   assert(
     pageLayout.primaryItems.every((item) =>
       !item.missing && item.visible && item.fontSize >= 11 &&
-      item.labelScrollWidth <= item.labelWidth + 1 && item.height >= 28),
+      item.labelScrollWidth <= item.labelWidth + 1 &&
+      Math.abs(item.height - expectedPrimaryHeight) <= 1),
     `Primary navigation buttons are clipped, too small, or unreadable at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.primaryItems)}`,
   );
   const primaryLeft = Math.min(...pageLayout.primaryItems.map(({ left }) => left));

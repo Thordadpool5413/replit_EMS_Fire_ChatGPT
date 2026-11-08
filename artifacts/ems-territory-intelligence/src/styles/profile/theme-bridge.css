@@ -1,0 +1,88 @@
+/* Owner: profile. Cascade phase: theme-bridge. See ../README.md. */
+.profile-workspace [class~="bg-white"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.profile-workspace [class~="bg-slate-50"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.profile-workspace [class~="border-slate-200"],
+.profile-workspace [class~="border-slate-200/90"] {
+  border-color: var(--pi-border) !important;
+}
+
+.dark .profile-workspace [class~="dark:bg-slate-900"] {
+  background-color: var(--pi-surface-bg) !important;
+}
+
+.dark .profile-workspace [class~="dark:bg-slate-800"] {
+  background-color: var(--pi-surface-subtle) !important;
+}
+
+.dark .profile-workspace [class~="dark:border-slate-800"],
+.dark .profile-workspace [class~="dark:border-slate-700"] {
+  border-color: var(--pi-border) !important;
+}
+
+.profile-workspace .pi-page-title,
+.profile-workspace .pi-profile-title {
+  color: var(--pi-text-primary) !important;
+  font-size: var(--pi-font-page-title);
+}
+
+.profile-workspace {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  --atlas-teal: var(--pi-action);
+  --briefing-line: var(--pi-border);
+  --briefing-paper: var(--pi-surface-bg);
+  --briefing-wash: var(--pi-surface-subtle);
+}
+
+.dark .profile-workspace {
+  --atlas-ink: var(--pi-text-primary);
+  --atlas-muted: var(--pi-text-secondary);
+  --atlas-line: var(--pi-border);
+  --atlas-paper: var(--pi-surface-bg);
+  --atlas-wash: var(--pi-surface-subtle);
+  --atlas-teal: var(--pi-action);
+  --briefing-line: var(--pi-border);
+  --briefing-paper: var(--pi-surface-bg);
+  --briefing-wash: var(--pi-surface-subtle);
+}
+
+.dark .profile-workspace .pi-page-title,
+.dark .profile-workspace .pi-profile-title {
+  color: var(--pi-text-primary) !important;
+}
+
+.profile-workspace > div:last-of-type > section:first-child {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-bg) !important;
+  background-image: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.profile-workspace .pi-surface,
+.profile-workspace .profile-summary-panel,
+.profile-workspace section[class*="rounded-lg"][class*="border"],
+.profile-workspace section[class*="rounded-xl"][class*="border"] {
+  border-color: var(--pi-border) !important;
+}
+
+.profile-workspace .profile-summary-panel,
+.profile-workspace [aria-label="Agency contact summary"],
+.profile-workspace [aria-label="Agency location summary"],
+.profile-workspace [aria-label="Agency evidence summary"] {
+  background: var(--pi-surface-subtle) !important;
+}
+
+.profile-workspace .profile-evidence-tag {
+  border-color: var(--pi-border) !important;
+  background: var(--pi-surface-subtle) !important;
+  color: var(--pi-text-secondary) !important;
+}

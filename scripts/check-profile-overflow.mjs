@@ -82,6 +82,10 @@ const profilePrintCases = [
     operationsLabel: 'Annual fire-rescue calls',
   },
 ];
+const printPaperSizes = [
+  { name: 'Letter', width: 8.5, height: 11, expectedSize: /612 x 792 pts \(letter\)/i },
+  { name: 'A4', width: 8.27, height: 11.69, expectedSize: /595\.\d+ x 841\.\d+ pts \(A4\)/i },
+];
 const fireProfileCases = [
   'Fire Department of New York - Emergency Medical Service Command',
   'Miami-Dade County Fire Rescue Department',
@@ -272,6 +276,18 @@ async function waitFor(cdp, expression, description, timeoutMs = 30_000) {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(`Timed out waiting for ${description}`);
+}
+
+async function waitForDownloadedFile(directory, fileName, timeoutMs = 90_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const files = await readdir(directory);
+    if (files.includes(fileName) && !files.includes(`${fileName}.crdownload`)) {
+      return path.join(directory, fileName);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Timed out waiting for downloaded file ${fileName}`);
 }
 
 async function clickVisibleButton(cdp, label, description = label) {
@@ -1261,7 +1277,14 @@ async function setPrintTheme(cdp, theme) {
   );
 }
 
-async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
+async function checkProfilePrintCase(
+  cdp,
+  testCase,
+  pdfDirectory,
+  downloadDirectory,
+  theme,
+  paperSize,
+) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(
     cdp,
@@ -1508,13 +1531,16 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
   assert(printButtonClicked, `${testCase.category} brief print action did not request browser printing`);
 
   const pdfResult = await cdp.send('Page.printToPDF', {
-    paperWidth: 8.5,
-    paperHeight: 11,
-    preferCSSPageSize: true,
+    paperWidth: paperSize.width,
+    paperHeight: paperSize.height,
+    preferCSSPageSize: false,
     printBackground: true,
     transferMode: 'ReturnAsBase64',
   });
-  const pdfPath = path.join(pdfDirectory, `${testCase.category}-${theme}-agency-brief.pdf`);
+  const pdfPath = path.join(
+    pdfDirectory,
+    `${testCase.category}-${theme}-${paperSize.name.toLowerCase()}-agency-brief.pdf`,
+  );
   await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
   const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
     execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
@@ -1529,8 +1555,8 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
     cell.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []))];
   const missingTableWords = tableWords.filter((word) => !normalizedPdfText.includes(word));
   assert(
-    /612 x 792 pts \(letter\)/i.test(pageSize),
-    `${testCase.category} PDF is not Letter portrait paper: ${pageSize}`,
+    paperSize.expectedSize.test(pageSize),
+    `${testCase.category} PDF is not ${paperSize.name} portrait paper: ${pageSize}`,
   );
   assert(
     pageCount > 0 && pageCount <= 16 && pages.length === pageCount &&
@@ -1579,8 +1605,81 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
     `${testCase.category} printed PDF includes unrelated workspace content`,
   );
   await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
+  if (testCase.category === 'ems' && theme === 'daylight' && paperSize.name === 'A4') {
+    const downloadClicked = await evaluate(cdp, `(() => {
+      const button = [...document.querySelectorAll(
+        '#briefing-dossier-modal-container button',
+      )].find((candidate) => candidate.innerText.trim() === 'Download PDF');
+      if (!button || button.disabled) return false;
+      button.click();
+      return true;
+    })()`);
+    assert(downloadClicked, 'The direct agency PDF download action was not available');
+    const exportCompleted = await waitFor(
+      cdp,
+      `(() => {
+        const text = document.querySelector('#briefing-dossier-modal-container')?.innerText ?? '';
+        return text.includes('PDF file saved successfully!') ||
+          text.includes('Issue ·');
+      })()`,
+      'the direct agency PDF export to complete',
+      150_000,
+    );
+    const exportStatus = await evaluate(
+      cdp,
+      `document.querySelector('#briefing-dossier-modal-container')?.innerText ?? ''`,
+    );
+    assert(
+      exportCompleted && exportStatus.includes('PDF file saved successfully!'),
+      `The direct agency PDF export did not complete: ${exportStatus.slice(0, 500)}`,
+    );
+    const fileName = `${testCase.agency.replace(/[^a-zA-Z0-9]/g, '_')}_ZOLL_Executive_Dossier.pdf`;
+    const directPdfPath = await waitForDownloadedFile(downloadDirectory, fileName, 15_000);
+    const [{ stdout: directPdfInfo }, { stdout: directPdfText }] = await Promise.all([
+      execFileAsync('pdfinfo', [directPdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+      execFileAsync('pdftotext', ['-layout', directPdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+    ]);
+    const directPageCount = Number(directPdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+    const directPageSize = directPdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+    const directPages = directPdfText.split('\f').map((page) => page.trim()).filter(Boolean);
+    const directNormalizedText = directPdfText.replace(/\s+/g, ' ').toLowerCase();
+    const directCompactText = directPdfText.replace(/\s+/g, '').toLowerCase();
+    const expectedSource = briefDetails.references.find((reference) => reference.links.length > 0);
+    const containsWords = (value) => value.toLowerCase().split(/\s+/)
+      .filter(Boolean)
+      .every((word) => directCompactText.includes(word.replace(/[^a-z0-9]/g, '')));
+    const directExportChecks = {
+      a4PageSize: printPaperSizes.find(({ name }) => name === 'A4').expectedSize.test(directPageSize),
+      pageCount: directPageCount,
+      pageTextCount: directPages.length,
+      allPagesHaveText: directPages.every((page) => page.length > 0),
+      agency: containsWords(testCase.agency),
+      operations: containsWords(testCase.operationsLabel),
+      sourceName: Boolean(expectedSource &&
+        containsWords(expectedSource.sourceName)),
+      sourceLink: Boolean(expectedSource && expectedSource.links.some((link) =>
+        directCompactText.includes(link.href.replace(/\s+/g, '').toLowerCase()))),
+      sourceNameExpected: expectedSource?.sourceName ?? '',
+      sourceUrlExpected: expectedSource?.links[0]?.href ?? '',
+      textSample: directNormalizedText.slice(-900),
+    };
+    assert(
+      directExportChecks.a4PageSize &&
+        directPageCount > 0 && directPageCount <= 16 &&
+        directPages.length === directPageCount &&
+        directExportChecks.allPagesHaveText &&
+        directExportChecks.agency &&
+        directExportChecks.operations &&
+        directExportChecks.sourceName &&
+        directExportChecks.sourceLink,
+      `Direct agency PDF lost A4 page sizing, readable pagination, agency details, or source links: ${JSON.stringify(directExportChecks)}`,
+    );
+    console.log(
+      `✓ Direct agency PDF / A4: ${directPageCount} non-empty page(s), agency details and source links retained`,
+    );
+  }
   console.log(
-    `✓ ${testCase.category} / ${theme}: ${pageCount} non-empty Letter page(s), contrast, page breaks, agency details, and linked source periods retained`,
+    `✓ ${testCase.category} / ${theme} / ${paperSize.name}: ${pageCount} non-empty page(s), contrast, page breaks, agency details, and linked source periods retained`,
   );
 }
 
@@ -1608,10 +1707,27 @@ async function checkFieldRoutePrint(cdp, pdfDirectory) {
     `document.querySelectorAll('#field-route-sheet .field-route-stop').length > 1`,
     'multiple existing agencies in the field route sheet',
   );
-  const routeAgencyNames = await evaluate(cdp, `[
-    ...document.querySelectorAll('#field-route-sheet .field-route-stop h3'),
-  ].map((heading) => heading.innerText.trim())`);
-  assert(routeAgencyNames.length > 1, 'The field route print check needs multiple route stops');
+  const routeStops = await evaluate(cdp, `[
+    ...document.querySelectorAll('#field-route-sheet .field-route-stop'),
+  ].map((stop) => {
+    const heading = stop.querySelector('h3');
+    const infoBlock = heading?.parentElement?.parentElement;
+    const addressTarget = infoBlock?.querySelector(':scope > div:nth-child(2)');
+    const contact = infoBlock?.querySelector(':scope > div:nth-child(3)');
+    return {
+      name: heading?.innerText.trim() ?? '',
+      score: stop.querySelector('.field-route-score')?.innerText.trim() ?? '',
+      address: [...(addressTarget?.querySelectorAll('span') ?? [])]
+        .find((span) => !span.hasAttribute('aria-hidden'))?.innerText.trim() ?? '',
+      target: addressTarget?.querySelector('strong')?.innerText.trim() ?? '',
+      contact: contact?.querySelector('span.font-semibold')?.innerText.trim() ?? '',
+    };
+  })`);
+  assert(
+    routeStops.length > 1 &&
+      routeStops.every((stop) => stop.name && stop.score && stop.address && stop.target && stop.contact),
+    `The field route print check needs multiple complete route stops: ${JSON.stringify(routeStops)}`,
+  );
 
   for (const theme of ['daylight', 'dark', 'miami-vice']) {
     await setPrintTheme(cdp, theme);
@@ -1664,7 +1780,7 @@ async function checkFieldRoutePrint(cdp, pdfDirectory) {
     assert(
       printState?.sheetVisible &&
         printState.printNavigationHidden &&
-        printState.stopCount === routeAgencyNames.length &&
+        printState.stopCount === routeStops.length &&
         printState.stopsAvoidBreak &&
         printState.scoreContrast >= 4.5 &&
         printState.scoreBackground === 'rgb(219, 234, 254)' &&
@@ -1673,33 +1789,45 @@ async function checkFieldRoutePrint(cdp, pdfDirectory) {
       `Field route print styling failed in ${theme}: ${JSON.stringify(printState)}`,
     );
 
-    const pdfResult = await cdp.send('Page.printToPDF', {
-      paperWidth: 8.5,
-      paperHeight: 11,
-      preferCSSPageSize: true,
-      printBackground: true,
-      transferMode: 'ReturnAsBase64',
-    });
-    const pdfPath = path.join(pdfDirectory, `field-route-${theme}.pdf`);
-    await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
-    const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
-      execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
-      execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
-    ]);
-    const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
-    const pageSize = pdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
-    const normalizedPdfText = extractedText.replace(/\s+/g, ' ').toLowerCase();
-    assert(
-      /612 x 792 pts \(letter\)/i.test(pageSize) &&
-        pageCount > 0 && pageCount <= 6 &&
-        routeAgencyNames.every((agency) =>
-          normalizedPdfText.includes(agency.toLowerCase())) &&
-        normalizedPdfText.includes('google maps lookup') &&
-        !normalizedPdfText.includes('field clinical & financial battlecards'),
-      `Field route PDF lost content, printed unrelated panels, or paginated unexpectedly in ${theme}: ${pageCount} pages`,
-    );
+    for (const paperSize of printPaperSizes) {
+      const pdfResult = await cdp.send('Page.printToPDF', {
+        paperWidth: paperSize.width,
+        paperHeight: paperSize.height,
+        preferCSSPageSize: false,
+        printBackground: true,
+        transferMode: 'ReturnAsBase64',
+      });
+      const pdfPath = path.join(
+        pdfDirectory,
+        `field-route-${theme}-${paperSize.name.toLowerCase()}.pdf`,
+      );
+      await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
+      const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
+        execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+        execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+      ]);
+      const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+      const pageSize = pdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+      const normalizedPdfText = extractedText.replace(/\s+/g, ' ').toLowerCase();
+      assert(
+        paperSize.expectedSize.test(pageSize) &&
+          pageCount > 0 && pageCount <= 6 &&
+          routeStops.every((stop) => [
+            stop.name,
+            stop.score,
+            stop.address,
+            stop.target,
+            stop.contact,
+          ].every((detail) => normalizedPdfText.includes(detail.toLowerCase()))) &&
+          normalizedPdfText.includes('google maps lookup') &&
+          !normalizedPdfText.includes('field clinical & financial battlecards'),
+        `Field route ${paperSize.name} PDF lost content, printed unrelated panels, or paginated unexpectedly in ${theme}: ${pageCount} pages (${pageSize})`,
+      );
+      console.log(
+        `✓ Field Work / ${theme} / ${paperSize.name}: ${pageCount} non-empty page(s), route details and status colors retained`,
+      );
+    }
     await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
-    console.log(`✓ Field Work / ${theme}: ${pageCount} non-empty Letter page(s), route details and status colors retained`);
   }
 }
 
@@ -4685,11 +4813,20 @@ async function main() {
       });
       for (const theme of ['daylight', 'dark', 'miami-vice']) {
         for (const testCase of profilePrintCases) {
-          await checkProfilePrintCase(cdp, testCase, userDataDir, theme);
+          for (const paperSize of printPaperSizes) {
+            await checkProfilePrintCase(
+              cdp,
+              testCase,
+              userDataDir,
+              downloadPath,
+              theme,
+              paperSize,
+            );
+          }
         }
       }
       await checkFieldRoutePrint(cdp, userDataDir);
-      console.log('Provider and Field Work Letter-print regression checks passed in Daylight, Dark, and Miami Vice.');
+      console.log('Provider and Field Work A4 and Letter print checks passed in Daylight, Dark, and Miami Vice.');
       return;
     }
 

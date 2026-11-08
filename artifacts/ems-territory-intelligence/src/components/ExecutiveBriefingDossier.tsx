@@ -283,7 +283,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
         text: string;
         left: number;
         top: number;
-        width: number;
         height: number;
         fontSize: number;
         bold: boolean;
@@ -301,6 +300,65 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           if (docEl) {
             docEl.style.backgroundColor = '#ffffff';
             docEl.style.color = '#0f172a';
+            const statusColors: Record<string, [string, string, string]> = {
+              fire: ['#991b1b', '#fee2e2', '#fca5a5'],
+              ems: ['#1e3a8a', '#dbeafe', '#93c5fd'],
+              reviewed: ['#166534', '#dcfce7', '#86efac'],
+              mapped: ['#1e40af', '#dbeafe', '#93c5fd'],
+              reported: ['#1e40af', '#dbeafe', '#93c5fd'],
+              warning: ['#92400e', '#fef3c7', '#fcd34d'],
+              calculated: ['#5b21b6', '#ede9fe', '#c4b5fd'],
+              'user-entered': ['#6b21a8', '#f3e8ff', '#d8b4fe'],
+              disbursed: ['#166534', '#dcfce7', '#86efac'],
+              active: ['#1e40af', '#dbeafe', '#93c5fd'],
+              planned: ['#92400e', '#fef3c7', '#fcd34d'],
+            };
+            const printableElements = [docEl, ...Array.from(docEl.querySelectorAll<HTMLElement>('*'))];
+            printableElements.forEach((printableElement) => {
+              const style = clonedDoc.defaultView?.getComputedStyle(printableElement);
+              if (!style) return;
+              const statusColorsForElement = statusColors[printableElement.dataset.statusKind ?? ''];
+              const fallbackTextColor = printableElement.matches('h1, h2, h3, strong, th')
+                ? '#111827'
+                : printableElement.tagName === 'A'
+                  ? '#1d4ed8'
+                  : '#334155';
+              const normalizeColor = (
+                property: string,
+                computedValue: string,
+                fallback: string,
+              ) => {
+                if (computedValue.includes('oklch')) {
+                  printableElement.style.setProperty(property, fallback, 'important');
+                }
+              };
+              normalizeColor('color', style.color, fallbackTextColor);
+              normalizeColor(
+                'background-color',
+                style.backgroundColor,
+                statusColorsForElement?.[1] ?? 'transparent',
+              );
+              normalizeColor(
+                'border-color',
+                style.borderColor,
+                statusColorsForElement?.[2] ?? '#cbd5e1',
+              );
+              normalizeColor('outline-color', style.outlineColor, '#cbd5e1');
+              normalizeColor('text-decoration-color', style.textDecorationColor, fallbackTextColor);
+              normalizeColor('fill', style.fill, '#334155');
+              normalizeColor('stroke', style.stroke, 'none');
+              if (style.boxShadow.includes('oklch')) {
+                printableElement.style.setProperty('box-shadow', 'none', 'important');
+              }
+              if (style.backgroundImage.includes('oklch')) {
+                printableElement.style.setProperty('background-image', 'none', 'important');
+              }
+              if (statusColorsForElement) {
+                printableElement.style.setProperty('color', statusColorsForElement[0], 'important');
+                printableElement.style.setProperty('background-color', statusColorsForElement[1], 'important');
+                printableElement.style.setProperty('border-color', statusColorsForElement[2], 'important');
+              }
+            });
 
             const rootRect = docEl.getBoundingClientRect();
             searchableLayoutWidth = rootRect.width;
@@ -331,7 +389,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   text: match[0],
                   left: rect.left - rootRect.left,
                   top: rect.top - rootRect.top,
-                  width: rect.width,
                   height: rect.height,
                   fontSize: Number.parseFloat(style.fontSize) || rect.height,
                   bold: Number.parseInt(style.fontWeight, 10) >= 600 || style.fontWeight === 'bold',
@@ -347,12 +404,12 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
-        format: 'letter'
+        format: 'a4'
       });
 
-      const pageWidth = 215.9; // Letter width in mm
-      const pageHeight = 279.4; // Letter height in mm
-      const margin = 8;
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 12;
       const contentWidth = pageWidth - (margin * 2);
       const contentHeight = pageHeight - (margin * 2);
       const imgWidth = contentWidth;
@@ -364,7 +421,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
       // Keep the existing image-based appearance and page breaks.
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-        if (pageIndex > 0) pdf.addPage('letter', 'p');
+        if (pageIndex > 0) pdf.addPage('a4', 'p');
         pdf.addImage(imgData, 'JPEG', margin, margin - pageIndex * contentHeight, imgWidth, imgHeight);
       }
 
@@ -383,7 +440,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           margin + baselineMm - pageIndex * contentHeight,
           {
             renderingMode: 'invisible',
-            maxWidth: Math.max(0.1, item.width * cssPixelToMm),
           },
         );
       }
@@ -473,7 +529,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       table { font-size: 9pt; }
       th, td { padding: 5px !important; }
     }
-    @page { size: letter portrait; margin: 12mm; }
+    @page { size: auto; margin: 12mm; }
     @media print {
       html, body { width: auto; min-height: 0; padding: 0 !important; background: #fff !important; }
       #briefing-dossier-document { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
@@ -1580,7 +1636,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       <style>{`
         @media print {
           @page {
-            size: letter portrait;
+            size: auto;
             margin: 12mm;
           }
 

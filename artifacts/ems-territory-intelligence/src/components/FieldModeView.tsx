@@ -483,7 +483,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       <style>{`
         @media print {
           @page {
-            size: letter portrait;
+            size: auto;
             margin: 12mm;
           }
 

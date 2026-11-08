@@ -50,3 +50,9 @@ For Letter-print regressions, capture PDFs with Chromium's DevTools print comman
 **Why:** Multi-column PDF extraction order is not a reliable representation of the visual cell boundaries, even when the printed table is intact.
 
 **How to apply:** Use the installed `pdfinfo` and `pdftotext` tools alongside DOM measurements under print media when validating agency brief output.
+
+In Plan mode, a temporary Chromium user-data directory alone does not prevent browser writes to the workspace: ancillary crash-report and NSS certificate stores can still use workspace-backed OS profile locations.
+
+**Why:** Read-only audits were blocked by Chromium writing crash settings and certificate database files outside its requested temporary user-data directory.
+
+**How to apply:** Prefer the platform screenshot tool for read-only planning previews. If a temporary browser harness is necessary, isolate all ancillary OS profile storage under `/tmp` before launching; never treat a blocked launch or an early loading screenshot as a completed layout check.

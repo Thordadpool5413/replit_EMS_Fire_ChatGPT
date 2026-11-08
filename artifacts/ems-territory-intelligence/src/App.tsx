@@ -37,6 +37,7 @@ import {
 } from './services/agencySourceRecordStore';
 import { TopBar } from './components/TopBar';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { WorkspaceLoadingState } from './components/WorkspaceLoadingState';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
@@ -1205,7 +1206,7 @@ export default function App() {
           </section>
         )}
 
-        <React.Suspense fallback={<div className="workspace-view-container min-h-40 flex items-center justify-center text-sm text-slate-500" role="status">Loading workspace…</div>}>
+        <React.Suspense fallback={<WorkspaceLoadingState />}>
         <ErrorBoundary onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
         {activeTab === 'home' && (

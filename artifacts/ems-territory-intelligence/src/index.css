@@ -10907,3 +10907,103 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
     animation: none;
   }
 }
+
+/* Short laptop viewports: keep every sidebar destination visible without a
+   nested scroll area. The logo block and mobile navigation remain untouched. */
+@media (min-width: 768px) and (max-height: 600px) {
+  .pi-primary-sidebar {
+    overflow: hidden;
+  }
+
+  .pi-primary-nav {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
+    scrollbar-width: none !important;
+    gap: 0.22rem !important;
+    padding: 0.1rem 0.55rem !important;
+  }
+
+  .pi-primary-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .pi-primary-nav > div + div {
+    margin-top: 0 !important;
+  }
+
+  .pi-primary-nav > div > div:first-child {
+    margin-bottom: 0.12rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .pi-primary-nav > div:first-child > div:last-child {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.06rem !important;
+  }
+
+  .pi-primary-nav > div:nth-child(2) > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.16rem !important;
+  }
+
+  .pi-primary-nav > div > div:last-child > * + * {
+    margin-top: 0 !important;
+  }
+
+  .pi-primary-nav button {
+    min-height: 1.42rem !important;
+    padding: 0.08rem 0.45rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .pi-sidebar-quick-actions {
+    flex: 0 0 auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.18rem !important;
+    margin-top: 0 !important;
+    padding: 0.12rem 0.5rem 0.18rem !important;
+  }
+
+  .pi-sidebar-quick-actions > * + * {
+    margin-top: 0 !important;
+  }
+
+  .pi-sidebar-quick-actions > div:not(.grid):not(.relative),
+  .pi-sidebar-quick-actions > button[aria-label*="pending sync"] {
+    grid-column: 1 / -1;
+  }
+
+  .pi-sidebar-quick-actions > div.grid {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .pi-sidebar-quick-actions > div.relative {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .pi-sidebar-quick-actions > button,
+  .pi-sidebar-quick-actions > div > button {
+    width: 100%;
+    min-width: 0;
+    height: 1.42rem !important;
+    min-height: 1.42rem !important;
+    padding-inline: 0.35rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .pi-sidebar-quick-actions > div.grid > button {
+    min-width: 0;
+  }
+
+  .pi-sidebar-quick-actions kbd {
+    display: none !important;
+  }
+}

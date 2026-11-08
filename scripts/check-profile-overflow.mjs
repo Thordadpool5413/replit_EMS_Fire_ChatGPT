@@ -1410,6 +1410,24 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
         const heading = doc?.querySelector('.print-agency-identity h1');
         const summaryValue = doc?.querySelector('.print-summary-value');
         const sourceLink = doc?.querySelector('.print-source-references a');
+        const headings = [...(doc?.querySelectorAll('h1, h2, h3, th') ?? [])]
+          .map((element) => ({
+            text: element.innerText.trim(),
+            color: getComputedStyle(element).color,
+            contrast: contrast(getComputedStyle(element).color, white),
+          }))
+          .filter((element) => element.text);
+        const evidenceText = [...(doc?.querySelectorAll('.print-source-references li') ?? [])]
+          .flatMap((item) => [...item.children]
+            .filter((element) =>
+              element.tagName === 'DIV' &&
+              !element.querySelector('.print-status-badge, a') &&
+              element.innerText.trim())
+            .map((element) => ({
+              text: element.innerText.trim(),
+              color: getComputedStyle(element).color,
+              contrast: contrast(getComputedStyle(element).color, white),
+            })));
         const statuses = [...(doc?.querySelectorAll('.print-source-references .print-status-badge') ?? [])]
           .map((element) => {
             const style = getComputedStyle(element);
@@ -1424,7 +1442,9 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
           documentColor: getComputedStyle(doc).color,
           documentBackground: getComputedStyle(doc).backgroundColor,
           headingContrast: heading ? contrast(getComputedStyle(heading).color, white) : 0,
+          headings,
           summaryContrast: summaryValue ? contrast(getComputedStyle(summaryValue).color, white) : 0,
+          evidenceText,
           sourceLinkContrast: sourceLink ? contrast(getComputedStyle(sourceLink).color, white) : 0,
           statuses,
         };
@@ -1458,7 +1478,11 @@ async function checkProfilePrintCase(cdp, testCase, pdfDirectory, theme) {
       printState.colors.documentColor === 'rgb(17, 24, 39)' &&
       printState.colors.documentBackground === 'rgb(255, 255, 255)' &&
       printState.colors.headingContrast >= 7 &&
+      printState.colors.headings.length > 0 &&
+      printState.colors.headings.every((heading) => heading.contrast >= 4.5) &&
       printState.colors.summaryContrast >= 7 &&
+      printState.colors.evidenceText.length > 0 &&
+      printState.colors.evidenceText.every((evidence) => evidence.contrast >= 4.5) &&
       printState.colors.sourceLinkContrast >= 4.5 &&
       printState.colors.statuses.length > 0 &&
       printState.colors.statuses.every((status) =>

@@ -1,4 +1,4 @@
-- [Display available agency data](display-available-agency-data.md) — show available information and let end users verify it directly with the account.
+- [Display available agency and county data](display-available-agency-data.md) — keep current values visible as working references; separate source status from user confirmation.
 - [County Medicare denial matching](county-mcr-denial-mapping.md) — use exact county FIPS and same-scope claims counts; CMS county use/spending data is not a denial source.
 - [EMS territory map metrics](gis-ohca-fleet-heatmap.md) — use the selected dark command-center style with vivid semantic shading and distinct missing/selection states.
 - [Home and navigation focus](home-navigation-focus.md) — keep Home map-only, use one workspace entry with consistent view tabs, and retain specialist tools.

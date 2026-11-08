@@ -1,13 +1,15 @@
 ---
-name: Display available agency data
-description: Product rule for showing EMS and fire agency information before end-user verification.
+name: Display available agency and county data
+description: Product rule for showing current EMS, fire, and county information before end-user verification.
 ---
 
 Map as much available EMS and fire agency data, information, logic, and API/source detail as possible. Display every available value—including estimates, generated prospect hypotheses, and candidate matches—so the end user can verify it directly with the account. Verification is the end user's responsibility; lack of confirmation or a mapped source must never block display or be framed as a warning.
 
+For county and state context, use the data currently available in the app as the working reference until an end user confirms or corrects it. Keep unconfirmed values visible and clearly separate source-reported facts, estimates, source-native risk categories, missing data, and user-confirmed information. Pending confirmation describes review status; it does not mean the value is false or bad.
+
 **Why:** the user’s goal is comprehensive agency intelligence for end-user verification, not to treat every unverified value as wrong or suppress it.
 
-**How to apply:** map each field to its source or API, agency-matching key, reporting period, refresh date, and calculation where available. Label whether a value is sourced, estimated, generated, or a candidate, and show its basis so users can assess it. Keep source references and verification state separate from data visibility; avoid “source needed” or “unverified” blockers. PulseIQ scores are estimates: show them even when inputs lack citations, use neutral estimate/source labels, and do not frame estimate status as a warning.
+**How to apply:** map each field to its source or API, geographic scope or agency-matching key, reporting period, refresh date, and calculation where available. Label whether a value is sourced, estimated, generated, or a candidate, and show its basis so users can assess it. Keep source references and verification state separate from data visibility; avoid “source needed” or “unverified” blockers. Use source-defined risk categories when available; do not invent good/bad thresholds for metrics without a valid benchmark. PulseIQ scores are estimates: show them even when inputs lack citations, use neutral estimate/source labels, and do not frame estimate status as a warning.
 
 For missing agency metrics, show “Not reported” rather than substituting a typical or sample number. Preserve reported zero as a real value. Show an estimate only when its agency inputs and calculation method are visible.
 

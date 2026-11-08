@@ -8,6 +8,8 @@ const baseUrl = process.env.THEME_TEST_URL ?? `http://127.0.0.1:${process.env.PO
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const allViewports = [
   { width: 390, height: 844, mobile: true },
+  { width: 767, height: 1024, mobile: true },
+  { width: 768, height: 1024, mobile: false },
   { width: 820, height: 1180, mobile: false },
   { width: 1024, height: 768, mobile: false },
   { width: 1280, height: 900, mobile: false },
@@ -2258,6 +2260,13 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  if (process.env.THEME_NAVIGATION_ONLY === '1') {
+    await checkHome(cdp, false);
+    await checkHome(cdp, true);
+    await checkHome(cdp, 'miami-vice');
+    console.log(`PASS ${viewport.width}×${viewport.height}: active navigation, focus ring, and horizontal overflow in all themes`);
+    return;
+  }
   if (process.env.THEME_GIS_ONLY === '1') {
     await checkGisLegendAndRiskColors(cdp, false, viewport);
     await checkGisLegendAndRiskColors(cdp, true, viewport);

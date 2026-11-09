@@ -1554,33 +1554,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* ================================================================
-                BLOCK 3: WHAT WE KNOW — 4 STRUCTURED INFORMATION CARDS
+                PLANNING CONTEXT — discovery prompts and unverified fit
                ================================================================ */}
             <div className="space-y-3">
               <h2 className="text-xs font-semibold text-[#53657B] dark:text-slate-400">
-                What we know &middot; Structured evidence
+                Planning context &middot; Confirm with the agency
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Block 1: Source-reviewed identity */}
-                <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
-                  <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                    Provider identity
-                  </div>
-                  <div className="text-sm font-semibold text-[#14283F] dark:text-white">
-                    {agency.address || 'Address not reported'}
-                  </div>
-                  <p className="text-xs text-[#53657B] dark:text-slate-300">
-                    {agency.stateLicenseNumber && hasAgencyFactEvidence(agency, 'departmentRegistry')
-                      ? `Florida EMS provider license ${agency.stateLicenseNumber} is listed by the Florida Department of Health.`
-                      : `State license: ${agency.stateLicenseNumber || 'Not reported'}`}
-                  </p>
-                  <div className="text-[11px] text-[#53657B] dark:text-slate-400 pt-1">
-                    Address and license sources do not verify stations, volume, equipment, or contracts.
-                  </div>
-                </div>
-
-                {/* Block 2: Important Questions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* Discovery prompts are planning context, not verified agency facts. */}
                 <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
                   <div className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                     Important questions
@@ -1596,7 +1578,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </div>
                 </div>
 
-                {/* Block 3: Relevant Timing */}
+                {/* Relevant timing */}
                 <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
                   <div className="text-xs font-semibold text-[#285EE8] dark:text-blue-400">
                     Relevant timing
@@ -1611,7 +1593,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </p>
                 </div>
 
-                {/* Block 4: Potential Product Relevance */}
+                {/* Potential product relevance */}
                 <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
                   <div className="text-xs font-semibold text-[#14283F] dark:text-slate-200">
                     Potential product fit
@@ -1735,7 +1717,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   Hardware, operations &amp; contracts
                 </h2>
                 <p className="mt-0.5 text-[11px] leading-snug text-[#53657B] dark:text-slate-400">
-                  Source details, periods and scope appear where mapped; users should confirm values with the listed source.
+                  Source details, periods and scope appear where mapped. Confirm figures with the cited source; address and license sources do not verify operational metrics.
                 </p>
               </div>
               <span className="shrink-0 rounded-md border border-[#DFE6EF] bg-[#F5F7FA] px-2 py-1 text-[10px] font-semibold text-[#53657B] dark:border-[#33445A] dark:bg-[#16243A] dark:text-slate-300">

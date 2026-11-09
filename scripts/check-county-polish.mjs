@@ -220,7 +220,7 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
-      if (desktop) assert(row.cardHeight <= 720,
+      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 560 : 680),
         `${label}: county card too tall (${row.cardHeight}px)`);
       assert.notEqual(row.primaryNumberColor, row.labelColor, `${label}: key numbers lack color emphasis`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
@@ -243,10 +243,14 @@ try {
         await layout(`${label} ${theme} county`, desktop);
         const pair = await evaluate(`(() => {
           const cards = [...document.querySelectorAll('.county-signal-list > .county-signal-row')].slice(0,2);
-          return {parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
+          const cardiac=cards[0].querySelector('[data-testid="text-county-ohca-12001"]');
+          const transport=cards[0].querySelector('[data-testid="text-county-transport-12001"]');
+          return {cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
+            parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
+        assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
         if (desktop) {
           assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);
           assert(Math.abs(pair.cards[0].w - pair.cards[1].w) < 2, `${label} ${theme}: unequal card widths`);

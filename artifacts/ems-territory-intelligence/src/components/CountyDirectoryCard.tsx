@@ -118,7 +118,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
                 <dd>{num('annualEmergencyTransports', v => v.toLocaleString())}</dd>
               </div>
               <div data-figure-key="annualCardiacArrestIncidents">
-                <dt title="Out-of-hospital cardiac arrest incidents per year"><HeartPulse aria-hidden="true" /> Cardiac arrests / yr</dt>
+                <dt title="Out-of-hospital cardiac arrests per year. Red identifies the cardiac metric, not a risk threshold."><HeartPulse aria-hidden="true" /> Cardiac arrests / yr</dt>
                 <dd data-testid={`text-county-ohca-${c.countyFips}`}>{num('annualCardiacArrestIncidents', v => v.toLocaleString())}</dd>
               </div>
             </dl>

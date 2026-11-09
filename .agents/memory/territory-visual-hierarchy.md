@@ -43,13 +43,13 @@ Emphasize population, average EMS transport time, and annual cardiac arrests ove
 
 **Why:** The user approved this hierarchy to make county cards easier to scan without hiding available data or inventing good/bad judgments.
 
-**How to apply:** Use stronger neutral numbers for the three key figures, quieter supporting/geographic rows, and low-chrome place links. Keep every figure and actual source, vintage, scope, and period visible.
+**How to apply:** Use stronger numbers for the three key figures, quieter supporting/geographic rows, and low-chrome place links. The user explicitly requested a red cardiac-arrest accent; treat this as a metric-category cue, not an inferred risk threshold. Keep every figure and actual source, vintage, scope, and period visible.
 
 Readability improvements alone are not enough for county cards: the user wants the data to look and feel visually impressive and appealing, not like a plain table inside a white box.
 
 **Why:** The user rejected the clearer, neutral card presentation and subsequently rejected the data area again after a blue header, metric icons, and a tinted supporting-facts strip were added.
 
-**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user also rejected the enlarged response/community composition as too large and explicitly requested color in the data itself. Keep the card compact, emphasize key numeric values with shared brand ink, and retain readable labels. Avoid rainbow metric accents, hidden details, or invented good/bad judgments.
+**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user also rejected empty space in half-width response/community cards. Avoid stretching shorter cards to match neighbors; use the available interior space for aligned facts instead of centered metrics beside tall columns. Emphasize key numeric values with shared brand ink and the requested cardiac red accent. Retain readable labels and avoid hidden details or invented good/bad judgments.
 
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 

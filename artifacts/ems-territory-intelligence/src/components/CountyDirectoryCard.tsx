@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight, ExternalLink, ShieldAlert, Users, Ambulance, MapPin, Landmark } from 'lucide-react';
+import { ArrowRight, ExternalLink, ShieldAlert, Users, Ambulance, HeartPulse, Siren, Hospital, UserRound, HandCoins, Wallet, MapPin, Landmark, Activity, LayoutList } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
@@ -50,10 +51,10 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
   };
 
   const fig = (
-    key: CountyFigureSourceKey, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string,
+    key: CountyFigureSourceKey, Icon: LucideIcon, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string,
   ) => (
     <div className={`cb-fig cb-fig--${key}`} data-figure-key={key}>
-      <dt title={title}>{label}</dt>
+      <dt title={title}><span className="cb-ico" aria-hidden="true"><Icon /></span>{label}</dt>
       <dd data-testid={testId}>{value}</dd>
     </div>
   );
@@ -114,27 +115,27 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
         <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
           <section className="cb-group cb-group--snapshot" aria-labelledby={`${titleId}-snapshot`}>
-            <h4 id={`${titleId}-snapshot`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><Ambulance /></span>Operational snapshot</h4>
+            <h4 id={`${titleId}-snapshot`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><Activity /></span>Operational snapshot</h4>
             <dl className="cb-figs">
-              {fig('population', 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
-              {fig('averageTransportMinutes', 'Average transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
-              {fig('annualCardiacArrestIncidents', 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
+              {fig('population', Users, 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
+              {fig('averageTransportMinutes', Ambulance, 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('annualCardiacArrestIncidents', HeartPulse, 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
             </dl>
           </section>
           <section className="cb-group cb-group--context" aria-labelledby={`${titleId}-context`}>
-            <h4 id={`${titleId}-context`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><Users /></span>County context</h4>
+            <h4 id={`${titleId}-context`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><LayoutList /></span>County context</h4>
             <dl className="cb-figs">
-              {fig('annualEmergencyTransports', 'Emergency transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency transports per year')}
-              {fig('primaryCathLabDistanceMiles', 'Primary cath lab distance', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
-              {fig('seniorPopPct', 'Residents age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
-              {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
-              {fig('medianIncome', 'Median household income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
+              {fig('annualEmergencyTransports', Siren, 'EMS transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency transports per year')}
+              {fig('primaryCathLabDistanceMiles', Hospital, 'Cath lab distance', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
+              {fig('seniorPopPct', UserRound, 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`), undefined, 'Residents age 65 and older')}
+              {fig('povertyRatePct', HandCoins, 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
+              {fig('medianIncome', Wallet, 'Median income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
             </dl>
           </section>
         </div>
 
         <dl className="cb-ref" data-cap="Geography" aria-label={`Geography for ${c.countyName}`}>
-          <div><dt><MapPin aria-hidden="true" />Land area</dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
+          <div><dt title="Land area"><MapPin aria-hidden="true" />Area</dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
           <div><dt>Centroid</dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
           <div className="cb-ref-wide"><dt>ZIPs{zips.length ? ` (${zips.length})` : ''}</dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
           <div className="cb-ref-wide">

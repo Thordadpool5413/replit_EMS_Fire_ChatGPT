@@ -17,7 +17,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, ShieldAlert, Users, Ambulance, MapPin } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, ShieldAlert, Users, Ambulance, HeartPulse, MapPin } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
 
@@ -393,10 +393,17 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     )}
                   </section>
 
-                  <dl className="ci-stats">
-                    <div><span className="ci-ico" aria-hidden="true"><Users /></span><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                    <div><span className="ci-ico" aria-hidden="true"><Ambulance /></span><dt>Average EMS transport time</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
-                  </dl>
+                  {(() => {
+                    const ohca = inspectedCounty.node.countyRecord?.annualCardiacArrestIncidents;
+                    const hasOhca = typeof ohca === 'number' && Number.isFinite(ohca);
+                    return (
+                      <dl className="ci-stats">
+                        <div className="ci-stat"><dt><span className="ci-ico" aria-hidden="true"><Users /></span>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                        <div className="ci-stat"><dt title="Average EMS transport time"><span className="ci-ico" aria-hidden="true"><Ambulance /></span>Avg transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
+                        <div className="ci-stat ci-stat--cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><span className="ci-ico" aria-hidden="true"><HeartPulse /></span>Cardiac arrests</dt><dd>{hasOhca ? <>{ohca.toLocaleString()}<small> /yr</small></> : <span className="ci-na">Not reported</span>}</dd></div>
+                      </dl>
+                    );
+                  })()}
 
                   <section className="ci-places" aria-label="Mapped places">
                     <h5 className="ci-section"><MapPin aria-hidden="true" />Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>

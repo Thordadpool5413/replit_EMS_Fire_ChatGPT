@@ -43,7 +43,7 @@ County views need purposeful icons, better labels, and restrained color as well 
 
 **Why:** The user rejected the plain label/value redesign and explicitly requested icons, color, and improved layout for both previews and directory cards.
 
-**How to apply:** Give related information recognizable section cues without turning every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.
+**How to apply:** Give individual metrics recognizable icons, including population, transport time, and cardiac arrests; section-level icons alone do not satisfy this requirement. Do not turn every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.
 
 Use the intelligence-brief direction for county previews and directory cards: stronger typography, fewer boxes, and clear hierarchy rather than a clinical dashboard.
 

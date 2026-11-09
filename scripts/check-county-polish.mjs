@@ -382,7 +382,8 @@ try {
           const transport=cards[0].querySelector('[data-testid="text-county-transport-12001"]');
           const metrics=[...cards[0].querySelectorAll('[data-figure-key]')].map(metric=>{
             const value=metric.querySelector('dd'), label=metric.querySelector('dt');
-            return {key:metric.dataset.figureKey,context:!!metric.closest('.cb-group--context'),color:getComputedStyle(value).color,
+            const icon=metric.querySelector('dt .cb-ico svg');
+            return {key:metric.dataset.figureKey,icon:!!icon && icon.getBoundingClientRect().width>=12,context:!!metric.closest('.cb-group--context'),color:getComputedStyle(value).color,
               labelColor:getComputedStyle(label).color,size:parseFloat(getComputedStyle(value).fontSize),
               right:value.getBoundingClientRect().right,
               labelClipped:label.scrollWidth > label.clientWidth + 1,
@@ -401,6 +402,7 @@ try {
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
+        assert(pair.metrics.every(metric=>metric.icon), `${label} ${theme}: a county metric lost its visible icon`);
         assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
         assert.deepEqual(pair.groups,['Operational snapshot','County context'],`${label} ${theme}: county brief groups missing`);
         assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);

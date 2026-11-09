@@ -49,7 +49,7 @@ Readability improvements alone are not enough for county cards: the user wants t
 
 **Why:** The user rejected the clearer, neutral card presentation and subsequently rejected the data area again after a blue header, metric icons, and a tinted supporting-facts strip were added.
 
-**How to apply:** Redesign the data composition itself, not just the header or surrounding color. Give the county brief a deliberate visual identity without returning to oversized panels, rainbow metric accents, hidden details, or invented good/bad judgments.
+**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user also rejected the enlarged response/community composition as too large and explicitly requested color in the data itself. Keep the card compact, emphasize key numeric values with shared brand ink, and retain readable labels. Avoid rainbow metric accents, hidden details, or invented good/bad judgments.
 
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 

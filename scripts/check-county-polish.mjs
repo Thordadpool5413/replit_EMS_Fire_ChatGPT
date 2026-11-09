@@ -201,7 +201,10 @@ try {
       const text = card.innerText;
       const placeButtons = [...card.querySelectorAll('.county-profile-city-list button')];
       const sources = card.querySelector('.county-figure-source-details');
-      return {text, closedDetails:card.querySelectorAll('details:not([open])').length,
+      return {text, cardHeight:card.getBoundingClientRect().height,
+        primaryNumberColor:getComputedStyle(card.querySelector('.cb-focal dd')).color,
+        labelColor:getComputedStyle(card.querySelector('.cb-focal dt')).color,
+        closedDetails:card.querySelectorAll('details:not([open])').length,
         figureKeys:[...card.querySelectorAll('[data-figure-key]')].map(item=>item.getAttribute('data-figure-key')),
         placeNames:placeButtons.map(button=>button.innerText.trim()),sourceText:sources?.innerText ?? '',
         titleSize:parseFloat(getComputedStyle(card.querySelector('h3')).fontSize),
@@ -217,6 +220,10 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
+      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 440 : 510),
+        `${label}: county card too tall (${row.cardHeight}px)`);
+      assert.notEqual(row.primaryNumberColor, row.labelColor, `${label}: key numbers lack color emphasis`);
+      console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
       assert.equal(row.figureKeys.length, 8, `${label}: county figures duplicated or removed`);
       assert.equal(new Set(row.figureKeys).size, 8, `${label}: each county figure must appear once`);

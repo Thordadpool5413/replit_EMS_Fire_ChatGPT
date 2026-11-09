@@ -53,7 +53,6 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
     <article aria-labelledby={titleId} className="county-brief county-signal-row" data-testid={`row-county-signals-${c.countyFips}`}>
       <header className="cb-head">
         <div className="cb-ident">
-          <p className="cb-eyebrow">County brief</p>
           <h3 id={titleId} className="cb-name">{c.countyName}</h3>
           <p className="cb-seat"><MapPin aria-hidden="true" /> Seat <strong>{c.countySeat}</strong></p>
         </div>

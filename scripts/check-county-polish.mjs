@@ -295,9 +295,9 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
-      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 306 : 345),
+      // The approved restrained layout puts seat/FIPS on a separate identity line.
+      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 330 : 345),
         `${label}: county card too tall (${row.cardHeight}px)`);
-      assert.notEqual(row.primaryNumberColor, row.labelColor, `${label}: key numbers lack color emphasis`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
       assert.equal(row.figureKeys.length, 8, `${label}: county figures duplicated or removed`);
@@ -328,14 +328,20 @@ try {
               labelSize:parseFloat(getComputedStyle(label).fontSize)};
           });
           return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
+            wellBackground:getComputedStyle(cards[0].querySelector('.cb-figs-wrap')).backgroundColor,
+            seatTop:cards[0].querySelector('.cb-seat').getBoundingClientRect().top,
+            titleBottom:cards[0].querySelector('.cb-name').getBoundingClientRect().bottom,
             parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
+        assert.equal(pair.wellBackground,'rgba(0, 0, 0, 0)',`${label} ${theme}: tinted metric panel returned`);
+        assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
         assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
-        assert(pair.metrics.every(metric=>metric.color !== metric.labelColor),
-          `${label} ${theme}: a metric lacks colored value emphasis`);
-        assert(new Set(pair.metrics.map(metric=>metric.color)).size >= 5, `${label} ${theme}: category colors not applied`);
+        const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');
+        assert.equal(new Set(neutralMetrics.map(metric=>metric.color)).size,1,
+          `${label} ${theme}: decorative metric colors returned`);
+        assert(pair.cardiacColor !== neutralMetrics[0].color, `${label} ${theme}: cardiac topic cue missing`);
         assert(pair.metrics.every(metric=>metric.size >= 17 && metric.labelSize >= 12),
           `${label} ${theme}: metric type too small`);
         assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 2.2),

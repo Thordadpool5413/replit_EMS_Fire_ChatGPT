@@ -9,11 +9,11 @@ For the Home territory map, make the map the visual focus and show the selected 
 
 **How to apply:** Keep map texture and atmosphere on a full-bleed viewport layer rather than relying on the geometry SVG's opaque background. Reduce surrounding chrome before shrinking readable text. Fit the map without cropping, balance the map and inspector widths, and verify short-laptop and phone layouts for visible background coverage, horizontal overflow, or clipped legend labels. Preserve available data, citations, actions, and usable map controls.
 
-Use shared app theme tokens for county and provider surfaces. County directory metrics are an explicit exception to the earlier neutral-only metric direction: the user requested topic color for all county data, including cardiac red. Use FEMA risk colors only for the risk category defined by the source.
+Use shared app theme tokens for county and provider surfaces. County figures use restrained colors: neutral numbers for most facts, red for cardiac arrests as a topic cue, and brand color for actions/selection. Use FEMA risk colors only for the risk category defined by the source.
 
-**Why:** the user asked for a restrained, consistent app theme but subsequently repeated that every county metric needs color to attract attention, not only cardiac arrests.
+**Why:** After rejecting the multicolor county cards as visually cluttered, the user explicitly chose “Use restrained colors (recommended),” superseding the earlier request for a separate color on every metric.
 
-**How to apply:** Use shared canvas, surface, text, border, and action tokens in all themes. Give county metrics consistent, readable topic accents; do not imply performance thresholds or unvalidated risk ratings. Preserve FEMA/map palettes and keep surfaces quiet.
+**How to apply:** Use shared canvas, surface, text, border, and action tokens in all themes. Do not restore rainbow metric colors or the tinted metric block. Keep readable neutral numbers and cardiac red without implying performance thresholds or unvalidated risk ratings. Preserve FEMA/map palettes.
 
 Do not modify the existing app logo during visual or responsive changes. If it appears clipped, correct the surrounding layout rather than changing the logo asset or its styling.
 
@@ -49,7 +49,7 @@ Readability improvements alone are not enough for county cards: the user wants t
 
 **Why:** The user rejected the clearer, neutral card presentation and subsequently rejected the data area again after a blue header, metric icons, and a tinted supporting-facts strip were added.
 
-**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user rejected roomy response/community panels, narrow multi-column metric matrices with colored ticks, an eight-row label/value ledger, and freely wrapping supporting figures that run together. Do not treat those as approved designs. Keep two half-width cards with clear primary/supporting hierarchy and topic color. Avoid stretching shorter cards to match neighbors. Retain readable labels and avoid invented good/bad judgments.
+**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user rejected roomy response/community panels, narrow multi-column metric matrices with colored ticks, an eight-row label/value ledger, and freely wrapping supporting figures that run together. Do not treat those as approved designs. Keep two half-width cards with clear primary/supporting hierarchy and restrained color. Avoid stretching shorter cards to match neighbors. Retain readable labels and avoid invented good/bad judgments.
 
 Keep every county detail visible; do not move secondary figures, geography, places, or source records into an expandable section.
 

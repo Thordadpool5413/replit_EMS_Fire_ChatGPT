@@ -202,8 +202,8 @@ try {
       const placeButtons = [...card.querySelectorAll('.county-profile-city-list button')];
       const sources = card.querySelector('.county-figure-source-details');
       return {text, cardHeight:card.getBoundingClientRect().height,
-        primaryNumberColor:getComputedStyle(card.querySelector('.cb-focal dd')).color,
-        labelColor:getComputedStyle(card.querySelector('.cb-focal dt')).color,
+        primaryNumberColor:getComputedStyle(card.querySelector('[data-testid="text-county-population-12001"]')).color,
+        labelColor:getComputedStyle(card.querySelector('[data-figure-key="population"] dt')).color,
         closedDetails:card.querySelectorAll('details:not([open])').length,
         figureKeys:[...card.querySelectorAll('[data-figure-key]')].map(item=>item.getAttribute('data-figure-key')),
         placeNames:placeButtons.map(button=>button.innerText.trim()),sourceText:sources?.innerText ?? '',
@@ -220,7 +220,7 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
-      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 440 : 510),
+      if (desktop) assert(row.cardHeight <= 720,
         `${label}: county card too tall (${row.cardHeight}px)`);
       assert.notEqual(row.primaryNumberColor, row.labelColor, `${label}: key numbers lack color emphasis`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
@@ -241,6 +241,19 @@ try {
         })()`);
         await pause(200);
         await layout(`${label} ${theme} county`, desktop);
+        const pair = await evaluate(`(() => {
+          const cards = [...document.querySelectorAll('.county-signal-list > .county-signal-row')].slice(0,2);
+          return {parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
+            cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
+        })()`);
+        assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
+        if (desktop) {
+          assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);
+          assert(Math.abs(pair.cards[0].w - pair.cards[1].w) < 2, `${label} ${theme}: unequal card widths`);
+          assert(pair.cards[0].w <= pair.parentWidth * .51, `${label} ${theme}: cards not half width`);
+        } else {
+          assert(pair.cards[1].y > pair.cards[0].y + pair.cards[0].h - 1, `${label} ${theme}: phone cards not stacked`);
+        }
         await capture(`${label}-directory-${theme}`, '[data-testid="row-county-signals-12001"]');
       }
       if (viewport.width === 1366) {

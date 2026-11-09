@@ -3,14 +3,14 @@
    followed by an access rail. Numeric hierarchy carries emphasis, not metric-specific color.
    All color derives from --pi-action tokens, so Daylight / Dark / Miami follow automatically.
    The only non-brand color is the FEMA source-defined category swatch.
-   Card widths: ~770px at 1024 (210px sidebar), ~1100px at 1366, ~350px at 390 phone. */
+   Cards use two equal laptop columns and a single phone column. */
 .county-brief {
   container-type: inline-size;
   --cb-band: var(--pi-action);
   --cb-band-deep: color-mix(in srgb, var(--pi-action) 72%, #06122b);
   --cb-tint: var(--pi-action-subtle);
   --cb-rule: color-mix(in srgb, var(--pi-action) 18%, var(--pi-border));
-  display: grid; min-width: 0; overflow: hidden;
+  display: grid; grid-template-rows: auto 1fr; min-width: 0; overflow: hidden;
   border: 1px solid var(--cb-rule); border-radius: .85rem;
   background: var(--pi-surface-bg);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--pi-action) 10%, transparent),
@@ -18,7 +18,13 @@
   scroll-margin-top: 5rem;
   transition: box-shadow 180ms ease, transform 180ms ease;
 }
-.county-brief + .county-brief { margin-top: .75rem; }
+.county-signal-list:has(> .county-brief) {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; align-items: stretch;
+}
+@media (min-width: 900px) {
+  .county-signal-list:has(> .county-brief) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.county-signal-list > .county-brief { margin: 0 !important; width: auto !important; max-width: none !important; }
 .county-brief:hover {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--pi-action) 14%, transparent),
               0 12px 28px -14px color-mix(in srgb, var(--pi-action) 60%, transparent);
@@ -216,4 +222,45 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .county-brief, .county-brief .cb-inspect, .county-brief .cb-inspect svg, .county-brief .cb-place, .county-brief .cb-link { transition: none; }
+}
+
+/* ---------- Half-width composition (cards ~340-560px) ---------- */
+.county-brief .cb-head { grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "ident inspect" "risk risk"; padding: .6rem .8rem; gap: .5rem; }
+.county-brief .cb-risk { justify-self: stretch !important; grid-template-columns: auto minmax(0,1fr); }
+.county-brief .cb-risk-label { grid-column: auto; font-size: .8rem; letter-spacing: 0; }
+.county-brief .cb-risk-meta { grid-column: 1 / -1; }
+.county-brief .cb-risk { padding: .3rem .4rem; gap: .25rem .4rem; }
+.county-brief .cb-risk-chip { font-size: .8rem; }
+.county-brief .cb-name { font-size: 1.25rem; }
+.county-brief .cb-body { gap: .45rem; padding: .6rem .8rem; align-content: start; }
+.county-brief .cb-brief { grid-template-columns: minmax(0,1fr); gap: .45rem; }
+.county-brief .cb-group { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: .4rem .6rem; }
+.county-brief .cb-group-label { grid-column: 1 / -1; }
+.county-brief .cb-group > .cb-pairs { border-top: 0; border-left: 1px solid var(--cb-rule); padding: 0 0 0 .6rem; }
+.county-brief .cb-group > .cb-focal { align-self: center; }
+.county-brief .cb-group--response, .county-brief .cb-group--community { border-radius: .7rem !important; }
+.county-brief .cb-group--community { border-left: 1px solid var(--cb-rule) !important; background: color-mix(in srgb, var(--pi-action-subtle) 35%, var(--pi-surface-bg)); }
+.county-brief .cb-group--response .cb-focal dd { font-size: 1.9rem; color: var(--pi-action-ink); }
+.county-brief .cb-group--response .cb-focal dd small { color: var(--pi-action-ink); opacity: .75; }
+.county-brief .cb-group--community .cb-focal dd { font-size: 1.55rem; color: var(--pi-action-ink); }
+.county-brief .cb-group--community .cb-pairs dd { color: color-mix(in srgb, var(--pi-action-ink) 82%, var(--pi-text-primary)); }
+.county-brief .cb-pairs--three { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+.county-brief .cb-pairs--three > div[data-figure-key="medianIncome"] { grid-column: 1 / -1; order: -1; }
+.county-brief .cb-pairs > div, .county-brief .cb-focal > div { border-radius: .4rem; transition: background-color 140ms ease; }
+.county-brief .cb-pairs > div:hover, .county-brief .cb-focal > div:hover { background: color-mix(in srgb, var(--pi-action) 9%, transparent); }
+.county-brief .cb-access-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: .5rem .6rem; }
+.county-brief .cb-access-lead { border-right: 0 !important; padding-right: 0; }
+.county-brief .cb-access-lead dd { color: var(--pi-action-ink); font-size: 1.6rem; }
+.county-brief .cb-geo { display: flex; flex-wrap: wrap; gap: .2rem .6rem; }
+.county-brief .cb-geo > div { display: flex; gap: .2rem; }
+.county-brief .cb-geo .cb-geo-zips { grid-column: 1 / -1; }
+.county-brief .cb-geo > div:nth-child(3) { grid-column: 1 / -1; }
+.county-brief:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--pi-action) 45%, transparent), 0 12px 28px -14px color-mix(in srgb, var(--pi-action) 60%, transparent); }
+.county-brief .cb-place:hover { background: color-mix(in srgb, var(--pi-action) 18%, var(--pi-surface-bg)) !important; text-decoration-color: currentColor; }
+.county-brief .cb-inspect:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px var(--cb-band-deep); }
+@container (max-width: 340px) {
+  .county-brief .cb-head { grid-template-columns: minmax(0,1fr) !important; grid-template-areas: "ident" "risk" "inspect" !important; }
+  .county-brief .cb-inspect { justify-self: start; }
+  .county-brief .cb-group, .county-brief .cb-access-grid { grid-template-columns: minmax(0,1fr); }
+  .county-brief .cb-group > .cb-pairs { border-left: 0; border-top: 1px solid var(--cb-rule); padding: .35rem 0 0; }
 }

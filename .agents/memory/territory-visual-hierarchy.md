@@ -33,11 +33,11 @@ On drilled-in Territory views, do not repeat the selected location when the shar
 
 **How to apply:** Let the shared breadcrumb provide current-location context; keep the selected area, search, and primary provider action in one compact heading card, with secondary controls available on demand.
 
-For county directories, use aligned comparison rows on laptops and compact stacked cards on phones. Emphasize county/seat and the reference metrics. Display mapped places, geography metadata, extra context, and sources directly with each county rather than behind collapsed details. Remove the "User review not recorded" badge and its review-status column instead of replacing it with another verification notice.
+For county directories, use two equal-width cards side by side on laptops and one per row on phones. Emphasize county/seat and the reference metrics. Display mapped places, geography metadata, extra context, and sources directly with each county rather than behind collapsed details. Remove the "User review not recorded" badge and its review-status column instead of replacing it with another verification notice.
 
-**Why:** The user said the county figures were difficult to read, asked for Details & sources to be on display with individual counties, and explicitly asked to remove "User review not recorded."
+**Why:** The user explicitly asked to cut county card width in half to show two counties side by side, replacing the earlier full-width comparison-row direction. They also requested inline Details & sources and removal of "User review not recorded."
 
-**How to apply:** On desktop, align county identity, reference figures, FEMA risk, and the county action, with compact visible detail/source sections. On phones, retain one readable card per county. Do not delete data or citations; verify place selection and source links.
+**How to apply:** Recompose content for half-width cards rather than shrinking full-width layouts. Verify two equal columns at 1024px and 1366px, one readable card per row on phones, and all themes. Do not delete data or citations; verify place selection and source links.
 
 Emphasize population, average EMS transport time, and annual cardiac arrests over supporting context and geography. Label FEMA as hazard risk, not an agency-performance grade or percentage. Explain general FIPS/NEMSIS limitations once at directory level; retain county-specific provenance with each county.
 

@@ -58,7 +58,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
         </div>
 
         <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
-          <p className="cb-risk-label"><ShieldAlert aria-hidden="true" /> FEMA hazard-risk category</p>
+          <p className="cb-risk-label"><ShieldAlert aria-hidden="true" /> FEMA hazard risk</p>
           {nriLoading ? (
             <span className="cb-risk-status" role="status">Loading FEMA record</span>
           ) : nriError ? (

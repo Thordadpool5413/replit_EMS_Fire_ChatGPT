@@ -44,3 +44,9 @@ County views need purposeful icons, better labels, and restrained color as well 
 **Why:** The user rejected the plain label/value redesign and explicitly requested icons, color, and improved layout for both previews and directory cards.
 
 **How to apply:** Give related information recognizable section cues without turning every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.
+
+Use the intelligence-brief direction for county previews and directory cards: stronger typography, fewer boxes, and clear hierarchy rather than a clinical dashboard.
+
+**Why:** The user explicitly chose “Intelligence brief” after rejecting the tiled metric layout and small ornamental icons.
+
+**How to apply:** Make county identity and operational figures prominent, use a few purposeful section icons, and keep geography and sources visible but secondary. Do not interpret this choice as approval of a particular implementation.

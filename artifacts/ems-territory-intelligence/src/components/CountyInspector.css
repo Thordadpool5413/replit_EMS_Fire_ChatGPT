@@ -62,11 +62,14 @@
   .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { width: 100%; height: 100% !important; min-height: 13rem !important; max-height: none !important; }
 }
 
-/* Preview redesign layer */
-.cv-panel.county-inspector-panel.ci { border-top: 3px solid var(--pi-action); gap: .25rem; }
-.ci .ci-band-label, .ci .ci-stats dt, .ci .ci-section { display: inline-flex; align-items: center; gap: .3rem; }
+/* Preview brief: blue icon facts, open typography */
+.cv-panel.county-inspector-panel.ci { border-top: 3px solid var(--pi-action); gap: .2rem; }
+.ci .ci-name { font-size: 1.3rem; font-weight: 750; letter-spacing: -.02em; }
+.ci .ci-band-label, .ci .ci-section { display: inline-flex; align-items: center; gap: .3rem; }
 .ci .ci-band-label { font-size: 12px; text-transform: none; letter-spacing: 0; }
-.ci .ci-band-label svg, .ci .ci-stats dt svg, .ci .ci-section svg { width: .9rem; height: .9rem; flex: none; color: var(--pi-action-ink); }
-.ci .ci-stats { gap: .45rem; border-bottom: 0; padding-bottom: 0; }
-.ci .ci-stats > div { padding: .2rem .4rem; border-radius: .4rem; border: 1px solid color-mix(in srgb, var(--pi-action) 12%, var(--pi-border)); background: color-mix(in srgb, var(--pi-action) 5%, transparent); }
-.ci .ci-stats dd { font-size: 17px; }
+.ci .ci-band-label svg, .ci .ci-section svg { width: .95rem; height: .95rem; flex: none; color: var(--pi-action-ink); }
+.ci .ci-stats { gap: .5rem; border-bottom: 1px solid var(--pi-border); padding-bottom: .3rem; }
+.ci .ci-stats > div { grid-template-columns: auto minmax(0, 1fr); column-gap: .5rem; align-items: center; }
+.ci .ci-ico { grid-row: span 2; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--pi-action-subtle); color: var(--pi-action-ink); }
+.ci .ci-ico svg { width: 1.1rem; height: 1.1rem; }
+.ci .ci-stats dd { font-size: 19px; font-weight: 750; letter-spacing: -.01em; }

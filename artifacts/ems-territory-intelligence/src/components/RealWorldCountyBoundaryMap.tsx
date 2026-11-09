@@ -394,8 +394,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </section>
 
                   <dl className="ci-stats">
-                    <div><dt><Users aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                    <div><dt><Ambulance aria-hidden="true" />Average EMS transport time</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
+                    <div><span className="ci-ico" aria-hidden="true"><Users /></span><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                    <div><span className="ci-ico" aria-hidden="true"><Ambulance /></span><dt>Average EMS transport time</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
                   </dl>
 
                   <section className="ci-places" aria-label="Mapped places">

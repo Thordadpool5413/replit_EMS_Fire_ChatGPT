@@ -62,8 +62,11 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
     <article aria-labelledby={titleId} className="county-brief county-signal-row" data-testid={`row-county-signals-${c.countyFips}`}>
       <header className="cb-head">
         <div className="cb-ident">
-          <h3 id={titleId} className="cb-name"><Landmark aria-hidden="true" className="cb-name-ico" />{c.countyName}</h3>
+          <span className="cb-seal" aria-hidden="true"><Landmark /></span>
+          <div className="cb-ident-text">
+          <h3 id={titleId} className="cb-name">{c.countyName}</h3>
           <p className="cb-seat">Seat <strong>{c.countySeat}</strong><span className="cb-dot" aria-hidden="true" />FIPS {c.countyFips}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -110,22 +113,22 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
         <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
-          <section className="cb-group cb-group--community" aria-labelledby={`${titleId}-community`}>
-            <h4 id={`${titleId}-community`} className="cb-group-cap"><Users aria-hidden="true" />Community</h4>
+          <section className="cb-group cb-group--snapshot" aria-labelledby={`${titleId}-snapshot`}>
+            <h4 id={`${titleId}-snapshot`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><Ambulance /></span>Operational snapshot</h4>
             <dl className="cb-figs">
               {fig('population', 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
-              {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
-              {fig('medianIncome', 'Median income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
-              {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
+              {fig('averageTransportMinutes', 'Average transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('annualCardiacArrestIncidents', 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
             </dl>
           </section>
-          <section className="cb-group cb-group--activity" aria-labelledby={`${titleId}-activity`}>
-            <h4 id={`${titleId}-activity`} className="cb-group-cap"><Ambulance aria-hidden="true" />EMS activity and access</h4>
+          <section className="cb-group cb-group--context" aria-labelledby={`${titleId}-context`}>
+            <h4 id={`${titleId}-context`} className="cb-group-cap"><span className="cb-cap-ico" aria-hidden="true"><Users /></span>County context</h4>
             <dl className="cb-figs">
-              {fig('annualCardiacArrestIncidents', 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
-              {fig('annualEmergencyTransports', <>Transports<small> / year</small></>, num('annualEmergencyTransports', v => v.toLocaleString()), undefined, 'Emergency transports per year')}
-              {fig('averageTransportMinutes', 'Avg. transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
-              {fig('primaryCathLabDistanceMiles', 'Cath lab distance', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
+              {fig('annualEmergencyTransports', 'Emergency transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency transports per year')}
+              {fig('primaryCathLabDistanceMiles', 'Primary cath lab distance', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
+              {fig('seniorPopPct', 'Residents age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
+              {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
+              {fig('medianIncome', 'Median household income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
             </dl>
           </section>
         </div>

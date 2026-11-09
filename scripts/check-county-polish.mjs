@@ -213,6 +213,54 @@ async function checkDenseFixture(viewport) {
   console.log(`✓ ${label}: long names, 24 ZIPs, 12 places, missing/zero figures and eight full source records`);
 }
 
+async function checkInspector(viewport) {
+  const label = `${viewport.width}x${viewport.height}`;
+  await navigate('/?state=FL','Boolean(document.querySelector(".county-inspector-panel"))');
+  await waitFor('document.querySelector(".county-inspector-panel")?.innerText.includes("Moderate")','FEMA county preview');
+  await waitFor('Boolean(document.querySelector(".county-state-map-svg path"))','County boundary geometry');
+  await framing(`${label} preview map`);
+  for (const theme of ['daylight','dark','miami-vice']) {
+    await evaluate(`(() => {
+      const select=document.querySelector('[data-testid="theme-select-desktop"]');
+      select.value=${JSON.stringify(theme)};select.dispatchEvent(new Event('change',{bubbles:true}));
+    })()`);
+    await pause(150);
+    const result=await evaluate(`(() => {
+      const panel=document.querySelector('.county-inspector-panel');
+      const rect=panel.getBoundingClientRect();
+      return {text:panel.innerText,width:rect.width,pageWidth:document.documentElement.scrollWidth,
+        closed:panel.querySelectorAll('details:not([open])').length,
+        clipped:[...panel.querySelectorAll('dl,dt,dd,section,button,a')].filter(e=>e.scrollWidth>e.clientWidth+2).map(e=>e.className),
+        controls:[...panel.querySelectorAll('button,a')].map(e=>({name:e.innerText,height:e.getBoundingClientRect().height})),
+        fema:[...panel.querySelectorAll('a')].some(a=>/FEMA record/.test(a.innerText) &&
+          a.href.startsWith('https://') && decodeURIComponent(a.href).includes('12001')),
+        numbers:[...panel.querySelectorAll('dl dd')].map(e=>parseFloat(getComputedStyle(e).fontSize))};
+    })()`);
+    for (const text of ['Alachua County','Gainesville','12001','184,943','18.3','Relatively Moderate','90.33','December 2025'])
+      assert(result.text.includes(text),`${label} ${theme}: inspector lost ${text}`);
+    assert.equal(result.closed,0,`${label} ${theme}: county details hidden`);
+    assert(result.pageWidth<=viewport.width+1,`${label} ${theme}: inspector page overflow`);
+    assert.deepEqual(result.clipped,[],`${label} ${theme}: clipped inspector content`);
+    assert(result.fema,`${label} ${theme}: FEMA source link missing`);
+    if (viewport.width<768) assert(result.controls.every(c=>c.height>=43),`${label} ${theme}: small touch target ${JSON.stringify(result.controls)}`);
+    assert(result.numbers.every(n=>n>=12),`${label} ${theme}: inspector facts too small`);
+    await capture(`${label}-inspector-${theme}`,'.county-inspector-panel');
+  }
+  await evaluate('document.querySelector(\'[data-testid="button-open-inspected-county"]\').focus()');
+  await pressEnter();
+  await waitFor('Boolean(document.querySelector(".county-city-directory-panel"))','Open inspected county');
+  await evaluate('history.back()');
+  await waitFor('Boolean(document.querySelector(".county-inspector-panel"))','Return to county inspector');
+  await evaluate(`(() => {
+    const panel=document.querySelector('.county-inspector-panel');
+    const place=[...panel.querySelectorAll('button')].find(b=>/Gainesville/.test(b.innerText));
+    if(!place) throw new Error('Inspector place action missing'); place.focus();
+  })()`);
+  await pressEnter();
+  await waitFor('Boolean(document.querySelector(\'[data-testid="button-show-all-places"]\'))','Inspector place keyboard navigation');
+  console.log(`✓ ${label}: county preview facts, three themes, touch targets and keyboard county/place navigation`);
+}
+
 try {
   let targets;
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -233,7 +281,9 @@ try {
   });
   await send('Page.enable');
   await send('Runtime.enable');
-  const viewports = [{ width: 1024, height: 640 }, { width: 1366, height: 768 }, { width: 390, height: 844 }]
+  const inspectorOnly = process.env.COUNTY_INSPECTOR_ONLY === '1';
+  const viewports = [{ width: 1024, height: 640 }, { width: 1366, height: 768 }, { width: 390, height: 844 },
+    ...(inspectorOnly ? [{width:430,height:932}] : [])]
     .filter(viewport => !process.env.COUNTY_TEST_WIDTH || viewport.width === Number(process.env.COUNTY_TEST_WIDTH));
   const mapOnly = process.env.COUNTY_MAP_ONLY === '1';
   const cardsOnly = process.env.COUNTY_CARDS_ONLY === '1';
@@ -241,6 +291,7 @@ try {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
     await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: !desktop });
+    if (inspectorOnly) { await checkInspector(viewport); continue; }
     if (mapOnly) {
       await navigate('/?state=FL&county=Alachua%20County', 'Boolean(document.querySelector(".county-city-directory-panel"))');
       await framing(`${label} Alachua`, true);
@@ -389,7 +440,7 @@ try {
     await waitFor('!document.querySelector(\'[data-testid="button-show-all-places"]\') && !document.querySelector(\'.county-city-directory-panel [aria-pressed="true"]\')', 'return to all cities');
     console.log(`✓ ${label}: Home/state/county, inline sources, deduped places, keyboard city selection and return`);
   }
-  if (!mapOnly) {
+  if (!mapOnly && !inspectorOnly) {
   await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
   if (!cardsOnly) for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
     await navigate(`/?state=${code}`, 'Boolean(document.querySelector(".county-state-map-svg path"))');

@@ -55,7 +55,7 @@ Keep every county detail visible; do not move secondary figures, geography, plac
 
 **Why:** When explicitly offered a smaller summary with expandable secondary details, the user chose “Keep every detail visible.”
 
-**How to apply:** Reduce redundant chrome and improve composition rather than hiding content, truncating labels, omitting records, or making essential type smaller.
+**How to apply:** Reduce redundant chrome and improve composition rather than hiding content, truncating labels, omitting records, or making essential type smaller. On phones, let county place lists flow with the page rather than capping them inside a nested scroll box; this preserves the same visible-detail requirement during touch browsing.
 
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 

@@ -19,6 +19,7 @@ import {
 } from '@workspace/api-client-react';
 import { ExternalLink, ChevronRight, ArrowLeft } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
+import './CountyInspector.css';
 
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
@@ -357,105 +358,114 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               {legend}
             </div>
 
-            <div className="cv-panel county-inspector-panel" aria-live="polite">
+            <div className="cv-panel county-inspector-panel ci" aria-live="polite">
               {inspectedCounty ? (
                 <>
-                  <div>
-                    <p className="cv-kicker">{hoveredCountyFips ? 'Previewing on map' : 'First county · hover or focus the map to preview'}</p>
-                    <h4 className="cv-title">{inspectedCounty.countyName}</h4>
-                    <p className="cv-meta">
-                      Seat <strong>{inspectedCounty.countySeat}</strong> · {inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi · FIPS <span className="tabular-nums">{inspectedCounty.countyFips}</span>
-                    </p>
-                  </div>
+                  <header className="ci-head">
+                    <p className="ci-kicker">{hoveredCountyFips ? 'Previewing on map' : 'County preview · first county'}</p>
+                    <h4 className="ci-name">{inspectedCounty.countyName}</h4>
+                    <dl className="ci-ident">
+                      <div><dt>Seat</dt><dd>{inspectedCounty.countySeat}</dd></div>
+                      <div><dt>Area</dt><dd>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</dd></div>
+                      <div><dt>FIPS</dt><dd>{inspectedCounty.countyFips}</dd></div>
+                    </dl>
+                  </header>
 
-                  <div className="cv-risk" aria-label="FEMA National Risk Index">
-                    <span
-                      className={`cv-risk-badge ${inspectedNri?.riskRating ? '' : 'cv-risk-badge--none'}`}
-                      style={riskStyle(inspectedNri?.riskRating)}
-                    >
-                      {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : 'No FEMA NRI record')}
-                    </span>
-                    {inspectedNri && (
-                      <span className="cv-risk-score">
-                        Risk score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong> · vintage {inspectedNri.sourceVersion}
-                      </span>
-                    )}
-                    {inspectedNri?.sourceUrl && (
-                      <a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">
-                        FEMA record <ExternalLink aria-hidden="true" />
-                      </a>
-                    )}
-                  </div>
-
-                  <dl className="cv-facts">
+                  <dl className="ci-stats">
                     <div>
                       <dt>Population</dt>
                       <dd>{inspectedCounty.population.toLocaleString()}</dd>
                     </div>
                     <div>
-                      <dt>Average EMS transport time</dt>
+                      <dt>Avg. EMS transport</dt>
                       <dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd>
                     </div>
-                    {inspectedNri && (
-                      <>
-                        <div>
-                          <dt>FEMA expected annual loss</dt>
-                          <dd className="!text-[0.9rem]">{formatLoss(inspectedNri.expectedAnnualLoss)}</dd>
-                        </div>
-                        <div>
-                          <dt>Social vulnerability · resilience</dt>
-                          <dd className="!text-[0.85rem] !font-medium">
-                            {inspectedNri.socialVulnerabilityRating ?? 'not stated'} · {inspectedNri.communityResilienceRating ?? 'not stated'}
-                          </dd>
-                        </div>
-                      </>
-                    )}
                   </dl>
 
-                  <div>
-                    <div className="cv-section-label">
+                  <section className="ci-risk" aria-label="FEMA National Risk Index" style={riskStyle(inspectedNri?.riskRating)}>
+                    <div className="ci-risk-top">
+                      <span className="ci-risk-label">FEMA National Risk Index</span>
+                      {inspectedNri && (
+                        <span className="ci-risk-score">
+                          Score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong>
+                        </span>
+                      )}
+                    </div>
+                    <p className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
+                      <span className="ci-swatch" aria-hidden="true" />
+                      {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : 'No FEMA NRI record')}
+                    </p>
+                    {inspectedNri && (
+                      <dl className="ci-risk-facts">
+                        <div><dt>Expected annual loss</dt><dd>{formatLoss(inspectedNri.expectedAnnualLoss)}</dd></div>
+                        <div><dt>Social vulnerability</dt><dd>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                        <div><dt>Community resilience</dt><dd>{inspectedNri.communityResilienceRating ?? 'not stated'}</dd></div>
+                      </dl>
+                    )}
+                    {inspectedNri && (
+                      <p className="ci-prov">
+                        <span>Vintage {inspectedNri.sourceVersion}</span>
+                        {inspectedNri.sourceUrl && (
+                          <a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">
+                            FEMA record <ExternalLink aria-hidden="true" />
+                          </a>
+                        )}
+                      </p>
+                    )}
+                  </section>
+
+                  <section className="ci-places" aria-label="Mapped places">
+                    <h5 className="ci-section">
                       <span>Mapped places</span>
-                      <span>{inspectedCounty.node.citiesList.length}</span>
-                    </div>
-                    <div className="cv-chips mt-1.5">
+                      <span className="ci-count">{inspectedCounty.node.citiesList.length}</span>
+                    </h5>
+                    <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
-                        <button
-                          key={`${inspectedCounty.countyFips}-${cityNode.cityName}`}
-                          type="button"
-                          className="cv-chip"
-                          onClick={() => onSelectCity(cityNode.cityName, inspectedCounty.countyName, stateNode.stateCode)}
-                          title={`ZIP ${cityNode.zipCodes.join(', ') || 'not listed'} · ${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
-                        >
-                          {cityNode.cityName}{cityNode.isCountySeat ? ' (seat)' : ''}
-                        </button>
+                        <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`}>
+                          <button
+                            type="button"
+                            className="ci-place"
+                            onClick={() => onSelectCity(cityNode.cityName, inspectedCounty.countyName, stateNode.stateCode)}
+                            title={`ZIP ${cityNode.zipCodes.join(', ') || 'not listed'} · ${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
+                          >
+                            <span className="ci-place-main">
+                              <span className="ci-place-name">{cityNode.cityName}</span>
+                              {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
+                            </span>
+                            <span className="ci-place-sub">
+                              ZIP {cityNode.zipCodes.join(', ') || 'not listed'}
+                            </span>
+                            <ChevronRight aria-hidden="true" className="ci-place-chev" />
+                          </button>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                     {inspectedCounty.node.primaryZipCodes.length > 0 && (
-                      <p className="cv-zips mt-1.5">
-                        <strong className="text-[var(--pi-text-primary)]">ZIPs ({inspectedCounty.node.primaryZipCodes.length})</strong>{' '}
+                      <p className="ci-zips">
+                        <strong>All ZIPs ({inspectedCounty.node.primaryZipCodes.length})</strong>{' '}
                         {inspectedCounty.node.primaryZipCodes.join(', ')}
                       </p>
                     )}
-                  </div>
+                  </section>
 
-                  <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[var(--pi-border)] pt-2.5">
+                  <footer className="ci-foot">
+                    <button
+                      type="button"
+                      onClick={() => onSelectCounty(inspectedCounty.countyName, stateNode.stateCode)}
+                      className="ci-btn"
+                      data-testid="button-open-inspected-county"
+                    >
+                      <span className="ci-btn-text">Open {inspectedCounty.countyName}</span> <ChevronRight aria-hidden="true" />
+                    </button>
                     <a
                       href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${inspectedCounty.countyName}, ${stateNode.stateName}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="cv-link"
+                      className="ci-link ci-link--foot"
                     >
                       Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
                     </a>
-                    <button
-                      type="button"
-                      onClick={() => onSelectCounty(inspectedCounty.countyName, stateNode.stateCode)}
-                      className="cv-btn"
-                      data-testid="button-open-inspected-county"
-                    >
-                      Open {inspectedCounty.countyName} <ChevronRight aria-hidden="true" />
-                    </button>
-                  </div>
+                  </footer>
                 </>
               ) : (
                 <p className="cv-note">County boundaries are not available for this state.</p>

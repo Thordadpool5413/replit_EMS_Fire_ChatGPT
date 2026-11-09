@@ -138,6 +138,81 @@ async function pressEnter() {
   }
 }
 
+async function checkDenseFixture(viewport) {
+  const label = `${viewport.width}x${viewport.height}`;
+  await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: viewport.width < 768 });
+  await navigate('/?state=FL', 'Boolean(document.querySelector(".county-signal-list"))');
+  await evaluate(`(async () => {
+    // Reuse Vite's exact optimized React URLs, avoiding a second React instance.
+    const entry = await fetch('/src/main.tsx').then(r => r.text());
+    const reactUrl = entry.match(/from\\s+["']([^"']*\\/react_jsx-dev-runtime\\.js[^"']*)["']/)?.[1]?.replace('react_jsx-dev-runtime.js','react.js');
+    const domUrl = entry.match(/from\\s+["']([^"']*react-dom_client[^"']*)["']/)?.[1];
+    if (!reactUrl || !domUrl) throw new Error('Cannot locate optimized React fixture imports');
+    const [{ default: React }, { default: ReactDOM }, { CountyDirectoryCard }, { NATIONAL_COUNTIES_DIRECTORY }] =
+      await Promise.all([import(reactUrl), import(domUrl),
+        import('/src/components/CountyDirectoryCard.tsx'), import('/src/data/nationalGeographicData.ts')]);
+    const county = { ...NATIONAL_COUNTIES_DIRECTORY.find(c => c.countyFips === '12001'),
+      countyName: 'Long County Equivalent and Consolidated Municipality',
+      countySeat: 'A long county seat and administrative district',
+      population: 0, averageTransportMinutes: null, annualCardiacArrestIncidents: 0,
+      annualEmergencyTransports: 0, seniorPopPct: 0, medianIncome: 0, povertyRatePct: null,
+      primaryCathLabDistanceMiles: 0,
+      primaryZipCodes: Array.from({length: 24}, (_, i) => String(32000 + i)),
+      cities: Array.from({length: 12}, (_, i) => 'Long mapped municipality ' + (i + 1)),
+    };
+    const keys = ['population','averageTransportMinutes','annualCardiacArrestIncidents',
+      'annualEmergencyTransports','seniorPopPct','medianIncome','povertyRatePct','primaryCathLabDistanceMiles'];
+    county.figureSources = Object.fromEntries(keys.map(key => [key, {
+      source: 'Official county reference — extended source name for ' + key,
+      sourceUrl: 'https://example.org/' + 'long-source-path/'.repeat(8) + key,
+      vintage: 'December 2025 release', scope: 'County-equivalent reporting geography, not individual agency service area',
+      reportingPeriod: 'January–December 2024 reporting period'
+    }]));
+    const host = document.createElement('div');
+    host.id = 'county-regression-fixture';
+    host.className = 'county-signal-list';
+    document.querySelector('.county-signal-list').after(host);
+    window.__countyFixtureRoot = ReactDOM.createRoot(host);
+    window.__countyFixtureRoot.render(React.createElement(CountyDirectoryCard, {
+      county, nri: {riskRating:'Relatively Moderate',riskScore:0,sourceVersion:'December 2025'},
+      nriSourceUrl:'https://example.org/fema', nriLoading:false,nriError:false,
+      onInspectCounty:() => {},onSelectPlace:() => {}
+    }));
+  })()`);
+  await waitFor('Boolean(document.querySelector("#county-regression-fixture .cb-name"))', 'dense county fixture');
+  for (const theme of ['daylight', 'dark', 'miami-vice']) {
+    await evaluate(`(() => {
+      const select = document.querySelector('[data-testid="theme-select-desktop"]');
+      select.value = ${JSON.stringify(theme)}; select.dispatchEvent(new Event('change',{bubbles:true}));
+    })()`);
+    await pause(120);
+    const result = await evaluate(`(() => {
+      const card=document.querySelector('#county-regression-fixture .county-brief');
+      const figures=[...card.querySelectorAll('[data-figure-key]')];
+      const sources=[...card.querySelectorAll('.county-figure-source-record')];
+      return {text:card.innerText, figures:figures.length,
+        missing:figures.filter(f=>f.innerText.includes('Not reported')).length,
+        zeros:figures.filter(f=>/^\\$?0(?:\\.0)?(?:%|\\s*mi|\\s*\\/yr)?$/.test(f.querySelector('dd').innerText.trim())).length,
+        sources:sources.length, sourceMetadata:sources.every(s=>/December 2025 release/.test(s.innerText) &&
+          /County-equivalent reporting geography/.test(s.innerText) && /January–December 2024/.test(s.innerText)),
+        places:card.querySelectorAll('.cb-place').length, closed:card.querySelectorAll('details:not([open])').length,
+        clipped:[...card.querySelectorAll('dl,dt,dd,section,table,th,td,button')].some(e=>e.scrollWidth>e.clientWidth+2),
+        links:sources.every(s=>s.querySelector('a')?.href.startsWith('https://example.org/'))};
+    })()`);
+    assert.equal(result.figures,8,`${label} ${theme}: fixture figure count`);
+    assert.equal(result.missing,2,`${label} ${theme}: missing values confused with zero`);
+    assert.equal(result.zeros,6,`${label} ${theme}: zero values lost`);
+    assert.equal(result.sources,8,`${label} ${theme}: source records lost`);
+    assert(result.sourceMetadata && result.links,`${label} ${theme}: source provenance lost`);
+    assert.equal(result.places,12,`${label} ${theme}: dense mapped places lost`);
+    assert(result.text.includes('32023'),`${label} ${theme}: final ZIP lost`);
+    assert.equal(result.closed,0,`${label} ${theme}: dense details collapsed`);
+    assert(!result.clipped,`${label} ${theme}: dense fixture clipped`);
+    await capture(`${label}-dense-${theme}`,'#county-regression-fixture');
+  }
+  console.log(`✓ ${label}: long names, 24 ZIPs, 12 places, missing/zero figures and eight full source records`);
+}
+
 try {
   let targets;
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -220,7 +295,7 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
-      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 440 : 450),
+      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 306 : 345),
         `${label}: county card too tall (${row.cardHeight}px)`);
       assert.notEqual(row.primaryNumberColor, row.labelColor, `${label}: key numbers lack color emphasis`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
@@ -328,6 +403,7 @@ try {
   await waitFor('document.querySelectorAll(".county-signal-row").length === 7', 'remaining seven Florida counties');
   assert.equal(await evaluate('document.querySelectorAll(".county-signal-row").length'), 7);
   console.log('✓ Florida pagination: remaining seven counties reachable from directory heading');
+  if (cardsOnly) for (const viewport of viewports) await checkDenseFixture(viewport);
   }
   assert.deepEqual(errors, [], `Uncaught browser exceptions: ${errors.join(', ')}`);
   console.log(`PASS county polish checks. Captures: ${captures}`);

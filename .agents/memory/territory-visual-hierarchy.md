@@ -49,7 +49,7 @@ Readability improvements alone are not enough for county cards: the user wants t
 
 **Why:** The user rejected the clearer, neutral card presentation and subsequently rejected the data area again after a blue header, metric icons, and a tinted supporting-facts strip were added.
 
-**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user rejected roomy response/community panels, narrow multi-column metric matrices with colored ticks, and an eight-row label/value ledger. Do not treat any of those as an approved design. Keep two half-width cards with clear primary/supporting hierarchy and topic color. Avoid stretching shorter cards to match neighbors. Retain readable labels and avoid invented good/bad judgments.
+**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user rejected roomy response/community panels, narrow multi-column metric matrices with colored ticks, an eight-row label/value ledger, and freely wrapping supporting figures that run together. Do not treat those as approved designs. Keep two half-width cards with clear primary/supporting hierarchy and topic color. Avoid stretching shorter cards to match neighbors. Retain readable labels and avoid invented good/bad judgments.
 
 Keep every county detail visible; do not move secondary figures, geography, places, or source records into an expandable section.
 

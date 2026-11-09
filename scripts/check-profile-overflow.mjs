@@ -293,7 +293,8 @@ async function waitForDownloadedFile(directory, fileName, timeoutMs = 90_000) {
 async function clickVisibleButton(cdp, label, description = label) {
   const clicked = await evaluate(cdp, `(() => {
     const candidates = [...document.querySelectorAll('button')]
-      .filter((button) => button.innerText.trim() === ${JSON.stringify(label)})
+      .filter((button) => button.innerText.trim() === ${JSON.stringify(label)} ||
+        button.getAttribute('aria-label') === ${JSON.stringify(label)})
       .filter((button) => {
         const rect = button.getBoundingClientRect();
         const style = getComputedStyle(button);
@@ -548,7 +549,7 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
   console.log(`✓ ${viewport.width}px: ${workspace.label} shared navigation, alignment, logo, and overflow`);
 }
 
-async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) {
+async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, theme = 'dark') {
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
     height: viewport.height,
@@ -563,6 +564,8 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
     `mobile navigation at ${viewport.width}px`,
     60_000,
   );
+  await setPrintTheme(cdp, theme);
+  await evaluate(cdp, 'document.fonts.ready.then(() => true)');
   if (enlargedText) {
     await evaluate(cdp, `(() => {
       const style = document.createElement('style');
@@ -624,6 +627,9 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
       const label = [...button.querySelectorAll('span:not(.pi-data-number)')]
         .find((span) => getComputedStyle(span).display !== 'none');
       const labelBounds = label?.getBoundingClientRect();
+      const range = document.createRange();
+      if (label) range.selectNodeContents(label);
+      const textRects = [...range.getClientRects()];
       const text = label?.innerText.trim().replace(/\\s+/g, ' ') ?? '';
       return {
         accessibleName: button.getAttribute('aria-label'),
@@ -646,6 +652,10 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
         labelTop: labelBounds?.top ?? null,
         labelBottom: labelBounds?.bottom ?? null,
         labelFontSize: Number.parseFloat(label ? getComputedStyle(label).fontSize : '0'),
+        labelLines: new Set(textRects.map((rect) => Math.round(rect.top))).size,
+        textFits: textRects.every((textRect) =>
+          textRect.left >= rect.left - 1 && textRect.right <= rect.right + 1 &&
+          textRect.top >= rect.top - 1 && textRect.bottom <= rect.bottom + 1),
         labelVisible: Boolean(label && labelBounds && getComputedStyle(label).display !== 'none' &&
           labelBounds.width > 0 && labelBounds.left >= rect.left - 1 &&
           labelBounds.right <= rect.right + 1 &&
@@ -680,9 +690,9 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
   const expectedMobileLabels = [
     { accessibleName: 'Home', visibleLabels: ['Home'] },
     { accessibleName: 'Agencies', visibleLabels: ['Agencies'] },
-    { accessibleName: 'Opportunities', visibleLabels: ['Opportunities', 'Opps'] },
-    { accessibleName: 'Territory', visibleLabels: ['Territory'] },
-    { accessibleName: 'Field work', visibleLabels: ['Field work', 'Field'] },
+    { accessibleName: 'Opportunities', visibleLabels: ['Leads'] },
+    { accessibleName: 'Territory', visibleLabels: ['Map'] },
+    { accessibleName: 'Field work', visibleLabels: ['Field'] },
     { accessibleName: 'More', visibleLabels: ['More'] },
   ];
   assert(
@@ -691,6 +701,8 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
       return button.accessibleName === expected?.accessibleName &&
         expected.visibleLabels.includes(button.text) &&
         button.labelVisible &&
+        button.labelLines === 1 &&
+        button.textFits &&
         button.labelFontSize >= (enlargedText ? 16 : 12) &&
         button.labelScrollWidth <= button.labelClientWidth + 1;
     }) &&
@@ -726,8 +738,45 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false) 
       })()`,
       `"${label}" mobile navigation selection at ${viewport.width}px`,
     );
+    // Let the existing 140ms selection-color transition finish before comparing.
+    await evaluate(cdp, 'new Promise((resolve) => setTimeout(resolve, 180))');
+    const selectedLayout = await evaluate(cdp, `(() => {
+      const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
+      const button = nav?.querySelector('button[aria-current="page"]');
+      const label = button?.querySelector('span:not(.pi-data-number)');
+      if (!button || !label) return null;
+      const bounds = button.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const textRects = [...range.getClientRects()];
+      const marker = getComputedStyle(button, '::before');
+      return {
+        name: button.getAttribute('aria-label'),
+        singleLine: new Set(textRects.map((rect) => Math.round(rect.top))).size === 1,
+        textFits: textRects.every((rect) =>
+          rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+          rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1),
+        hasMarker: marker.content === '""' && Number.parseFloat(marker.height) >= 2,
+        distinctColor: [...nav.querySelectorAll('button:not([aria-current="page"])')]
+          .every((other) => getComputedStyle(other).color !== getComputedStyle(button).color),
+      };
+    })()`);
+    assert(
+      selectedLayout?.name === accessibleName && selectedLayout.singleLine &&
+        selectedLayout.textFits && selectedLayout.hasMarker && selectedLayout.distinctColor,
+      `Selected "${label}" label or indicator is unclear in ${theme} at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(selectedLayout)}`,
+    );
   }
-  console.log(`✓ ${viewport.width}px: mobile navigation${enlargedText ? ' with enlarged text' : ''}, touch targets, logo, and workspace selection`);
+  console.log(`✓ ${theme} / ${viewport.width}px: single-line mobile labels${enlargedText ? ' with enlarged text' : ''}, full accessible names, touch targets, logo, and workspace selection`);
+}
+
+async function checkMobileNavigationLabels(cdp) {
+  for (const theme of ['daylight', 'dark', 'miami-vice']) {
+    for (const viewport of sharedNavigationMobileViewports) {
+      await checkSharedNavigationMobile(cdp, viewport, false, theme);
+      await checkSharedNavigationMobile(cdp, viewport, true, theme);
+    }
+  }
 }
 
 async function checkMobileNavigationAccessibility(cdp, viewport) {
@@ -956,10 +1005,7 @@ async function checkSharedNavigation(cdp) {
     }
   }
 
-  for (const viewport of sharedNavigationMobileViewports) {
-    await checkSharedNavigationMobile(cdp, viewport);
-    await checkSharedNavigationMobile(cdp, viewport, true);
-  }
+  await checkMobileNavigationLabels(cdp);
   console.log('Shared desktop and mobile navigation regression checks passed.');
 }
 
@@ -4845,6 +4891,7 @@ async function main() {
     process.env.PROFILE_LAYOUT_ONLY !== '1' &&
     process.env.PROFILE_PRINT_ONLY !== '1' &&
     process.env.NAV_LAYOUT_ONLY !== '1' &&
+    process.env.MOBILE_NAV_LABELS_ONLY !== '1' &&
     process.env.MOBILE_NAV_A11Y_ONLY !== '1'
   ) {
     await checkPublishedRoutes();
@@ -4883,6 +4930,11 @@ async function main() {
 
     if (process.env.MOBILE_NAV_A11Y_ONLY === '1') {
       await checkMobileNavigationAccessibility(cdp, { width: 360, height: 844 });
+      return;
+    }
+
+    if (process.env.MOBILE_NAV_LABELS_ONLY === '1') {
+      await checkMobileNavigationLabels(cdp);
       return;
     }
 

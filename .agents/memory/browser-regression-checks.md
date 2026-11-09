@@ -9,6 +9,12 @@ Check component-level overflow as well as document width; an ancestor with hidde
 
 **How to apply:** Compare scroll width with client width on the county/source containers, then inspect the loaded screenshot. Do not equate absence of a page scrollbar with readable content.
 
+For compact navigation labels, measure text-range line boxes as well as element overflow, and check the selected font weight after its color transition settles.
+
+**Why:** Arbitrary word wrapping can fit inside a touch target while leaving an unreadable final fragment. Selected weight can also make text wider, and checking animated colors immediately after navigation gives false failures.
+
+**How to apply:** Assert whole-word or intentional line treatment at ordinary and enlarged text sizes in every theme; compare actual text bounds against each button, not just span bounds.
+
 Use the installed Chromium binary with Node's built-in WebSocket and Chrome DevTools Protocol for browser-level layout checks. The workspace has no Playwright or Puppeteer dependency, so keep this harness dependency-free unless the project adopts a browser test framework.
 
 **Why:** Browser testing must run in the Replit environment without adding a browser automation package just to cover a viewport regression.

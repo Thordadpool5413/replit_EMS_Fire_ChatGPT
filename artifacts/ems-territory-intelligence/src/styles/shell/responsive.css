@@ -4,7 +4,12 @@
 }
 
 @media (max-width: 767px) {
-  .pi-mobile-nav > div { height: 4.1rem !important; padding-inline: 0.15rem !important; }
+  .pi-mobile-nav > div {
+    height: 4.1rem !important;
+    padding-inline: 0.15rem !important;
+    /* Agencies needs more room than the short labels, especially at large text. */
+    grid-template-columns: minmax(44px, 1fr) minmax(44px, 1.5fr) repeat(4, minmax(44px, 1fr));
+  }
 }
 
 @media (max-width: 767px) {
@@ -21,18 +26,6 @@
 
 @media (max-width: 360px) {
   .pi-mobile-nav button svg { width: 1rem; height: 1rem; }
-}
-
-@media (max-width: 375px) {
-  .pi-mobile-nav .pi-mobile-label-full { display: none; }
-}
-
-@media (max-width: 375px) {
-  .pi-mobile-nav .pi-mobile-label-compact { display: inline-block; }
-}
-
-@media (min-width: 376px) {
-  .pi-mobile-nav .pi-mobile-label-compact { display: none; }
 }
 
 .pi-sidebar-logo {

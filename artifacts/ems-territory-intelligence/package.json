@@ -20,6 +20,7 @@
     "test:style-ownership": "node ../../scripts/check-style-ownership.mjs",
     "test:navigation-layout": "NAV_LAYOUT_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "test:mobile-nav-a11y": "MOBILE_NAV_A11Y_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
+    "test:mobile-nav-labels": "MOBILE_NAV_LABELS_ONLY=1 node ../../scripts/check-profile-overflow.mjs",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

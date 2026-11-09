@@ -197,8 +197,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <TrendingUp className={`w-4 h-4 ${isOpportunities ? 'text-[#285EE8]' : ''}`} />
-            <span aria-hidden="true" className="pi-mobile-label-full text-[9px] tracking-tight mt-1">Opportunities</span>
-            <span aria-hidden="true" className="pi-mobile-label-compact text-[9px] tracking-tight mt-1">Opps</span>
+            <span aria-hidden="true" className="text-[9px] tracking-tight mt-1">Leads</span>
           </button>
 
           <button
@@ -211,7 +210,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <Globe className={`w-4 h-4 ${isTerritory ? 'text-[#285EE8]' : ''}`} />
-            <span className="text-[9px] tracking-tight mt-1">Territory</span>
+            <span aria-hidden="true" className="text-[9px] tracking-tight mt-1">Map</span>
           </button>
 
           <button
@@ -224,8 +223,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <Briefcase className={`w-4 h-4 ${isMyWork ? 'text-[#285EE8]' : ''}`} />
-            <span aria-hidden="true" className="pi-mobile-label-full text-[9px] tracking-tight mt-1">Field work</span>
-            <span aria-hidden="true" className="pi-mobile-label-compact text-[9px] tracking-tight mt-1">Field</span>
+            <span aria-hidden="true" className="text-[9px] tracking-tight mt-1">Field</span>
             {dayRouteCount > 0 && (
               <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-[#285EE8] text-white pi-data-number text-[9px] font-bold flex items-center justify-center">
                 {dayRouteCount}

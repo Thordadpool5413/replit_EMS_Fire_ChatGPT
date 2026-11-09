@@ -81,9 +81,12 @@
 
   .pi-mobile-nav button > span:not(.pi-data-number) {
     max-width: 100%;
-    overflow-wrap: anywhere;
+    /* Short phone-only labels keep whole words readable, including enlarged text.
+       Full workspace names remain on each button's accessible name. */
+    overflow-wrap: normal;
+    word-break: normal;
     text-align: center;
-    white-space: normal !important;
+    white-space: nowrap !important;
     font-size: 0.8rem !important;
     line-height: 1.1 !important;
   }

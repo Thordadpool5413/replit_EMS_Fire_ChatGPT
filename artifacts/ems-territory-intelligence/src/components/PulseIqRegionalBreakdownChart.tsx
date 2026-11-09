@@ -629,7 +629,7 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
       return (
         <div
           className="box-border min-w-0 max-w-full break-words bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl text-xs space-y-1.5 pointer-events-none select-none"
-          style={{ maxWidth: 'min(20rem, calc(100vw - 2rem))', overflowWrap: 'anywhere' }}
+          style={{ maxWidth: 'min(20rem, calc(100vw - 8rem))', overflowWrap: 'anywhere' }}
         >
           <div className="flex min-w-0 items-start justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
             <span className="min-w-0 flex-1 break-words font-semibold text-slate-900 dark:text-white text-sm tracking-[-0.01em]">{item.fullName || label}</span>

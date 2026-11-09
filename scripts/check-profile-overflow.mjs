@@ -691,7 +691,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     { accessibleName: 'Home', visibleLabels: ['Home'] },
     { accessibleName: 'Agencies', visibleLabels: ['Agencies'] },
     { accessibleName: 'Opportunities', visibleLabels: ['Leads'] },
-    { accessibleName: 'Territory', visibleLabels: ['Map'] },
+    { accessibleName: 'Territory', visibleLabels: ['Territory', 'Map'] },
     { accessibleName: 'Field work', visibleLabels: ['Field'] },
     { accessibleName: 'More', visibleLabels: ['More'] },
   ];
@@ -743,7 +743,8 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     const selectedLayout = await evaluate(cdp, `(() => {
       const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
       const button = nav?.querySelector('button[aria-current="page"]');
-      const label = button?.querySelector('span:not(.pi-data-number)');
+      const label = [...(button?.querySelectorAll('span:not(.pi-data-number)') ?? [])]
+        .find((span) => getComputedStyle(span).display !== 'none');
       if (!button || !label) return null;
       const bounds = button.getBoundingClientRect();
       const range = document.createRange();

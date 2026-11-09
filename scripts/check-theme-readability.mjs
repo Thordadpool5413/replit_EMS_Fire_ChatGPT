@@ -1196,16 +1196,16 @@ async function checkHome(cdp, dark) {
 async function checkCounty(cdp, dark) {
   await setTheme(cdp, dark);
   const summary = await evaluate(cdp, `(() => {
-    const panel = document.querySelector('.county-state-summary-panel');
-    const card = document.querySelector('.county-profile-card');
-    const title = card?.querySelector('h3');
+    const panel = document.querySelector('.county-directory-heading');
+    const card = document.querySelector('.county-signal-row');
+    const title = card?.querySelector('.cb-name');
     const missing = [...(card?.querySelectorAll('*') ?? [])]
       .find((element) => element.children.length === 0 && /not reported/i.test(element.textContent ?? ''));
     return {
       summaryText: panel?.innerText.trim().slice(0, 400) ?? '',
       cardTitle: title?.innerText.trim() ?? '',
       missingLabel: missing?.textContent.trim() ?? '',
-      countyCount: document.querySelectorAll('.county-profile-card').length,
+      countyCount: document.querySelectorAll('.county-signal-row').length,
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
       mainOverflow: Boolean(document.querySelector('main') &&
         document.querySelector('main').scrollWidth > document.querySelector('main').clientWidth + 1),
@@ -1219,8 +1219,8 @@ async function checkCounty(cdp, dark) {
     `${themeLabel(dark)} county cards cause horizontal overflow: ${JSON.stringify(summary)}`,
   );
   await checkReadable(cdp, `${themeLabel(dark)} county`, [
-    { name: 'county card title', selector: '.county-profile-card h3' },
-    { name: 'county summary heading', selector: '.county-state-summary-panel h4' },
+    { name: 'county card title', selector: '.county-signal-row .cb-name' },
+    { name: 'county directory heading', selector: '.county-directory-heading h3' },
   ]);
   console.log(
     `  ${themeLabel(dark)} county state: ${summary.countyCount} cards; missing-data label ${summary.missingLabel || 'not present in first card'}`,
@@ -1682,7 +1682,11 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
 async function openPulseIqCharts(cdp) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before specialty chart checks');
-  await clickVisible(cdp, 'Opportunities', true);
+  if (await evaluate(cdp, 'innerWidth < 768')) {
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Opportunities"]');
+  } else {
+    await clickVisible(cdp, 'Opportunities', true);
+  }
   await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Opportunities views"]'))`, 'Opportunities views');
   await clickVisible(cdp, 'Regional priority', true);
   await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('Regional Priority Score Breakdown'))`, 'PulseIQ regional chart');
@@ -1930,7 +1934,11 @@ async function checkPulseIqCharts(cdp, dark, viewport) {
 async function openGisHeatmap(cdp) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before GIS heatmap checks');
-  await clickVisible(cdp, 'Territory', true);
+  if (await evaluate(cdp, 'innerWidth < 768')) {
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Territory"]');
+  } else {
+    await clickVisible(cdp, 'Territory', true);
+  }
   await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Territory views"]'))`, 'Territory views');
   await clickVisible(cdp, 'Fleet & response map', true);
   await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('High-Potential Territory Clusters'))`, 'GIS heatmap');
@@ -2344,7 +2352,11 @@ async function runViewport(cdp, viewport) {
   await checkHome(cdp, 'miami-vice');
   await checkThemeStates(cdp, 'miami-vice', viewport);
 
-  await clickVisible(cdp, 'Territory', true);
+  if (await evaluate(cdp, 'innerWidth < 768')) {
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Territory"]');
+  } else {
+    await clickVisible(cdp, 'Territory', true);
+  }
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen #home-state-picker'))`, 'Territory state selector');
   const selectedState = await evaluate(cdp, `(() => {
     const select = document.querySelector('#home-state-picker');
@@ -2356,8 +2368,8 @@ async function runViewport(cdp, viewport) {
   assert(selectedState, 'Could not select Florida for county summary verification');
   await waitFor(
     cdp,
-    `Boolean(document.querySelector('.county-state-summary-panel')) &&
-      Boolean(document.querySelector('.county-profile-card'))`,
+    `Boolean(document.querySelector('.county-directory-heading')) &&
+      Boolean(document.querySelector('.county-signal-row'))`,
     'Florida county summary cards',
   );
   await checkCounty(cdp, false);

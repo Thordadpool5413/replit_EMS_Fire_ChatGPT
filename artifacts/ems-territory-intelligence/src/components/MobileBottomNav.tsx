@@ -210,7 +210,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <Globe className={`w-4 h-4 ${isTerritory ? 'text-[#285EE8]' : ''}`} />
-            <span aria-hidden="true" className="text-[9px] tracking-tight mt-1">Map</span>
+            <span aria-hidden="true" className="pi-mobile-nav__full-label text-[9px] tracking-tight mt-1">Territory</span>
+            <span aria-hidden="true" className="pi-mobile-nav__compact-label text-[9px] tracking-tight mt-1">Map</span>
           </button>
 
           <button

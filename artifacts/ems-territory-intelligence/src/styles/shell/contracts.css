@@ -141,6 +141,123 @@
 
 .pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"]:focus-visible { outline-color: var(--pi-text-primary) !important; }
 
+/* Keep the desktop shell aligned to its 14rem navigation rail and readable on
+   short laptop viewports without introducing a second scrollbar. */
+@media (min-width: 768px) {
+  .pi-primary-sidebar .pi-primary-nav {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    gap: .52rem !important;
+    padding: .55rem .75rem .45rem !important;
+  }
+
+  .pi-primary-sidebar .pi-primary-nav .pi-sb-list {
+    gap: .12rem;
+  }
+
+  .pi-primary-sidebar .pi-primary-nav .pi-sb-item {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    padding-inline: .65rem !important;
+    font-size: .84rem !important;
+  }
+
+  .pi-primary-sidebar .pi-primary-nav .pi-sb-item svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .pi-primary-sidebar .pi-sb-heading {
+    margin-bottom: .2rem;
+    font-size: .75rem;
+  }
+
+  .pi-primary-sidebar > div.pi-sidebar-quick-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .3rem .4rem !important;
+    padding: .45rem .65rem !important;
+  }
+
+  .pi-primary-sidebar .pi-sidebar-quick-actions > .pi-sb-wide {
+    grid-column: 1 / -1;
+  }
+
+  .pi-primary-sidebar .pi-sidebar-quick-actions .pi-sb-tool {
+    min-width: 0;
+    height: 2rem !important;
+    min-height: 2rem !important;
+    padding-inline: .4rem !important;
+    gap: .4rem;
+    font-size: .77rem !important;
+  }
+
+  .pi-primary-sidebar .pi-sidebar-quick-actions .pi-sb-tool svg {
+    width: .95rem;
+    height: .95rem;
+  }
+
+  .pi-primary-sidebar .pi-sb-kbd {
+    display: none;
+  }
+
+  .pi-primary-sidebar .pi-sb-appearance,
+  .pi-primary-sidebar .pi-sidebar-quick-actions > .relative {
+    min-width: 0;
+  }
+}
+
+/* A single tab pattern across Territory, Agencies, Field Work and tools. */
+.pi-workspace-tabs {
+  gap: .25rem !important;
+  padding: .25rem !important;
+  border-color: var(--pi-border) !important;
+  border-radius: .7rem !important;
+  background: var(--pi-surface-bg) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.pi-workspace-tabs > button {
+  min-height: 2.35rem !important;
+  padding-inline: .8rem !important;
+  border-radius: .48rem !important;
+  font-size: .82rem !important;
+  line-height: 1.25;
+}
+
+.pi-workspace-tabs > button[aria-current="page"] {
+  background: var(--pi-action) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--pi-action) 22%, transparent);
+}
+
+.pi-workspace-tabs > button:not([aria-current="page"]) {
+  color: var(--pi-text-secondary) !important;
+}
+
+.pi-workspace-tabs > button:not([aria-current="page"]):hover {
+  background: var(--pi-action-subtle) !important;
+  color: var(--pi-action-ink) !important;
+}
+
+.pi-workspace-tabs > button:focus-visible {
+  outline: 2px solid var(--pi-focus-ring) !important;
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .pi-workspace-tabs {
+    margin-bottom: .65rem !important;
+    border-radius: .65rem !important;
+  }
+
+  .pi-workspace-tabs > button {
+    min-height: 2.5rem !important;
+    padding-inline: .7rem !important;
+    font-size: .8rem !important;
+  }
+}
+
 @media (min-width: 768px) and (max-height: 760px) {
   .pi-primary-sidebar .pi-sb-brand { padding-block: .45rem .4rem !important; }
 }

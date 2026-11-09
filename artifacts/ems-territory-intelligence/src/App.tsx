@@ -1010,7 +1010,7 @@ export default function App() {
       />
 
       {/* Main Workspace Body with a synchronized desktop sidebar offset */}
-      <div className="pi-workspace-body md:pl-64 flex-1 flex flex-col min-w-0">
+      <div className="pi-workspace-body md:pl-56 flex-1 flex flex-col min-w-0">
       <main className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-4 pb-24 md:pb-6 min-w-0">
 
         {!currentActive && activeTab !== 'home' && (

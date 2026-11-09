@@ -38,3 +38,9 @@ Compactness alone is not acceptance: county previews and cards must remain easy 
 **Why:** After the size reduction, the user again rejected both views as visually difficult and asked for clutter-free, clean, sharp, professionally formatted information that looks trustworthy.
 
 **How to apply:** Keep metric label/value ordering consistent, clearly separate source-defined hazard information from operational figures, and label place ZIPs instead of presenting bare numbers beside links.
+
+County views need purposeful icons, better labels, and restrained color as well as readable spacing.
+
+**Why:** The user rejected the plain label/value redesign and explicitly requested icons, color, and improved layout for both previews and directory cards.
+
+**How to apply:** Give related information recognizable section cues without turning every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.

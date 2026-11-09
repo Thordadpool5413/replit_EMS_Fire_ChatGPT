@@ -17,7 +17,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, ShieldAlert, Users, Ambulance, MapPin } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
 
@@ -370,7 +370,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </header>
 
                   <section className="ci-fema" style={riskStyle(inspectedNri?.riskRating)} aria-label="FEMA National Risk Index">
-                    <p className="ci-band-label">FEMA NRI hazard risk</p>
+                    <p className="ci-band-label"><ShieldAlert aria-hidden="true" />FEMA NRI hazard risk</p>
                     <div className="ci-fema-row">
                       <span className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
                         <span className="ci-swatch" aria-hidden="true" />
@@ -394,12 +394,12 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </section>
 
                   <dl className="ci-stats">
-                    <div><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                    <div><dt>Avg. EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
+                    <div><dt><Users aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                    <div><dt><Ambulance aria-hidden="true" />Average EMS transport time</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
                   </dl>
 
                   <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section">Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
+                    <h5 className="ci-section"><MapPin aria-hidden="true" />Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
                         <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">

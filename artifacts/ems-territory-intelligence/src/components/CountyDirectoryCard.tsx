@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink, ShieldAlert, Users, Ambulance, MapPin, Landmark } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
@@ -62,7 +62,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
     <article aria-labelledby={titleId} className="county-brief county-signal-row" data-testid={`row-county-signals-${c.countyFips}`}>
       <header className="cb-head">
         <div className="cb-ident">
-          <h3 id={titleId} className="cb-name">{c.countyName}</h3>
+          <h3 id={titleId} className="cb-name"><Landmark aria-hidden="true" className="cb-name-ico" />{c.countyName}</h3>
           <p className="cb-seat">Seat <strong>{c.countySeat}</strong><span className="cb-dot" aria-hidden="true" />FIPS {c.countyFips}</p>
         </div>
         <button
@@ -78,7 +78,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
       <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
         <span className="cb-risk-body">
-          <span className="cb-risk-label" title="FEMA National Risk Index source-defined category">FEMA hazard risk</span>
+          <span className="cb-risk-label" title="FEMA National Risk Index source-defined category"><ShieldAlert aria-hidden="true" />FEMA hazard risk</span>
           {nriLoading ? (
             <span className="cb-risk-status" role="status">Loading FEMA record</span>
           ) : nriError ? (
@@ -111,7 +111,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
         <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
           <section className="cb-group cb-group--community" aria-labelledby={`${titleId}-community`}>
-            <h4 id={`${titleId}-community`} className="cb-group-cap">Community</h4>
+            <h4 id={`${titleId}-community`} className="cb-group-cap"><Users aria-hidden="true" />Community</h4>
             <dl className="cb-figs">
               {fig('population', 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
               {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
@@ -119,21 +119,21 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
               {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
             </dl>
           </section>
-          <section className="cb-group" aria-labelledby={`${titleId}-activity`}>
-            <h4 id={`${titleId}-activity`} className="cb-group-cap">EMS activity and access</h4>
+          <section className="cb-group cb-group--activity" aria-labelledby={`${titleId}-activity`}>
+            <h4 id={`${titleId}-activity`} className="cb-group-cap"><Ambulance aria-hidden="true" />EMS activity and access</h4>
             <dl className="cb-figs">
-              {fig('annualCardiacArrestIncidents', 'Cardiac / yr', num('annualCardiacArrestIncidents', v => v.toLocaleString()), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
-              {fig('annualEmergencyTransports', 'EMS / yr', num('annualEmergencyTransports', v => v.toLocaleString()), undefined, 'Emergency transports per year')}
-              {fig('averageTransportMinutes', 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
-              {fig('primaryCathLabDistanceMiles', 'Cath lab', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
+              {fig('annualCardiacArrestIncidents', 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
+              {fig('annualEmergencyTransports', <>Transports<small> / year</small></>, num('annualEmergencyTransports', v => v.toLocaleString()), undefined, 'Emergency transports per year')}
+              {fig('averageTransportMinutes', 'Avg. transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('primaryCathLabDistanceMiles', 'Cath lab distance', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
             </dl>
           </section>
         </div>
 
-        <dl className="cb-ref" aria-label={`Geography for ${c.countyName}`}>
-          <div><dt>Land area</dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
+        <dl className="cb-ref" data-cap="Geography" aria-label={`Geography for ${c.countyName}`}>
+          <div><dt><MapPin aria-hidden="true" />Land area</dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
           <div><dt>Centroid</dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
-          <div className="cb-ref-wide"><dt>ZIP codes{zips.length ? ` (${zips.length})` : ''}</dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
+          <div className="cb-ref-wide"><dt>ZIPs{zips.length ? ` (${zips.length})` : ''}</dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
           <div className="cb-ref-wide">
             <dt>{hasMappedPlaces ? `Places (${places.length})` : 'County seat reference'}</dt>
             <dd className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>

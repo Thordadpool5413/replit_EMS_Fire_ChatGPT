@@ -107,18 +107,21 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
       <div className="cb-body county-profile-details-content" data-testid={`details-county-context-${c.countyFips}`}>
         <section className="cb-figs-wrap" aria-label={`County figures for ${c.countyName}`}>
-          <dl className="cb-figs">
-            {fig('averageTransportMinutes', 'Avg EMS transport',
-              num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`)}
-            {fig('annualEmergencyTransports', 'Emergency transports / yr',
-              num('annualEmergencyTransports', v => v.toLocaleString()))}
-            {fig('annualCardiacArrestIncidents', 'Cardiac arrests (OHCA) / yr',
-              num('annualCardiacArrestIncidents', v => v.toLocaleString()), `text-county-ohca-${c.countyFips}`,
-              'Out-of-hospital cardiac arrest incidents per year')}
-            {fig('primaryCathLabDistanceMiles', 'Primary cath lab distance',
-              num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>))}
+          <dl className="cb-figs cb-figs--key">
             {fig('population', 'Population',
               num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
+            {fig('averageTransportMinutes', 'Avg EMS transport',
+              num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`)}
+            {fig('annualCardiacArrestIncidents', 'Cardiac arrests / yr',
+              num('annualCardiacArrestIncidents', v => v.toLocaleString()), `text-county-ohca-${c.countyFips}`,
+              'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
+          </dl>
+          <dl className="cb-figs cb-figs--support">
+            {fig('annualEmergencyTransports', 'Transports / yr',
+              num('annualEmergencyTransports', v => v.toLocaleString()), undefined, 'Emergency transports per year')}
+            {fig('primaryCathLabDistanceMiles', 'Cath lab distance',
+              num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined,
+              'Distance to primary cath lab')}
             {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
             {fig('medianIncome', 'Median household income', num('medianIncome', v => `$${v.toLocaleString()}`))}
             {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}

@@ -1,6 +1,6 @@
 /* County brief card — scoped .county-brief / .cb-*.
-   Compact ledger: slim identity strip, inline FEMA line, one full-width label/value
-   ledger where each value carries a fixed TOPIC color (category, never a rating), then
+   Slim identity strip, inline FEMA line, primary figures and supporting context.
+   Each value carries a fixed TOPIC color (category, never a rating), followed by
    inline geography, places and sources. Topic tokens are local with dark variants.
    Parent list: 1 column below 900px viewport, 2 equal columns at >=900px. */
 .county-signal-list:has(> .county-brief) {
@@ -92,27 +92,34 @@
 .county-brief .cb-body { display: grid; gap: .4rem; min-width: 0; padding: .35rem .8rem .5rem; }
 .county-brief .cb-na { font-family: var(--font-body, inherit); font-size: .8rem; font-weight: 500; letter-spacing: 0; color: var(--pi-text-muted); }
 
-/* Ledger: one full-width row per figure, label left, tabular value right */
-.county-brief .cb-figs { display: grid; grid-template-columns: minmax(0, 1fr); }
-.county-brief .cb-fig {
-  --cb-c: var(--pi-action-ink);
-  display: flex; align-items: baseline; justify-content: space-between; gap: .75rem;
-  min-width: 0; padding: 0; line-height: 1.25;
-  border-bottom: 1px dotted var(--cb-rule);
-}
-.county-brief .cb-fig:last-child { border-bottom: 0; }
-.county-brief .cb-fig:nth-child(4) { border-bottom: 1px solid var(--cb-rule); }
-.county-brief .cb-fig:hover dt { color: var(--pi-text-primary); }
-.county-brief .cb-fig dt {
-  flex: 1 1 auto; min-width: 0; font-size: .8rem; font-weight: 500; color: var(--pi-text-secondary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+/* Two-tier figures: a key operating trio (stacked label/value, hairline-separated),
+   then supporting context flowing inline as label-value pairs. */
+.county-brief .cb-figs-wrap { display: grid; gap: .3rem; min-width: 0; }
+.county-brief .cb-fig { --cb-c: var(--pi-action-ink); min-width: 0; }
+.county-brief .cb-fig dt { font-size: .8rem; font-weight: 500; line-height: 1.25; color: var(--pi-text-secondary); }
 .county-brief .cb-fig dd {
-  flex: 0 0 auto; text-align: right; font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;
-  line-height: 1.2; letter-spacing: -.01em; color: var(--cb-c); font-variant-numeric: tabular-nums lining-nums; white-space: nowrap;
+  font-family: var(--font-display); font-weight: 700; letter-spacing: -.01em; color: var(--cb-c);
+  font-variant-numeric: tabular-nums lining-nums; white-space: nowrap;
 }
 .county-brief .cb-fig dd small { font-size: .75rem; font-weight: 600; letter-spacing: 0; color: var(--pi-text-muted); }
-.county-brief .cb-fig dd .cb-na { font-size: .8rem; }
+.county-brief .cb-fig dd .cb-na { font-size: .8rem; white-space: normal; }
+
+.county-brief .cb-figs--key {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: .3rem 0; border-bottom: 1px solid var(--cb-rule);
+}
+.county-brief .cb-figs--key .cb-fig { padding: 0 .6rem; border-left: 1px solid var(--cb-rule); }
+.county-brief .cb-figs--key .cb-fig:first-child { padding-left: 0; border-left: 0; }
+.county-brief .cb-figs--key dd { font-size: 1.3rem; line-height: 1.15; margin-top: .05rem; }
+.county-brief .cb-figs--key dt { font-weight: 600; }
+
+.county-brief .cb-figs--support { display: flex; flex-wrap: wrap; gap: .1rem 1rem; }
+.county-brief .cb-figs--support .cb-fig { display: inline-flex; align-items: baseline; gap: .35rem; }
+.county-brief .cb-figs--support dd { font-size: 1.15rem; line-height: 1.35; font-weight: 650; }
+@container (max-width: 360px) {
+  .county-brief .cb-figs--key { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .county-brief .cb-figs--key .cb-fig { display: flex; justify-content: space-between; align-items: baseline; padding: 0; border-left: 0; }
+}
 .county-brief .cb-fig--averageTransportMinutes { --cb-c: var(--cb-c-transport); }
 .county-brief .cb-fig--annualEmergencyTransports { --cb-c: var(--cb-c-volume); }
 .county-brief .cb-fig--annualCardiacArrestIncidents { --cb-c: var(--cb-c-cardiac); }

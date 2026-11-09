@@ -362,44 +362,47 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               {inspectedCounty ? (
                 <>
                   <header className="ci-head">
-                    <p className="ci-kicker">{hoveredCountyFips ? 'Previewing on map' : 'County preview · first county'}</p>
+                    <p className="ci-kicker">{hoveredCountyFips ? 'Map preview' : 'County preview'}</p>
                     <h4 className="ci-name">{inspectedCounty.countyName}</h4>
                     <p className="ci-ident">
                       Seat <strong>{inspectedCounty.countySeat}</strong> · Area <strong>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</strong> · FIPS <strong>{inspectedCounty.countyFips}</strong>
                     </p>
                   </header>
 
-                  <dl className="ci-stats" style={riskStyle(inspectedNri?.riskRating)}>
-                    <div><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                    <div><dt>Avg. EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
-                    <div>
-                      <dt>FEMA NRI</dt>
-                      <dd className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
+                  <section className="ci-fema" style={riskStyle(inspectedNri?.riskRating)} aria-label="FEMA National Risk Index">
+                    <p className="ci-band-label">FEMA NRI hazard risk</p>
+                    <div className="ci-fema-row">
+                      <span className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
                         <span className="ci-swatch" aria-hidden="true" />
                         {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading' : 'No record')}
-                      </dd>
+                      </span>
+                      {inspectedNri && (
+                        <span>Score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong></span>
+                      )}
+                      {inspectedNri && <span>Vintage <strong>{inspectedNri.sourceVersion}</strong></span>}
+                      {inspectedNri?.sourceUrl && (
+                        <a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">FEMA record <ExternalLink aria-hidden="true" /></a>
+                      )}
                     </div>
                     {inspectedNri && (
-                      <div><dt>NRI score</dt><dd>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</dd></div>
+                      <dl className="ci-fema-facts" aria-label="FEMA National Risk Index details">
+                        <div><dt>Expected annual loss</dt><dd>{formatLoss(inspectedNri.expectedAnnualLoss)}</dd></div>
+                        <div><dt>Social vulnerability</dt><dd>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                        <div><dt>Community resilience</dt><dd>{inspectedNri.communityResilienceRating ?? 'not stated'}</dd></div>
+                      </dl>
                     )}
-                  </dl>
+                  </section>
 
-                  {inspectedNri && (
-                    <p className="ci-facts" aria-label="FEMA National Risk Index details">
-                      <span>Expected annual loss <strong>{formatLoss(inspectedNri.expectedAnnualLoss)}</strong></span>
-                      <span>Social vulnerability <strong>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</strong></span>
-                      <span>Community resilience <strong>{inspectedNri.communityResilienceRating ?? 'not stated'}</strong></span>
-                      <span>Vintage <strong>{inspectedNri.sourceVersion}</strong>
-                        {inspectedNri.sourceUrl && (<>{' '}<a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">FEMA record <ExternalLink aria-hidden="true" /></a></>)}
-                      </span>
-                    </p>
-                  )}
+                  <dl className="ci-stats">
+                    <div><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                    <div><dt>Avg. EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
+                  </dl>
 
                   <section className="ci-places" aria-label="Mapped places">
                     <h5 className="ci-section">Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
-                        <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`}>
+                        <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">
                           <button
                             type="button"
                             className="ci-place"
@@ -408,14 +411,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           >
                             <span className="ci-place-name">{cityNode.cityName}</span>
                             {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
-                            <span className="ci-place-sub">{cityNode.zipCodes.join(', ') || 'ZIP not listed'}</span>
                           </button>
+                          <span className="ci-place-sub"><span className="ci-k">ZIP</span> {cityNode.zipCodes.join(', ') || 'not listed'}</span>
                         </li>
                       ))}
                     </ul>
                     {inspectedCounty.node.primaryZipCodes.length > 0 && (
                       <p className="ci-zips">
-                        <strong>All ZIPs ({inspectedCounty.node.primaryZipCodes.length})</strong>{' '}
+                        <span className="ci-k">All county ZIPs ({inspectedCounty.node.primaryZipCodes.length})</span>{' '}
                         {inspectedCounty.node.primaryZipCodes.join(', ')}
                       </p>
                     )}

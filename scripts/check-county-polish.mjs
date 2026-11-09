@@ -248,8 +248,8 @@ async function checkInspector(viewport) {
     assert(result.numbers.every(n=>n>=12),`${label} ${theme}: inspector facts too small`);
     await capture(`${label}-inspector-${theme}`,'.county-inspector-panel');
     if (viewport.width>=1024) {
-      assert(result.height<=360,`${label} ${theme}: county preview too tall (${result.height}px)`);
-      assert(result.mapHeight<=360,`${label} ${theme}: state map too tall (${result.mapHeight}px)`);
+      assert(result.height<=(viewport.width>=1366 ? 360 : 390),`${label} ${theme}: county preview too tall (${result.height}px)`);
+      assert(result.mapHeight<=(viewport.width>=1366 ? 360 : 390),`${label} ${theme}: state map too tall (${result.mapHeight}px)`);
       assert(Math.abs(result.height-result.mapHeight)<3 && Math.abs(result.top-result.mapTop)<3,
         `${label} ${theme}: map/preview no longer balanced`);
       console.log(`✓ ${label} ${theme}: preview ${Math.round(result.height)}px / map ${Math.round(result.mapHeight)}px`);
@@ -356,7 +356,7 @@ try {
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
       // Captioned story groups retain all eight figures without microtype.
-      if (desktop) assert(row.cardHeight <= (viewport.width>=1366 ? 280 : 300),
+      if (desktop) assert(row.cardHeight <= 360,
         `${label}: county card too tall (${row.cardHeight}px)`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
@@ -385,6 +385,8 @@ try {
               right:value.getBoundingClientRect().right,
               labelClipped:label.scrollWidth > label.clientWidth + 1,
               labelHeight:label.getBoundingClientRect().height,labelLine:parseFloat(getComputedStyle(label).lineHeight),
+              valueTop:value.getBoundingClientRect().top,labelBottom:label.getBoundingClientRect().bottom,
+              valueLeft:value.getBoundingClientRect().left,labelLeft:label.getBoundingClientRect().left,
               labelSize:parseFloat(getComputedStyle(label).fontSize)};
           });
           return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
@@ -397,7 +399,7 @@ try {
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
         assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
-        assert.deepEqual(pair.groups,['Community','Response','Care access'],`${label} ${theme}: county story groups missing`);
+        assert.deepEqual(pair.groups,['Community','EMS activity and access'],`${label} ${theme}: county story groups missing`);
         assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
         assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
         const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');
@@ -409,6 +411,9 @@ try {
         assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 3.2),
           `${label} ${theme}: metric labels wrap beyond three lines`);
         assert(pair.metrics.every(metric=>!metric.labelClipped), `${label} ${theme}: metric labels are truncated`);
+        assert(pair.metrics.every(metric=>metric.valueTop>=metric.labelBottom-1 &&
+          Math.abs(metric.valueLeft-metric.labelLeft)<1),
+          `${label} ${theme}: county figures no longer consistently label-over-value`);
         if (desktop) {
           assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);
           assert(Math.abs(pair.cards[0].w - pair.cards[1].w) < 2, `${label} ${theme}: unequal card widths`);

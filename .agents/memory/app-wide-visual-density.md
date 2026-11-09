@@ -32,3 +32,9 @@ The map/preview pair and individual county cards must be roughly half the height
 **Why:** The user specifically repeated “1/2 its size” for both surfaces after the grouped redesign increased their height.
 
 **How to apply:** Measure actual rendered laptop heights before declaring a density improvement. Remove nested panels and wasted vertical structure before reducing type size; retain all details and allow mobile content to grow naturally.
+
+Compactness alone is not acceptance: county previews and cards must remain easy to read and understand, not compressed into running text.
+
+**Why:** After the size reduction, the user again rejected both views as visually difficult and asked for clutter-free, clean, sharp, professionally formatted information that looks trustworthy.
+
+**How to apply:** Keep metric label/value ordering consistent, clearly separate source-defined hazard information from operational figures, and label place ZIPs instead of presenting bare numbers beside links.

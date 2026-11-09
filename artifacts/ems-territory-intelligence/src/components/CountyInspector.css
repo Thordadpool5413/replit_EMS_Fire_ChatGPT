@@ -56,3 +56,29 @@
 }
 @media (max-width: 359px) { .ci .ci-place-list { grid-template-columns: minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce) { .ci .ci-place, .ci .ci-btn { transition: none !important; } }
+
+/* Balanced map + preview pair (desktop). Outranks legacy !important caps in styles/territory/{records,responsive}.css. */
+@media (min-width: 1024px) {
+  .cv-state-grid.county-state-map-grid:has(> .county-inspector-panel.ci) { align-items: stretch; grid-template-columns: minmax(0, 1.1fr) minmax(22rem, .9fr); }
+  .county-state-map-grid:has(> .ci) > .county-state-map-panel { display: flex !important; flex-direction: column; height: auto !important; min-height: 100%; }
+  .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport { flex: 1 1 auto !important; min-height: 18rem !important; height: auto !important; max-height: none !important; }
+  .territory-explorer-screen .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg,
+  .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { height: 100% !important; min-height: 18rem !important; max-height: none !important; }
+}
+.cv-panel.county-inspector-panel.ci { container-type: inline-size; gap: .85rem; }
+.ci .ci-head { display: grid; gap: .1rem; }
+.ci .ci-kicker { letter-spacing: .02em; }
+.ci .ci-stats > div { padding: .55rem 0; }
+.ci .ci-stats dd { font-size: 24px; }
+.ci .ci-risk { gap: .4rem; }
+.ci .ci-risk-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.ci .ci-risk-facts > div { display: grid; gap: .1rem; justify-content: stretch; }
+.ci .ci-risk-facts dt { font-size: .78rem; }
+.ci .ci-risk-facts dd { text-align: left; }
+.ci .ci-link { min-height: 2rem; }
+.ci .ci-place-list { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+.ci .ci-place { min-height: 2.5rem; padding: .35rem .25rem; }
+.ci .ci-place-name { font-size: .9rem; }
+.ci .ci-zips { margin-top: .45rem; font-size: .82rem; }
+@container (max-width: 380px) { .ci .ci-risk-facts { grid-template-columns: minmax(0, 1fr); } .ci .ci-risk-facts > div { display: flex; justify-content: space-between; } .ci .ci-risk-facts dd { text-align: right; } }
+@media (max-width: 767px) { .ci .ci-place, .ci .ci-link { min-height: 44px; } }

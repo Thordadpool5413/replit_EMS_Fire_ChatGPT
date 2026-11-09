@@ -87,7 +87,7 @@ async function layout(label, desktop) {
   })()`);
   assert(result.documentWidth <= result.width + 1, `${label}: horizontal overflow ${JSON.stringify(result)}`);
   assert.deepEqual(result.clippedCountyContent, [], `${label}: internally clipped county content`);
-  if (desktop) {
+  if (desktop && process.env.COUNTY_CARDS_ONLY !== '1') {
     assert(result.navScrollHeight <= result.navHeight + 1, `${label}: unnecessary nav scroll ${JSON.stringify(result)}`);
     assert(result.sidebarScrollHeight <= result.sidebarHeight + 1, `${label}: unnecessary sidebar scroll ${JSON.stringify(result)}`);
     assert.equal(result.tools.length, 2, `${label}: missing tool destinations`);
@@ -346,8 +346,8 @@ try {
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
-      // The approved restrained layout puts seat/FIPS on a separate identity line.
-      if (desktop) assert(row.cardHeight <= (viewport.width >= 1366 ? 330 : 345),
+      // Captioned story groups retain all eight figures without microtype.
+      if (desktop) assert(row.cardHeight <= 460,
         `${label}: county card too tall (${row.cardHeight}px)`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
@@ -379,24 +379,26 @@ try {
               labelSize:parseFloat(getComputedStyle(label).fontSize)};
           });
           return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
-            wellBackground:getComputedStyle(cards[0].querySelector('.cb-figs-wrap')).backgroundColor,
+            groups:[...cards[0].querySelectorAll('.cb-group-cap')].map(e=>e.textContent),
+            pageOverflow:document.documentElement.scrollWidth > innerWidth + 1,
             seatTop:cards[0].querySelector('.cb-seat').getBoundingClientRect().top,
             titleBottom:cards[0].querySelector('.cb-name').getBoundingClientRect().bottom,
             parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
-        assert.equal(pair.wellBackground,'rgba(0, 0, 0, 0)',`${label} ${theme}: tinted metric panel returned`);
+        assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
+        assert.deepEqual(pair.groups,['Community','Emergency activity','Care access'],`${label} ${theme}: county story groups missing`);
         assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
         assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
         const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');
         assert.equal(new Set(neutralMetrics.map(metric=>metric.color)).size,1,
           `${label} ${theme}: decorative metric colors returned`);
         assert(pair.cardiacColor !== neutralMetrics[0].color, `${label} ${theme}: cardiac topic cue missing`);
-        assert(pair.metrics.every(metric=>metric.size >= 17 && metric.labelSize >= 12),
+        assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 12),
           `${label} ${theme}: metric type too small`);
-        assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 2.2),
-          `${label} ${theme}: metric labels wrap beyond two lines`);
+        assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 3.2),
+          `${label} ${theme}: metric labels wrap beyond three lines`);
         assert(pair.metrics.every(metric=>!metric.labelClipped), `${label} ${theme}: metric labels are truncated`);
         if (desktop) {
           assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);

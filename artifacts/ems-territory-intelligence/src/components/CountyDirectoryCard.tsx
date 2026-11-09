@@ -50,9 +50,9 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
   };
 
   const fig = (
-    key: CountyFigureSourceKey, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string,
+    key: CountyFigureSourceKey, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string, hero = false,
   ) => (
-    <div className={`cb-fig cb-fig--${key}`} data-figure-key={key}>
+    <div className={`cb-fig cb-fig--${key}${hero ? ' cb-fig--hero' : ''}`} data-figure-key={key}>
       <dt title={title} aria-label={title}>{label}</dt>
       <dd data-testid={testId}>{value}</dd>
     </div>
@@ -106,27 +106,38 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       </header>
 
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
-        <section className="cb-figs-wrap" aria-label={`County figures for ${c.countyName}`}>
-          <dl className="cb-figs cb-figs--key">
-            {fig('population', 'Population',
-              num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
-            {fig('averageTransportMinutes', 'Avg transport',
-              num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
-            {fig('annualCardiacArrestIncidents', 'Cardiac arrests',
-              num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`,
-              'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
-          </dl>
-          <dl className="cb-figs cb-figs--support">
-            {fig('annualEmergencyTransports', 'Transports/yr',
-              num('annualEmergencyTransports', v => v.toLocaleString()), undefined, 'Emergency transports per year')}
-            {fig('primaryCathLabDistanceMiles', 'Cath lab distance',
-              num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined,
-              'Distance to primary cath lab')}
-            {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
-            {fig('medianIncome', 'Median income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
-            {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
-          </dl>
-        </section>
+        <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
+          <section className="cb-group cb-group--community" aria-labelledby={`${titleId}-community`}>
+            <h4 id={`${titleId}-community`} className="cb-group-cap">Community</h4>
+            <dl className="cb-group-figs">
+              {fig('population', 'Population',
+                num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`, undefined, true)}
+              {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
+              {fig('medianIncome', 'Median income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
+              {fig('povertyRatePct', 'Poverty rate', num('povertyRatePct', v => `${v.toFixed(1)}%`))}
+            </dl>
+          </section>
+          <section className="cb-group cb-group--activity" aria-labelledby={`${titleId}-activity`}>
+            <h4 id={`${titleId}-activity`} className="cb-group-cap">Emergency activity</h4>
+            <dl className="cb-group-figs">
+              {fig('annualEmergencyTransports', 'Emergency transports',
+                num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency transports per year', true)}
+              {fig('annualCardiacArrestIncidents', 'Cardiac arrests',
+                num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`,
+                'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
+            </dl>
+          </section>
+          <section className="cb-group cb-group--access" aria-labelledby={`${titleId}-access`}>
+            <h4 id={`${titleId}-access`} className="cb-group-cap">Care access</h4>
+            <dl className="cb-group-figs">
+              {fig('averageTransportMinutes', 'Avg EMS transport',
+                num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time', true)}
+              {fig('primaryCathLabDistanceMiles', 'Primary cath lab',
+                num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined,
+                'Distance to primary cath lab')}
+            </dl>
+          </section>
+        </div>
 
         <section className="cb-access" aria-label={`Geography for ${c.countyName}`}>
           <dl className="cb-geo" aria-label={`Geography for ${c.countyName}`}>

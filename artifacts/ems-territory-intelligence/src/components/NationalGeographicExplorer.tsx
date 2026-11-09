@@ -1729,7 +1729,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             <div>
               <h3 className="cv-title">County directory</h3>
               <p className="cv-note">
-                FEMA NRI categories are source-defined natural-hazard risk, not data quality or agency performance. Other figures are county-level working references for your confirmation. Cards are displayed by county FIPS, which does not establish a source&apos;s own scope; NEMSIS v3.5 is a data standard, not a source citation.
+                FEMA NRI categories are source-defined natural-hazard risk, not data quality or agency performance. Metric colors identify topics, not good/bad ratings. Other figures are county-level working references for your confirmation. Cards are displayed by county FIPS, which does not establish a source&apos;s own scope; NEMSIS v3.5 is a data standard, not a source citation.
               </p>
             </div>
             {pagerControls('top')}

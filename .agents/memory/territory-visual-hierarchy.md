@@ -9,11 +9,11 @@ For the Home territory map, make the map the visual focus and show the selected 
 
 **How to apply:** Keep map texture and atmosphere on a full-bleed viewport layer rather than relying on the geometry SVG's opaque background. Reduce surrounding chrome before shrinking readable text. Fit the map without cropping, balance the map and inspector widths, and verify short-laptop and phone layouts for visible background coverage, horizontal overflow, or clipped legend labels. Preserve available data, citations, actions, and usable map controls.
 
-Use the shared app theme tokens for county and provider surfaces. Keep descriptive metrics neutral rather than assigning each metric a distinct accent; reserve semantic colors for meaningful source/status states and map-specific data encoding. Use FEMA risk colors only for the risk category defined by the source.
+Use shared app theme tokens for county and provider surfaces. County directory metrics are an explicit exception to the earlier neutral-only metric direction: the user requested topic color for all county data, including cardiac red. Use FEMA risk colors only for the risk category defined by the source.
 
-**Why:** the user asked for a restrained, consistent theme across Home, Territory, Agencies, and Field Work, with color reserved for actions, selection, and meaningful status rather than decorative metric coding.
+**Why:** the user asked for a restrained, consistent app theme but subsequently repeated that every county metric needs color to attract attention, not only cardiac arrests.
 
-**How to apply:** use the shared canvas, surface, text, border, and action tokens in light and dark themes. Keep population, transport time, and counts on quiet neutral surfaces; retain the source-defined FEMA risk palette and map metric shading.
+**How to apply:** Use shared canvas, surface, text, border, and action tokens in all themes. Give county metrics consistent, readable topic accents; do not imply performance thresholds or unvalidated risk ratings. Preserve FEMA/map palettes and keep surfaces quiet.
 
 Do not modify the existing app logo during visual or responsive changes. If it appears clipped, correct the surrounding layout rather than changing the logo asset or its styling.
 

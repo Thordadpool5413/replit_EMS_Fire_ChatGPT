@@ -49,7 +49,7 @@ Readability improvements alone are not enough for county cards: the user wants t
 
 **Why:** The user rejected the clearer, neutral card presentation and subsequently rejected the data area again after a blue header, metric icons, and a tinted supporting-facts strip were added.
 
-**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user also rejected empty space in half-width response/community cards. Avoid stretching shorter cards to match neighbors; use the available interior space for aligned facts instead of centered metrics beside tall columns. Emphasize key numeric values with shared brand ink and the requested cardiac red accent. Retain readable labels and avoid hidden details or invented good/bad judgments.
+**How to apply:** Redesign the data composition itself, not just the header or surrounding color. The user rejected both roomy response/community panels and narrow multi-column metric matrices with colored ticks. Keep two half-width cards, but use compact full-width label/value rows within each card, aligned tabular numbers, and topic color on values rather than decorative bars. Avoid stretching shorter cards to match neighbors. Retain readable labels and avoid hidden details or invented good/bad judgments.
 
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ExternalLink, HeartPulse, MapPin, Navigation, ShieldAlert, Timer, Users } from 'lucide-react';
+import { ArrowRight, ExternalLink } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
@@ -63,7 +63,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       <header className="cb-head">
         <div className="cb-ident">
           <h3 id={titleId} className="cb-name">{c.countyName}</h3>
-          <p className="cb-seat"><MapPin aria-hidden="true" /> Seat <strong>{c.countySeat}</strong><span className="cb-dot" aria-hidden="true" />FIPS {c.countyFips}</p>
+          <p className="cb-seat">Seat <strong>{c.countySeat}</strong><span className="cb-dot" aria-hidden="true" />FIPS {c.countyFips}</p>
         </div>
         <button
           type="button"
@@ -75,7 +75,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           Inspect <ArrowRight aria-hidden="true" />
         </button>
         <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
-          <span className="cb-risk-label"><ShieldAlert aria-hidden="true" /> FEMA hazard-risk category</span>
+          <span className="cb-risk-label" title="FEMA National Risk Index source-defined category">FEMA NRI</span>
           {nriLoading ? (
             <span className="cb-risk-status" role="status">Loading FEMA record</span>
           ) : nriError ? (
@@ -106,19 +106,18 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       </header>
 
       <div className="cb-body county-profile-details-content" data-testid={`details-county-context-${c.countyFips}`}>
-        <section className="cb-figs-wrap" aria-labelledby={`${titleId}-figs`}>
-          <h4 id={`${titleId}-figs`} className="cb-group-label">County figures</h4>
+        <section className="cb-figs-wrap" aria-label={`County figures for ${c.countyName}`}>
           <dl className="cb-figs">
-            {fig('averageTransportMinutes', <><Timer aria-hidden="true" /> Avg EMS transport</>,
+            {fig('averageTransportMinutes', 'Avg EMS transport',
               num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`)}
-            {fig('annualEmergencyTransports', <><Navigation aria-hidden="true" /> Emergency transports / yr</>,
+            {fig('annualEmergencyTransports', 'Emergency transports / yr',
               num('annualEmergencyTransports', v => v.toLocaleString()))}
-            {fig('annualCardiacArrestIncidents', <><HeartPulse aria-hidden="true" /> Cardiac arrests / yr</>,
+            {fig('annualCardiacArrestIncidents', 'Cardiac arrests (OHCA) / yr',
               num('annualCardiacArrestIncidents', v => v.toLocaleString()), `text-county-ohca-${c.countyFips}`,
               'Out-of-hospital cardiac arrest incidents per year')}
-            {fig('primaryCathLabDistanceMiles', <><MapPin aria-hidden="true" /> Primary cath lab</>,
+            {fig('primaryCathLabDistanceMiles', 'Primary cath lab distance',
               num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>))}
-            {fig('population', <><Users aria-hidden="true" /> Population</>,
+            {fig('population', 'Population',
               num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
             {fig('seniorPopPct', 'Age 65+', num('seniorPopPct', v => `${v.toFixed(1)}%`))}
             {fig('medianIncome', 'Median household income', num('medianIncome', v => `$${v.toLocaleString()}`))}
@@ -126,8 +125,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           </dl>
         </section>
 
-        <section className="cb-access" aria-labelledby={`${titleId}-geo`}>
-          <h4 id={`${titleId}-geo`} className="cb-group-label">Geography</h4>
+        <section className="cb-access" aria-label={`Geography for ${c.countyName}`}>
           <dl className="cb-geo" aria-label={`Geography for ${c.countyName}`}>
             <div><dt>Land</dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
             <div><dt>Centroid</dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>

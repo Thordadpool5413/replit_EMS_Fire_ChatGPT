@@ -364,61 +364,39 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <header className="ci-head">
                     <p className="ci-kicker">{hoveredCountyFips ? 'Previewing on map' : 'County preview · first county'}</p>
                     <h4 className="ci-name">{inspectedCounty.countyName}</h4>
-                    <dl className="ci-ident">
-                      <div><dt>Seat</dt><dd>{inspectedCounty.countySeat}</dd></div>
-                      <div><dt>Area</dt><dd>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</dd></div>
-                      <div><dt>FIPS</dt><dd>{inspectedCounty.countyFips}</dd></div>
-                    </dl>
+                    <p className="ci-ident">
+                      Seat <strong>{inspectedCounty.countySeat}</strong> · Area <strong>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</strong> · FIPS <strong>{inspectedCounty.countyFips}</strong>
+                    </p>
                   </header>
 
-                  <dl className="ci-stats">
+                  <dl className="ci-stats" style={riskStyle(inspectedNri?.riskRating)}>
+                    <div><dt>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                    <div><dt>Avg. EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
                     <div>
-                      <dt>Population</dt>
-                      <dd>{inspectedCounty.population.toLocaleString()}</dd>
+                      <dt>FEMA NRI</dt>
+                      <dd className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
+                        <span className="ci-swatch" aria-hidden="true" />
+                        {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading' : 'No record')}
+                      </dd>
                     </div>
-                    <div>
-                      <dt>Avg. EMS transport</dt>
-                      <dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd>
-                    </div>
+                    {inspectedNri && (
+                      <div><dt>NRI score</dt><dd>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</dd></div>
+                    )}
                   </dl>
 
-                  <section className="ci-risk" aria-label="FEMA National Risk Index" style={riskStyle(inspectedNri?.riskRating)}>
-                    <div className="ci-risk-top">
-                      <span className="ci-risk-label">FEMA National Risk Index</span>
-                      {inspectedNri && (
-                        <span className="ci-risk-score">
-                          Score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong>
-                        </span>
-                      )}
-                    </div>
-                    <p className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
-                      <span className="ci-swatch" aria-hidden="true" />
-                      {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : 'No FEMA NRI record')}
+                  {inspectedNri && (
+                    <p className="ci-facts" aria-label="FEMA National Risk Index details">
+                      <span>Expected annual loss <strong>{formatLoss(inspectedNri.expectedAnnualLoss)}</strong></span>
+                      <span>Social vulnerability <strong>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</strong></span>
+                      <span>Community resilience <strong>{inspectedNri.communityResilienceRating ?? 'not stated'}</strong></span>
+                      <span>Vintage <strong>{inspectedNri.sourceVersion}</strong>
+                        {inspectedNri.sourceUrl && (<>{' '}<a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">FEMA record <ExternalLink aria-hidden="true" /></a></>)}
+                      </span>
                     </p>
-                    {inspectedNri && (
-                      <dl className="ci-risk-facts">
-                        <div><dt>Expected annual loss</dt><dd>{formatLoss(inspectedNri.expectedAnnualLoss)}</dd></div>
-                        <div><dt>Social vulnerability</dt><dd>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
-                        <div><dt>Community resilience</dt><dd>{inspectedNri.communityResilienceRating ?? 'not stated'}</dd></div>
-                      </dl>
-                    )}
-                    {inspectedNri && (
-                      <p className="ci-prov">
-                        <span>Vintage {inspectedNri.sourceVersion}</span>
-                        {inspectedNri.sourceUrl && (
-                          <a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">
-                            FEMA record <ExternalLink aria-hidden="true" />
-                          </a>
-                        )}
-                      </p>
-                    )}
-                  </section>
+                  )}
 
                   <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section">
-                      <span>Mapped places</span>
-                      <span className="ci-count">{inspectedCounty.node.citiesList.length}</span>
-                    </h5>
+                    <h5 className="ci-section">Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
                         <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`}>
@@ -426,16 +404,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             type="button"
                             className="ci-place"
                             onClick={() => onSelectCity(cityNode.cityName, inspectedCounty.countyName, stateNode.stateCode)}
-                            title={`ZIP ${cityNode.zipCodes.join(', ') || 'not listed'} · ${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
+                            title={`${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
                           >
-                            <span className="ci-place-main">
-                              <span className="ci-place-name">{cityNode.cityName}</span>
-                              {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
-                            </span>
-                            <span className="ci-place-sub">
-                              ZIP {cityNode.zipCodes.join(', ') || 'not listed'}
-                            </span>
-                            <ChevronRight aria-hidden="true" className="ci-place-chev" />
+                            <span className="ci-place-name">{cityNode.cityName}</span>
+                            {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
+                            <span className="ci-place-sub">{cityNode.zipCodes.join(', ') || 'ZIP not listed'}</span>
                           </button>
                         </li>
                       ))}
@@ -449,6 +422,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </section>
 
                   <footer className="ci-foot">
+                    <a
+                      href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${inspectedCounty.countyName}, ${stateNode.stateName}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ci-link"
+                    >
+                      Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
+                    </a>
                     <button
                       type="button"
                       onClick={() => onSelectCounty(inspectedCounty.countyName, stateNode.stateCode)}
@@ -457,14 +438,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     >
                       <span className="ci-btn-text">Open {inspectedCounty.countyName}</span> <ChevronRight aria-hidden="true" />
                     </button>
-                    <a
-                      href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${inspectedCounty.countyName}, ${stateNode.stateName}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ci-link ci-link--foot"
-                    >
-                      Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
-                    </a>
                   </footer>
                 </>
               ) : (

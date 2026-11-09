@@ -74,7 +74,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
           ))}
         </dl>
       )}
-      <div className="cv-section-label"><span>Sources &amp; coverage</span></div>
+      <div className="cv-section-label"><span>{showGeneralNotes ? 'Sources & coverage' : 'Sources'}</span></div>
       {attached.length > 0 && <table className="cv-sources-table">
         <thead>
           <tr>
@@ -111,7 +111,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
       </table>}
       <p className="cv-sources-foot">
         {missing.length === COUNTY_FIGURES.length
-          ? 'Source details are not attached to the eight county figures displayed here.'
+          ? (showGeneralNotes ? 'Source details are not attached to the eight county figures displayed here.' : 'No source details attached to these 8 figures.')
           : missing.length > 0
             ? `Source details not attached for: ${missing.map(({ label }) => label).join('; ')}.`
             : 'Source scope and reporting periods are shown for each figure.'}

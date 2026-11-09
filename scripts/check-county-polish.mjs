@@ -228,7 +228,9 @@ async function checkInspector(viewport) {
     const result=await evaluate(`(() => {
       const panel=document.querySelector('.county-inspector-panel');
       const rect=panel.getBoundingClientRect();
-      return {text:panel.innerText,width:rect.width,pageWidth:document.documentElement.scrollWidth,
+      const map=document.querySelector('.county-state-map-panel').getBoundingClientRect();
+      return {text:panel.innerText,width:rect.width,height:rect.height,mapHeight:map.height,
+        top:rect.top,mapTop:map.top,pageWidth:document.documentElement.scrollWidth,
         closed:panel.querySelectorAll('details:not([open])').length,
         clipped:[...panel.querySelectorAll('dl,dt,dd,section,button,a')].filter(e=>e.scrollWidth>e.clientWidth+2).map(e=>e.className),
         controls:[...panel.querySelectorAll('button,a')].map(e=>({name:e.innerText,height:e.getBoundingClientRect().height})),
@@ -245,6 +247,13 @@ async function checkInspector(viewport) {
     if (viewport.width<768) assert(result.controls.every(c=>c.height>=43),`${label} ${theme}: small touch target ${JSON.stringify(result.controls)}`);
     assert(result.numbers.every(n=>n>=12),`${label} ${theme}: inspector facts too small`);
     await capture(`${label}-inspector-${theme}`,'.county-inspector-panel');
+    if (viewport.width>=1024) {
+      assert(result.height<=360,`${label} ${theme}: county preview too tall (${result.height}px)`);
+      assert(result.mapHeight<=360,`${label} ${theme}: state map too tall (${result.mapHeight}px)`);
+      assert(Math.abs(result.height-result.mapHeight)<3 && Math.abs(result.top-result.mapTop)<3,
+        `${label} ${theme}: map/preview no longer balanced`);
+      console.log(`✓ ${label} ${theme}: preview ${Math.round(result.height)}px / map ${Math.round(result.mapHeight)}px`);
+    }
   }
   await evaluate('document.querySelector(\'[data-testid="button-open-inspected-county"]\').focus()');
   await pressEnter();
@@ -347,7 +356,7 @@ try {
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
       // Captioned story groups retain all eight figures without microtype.
-      if (desktop) assert(row.cardHeight <= 460,
+      if (desktop) assert(row.cardHeight <= (viewport.width>=1366 ? 280 : 300),
         `${label}: county card too tall (${row.cardHeight}px)`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
@@ -388,7 +397,7 @@ try {
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
         assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
-        assert.deepEqual(pair.groups,['Community','Emergency activity','Care access'],`${label} ${theme}: county story groups missing`);
+        assert.deepEqual(pair.groups,['Community','Response','Care access'],`${label} ${theme}: county story groups missing`);
         assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
         assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
         const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');

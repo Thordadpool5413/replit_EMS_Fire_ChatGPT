@@ -1,84 +1,53 @@
-/* Scoped county inspector (Mode A). */
-.county-state-map-grid:has(> .county-inspector-panel.ci) { align-items: start; }
-.cv-panel.county-inspector-panel.ci { gap: .7rem; padding: 1rem; font-family: 'Inter Variable', Inter, system-ui, sans-serif; box-shadow: none !important; }
-.ci .ci-kicker { margin: 0; font-size: .78rem; font-weight: 600; color: var(--pi-text-muted); }
-.ci .ci-name { margin: .2rem 0 0; font-family: var(--font-display, Manrope, sans-serif); font-size: 1.35rem; font-weight: 700; line-height: 1.2; letter-spacing: -.015em; color: var(--pi-text-primary); overflow-wrap: anywhere; }
-.ci .ci-ident { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .45rem 0 0; font-size: .875rem; }
-.ci .ci-ident > div { display: flex; gap: .3rem; min-width: 0; }
-.ci .ci-ident dt { color: var(--pi-text-muted); }
-.ci .ci-ident dd { margin: 0; font-weight: 600; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
-.ci .ci-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--pi-border); }
-.ci .ci-stats > div { padding: .7rem 0; min-width: 0; }
-.ci .ci-stats > div + div { padding-left: 1rem; border-left: 1px solid var(--pi-border); }
-.ci .ci-stats dt { font-size: .8rem; color: var(--pi-text-secondary); }
-.ci .ci-stats dd { margin: .15rem 0 0; font-size: 26px; font-weight: 650; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; line-height: 1.15; }
-.ci .ci-stats dd small { font-size: .85rem; font-weight: 500; color: var(--pi-text-secondary); }
-.ci .ci-risk { display: grid; gap: .55rem; padding: 0 0 0 .85rem; border-left: 3px solid var(--risk, #94a3b8); }
-.ci .ci-risk-top { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
-.ci .ci-risk-label { font-size: .8rem; font-weight: 600; color: var(--pi-text-secondary); }
-.ci .ci-risk-score { font-size: .85rem; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
-.ci .ci-risk-score strong { font-size: 1rem; color: var(--pi-text-primary); }
-.ci .ci-risk-rating { display: flex; align-items: center; gap: .5rem; margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--pi-text-primary); }
-.ci .ci-risk-rating--none { font-weight: 600; color: var(--pi-text-secondary); }
-.ci .ci-swatch { width: .8rem; height: .8rem; flex: none; border-radius: 3px; background: var(--risk, #94a3b8); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
-.ci .ci-risk-facts { display: grid; gap: .35rem; margin: 0; font-size: .875rem; }
-.ci .ci-risk-facts > div { display: flex; justify-content: space-between; gap: .75rem; }
-.ci .ci-risk-facts dt { color: var(--pi-text-secondary); }
-.ci .ci-risk-facts dd { margin: 0; font-weight: 600; color: var(--pi-text-primary); text-align: right; font-variant-numeric: tabular-nums; }
-.ci .ci-prov { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 .75rem; margin: 0; font-size: .8rem; color: var(--pi-text-muted); }
-.ci .ci-link { display: inline-flex; align-items: center; gap: .3rem; min-height: 44px; font-size: .875rem; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--pi-action) 40%, transparent); }
+/* County preview (Mode A): compact single-flow panel, hairlines only, no nested tinted boxes. */
+.cv-panel.county-inspector-panel.ci { container-type: inline-size; display: flex; flex-direction: column; gap: .35rem; padding: .6rem .7rem; box-shadow: none !important; font-family: 'Inter Variable', Inter, system-ui, sans-serif; line-height: 1.3; }
+.ci p, .ci dl, .ci dd, .ci h4, .ci h5 { margin: 0; }
+.ci .ci-head { display: grid; gap: .05rem; }
+.ci .ci-kicker { font-size: 12px; font-weight: 600; color: var(--pi-text-muted); }
+.ci .ci-name { font-family: var(--font-display, Manrope, sans-serif); font-size: 1.2rem; font-weight: 700; line-height: 1.2; letter-spacing: -.015em; color: var(--pi-text-primary); overflow-wrap: anywhere; }
+.ci .ci-ident { font-size: 13px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
+.ci .ci-ident strong { font-weight: 600; color: var(--pi-text-primary); }
+.ci .ci-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); border-block: 1px solid var(--pi-border); }
+.ci .ci-stats > div { padding: .4rem .6rem .4rem 0; min-width: 0; }
+.ci .ci-stats > div + div { padding-left: .6rem; border-left: 1px solid var(--pi-border); }
+.ci .ci-stats dt { font-size: 12px; color: var(--pi-text-secondary); }
+.ci .ci-stats dd { font-size: 20px; font-weight: 650; line-height: 1.2; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
+.ci .ci-stats dd small { font-size: 13px; font-weight: 500; color: var(--pi-text-secondary); }
+.ci .ci-stats .ci-risk-rating { display: flex; align-items: center; gap: .35rem; font-size: 15px; font-weight: 700; padding-top: .2rem; }
+.ci .ci-risk-rating--none { color: var(--pi-text-secondary) !important; font-weight: 600 !important; }
+.ci .ci-swatch { width: .7rem; height: .7rem; flex: none; border-radius: 2px; background: var(--risk, #94a3b8); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.ci .ci-facts { display: flex; flex-wrap: wrap; gap: .1rem 1rem; font-size: 12px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
+.ci .ci-facts strong { color: var(--pi-text-primary); font-weight: 600; }
+.ci .ci-link { display: inline-flex; align-items: center; gap: .2rem; font-size: 12px; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--pi-action) 40%, transparent); }
 .ci .ci-link:hover { text-decoration-color: currentColor; }
-.ci .ci-link svg { width: .85rem; height: .85rem; flex: none; }
-.ci .ci-section { display: flex; align-items: baseline; gap: .5rem; margin: 0 0 .35rem; font-size: .9rem; font-weight: 700; color: var(--pi-text-primary); }
-.ci .ci-count { font-size: .8rem; font-weight: 600; color: var(--pi-text-muted); font-variant-numeric: tabular-nums; }
-.ci .ci-place-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: .75rem; list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--pi-border); }
-.ci .ci-place-list > li { border-bottom: 1px solid var(--pi-border); }
-.ci .ci-place { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .15rem .3rem; width: 100%; min-height: 44px; padding: .45rem .25rem; text-align: left; background: transparent; color: var(--pi-text-primary); cursor: pointer; border-radius: .35rem; transition: background-color 140ms ease; }
-.ci .ci-place:hover { background: var(--pi-surface-subtle); }
-.ci .ci-place:focus-visible, .ci .ci-btn:focus-visible, .ci .ci-link:focus-visible { outline: 2px solid var(--pi-focus-ring, var(--pi-action)); outline-offset: 2px; }
-.ci .ci-place-main { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .4rem; min-width: 0; grid-column: 1; }
-.ci .ci-place-name { font-size: .95rem; font-weight: 600; overflow-wrap: anywhere; }
-.ci .ci-tag { flex: none; font-size: .72rem; font-weight: 650; padding: .05rem .4rem; border-radius: .3rem; background: var(--pi-action-subtle); color: var(--pi-action-ink); }
-.ci .ci-place-sub { font-size: 12px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; text-align: left; grid-column: 1; overflow-wrap: anywhere; }
-.ci .ci-place-chev { width: .9rem; height: .9rem; color: var(--pi-text-muted); grid-column: 2; grid-row: 1 / 3; }
-.ci .ci-zips { margin: .55rem 0 0; font-size: .85rem; line-height: 1.55; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ci .ci-link svg { width: .75rem; height: .75rem; flex: none; }
+.ci .ci-section { display: flex; align-items: baseline; gap: .35rem; margin-bottom: .2rem; font-size: 13px; font-weight: 700; color: var(--pi-text-primary); }
+.ci .ci-count { font-size: 12px; font-weight: 600; color: var(--pi-text-muted); }
+.ci .ci-place-list { display: flex; flex-wrap: wrap; gap: .1rem .9rem; list-style: none; margin: 0; padding: 0; }
+.ci .ci-place { display: inline-flex; align-items: baseline; gap: .3rem; padding: .05rem .15rem; border-radius: .25rem; background: transparent; cursor: pointer; text-align: left; transition: background-color 140ms ease; }
+.ci .ci-place:hover { background: var(--pi-action-subtle); }
+.ci .ci-place-name { font-size: 13px; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--pi-action) 35%, transparent); }
+.ci .ci-tag { font-size: 12px; font-weight: 650; color: var(--pi-text-secondary); }
+.ci .ci-place-sub { font-size: 12px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
+.ci .ci-zips { margin-top: .25rem; font-size: 12px; line-height: 1.45; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ci .ci-zips strong { color: var(--pi-text-primary); font-weight: 600; }
-.ci .ci-foot { display: grid; gap: .25rem; margin-top: auto; padding-top: .75rem; border-top: 1px solid var(--pi-border); }
-.ci .ci-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; min-height: 44px; padding: 0 1rem; border-radius: .55rem; background: var(--pi-action); color: #fff; font-size: .95rem; font-weight: 650; cursor: pointer; transition: background-color 140ms ease; }
+.ci .ci-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .75rem; margin-top: auto; padding-top: .45rem; border-top: 1px solid var(--pi-border); }
+.ci .ci-btn { display: inline-flex; align-items: center; gap: .3rem; min-height: 2rem; padding: 0 .8rem; border-radius: .4rem; background: var(--pi-action); color: #fff; font-size: 13px; font-weight: 650; cursor: pointer; transition: background-color 140ms ease; }
 .ci .ci-btn:hover { background: var(--pi-action-hover); }
-.ci .ci-btn svg { width: 1rem; height: 1rem; flex: none; }
-.ci .ci-btn-text { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-.ci .ci-link--foot { justify-content: center; }
-@media (min-width: 1024px) {
-  .ci .ci-foot { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
-  .ci .ci-foot .ci-btn { width: auto; grid-column: 2; justify-self: end; }
-  .ci .ci-link--foot { grid-column: 1; grid-row: 1; justify-content: flex-start; }
+.ci .ci-btn svg { width: .9rem; height: .9rem; flex: none; }
+.ci .ci-btn-text { min-width: 0; overflow-wrap: anywhere; }
+.ci .ci-place:focus-visible, .ci .ci-btn:focus-visible, .ci .ci-link:focus-visible { outline: 2px solid var(--pi-focus-ring, var(--pi-action)); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .ci .ci-kicker, .ci .ci-facts, .ci .ci-place-sub, .ci .ci-zips, .ci .ci-tag, .ci .ci-stats dt, .ci .ci-link { font-size: 13px; }
+  .ci .ci-place, .ci .ci-link { min-height: 44px; align-items: center; }
+  .ci .ci-btn { min-height: 44px; width: 100%; justify-content: center; }
 }
-@media (max-width: 359px) { .ci .ci-place-list { grid-template-columns: minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce) { .ci .ci-place, .ci .ci-btn { transition: none !important; } }
 
-/* Balanced map + preview pair (desktop). Outranks legacy !important caps in styles/territory/{records,responsive}.css. */
+/* Balanced pair: map follows the preview's height (no forced growth), map keeps aspect via meet. */
 @media (min-width: 1024px) {
-  .cv-state-grid.county-state-map-grid:has(> .county-inspector-panel.ci) { align-items: stretch; grid-template-columns: minmax(0, 1.1fr) minmax(22rem, .9fr); }
-  .county-state-map-grid:has(> .ci) > .county-state-map-panel { display: flex !important; flex-direction: column; height: auto !important; min-height: 100%; }
-  .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport { flex: 1 1 auto !important; min-height: 18rem !important; height: auto !important; max-height: none !important; }
+  .territory-explorer-screen .cv-state-grid.county-state-map-grid:has(> .county-inspector-panel.ci) { align-items: stretch; grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr) !important; }
+  .county-state-map-grid:has(> .ci) > .county-state-map-panel { display: flex !important; flex-direction: column; height: auto !important; min-height: 0 !important; }
+  .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport { flex: 1 1 0 !important; min-height: 13rem !important; height: auto !important; max-height: none !important; }
   .territory-explorer-screen .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg,
-  .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { height: 100% !important; min-height: 18rem !important; max-height: none !important; }
+  .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { width: 100%; height: 100% !important; min-height: 13rem !important; max-height: none !important; }
 }
-.cv-panel.county-inspector-panel.ci { container-type: inline-size; gap: .85rem; }
-.ci .ci-head { display: grid; gap: .1rem; }
-.ci .ci-kicker { letter-spacing: .02em; }
-.ci .ci-stats > div { padding: .55rem 0; }
-.ci .ci-stats dd { font-size: 24px; }
-.ci .ci-risk { gap: .4rem; }
-.ci .ci-risk-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
-.ci .ci-risk-facts > div { display: grid; gap: .1rem; justify-content: stretch; }
-.ci .ci-risk-facts dt { font-size: .78rem; }
-.ci .ci-risk-facts dd { text-align: left; }
-.ci .ci-link { min-height: 2rem; }
-.ci .ci-place-list { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
-.ci .ci-place { min-height: 2.5rem; padding: .35rem .25rem; }
-.ci .ci-place-name { font-size: .9rem; }
-.ci .ci-zips { margin-top: .45rem; font-size: .82rem; }
-@container (max-width: 380px) { .ci .ci-risk-facts { grid-template-columns: minmax(0, 1fr); } .ci .ci-risk-facts > div { display: flex; justify-content: space-between; } .ci .ci-risk-facts dd { text-align: right; } }
-@media (max-width: 767px) { .ci .ci-place, .ci .ci-link { min-height: 44px; } }

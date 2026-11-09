@@ -26,3 +26,9 @@ County cards should communicate a visual story through related groups, rather th
 **Why:** The user repeatedly rejected both multicolor metric grids and compressed inline numbers, then specifically requested a visual story of the county's data and a preview sized to match its map.
 
 **How to apply:** Group related figures with clear captions and a deliberate reading order. Do not mistake smaller text or more decorative color for better hierarchy, and verify the actual map/preview geometry at laptop widths.
+
+The map/preview pair and individual county cards must be roughly half the height of the rejected oversized grouped layout, not taller “polished” versions.
+
+**Why:** The user specifically repeated “1/2 its size” for both surfaces after the grouped redesign increased their height.
+
+**How to apply:** Measure actual rendered laptop heights before declaring a density improvement. Remove nested panels and wasted vertical structure before reducing type size; retain all details and allow mobile content to grow naturally.

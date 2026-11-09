@@ -20,3 +20,9 @@ Include row and icon geometry in every theme's checks, not only contrast.
 **Why:** Daylight geometry and all-theme contrast checks missed a Miami Vice selected-state border that shifted only the active row's icon.
 
 **How to apply:** Keep selection indicators from changing row border geometry; check the selected workspace against inactive rows after switching themes.
+
+Every fresh app session starts in Daylight, regardless of a previously selected app theme or the device color preference. Users may still switch themes during the current session.
+
+**Why:** the user asked.
+
+**How to apply:** Keep startup theme initialization authoritative, and verify reload behavior after selecting dark or Miami Vice.

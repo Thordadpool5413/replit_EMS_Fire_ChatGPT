@@ -476,18 +476,25 @@ async function checkThemeModeSelection(cdp, viewport) {
     }
   }
 
-  await reloadAndWaitForTheme(cdp, 'miami-vice', 'Miami Vice preference after reload');
+  await reloadAndWaitForTheme(cdp, 'daylight', 'Daylight startup after selecting another theme');
+  await waitFor(
+    cdp,
+    `localStorage.getItem('app_theme_mode') === 'daylight' &&
+      localStorage.getItem('app_dark_mode') === 'false'`,
+    'the saved theme to be reset to Daylight for the new app session',
+  );
   await evaluate(cdp, `(() => {
-    localStorage.removeItem('app_theme_mode');
-    localStorage.setItem('app_dark_mode', 'false');
-  })()`);
-  await reloadAndWaitForTheme(cdp, 'daylight', 'legacy Daylight preference migration');
-  await evaluate(cdp, `(() => {
-    localStorage.removeItem('app_theme_mode');
+    localStorage.setItem('app_theme_mode', 'dark');
     localStorage.setItem('app_dark_mode', 'true');
   })()`);
-  await reloadAndWaitForTheme(cdp, 'dark', 'legacy Dark preference migration');
-  console.log(`  ${viewport.width}px: all three theme options, persistence, and legacy Daylight/Dark preference migration`);
+  await reloadAndWaitForTheme(cdp, 'daylight', 'Daylight startup despite saved dark preferences');
+  await waitFor(
+    cdp,
+    `localStorage.getItem('app_theme_mode') === 'daylight' &&
+      localStorage.getItem('app_dark_mode') === 'false'`,
+    'saved dark preferences to be reset to Daylight on app startup',
+  );
+  console.log(`  ${viewport.width}px: all three theme options work in-session; every new app session starts in Daylight`);
 }
 
 async function checkThemeSelectionWithKeyboard(cdp, viewport) {
@@ -552,11 +559,13 @@ async function checkThemeSelectionWithKeyboard(cdp, viewport) {
   await cdp.send('Page.reload');
   await waitFor(
     cdp,
-    `document.documentElement.dataset.theme === 'miami-vice' &&
-      localStorage.getItem('app_theme_mode') === 'miami-vice'`,
-    `${viewport.width}px Miami Vice persistence after keyboard selection and reload`,
+    `document.documentElement.dataset.theme === 'daylight' &&
+      document.documentElement.style.colorScheme === 'light' &&
+      localStorage.getItem('app_theme_mode') === 'daylight' &&
+      localStorage.getItem('app_dark_mode') === 'false'`,
+    `${viewport.width}px Daylight startup after keyboard-selecting another theme`,
   );
-  console.log(`  ${viewport.width}px: pointer/keyboard selection and reload retained Miami Vice`);
+  console.log(`  ${viewport.width}px: pointer/keyboard theme selection works; reload restores Daylight`);
 }
 
 async function contrastReadings(cdp, selectors) {
@@ -2306,6 +2315,11 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  if (process.env.THEME_STARTUP_ONLY === '1') {
+    await checkThemeModeSelection(cdp, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: theme selection remains available, new sessions always start in Daylight`);
+    return;
+  }
   if (process.env.THEME_NAVIGATION_ONLY === '1') {
     await checkHome(cdp, false);
     await checkHome(cdp, true);

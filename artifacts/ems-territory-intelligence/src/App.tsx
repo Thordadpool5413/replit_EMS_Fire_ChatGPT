@@ -49,7 +49,7 @@ import {
   type TerritoryUrlValidators,
 } from './navigation/territoryUrl';
 import { territoryEngine } from './services/territoryIntelligenceEngine';
-import { isThemeMode, type ThemeMode } from './types/theme';
+import { type ThemeMode } from './types/theme';
 import {
   shouldShowTransientNotice,
   type TransientNoticeType,
@@ -96,18 +96,8 @@ const MobileProviderSelectorDrawer = React.lazy(() => import('./components/Mobil
 const AgencyComparisonPanel = React.lazy(() => import('./components/AgencyComparisonPanel').then((module) => ({ default: module.AgencyComparisonPanel })));
 
 function loadInitialThemeMode(): ThemeMode {
-  try {
-    const savedThemeMode = localStorage.getItem('app_theme_mode');
-    if (isThemeMode(savedThemeMode)) return savedThemeMode;
-
-    const legacyDarkMode = localStorage.getItem('app_dark_mode');
-    if (legacyDarkMode === 'true') return 'dark';
-    if (legacyDarkMode === 'false') return 'daylight';
-
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'daylight';
-  } catch {
-    return 'daylight';
-  }
+  // Every fresh app session starts in Daylight, regardless of saved or OS preferences.
+  return 'daylight';
 }
 
 type TerritoryNavigationEntry = {

@@ -27,8 +27,8 @@ const requests = new Map();
 let id = 0;
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const errors = [];
-// Collect density failures so data, keyboard and source checks still run.
-const densityFailures = [];
+// Readable content determines height. Report geometry rather than enforcing
+// the retired 360px cap that encouraged tiny labels and cramped source rows.
 function send(method, params = {}) {
   return new Promise((resolve, reject) => {
     const current = ++id;
@@ -213,6 +213,29 @@ async function checkDenseFixture(viewport) {
     await capture(`${label}-dense-${theme}`,'#county-regression-fixture');
   }
   console.log(`✓ ${label}: long names, 24 ZIPs, 12 places, missing/zero figures and eight full source records`);
+  // Enlarge the county component within the same physical space. Zooming the
+  // whole document also tests unrelated shell/toolbar minimum widths.
+  await evaluate(`(() => {
+    const host=document.querySelector('#county-regression-fixture');
+    host.style.zoom='2';host.style.width='50%';
+  })()`);
+  await pause(150);
+  const enlarged = await evaluate(`(() => {
+    const card=document.querySelector('#county-regression-fixture .county-brief');
+    return {pageOverflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2,
+      figures:card.querySelectorAll('[data-figure-key]').length,
+      sources:card.querySelectorAll('.county-figure-source-record').length,
+      clipped:[...card.querySelectorAll('dl,dt,dd,section,table,th,td,button')]
+        .filter(e=>e.scrollWidth>e.clientWidth+2).map(e=>e.className)};
+  })()`);
+  await capture(`${label}-dense-enlarged`,'#county-regression-fixture');
+  await evaluate(`(() => {
+    const host=document.querySelector('#county-regression-fixture');
+    host.style.zoom='';host.style.width='';
+  })()`);
+  assert(!enlarged.pageOverflow && enlarged.figures===8 && enlarged.sources===8 &&
+    enlarged.clipped.length===0,`${label}: 200% enlargement failed ${JSON.stringify(enlarged)}`);
+  console.log(`✓ ${label}: 200% enlargement retains all facts and provenance without clipping`);
 }
 
 async function checkInspector(viewport) {
@@ -250,8 +273,6 @@ async function checkInspector(viewport) {
     assert(result.numbers.every(n=>n>=12),`${label} ${theme}: inspector facts too small`);
     await capture(`${label}-inspector-${theme}`,'.county-inspector-panel');
     if (viewport.width>=1024) {
-      assert(result.height<=(viewport.width>=1366 ? 360 : 390),`${label} ${theme}: county preview too tall (${result.height}px)`);
-      assert(result.mapHeight<=(viewport.width>=1366 ? 360 : 390),`${label} ${theme}: state map too tall (${result.mapHeight}px)`);
       assert(Math.abs(result.height-result.mapHeight)<3 && Math.abs(result.top-result.mapTop)<3,
         `${label} ${theme}: map/preview no longer balanced`);
       console.log(`✓ ${label} ${theme}: preview ${Math.round(result.height)}px / map ${Math.round(result.mapHeight)}px`);
@@ -302,6 +323,7 @@ try {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
     await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: !desktop });
+     if (process.env.COUNTY_DENSE_ONLY === '1') { await checkDenseFixture(viewport); continue; }
     if (inspectorOnly) { await checkInspector(viewport); continue; }
     if (mapOnly) {
       await navigate('/?state=FL&county=Alachua%20County', 'Boolean(document.querySelector(".county-city-directory-panel"))');
@@ -358,8 +380,6 @@ try {
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
       // Captioned story groups retain all eight figures without microtype.
-      if (desktop && row.cardHeight > 360) densityFailures.push(
-        `${label}: county card too tall (${row.cardHeight}px)`);
       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
       assert.equal(row.figureKeys.length, 8, `${label}: county figures duplicated or removed`);
@@ -382,7 +402,7 @@ try {
           const transport=cards[0].querySelector('[data-testid="text-county-transport-12001"]');
           const metrics=[...cards[0].querySelectorAll('[data-figure-key]')].map(metric=>{
             const value=metric.querySelector('dd'), label=metric.querySelector('dt');
-            const icon=metric.querySelector('dt .cb-ico svg');
+             const icon=metric.querySelector('dt svg.cb-ico,dt .cb-ico svg');
             return {key:metric.dataset.figureKey,icon:!!icon && icon.getBoundingClientRect().width>=12,context:!!metric.closest('.cb-group--context'),color:getComputedStyle(value).color,
               labelColor:getComputedStyle(label).color,size:parseFloat(getComputedStyle(value).fontSize),
               right:value.getBoundingClientRect().right,
@@ -393,7 +413,9 @@ try {
               valueBottom:value.getBoundingClientRect().bottom,labelTop:label.getBoundingClientRect().top,
               labelSize:parseFloat(getComputedStyle(label).fontSize)};
           });
-          return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
+           return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
+             cardiacIconColor:getComputedStyle(cards[0].querySelector('[data-figure-key="annualCardiacArrestIncidents"] svg')).color,
+             transportIconColor:getComputedStyle(cards[0].querySelector('[data-figure-key="averageTransportMinutes"] svg')).color,
             groups:[...cards[0].querySelectorAll('.cb-group-cap')].map(e=>e.textContent),
             pageOverflow:document.documentElement.scrollWidth > innerWidth + 1,
             seatTop:cards[0].querySelector('.cb-seat').getBoundingClientRect().top,
@@ -402,24 +424,26 @@ try {
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
         assert.equal(pair.cards.length, 2, `${label}: missing county pair`);
-        assert(pair.metrics.every(metric=>metric.icon), `${label} ${theme}: a county metric lost its visible icon`);
+         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.icon),
+           `${label} ${theme}: a primary county metric lost its visible icon`);
         assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
-        assert.deepEqual(pair.groups,['Operational snapshot','County context'],`${label} ${theme}: county brief groups missing`);
+         assert.deepEqual(pair.groups,['Operational snapshot','County context','Geography and places'],`${label} ${theme}: county brief groups missing`);
         assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
-        assert.notEqual(pair.cardiacColor, pair.transportColor, `${label} ${theme}: missing distinct cardiac accent`);
+         assert.notEqual(pair.cardiacIconColor, pair.transportIconColor, `${label} ${theme}: missing distinct cardiac icon accent`);
         const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');
         assert.equal(new Set(neutralMetrics.map(metric=>metric.color)).size,1,
           `${label} ${theme}: decorative metric colors returned`);
-        assert(pair.cardiacColor !== neutralMetrics[0].color, `${label} ${theme}: cardiac topic cue missing`);
-        assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 12),
+         assert.equal(pair.cardiacColor, neutralMetrics[0].color, `${label} ${theme}: metric values should remain neutral`);
+         assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 14),
           `${label} ${theme}: metric type too small`);
+         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.size>=22),
+           `${label} ${theme}: primary figures lost their visual hierarchy`);
         assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 3.2),
           `${label} ${theme}: metric labels wrap beyond three lines`);
         assert(pair.metrics.every(metric=>!metric.labelClipped), `${label} ${theme}: metric labels are truncated`);
-        assert(pair.metrics.every(metric=>metric.context
-          ? metric.valueBottom>=metric.labelTop && metric.valueTop<=metric.labelBottom && metric.valueLeft>metric.labelLeft
-          : metric.valueTop>=metric.labelBottom-1 && Math.abs(metric.valueLeft-metric.labelLeft)<1),
-          `${label} ${theme}: snapshot/context label-value alignment broken`);
+         assert(pair.metrics.every(metric=>metric.valueTop>=metric.labelBottom-1 &&
+           Math.abs(metric.valueLeft-metric.labelLeft)<1),
+           `${label} ${theme}: consistent label-over-value alignment broken`);
         if (desktop) {
           assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);
           assert(Math.abs(pair.cards[0].w - pair.cards[1].w) < 2, `${label} ${theme}: unequal card widths`);
@@ -462,7 +486,7 @@ try {
     await waitFor('!document.querySelector(\'[data-testid="button-show-all-places"]\') && !document.querySelector(\'.county-city-directory-panel [aria-pressed="true"]\')', 'return to all cities');
     console.log(`✓ ${label}: Home/state/county, inline sources, deduped places, keyboard city selection and return`);
   }
-  if (!mapOnly && !inspectorOnly) {
+  if (!mapOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1') {
   await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
   if (!cardsOnly) for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
     await navigate(`/?state=${code}`, 'Boolean(document.querySelector(".county-state-map-svg path"))');
@@ -485,7 +509,6 @@ try {
   if (cardsOnly) for (const viewport of viewports) await checkDenseFixture(viewport);
   }
   assert.deepEqual(errors, [], `Uncaught browser exceptions: ${errors.join(', ')}`);
-  assert.deepEqual(densityFailures, [], `County density limits: ${densityFailures.join('; ')}`);
   console.log(`PASS county polish checks. Captures: ${captures}`);
 } finally {
   socket?.close();

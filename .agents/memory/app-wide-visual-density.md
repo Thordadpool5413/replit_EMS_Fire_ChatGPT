@@ -31,7 +31,7 @@ The map/preview pair and individual county cards must be roughly half the height
 
 **Why:** The user specifically repeated “1/2 its size” for both surfaces after the grouped redesign increased their height.
 
-**How to apply:** Measure actual rendered laptop heights before declaring a density improvement. Remove nested panels and wasted vertical structure before reducing type size; retain all details and allow mobile content to grow naturally.
+**How to apply:** Measure actual rendered laptop heights before declaring a density improvement. Remove nested panels and wasted vertical structure before reducing type size; retain all details and allow mobile content to grow naturally. The later approved intelligence-brief redesign prioritizes readable metric labels and figures over the former fixed height cap; disclose a height increase instead of silently shrinking type to pass a density check.
 
 Compactness alone is not acceptance: county previews and cards must remain easy to read and understand, not compressed into running text.
 
@@ -43,7 +43,7 @@ County views need purposeful icons, better labels, and restrained color as well 
 
 **Why:** The user rejected the plain label/value redesign and explicitly requested icons, color, and improved layout for both previews and directory cards.
 
-**How to apply:** Give individual metrics recognizable icons, including population, transport time, and cardiac arrests; section-level icons alone do not satisfy this requirement. Do not turn every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.
+**How to apply:** Give the primary individual metrics recognizable icons, including population, transport time, and cardiac arrests; section-level icons alone do not satisfy this requirement. Use unboxed icons, not colored icon tiles or ornamental county emblems: the user subsequently rejected those decorations as clutter. Do not turn every number into a different color. Preserve FEMA categories and distinguish a cardiac topic accent from a risk assessment.
 
 Use the intelligence-brief direction for county previews and directory cards: stronger typography, fewer boxes, and clear hierarchy rather than a clinical dashboard.
 

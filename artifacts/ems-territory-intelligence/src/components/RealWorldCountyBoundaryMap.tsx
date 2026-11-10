@@ -17,7 +17,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, ShieldAlert, Users, Ambulance, HeartPulse, MapPin } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
 
@@ -369,12 +369,24 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </p>
                   </header>
 
+                  {(() => {
+                    const ohca = inspectedCounty.node.countyRecord?.annualCardiacArrestIncidents;
+                    const hasOhca = typeof ohca === 'number' && Number.isFinite(ohca);
+                    return (
+                      <dl className="ci-stats">
+                        <div className="ci-stat"><dt><Users className="ci-ico" aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                        <div className="ci-stat"><dt title="Average EMS transport time"><Ambulance className="ci-ico" aria-hidden="true" />Avg EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
+                        <div className="ci-stat ci-stat--cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><HeartPulse className="ci-ico" aria-hidden="true" />Cardiac arrests</dt><dd>{hasOhca ? <>{ohca.toLocaleString()}<small> /yr</small></> : <span className="ci-na">Not reported</span>}</dd></div>
+                      </dl>
+                    );
+                  })()}
+
                   <section className="ci-fema" style={riskStyle(inspectedNri?.riskRating)} aria-label="FEMA National Risk Index">
-                    <p className="ci-band-label"><ShieldAlert aria-hidden="true" />FEMA NRI hazard risk</p>
+                    <p className="ci-band-label">FEMA hazard risk</p>
                     <div className="ci-fema-row">
                       <span className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
                         <span className="ci-swatch" aria-hidden="true" />
-                        {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading' : 'No record')}
+                        {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No record')}
                       </span>
                       {inspectedNri && (
                         <span>Score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong></span>
@@ -393,20 +405,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     )}
                   </section>
 
-                  {(() => {
-                    const ohca = inspectedCounty.node.countyRecord?.annualCardiacArrestIncidents;
-                    const hasOhca = typeof ohca === 'number' && Number.isFinite(ohca);
-                    return (
-                      <dl className="ci-stats">
-                        <div className="ci-stat"><dt><span className="ci-ico" aria-hidden="true"><Users /></span>Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                        <div className="ci-stat"><dt title="Average EMS transport time"><span className="ci-ico" aria-hidden="true"><Ambulance /></span>Avg transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
-                        <div className="ci-stat ci-stat--cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><span className="ci-ico" aria-hidden="true"><HeartPulse /></span>Cardiac arrests</dt><dd>{hasOhca ? <>{ohca.toLocaleString()}<small> /yr</small></> : <span className="ci-na">Not reported</span>}</dd></div>
-                      </dl>
-                    );
-                  })()}
 
                   <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section"><MapPin aria-hidden="true" />Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
+                    <h5 className="ci-section">Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
                         <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">

@@ -15,6 +15,18 @@ Buy-back cash, replacement-purchase credit, and illustrative trade-in assumption
 
 **How to apply:** Require a recorded device, explicit currency, quoted per-unit amount, and whole eligible quantity before presenting a quoted fleet total. Never substitute ambulance count, full installed quantity, or a default competitor match. Retain quote dates and conditions, and never count the same credit twice as savings.
 
+Compare alternative offers individually; do not sum them even when their type and currency match.
+
+**Why:** Two providers may quote on the same devices. Adding both offers suggests the agency can realize both payments, which is not established by either quote.
+
+**How to apply:** Keep each quoted eligible-device total separate. Any future combined valuation must first establish non-overlapping devices and compatible terms.
+
+Equipment age is a discovery input, not proof of failure or replacement intent. A historical grant award is not a current application deadline.
+
+**Why:** The user wants explainable opportunities based on documented signals, not invented urgency inferred from inventory or award history.
+
+**How to apply:** Show the recorded basis, confidence, source and verification action. Do not use modeled or logic-derived evidence as a documented contract/warranty source; require an actual cited notice for a grant deadline.
+
 Make responsive layouts depend on the available component width, not only the screen width.
 
 **Why:** Enlarged profile text can narrow a brief inside a desktop viewport while desktop multi-column finding rules still apply.

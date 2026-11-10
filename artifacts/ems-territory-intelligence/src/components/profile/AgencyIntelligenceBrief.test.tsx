@@ -87,6 +87,20 @@ test('technology and buy-back precede operational figures without duplicate hard
   assert.doesNotMatch(html, /Fleet &amp; hardware/);
 });
 
+test('alternative quotes remain independent even when their kind and currency match', () => {
+  const quote = {
+    id: 'cash-one', provider: 'Provider one', kind: 'cash-buyback' as const,
+    eligibleDevice: 'Monitor', currency: 'USD', perUnitValue: 1000, eligibleQuantity: 2,
+    offerDate: '2020-01-01', expiryDate: '2099-12-31',
+  };
+  const html = render(record({ documentedTradeInOffers: [quote, { ...quote, id: 'cash-two', provider: 'Provider two' }] }));
+  assert.match(html, /Provider one/);
+  assert.match(html, /Provider two/);
+  assert.match(html, /USD 2,000/);
+  assert.doesNotMatch(html, /USD 4,000|Within-dates total/);
+  assert.match(html, /Offers may cover the same devices/);
+});
+
 test('software records are never split or vendor/model guessed', () => {
   const agency = record({ installedFleet: { defibBrand: 'Unknown brand', epcrCadSoftware: 'Combined system' } as Agency['installedFleet'] });
   const lines = buildEquipmentLines(agency);

@@ -12,11 +12,9 @@ import {
   ArrowRight,
   Building2,
   CalendarClock,
-  ClipboardCheck,
   Cpu,
   Flame,
   Monitor,
-  Repeat,
   Wind,
   HeartPulse,
   Landmark,
@@ -30,15 +28,14 @@ import { hasAgencyFactEvidence } from '../../data/agencyFactEvidence';
 import { DataLabel, dataLabelTone, inferDataLabelKind, type DataLabelKind } from '../DataLabel';
 import {
   NOT_REPORTED,
-  TRADE_IN_CHECKLIST,
   buildEquipmentLines,
-  getDocumentedOffers,
-  offerKindLabel,
-  offerTotal,
-  offerValue,
   summarizeEvidence,
   type EquipmentLine,
 } from './equipmentInsights';
+import { useProfileResearch, type ProfileResearchState } from './useProfileResearch';
+import { ProfileDecisionSupport } from './ProfileDecisionSupport';
+import { BuybackDecisionSupport } from './BuybackDecisionSupport';
+import { MeetingBriefPanel } from './MeetingBriefPanel';
 
 type IconType = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
 
@@ -172,12 +169,17 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
   const line = (l: EquipmentLine) => {
     const Icon = categoryIcon[l.category];
     const missing = l.value === NOT_REPORTED;
+    const ev = summarizeEvidence(agency, l.evidenceKeys[0]);
     return (
       <li key={l.key} className="aib-eq" data-testid={`equipment-line-${l.key}`}>
         <Icon className="aib-icon" aria-hidden="true" />
         <div className="min-w-0">
           <p className="aib-eq-label">{l.label}</p>
           <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
+          <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
+            <span className="aib-eq-srcstate">{ev.state === 'none' ? 'No source mapped' : ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
+            {ev.sourceName && <> · {ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
+          </p>
         </div>
         {l.quantity && <p className={`aib-eq-qty${l.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>{l.quantity === NOT_REPORTED ? 'Qty not reported' : l.quantity}</p>}
       </li>
@@ -206,52 +208,10 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
   );
 };
 
-const BuybackInsights: React.FC<{ agency: Agency }> = ({ agency }) => {
-  const offers = getDocumentedOffers(agency);
-  return (
-    <section className="aib-block aib-buyback" data-testid="profile-buyback-insights" aria-labelledby="aib-buyback-title">
-      <h3 id="aib-buyback-title" className="aib-label"><Repeat className="aib-icon" aria-hidden="true" />Buy-back &amp; trade-in</h3>
-      <p className="aib-sub">Agency-specific offer records</p>
-      {offers.length === 0 ? (
-        <p className="aib-noquote" data-testid="text-no-current-quote">No current quote recorded</p>
-      ) : (
-        <ul className="aib-offers">
-          {offers.map((o) => {
-            const total = offerTotal(o);
-            return (
-              <li key={o.id} className="aib-offer" data-testid={`offer-${o.id}`}>
-                <p className="aib-eq-label">{offerKindLabel(o.kind)} · {o.provider}</p>
-                <dl className="aib-rows">
-                  <Row label="Eligible device" kind="equipment">{o.eligibleDevice || NOT_REPORTED}</Row>
-                  <Row label="Offer date" kind="period">{o.offerDate || NOT_REPORTED}</Row>
-                  <Row label="Expires" kind="expiration">{o.expiryDate || 'Not stated'}</Row>
-                  <Row label="Per-unit value" kind="funding">{offerValue(o.perUnitValue, o.currency)}</Row>
-                  <Row label="Eligible quantity" kind="equipment">{fmt(o.eligibleQuantity)}</Row>
-                  <Row label="Quoted total" kind="funding" tone={total == null ? 'muted' : undefined}>{total == null ? 'Not calculated: device, currency, unit value and eligible quantity required' : offerValue(total, o.currency)}</Row>
-                  <Row label="Conditions" kind="notes">{o.conditions || 'Not stated; confirm with offer provider'}</Row>
-                  <Row label="Source" kind="source">{o.sourceUrl ? <a href={o.sourceUrl} target="_blank" rel="noopener noreferrer">{o.sourceName || 'Offer document'}</a> : o.sourceName || 'Source not stated'}</Row>
-                </dl>
-                <p className="aib-scope">Recorded quote, not a guarantee of current eligibility. Confirm dates and terms with the provider before use.</p>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <p className="aib-scope">Confirm the recorded model and units with the equipment lead, then request separate cash and replacement-credit quotes. Inventory alone does not establish eligibility.</p>
-      <details className="aib-sources">
-        <summary><ClipboardCheck className="aib-icon" aria-hidden="true" /> Prepare for a quote · 8 checks</summary>
-        <ul className="aib-check">{TRADE_IN_CHECKLIST.map((c) => <li key={c}>{c}</li>)}</ul>
-      </details>
-      <details className="aib-sources">
-        <summary>General knowledge: cash vs credit</summary>
-        <ul className="aib-explain">
-          <li><strong>Cash buy-back</strong> is a payment for retired units, often from a reseller or refurbisher. It usually does not depend on buying new equipment.</li>
-          <li><strong>Vendor replacement credit</strong> reduces the price of a new purchase from that vendor. It has no value without the purchase and should not also be counted as savings.</li>
-          <li><strong>Illustrative scenarios</strong> in Purchasing use planning assumptions only. They are not current, guaranteed or agency-confirmed offers.</li>
-        </ul>
-      </details>
-    </section>
-  );
+/** Shares one browser-local research record across decision support, buy-back and meeting brief. Keyed by agency id. */
+const DecisionSupportStack: React.FC<{ agency: Agency; children: (r: ProfileResearchState) => React.ReactNode }> = ({ agency, children }) => {
+  const research = useProfileResearch(agency.id);
+  return <>{children(research)}</>;
 };
 
 export interface AgencyIntelligenceBriefProps {
@@ -312,10 +272,20 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
         )}
       </header>
 
-      <div className="aib-equipment-row">
-        <EquipmentSummary agency={agency} renderFactTag={renderFactTag} />
-        <BuybackInsights agency={agency} />
-      </div>
+      <DecisionSupportStack key={agency.id} agency={agency}>
+        {(research) => (
+          <>
+            <div className="aib-equipment-row">
+              <EquipmentSummary agency={agency} renderFactTag={renderFactTag} />
+              <BuybackDecisionSupport agency={agency} research={research} />
+            </div>
+            <div className="pds-row">
+              <ProfileDecisionSupport agency={agency} research={research} />
+              <MeetingBriefPanel agency={agency} research={research.data} />
+            </div>
+          </>
+        )}
+      </DecisionSupportStack>
 
       <div className="aib-grid">
         <section className="aib-block aib-snapshot" data-testid="baseline-operational-metrics" aria-labelledby="aib-snapshot-title">

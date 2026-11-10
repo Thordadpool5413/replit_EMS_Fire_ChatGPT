@@ -1813,7 +1813,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {/* 1. Executive Deal Story & Conversion Playbook Section */}
           {showSection('deal_story') && (
-            <div id="meeting-preparation-section" className="scroll-mt-32">
+            <div id="legacy-meeting-playbook-section" className="scroll-mt-32">
               <DealStoryBriefingView
                 agency={agency}
                 variant="full"

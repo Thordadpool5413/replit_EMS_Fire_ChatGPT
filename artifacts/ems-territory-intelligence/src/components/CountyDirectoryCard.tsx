@@ -87,15 +87,15 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
             <h4 id={`${titleId}-snapshot`} className="cb-group-cap"><DataLabel kind="incidents">Operational snapshot</DataLabel></h4>
             <dl className="cb-figs">
               {fig('population', Users, 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
-              {fig('averageTransportMinutes', Ambulance, 'Avg EMS transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('averageTransportMinutes', Ambulance, 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
               {fig('annualCardiacArrestIncidents', HeartPulse, 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
             </dl>
           </section>
           <section className="cb-group cb-group--context" aria-labelledby={`${titleId}-context`}>
             <h4 id={`${titleId}-context`} className="cb-group-cap"><DataLabel kind="population">County context</DataLabel></h4>
             <dl className="cb-figs">
-              {fig('annualEmergencyTransports', null, <DataLabel kind="transports">EMS transports</DataLabel>, num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency transports per year')}
-              {fig('primaryCathLabDistanceMiles', null, <DataLabel kind="distance">Cath lab distance</DataLabel>, num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
+              {fig('annualEmergencyTransports', null, <DataLabel kind="transports">Transports</DataLabel>, num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency EMS transports per year')}
+              {fig('primaryCathLabDistanceMiles', null, <DataLabel kind="distance">Cath lab</DataLabel>, num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
               {fig('seniorPopPct', null, <DataLabel kind="age">Age 65+</DataLabel>, num('seniorPopPct', v => `${v.toFixed(1)}%`), undefined, 'Residents age 65 and older')}
               {fig('povertyRatePct', null, <DataLabel kind="poverty">Poverty rate</DataLabel>, num('povertyRatePct', v => `${v.toFixed(1)}%`))}
               {fig('medianIncome', null, <DataLabel kind="income">Median income</DataLabel>, num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
@@ -105,7 +105,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
           <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
             <span className="cb-risk-body">
-              <span className="cb-risk-label" title="FEMA National Risk Index source-defined category"><DataLabel kind="risk">FEMA hazard risk</DataLabel></span>
+              <span className="cb-risk-label" title="FEMA National Risk Index source-defined hazard category"><DataLabel kind="risk">FEMA NRI</DataLabel></span>
               {nriLoading ? (
                 <span className="cb-risk-status" role="status">Loading FEMA record</span>
               ) : nriError ? (
@@ -137,9 +137,9 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
         <h4 className="cb-group-cap"><DataLabel kind="location">Geography and places</DataLabel></h4>
         <dl className="cb-ref" aria-label={`Geography for ${c.countyName}`}>
-          <div><dt><DataLabel kind="area">Land area</DataLabel></dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
+          <div><dt><DataLabel kind="area">Area</DataLabel></dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
           <div><dt><DataLabel kind="coordinates">Centroid</DataLabel></dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
-          <div className="cb-ref-wide"><dt><DataLabel kind="zip">ZIP codes{zips.length ? ` (${zips.length})` : ''}</DataLabel></dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
+          <div className="cb-ref-wide"><dt><DataLabel kind="zip">ZIPs{zips.length ? ` (${zips.length})` : ''}</DataLabel></dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
           <div className="cb-ref-wide">
             <dt><DataLabel kind="places">{hasMappedPlaces ? `Places (${places.length})` : 'County seat reference'}</DataLabel></dt>
             <dd className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>

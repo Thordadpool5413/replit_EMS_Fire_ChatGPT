@@ -62,3 +62,9 @@ Measure the rendered geography and card content, not just the size of their encl
 **Why:** The user rejected a wide Home map panel whose stacked controls left the U.S. geography small, and county cards whose responsive label heights and wrapped actions created wasted vertical space.
 
 **How to apply:** At the same laptop viewport, compare the actual geographic bounds and card heights. Check the narrow half-width county cards too; roomy full-width previews can conceal wrapping and spacing problems. Preserve readable text and visible details rather than meeting size goals through microtype.
+
+When the user requests a percentage reduction in county cards, target rendered height on both laptop and phone, not a uniform scale transform.
+
+**Why:** The user again rejected the compact version and explicitly requested a further 25% reduction. Phone wrapping and oversized repeated link targets can retain substantially more height than the same desktop card.
+
+**How to apply:** Reflow supporting figures into aligned label/value rows and shorten unambiguous captions before reducing numeric hierarchy. Preserve all facts and icons. Secondary text links may use compact targets no smaller than 24 CSS pixels with clear spacing; keep the primary phone Inspect action at 44 pixels. Allow dense records and enlarged text to grow rather than clipping them to a fixed height.

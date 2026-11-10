@@ -636,7 +636,8 @@ try {
         assert.equal(new Set(neutralMetrics.map(metric=>metric.color)).size,1,
           `${label} ${theme}: decorative metric colors returned`);
          assert.equal(pair.cardiacColor, neutralMetrics[0].color, `${label} ${theme}: metric values should remain neutral`);
-         assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 14),
+         // Compact captions are 13px; numeric facts remain at least 15px.
+         assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 13),
           `${label} ${theme}: metric type too small`);
          assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.size>=22),
            `${label} ${theme}: primary figures lost their visual hierarchy`);

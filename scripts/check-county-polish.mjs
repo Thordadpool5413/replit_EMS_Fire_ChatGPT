@@ -452,10 +452,35 @@ try {
     .filter(viewport => !process.env.COUNTY_TEST_WIDTH || viewport.width === Number(process.env.COUNTY_TEST_WIDTH));
   const mapOnly = process.env.COUNTY_MAP_ONLY === '1';
   const cardsOnly = process.env.COUNTY_CARDS_ONLY === '1';
+  const homeOnly = process.env.COUNTY_HOME_ONLY === '1';
   for (const viewport of viewports) {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
     await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: !desktop });
+    if (homeOnly) {
+      await navigate('/', 'Boolean(document.querySelector(".home-map-state-path"))');
+      await evaluate('document.fonts.ready');
+      const frame = await evaluate(`(() => {
+        const svg=document.querySelector('.home-map-svg'), stage=document.querySelector('.home-map-stage-v2');
+        const viewport=document.querySelector('.home-map-viewport').getBoundingClientRect();
+        const b=svg.getBBox(), m=svg.getScreenCTM(), s=stage.getBoundingClientRect();
+        const a=new DOMPoint(b.x,b.y).matrixTransform(m), z=new DOMPoint(b.x+b.width,b.y+b.height).matrixTransform(m);
+        const shortcuts=[...stage.querySelectorAll('.home-map-shortcut-row button')].map(e=>e.getBoundingClientRect());
+        return {width:innerWidth,pageWidth:document.documentElement.scrollWidth,height:innerHeight,stageBottom:s.bottom,
+          geoWidth:z.x-a.x,geoHeight:z.y-a.y,fit:Math.max((z.x-a.x)/viewport.width,(z.y-a.y)/viewport.height),
+          uncropped:a.x>=viewport.left-2 && z.x<=viewport.right+2 && a.y>=viewport.top-2 && z.y<=viewport.bottom+2,
+          shortcutsVisible:shortcuts.every(r=>r.top>=s.top && r.bottom<=s.bottom)};
+      })()`);
+      await capture(`${label}-home-fit`);
+      assert(frame.pageWidth<=frame.width+1 && frame.uncropped, `${label}: Home map overflow/cropping ${JSON.stringify(frame)}`);
+      assert(frame.fit>=.9, `${label}: unused map frame space ${JSON.stringify(frame)}`);
+      if (viewport.width>=1024) {
+        assert(frame.stageBottom<=frame.height, `${label}: map stage extends below screen ${JSON.stringify(frame)}`);
+        assert(frame.shortcutsVisible, `${label}: shortcut controls clipped ${JSON.stringify(frame)}`);
+      }
+      console.log(`✓ ${label}: full US ${Math.round(frame.geoWidth)}×${Math.round(frame.geoHeight)}px, fitted without cropping`);
+      continue;
+    }
     if (process.env.COUNTY_FORCED_COLORS_ONLY === '1') { await checkForcedColors(viewport); continue; }
      if (process.env.COUNTY_DENSE_ONLY === '1') { await checkDenseFixture(viewport); continue; }
     if (inspectorOnly) { await checkInspector(viewport); continue; }
@@ -575,6 +600,7 @@ try {
               labelHeight:label.getBoundingClientRect().height,labelLine:parseFloat(getComputedStyle(label).lineHeight),
               valueTop:value.getBoundingClientRect().top,labelBottom:label.getBoundingClientRect().bottom,
               valueLeft:value.getBoundingClientRect().left,labelLeft:label.getBoundingClientRect().left,
+              labelRight:label.getBoundingClientRect().right,
               valueBottom:value.getBoundingClientRect().bottom,labelTop:label.getBoundingClientRect().top,
               labelSize:parseFloat(getComputedStyle(label).fontSize)};
           });
@@ -606,9 +632,12 @@ try {
         assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 3.2),
           `${label} ${theme}: metric labels wrap beyond three lines`);
         assert(pair.metrics.every(metric=>!metric.labelClipped), `${label} ${theme}: metric labels are truncated`);
-         assert(pair.metrics.every(metric=>metric.valueTop>=metric.labelBottom-1 &&
+         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.valueTop>=metric.labelBottom-1 &&
            Math.abs(metric.valueLeft-metric.labelLeft)<1),
-           `${label} ${theme}: consistent label-over-value alignment broken`);
+           `${label} ${theme}: primary label-over-value alignment broken`);
+         assert(pair.metrics.filter(metric=>metric.context).every(metric=>
+           metric.valueTop>=metric.labelBottom-1 || metric.valueLeft>=metric.labelRight-1),
+           `${label} ${theme}: context label and value overlap`);
         if (desktop) {
           assert(Math.abs(pair.cards[0].y - pair.cards[1].y) < 2, `${label} ${theme}: counties not side by side`);
           assert(Math.abs(pair.cards[0].w - pair.cards[1].w) < 2, `${label} ${theme}: unequal card widths`);
@@ -651,7 +680,7 @@ try {
     await waitFor('!document.querySelector(\'[data-testid="button-show-all-places"]\') && !document.querySelector(\'.county-city-directory-panel [aria-pressed="true"]\')', 'return to all cities');
     console.log(`✓ ${label}: Home/state/county, inline sources, deduped places, keyboard city selection and return`);
   }
-  if (!mapOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' && process.env.COUNTY_FORCED_COLORS_ONLY !== '1') {
+  if (!homeOnly && !mapOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' && process.env.COUNTY_FORCED_COLORS_ONLY !== '1') {
   await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
   if (!cardsOnly) for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
     await navigate(`/?state=${code}`, 'Boolean(document.querySelector(".county-state-map-svg path"))');
@@ -671,11 +700,11 @@ try {
   await waitFor('document.querySelectorAll(".county-signal-row").length === 7', 'remaining seven Florida counties');
   assert.equal(await evaluate('document.querySelectorAll(".county-signal-row").length'), 7);
   console.log('✓ Florida pagination: remaining seven counties reachable from directory heading');
-  if (cardsOnly) for (const viewport of viewports) await checkDenseFixture(viewport);
+  if (cardsOnly && !homeOnly) for (const viewport of viewports) await checkDenseFixture(viewport);
   }
   // Include accessibility coverage in the ordinary complete run as well as the
   // focused mode; other *_ONLY modes retain their intentionally narrow scope.
-  if (!mapOnly && !cardsOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' &&
+  if (!homeOnly && !mapOnly && !cardsOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' &&
     process.env.COUNTY_FORCED_COLORS_ONLY !== '1') {
     for (const viewport of viewports) {
       await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<768});

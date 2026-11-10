@@ -490,28 +490,3 @@
     flex: 0 0 auto;
   }
 }
-
-@media (min-width: 1024px) {
-  .home-map-viewport {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-@media (min-width: 1024px) {
-
-  .home-map-viewport svg[data-fit-screen="true"] {
-    width: min(100%, 1100px) !important;
-    max-width: 100% !important;
-    height: auto !important;
-    margin-inline: auto;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-  .home-map-viewport svg[data-fit-screen="true"] {
-    width: min(100%, calc((100dvh - 320px) * 1.84)) !important;
-    max-height: calc(100dvh - 320px) !important;
-  }
-}

@@ -56,3 +56,9 @@ Use the intelligence-brief direction for county previews and directory cards: st
 **Why:** The user explicitly chose “Intelligence brief” after rejecting the tiled metric layout and small ornamental icons.
 
 **How to apply:** Make county identity and operational figures prominent, use a few purposeful section icons, and keep geography and sources visible but secondary. Do not interpret this choice as approval of a particular implementation.
+
+Measure the rendered geography and card content, not just the size of their enclosing panels.
+
+**Why:** The user rejected a wide Home map panel whose stacked controls left the U.S. geography small, and county cards whose responsive label heights and wrapped actions created wasted vertical space.
+
+**How to apply:** At the same laptop viewport, compare the actual geographic bounds and card heights. Check the narrow half-width county cards too; roomy full-width previews can conceal wrapping and spacing problems. Preserve readable text and visible details rather than meeting size goals through microtype.

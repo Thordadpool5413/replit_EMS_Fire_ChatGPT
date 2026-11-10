@@ -161,7 +161,7 @@
   width: 100%;
   min-width: 0;
   height: auto !important;
-  aspect-ratio: 920 / 500;
+  aspect-ratio: 872 / 494;
   overflow: hidden;
   border-color: #31556a !important;
   background:
@@ -353,25 +353,6 @@
   flex: 0 0 auto;
 }
 
-@media (min-width: 1024px) {
-  .home-territory-map-screen-v2 .home-map-stage-v2 {
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto minmax(0, 1fr) !important;
-    grid-template-areas:
-      "toolbar"
-      "legend"
-      "map" !important;
-    min-height: clamp(28rem, calc(100dvh - 185px), 48rem) !important;
-  }
-}
-
-@media (min-width: 1024px) {
-
-  .home-territory-map-screen-v2 .home-map-visual-v2 {
-    grid-column: 1 / -1 !important;
-    grid-row: 3 !important;
-  }
-}
 
 @media (max-width: 767px) {
   .home-territory-map-screen-v2 .home-map-page-heading {
@@ -694,7 +675,7 @@
 @media (max-width: 767px) {
 
   .home-territory-map-screen-v2 .home-map-viewport {
-    aspect-ratio: 920 / 500;
+    aspect-ratio: 872 / 494;
     min-height: 0;
     touch-action: pan-x pan-y;
   }
@@ -787,11 +768,6 @@
   border-radius: 0.6rem;
 }
 
-@media (min-width: 1200px) {
-  .home-territory-map-screen-v2 .home-map-stage-v2 {
-    min-height: clamp(21rem, calc(100dvh - 250px), 40rem) !important;
-  }
-}
 
 @media (min-width: 768px) and (max-height: 820px) {
 
@@ -1047,25 +1023,6 @@
   outline-offset: 2px;
 }
 
-@media (min-width: 1024px) {
-  .home-territory-map-screen-v2 .home-map-stage-v2 {
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto minmax(0, 1fr) !important;
-    grid-template-areas:
-      "toolbar"
-      "legend"
-      "map" !important;
-    min-height: clamp(28rem, calc(100dvh - 185px), 48rem) !important;
-  }
-}
-
-@media (min-width: 1024px) {
-
-  .home-territory-map-screen-v2 .home-map-visual-v2 {
-    grid-column: 1 / -1 !important;
-    grid-row: 3 !important;
-  }
-}
 
 @media (max-width: 767px) {
   .home-territory-map-screen-v2 .home-map-stage-v2 {
@@ -1330,97 +1287,6 @@
 @media (max-width: 767px) {
   .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
     width: 100% !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-  .home-territory-map-screen-v2 {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-    gap: 0.25rem !important;
-    padding: 0.35rem !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 > .grid {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex !important;
-    margin-top: 0 !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 > .grid > .min-w-0 {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 .home-map-stage-v2 {
-    display: flex !important;
-    flex: 1 1 auto;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    height: calc(100dvh - 86px) !important;
-    min-height: 0 !important;
-    padding: 0.45rem !important;
-    gap: 0.35rem !important;
-    overflow: hidden;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 .home-map-toolbar-v2,
-.home-territory-map-screen-v2 .home-map-legend-v2,
-.home-territory-map-screen-v2 .home-map-shortcuts {
-    flex: 0 0 auto;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 .home-map-visual-v2 {
-    display: flex !important;
-    flex: 1 1 0;
-    flex-direction: column;
-    align-items: stretch !important;
-    min-height: 0;
-    width: 100%;
-    gap: 0.35rem !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 .home-map-viewport {
-    flex: 1 1 0;
-    align-self: stretch;
-    min-height: 0;
-    width: 100% !important;
-    height: auto !important;
-    max-height: none;
-    aspect-ratio: auto !important;
-    overflow: hidden;
-  }
-}
-
-@media (min-width: 1024px) and (max-height: 820px) {
-
-  .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
-    width: auto !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
   }
 }
 

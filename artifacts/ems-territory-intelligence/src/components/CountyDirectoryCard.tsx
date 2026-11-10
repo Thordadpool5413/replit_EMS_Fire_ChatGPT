@@ -66,7 +66,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
         <div className="cb-ident">
           <div className="cb-ident-text">
           <h3 id={titleId} className="cb-name">{c.countyName}</h3>
-          <p className="cb-seat"><DataLabel kind="places">Seat</DataLabel> <strong>{c.countySeat}</strong><span className="cb-sep" aria-hidden="true">·</span><DataLabel kind="identifier">FIPS</DataLabel> {c.countyFips}</p>
+          <p className="cb-seat"><DataLabel kind="places">Seat</DataLabel> <strong>{c.countySeat}</strong><span className="cb-sep" aria-hidden="true">·</span><span className="cb-fips"><DataLabel kind="identifier">FIPS</DataLabel> {c.countyFips}</span></p>
           </div>
         </div>
         <button

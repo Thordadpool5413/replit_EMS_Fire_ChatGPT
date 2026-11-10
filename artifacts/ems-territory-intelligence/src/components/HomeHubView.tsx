@@ -19,6 +19,9 @@ import { formatInteger, formatScore } from '../utils/numberFormatting';
 import { DataLabel, inferDataLabelKind } from './DataLabel';
 
 const HOME_MAP_TRANSLATE_X = 48;
+// Tight frame around the drawn content (states, AK/HI insets, east-coast callouts)
+// in translated SVG units, so no internal letterbox margin is rendered.
+const HOME_MAP_VIEWBOX = { x: 40, y: 0, width: 872, height: 494 } as const;
 const HOME_MAP_GEOMETRY_SCALE = 1.08;
 const HOME_MAP_SCALE_ORIGIN_X = 460;
 const HOME_MAP_SCALE_ORIGIN_Y = 250;
@@ -349,14 +352,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return;
     }
 
-    const scale = svg.getBoundingClientRect().width / 920;
+    const scale = svg.getBoundingClientRect().width / HOME_MAP_VIEWBOX.width;
     const mapPoint = getHomeMapGeometryPoint(
       stateBoundary.labelX,
       stateBoundary.labelY,
       !isHomeMapInsetState(selectedStateCode),
     );
-    const stateX = (mapPoint.x + HOME_MAP_TRANSLATE_X) * scale;
-    const stateY = mapPoint.y * scale;
+    const stateX = (mapPoint.x + HOME_MAP_TRANSLATE_X - HOME_MAP_VIEWBOX.x) * scale;
+    const stateY = (mapPoint.y - HOME_MAP_VIEWBOX.y) * scale;
     const desiredLeft = stateX - viewport.clientWidth / 2;
     const desiredTop = stateY - viewport.clientHeight / 2;
     const maxScrollLeft = viewport.scrollWidth - viewport.clientWidth;
@@ -589,9 +592,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]"
               >
               <svg
-                viewBox="0 0 920 500"
+                viewBox={`${HOME_MAP_VIEWBOX.x} ${HOME_MAP_VIEWBOX.y} ${HOME_MAP_VIEWBOX.width} ${HOME_MAP_VIEWBOX.height}`}
                 className="home-map-svg block h-auto select-none"
-                style={{ aspectRatio: '920 / 500', width: `${mapZoom * 100}%` }}
+                style={{ aspectRatio: `${HOME_MAP_VIEWBOX.width} / ${HOME_MAP_VIEWBOX.height}`, width: `${mapZoom * 100}%` }}
                 data-fit-screen={mapZoom === 1 ? 'true' : 'false'}
                 data-map-palette={isQualityMapMetric(mapMetric) ? mapColorScheme : 'standard'}
                 role="group"
@@ -781,7 +784,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
                     </div>
                     <dl className="home-map-state-preview-facts">
-                      <div><dt>{activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
+                      <div><dt>{mapMetric === 'agency-records' ? 'Agency records' : activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
                       {mapMetric === 'agency-records'
                         ? <div><dt>Counties in directory</dt><dd>{formatInteger(territoryEngine.getCountiesForState(code).length)}</dd></div>
                         : <div><dt>Agency records</dt><dd data-testid="text-preview-agencies">{formatInteger(count)}</dd></div>}

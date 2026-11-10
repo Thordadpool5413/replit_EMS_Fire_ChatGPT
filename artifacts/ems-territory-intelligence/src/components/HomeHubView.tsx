@@ -191,6 +191,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         : 'FL';
   });
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
+  const [focusedStateCode, setFocusedStateCode] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<StateMapRegion>(() => {
     const saved = readMapPreference('region', 'All');
     return ['All', 'Northeast', 'Midwest', 'South', 'West'].includes(saved) ? saved as StateMapRegion : 'All';
@@ -498,6 +499,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
                   setHoveredStateCode(null);
+                  setFocusedStateCode(null);
                 }
               }}
             >
@@ -574,7 +576,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <span className="inline-block h-4 w-4 rounded-sm border border-[#7890A8] bg-[repeating-linear-gradient(135deg,#172A3D_0px,#172A3D_3px,#7890A8_3px,#7890A8_4px)]" aria-hidden="true" />
                   Not reported
                 </span>
-                <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]">Hatch = missing</span>
+                <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]" data-testid="text-map-legend-coverage">
+                  {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero
+                </span>
               </div>
 
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
@@ -614,7 +618,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <g>
                   {[...Object.values(ALL_50_STATES_SUMMARIES)]
                     .sort((a, b) => {
-                      const rank = (code: string) => (code === selectedStateCode ? 2 : code === hoveredStateCode ? 1 : 0);
+                      // Do not move a focused SVG node when its preview changes:
+                      // Chromium blurs nodes that are reordered in the DOM.
+                      const rank = (code: string) => (code === selectedStateCode ? 1 : 0);
                       return rank(a.code) - rank(b.code);
                     })
                     .map((st) => {
@@ -637,16 +643,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         transform={isHomeMapInsetState(st.code) ? undefined : HOME_MAP_GEOMETRY_TRANSFORM}
                         opacity={isInRegion ? 1 : 0.36}
                       >
-                        {isSelected && (
-                          <path
-                            d={boundary.d}
-                            fill="none"
-                            stroke="#F4C86A"
-                            strokeWidth="3.5"
-                            strokeLinejoin="round"
-                            pointerEvents="none"
-                          />
-                        )}
                         <path
                           d={boundary.d}
                           fill={fillColor}
@@ -656,7 +652,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           vectorEffect="non-scaling-stroke"
                           onClick={() => handleStateClick(st.code)}
                           onMouseEnter={() => setHoveredStateCode(st.code)}
-                          onFocus={() => setHoveredStateCode(st.code)}
+                          onFocus={() => setFocusedStateCode(st.code)}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
@@ -671,6 +667,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         >
                           <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${datum.coverage} · Period ${datum.period}${datum.claimScope ? ` · ${datum.claimScope} · ${datum.denialDefinition}` : ''}${datum.source ? ` · ${datum.source}` : ''} · ${countyCount} counties`}</title>
                         </path>
+                        {(isSelected || isHovered) && (
+                          <g pointerEvents="none" className="home-map-state-ring">
+                            <path d={boundary.d} fill="none" stroke="#06101B" strokeWidth={isSelected ? 5 : 3.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" strokeOpacity="0.85" />
+                            <path d={boundary.d} fill="none" stroke={isSelected ? '#F4C86A' : '#B6F1E8'} strokeWidth={isSelected ? 2.4 : 1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                          </g>
+                        )}
                       </g>
                     );
                   })}
@@ -679,11 +681,42 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 {/* Layer 2: Interior State Labels */}
                 <g>
                   {Object.values(ALL_50_STATES_SUMMARIES).map((st) => {
-                    const isCalloutState = EAST_COAST_CALLOUT_STATES.some((c) => c.code === st.code);
-                    if (isCalloutState) return null;
-
+                    const callout = EAST_COAST_CALLOUT_STATES.find((c) => c.code === st.code);
                     const boundary = US_STATES_SVG_PATHS[st.code];
                     if (!boundary) return null;
+                    if (callout) {
+                      const anchor = getHomeMapGeometryPoint(boundary.labelX, boundary.labelY, true);
+                      const cIn = regionFilter === 'All' || st.region === regionFilter;
+                      const cSel = selectedStateCode === st.code;
+                      const cHov = hoveredStateCode === st.code;
+                      const cDatum = stateMapMetricsByCode[st.code][mapMetric];
+                      const cFill = hasReportedValue(cDatum.value)
+                        ? interpolateStateFill(mapMetric, cDatum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                        : '#172A3D';
+                      return (
+                        <g
+                          key={`home-lbl-${st.code}`}
+                          className="home-map-leader"
+                          opacity={cIn ? 1 : 0.4}
+                          onClick={() => handleStateClick(st.code)}
+                          onMouseEnter={() => setHoveredStateCode(st.code)}
+                          style={{ cursor: 'pointer' }}
+                          aria-hidden="true"
+                        >
+                          <polyline
+                            points={`${anchor.x},${anchor.y} ${callout.calloutX - 22},${callout.calloutY} ${callout.calloutX - 14},${callout.calloutY}`}
+                            fill="none"
+                            stroke={cSel ? '#F4C86A' : cHov ? '#B6F1E8' : '#6F8AA3'}
+                            strokeWidth={cSel || cHov ? 1.3 : 0.8}
+                            pointerEvents="none"
+                          />
+                          <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? '#F4C86A' : '#C9D8E6'} pointerEvents="none" />
+                          <rect x={callout.calloutX - 14} y={callout.calloutY - 9} width="28" height="18" rx="4" fill="#102235" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#7590A8'} strokeWidth={cSel ? 2 : 1.1} />
+                          <rect x={callout.calloutX - 12} y={callout.calloutY - 7} width="4" height="14" rx="1.5" fill={cFill} />
+                          <text x={callout.calloutX + 3} y={callout.calloutY + 3.5} textAnchor="middle" fill={cSel ? '#F4C86A' : '#E1EDF7'} fontSize="10" fontWeight="800" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">{st.code}</text>
+                        </g>
+                      );
+                    }
 
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
@@ -730,6 +763,36 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </svg>
               </div>
 
+              {(() => {
+                const previewStateCode = hoveredStateCode ?? focusedStateCode;
+                const code = previewStateCode ?? selectedStateCode;
+                const st = ALL_50_STATES_SUMMARIES[code];
+                if (!st) return null;
+                const datum = stateMapMetricsByCode[code][mapMetric];
+                const count = stateStatsByCode[code]?.count ?? 0;
+                const swatch = hasReportedValue(datum.value)
+                  ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                  : undefined;
+                return (
+                  <div className="home-map-state-preview" aria-live="polite" data-testid="panel-state-preview" data-preview-mode={previewStateCode ? 'preview' : 'selected'}>
+                    <span className={`home-map-state-preview-swatch${swatch ? '' : ' is-missing'}`} style={swatch ? { backgroundColor: swatch } : undefined} aria-hidden="true" />
+                    <div className="home-map-state-preview-id">
+                      <span className="home-map-state-preview-kicker">{previewStateCode && previewStateCode !== selectedStateCode ? 'Preview' : 'Selected'}</span>
+                      <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
+                    </div>
+                    <dl className="home-map-state-preview-facts">
+                      <div><dt>{activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
+                      {mapMetric === 'agency-records'
+                        ? <div><dt>Counties in directory</dt><dd>{formatInteger(territoryEngine.getCountiesForState(code).length)}</dd></div>
+                        : <div><dt>Agency records</dt><dd data-testid="text-preview-agencies">{formatInteger(count)}</dd></div>}
+                    </dl>
+                    <button type="button" className="home-map-state-preview-action" data-testid="button-preview-explore" onClick={() => handleStateClick(code)}>
+                      Explore {code}
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* East Coast Compact Callout Buttons */}
               <div className="home-map-shortcuts pt-2 border-t border-[#294158] text-xs">
                 <div className="home-map-shortcuts-heading">
@@ -746,7 +809,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       type="button"
                       onClick={() => handleStateClick(c.code)}
                       onMouseEnter={() => setHoveredStateCode(c.code)}
-                      onFocus={() => setHoveredStateCode(c.code)}
+                      onFocus={() => setFocusedStateCode(c.code)}
                       aria-pressed={isSelected}
                       aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${activeMapMetric.label}, ${formatStateMapValue(mapMetric, datum.value)}`}
                       style={{

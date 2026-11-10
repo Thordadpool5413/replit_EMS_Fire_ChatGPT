@@ -78,3 +78,9 @@ In Plan mode, a temporary Chromium user-data directory alone does not prevent br
 **Why:** Read-only audits were blocked by Chromium writing crash settings and certificate database files outside its requested temporary user-data directory.
 
 **How to apply:** Prefer the platform screenshot tool for read-only planning previews. If a temporary browser harness is necessary, isolate all ancillary OS profile storage under `/tmp` before launching; never treat a blocked launch or an early loading screenshot as a completed layout check.
+
+Enable DevTools focus emulation before verifying React focus-driven previews in a headless browser.
+
+**Why:** A background CDP page can report an SVG path as `activeElement` while `document.hasFocus()` is false and React's focus handler never fires. This can look like a broken preview despite a correctly focused DOM node.
+
+**How to apply:** Use `Emulation.setFocusEmulationEnabled` with `enabled: true` before keyboard/focus assertions. Check actual document focus before changing app code in response to a failed focus test.

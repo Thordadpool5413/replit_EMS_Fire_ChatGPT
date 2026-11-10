@@ -101,3 +101,13 @@
   .territory-explorer-screen .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg,
   .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { width: 100%; height: 100% !important; min-height: 16rem !important; max-height: none !important; }
 }
+
+/* County map refinement: fine interior lines, stronger state outline, progressive labels. */
+.cv-county-label { fill: #EEF4FA; stroke: rgba(8,18,30,.86); paint-order: stroke; stroke-linejoin: round; font-family: 'Instrument Sans Variable', system-ui, sans-serif; letter-spacing: .01em; }
+.cv-county-label.is-selected { fill: #FFFFFF; }
+.cv-county-label.is-hovered { fill: #B6F1E8; }
+.cv-county-path { transition: stroke-width 120ms ease; }
+.cv-county-path:focus-visible { outline: none; stroke: #65D7D0 !important; stroke-width: 2.6px !important; }
+.cv-zoom-hint { margin: .35rem 0 0; font-size: 12px; color: #AFC2D6; }
+@media (prefers-reduced-motion: reduce) { .cv-county-path { transition: none !important; } }
+@media (forced-colors: active) { .cv-county-label { fill: CanvasText; stroke: Canvas; } .cv-zoom-hint { color: CanvasText; } }

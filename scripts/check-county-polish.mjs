@@ -479,6 +479,15 @@ try {
       theme.value = 'daylight'; theme.dispatchEvent(new Event('change',{bubbles:true}));
     })()`);
     await layout(`${label} Home`, desktop);
+    await send('Emulation.setFocusEmulationEnabled', {enabled:true});
+    await evaluate(`(() => {
+      const state = [...document.querySelectorAll('.home-map-state-path')].find(p=>p.getAttribute('aria-label').startsWith('Texas.'));
+      state.focus();
+    })()`);
+    await waitFor('document.querySelector(\'[data-testid="text-preview-state"]\')?.textContent.includes("Texas")', 'keyboard focus updates state preview', 5000);
+    assert(await evaluate('document.querySelectorAll(".home-map-leader").length >= 8'), `${label}: Northeast leader labels missing`);
+    assert(await evaluate('document.querySelector(\'[data-testid="button-preview-explore"]\').textContent.includes("TX")'), `${label}: preview action targets wrong state`);
+    await evaluate('document.activeElement.blur()');
     await capture(`${label}-home`);
     }
     await navigate('/?state=FL', 'Boolean(document.querySelector(\'[data-testid="row-county-signals-12001"]\'))');
@@ -495,6 +504,16 @@ try {
     assert(Number(zoomedViewBox.split(' ')[2]) < Number(fittedViewBox.split(' ')[2]), `${label}: zoom did not magnify map`);
     assert.deepEqual(await evaluate('[...document.querySelectorAll(".cv-county-path")].map(p=>[p.getAttribute("aria-label"),p.getAttribute("fill")]).sort()'),
       countyColors, `${label}: zoom changed source-defined risk fills`);
+    await evaluate('document.querySelector(\'[data-testid="button-county-map-zoom-in"]\').click()');
+    await waitFor('document.querySelector(".cv-map-tool-readout").textContent.includes("225%")', 'second zoom');
+    await waitFor('document.querySelectorAll(".cv-county-label").length > 0', 'progressive county labels', 5000);
+    const labelSizes = await evaluate('[...document.querySelectorAll(".cv-county-label")].map(t=>parseFloat(getComputedStyle(t).fontSize)*t.getScreenCTM().a)');
+    assert(labelSizes.every(size=>size >= 11.5), `${label}: county names too small ${labelSizes}`);
+    const labelOverlaps = await evaluate(`(() => {
+      const boxes=[...document.querySelectorAll('.cv-county-label')].map(t=>t.getBoundingClientRect());
+      return boxes.some((a,i)=>boxes.slice(i+1).some(b=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top));
+    })()`);
+    assert(!labelOverlaps, `${label}: county labels overlap`);
     await evaluate('document.querySelector(\'[data-testid="button-county-map-fit"]\').click()');
     await waitFor(`document.querySelector(".county-state-map-svg").getAttribute("viewBox")===${JSON.stringify(fittedViewBox)}`, 'fit restores whole-state view');
     assert(await evaluate('document.querySelector(\'[data-testid="button-county-map-zoom-out"]\').disabled'), `${label}: minimum zoom control not disabled`);

@@ -163,6 +163,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
   const setZoomClamped = (next: number) => {
     const z = Math.max(1, Math.min(6, Number(next.toFixed(2))));
+    if (countyZoom === 1 && z > 1) {
+      // A long/coastal state's geometric center can be ocean. Begin zooming
+      // around the previewed county so enlarging the map reveals useful land.
+      const anchor = projectedState.projectedCounties.find((c) => c.countyFips === hoveredCountyFips)
+        ?? projectedState.projectedCounties[0];
+      if (anchor) {
+        const [x, y, w, h] = countyMapViewBox.split(' ').map(Number);
+        setCountyPan({ x: anchor.labelX - (x + w / 2), y: anchor.labelY - (y + h / 2) });
+      }
+    }
     setCountyZoom(z);
     if (z === 1) setCountyPan({ x: 0, y: 0 });
   };
@@ -403,6 +413,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         <line x1="0" y1="0" x2="0" y2="6" stroke="#8193ab" strokeWidth="1.4" />
                       </pattern>
                     </defs>
+                    <g aria-hidden="true" pointerEvents="none" className="cv-state-outline">
+                      {projectedState.projectedCounties.map((pc) => (
+                        <path key={`outline-${pc.countyFips}`} d={pc.svgPath} fill="none" stroke="#D5E1EE" strokeWidth={3.2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                      ))}
+                    </g>
                     <g ref={countyMapPathsRef}>
                       {[...projectedState.projectedCounties]
                         .sort((a, b) => {
@@ -423,8 +438,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             key={pc.countyFips}
                             d={pc.svgPath}
                             fill={nriColorFor(pc.countyFips)}
-                            stroke={isSelected ? '#FFFFFF' : isHovered ? '#E2EAF5' : '#1C2E45'}
-                            strokeWidth={isSelected ? 3 : isHovered ? 2.2 : 0.9}
+                            stroke={isSelected ? '#FFFFFF' : isHovered ? '#E2EAF5' : 'rgba(16,30,48,0.78)'}
+                            strokeWidth={isSelected ? 3 : isHovered ? 2.2 : 0.55}
                             strokeLinejoin="round"
                             vectorEffect="non-scaling-stroke"
                             tabIndex={0}
@@ -454,9 +469,62 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         );
                       })}
                     </g>
+                    {(() => {
+                      const [vx, vy, vw, vh] = displayedCountyViewBox.split(' ').map(Number);
+                      const rect = countySvgRef.current?.getBoundingClientRect();
+                      const scale = Math.min((rect?.width || 432) / vw, (rect?.height || 300) / vh);
+                      const fontSize = 12 / scale;
+                      const showAll = countyZoom >= 2.25;
+                      // Keep names readable rather than showing overlapping labels.
+                      // Active labels get first choice; zoom progressively makes room.
+                      const boxes: { x: number; y: number; w: number; h: number }[] = [];
+                      const labelCounties = [...projectedState.projectedCounties]
+                        .sort((a, b) => Number(b.countyFips === hoveredCountyFips) - Number(a.countyFips === hoveredCountyFips))
+                        .filter((pc) => {
+                          const active = pc.countyFips === hoveredCountyFips ||
+                            (selectedCountyName !== 'all' && pc.countyName.toLowerCase() === selectedCountyName.toLowerCase());
+                          if (!showAll && !active) return false;
+                          const name = pc.countyName.replace(/ (County|Parish|Borough|Census Area|Municipality)$/i, '');
+                          const w = (name.length * .6 + 1.5) * fontSize;
+                          const h = fontSize * 1.7;
+                          const box = { x: pc.labelX - w / 2, y: pc.labelY - h / 2, w, h };
+                          if (!active && (box.x < vx || box.y < vy || box.x + w > vx + vw || box.y + h > vy + vh)) return false;
+                          if (!active && boxes.some((b) => box.x < b.x + b.w && box.x + w > b.x && box.y < b.y + b.h && box.y + h > b.y)) return false;
+                          boxes.push(box);
+                          return true;
+                        });
+                      return (
+                        <g className="cv-county-labels" pointerEvents="none" aria-hidden="true">
+                          {labelCounties.map((pc) => {
+                            const isSel = selectedCountyName !== 'all' && pc.countyName.toLowerCase() === selectedCountyName.toLowerCase();
+                            const isHov = pc.countyFips === hoveredCountyFips;
+                            if (!showAll && !isSel && !isHov) return null;
+                            const name = pc.countyName.replace(/ (County|Parish|Borough|Census Area|Municipality)$/i, '');
+                            return (
+                              <text
+                                key={`lbl-${pc.countyFips}`}
+                                x={pc.labelX}
+                                y={pc.labelY}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize={isSel || isHov ? fontSize * 1.15 : fontSize}
+                                fontWeight={isSel || isHov ? 750 : 600}
+                                className={`cv-county-label${isSel ? ' is-selected' : ''}${isHov ? ' is-hovered' : ''}`}
+                                style={{ strokeWidth: fontSize * 0.28 }}
+                              >
+                                {name}
+                              </text>
+                            );
+                          })}
+                        </g>
+                      );
+                    })()}
                   </svg>
                 </div>
               )}
+              <p className="cv-zoom-hint" aria-live="polite">
+                {countyZoom >= 2.25 ? 'County names appear where space allows. Drag to pan.' : 'Hover or focus a county for its name. Zoom in for more labels.'}
+              </p>
               {legend}
             </div>
 

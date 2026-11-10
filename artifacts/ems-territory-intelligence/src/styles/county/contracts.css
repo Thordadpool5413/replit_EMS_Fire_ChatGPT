@@ -236,3 +236,21 @@
   .cv-btn,
 .cv-place-row { transition: none !important; }
 }
+
+/* Map interaction states: outline only, choropleth fill preserved. */
+.cv-county-path { transition: stroke-width .12s ease; }
+.cv-county-path:hover, .cv-county-path:focus-visible, .cv-county-path.is-selected { paint-order: stroke; }
+.cv-map-stage path.cv-county-path:focus-visible { outline: none; stroke: #ffffff; stroke-width: 3.2; stroke-dasharray: 5 3; }
+.cv-swatch--missing { background: repeating-linear-gradient(45deg, #33445c 0 2px, #8193ab 2px 3.5px); }
+.us-state-path:focus-visible { outline: none; stroke: #0f172a; stroke-width: 3; stroke-dasharray: 5 3; }
+.dark .us-state-path:focus-visible { stroke: #f8fafc; }
+@media (max-width: 1023px) { .cv-map-stage { min-height: 12rem; } .cv-map-stage svg { max-height: 55vh; } }
+.cv-map-tools { display: inline-flex; align-items: center; gap: .2rem; margin-left: auto; padding: .15rem; border: 1px solid #2c4260; border-radius: .45rem; background: #102036; }
+.cv-map-tool { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; min-width: 1.8rem; height: 1.8rem; padding: 0 .35rem; border-radius: .32rem; color: #dbe5f2; font-size: .74rem; font-weight: 600; cursor: pointer; }
+.cv-map-tool svg { width: .95rem; height: .95rem; }
+.cv-map-tool:hover:not(:disabled) { background: #1d3352; }
+.cv-map-tool:disabled { opacity: .4; cursor: default; }
+.cv-map-tool:focus-visible { outline: 2px solid #bfd3ff; outline-offset: 1px; }
+.cv-map-tool-readout { min-width: 2.6rem; text-align: center; font-size: .72rem; color: #b7c5d8; }
+.county-state-map-svg.is-zoomed { cursor: grab; touch-action: none; }
+.county-state-map-svg.is-zoomed:active { cursor: grabbing; }

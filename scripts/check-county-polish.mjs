@@ -406,8 +406,8 @@ async function checkInspector(viewport) {
     assert(result.numbers.every(n=>n>=12),`${label} ${theme}: inspector facts too small`);
     await capture(`${label}-inspector-${theme}`,'.county-inspector-panel');
     if (viewport.width>=1024) {
-      assert(Math.abs(result.height-result.mapHeight)<3 && Math.abs(result.top-result.mapTop)<3,
-        `${label} ${theme}: map/preview no longer balanced`);
+      assert(Math.abs(result.top-result.mapTop)<3 && result.mapHeight < viewport.height * .85,
+        `${label} ${theme}: map must align with preview without stretching to its content height`);
       console.log(`✓ ${label} ${theme}: preview ${Math.round(result.height)}px / map ${Math.round(result.mapHeight)}px`);
     }
   }
@@ -487,6 +487,18 @@ try {
     if (!cardsOnly) {
     await waitFor('Boolean(document.querySelector(\'.county-state-map-svg path\'))', 'Florida boundaries');
     await framing(`${label} Florida`);
+    const fittedViewBox = await evaluate('document.querySelector(".county-state-map-svg").getAttribute("viewBox")');
+    const countyColors = await evaluate('[...document.querySelectorAll(".cv-county-path")].map(p=>[p.getAttribute("aria-label"),p.getAttribute("fill")]).sort()');
+    await evaluate('document.querySelector(\'[data-testid="button-county-map-zoom-in"]\').click()');
+    await waitFor('document.querySelector(".cv-map-tool-readout").textContent.includes("150%")', 'county map zoom');
+    const zoomedViewBox = await evaluate('document.querySelector(".county-state-map-svg").getAttribute("viewBox")');
+    assert(Number(zoomedViewBox.split(' ')[2]) < Number(fittedViewBox.split(' ')[2]), `${label}: zoom did not magnify map`);
+    assert.deepEqual(await evaluate('[...document.querySelectorAll(".cv-county-path")].map(p=>[p.getAttribute("aria-label"),p.getAttribute("fill")]).sort()'),
+      countyColors, `${label}: zoom changed source-defined risk fills`);
+    await evaluate('document.querySelector(\'[data-testid="button-county-map-fit"]\').click()');
+    await waitFor(`document.querySelector(".county-state-map-svg").getAttribute("viewBox")===${JSON.stringify(fittedViewBox)}`, 'fit restores whole-state view');
+    assert(await evaluate('document.querySelector(\'[data-testid="button-county-map-zoom-out"]\').disabled'), `${label}: minimum zoom control not disabled`);
+    console.log(`✓ ${label}: county zoom/fit preserves risk fills and restores geography`);
     await capture(`${label}-state`);
     }
     const row = await evaluate(`(() => {

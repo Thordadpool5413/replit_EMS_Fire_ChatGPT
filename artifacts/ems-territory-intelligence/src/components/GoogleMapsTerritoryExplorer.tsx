@@ -142,15 +142,76 @@ const RecenterControl: React.FC<RecenterControlProps> = ({ userLocation, isPermi
 
   return (
     <MapControl position={ControlPosition.RIGHT_BOTTOM}>
-      <div className="m-3">
+      <div className="m-2.5 mb-6">
         <button
           type="button"
           onClick={handleRecenter}
-          className="h-10 px-3.5 bg-white dark:bg-slate-900 text-slate-800 dark:text-white rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold flex items-center gap-2 cursor-pointer transition-transform active:scale-95"
+          className="gmap-ctl"
           title="Recenter map to your current location"
         >
           <LocateFixed className="w-4 h-4 text-[#285EE8]" />
           <span>Recenter to Location</span>
+        </button>
+      </div>
+    </MapControl>
+  );
+};
+
+interface CameraSyncProps {
+  center: { lat: number; lng: number };
+  zoom: number;
+}
+
+/** Moves the camera when the territory target changes, without locking user pan/zoom. */
+const CameraSync: React.FC<CameraSyncProps> = ({ center, zoom }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    map.moveCamera({ center, zoom });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, center.lat, center.lng, zoom]);
+  return null;
+};
+
+interface FitAreaControlProps {
+  points: { lat: number; lng: number }[];
+  fallbackCenter: { lat: number; lng: number };
+  fallbackZoom: number;
+}
+
+/** Fits the camera to the real bounds of the agency coordinates currently plotted. */
+const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter, fallbackZoom }) => {
+  const map = useMap();
+  const handleFit = () => {
+    if (!map) return;
+    if (points.length === 0) {
+      map.moveCamera({ center: fallbackCenter, zoom: fallbackZoom });
+      return;
+    }
+    if (points.length === 1) {
+      map.moveCamera({ center: points[0], zoom: Math.max(fallbackZoom, 12) });
+      return;
+    }
+    let south = 90, west = 180, north = -90, east = -180;
+    for (const p of points) {
+      south = Math.min(south, p.lat); north = Math.max(north, p.lat);
+      west = Math.min(west, p.lng); east = Math.max(east, p.lng);
+    }
+    map.fitBounds({ south, west, north, east }, 48);
+  };
+  return (
+    <MapControl position={ControlPosition.RIGHT_TOP}>
+      <div className="m-2.5">
+        <button
+          type="button"
+          onClick={handleFit}
+          data-testid="button-gmap-fit-area"
+          className="gmap-ctl"
+          title={points.length ? `Fit all ${points.length} plotted agencies` : 'Return to territory view'}
+          aria-label={points.length ? `Fit map to ${points.length} plotted agencies` : 'Return map to territory view'}
+        >
+          <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>Fit area</span>
         </button>
       </div>
     </MapControl>
@@ -949,18 +1010,18 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
           </div>
 
           {/* Interactive Google Map Canvas */}
-          <div className="relative w-full h-[520px] sm:h-[620px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
+          <div className="gmap-frame relative w-full h-[440px] sm:h-[560px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
             {activeApiKey ? (
               <APIProvider apiKey={activeApiKey} libraries={['marker', 'routes']}>
                 <Map
                   mapId="DEMO_MAP_ID"
-                  center={mapCenter}
-                  zoom={mapZoom}
+                  defaultCenter={mapCenter}
+                  defaultZoom={mapZoom}
                   onZoomChanged={(event) => {
                     setMarkerZoom(event.detail.zoom);
                     setExpandedMarkerClusterId(null);
                   }}
-                  gestureHandling="greedy"
+                  gestureHandling="cooperative"
                   disableDefaultUI={false}
                   mapTypeId={mapTypeId}
                   className="w-full h-full"
@@ -982,6 +1043,13 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                       </div>
                     </AdvancedMarker>
                   )}
+
+                  <CameraSync center={mapCenter} zoom={mapZoom} />
+                  <FitAreaControl
+                    points={filteredAgencies.map((a) => ({ lat: a.latitude, lng: a.longitude }))}
+                    fallbackCenter={mapCenter}
+                    fallbackZoom={mapZoom}
+                  />
 
                   {/* Native On-Map Recenter to Location Control */}
                   <RecenterControl

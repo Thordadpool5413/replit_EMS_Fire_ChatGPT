@@ -594,9 +594,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 aria-label={`Interactive United States map shaded by ${activeMapMetric.label}, zoom ${Math.round(mapZoom * 100)} percent`}
               >
                 <defs>
-                  <filter id="home-map-land-glow" x="-12%" y="-12%" width="124%" height="124%">
-                    <feGaussianBlur stdDeviation="9" />
-                  </filter>
                   <pattern id="home-map-missing-data" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                     <rect width="7" height="7" fill="#172A3D" />
                     <path d="M 0 0 L 0 7" stroke="#8299AF" strokeWidth="2" />
@@ -613,23 +610,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <text x="206" y="413" fill="#C3D3E2" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
                 </g>
 
-                {/* A restrained coastal halo separates the national silhouette from the ocean field. */}
-                <g fill="#58d2d1" opacity="0.3" filter="url(#home-map-land-glow)" pointerEvents="none" aria-hidden="true">
-                  {Object.values(ALL_50_STATES_SUMMARIES).map((st) => {
-                    const boundary = US_STATES_SVG_PATHS[st.code];
-                    return boundary?.d ? (
-                      <path
-                        key={`home-glow-${st.code}`}
-                        d={boundary.d}
-                        transform={isHomeMapInsetState(st.code) ? undefined : HOME_MAP_GEOMETRY_TRANSFORM}
-                      />
-                    ) : null;
-                  })}
-                </g>
-
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
                 <g>
-                  {Object.values(ALL_50_STATES_SUMMARIES).map((st) => {
+                  {[...Object.values(ALL_50_STATES_SUMMARIES)]
+                    .sort((a, b) => {
+                      const rank = (code: string) => (code === selectedStateCode ? 2 : code === hoveredStateCode ? 1 : 0);
+                      return rank(a.code) - rank(b.code);
+                    })
+                    .map((st) => {
                     const boundary = US_STATES_SVG_PATHS[st.code];
                     if (!boundary || !boundary.d) return null;
 
@@ -653,16 +641,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <path
                             d={boundary.d}
                             fill="none"
-                            stroke="#67D6CE"
-                            strokeWidth="7"
-                            strokeLinejoin="round"
-                            pointerEvents="none"
-                          />
-                        )}
-                        {isSelected && (
-                          <path
-                            d={boundary.d}
-                            fill="none"
                             stroke="#F4C86A"
                             strokeWidth="3.5"
                             strokeLinejoin="round"
@@ -673,8 +651,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           d={boundary.d}
                           fill={fillColor}
                           stroke={isSelected ? '#F4C86A' : isHovered ? '#B6F1E8' : '#152A3D'}
-                          strokeWidth={isSelected ? 2.3 : isHovered ? 1.8 : 1.15}
+                          strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
+                          vectorEffect="non-scaling-stroke"
                           onClick={() => handleStateClick(st.code)}
                           onMouseEnter={() => setHoveredStateCode(st.code)}
                           onFocus={() => setHoveredStateCode(st.code)}
@@ -688,7 +667,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           role="button"
                           aria-pressed={isSelected}
                           aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
-                          className={`home-map-state-path cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none focus:stroke-[#67D6CE] focus:stroke-[3px]${isSelected ? ' is-selected' : ''}${isHovered ? ' is-hovered' : ''}`}
+                          className={`home-map-state-path cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none${isSelected ? ' is-selected' : ''}${isHovered ? ' is-hovered' : ''}`}
                         >
                           <title>{`${st.state} (${st.code}) · ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)} · ${datum.coverage} · Period ${datum.period}${datum.claimScope ? ` · ${datum.claimScope} · ${datum.denialDefinition}` : ''}${datum.source ? ` · ${datum.source}` : ''} · ${countyCount} counties`}</title>
                         </path>

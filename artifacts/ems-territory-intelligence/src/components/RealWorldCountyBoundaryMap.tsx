@@ -17,7 +17,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
 import { DataLabel } from './DataLabel';
@@ -56,6 +56,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const [compactCountyMap, setCompactCountyMap] = useState(false);
   const [singleViewBox, setSingleViewBox] = useState('0 0 520 340');
   const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
+  const [countyZoom, setCountyZoom] = useState(1);
+  const [countyPan, setCountyPan] = useState({ x: 0, y: 0 });
+  const countySvgRef = useRef<SVGSVGElement>(null);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
   const nriParams = useMemo(
     () => stateCode && stateCode !== 'all' ? { stateCode } : undefined,
     [stateCode],
@@ -85,6 +90,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       (record) => !appBoundaryFips.has(record.countyFips),
     );
   }, [nriQuery.data?.records, stateNode]);
+
+  useEffect(() => {
+    setCountyZoom(1);
+    setCountyPan({ x: 0, y: 0 });
+  }, [stateCode]);
 
   useEffect(() => {
     if (!stateCode || stateCode === 'all') return;
@@ -138,6 +148,62 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       setCountyMapViewBox('0 0 720 400');
     }
   }, [projectedState.projectedCounties]);
+
+  const displayedCountyViewBox = useMemo(() => {
+    const [bx, by, bw, bh] = countyMapViewBox.split(' ').map(Number);
+    if (countyZoom === 1) return countyMapViewBox;
+    const w = bw / countyZoom;
+    const h = bh / countyZoom;
+    const maxX = (bw - w) / 2;
+    const maxY = (bh - h) / 2;
+    const px = Math.max(-maxX, Math.min(maxX, countyPan.x));
+    const py = Math.max(-maxY, Math.min(maxY, countyPan.y));
+    return [bx + (bw - w) / 2 + px, by + (bh - h) / 2 + py, w, h].map((v) => Number(v.toFixed(1))).join(' ');
+  }, [countyMapViewBox, countyZoom, countyPan]);
+
+  const setZoomClamped = (next: number) => {
+    const z = Math.max(1, Math.min(6, Number(next.toFixed(2))));
+    setCountyZoom(z);
+    if (z === 1) setCountyPan({ x: 0, y: 0 });
+  };
+  const fitCountyMap = () => {
+    setCountyZoom(1);
+    setCountyPan({ x: 0, y: 0 });
+  };
+
+  const handleCountyPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (countyZoom === 1) return;
+    dragRef.current = { x: event.clientX, y: event.clientY, panX: countyPan.x, panY: countyPan.y, moved: false };
+  };
+  const handleCountyPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    const drag = dragRef.current;
+    const svg = countySvgRef.current;
+    if (!drag || !svg) return;
+    const dxPx = event.clientX - drag.x;
+    const dyPx = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dxPx, dyPx) < 4) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      try { svg.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+    }
+    const rect = svg.getBoundingClientRect();
+    const [, , vw, vh] = displayedCountyViewBox.split(' ').map(Number);
+    const unitsPerPx = Math.max(vw / Math.max(rect.width, 1), vh / Math.max(rect.height, 1));
+    const [, , bw, bh] = countyMapViewBox.split(' ').map(Number);
+    const maxX = (bw - bw / countyZoom) / 2;
+    const maxY = (bh - bh / countyZoom) / 2;
+    setCountyPan({
+      x: Math.max(-maxX, Math.min(maxX, drag.panX - dxPx * unitsPerPx)),
+      y: Math.max(-maxY, Math.min(maxY, drag.panY - dyPx * unitsPerPx)),
+    });
+  };
+  const handleCountyPointerUp = () => {
+    if (dragRef.current?.moved) {
+      suppressClickRef.current = true;
+      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
+    }
+    dragRef.current = null;
+  };
 
   const activeCountyNode: CountyBoundaryNode | null = useMemo(() => {
     if (!stateNode || !selectedCountyName || selectedCountyName === 'all') return null;
@@ -194,7 +260,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     : null;
   const nriColorFor = (fips: string) => {
     const rating = nriByCountyFips.get(fips)?.riskRating;
-    return rating ? FEMA_NRI_RATING_COLORS[rating] ?? '#475569' : '#475569';
+    return rating ? FEMA_NRI_RATING_COLORS[rating] ?? 'url(#cv-missing-hatch)' : 'url(#cv-missing-hatch)';
   };
 
   if (!stateNode) return null;
@@ -273,7 +339,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       {Object.entries(FEMA_NRI_RATING_COLORS).map(([rating, color]) => (
         <span key={rating}><span className="cv-swatch" style={{ backgroundColor: color }} />{rating}</span>
       ))}
-      <span><span className="cv-swatch" style={{ backgroundColor: '#475569' }} />No FEMA record</span>
+      <span><span className="cv-swatch cv-swatch--missing" />No FEMA record</span>
     </div>
   );
 
@@ -299,6 +365,18 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 <span className="tabular-nums">
                   {projectedState.projectedCounties.length} of {stateNode.countiesList.length} boundaries drawn
                 </span>
+                <div className="cv-map-tools" role="group" aria-label="County map zoom controls">
+                  <button type="button" className="cv-map-tool" onClick={() => setZoomClamped(countyZoom * 1.5)} disabled={countyZoom >= 6} aria-label="Zoom in on county map" title="Zoom in" data-testid="button-county-map-zoom-in">
+                    <ZoomIn aria-hidden="true" />
+                  </button>
+                  <span className="cv-map-tool-readout tabular-nums" aria-live="polite">{Math.round(countyZoom * 100)}%</span>
+                  <button type="button" className="cv-map-tool" onClick={() => setZoomClamped(countyZoom / 1.5)} disabled={countyZoom <= 1} aria-label="Zoom out on county map" title="Zoom out" data-testid="button-county-map-zoom-out">
+                    <ZoomOut aria-hidden="true" />
+                  </button>
+                  <button type="button" className="cv-map-tool cv-map-tool--text" onClick={fitCountyMap} disabled={countyZoom === 1} aria-label="Fit whole state" title="Fit whole state" data-testid="button-county-map-fit">
+                    <Maximize2 aria-hidden="true" /> Fit
+                  </button>
+                </div>
               </div>
 
               {isLoadingBoundaries && projectedState.projectedCounties.length === 0 ? (
@@ -308,14 +386,33 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               ) : (
                 <div className="cv-map-stage county-state-map-viewport">
                   <svg
-                    viewBox={countyMapViewBox}
+                    ref={countySvgRef}
+                    viewBox={displayedCountyViewBox}
                     preserveAspectRatio="xMidYMid meet"
-                    className="county-state-map-svg select-none"
+                    className={`county-state-map-svg select-none${countyZoom > 1 ? ' is-zoomed' : ''}`}
+                    onPointerDown={handleCountyPointerDown}
+                    onPointerMove={handleCountyPointerMove}
+                    onPointerUp={handleCountyPointerUp}
+                    onPointerCancel={handleCountyPointerUp}
                     role="group"
                     aria-label={`${stateNode.stateName} county boundaries. Select a county to open it.`}
                   >
+                    <defs>
+                      <pattern id="cv-missing-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                        <rect width="6" height="6" fill="#33445c" />
+                        <line x1="0" y1="0" x2="0" y2="6" stroke="#8193ab" strokeWidth="1.4" />
+                      </pattern>
+                    </defs>
                     <g ref={countyMapPathsRef}>
-                      {projectedState.projectedCounties.map((pc) => {
+                      {[...projectedState.projectedCounties]
+                        .sort((a, b) => {
+                          const rank = (c: SvgProjectedCounty) =>
+                            selectedCountyName !== 'all' && c.countyName.toLowerCase() === selectedCountyName.toLowerCase()
+                              ? 2
+                              : c.countyFips === hoveredCountyFips ? 1 : 0;
+                          return rank(a) - rank(b);
+                        })
+                        .map((pc) => {
                         const isHovered = hoveredCountyFips === pc.countyFips;
                         const isSelected =
                           selectedCountyName !== 'all' &&
@@ -326,19 +423,23 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             key={pc.countyFips}
                             d={pc.svgPath}
                             fill={nriColorFor(pc.countyFips)}
-                            stroke={isHovered ? '#FFFFFF' : isSelected ? '#BFD3FF' : '#1C2E45'}
-                            strokeWidth={isHovered ? 2.6 : isSelected ? 2.1 : 1}
+                            stroke={isSelected ? '#FFFFFF' : isHovered ? '#E2EAF5' : '#1C2E45'}
+                            strokeWidth={isSelected ? 3 : isHovered ? 2.2 : 0.9}
                             strokeLinejoin="round"
                             vectorEffect="non-scaling-stroke"
                             tabIndex={0}
                             role="button"
                             aria-label={`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
-                            className="cursor-pointer"
+                            className={`cv-county-path cursor-pointer${isSelected ? ' is-selected' : ''}`}
+                            aria-pressed={isSelected}
                             onMouseEnter={() => setHoveredCountyFips(pc.countyFips)}
                             onMouseLeave={() => setHoveredCountyFips(null)}
                             onFocus={() => setHoveredCountyFips(pc.countyFips)}
                             onBlur={() => setHoveredCountyFips(null)}
-                            onClick={() => onSelectCounty(pc.countyName, stateNode.stateCode)}
+                            onClick={() => {
+                              if (suppressClickRef.current) return;
+                              onSelectCounty(pc.countyName, stateNode.stateCode);
+                            }}
                             onKeyDown={(event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();

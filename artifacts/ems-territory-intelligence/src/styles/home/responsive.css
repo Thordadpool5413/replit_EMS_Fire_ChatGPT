@@ -819,30 +819,22 @@
 }
 
 .home-territory-map-screen-v2 .home-map-stage-v2 {
-  background:
-    radial-gradient(ellipse at 50% 38%, rgba(49, 111, 126, 0.28), transparent 58%),
-    radial-gradient(ellipse at 7% 83%, rgba(24, 91, 119, 0.18), transparent 36%),
-    radial-gradient(ellipse at 94% 16%, rgba(74, 137, 143, 0.16), transparent 34%),
-    repeating-linear-gradient(0deg, rgba(144, 192, 197, 0.035) 0 1px, transparent 1px 44px),
-    repeating-linear-gradient(90deg, rgba(144, 192, 197, 0.03) 0 1px, transparent 1px 44px),
-    linear-gradient(145deg, #102d3b 0%, #091c2a 52%, #0b2532 100%) !important;
+  background: linear-gradient(160deg, #102d3b 0%, #0b2130 100%) !important;
 }
 
 .home-territory-map-screen-v2 .home-map-viewport {
-  background:
-    radial-gradient(ellipse at 50% 44%, rgba(49, 123, 140, 0.3), transparent 58%),
-    radial-gradient(ellipse at 9% 20%, rgba(42, 113, 131, 0.18), transparent 36%),
-    radial-gradient(ellipse at 91% 78%, rgba(37, 103, 122, 0.2), transparent 38%),
-    repeating-radial-gradient(ellipse at 51% 48%, transparent 0 62px, rgba(145, 202, 205, 0.085) 63px 64px, transparent 65px 110px),
-    repeating-linear-gradient(0deg, rgba(159, 204, 208, 0.045) 0 1px, transparent 1px 56px),
-    repeating-linear-gradient(90deg, rgba(159, 204, 208, 0.04) 0 1px, transparent 1px 56px),
-    linear-gradient(150deg, #123748 0%, #0c2635 52%, #0a1d2b 100%) !important;
+  background: #0d2433 !important;
 }
 
 .home-territory-map-screen-v2 .home-map-viewport::after {
-  background:
-    linear-gradient(90deg, rgba(2, 12, 19, 0.035), transparent 13%, transparent 87%, rgba(2, 12, 19, 0.04)),
-    radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(2, 10, 16, 0.07) 100%) !important;
+  background: none !important;
+}
+
+/* Keyboard focus: dashed outline on top of the choropleth fill; fill never changes. */
+.home-territory-map-screen-v2 .home-map-state-path:focus-visible {
+  stroke: #e7fbf8 !important;
+  stroke-width: 3px !important;
+  stroke-dasharray: 5 3;
 }
 
 @media (max-width: 767px) {

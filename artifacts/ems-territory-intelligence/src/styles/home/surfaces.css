@@ -991,13 +991,10 @@
   transition: filter 130ms ease, stroke 130ms ease, opacity 130ms ease;
 }
 
+/* Hover/selection are carried by the outline so the metric fill stays exact. */
 .home-territory-map-screen-v2 .home-map-state-path:hover,
-.home-territory-map-screen-v2 .home-map-state-path:focus-visible {
-  filter: brightness(1.13) saturate(1.06);
-}
-
 .home-territory-map-screen-v2 .home-map-state-path.is-selected {
-  filter: saturate(1.08);
+  filter: none;
 }
 
 .home-territory-map-screen-v2 .home-map-inspector-v2 {

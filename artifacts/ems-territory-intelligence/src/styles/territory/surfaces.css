@@ -346,3 +346,15 @@
 .dark .territory-explorer-screen details .text-slate-500 {
   color: #a5b8b7 !important;
 }
+
+/* Google Maps territory frame + on-map controls (shared compact treatment). */
+.gmap-frame { background: #e8eef4; }
+.dark .gmap-frame { background: #0d1a28; }
+.gmap-ctl {
+  display: inline-flex; align-items: center; gap: .4rem; height: 2.1rem; padding: 0 .7rem;
+  border-radius: .5rem; border: 1px solid #c9d4e1; background: #f8fafc; color: #1e293b;
+  font-size: .75rem; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px rgba(15, 23, 42, .18);
+}
+.gmap-ctl:hover { background: #eef3f8; }
+.gmap-ctl:focus-visible { outline: 2px solid #285ee8; outline-offset: 2px; }
+.gmap-ctl svg { color: #285ee8; }

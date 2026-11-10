@@ -1107,15 +1107,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               <svg
                 viewBox="0 0 920 500"
                 className="w-full h-[380px] sm:h-[440px] select-none"
-                role="img"
-                aria-label="Interactive United States Territory Boundary Map"
+                role="group"
+                preserveAspectRatio="xMidYMid meet"
+                aria-label="United States state boundary map. Select a state to inspect its counties."
               >
                 <defs>
-                  <pattern id="us-map-grid" width="46" height="46" patternUnits="userSpaceOnUse">
-                    <path d="M 46 0 L 0 0 0 46" fill="none" stroke="rgba(148, 163, 184, 0.16)" strokeWidth="1" />
+                  <pattern id="us-map-missing-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="6" height="6" fill="#E2E8F0" />
+                    <line x1="0" y1="0" x2="0" y2="6" stroke="#94A3B8" strokeWidth="1.5" />
                   </pattern>
                 </defs>
-                <rect width="920" height="500" fill="url(#us-map-grid)" />
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
@@ -1145,7 +1146,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       ? '#F1F5F9'
                       : hasMapValue
                         ? stateMapColorByCode.get(st.code) ?? '#E2E8F0'
-                        : '#CBD5E1';
+                        : 'url(#us-map-missing-hatch)';
 
                     const strokeColor = isHovered || selectedStateCode === st.code
                       ? '#0F172A'
@@ -1167,7 +1168,22 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         }}
                         onMouseEnter={() => setHoveredMapStateCode(st.code)}
                         onMouseLeave={() => setHoveredMapStateCode(null)}
-                        className="cursor-pointer transition-colors duration-150"
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Inspect ${st.state} counties`}
+                        aria-pressed={selectedStateCode === st.code}
+                        onFocus={() => setHoveredMapStateCode(st.code)}
+                        onBlur={() => setHoveredMapStateCode(null)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            handleSelectState(st.code);
+                            setMiddleTab('counties');
+                          }
+                        }}
+                        vectorEffect="non-scaling-stroke"
+                        strokeLinejoin="round"
+                        className="us-state-path cursor-pointer transition-colors duration-150"
                       >
                         <title>{`${st.state} (${st.code}) · ${stateMapLayer === 'fema-loss'
                           ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
@@ -1395,7 +1411,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       </span>
                       {stateMapLayer === 'fema-loss' && (
                         <span className="flex items-center gap-1.5">
-                          <span className="h-3 w-3 rounded-xs border border-slate-500 bg-slate-300" />
+                          <span className="h-3 w-3 rounded-xs border border-slate-500" style={{ background: 'repeating-linear-gradient(45deg, #E2E8F0 0 2px, #94A3B8 2px 3.5px)' }} />
                           <span>Missing or incomplete county coverage</span>
                         </span>
                       )}

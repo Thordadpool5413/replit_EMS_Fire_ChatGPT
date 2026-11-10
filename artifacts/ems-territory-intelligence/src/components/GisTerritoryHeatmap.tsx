@@ -2308,26 +2308,34 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           >
             {/* Interactive Map Zoom, Pan & Opacity Control Cluster */}
             <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-auto">
-              <div className="relative backdrop-blur-md bg-slate-950/85 border border-white/10 text-slate-100 rounded-xl shadow-2xl overflow-hidden p-0.5">
+              <div role="group" aria-label="Territory map zoom controls" className="relative bg-slate-950/95 border border-white/20 text-slate-100 rounded-lg overflow-hidden p-0.5">
                 <div className="flex flex-col">
                   <button 
+                    type="button"
+                    aria-label="Zoom in on territory map"
+                    disabled={zoomLevel >= 3.5}
                     onClick={() => setZoomLevel(z => Math.min(3.5, +(z + 0.35).toFixed(2)))} 
                     title="Zoom In (+)" 
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 transition-colors border-b border-white/10 cursor-pointer text-slate-200"
+                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
                   <button 
+                    type="button"
+                    aria-label="Zoom out on territory map"
+                    disabled={zoomLevel <= 1}
                     onClick={() => setZoomLevel(z => Math.max(1, +(z - 0.35).toFixed(2)))} 
                     title="Zoom Out (-)" 
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 transition-colors border-b border-white/10 cursor-pointer text-slate-200"
+                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
                   >
                     <ZoomOut className="w-4 h-4" />
                   </button>
                   <button 
+                    type="button"
+                    aria-label="Fit nationwide territory map"
                     onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }} 
-                    title="Reset Nationwide View" 
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 transition-colors cursor-pointer text-slate-200"
+                    title="Fit nationwide view"
+                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 transition-colors cursor-pointer text-slate-200"
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -2432,7 +2440,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 <rect
                   width={mapWidth}
                   height={mapHeight}
-                  fill={basemapTheme === 'dark' ? 'url(#gis-map-grid-dark)' : 'url(#gis-map-grid-light)'}
+                  fill="transparent"
                 />
 
                 {/* Geodetic Graticule Parallels & Meridians (25°N–45°N, 120°W–70°W) */}
@@ -3976,7 +3984,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                   transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`} 
                   style={{ transformOrigin: '460px 250px', transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
                 >
-                  <rect width={mapWidth} height={mapHeight} fill="url(#gis-theater-grid)" />
+                  <rect width={mapWidth} height={mapHeight} fill="transparent" />
 
                   {/* Alaska & Hawaii Inset Frames */}
                   <g>

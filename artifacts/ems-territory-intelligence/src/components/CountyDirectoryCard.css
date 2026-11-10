@@ -115,3 +115,27 @@
   .county-brief .cb-place { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .county-brief, .county-brief * { transition: none !important; } }
+
+/* Honor Windows High Contrast. The source's written rating, not a retained
+   native hue or a topic icon, communicates meaning in this mode. */
+@media (forced-colors: active) {
+  .county-brief { --cb-hair: CanvasText; }
+  .county-brief .cb-ico { color: CanvasText; }
+  .county-brief .cb-risk-chip::before {
+    background: Canvas; border: 1px solid CanvasText; box-shadow: none;
+  }
+  .county-brief .cb-inspect {
+    background: ButtonFace; color: ButtonText; border-color: ButtonText;
+  }
+  .county-brief .cb-place,
+  .county-brief .cb-link,
+  .county-brief .cb-sources a {
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+  }
+  .county-brief .cb-place { color: ButtonText; text-decoration-color: ButtonText !important; }
+  .county-brief .cb-link,
+  .county-brief .cb-sources a { color: LinkText; text-decoration-color: LinkText !important; }
+  .county-brief button:focus-visible,
+  .county-brief a:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+}

@@ -1,4 +1,5 @@
 // Focused layout/interaction checks. Uses the artifact proxy, not Vite's API-less direct port.
+// High contrast only: COUNTY_FORCED_COLORS_ONLY=1 node scripts/check-county-polish.mjs
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -140,7 +141,118 @@ async function pressEnter() {
   }
 }
 
-async function checkDenseFixture(viewport) {
+// Windows High Contrast is exposed to web content as forced-colors. Test both
+// system palettes, not the authored FEMA/icon hues (which may legitimately vanish).
+async function checkForcedSurface(selector, label) {
+  const result = await evaluate(`(() => {
+    const root=document.querySelector(${JSON.stringify(selector)});
+    const visible=e=>e.getClientRects().length && getComputedStyle(e).visibility==='visible';
+    const probe=document.createElement('span');
+    probe.style.cssText='color:CanvasText;background:Canvas;position:absolute';
+    root.append(probe);
+    const system={ink:getComputedStyle(probe).color,paper:getComputedStyle(probe).backgroundColor};
+    probe.remove();
+    // The snapshot heading is an intentional screen-reader-only section name,
+    // not a county detail. Its metric labels remain visible and are checked.
+    const items=[...root.querySelectorAll('dt,dd,h3,h4,h5,p,a,button,.cb-risk-chip,.ci-risk-rating,.cb-risk-meta,.ci-fema-row')]
+      .filter(e=>!e.matches('.cb-group--snapshot > .cb-group-cap'));
+    const links=[...root.querySelectorAll('a,.cb-place,.ci-place-name')];
+    const swatch=root.querySelector('.ci-swatch') ?? root.querySelector('.cb-risk-chip');
+    const swatchStyle=swatch && getComputedStyle(swatch,swatch.matches('.cb-risk-chip')?'::before':null);
+    return {active:matchMedia('(forced-colors: active)').matches,system,text:root.innerText,
+      facts:[...root.querySelectorAll('dt,dd')].map(e=>e.innerText),
+      hidden:items.filter(e=>!visible(e)).map(e=>e.className),
+      clipped:items.filter(e=>e.scrollWidth>e.clientWidth+2).map(e=>e.className),
+      closed:root.querySelectorAll('details:not([open])').length,
+      labels:[...root.querySelectorAll('.cb-group--snapshot dt,.ci-stats dt,.cb-risk-chip,.ci-risk-rating')]
+        .map(e=>({text:e.innerText,color:getComputedStyle(e).color})),
+      links:links.map(e=>{const s=getComputedStyle(e);return {text:e.innerText,
+        underline:s.textDecorationLine.includes('underline'),color:s.color,decoration:s.textDecorationColor};}),
+      actions:[...root.querySelectorAll('.cb-inspect,.ci-btn')].map(e=>{
+        const s=getComputedStyle(e);return {border:parseFloat(s.borderTopWidth),style:s.borderTopStyle,
+          ink:s.color,borderColor:s.borderTopColor,background:s.backgroundColor};}),
+      swatch:swatchStyle && {border:parseFloat(swatchStyle.borderTopWidth),style:swatchStyle.borderTopStyle,
+        color:swatchStyle.borderTopColor},
+      controls:root.querySelectorAll('button,a').length,
+      overrides:[root,...root.querySelectorAll('*')].some(e=>getComputedStyle(e).forcedColorAdjust==='none')};
+  })()`);
+  assert(result.active,`${label}: forced-colors emulation inactive`);
+  assert.notEqual(result.system.ink,result.system.paper,`${label}: invalid high-contrast palette`);
+  assert(!result.overrides,`${label}: county content opts out of system colors`);
+  assert.deepEqual(result.hidden,[],`${label}: hidden county details`);
+  assert.deepEqual(result.clipped,[],`${label}: clipped county details`);
+  assert.equal(result.closed,0,`${label}: collapsed county details`);
+  assert(result.labels.every(item=>item.text.trim() && item.color===result.system.ink),
+    `${label}: primary labels or textual FEMA category lost system contrast`);
+  assert(result.links.length>0 && result.links.every(link=>link.underline && link.color===link.decoration),
+    `${label}: source/place links need a visible non-color cue ${JSON.stringify(result.links)}`);
+  assert(result.actions.every(a=>a.border>=1 && a.style==='solid' && a.borderColor!==a.background && a.ink!==a.background),
+    `${label}: action boundary lost ${JSON.stringify(result.actions)}`);
+  assert(result.swatch?.border>=1 && result.swatch.style==='solid' && result.swatch.color!==result.system.paper,
+    `${label}: FEMA swatch boundary disappears`);
+  // A real Tab event establishes keyboard modality; programmatic focus alone
+  // can inherit mouse modality and miss :focus-visible regressions.
+  for (let index=0;index<result.controls;index++) {
+    await evaluate(`(() => {
+      const target=document.querySelector(${JSON.stringify(selector)}).querySelectorAll('button,a')[${index}];
+      const start=document.createElement('span');start.tabIndex=0;start.id='county-tab-start';
+      target.before(start);start.focus();
+    })()`);
+    for (const type of ['rawKeyDown','keyUp'])
+      await send('Input.dispatchKeyEvent',{type,key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
+    const focus=await evaluate(`(() => {
+      document.querySelector('#county-tab-start').remove();
+      const target=document.querySelector(${JSON.stringify(selector)}).querySelectorAll('button,a')[${index}];
+      const s=getComputedStyle(target);
+      return {active:document.activeElement===target,visible:target.matches(':focus-visible'),
+        width:parseFloat(s.outlineWidth),style:s.outlineStyle,color:s.outlineColor,offset:parseFloat(s.outlineOffset)};
+    })()`);
+    assert(focus.active && focus.visible && focus.width>=2 && focus.style==='solid' &&
+      focus.color!==result.system.paper && focus.offset>=2,
+      `${label}: keyboard focus lost on control ${index} ${JSON.stringify(focus)}`);
+  }
+  await capture(label,selector);
+  return result;
+}
+
+async function checkForcedColors(viewport) {
+  const label=`${viewport.width}x${viewport.height}`;
+  await navigate('/?state=FL','Boolean(document.querySelector(".county-inspector-panel"))');
+  await waitFor('document.querySelector(".ci-risk-rating")?.innerText.includes("Relatively Moderate")','FEMA forced-colors source record');
+  const surfaces=['.county-inspector-panel','[data-testid="row-county-signals-12001"]'];
+  const baseline=await evaluate(`JSON.stringify(${JSON.stringify(surfaces)}.map(selector=>{
+    const root=document.querySelector(selector);
+    return {text:root.innerText,facts:[...root.querySelectorAll('dt,dd')].map(e=>e.innerText)};
+  }))`);
+  try {
+    for (const scheme of ['light','dark']) {
+      await send('Emulation.setEmulatedMedia',{features:[
+        {name:'forced-colors',value:'active'},{name:'prefers-color-scheme',value:scheme}]});
+      for (const theme of ['daylight','dark','miami-vice']) {
+        await evaluate(`(() => {
+          const select=document.querySelector('[data-testid="theme-select-desktop"]');
+          select.value=${JSON.stringify(theme)};select.dispatchEvent(new Event('change',{bubbles:true}));
+        })()`);
+        await pause(150);
+        const readings=[];
+        for (const [index,selector] of surfaces.entries()) {
+          const result=await checkForcedSurface(selector,`${label}-forced-${scheme}-${theme}-${index?'directory':'preview'}`);
+          readings.push({text:result.text,facts:result.facts});
+          for (const text of ['Population','Avg EMS transport','Cardiac arrests','Relatively Moderate','December 2025'])
+            assert(result.text.includes(text),`${label}: forced colors lost ${text}`);
+        }
+        assert.equal(JSON.stringify(readings),baseline,`${label}: high contrast changes county details or source-defined ratings`);
+      }
+      // Dense fixture includes missing versus zero and all eight attached sources.
+      await checkDenseFixture(viewport,scheme);
+    }
+  } finally {
+    await send('Emulation.setEmulatedMedia',{features:[]});
+  }
+  console.log(`✓ ${label}: both forced-color palettes, three themes, native labels, links, actions and keyboard focus`);
+}
+
+async function checkDenseFixture(viewport, forcedScheme) {
   const label = `${viewport.width}x${viewport.height}`;
   await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: viewport.width < 768 });
   await navigate('/?state=FL', 'Boolean(document.querySelector(".county-signal-list"))');
@@ -175,11 +287,12 @@ async function checkDenseFixture(viewport) {
     host.className = 'county-signal-list';
     document.querySelector('.county-signal-list').after(host);
     window.__countyFixtureRoot = ReactDOM.createRoot(host);
-    window.__countyFixtureRoot.render(React.createElement(CountyDirectoryCard, {
+    window.__renderCountyNriFixture = (overrides={}) => window.__countyFixtureRoot.render(React.createElement(CountyDirectoryCard, {
       county, nri: {riskRating:'Relatively Moderate',riskScore:0,sourceVersion:'December 2025'},
       nriSourceUrl:'https://example.org/fema', nriLoading:false,nriError:false,
-      onInspectCounty:() => {},onSelectPlace:() => {}
+      onInspectCounty:() => {},onSelectPlace:() => {},...overrides
     }));
+    window.__renderCountyNriFixture();
   })()`);
   await waitFor('Boolean(document.querySelector("#county-regression-fixture .cb-name"))', 'dense county fixture');
   for (const theme of ['daylight', 'dark', 'miami-vice']) {
@@ -210,7 +323,27 @@ async function checkDenseFixture(viewport) {
     assert(result.text.includes('32023'),`${label} ${theme}: final ZIP lost`);
     assert.equal(result.closed,0,`${label} ${theme}: dense details collapsed`);
     assert(!result.clipped,`${label} ${theme}: dense fixture clipped`);
-    await capture(`${label}-dense-${theme}`,'#county-regression-fixture');
+    if (forcedScheme) {
+      await checkForcedSurface('#county-regression-fixture .county-brief',`${label}-forced-${forcedScheme}-dense-${theme}`);
+      assert(result.text.includes('Relatively Moderate') && result.text.includes('Score 0.00'),
+        `${label}: forced colors changed the native rating or zero score`);
+    } else await capture(`${label}-dense-${theme}`,'#county-regression-fixture');
+  }
+  if (forcedScheme) {
+    for (const [overrides,text] of [
+      [{nri:null},'No county-equivalent record'],
+      [{nri:{riskRating:null,riskScore:null}},'Rating not stated'],
+      [{nriLoading:true},'Loading FEMA record'],
+      [{nriError:true},'FEMA NRI source unavailable'],
+    ]) {
+      await evaluate(`window.__renderCountyNriFixture(${JSON.stringify(overrides)})`);
+      await waitFor(`document.querySelector('#county-regression-fixture .cb-risk').innerText.includes(${JSON.stringify(text)})`,text);
+      const fallback=await evaluate(`document.querySelector('#county-regression-fixture .cb-risk').innerText`);
+      assert(!fallback.includes('Relatively Moderate'),`${label}: fallback invented a FEMA rating`);
+      if (text==='Rating not stated') assert(fallback.includes('Score not stated'),`${label}: missing score replaced with zero`);
+    }
+    await evaluate(`window.__countyFixtureRoot.unmount();document.querySelector('#county-regression-fixture').remove()`);
+    return;
   }
   console.log(`✓ ${label}: long names, 24 ZIPs, 12 places, missing/zero figures and eight full source records`);
   // Enlarge the county component within the same physical space. Zooming the
@@ -323,6 +456,7 @@ try {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
     await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: !desktop });
+    if (process.env.COUNTY_FORCED_COLORS_ONLY === '1') { await checkForcedColors(viewport); continue; }
      if (process.env.COUNTY_DENSE_ONLY === '1') { await checkDenseFixture(viewport); continue; }
     if (inspectorOnly) { await checkInspector(viewport); continue; }
     if (mapOnly) {
@@ -486,7 +620,7 @@ try {
     await waitFor('!document.querySelector(\'[data-testid="button-show-all-places"]\') && !document.querySelector(\'.county-city-directory-panel [aria-pressed="true"]\')', 'return to all cities');
     console.log(`✓ ${label}: Home/state/county, inline sources, deduped places, keyboard city selection and return`);
   }
-  if (!mapOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1') {
+  if (!mapOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' && process.env.COUNTY_FORCED_COLORS_ONLY !== '1') {
   await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
   if (!cardsOnly) for (const [code, name] of [['TX', 'Texas'], ['RI', 'Rhode Island'], ['AK', 'Alaska']]) {
     await navigate(`/?state=${code}`, 'Boolean(document.querySelector(".county-state-map-svg path"))');
@@ -507,6 +641,15 @@ try {
   assert.equal(await evaluate('document.querySelectorAll(".county-signal-row").length'), 7);
   console.log('✓ Florida pagination: remaining seven counties reachable from directory heading');
   if (cardsOnly) for (const viewport of viewports) await checkDenseFixture(viewport);
+  }
+  // Include accessibility coverage in the ordinary complete run as well as the
+  // focused mode; other *_ONLY modes retain their intentionally narrow scope.
+  if (!mapOnly && !cardsOnly && !inspectorOnly && process.env.COUNTY_DENSE_ONLY !== '1' &&
+    process.env.COUNTY_FORCED_COLORS_ONLY !== '1') {
+    for (const viewport of viewports) {
+      await send('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:viewport.width<768});
+      await checkForcedColors(viewport);
+    }
   }
   assert.deepEqual(errors, [], `Uncaught browser exceptions: ${errors.join(', ')}`);
   console.log(`PASS county polish checks. Captures: ${captures}`);

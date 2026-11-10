@@ -74,6 +74,20 @@
 }
 @media (prefers-reduced-motion: reduce) { .ci .ci-place, .ci .ci-btn { transition: none !important; } }
 
+/* System colors keep controls and source cues distinct when native FEMA and
+   topic hues are removed. The original category text remains authoritative. */
+@media (forced-colors: active) {
+  .cv-panel.county-inspector-panel.ci,
+  .ci > * + * { border-color: CanvasText; }
+  .ci .ci-ico { color: CanvasText; }
+  .ci .ci-swatch { background: Canvas; border: 1px solid CanvasText; box-shadow: none; }
+  .ci .ci-btn { background: ButtonFace; color: ButtonText; border: 1px solid ButtonText; }
+  .ci .ci-link { color: LinkText; text-decoration-color: LinkText; }
+  .ci .ci-place-name { color: ButtonText; text-decoration-color: ButtonText; }
+  .ci button:focus-visible,
+  .ci a:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+}
+
 /* Balanced pair: preview and map share height; map keeps aspect via meet. */
 @media (min-width: 1024px) {
   .territory-explorer-screen .cv-state-grid.county-state-map-grid:has(> .county-inspector-panel.ci) { align-items: stretch; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr) !important; }

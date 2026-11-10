@@ -272,14 +272,9 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="claims">Claim-dollar recovery estimate</DataLabel></span>
-                <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
-                    ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                    : 'Not calculated'}
-                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="claims">Claim summary records</DataLabel></span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {denialMetric
+                  {hasAgencyFactEvidence(agency, 'cmsClaims')
                     ? 'Claim summary records available'
                     : 'No claim summary record attached'}
                 </span>

@@ -4978,6 +4978,75 @@ async function checkMobileEquipmentBrief(cdp, viewport, category, agencyName) {
   console.log(`PASS ${viewport.width}px ${category}: equipment first, buy-back, touch sources, contact targets, 200% reflow`);
 }
 
+async function checkCountyPolish(cdp, viewport) {
+  const checkOverflow = async (area) => assert(await evaluate(cdp,
+    `document.documentElement.scrollWidth <= innerWidth + 2 && document.body.scrollWidth <= innerWidth + 2`),
+    `page overflow in ${area} at ${viewport.width}px`);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Territory'))`, 'territory navigation', 60000);
+  await evaluate(cdp, `(() => {const s=document.createElement('style');s.textContent='*{scroll-behavior:auto!important}';document.head.appendChild(s);})()`);
+  await clickVisibleButton(cdp, 'Territory', 'Territory');
+  await waitFor(cdp, `Boolean(document.querySelector('#home-state-picker'))`, 'state selector');
+  await evaluate(cdp, `(() => {
+    const e=document.querySelector('#home-state-picker');
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(e,'FL');
+    e.dispatchEvent(new Event('change',{bubbles:true}));
+  })()`);
+  await waitFor(cdp, `Boolean(document.querySelector('.county-brief')) && Boolean(document.querySelector('.county-inspector-panel'))`, 'county cards',60000);
+  await waitFor(cdp, `Boolean(document.querySelector('.ci-name'))`, 'county preview data',60000);
+  const state = await evaluate(cdp, `(() => {
+    const r=e=>{const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
+    const preview=document.querySelector('.county-inspector-panel');
+    const card=document.querySelector('.county-brief');
+    return {preview:r(preview),card:r(card),parts:Object.fromEntries(
+      ['cb-head','cb-group--snapshot','cb-group--context','cb-risk','cb-ref','cb-sources'].map(k=>[k,r(card.querySelector('.'+k))]))};
+  })()`);
+  await checkOverflow('county directory');
+  await evaluate(cdp, `document.querySelector('.county-inspector-panel').scrollIntoView({block:'start'})`);
+  let shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(`/tmp/county-polish-${process.env.COUNTY_POLISH_TAG || 'after'}-${viewport.width}-preview.png`,Buffer.from(shot.result.data,'base64'));
+  await evaluate(cdp, `document.querySelector('.county-brief').scrollIntoView({block:'start'})`);
+  shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(`/tmp/county-polish-${process.env.COUNTY_POLISH_TAG || 'after'}-${viewport.width}-cards.png`,Buffer.from(shot.result.data,'base64'));
+  await evaluate(cdp, `document.querySelector('.county-brief .cb-inspect').click()`);
+  await waitFor(cdp, `Boolean(document.querySelector('.cv-map-stage--county'))`, 'selected county');
+  const selected=await evaluate(cdp, `(() => {
+    const r=e=>{const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
+    return {map:r(document.querySelector('.cv-map-stage--county').closest('.cv-map-panel')),
+      places:r(document.querySelector('.county-city-directory-panel')),
+      mapStage:r(document.querySelector('.cv-map-stage--county')),
+      placesCount:document.querySelectorAll('.cv-place-row').length};
+  })()`);
+  await checkOverflow('selected county');
+  await evaluate(cdp, `document.querySelector('.cv-map-stage--county').scrollIntoView({block:'center'})`);
+  shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(`/tmp/county-polish-${process.env.COUNTY_POLISH_TAG || 'after'}-${viewport.width}-selected.png`,Buffer.from(shot.result.data,'base64'));
+  if(viewport.width >= 768) await clickVisibleButton(cdp, 'Table', 'provider table');
+  const table=await evaluate(cdp, `(() => {
+    const e=[...document.querySelectorAll('table')].find(t=>t.innerText.includes('Provider')||t.innerText.includes('PROVIDER'));
+    if(!e)return null;
+    return {headers:e.querySelector('thead')?.innerText,recovery:/claim.dollar recovery estimate/i.test(e.innerText),
+      icons:e.querySelectorAll('svg').length,headerIcons:e.querySelectorAll('thead svg').length,rows:e.querySelectorAll('tbody tr').length};
+  })()`);
+  await evaluate(cdp, `(() => {
+    const table=[...document.querySelectorAll('table')].find(t=>/provider/i.test(t.innerText));
+    if(table?.getBoundingClientRect().height) table.scrollIntoView({block:'start'});
+  })()`);
+  shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(`/tmp/county-polish-${process.env.COUNTY_POLISH_TAG || 'after'}-${viewport.width}-providers.png`,Buffer.from(shot.result.data,'base64'));
+  console.log(JSON.stringify({viewport,state,selected,table}));
+  if (process.env.COUNTY_POLISH_TAG !== 'before') {
+    if(viewport.width >= 768) {
+      assert(table && !table.recovery, 'unsupported claim recovery column remains');
+      assert(table.headerIcons >= 4 && table.rows > 0, 'provider table lacks recognizable visual labels or records');
+    }
+    await evaluate(cdp, `document.querySelector('.cv-place-row').click()`);
+    await waitFor(cdp, `Boolean(document.querySelector('[data-testid="button-show-all-places"]'))`, 'selected place filter');
+    await evaluate(cdp, `document.querySelector('[data-testid="button-show-all-places"]').click()`);
+  }
+}
+
 async function main() {
   if (
     process.env.PROFILE_LAYOUT_ONLY !== '1' &&
@@ -5020,6 +5089,13 @@ async function main() {
       downloadPath,
     });
 
+    if (process.env.COUNTY_POLISH_ONLY === '1') {
+      for(const viewport of [{width:1280,height:900,mobile:false},{width:390,height:844,mobile:true}]) {
+        if(process.env.PROFILE_TEST_WIDTH && viewport.width !== Number(process.env.PROFILE_TEST_WIDTH))continue;
+        await checkCountyPolish(cdp,viewport);
+      }
+      return;
+    }
     if (process.env.MOBILE_NAV_A11Y_ONLY === '1') {
       await checkMobileNavigationAccessibility(cdp, { width: 360, height: 844 });
       return;

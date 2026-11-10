@@ -173,8 +173,8 @@
 @media (min-width: 768px) and (max-height: 820px) {
 
   .county-single-map-panel {
-    min-height: 360px !important;
-    padding: 0.75rem !important;
+    min-height: 0 !important;
+    padding: .45rem .6rem !important;
   }
 }
 
@@ -499,8 +499,7 @@
 
 @media (max-width: 767px) {
 
-  .county-state-map-panel,
-.county-single-map-panel {
+  .county-state-map-panel {
     min-height: 320px !important;
   }
 }
@@ -738,8 +737,8 @@
 @media (max-width: 767px) {
 
   .county-single-map-panel {
-    min-height: 320px !important;
-    padding: .625rem !important;
+    min-height: 0 !important;
+    padding: .35rem .6rem !important;
   }
 }
 

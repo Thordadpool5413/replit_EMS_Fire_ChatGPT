@@ -14,7 +14,6 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
-import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
 import { CountyDirectoryCard } from './CountyDirectoryCard';
 import {
@@ -2174,9 +2173,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
                       {/* 2 × 2 metric tiles retain each value without forcing narrow columns. */}
                       <div className="agency-metric-grid grid grid-cols-2 gap-2.5 text-sm tabular-nums" aria-label="Agency record and planning summary">
-                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="provider-metric provider-metric--planning provider-metric provider-metric--equipment provider-metric provider-metric--operations provider-metric provider-metric--calls min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                           <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="score">Planning value · estimate</DataLabel></span>
-                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
                             {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
                               ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
                               : 'Not calculated'}
@@ -2208,20 +2207,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
 
                         <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind={isFire ? 'stations' : 'claims'}>{isFire ? 'Stations · public record' : 'Claim recovery · estimate'}</DataLabel></span>
-                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-blue-800 dark:text-blue-400">
-                            {isFire
-                              ? hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                                ? agency.stationsCount.toLocaleString()
-                                : 'Not reported'
-                              : agency.cmsData.estimatedRecoverableRevenue != null && Number.isFinite(agency.cmsData.estimatedRecoverableRevenue)
-                                ? `+${formatCompactDollars(agency.cmsData.estimatedRecoverableRevenue)}/yr`
-                                : 'Not reported'}
+                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="stations">Stations · public record</DataLabel></span>
+                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
+                            {hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
+                              ? agency.stationsCount.toLocaleString()
+                              : 'Not reported'}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {isFire
-                              ? agency.factEvidence?.stationCount?.reportingPeriod || agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || 'Reporting period · Not reported'
-                              : `${agency.cmsData.medicareDenialSource || 'Source not listed'} · ${agency.cmsData.medicareDenialReportingPeriod || 'Period not reported'}`}
+                            {agency.factEvidence?.stationCount?.reportingPeriod || agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || 'Reporting period · Not reported'}
                           </span>
                         </div>
 
@@ -2349,7 +2342,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <button
                             type="button"
                             onClick={() => onSelectAgency(agency)}
-                            className="ml-auto inline-flex min-h-9 items-center justify-center gap-1 rounded-lg bg-[#194d54] px-3 text-xs font-bold text-white transition-colors hover:bg-[#123c43]"
+                            className="ml-auto inline-flex min-h-11 items-center justify-center gap-1 rounded-lg bg-[#194d54] px-3 text-xs font-bold text-white transition-colors hover:bg-[#123c43]"
                           >
                             Open profile
                             <ChevronRight className="h-3.5 w-3.5" />
@@ -2371,29 +2364,27 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onClick={() => setProviderSortBy('pulseIq')}
                         className="py-2.5 px-3 w-24 font-mono cursor-pointer hover:text-[#1E3A8A]"
                       >
-                        Score {providerSortBy === 'pulseIq' ? '↓' : ''}
+                        <DataLabel kind="score">Score</DataLabel> {providerSortBy === 'pulseIq' ? '↓' : ''}
                       </th>
                       <th className="py-2.5 px-4"><DataLabel kind="agency">Provider &amp; Jurisdiction</DataLabel></th>
                       <th
                         onClick={() => setProviderSortBy('fleetAge')}
                         className="py-2.5 px-3 hidden md:table-cell cursor-pointer hover:text-[#1E3A8A]"
                       >
-                        Frontline Fleet {providerSortBy === 'fleetAge' ? '↓' : ''}
+                        <DataLabel kind="monitor">Monitor fleet · software</DataLabel> {providerSortBy === 'fleetAge' ? '↓' : ''}
                       </th>
                       <th
                         onClick={() => setProviderSortBy('value')}
                         className="py-2.5 px-3 text-right hidden sm:table-cell cursor-pointer hover:text-[#1E3A8A]"
                       >
-                        Upgrade value · estimate {providerSortBy === 'value' ? '↓' : ''}
+                        <DataLabel kind="savings">Upgrade value · estimate</DataLabel> {providerSortBy === 'value' ? '↓' : ''}
                       </th>
-                      <th className="py-2.5 px-3 text-right hidden lg:table-cell"><DataLabel kind="cost">Claim-dollar recovery estimate</DataLabel></th>
-                      <th className="py-2.5 px-3 text-right hidden 2xl:table-cell">Runs &amp; ROSC</th>
-                      <th className="py-2.5 px-4 text-right">Actions</th>
+                                            <th className="py-2.5 px-3 text-right hidden 2xl:table-cell"><DataLabel kind="calls">Runs · outcomes</DataLabel></th>
+                      <th className="py-2.5 px-4 text-right"><DataLabel kind="review">Actions</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                     {paginatedAgencies.map((agency) => {
-                      const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
                       const isFire = agency.agencyType.toLowerCase().includes('fire');
                       const hasVerifiedModel = hasVerifiedModelInputs(agency);
                       return (
@@ -2413,7 +2404,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {agency.name}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                              {agency.city}, {agency.stateCode} · {agency.county} · {isFire ? 'Fire' : 'EMS'} · <span className="font-mono text-[10px]">FDID {agency.fdid || 'Not reported'}</span>
+                              <span className={`provider-discipline ${isFire ? 'provider-discipline--fire' : 'provider-discipline--ems'}`}>{isFire ? 'Fire' : 'EMS'}</span> <span className="provider-fdid">FDID {agency.fdid || 'Not reported'}</span> · {agency.city}, {agency.stateCode} · {agency.county}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 hidden md:table-cell">
@@ -2425,22 +2416,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 : 'Not reported'}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not reported'}
+                              <span className="provider-sub-k">ePCR/CAD</span> {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
                               {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
                             </div>
-                            <div className="text-[10px] text-slate-500 tabular-nums">
+                            <div className="text-[11px] text-slate-500 tabular-nums">
                               {agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-right hidden lg:table-cell">
-                            <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
-                                ? `+$${(agency.cmsData.estimatedRecoverableRevenue / 1000).toFixed(0)}K/yr`
-                                : 'Not calculated'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden 2xl:table-cell">
@@ -2451,8 +2435,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                   ? agency.annual911Transports.toLocaleString()
                               : 'Not reported'}
                             </div>
-                            <div className="text-[10px] text-slate-500 tabular-nums">
-                              {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
+                            <div className="text-[11px] text-slate-500 tabular-nums">
+                              <span className="provider-sub-k">Outcome</span> {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -2477,7 +2461,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                 onClick={() => onSelectAgency(agency)}
                                 aria-label={`Open agency profile for ${agency.name}`}
                                 title="Open agency profile"
-                                className="h-8 shrink-0 whitespace-nowrap px-2.5 rounded-lg text-[11px] font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
+                                className="h-9 shrink-0 whitespace-nowrap px-3 rounded-lg text-xs font-bold bg-[#1E3A8A] text-white hover:bg-[#172554] transition-colors flex items-center gap-1 cursor-pointer"
                               >
                                 <span>Open profile</span>
                                 <ChevronRight className="w-3 h-3" />

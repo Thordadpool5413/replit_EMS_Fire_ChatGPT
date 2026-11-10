@@ -111,3 +111,47 @@
 .cv-zoom-hint { margin: .35rem 0 0; font-size: 12px; color: #AFC2D6; }
 @media (prefers-reduced-motion: reduce) { .cv-county-path { transition: none !important; } }
 @media (forced-colors: active) { .cv-county-label { fill: CanvasText; stroke: Canvas; } .cv-zoom-hint { color: CanvasText; } }
+
+/* Compact density pass: preview, selected-county map + places. */
+.cv-panel.county-inspector-panel.ci { padding: .6rem .8rem; }
+.ci > * + * { padding-top: .4rem; margin-top: .4rem; }
+.ci .ci-head { margin: -.6rem -.8rem 0; padding: .55rem .8rem .45rem; gap: 0; }
+.ci .ci-name { font-size: 18px; }
+.ci .ci-stats { gap: .3rem .75rem; }
+.ci .ci-stats dt { font-size: 13px; }
+.ci .ci-stats dd { font-size: 20px; }
+.ci .ci-fema { gap: .25rem; }
+.ci .ci-fema-facts { gap: .2rem .75rem; }
+.ci .ci-fema-facts dd { font-size: 14px; }
+.ci .ci-section { margin-bottom: .2rem; }
+.ci .ci-place-list { display: flex; flex-wrap: wrap; gap: .1rem 1rem; }
+.ci .ci-place-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 .35rem; }
+.ci .ci-place-sub { padding-left: 0; font-size: 12.5px; }
+.ci .ci-zips { margin-top: .3rem; }
+.ci .ci-btn { min-height: 2.25rem; }
+@container (max-width: 420px) { .ci .ci-stats dt { min-height: 0; } .ci .ci-stats dd { font-size: 18px; } }
+@media (max-width: 767px) {
+  .ci .ci-place, .ci .ci-link { min-height: 28px; }
+}
+.county-single-map-panel { padding: .45rem .6rem; }
+.county-single-map-panel .cv-map-stage--county { min-height: 0; padding-block: .15rem; }
+.county-single-map-panel .cv-map-stage--county svg { height: 11.5rem; max-height: 11.5rem; }
+.county-single-map-panel .cv-legend { padding-top: .25rem; }
+.county-city-directory-panel { padding: .5rem .7rem; gap: .35rem; }
+.county-city-directory-panel .cv-kicker { display: none; }
+.county-city-directory-panel .cv-title { font-size: 1rem; }
+.county-city-directory-panel .cv-place-list { max-height: 7.5rem; }
+.county-city-directory-panel .cv-place-row { padding: .3rem .6rem; }
+.county-city-directory-panel .cv-zips { max-height: 2.6em; overflow-y: auto; margin-top: 0; }
+@media (min-width: 1024px) { .cv-state-grid:has(> .county-city-directory-panel) { align-items: start; } }
+@media (max-width: 1023px) {
+  .county-single-map-panel { padding: .35rem .6rem; }
+  .county-single-map-panel .cv-map-stage--county { flex: none; }
+  .county-single-map-panel .cv-map-stage--county svg { height: 4.5rem; max-height: 4.5rem; }
+  .county-single-map-panel .cv-map-head { gap: .1rem .5rem; }
+  .county-single-map-panel .cv-map-head strong { font-size: .8rem; }
+  .county-single-map-panel .cv-legend { font-size: .7rem; gap: .15rem .6rem; padding-top: .2rem; }
+  .county-single-map-panel .cv-map-head span { font-size: 12px; }
+  .county-city-directory-panel .cv-place-list { max-height: 6rem; }
+  .county-city-directory-panel .cv-place-row { min-height: 44px; }
+}

@@ -254,3 +254,19 @@
 .cv-map-tool-readout { min-width: 2.6rem; text-align: center; font-size: .72rem; color: #b7c5d8; }
 .county-state-map-svg.is-zoomed { cursor: grab; touch-action: none; }
 .county-state-map-svg.is-zoomed:active { cursor: grabbing; }
+.provider-discipline { display: inline-flex; align-items: center; padding: 0 .4rem; border-radius: .3rem; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.provider-discipline--fire { background: #fdecee; color: #9f1d2b; }
+.provider-discipline--ems { background: #e3f4f2; color: #0f5f58; }
+.dark .provider-discipline--fire { background: rgba(159,29,43,.25); color: #ffb3bb; }
+.dark .provider-discipline--ems { background: rgba(15,95,88,.3); color: #8fe0d6; }
+.provider-fdid { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 650; color: var(--pi-text-primary); }
+@media (forced-colors: active) { .provider-discipline { border: 1px solid CanvasText; } }
+.provider-sub-k { font-size: 11px; font-weight: 650; color: var(--pi-text-secondary); margin-right: .2rem; }
+th .pi-data-label { white-space: nowrap; }
+.provider-metric { border-left-width: 3px !important; }
+.provider-metric--planning { border-left-color: #2f7d5b !important; }
+.provider-metric--equipment { border-left-color: #2456c8 !important; }
+.provider-metric--operations { border-left-color: #8a5a12 !important; }
+.provider-metric--calls { border-left-color: #b42332 !important; }
+.provider-metric .agency-card-metric-value { color: var(--pi-text-primary) !important; }
+@media (forced-colors: active) { .provider-metric { border-left-color: CanvasText !important; } }

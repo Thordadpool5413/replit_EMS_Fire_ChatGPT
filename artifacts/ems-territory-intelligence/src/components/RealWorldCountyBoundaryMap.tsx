@@ -534,9 +534,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <header className="ci-head">
                     <p className="ci-kicker">{hoveredCountyFips ? 'Map preview' : 'County preview'}</p>
                     <h4 className="ci-name">{inspectedCounty.countyName}</h4>
-                    <p className="ci-ident">
-                      <DataLabel kind="places">Seat</DataLabel> <strong>{inspectedCounty.countySeat}</strong> · <DataLabel kind="area">Area</DataLabel> <strong>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</strong> · <DataLabel kind="identifier">FIPS</DataLabel> <strong>{inspectedCounty.countyFips}</strong>
-                    </p>
+                    <dl className="ci-ident">
+                      <div><dt><DataLabel kind="places">Seat</DataLabel></dt><dd>{inspectedCounty.countySeat}</dd></div>
+                      <div><dt><DataLabel kind="area">Area</DataLabel></dt><dd>{inspectedCounty.landAreaSqMiles.toLocaleString()}<small> sq mi</small></dd></div>
+                      <div><dt><DataLabel kind="identifier">FIPS</DataLabel></dt><dd>{inspectedCounty.countyFips}</dd></div>
+                    </dl>
                   </header>
 
                   {(() => {
@@ -552,7 +554,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   })()}
 
                   <section className="ci-fema" style={riskStyle(inspectedNri?.riskRating)} aria-label="FEMA National Risk Index">
-                    <p className="ci-band-label"><DataLabel kind="risk">FEMA hazard risk</DataLabel></p>
+                    <h5 className="ci-section"><DataLabel kind="risk">FEMA hazard risk</DataLabel></h5>
                     <div className="ci-fema-row">
                       <span className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
                         <span className="ci-swatch" aria-hidden="true" />
@@ -577,7 +579,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
 
                   <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section"><DataLabel kind="places">Mapped places</DataLabel> <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
+                    <h5 className="ci-section"><DataLabel kind="places">Places &amp; ZIP codes</DataLabel> <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
                         <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">
@@ -590,15 +592,15 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             <span className="ci-place-name">{cityNode.cityName}</span>
                             {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
                           </button>
-                          <span className="ci-place-sub"><span className="ci-k">ZIP</span> {cityNode.zipCodes.join(', ') || 'not listed'}</span>
+                          <span className="ci-place-sub">{cityNode.zipCodes.join(', ') || 'ZIP not listed'}</span>
                         </li>
                       ))}
                     </ul>
                     {inspectedCounty.node.primaryZipCodes.length > 0 && (
-                      <p className="ci-zips">
-                        <span className="ci-k"><DataLabel kind="zip">All county ZIPs ({inspectedCounty.node.primaryZipCodes.length})</DataLabel></span>{' '}
-                        {inspectedCounty.node.primaryZipCodes.join(', ')}
-                      </p>
+                      <div className="ci-zips">
+                        <span className="ci-section ci-section--sub"><DataLabel kind="zip">All county ZIPs</DataLabel> <span className="ci-count">{inspectedCounty.node.primaryZipCodes.length}</span></span>
+                        <p className="ci-zip-run">{inspectedCounty.node.primaryZipCodes.join(', ')}</p>
+                      </div>
                     )}
                   </section>
 

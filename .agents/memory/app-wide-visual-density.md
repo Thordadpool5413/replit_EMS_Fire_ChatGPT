@@ -53,9 +53,9 @@ The map/preview pair and individual county cards must be roughly half the height
 
 Compactness alone is not acceptance: county previews and cards must remain easy to read and understand, not compressed into running text.
 
-**Why:** After the size reduction, the user again rejected both views as visually difficult and asked for clutter-free, clean, sharp, professionally formatted information that looks trustworthy.
+**Why:** After the size reduction, the user again rejected both views as visually difficult and asked for clutter-free, clean, sharp, professionally formatted information that looks trustworthy. They also rejected the later measured reductions because “nothing is cleanly formatted.”
 
-**How to apply:** Keep metric label/value ordering consistent, clearly separate source-defined hazard information from operational figures, and label place ZIPs instead of presenting bare numbers beside links.
+**How to apply:** Keep metric label/value ordering consistent, clearly separate source-defined hazard information from operational figures, and label place ZIPs instead of presenting bare numbers beside links. Check the final screenshots for aligned fields and clear reading order; passing height and page-overflow checks does not establish that the visual design is acceptable. Also check content against its card bounds: hidden overflow can conceal an oversized inner grid without making the page scroll horizontally.
 
 County views need purposeful icons, better labels, and restrained color as well as readable spacing.
 

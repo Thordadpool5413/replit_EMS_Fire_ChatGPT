@@ -135,20 +135,22 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
             </span>
           </section>
 
-        <h4 className="cb-group-cap"><DataLabel kind="location">Geography and places</DataLabel></h4>
-        <dl className="cb-ref" aria-label={`Geography for ${c.countyName}`}>
-          <div><dt><DataLabel kind="area">Area</DataLabel></dt><dd>{isNum(c.landAreaSqMiles) ? `${c.landAreaSqMiles.toLocaleString()} sq mi` : NOT_REPORTED}</dd></div>
-          <div><dt><DataLabel kind="coordinates">Centroid</DataLabel></dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
-          <div className="cb-ref-wide"><dt><DataLabel kind="zip">ZIPs{zips.length ? ` (${zips.length})` : ''}</DataLabel></dt><dd>{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
-          <div className="cb-ref-wide">
-            <dt><DataLabel kind="places">{hasMappedPlaces ? `Places (${places.length})` : 'County seat reference'}</DataLabel></dt>
-            <dd className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>
-              {places.map(name => (
-                <button key={`${c.stateCode}-${c.countyName}-${name}`} type="button" className="cb-place county-profile-place-button" onClick={() => onSelectPlace(name)}>{name}</button>
-              ))}
-            </dd>
-          </div>
-        </dl>
+        <section className="cb-geo" aria-labelledby={`${titleId}-geo`}>
+          <h4 id={`${titleId}-geo`} className="cb-group-cap"><DataLabel kind="location">Geography and places</DataLabel></h4>
+          <dl className="cb-ref" aria-label={`Geography for ${c.countyName}`}>
+            <div><dt><DataLabel kind="area">Area</DataLabel></dt><dd>{isNum(c.landAreaSqMiles) ? <>{c.landAreaSqMiles.toLocaleString()}<small> sq mi</small></> : NOT_REPORTED}</dd></div>
+            <div><dt><DataLabel kind="coordinates">Centroid</DataLabel></dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
+            <div className="cb-ref-wide"><dt><DataLabel kind="zip">ZIPs</DataLabel>{zips.length > 0 && <span className="cb-count">{zips.length}</span>}</dt><dd className="cb-zip-run">{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
+            <div className="cb-ref-wide">
+              <dt><DataLabel kind="places">{hasMappedPlaces ? 'Places' : 'Seat ref.'}</DataLabel>{hasMappedPlaces && <span className="cb-count">{places.length}</span>}</dt>
+              <dd className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>
+                {places.map(name => (
+                  <button key={`${c.stateCode}-${c.countyName}-${name}`} type="button" className="cb-place county-profile-place-button" onClick={() => onSelectPlace(name)}>{name}</button>
+                ))}
+              </dd>
+            </div>
+          </dl>
+        </section>
 
         <CountyFigureSourceDetails
           countyFips={c.countyFips}

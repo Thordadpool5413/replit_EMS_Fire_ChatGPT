@@ -4996,7 +4996,7 @@ async function checkCountyPolish(cdp, viewport) {
   await waitFor(cdp, `Boolean(document.querySelector('.county-brief')) && Boolean(document.querySelector('.county-inspector-panel'))`, 'county cards',60000);
   await waitFor(cdp, `Boolean(document.querySelector('.ci-name'))`, 'county preview data',60000);
   const state = await evaluate(cdp, `(() => {
-    const r=e=>{const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
+    const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
     const preview=document.querySelector('.county-inspector-panel');
     const card=document.querySelector('.county-brief');
     return {preview:r(preview),card:r(card),parts:Object.fromEntries(
@@ -5009,6 +5009,46 @@ async function checkCountyPolish(cdp, viewport) {
   await evaluate(cdp, `document.querySelector('.county-brief').scrollIntoView({block:'start'})`);
   shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
   await writeFile(`/tmp/county-polish-${process.env.COUNTY_POLISH_TAG || 'after'}-${viewport.width}-cards.png`,Buffer.from(shot.result.data,'base64'));
+  if(process.env.COUNTY_BRIEF_ONLY === '1') {
+    const readability=await evaluate(cdp, `(() => {
+      const card=document.querySelector('.county-brief');
+      const expected={population:'184,943',averageTransportMinutes:'18.3',annualCardiacArrestIncidents:'318',
+        annualEmergencyTransports:'15,165',seniorPopPct:'24.3%',medianIncome:'73,943',povertyRatePct:'18.3%',primaryCathLabDistanceMiles:'16.1'};
+      const missing=Object.entries(expected).filter(([key,value])=>!card.querySelector('[data-figure-key="'+key+'"] dd')?.innerText.includes(value));
+      const overlap=[...card.querySelectorAll('[data-figure-key]')].filter(e=>{
+        const d=e.querySelector('dt')?.getBoundingClientRect(),v=e.querySelector('dd')?.getBoundingClientRect();
+        return d&&v&&d.bottom>v.top+1&&v.bottom>d.top+1&&d.right>v.left+1&&v.right>d.left+1;
+      }).map(e=>e.dataset.figureKey);
+      const clipped=[...document.querySelectorAll('.county-brief dt,.county-brief dd,.ci dt,.ci dd')].filter(e=>e.scrollWidth>e.clientWidth+2).map(e=>e.innerText);
+      const bounds=card.getBoundingClientRect();
+      const outside=[...card.querySelectorAll('.cb-body,.cb-body>*,[data-figure-key] dd')].filter(e=>{
+        const r=e.getBoundingClientRect();
+        return r.right>bounds.right+2||r.left<bounds.left-2;
+      }).map(e=>e.className||e.tagName);
+      return {missing,overlap,clipped,outside,
+        contextGrid:getComputedStyle(card.querySelector('.cb-group--context .cb-figs')).gridTemplateColumns,
+        containers:(()=>{const a=[];let e=card.querySelector('.cb-group--context .cb-figs');while(e){if(getComputedStyle(e).containerType!=='normal')a.push({class:e.className,width:e.clientWidth,type:getComputedStyle(e).containerType});e=e.parentElement;}return a})(),
+        rowStyle:[...card.querySelectorAll('.cb-group--context .cb-fig,.cb-group--context dt,.cb-sources')].slice(0,3).map(e=>({class:e.className,font:getComputedStyle(e).fontSize,line:getComputedStyle(e).lineHeight,padding:getComputedStyle(e).padding,margin:getComputedStyle(e).margin})),
+        places:card.querySelectorAll('.cb-place').length,
+        primaryTouch:card.querySelector('.cb-inspect').getBoundingClientRect().height};
+    })()`);
+    assert(!readability.missing.length, 'county facts lost: '+JSON.stringify(readability.missing));
+    assert(!readability.overlap.length, 'county labels overlap values: '+JSON.stringify(readability.overlap));
+    assert(!readability.clipped.length, 'county text clipped: '+JSON.stringify(readability.clipped));
+    assert(!readability.outside.length, 'county content outside card: '+JSON.stringify(readability.outside));
+    assert(readability.places===7,'county places lost');
+    if(viewport.mobile) assert(readability.primaryTouch>=44,'phone Inspect target below44px');
+    await evaluate(cdp, `(() => {
+      const p=[...document.querySelectorAll('path.cv-county-path')].find(p=>p.querySelector('title')?.textContent.startsWith('Madison County'));
+      if(p)p.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
+    })()`);
+    await waitFor(cdp, `document.querySelector('.ci-name')?.textContent.includes('Madison County')`, 'Madison county preview');
+    await evaluate(cdp, `document.querySelector('.county-inspector-panel').scrollIntoView({block:'start'})`);
+    shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile('/tmp/county-polish-'+viewport.width+'-madison.png',Buffer.from(shot.result.data,'base64'));
+    console.log(JSON.stringify({viewport,state,readability,madisonPreview:true}));
+    return;
+  }
   await evaluate(cdp, `document.querySelector('.county-brief .cb-inspect').click()`);
   await waitFor(cdp, `Boolean(document.querySelector('.cv-map-stage--county'))`, 'selected county');
   const selected=await evaluate(cdp, `(() => {

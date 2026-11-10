@@ -17,6 +17,12 @@ Current technology and equipment identification is a primary profile goal, not j
 
 **How to apply:** Prioritize available device and software information alongside the agency overview. Distinguish reported equipment from historical purchases or planned replacements, and do not imply a dated or unconfirmed reference proves current use.
 
+Include buy-back insights and knowledge alongside the prominent equipment information in agency profiles.
+
+**Why:** The user explicitly requested “include buy-back insights and knowledge.”
+
+**How to apply:** Distinguish cash buy-back from trade-in credit and general preparation guidance from agency-specific offers. Keep illustrative values clearly separate from documented quotes; never infer eligibility or guaranteed value from the equipment inventory alone.
+
 **Why:** The user said profile sheets looked repetitive and oversized, asked for essentials first with secondary material moved to the bottom, and approved the agency intelligence brief redesign for both EMS and fire profiles.
 
 **How to apply:** Keep one identity header, one operations summary, and one topic bar; derive findings from available records without invented thresholds or verification claims. Keep working-reference values visible until the user confirms or corrects them. Collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop. Carry the same hierarchy into paper-safe exports.

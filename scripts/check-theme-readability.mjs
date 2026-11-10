@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { gisGroupTimeout, planGisGroups } from './lib/theme-gis-groups.mjs';
 
 const baseUrl = process.env.THEME_TEST_URL ?? `http://127.0.0.1:${process.env.PORT ?? '24938'}/`;
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
@@ -128,11 +129,12 @@ async function reservePort() {
   return port;
 }
 
-async function waitForJson(url, timeoutMs = 15_000) {
+async function waitForJson(url, timeoutMs = 15_000, signal) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    signal?.throwIfAborted();
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
       if (response.ok) return await response.json();
     } catch {
       // Chromium is still starting.
@@ -146,10 +148,20 @@ function createCdpClient(webSocketUrl) {
   const socket = new WebSocket(webSocketUrl);
   let nextId = 0;
   const pending = new Map();
+  let closed = false;
+  const rejectPending = () => {
+    for (const { reject, timeout } of pending.values()) {
+      clearTimeout(timeout);
+      reject(new Error('Chromium connection closed'));
+    }
+    pending.clear();
+  };
   const opened = new Promise((resolve, reject) => {
     socket.addEventListener('open', resolve, { once: true });
     socket.addEventListener('error', reject, { once: true });
+    socket.addEventListener('close', () => reject(new Error('Chromium closed before connecting')), { once: true });
   });
+  socket.addEventListener('close', rejectPending);
 
   socket.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data);
@@ -166,17 +178,30 @@ function createCdpClient(webSocketUrl) {
       await opened;
     },
     send(method, params = {}) {
+      if (closed || socket.readyState !== WebSocket.OPEN) {
+        return Promise.reject(new Error('Chromium connection is not open'));
+      }
       const id = ++nextId;
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           pending.delete(id);
-          reject(new Error(`Timed out waiting for Chromium command: ${method}`));
+          const error = new Error(`Timed out waiting for Chromium command: ${method}; check incomplete, not a visual assertion failure`);
+          error.code = 'HARNESS_INCOMPLETE';
+          reject(error);
         }, 30_000);
         pending.set(id, { resolve, reject, timeout, method });
-        socket.send(JSON.stringify({ id, method, params }));
+        try {
+          socket.send(JSON.stringify({ id, method, params }));
+        } catch (error) {
+          clearTimeout(timeout);
+          pending.delete(id);
+          reject(error);
+        }
       });
     },
     close() {
+      closed = true;
+      rejectPending();
       socket.close();
     },
   };
@@ -1991,14 +2016,14 @@ async function checkQuotaWarning(cdp, dark) {
   console.log(`  ${themeLabel(dark)} Maps quota alert: one actionable warning with readable linked next step`);
 }
 
-async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
+async function checkGisLegendAndRiskColors(cdp, dark, viewport, layers = gisLayers) {
   await openGisHeatmap(cdp);
   await setTheme(cdp, dark);
   await clickButtonAndScroll(cdp, 'Station Vectors');
   await waitFor(cdp, `Boolean(document.querySelector('svg g.cursor-pointer.group[transform^="translate("] circle.transition-transform'))`, 'GIS station vector markers');
 
   const basemapButton = 'button[title="Switch between Tactical Dark and Daylight Survey cartography"]';
-  for (const layer of gisLayers) {
+  for (const layer of layers) {
     await clickButtonAndScroll(cdp, layer.button);
     const displayMode = await evaluate(
       cdp,
@@ -2015,6 +2040,7 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
     await evaluate(cdp, `document.querySelector('[data-testid="gis-layer-legend"]')?.scrollIntoView({ behavior: 'instant', block: 'start' })`);
 
     for (const basemap of ['Dark', 'Daylight']) {
+      console.log(`  CHECK ${themeModeName(dark)} ${viewport.width}px ${layer.name} legend / ${basemap} basemap`);
       const currentBasemap = await evaluate(cdp, `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim()`);
       if (currentBasemap !== basemap) {
         const clicked = await evaluate(cdp, `(() => {
@@ -2116,7 +2142,7 @@ async function checkGisLegendAndRiskColors(cdp, dark, viewport) {
   }
 }
 
-async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
+async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport, layers = gisRiskLayers, modes = ['kde', 'hexbin', 'choropleth']) {
   await openGisHeatmap(cdp);
   await setTheme(cdp, dark);
   const basemapButton = 'button[title="Switch between Tactical Dark and Daylight Survey cartography"]';
@@ -2126,9 +2152,9 @@ async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
     { name: 'Choropleth', mode: 'choropleth' },
   ];
 
-  for (const layer of gisRiskLayers) {
+  for (const layer of layers) {
     await clickTestIdAndScroll(cdp, `gis-risk-layer-${layer.id}`);
-    for (const view of views) {
+    for (const view of views.filter((view) => modes.includes(view.mode))) {
       await clickTestIdAndScroll(cdp, `gis-map-mode-${view.mode}`);
       await waitFor(
         cdp,
@@ -2142,6 +2168,7 @@ async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
       }
 
       for (const basemap of ['Dark', 'Daylight']) {
+        console.log(`  CHECK ${themeModeName(dark)} ${viewport.width}px ${layer.name} ${view.mode} / ${basemap} basemap`);
         const currentBasemap = await evaluate(cdp, `document.querySelector(${JSON.stringify(basemapButton)})?.innerText.trim()`);
         if (currentBasemap !== basemap) {
           const clicked = await evaluate(cdp, `(() => {
@@ -2301,7 +2328,7 @@ async function checkGisHeatAndChoroplethRiskColors(cdp, dark, viewport) {
   }
 }
 
-async function runViewport(cdp, viewport) {
+async function runViewport(cdp, viewport, gisGroup) {
   console.log(`Checking ${viewport.width}×${viewport.height}...`);
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: viewport.width,
@@ -2315,6 +2342,16 @@ async function runViewport(cdp, viewport) {
     `Boolean(document.querySelector('.home-map-state-path'))`,
     `Home map at ${viewport.width}px`,
   );
+  if (gisGroup) {
+    if (gisGroup.check === 'legend') {
+      await checkGisLegendAndRiskColors(cdp, gisGroup.theme, viewport,
+        gisLayers.filter((layer) => layer.name.toLowerCase() === gisGroup.layer));
+    } else {
+      await checkGisHeatAndChoroplethRiskColors(cdp, gisGroup.theme, viewport,
+        gisRiskLayers.filter((layer) => layer.name.toLowerCase() === gisGroup.layer), [gisGroup.check]);
+    }
+    return;
+  }
   if (process.env.THEME_STARTUP_ONLY === '1') {
     await checkThemeModeSelection(cdp, viewport);
     console.log(`PASS ${viewport.width}×${viewport.height}: theme selection remains available, new sessions always start in Daylight`);
@@ -2325,20 +2362,6 @@ async function runViewport(cdp, viewport) {
     await checkHome(cdp, true);
     await checkHome(cdp, 'miami-vice');
     console.log(`PASS ${viewport.width}×${viewport.height}: active navigation, focus ring, and horizontal overflow in all themes`);
-    return;
-  }
-  if (process.env.THEME_GIS_ONLY === '1') {
-    await checkGisLegendAndRiskColors(cdp, false, viewport);
-    await checkGisLegendAndRiskColors(cdp, true, viewport);
-    await checkGisHeatAndChoroplethRiskColors(cdp, false, viewport);
-    await checkGisHeatAndChoroplethRiskColors(cdp, true, viewport);
-    console.log(`PASS ${viewport.width}×${viewport.height}: GIS palettes, heat/hex/choropleth risk, basemaps, and light/dark themes`);
-    return;
-  }
-  if (process.env.THEME_GIS_RISK_ONLY === '1') {
-    await checkGisHeatAndChoroplethRiskColors(cdp, false, viewport);
-    await checkGisHeatAndChoroplethRiskColors(cdp, true, viewport);
-    console.log(`PASS ${viewport.width}×${viewport.height}: GIS heat, hexbin, and choropleth risk colors`);
     return;
   }
   if (process.env.THEME_SELECTION_ONLY === '1') {
@@ -2422,7 +2445,7 @@ async function runViewport(cdp, viewport) {
   console.log(`PASS ${viewport.width}×${viewport.height}: Home, Territory, Agencies, Field Work, profile, comparison, charts, and GIS in all themes`);
 }
 
-async function main() {
+async function withBrowser(run, timeoutMs) {
   const debuggingPort = await reservePort();
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'ems-theme-readability-'));
   const chromium = spawn(chromiumPath, [
@@ -2437,22 +2460,44 @@ async function main() {
     'about:blank',
   ], { detached: true, stdio: 'ignore' });
   let cdp;
+  const controller = new AbortController();
+  const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));
+  const abort = (message) => {
+    const error = new Error(message);
+    error.code = 'HARNESS_INCOMPLETE';
+    controller.abort(error);
+  };
+  const onSigterm = () => abort('Interrupted by SIGTERM; remaining checks were not run.');
+  const onSigint = () => abort('Interrupted by SIGINT; remaining checks were not run.');
+  process.once('SIGTERM', onSigterm);
+  process.once('SIGINT', onSigint);
+  let timer;
+  const interrupted = new Promise((_, reject) => {
+    controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
+    chromium.once('error', reject);
+    if (timeoutMs) {
+      timer = setTimeout(() => abort(`GIS group exceeded ${timeoutMs}ms; this is an incomplete check, not a visual assertion failure.`), timeoutMs);
+    }
+  });
   try {
-    const target = await waitForJson(`http://127.0.0.1:${debuggingPort}/json/version`);
-    const targets = await fetch(`http://127.0.0.1:${debuggingPort}/json/list`).then((result) => result.json());
-    const page = targets.find((candidate) => candidate.type === 'page');
-    assert(page, 'Chromium did not create a page target');
-    cdp = createCdpClient(page.webSocketDebuggerUrl ?? target.webSocketDebuggerUrl);
-    await cdp.connect();
-    await cdp.send('Page.enable');
-    await cdp.send('Runtime.enable');
-    for (const viewport of viewports) await runViewport(cdp, viewport);
-    console.log('Theme readability checks passed at phone, tablet, compact-laptop, and laptop sizes.');
+    await Promise.race([interrupted, (async () => {
+      const target = await waitForJson(`http://127.0.0.1:${debuggingPort}/json/version`, 15_000, controller.signal);
+      const targets = await waitForJson(`http://127.0.0.1:${debuggingPort}/json/list`, 15_000, controller.signal);
+      controller.signal.throwIfAborted();
+      const page = targets.find((candidate) => candidate.type === 'page');
+      assert(page, 'Chromium did not create a page target');
+      cdp = createCdpClient(page.webSocketDebuggerUrl ?? target.webSocketDebuggerUrl);
+      await cdp.connect();
+      await cdp.send('Page.enable');
+      await cdp.send('Runtime.enable');
+      await run(cdp);
+    })()]);
   } finally {
+    clearTimeout(timer);
+    controller.abort(new Error('Browser session finished'));
     cdp?.close();
-    const chromiumClosed = new Promise((resolve) => chromium.once('close', resolve));
     try {
-      process.kill(-chromium.pid, 'SIGTERM');
+      if (chromium.pid) process.kill(-chromium.pid, 'SIGTERM');
     } catch {
       // Chromium may already have exited.
     }
@@ -2461,7 +2506,7 @@ async function main() {
       new Promise((resolve) => setTimeout(resolve, 1_500)),
     ]);
     try {
-      process.kill(-chromium.pid, 'SIGKILL');
+      if (chromium.pid) process.kill(-chromium.pid, 'SIGKILL');
     } catch {
       // Chromium may already have exited.
     }
@@ -2469,11 +2514,58 @@ async function main() {
       chromiumClosed,
       new Promise((resolve) => setTimeout(resolve, 500)),
     ]);
-    await rm(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    try {
+      await rm(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    } finally {
+      process.removeListener('SIGTERM', onSigterm);
+      process.removeListener('SIGINT', onSigint);
+    }
   }
 }
 
+async function main() {
+  assert(process.env.THEME_TEST_WIDTH === undefined || Number.isInteger(requestedWidth) && requestedWidth > 0,
+    `Invalid THEME_TEST_WIDTH: ${process.env.THEME_TEST_WIDTH}`);
+  assert(viewports.length > 0, `Unsupported THEME_TEST_WIDTH: ${process.env.THEME_TEST_WIDTH}`);
+  const gisOnly = process.env.THEME_GIS_ONLY === '1' || process.env.THEME_GIS_RISK_ONLY === '1';
+  const listGroups = process.argv.includes('--list-gis-groups');
+  const hasGisFilters = ['THEME_GIS_THEMES', 'THEME_GIS_LAYERS', 'THEME_GIS_CHECKS', 'THEME_GIS_GROUP_TIMEOUT_MS']
+    .some((name) => process.env[name] !== undefined);
+  assert(gisOnly || listGroups || !hasGisFilters, 'GIS filters require THEME_GIS_ONLY=1 or THEME_GIS_RISK_ONLY=1');
+  if (gisOnly || listGroups) {
+    const groups = planGisGroups();
+    const timeoutMs = gisGroupTimeout();
+    const jobs = viewports.flatMap((viewport) => groups.map((group) => ({ viewport, group })));
+    console.log(`GIS plan: ${jobs.length} groups; both basemaps per group; ${timeoutMs}ms budget per fresh browser.`);
+    if (listGroups) {
+      for (const { viewport, group } of jobs) console.log(`${viewport.width}px ${group.id}`);
+      return;
+    }
+    let completed = 0;
+    for (const { viewport, group } of jobs) {
+      const label = `${viewport.width}px ${group.id}`;
+      const started = Date.now();
+      console.log(`START [${completed + 1}/${jobs.length}] ${label}`);
+      try {
+        await withBrowser((cdp) => runViewport(cdp, viewport, group), timeoutMs);
+      } catch (error) {
+        console.error(`${error.code === 'HARNESS_INCOMPLETE' ? 'INCOMPLETE' : 'FAIL'} ${label}; ${completed}/${jobs.length} groups passed.`);
+        console.error(`Rerun: THEME_GIS_ONLY=1 THEME_TEST_WIDTH=${viewport.width} THEME_GIS_THEMES=${group.theme} THEME_GIS_LAYERS=${group.layer} THEME_GIS_CHECKS=${group.check} node scripts/check-theme-readability.mjs`);
+        throw error;
+      }
+      completed++;
+      console.log(`PASS [${completed}/${jobs.length}] ${label} (${((Date.now() - started) / 1000).toFixed(1)}s; browser cleaned up)`);
+    }
+    console.log(`PASS GIS: all ${completed} selected groups completed at ${viewports.map(({ width }) => width).join(', ')}px.`);
+    return;
+  }
+  await withBrowser(async (cdp) => {
+    for (const viewport of viewports) await runViewport(cdp, viewport);
+  });
+  console.log(`Theme readability checks passed at selected widths: ${viewports.map(({ width }) => width).join(', ')}px.`);
+}
+
 main().catch((error) => {
-  console.error(`Theme readability check failed: ${error.stack ?? error.message}`);
-  process.exitCode = 1;
+  console.error(`Theme readability check ${error.code === 'HARNESS_INCOMPLETE' ? 'incomplete' : 'failed'}: ${error.stack ?? error.message}`);
+  process.exitCode = error.code === 'HARNESS_INCOMPLETE' ? 2 : 1;
 });

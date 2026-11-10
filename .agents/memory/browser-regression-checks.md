@@ -65,7 +65,7 @@ The full theme-readability run is expensive because it sweeps charts and multipl
 
 **Why:** Repeated full runs at laptop and phone widths reached the GIS layer sweep before hitting the DevTools command timeout; the focused selection checks remained reliable.
 
-**How to apply:** Run one viewport at a time. Diagnose with the selection-only or specialty-only mode first, and distinguish a late harness timeout from a specific visual assertion failure.
+**How to apply:** Run one viewport at a time. For GIS, select individual theme/layer/check groups with fresh browser sessions rather than repeating the full sweep under a five-minute shell limit. Run a combined matrix in the background if needed. Distinguish incomplete harness timeouts from specific visual assertion failures; a partial pass is not a complete sweep.
 
 For Letter-print regressions, capture PDFs with Chromium's DevTools print command and verify page size, text, and non-empty pagination. `pdftotext -layout` may interleave text from adjacent table columns, so check print-layout geometry and meaningful content tokens instead of requiring every multi-column cell to extract as one exact phrase.
 

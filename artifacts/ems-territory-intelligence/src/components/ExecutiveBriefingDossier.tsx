@@ -814,7 +814,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
         </div>
 
         {/* Printable Document Root (Captured by html2canvas and styled for @media print) */}
-        <div ref={documentRef} className="p-6 sm:p-10 text-slate-900 bg-white print-dossier-document font-sans">
+        <div ref={documentRef} className="dossier-brief p-6 sm:p-10 text-slate-900 bg-white print-dossier-document font-sans">
           
           {/* ================= PAGE 1: EXECUTIVE OVERVIEW, LEADERSHIP, FLEET & OPERATIONAL LOGISTICS ================= */}
           <section

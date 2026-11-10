@@ -79,6 +79,7 @@ import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
 import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
+import { AgencyIntelligenceBrief } from './profile/AgencyIntelligenceBrief';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
@@ -242,8 +243,8 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     existingContacts.length > 0
       ? existingContacts.map((c) => ({
           ...c,
-          email: '',
-          phone: '',
+          email: c.email || '',
+          phone: c.phone || '',
           officialWebsite: c.officialWebsite || '',
           headquartersAddress: c.headquartersAddress || raw.address,
           isVerifiedOfficial: Boolean(
@@ -252,7 +253,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
             hasAgencyFactEvidence(raw, 'decisionMakers')
           ),
           verificationSource: c.verificationSource || 'Source not listed',
-          notes: 'Contact details are not listed in the current record.'
+          notes: c.notes || ''
         }))
       : [];
 
@@ -300,7 +301,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
     nppesRegistryUrl,
     officialWebsite,
     googleMapsUri,
-    headquartersPhone: hasAgencyFactEvidence(raw, 'decisionMakers') ? raw.headquartersPhone || '' : '',
+    headquartersPhone: raw.headquartersPhone || '',
     apparatusFleet,
     hospitalLogistics,
     femaGrantHistory,
@@ -1153,7 +1154,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </div>
 
         {/* Main Account 360 Workspace Content */}
-        <div className="mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="profile-brief-layout mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           {/* ================================================================
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ================================================================ */}
@@ -1702,148 +1703,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             )}
           </section>
 
-          <section
-            className="pi-surface space-y-3 rounded-xl border border-[#DFE6EF] bg-white p-3 shadow-sm dark:border-[#1E2D42] dark:bg-[#111C2D] sm:p-4"
-            data-testid="agency-operational-baseline"
-            aria-labelledby="agency-operational-baseline-title"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#E5E4DF] pb-2.5 dark:border-slate-700">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#285EE8] dark:text-blue-300">
-                  <Activity className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  <span>Agency facts &amp; operational baseline</span>
-                </div>
-                <h2 id="agency-operational-baseline-title" className="mt-0.5 text-sm font-bold text-[#14283F] dark:text-white">
-                  Hardware, operations &amp; contracts
-                </h2>
-                <p className="mt-0.5 text-[11px] leading-snug text-[#53657B] dark:text-slate-400">
-                  Source details, periods and scope appear where mapped. Confirm figures with the cited source; address and license sources do not verify operational metrics.
-                </p>
-              </div>
-              <span className="shrink-0 rounded-md border border-[#DFE6EF] bg-[#F5F7FA] px-2 py-1 text-[10px] font-semibold text-[#53657B] dark:border-[#33445A] dark:bg-[#16243A] dark:text-slate-300">
-                Source status when mapped
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
-              <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#16243A]">
-                <h3 className="text-xs font-semibold text-[#14283F] dark:text-white">Fleet &amp; hardware</h3>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  <FactVerificationTag agency={agency} field="defibrillatorBiomedicalFleet" />
-                  <FactVerificationTag agency={agency} field="verifiedHardware" />
-                  <FactVerificationTag agency={agency} field="epcrSystem" />
-                  <FactVerificationTag agency={agency} field="maintenanceContracts" />
-                </div>
-                <dl className="mt-2 divide-y divide-slate-200/80 text-xs dark:divide-slate-700">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Monitor brand</dt>
-                    <dd className="min-w-0 break-words text-right font-semibold text-[#14283F] dark:text-white">{agency.installedFleet.defibBrand || 'Not reported'}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Deployed fleet age</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.installedFleet.defibAgeYears, ' years')}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Defibrillator units</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.installedFleet.defibUnitsCount, ' units')}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Warranty support</dt>
-                    <dd className={hasAgencyFactEvidence(agency, 'maintenanceContracts') && agency.installedFleet.defibWarrantyStatus.includes('Expired') ? 'text-right font-semibold text-rose-700 dark:text-rose-400' : 'text-right font-semibold text-[#14283F] dark:text-white'}>
-                      {agency.installedFleet.defibWarrantyStatus || 'Not reported'}
-                    </dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">ePCR system</dt>
-                    <dd className="min-w-0 max-w-[12rem] break-words text-right font-semibold text-[#14283F] dark:text-white">{agency.installedFleet.epcrCadSoftware || 'Not reported'}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section
-                className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#16243A]"
-                data-testid="baseline-operational-metrics"
-              >
-                <h3 className="text-xs font-semibold text-[#14283F] dark:text-white">Operational volume &amp; acuity</h3>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  <FactVerificationTag agency={agency} field="stationCount" />
-                  <FactVerificationTag agency={agency} field="frontlineApparatusStations" />
-                  <FactVerificationTag agency={agency} field="annualCallsReceived" />
-                  <FactVerificationTag agency={agency} field="annualEmergencyVolume" />
-                  <FactVerificationTag agency={agency} field="clinicalOutcomes" />
-                </div>
-                <dl className="mt-2 divide-y divide-slate-200/80 text-xs dark:divide-slate-700">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5" data-testid="baseline-stations">
-                    <dt className="text-[#53657B] dark:text-slate-400">Stations</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">
-                      {hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                        ? reportMetric(agency.stationsCount, ' stations')
-                        : 'Not reported'}
-                    </dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Active ambulances</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">
-                      {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.totalAmbulances, ' units') : 'Not reported'}
-                    </dd>
-                  </div>
-                  {isFireAgency && (
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5" data-testid="baseline-fire-engines">
-                      <dt className="text-[#53657B] dark:text-slate-400">Fire suppression engines</dt>
-                      <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">
-                        {hasAgencyFactEvidence(agency, 'frontlineApparatusStations') ? reportMetric(agency.totalFireEngines, ' units') : 'Not reported'}
-                      </dd>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5" data-testid="baseline-annual-calls">
-                    <dt className="text-[#53657B] dark:text-slate-400">{isFireAgency ? 'Reported fire-rescue calls' : 'Reported EMS calls'}</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.annualCallVolume, ' calls')}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">EMS transports</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.annual911Transports)}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Cardiac-arrest responses</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.annualCardiacArrestCalls, ' runs')}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Utstein survival rate</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{reportMetric(agency.utsteinSurvivalRate, '%')}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section className="min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#16243A]">
-                <h3 className="text-xs font-semibold text-[#14283F] dark:text-white">Contracts &amp; funding</h3>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  <FactVerificationTag agency={agency} field="maintenanceContracts" />
-                  <FactVerificationTag agency={agency} field="cmsClaims" />
-                  <FactVerificationTag agency={agency} field="federalGrant" />
-                </div>
-                <dl className="mt-2 divide-y divide-slate-200/80 text-xs dark:divide-slate-700">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Contract end date</dt>
-                    <dd className="text-right font-semibold tabular-nums text-[#14283F] dark:text-white">{agency.competitorContract.contractEndDate || 'Not reported'}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Contract status</dt>
-                    <dd className="text-right font-semibold text-[#14283F] dark:text-white">{agency.competitorContract.status || 'Not reported'}</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">Lost claim revenue</dt>
-                    <dd className="max-w-[12rem] text-right text-[#53657B] dark:text-slate-400">Not reported with a reproducible method</dd>
-                  </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 py-1.5">
-                    <dt className="text-[#53657B] dark:text-slate-400">FEMA AFG grants</dt>
-                    <dd className="max-w-[12rem] break-words text-right font-semibold text-[#14283F] dark:text-white">
-                      {agency.grantStatus.afgAwarded ? `${reportCurrency(agency.grantStatus.afgAwardAmount)} (FY${reportMetric(agency.grantStatus.afgFiscalYear)})` : 'No award indicated in this record'}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
-            </div>
-          </section>
+          <AgencyIntelligenceBrief
+            agency={agency}
+            renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />}
+            onOpenSources={() => setIsSourceDrawerOpen(true)}
+          />
 
           {/* ================================================================
               7-TOPIC ACCOUNT 360 NAVIGATION (SECTION 9)

@@ -1,0 +1,115 @@
+/* Agency intelligence brief + profile topic restyle (profile scope only).
+   Uses shared --pi-* theme tokens so every theme stays coherent. */
+
+/* ---------- Operational baseline brief ---------- */
+.aib { min-width: 0; padding: 1rem 1rem 1.1rem; border-radius: 12px; }
+@media (min-width: 640px) { .aib { padding: 1.1rem 1.35rem 1.3rem; } }
+.aib-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .5rem 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--pi-border); }
+.aib-eyebrow { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 650; letter-spacing: .03em; color: var(--pi-action-ink); }
+.aib-title { margin-top: .25rem; font-size: 1.125rem; font-weight: 650; line-height: 1.3; color: var(--pi-text-primary); }
+.aib-note { margin-top: .3rem; max-width: 80ch; font-size: .8125rem; line-height: 1.45; color: var(--pi-text-muted); }
+.aib-icon { width: 1.0625rem; height: 1.0625rem; flex-shrink: 0; color: var(--pi-action-ink); stroke-width: 1.8; }
+.aib-link { display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; padding: 0 .65rem; border-radius: 8px; border: 1px solid var(--pi-border); font-size: .76rem; font-weight: 600; color: var(--pi-action); background: transparent; transition: background-color .15s ease, border-color .15s ease; }
+.aib-link:hover { background: var(--pi-action-subtle); border-color: var(--pi-action); }
+@media (min-width: 768px) { .aib-link { min-height: 36px; } }
+.aib-link:focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; }
+
+.aib-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1rem; margin-top: .9rem; min-width: 0; }
+@media (min-width: 1100px) { .aib-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 8fr); gap: 2rem; } }
+.aib-block { min-width: 0; }
+.aib-label { display: flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 650; color: var(--pi-text-primary); padding-bottom: .45rem; border-bottom: 1px solid var(--pi-border); }
+.aib-tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .4rem; }
+.aib-tags:empty { display: none; }
+
+.aib-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.25rem; margin-top: .15rem; }
+.aib-figure { display: flex; flex-direction: column; gap: .25rem; padding: .6rem 0; min-width: 0; }
+.aib-figure dt { display: flex; align-items: center; gap: .4rem; font-size: .8125rem; line-height: 1.4; color: var(--pi-text-secondary); min-width: 0; }
+.aib-figure dd { display: flex; align-items: baseline; flex-wrap: wrap; gap: .1rem .35rem; padding-left: 1.3rem; min-width: 0; }
+.aib-num { font-family: var(--pi-font-data); font-variant-numeric: tabular-nums; font-size: 1.375rem; font-weight: 650; line-height: 1.2; letter-spacing: -.02em; color: var(--pi-text-primary); }
+.aib-figure dd.is-missing .aib-num { font-size: .78rem; font-weight: 500; color: var(--pi-text-muted); }
+.aib-unit { font-size: .75rem; color: var(--pi-text-muted); }
+
+.aib-findings { list-style: none; margin: 0; padding: 0; }
+.aib-findings-cols { display: none; }
+.aib-finding { display: grid; gap: .2rem; padding: .6rem .45rem; margin: 0 -.45rem; border-bottom: 1px solid var(--pi-border); border-radius: 6px; transition: background-color .15s ease; }
+.aib-finding:hover { background: var(--pi-surface-subtle); }
+.aib-finding p { min-width: 0; overflow-wrap: anywhere; font-size: .8125rem; line-height: 1.5; }
+.aib-f { display: flex; gap: .45rem; font-weight: 600; color: var(--pi-text-primary); }
+.aib-f .aib-icon { margin-top: .16rem; }
+.aib-b, .aib-n { color: var(--pi-text-secondary); padding-left: 1.35rem; }
+.aib-tag { display: inline-block; min-width: 2.7rem; margin-right: .35rem; font-size: .75rem; font-weight: 650; color: var(--pi-text-secondary); }
+@media (min-width: 900px) {
+  .aib-findings-cols { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 1rem; font-size: .75rem; font-weight: 650; color: var(--pi-text-secondary); padding: .45rem 0 .2rem; }
+  .aib-finding { grid-template-columns: 1.15fr 1fr 1fr; gap: 1rem; }
+  .aib-b, .aib-n { padding-left: 0; }
+  .aib-tag { display: none; }
+}
+.aib-empty { font-size: .76rem; color: var(--pi-text-muted); padding: .55rem 0; }
+
+.aib-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+@media (min-width: 640px) { .aib-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; } }
+.aib-rows { margin-top: .15rem; }
+.aib-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; align-items: baseline; padding: .45rem 0; border-bottom: 1px solid var(--pi-border); font-size: .8125rem; }
+.aib-row dt { color: var(--pi-text-muted); }
+.aib-row dd { text-align: right; font-weight: 600; color: var(--pi-text-primary); overflow-wrap: anywhere; max-width: 16rem; font-variant-numeric: tabular-nums; }
+.aib-row dd.is-muted { font-weight: 500; color: var(--pi-text-muted); }
+.aib-row dd.is-alert { color: var(--pi-critical-text); }
+
+/* ---------- Unboxed identity summary ---------- */
+.profile-executive-header .profile-summary-panel { background: transparent !important; border-width: 0 0 0 2px !important; border-color: var(--pi-border) !important; border-radius: 0 !important; padding: .1rem 0 .1rem .75rem !important; transition: border-color .15s ease; }
+.profile-executive-header .profile-summary-panel:hover { border-color: var(--pi-action) !important; }
+.profile-executive-header .profile-summary-panel h2 { font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pi-text-secondary); }
+
+/* ---------- Topic content: people, purchasing, operations, sources ---------- */
+.profile-brief-layout > section.pi-surface { border-radius: 12px; box-shadow: none; }
+.profile-brief-layout > section.pi-surface > div:first-child > div > h2,
+.profile-brief-layout > section.pi-surface h2.pi-section-heading,
+.profile-brief-layout > div section.pi-surface > div:first-child h2 {
+  font-size: .98rem !important; font-weight: 650 !important; letter-spacing: 0; color: var(--pi-text-primary) !important;
+}
+.profile-brief-layout section.pi-surface h2 svg { color: var(--pi-action) !important; width: 1rem; height: 1rem; }
+.profile-brief-layout section.pi-surface h3 { color: var(--pi-text-primary); }
+/* Neutral nested cards become quiet bordered groups (colored callouts keep their meaning). */
+.profile-brief-layout section.pi-surface .bg-white,
+.profile-brief-layout section.pi-surface .bg-\[\#F8FAFC\],
+.profile-brief-layout section.pi-surface .bg-\[\#F5F7FA\],
+.profile-brief-layout section.pi-surface .bg-slate-50 {
+  background-color: transparent;
+}
+.profile-brief-layout section.pi-surface .shadow-sm,
+.profile-brief-layout section.pi-surface .shadow-2xs,
+.profile-brief-layout section.pi-surface .shadow { box-shadow: none; }
+.profile-brief-layout section.pi-surface .border-\[\#DFE6EF\],
+.profile-brief-layout section.pi-surface .border-slate-200 { border-color: var(--pi-border); }
+.profile-brief-layout section.pi-surface .tabular-nums { font-family: var(--pi-font-data); }
+.profile-brief-layout section.pi-surface a:not([class*="bg-"]) { transition: color .15s ease; }
+.profile-brief-layout section.pi-surface :is(button, a, select, summary):focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; }
+.profile-brief-layout [data-testid="profile-topic-navigation"] button:focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aib-finding, .aib-link, .profile-executive-header .profile-summary-panel,
+  .profile-brief-layout section.pi-surface a { transition: none !important; }
+}
+@media print {
+  .aib { padding: 0; border: 0; box-shadow: none; break-inside: avoid; }
+  .aib-grid { grid-template-columns: 1fr 1.5fr; gap: 1rem; }
+  .aib-finding:hover { background: transparent; }
+  .aib-icon, .aib-eyebrow { color: #1e3a8a; }
+  .aib-num, .aib-f, .aib-title, .aib-row dd { color: #0f172a; }
+  .aib-note, .aib-b, .aib-n, .aib-unit, .aib-figure dt, .aib-row dt, .aib-label { color: #334155; }
+  .aib-link { display: none; }
+}
+
+/* ---------- Executive briefing dossier (paper-safe hex values only; html2canvas rejects oklch) ---------- */
+.dossier-brief { font-feature-settings: "tnum" 1; }
+.dossier-brief h1 { letter-spacing: -.01em; color: #0f172a; }
+.dossier-brief h2 { color: #0f172a; }
+.dossier-brief h3 { font-size: 1rem; font-weight: 650; color: #0f172a; padding-bottom: .35rem; border-bottom: 1px solid #cbd5e1; }
+.dossier-brief .print-summary { border-left-width: 3px; border-left-color: #1e3a8a; background-color: #f8fafc; border-radius: 6px; }
+.dossier-brief .print-summary h2 { font-size: .68rem; letter-spacing: .1em; color: #1e3a8a; }
+.dossier-brief .print-summary-value { font-variant-numeric: tabular-nums; }
+.dossier-brief table { font-variant-numeric: tabular-nums; }
+.dossier-brief th { font-size: .66rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #334155; background-color: #f1f5f9; }
+.dossier-brief td { color: #1e293b; }
+.dossier-brief tbody tr { border-color: #e2e8f0; }
+.dossier-brief .print-source-url { color: #1d4ed8; }

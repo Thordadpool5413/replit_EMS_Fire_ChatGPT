@@ -9,11 +9,11 @@ Keep the entire app compact, clean, and scannable on laptop and phone. Reduce ov
 
 **How to apply:** Tune shared shell and component density consistently across workspaces; check laptop and phone layouts, maintain readable type and tap targets, and keep all secondary information accessible rather than deleting it. Do not seed simulated alert feeds or show repeated network-state toasts; keep genuine errors, sync/offline consequences, and data-source or estimate disclosures.
 
-For EMS and Fire profiles, keep the executive header as the single summary of agency type, location, core operations, and source access. Start detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain the full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
+For EMS and Fire profiles, use an agency intelligence brief: one identity/contact header, one agency-specific operational snapshot, and findings paired with their basis and a suggested next step. Distinguish EMS, fire, and combined operations without duplicate summaries. Use recognizable unboxed icons, aligned numbers and units, restrained colors, and shared theme tokens. Start supporting detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
 
-**Why:** The user said profile sheets looked repetitive and oversized, and asked for essentials first with secondary material moved to the bottom.
+**Why:** The user said profile sheets looked repetitive and oversized, asked for essentials first with secondary material moved to the bottom, and approved the agency intelligence brief redesign for both EMS and fire profiles.
 
-**How to apply:** Keep one identity header, one operations summary, and one topic bar; collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop.
+**How to apply:** Keep one identity header, one operations summary, and one topic bar; derive findings from available records without invented thresholds or verification claims. Keep working-reference values visible until the user confirms or corrects them. Collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop. Carry the same hierarchy into paper-safe exports.
 
 The sidebar needs even layout, not merely enough space to fit. Keep navigation and utility rows aligned in width, height, icon position, and text baseline, with deliberate spacing between groups.
 

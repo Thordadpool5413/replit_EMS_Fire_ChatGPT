@@ -10,6 +10,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { Award, ChevronRight, ExternalLink, Filter, RefreshCw, ShieldCheck } from 'lucide-react';
 import { formatCurrency, formatInteger, formatScore } from '../utils/numberFormatting';
+import { DataLabel } from './DataLabel';
 
 interface LiveOpenFemaRecord {
   id: string;
@@ -169,7 +170,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           </div>
 
           <div className="pl-4 sm:border-l border-slate-200 dark:border-slate-800 text-left sm:text-right shrink-0">
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Modeled territory AFG liquidity</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="funding">Modeled territory AFG liquidity</DataLabel></div>
             <div className="pi-metric-hero font-[650] text-emerald-700 dark:text-emerald-400 mt-0.5 leading-none">
               {formatCurrency(totalAwarded)}
             </div>
@@ -256,13 +257,13 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800 text-xs">
-                <th className="py-2.5 px-4">Federal award number</th>
-                <th className="py-2.5 px-3">Recipient grantee</th>
-                <th className="py-2.5 px-3">Jurisdiction</th>
-                <th className="py-2.5 px-3">Program category</th>
-                <th className="py-2.5 px-3 text-right">Award amount</th>
-                <th className="py-2.5 px-3">Reporting period / award date</th>
-                <th className="py-2.5 px-4 text-right">Source</th>
+                <th className="py-2.5 px-4"><DataLabel kind="funding">Federal award number</DataLabel></th>
+                <th className="py-2.5 px-3"><DataLabel kind="funding">Recipient grantee</DataLabel></th>
+                <th className="py-2.5 px-3"><DataLabel kind="location">Jurisdiction</DataLabel></th>
+                <th className="py-2.5 px-3"><DataLabel kind="funding">Program category</DataLabel></th>
+                <th className="py-2.5 px-3 text-right"><DataLabel kind="funding">Award amount</DataLabel></th>
+                <th className="py-2.5 px-3"><DataLabel kind="funding">Reporting period / award date</DataLabel></th>
+                <th className="py-2.5 px-4 text-right"><DataLabel kind="source">Source</DataLabel></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -342,12 +343,12 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800 text-xs">
-                <th className="py-3 px-4">Agency &amp; jurisdiction</th>
-                <th className="py-3 px-3 text-right">Award liquidity</th>
-                <th className="py-3 px-4 hidden xl:table-cell">Program purpose</th>
-                <th className="py-3 px-3 hidden md:table-cell">Target ZOLL solution</th>
-                <th className="py-3 px-3 hidden sm:table-cell">Fiscal year close</th>
-                <th className="py-3 px-3 text-right">Priority score</th>
+                <th className="py-3 px-4"><DataLabel kind="agency">Agency &amp; jurisdiction</DataLabel></th>
+                <th className="py-3 px-3 text-right"><DataLabel kind="funding">Award liquidity</DataLabel></th>
+                <th className="py-3 px-4 hidden xl:table-cell"><DataLabel kind="funding">Program purpose</DataLabel></th>
+                <th className="py-3 px-3 hidden md:table-cell"><DataLabel kind="equipment">Target ZOLL solution</DataLabel></th>
+                <th className="py-3 px-3 hidden sm:table-cell"><DataLabel kind="period">Fiscal year close</DataLabel></th>
+                <th className="py-3 px-3 text-right"><DataLabel kind="score">Priority score</DataLabel></th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>

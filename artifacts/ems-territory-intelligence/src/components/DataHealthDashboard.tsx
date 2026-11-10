@@ -38,6 +38,7 @@ import {
   StoredNpiAuditReport
 } from '../services/dataSanitizationService';
 import { useHealthCheck } from '@workspace/api-client-react';
+import { DataLabel } from './DataLabel';
 
 interface DataHealthDashboardProps {
   agencies: Agency[];
@@ -535,13 +536,13 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
               <tr>
-                <th className="py-3 px-5">NPI Number</th>
-                <th className="py-3 px-4">Stored / Claimed Entity</th>
-                <th className="py-3 px-4">Origin Source</th>
-                <th className="py-3 px-4">80840 Check Digit</th>
-                <th className="py-3 px-4">Entity Classification</th>
-                <th className="py-3 px-4">Manual Review</th>
-                <th className="py-3 px-5 text-right">Evidence Action</th>
+                <th className="py-3 px-5"><DataLabel kind="identifier">NPI Number</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="claims">Stored / Claimed Entity</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="source">Origin Source</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="identifier">80840 Check Digit</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="agency">Entity Classification</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="review">Manual Review</DataLabel></th>
+                <th className="py-3 px-5 text-right"><DataLabel kind="source">Evidence Action</DataLabel></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -681,11 +682,11 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 font-semibold">
-                <th className="py-3 px-5">Data Tier &amp; Classification</th>
-                <th className="py-3 px-4">Origin &amp; Authority</th>
-                <th className="py-3 px-4">Fields Governed</th>
-                <th className="py-3 px-4 text-right">Active Record Count</th>
-                <th className="py-3 px-5 text-right">Verification Status</th>
+                <th className="py-3 px-5"><DataLabel kind="source">Data Tier &amp; Classification</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="source">Origin &amp; Authority</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="source">Fields Governed</DataLabel></th>
+                <th className="py-3 px-4 text-right"><DataLabel kind="source">Active Record Count</DataLabel></th>
+                <th className="py-3 px-5 text-right"><DataLabel kind="review">Verification Status</DataLabel></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -844,11 +845,11 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
               <tr>
-                <th className="py-3 px-5">Department / Agency</th>
-                <th className="py-3 px-4">Jurisdiction &amp; Registry ID</th>
-                <th className="py-3 px-4">Data Source Classification</th>
-                <th className="py-3 px-4">PulseIQ™ Mathematical Audit</th>
-                <th className="py-3 px-4">Field Notes State</th>
+                <th className="py-3 px-5"><DataLabel kind="agency">Department / Agency</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="identifier">Jurisdiction &amp; Registry ID</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="source">Data Source Classification</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="score">PulseIQ™ Mathematical Audit</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="notes">Field Notes State</DataLabel></th>
                 <th className="py-3 px-5 text-right">Cloud Action</th>
               </tr>
             </thead>

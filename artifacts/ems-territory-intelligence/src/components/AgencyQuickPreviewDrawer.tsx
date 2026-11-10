@@ -33,6 +33,7 @@ import { PulseIqEvidencePanel } from './PulseIqEvidencePanel';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
+import { DataLabel } from './DataLabel';
 
 interface AgencyQuickPreviewDrawerProps {
   agency: Agency | null;
@@ -152,11 +153,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 <span>·</span>
                   <span>
                     {agency.stateLicenseNumber
-                      ? <>State EMS license <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
-                      : <>FDID <span className="font-mono text-[11px]">{agency.fdid || 'No source mapped'}</span></>}
+                      ? <><DataLabel kind="identifier">State EMS license</DataLabel> <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
+                      : <><DataLabel kind="identifier">FDID</DataLabel> <span className="font-mono text-[11px]">{agency.fdid || 'No source mapped'}</span></>}
                   </span>
                 <span>·</span>
-                <span>NPI <span className="font-mono text-[11px]">{npiNumber || 'No source mapped'}</span></span>
+                <span><DataLabel kind="identifier">NPI</DataLabel> <span className="font-mono text-[11px]">{npiNumber || 'No source mapped'}</span></span>
               </div>
 
               <h2
@@ -241,11 +242,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           {/* 2x2 High-Contrast Financial & Fleet Snapshot (1px Hairline Grid) */}
           <div>
             <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Executive summary
+              <DataLabel kind="agency">Executive summary</DataLabel>
             </div>
             <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden tabular-nums">
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Cardiac monitor models</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="monitor">Cardiac monitor models</DataLabel></span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                     ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
@@ -261,7 +262,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Opportunity estimate</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="score">Opportunity estimate</DataLabel></span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
                   {hasDecisionGradeInputs ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
                 </span>
@@ -271,7 +272,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Claim-dollar recovery estimate</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="claims">Claim-dollar recovery estimate</DataLabel></span>
                 <span className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-400 mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                     ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
@@ -286,7 +287,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Fire Rescue calls &amp; outcomes</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="calls">Fire Rescue calls &amp; outcomes</DataLabel></span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
                   {hasAgencyFactEvidence(agency, 'annualCallsReceived')
                     ? `${formatInteger(agency.annualCallVolume)} calls received`
@@ -378,7 +379,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           {/* Field-specific source map for end-user review */}
           <section className="rounded-lg border border-slate-200 dark:border-slate-800 p-3 space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Mapped sources · user review
+              <DataLabel kind="source">Mapped sources · user review</DataLabel>
             </div>
             {mappedEvidenceSources.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -438,7 +439,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
           {onAddFieldNote && (
             <div className="space-y-2">
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Field Activity &amp; Cloud Notes ({agency.fieldNotes?.length || 0})
+                <DataLabel kind="notes">Field Activity &amp; Cloud Notes ({agency.fieldNotes?.length || 0})</DataLabel>
               </div>
 
               <form onSubmit={handleSaveNote} className="flex items-center gap-2">

@@ -59,6 +59,7 @@
 .county-brief .cb-group--context .cb-fig { display: grid; align-content: start; grid-column: span 2; gap: .15rem; }
 .county-brief .cb-group--context .cb-fig:nth-child(-n+2) { grid-column: span 3; }
 .county-brief .cb-group--context dt { font-size: 14px; color: var(--pi-text-secondary); min-width: 0; }
+.county-brief .cb-group--context .cb-fig:nth-child(n+3) dt { min-height: 2.8em; }
 .county-brief .cb-group--context dd { font-size: 16px; font-weight: 650; white-space: nowrap; }
 
 /* FEMA: separate source block, native swatch colour only */

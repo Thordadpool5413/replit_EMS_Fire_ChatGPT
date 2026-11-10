@@ -29,6 +29,7 @@ import {
   Flame,
   Siren
 } from 'lucide-react';
+import { DataLabel } from './DataLabel';
 interface PublicHealthcareExplorerProps {
   agencies?: Agency[];
   onSelectStateFilter: (stateCode: string) => void;
@@ -95,7 +96,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
 
           <div className="flex flex-wrap items-center gap-3 text-xs">
               <div className="hidden">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Medicare claim summary</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium"><DataLabel kind="claims">Medicare claim summary</DataLabel></span>
                 <span className="text-amber-700 dark:text-amber-400 font-semibold tabular-nums text-sm">
                   {denialMetric
                     ? 'Claim summary attached'
@@ -131,7 +132,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Primary Insurer</span>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-medium"><DataLabel kind="claims">Primary Insurer</DataLabel></span>
                 <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">
                   {hasAgencyFactEvidence(activeAccount, 'cmsClaims')
                     ? activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')
@@ -139,7 +140,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 </span>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/80 px-3 py-1.5 rounded-lg">
-                <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Opportunity model</span>
+                <span className="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium"><DataLabel kind="score">Opportunity model</DataLabel></span>
                 <span className="text-emerald-800 dark:text-emerald-400 font-semibold tabular-nums text-sm">
                   {hasDecisionGradeInputs
                     ? `$${(activeAccount.zollOpportunity.estimatedDealValue ?? activeAccount.zollOpportunity.projectedPipelineValue).toLocaleString()}`
@@ -169,7 +170,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 p-4 rounded-xl shrink-0 text-right">
-            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium">National market estimate</div>
+            <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium"><DataLabel kind="cost">National market estimate</DataLabel></div>
             <div className="text-sm font-semibold text-sky-950 dark:text-white mt-0.5">Reference value not source-verified</div>
             <div className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">Do not use as an audited market total</div>
           </div>
@@ -178,7 +179,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
         {/* National Macro Benchmarks */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden mt-6">
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">National ambulance improper-payment rate</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="claims">National ambulance improper-payment rate</DataLabel></div>
             <div className="text-xl font-[650] text-rose-700 dark:text-rose-400 tabular-nums mt-1">
               {NATIONAL_BENCHMARKS.nationalAmbulanceImproperPaymentRate}%
             </div>
@@ -193,7 +194,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">CARES cardiac survival (Utstein)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="survival">CARES cardiac survival (Utstein)</DataLabel></div>
             <div className="text-xl font-[650] text-emerald-700 dark:text-emerald-400 tabular-nums mt-1">
               {NATIONAL_BENCHMARKS.averageUtsteinSurvivalRate}%
             </div>
@@ -201,7 +202,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Annual 911 ambulance runs</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="transports">Annual 911 ambulance runs</DataLabel></div>
             <div className="text-xl font-[650] text-slate-900 dark:text-white tabular-nums mt-1">
               {(NATIONAL_BENCHMARKS.totalAmbulanceTransports / 1000000).toFixed(1)}M
             </div>
@@ -209,7 +210,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-slate-50/70 dark:bg-slate-900 p-4">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Annual federal AFG allocations</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="funding">Annual federal AFG allocations</DataLabel></div>
             <div className="text-xl font-[650] text-sky-700 dark:text-sky-400 tabular-nums mt-1">
               ${(NATIONAL_BENCHMARKS.totalAfgFundingAllocated / 1000000).toFixed(0)}M
             </div>
@@ -236,13 +237,13 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
-                <th className="py-2.5 px-3">State / Jurisdiction</th>
-                <th className="py-2.5 px-3 text-right">Registered Agencies</th>
-                <th className="hidden">ZIP-profile source records</th>
-                <th className="py-2.5 px-3 text-right">Cardiac Survival (Utstein)</th>
-                <th className="py-2.5 px-3 text-right">YTD AFG Grant Awards</th>
-                <th className="py-2.5 px-3 text-center">Medicaid Expansion</th>
-                <th className="py-2.5 px-3 text-right">High-Value Leads</th>
+                <th className="py-2.5 px-3"><DataLabel kind="location">State / Jurisdiction</DataLabel></th>
+                <th className="py-2.5 px-3 text-right"><DataLabel kind="agency">Registered Agencies</DataLabel></th>
+                <th className="hidden"><DataLabel kind="zip">ZIP-profile source records</DataLabel></th>
+                <th className="py-2.5 px-3 text-right"><DataLabel kind="cardiac">Cardiac Survival (Utstein)</DataLabel></th>
+                <th className="py-2.5 px-3 text-right"><DataLabel kind="funding">YTD AFG Grant Awards</DataLabel></th>
+                <th className="py-2.5 px-3 text-center"><DataLabel kind="claims">Medicaid Expansion</DataLabel></th>
+                <th className="py-2.5 px-3 text-right"><DataLabel kind="score">High-Value Leads</DataLabel></th>
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
@@ -550,7 +551,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">STEMI 12-lead acquisition &le;10 min</div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold"><DataLabel kind="clinical">STEMI 12-lead acquisition &le;10 min</DataLabel></div>
             <div className="text-2xl font-[650] text-sky-800 dark:text-sky-400 tabular-nums mt-1">
               {NATIONAL_BENCHMARKS.nemsqaStemi12LeadAcquisitionPct}%
             </div>
@@ -561,7 +562,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">Chest compression fraction (CCF)</div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold"><DataLabel kind="clinical">Chest compression fraction (CCF)</DataLabel></div>
             <div className="text-2xl font-[650] text-emerald-800 dark:text-emerald-400 tabular-nums mt-1">
               {NATIONAL_BENCHMARKS.nemsqaChestCompressionFractionPct}%
             </div>
@@ -572,7 +573,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold">Favorable cerebral survival (CPC 1/2)</div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 font-semibold"><DataLabel kind="survival">Favorable cerebral survival (CPC 1/2)</DataLabel></div>
             <div className="text-2xl font-[650] text-slate-900 dark:text-white tabular-nums mt-1">
               {NATIONAL_BENCHMARKS.caresGoodNeurologicalSurvivalPct}%
             </div>

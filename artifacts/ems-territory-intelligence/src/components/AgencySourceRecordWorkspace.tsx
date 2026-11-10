@@ -13,6 +13,7 @@ import type {
   GeographicRelationship,
 } from "../types";
 import type { AgencySourceRecordData } from "../services/agencySourceRecordStore";
+import { DataLabel } from './DataLabel';
 
 const GEOGRAPHIC_LEVELS: Array<{ value: GeographicLevel; label: string }> = [
   { value: "agency", label: "This agency (source identifies it)" },
@@ -398,7 +399,7 @@ export function AgencySourceRecordWorkspace({
                   <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400">
                     <th scope="col" className="px-2 py-1.5 font-semibold">Data category</th>
                     <th scope="col" className="px-2 py-1.5 font-semibold">Current profile value</th>
-                    <th scope="col" className="px-2 py-1.5 font-semibold">Mapped source records</th>
+                    <th scope="col" className="px-2 py-1.5 font-semibold"><DataLabel kind="source">Mapped source records</DataLabel></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -565,7 +566,7 @@ export function AgencySourceRecordWorkspace({
                   </div>
                   <dl className="mt-2 grid grid-cols-2 gap-2 text-[9px] text-slate-500 dark:text-slate-400">
                     <div>
-                      <dt>Source date</dt>
+                      <dt><DataLabel kind="source">Source date</DataLabel></dt>
                       <dd className="font-medium text-slate-700 dark:text-slate-200">
                         {formatDate(association.sourceDate)}
                       </dd>

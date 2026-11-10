@@ -3,6 +3,7 @@ import type {
   CountyFigureSourceKey,
   CountyFigureSourceMetadata,
 } from '../types';
+import { DataLabel } from './DataLabel';
 
 type CountyFigureValues = Partial<Record<CountyFigureSourceKey, number | null | undefined>>;
 
@@ -79,10 +80,10 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
         <thead>
           <tr>
             <th scope="col">Figure</th>
-            <th scope="col">Source</th>
-            <th scope="col">Vintage</th>
-            <th scope="col">Source scope</th>
-            <th scope="col">Reporting period</th>
+            <th scope="col"><DataLabel kind="source">Source</DataLabel></th>
+            <th scope="col"><DataLabel kind="period">Vintage</DataLabel></th>
+            <th scope="col"><DataLabel kind="source">Source scope</DataLabel></th>
+            <th scope="col"><DataLabel kind="period">Reporting period</DataLabel></th>
           </tr>
         </thead>
         <tbody>

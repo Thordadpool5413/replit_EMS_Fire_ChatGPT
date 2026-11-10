@@ -15,6 +15,12 @@ For EMS and Fire profiles, use an agency intelligence brief: one identity/contac
 
 **How to apply:** Keep one identity header, one operations summary, and one topic bar; derive findings from available records without invented thresholds or verification claims. Keep working-reference values visible until the user confirms or corrects them. Collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop. Carry the same hierarchy into paper-safe exports.
 
+Use recognizable topic-specific icons paired with clear labels throughout the app's data and information displays, including individual EMS and fire profile sheets. Icons must support readable text, not replace it or introduce decorative boxes.
+
+**Why:** The user explicitly requested icons and labels for everything specific to data and information across the entire app, including individual profiles, to improve attention and the visual experience.
+
+**How to apply:** Use the same topic icon consistently across workspaces, county displays, agency cards, profiles, comparisons, specialist information, and printable briefs. Put table icons in headers instead of repeating them in every cell. Preserve source-defined risk colors and avoid implying an unvalidated status through an icon or color.
+
 The sidebar needs even layout, not merely enough space to fit. Keep navigation and utility rows aligned in width, height, icon position, and text baseline, with deliberate spacing between groups.
 
 **Why:** The user again rejected the sidebar after the no-scroll correction, saying that not everything was evenly displayed and laid out.

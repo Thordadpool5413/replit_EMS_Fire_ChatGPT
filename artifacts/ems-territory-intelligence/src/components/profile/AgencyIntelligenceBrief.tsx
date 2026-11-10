@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
 import { hasAgencyFactEvidence } from '../../data/agencyFactEvidence';
+import { DataLabel, type DataLabelKind } from '../DataLabel';
 
 type IconType = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
 
@@ -65,9 +66,9 @@ const Fig: React.FC<Figure> = ({ label, value, unit, period, icon: Icon, testId 
   </div>
 );
 
-const Row: React.FC<{ label: string; children: React.ReactNode; tone?: 'muted' | 'alert' }> = ({ label, children, tone }) => (
+const Row: React.FC<{ label: string; kind: DataLabelKind; children: React.ReactNode; tone?: 'muted' | 'alert' }> = ({ label, kind, children, tone }) => (
   <div className="aib-row">
-    <dt>{label}</dt>
+    <dt><DataLabel kind={kind}>{label}</DataLabel></dt>
     <dd className={tone ? `is-${tone}` : ''}>{children}</dd>
   </div>
 );
@@ -182,7 +183,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
 
       <div className="aib-grid">
         <section className="aib-block aib-snapshot" data-testid="baseline-operational-metrics" aria-labelledby="aib-snapshot-title">
-          <h3 id="aib-snapshot-title" className="aib-label">Operational volume &amp; acuity</h3>
+          <h3 id="aib-snapshot-title" className="aib-label"><DataLabel kind="calls">Operational volume &amp; acuity</DataLabel></h3>
           <div className="aib-tags">
             {renderFactTag('stationCount')}
             {renderFactTag('frontlineApparatusStations')}
@@ -197,7 +198,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
         </section>
 
         <section className="aib-block aib-findings-block" aria-labelledby="aib-findings-title">
-          <h3 id="aib-findings-title" className="aib-label">Findings to discuss</h3>
+          <h3 id="aib-findings-title" className="aib-label"><DataLabel kind="notes">Findings to discuss</DataLabel></h3>
           {findings.length > 0 ? (
             <ol className="aib-findings">
               <li className="aib-findings-cols" aria-hidden="true"><span>Finding</span><span>Basis</span><span>Next step</span></li>
@@ -223,11 +224,11 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
                 {renderFactTag('maintenanceContracts')}
               </div>
               <dl className="aib-rows">
-                <Row label="Monitor brand">{fleet.defibBrand || 'Not reported'}</Row>
-                <Row label="Deployed fleet age">{isNum(fleet.defibAgeYears) ? `${fleet.defibAgeYears.toLocaleString()} years` : 'Not reported'}</Row>
-                <Row label="Defibrillator units">{isNum(fleet.defibUnitsCount) ? `${fleet.defibUnitsCount.toLocaleString()} units` : 'Not reported'}</Row>
-                <Row label="Warranty support" tone={warrantyExpired ? 'alert' : undefined}>{fleet.defibWarrantyStatus || 'Not reported'}</Row>
-                <Row label="ePCR system">{fleet.epcrCadSoftware || 'Not reported'}</Row>
+                <Row label="Monitor brand" kind="monitor">{fleet.defibBrand || 'Not reported'}</Row>
+                <Row label="Deployed fleet age" kind="period">{isNum(fleet.defibAgeYears) ? `${fleet.defibAgeYears.toLocaleString()} years` : 'Not reported'}</Row>
+                <Row label="Defibrillator units" kind="equipment">{isNum(fleet.defibUnitsCount) ? `${fleet.defibUnitsCount.toLocaleString()} units` : 'Not reported'}</Row>
+                <Row label="Warranty support" kind="warranty" tone={warrantyExpired ? 'alert' : undefined}>{fleet.defibWarrantyStatus || 'Not reported'}</Row>
+                <Row label="ePCR system" kind="equipment">{fleet.epcrCadSoftware || 'Not reported'}</Row>
               </dl>
             </section>
             <section aria-labelledby="aib-contracts-title">
@@ -238,10 +239,10 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
                 {renderFactTag('federalGrant')}
               </div>
               <dl className="aib-rows">
-                <Row label="Contract end date">{agency.competitorContract.contractEndDate || 'Not reported'}</Row>
-                <Row label="Contract status">{agency.competitorContract.status || 'Not reported'}</Row>
-                <Row label="Lost claim revenue" tone="muted">Not reported with a reproducible method</Row>
-                <Row label="FEMA AFG grants">
+                <Row label="Contract end date" kind="expiration">{agency.competitorContract.contractEndDate || 'Not reported'}</Row>
+                <Row label="Contract status" kind="contract">{agency.competitorContract.status || 'Not reported'}</Row>
+                <Row label="Lost claim revenue" kind="claims" tone="muted">Not reported with a reproducible method</Row>
+                <Row label="FEMA AFG grants" kind="funding">
                   {agency.grantStatus.afgAwarded
                     ? `${money(agency.grantStatus.afgAwardAmount)} (FY${fmt(agency.grantStatus.afgFiscalYear)})`
                     : 'No award indicated in this record'}

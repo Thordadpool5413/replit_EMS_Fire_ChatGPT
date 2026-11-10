@@ -33,6 +33,7 @@ import {
   HeartPulse,
   DollarSign
 } from 'lucide-react';
+import { DataLabel } from './DataLabel';
 
 interface DataLineageTrustModalProps {
   isOpen: boolean;
@@ -450,8 +451,8 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                     <tr>
                       <th className="py-2.5 px-3">Field &amp; Dimension</th>
                       <th className="py-2.5 px-3">Mapped Value</th>
-                      <th className="py-2.5 px-3">Public Source Registry</th>
-                      <th className="py-2.5 px-3">Schema / Citation Code</th>
+                      <th className="py-2.5 px-3"><DataLabel kind="source">Public Source Registry</DataLabel></th>
+                      <th className="py-2.5 px-3"><DataLabel kind="source">Schema / Citation Code</DataLabel></th>
                       <th className="py-2.5 px-3">Verification Tier</th>
                     </tr>
                   </thead>

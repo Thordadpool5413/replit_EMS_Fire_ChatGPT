@@ -220,6 +220,7 @@ import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { TermTooltip } from './TermTooltip';
 import { useVerifyProviderLive } from '@workspace/api-client-react';
+import { DataLabel } from './DataLabel';
 
 /**
  * Guarantees complete agency fields for any selected EMS Provider or Fire Department
@@ -1218,7 +1219,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 {/* Fast-review summary: location is already in the identity line above. */}
                 <div className="profile-summary-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
-                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Agency contact</h2>
+                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300"><DataLabel kind="contact">Agency contact</DataLabel></h2>
                     <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white [overflow-wrap:anywhere]">{primaryContact?.name || 'Not reported'}</p>
                     {primaryContact?.title && <p className="break-words text-[#53657B] dark:text-slate-400 [overflow-wrap:anywhere]">{primaryContact.title}</p>}
                     {(primaryContact?.phone || agency.headquartersPhone) && (
@@ -1235,7 +1236,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold text-[#53657B] dark:text-slate-300">Source references</h2>
+                      <h2 className="font-semibold text-[#53657B] dark:text-slate-300"><DataLabel kind="source">Source references</DataLabel></h2>
                       <button type="button" onClick={() => setIsSourceDrawerOpen(true)} className="min-h-8 shrink-0 font-semibold text-[#285EE8] hover:underline dark:text-blue-300">Review all</button>
                     </div>
                     {topSourceItems.length > 0 ? (
@@ -1559,7 +1560,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                ================================================================ */}
             <div className="space-y-3">
               <h2 className="text-xs font-semibold text-[#53657B] dark:text-slate-400">
-                Planning context &middot; Confirm with the agency
+                <DataLabel kind="score">Planning context &middot; Confirm with the agency</DataLabel>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1791,7 +1792,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
                 <div>
                     <h2 className="pi-section-heading">
-                    Decision Makers &amp; Command Directory
+                    <DataLabel kind="contact">Decision Makers &amp; Command Directory</DataLabel>
                   </h2>
                   <p className="pi-supporting mt-0.5">
                     Names and roles reflect the available agency record; confirm current command details directly with the agency.
@@ -1993,22 +1994,22 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 text-xs">
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual emergency calls</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="calls">Annual emergency calls</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annualCallVolume)}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Total 911 dispatches</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual 911 transports</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="transports">Annual 911 transports</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annual911Transports)}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Billable patient runs</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Cardiac arrest (OHCA) calls</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="cardiac">Cardiac arrest (OHCA) calls</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.annualCardiacArrestCalls)} / yr</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Resuscitation activations</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400 font-medium">Utstein cardiac survival</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400 font-medium"><DataLabel kind="cardiac">Utstein cardiac survival</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">{reportMetric(agency.utsteinSurvivalRate, '%')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Survival to discharge</dd>
                   </div>
@@ -2018,22 +2019,22 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Intact neurological outcome</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Bystander CPR rate</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="clinical">Bystander CPR rate</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.bystanderCPRRate, '%')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Prior to EMS arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Annual trauma incidents</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="incidents">Annual trauma incidents</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.annualTraumaIncidents)}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">{agency.gisData.traumaCenterLevel || 'Trauma center level not reported'}</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">Avg EMS transport time</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="transportTime">Avg EMS transport time</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.avgTransportTimeMinutes, ' mins')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">Scene to ED arrival</dd>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16243A] border border-slate-200 dark:border-[#1E2D42]">
-                    <dt className="text-[#53657B] dark:text-slate-400">STEMI PCI Cath Lab dist.</dt>
+                    <dt className="text-[#53657B] dark:text-slate-400"><DataLabel kind="distance">STEMI PCI Cath Lab dist.</DataLabel></dt>
                     <dd className="text-base font-semibold tabular-nums text-[#0F172A] dark:text-white mt-0.5">{reportMetric(agency.gisData.distanceToNearestCathLabMiles, ' miles')}</dd>
                     <dd className="text-[10px] text-slate-500 dark:text-slate-400">12-lead pre-activation</dd>
                   </div>
@@ -2131,11 +2132,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-3 px-4">Regional Clinical Protocol Mandate</th>
-                      <th className="py-3 px-4">Clinical Target Benchmark</th>
-                      <th className="py-3 px-4">Incumbent Fleet Limitation</th>
-                      <th className="py-3 px-4">ZOLL Enabling Clinical Technology</th>
-                      <th className="py-3 px-4 text-right">Status</th>
+                      <th className="py-3 px-4"><DataLabel kind="clinical">Regional Clinical Protocol Mandate</DataLabel></th>
+                      <th className="py-3 px-4"><DataLabel kind="clinical">Clinical Target Benchmark</DataLabel></th>
+                      <th className="py-3 px-4"><DataLabel kind="equipment">Incumbent Fleet Limitation</DataLabel></th>
+                      <th className="py-3 px-4"><DataLabel kind="clinical">ZOLL Enabling Clinical Technology</DataLabel></th>
+                      <th className="py-3 px-4 text-right"><DataLabel kind="review">Status</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -2189,7 +2190,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {/* Left 6 Cols: 4-Tier Insurance Payer Outcomes */}
               <div className="lg:col-span-6 space-y-4">
                 <h3 className="text-xs font-bold text-slate-600">
-                  Insurance Payer Mix &amp; Reimbursement Outcomes
+                  <DataLabel kind="claims">Insurance Payer Mix &amp; Reimbursement Outcomes</DataLabel>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -2254,7 +2255,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {/* Right 6 Cols: Claims Denials & Recoverable Revenue Breakdown */}
               <div className="lg:col-span-6 space-y-4">
                 <h3 className="text-xs font-bold text-slate-600">
-                  Medicare Billing &amp; Revenue Cycle Analysis
+                  <DataLabel kind="claims">Medicare Billing &amp; Revenue Cycle Analysis</DataLabel>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2310,7 +2311,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-bold text-[#0F172A]">
-                    Procedure-Level HCPCS Ambulance Fee Schedule &amp; CMS GADCS 10% Penalty Exposure
+                    <DataLabel kind="claims">Procedure-Level HCPCS Ambulance Fee Schedule &amp; CMS GADCS 10% Penalty Exposure</DataLabel>
                   </h3>
                   <p className="text-xs text-slate-500">
                     {hcpcsModel?.gadcs.cohortWave ?? 'Not calculated'} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel?.gadcs.reportingReadinessStatus ?? 'Not calculated'}</strong> · {hcpcsModel?.gadcs.keyComplianceGap ?? 'Reported annual transports and Medicare payer share are required.'}
@@ -2330,10 +2331,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-2.5 px-4">HCPCS Code</th>
-                      <th className="py-2.5 px-4">Procedure &amp; Clinical Requirement</th>
+                      <th className="py-2.5 px-4"><DataLabel kind="identifier">HCPCS Code</DataLabel></th>
+                      <th className="py-2.5 px-4"><DataLabel kind="clinical">Procedure &amp; Clinical Requirement</DataLabel></th>
                       <th className="py-2.5 px-4 text-right">CMS Base Rate</th>
-                      <th className="py-2.5 px-4 text-right">Annual Claims</th>
+                      <th className="py-2.5 px-4 text-right"><DataLabel kind="claims">Annual Claims</DataLabel></th>
                       <th className="py-2.5 px-4 text-right">Gross Billed</th>
                       <th className="py-2.5 px-4 text-right">Denial Exposure</th>
                       <th className="py-2.5 px-4">ZOLL Automated Documentation Mitigation</th>
@@ -2408,7 +2409,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             {/* MODALITY 1: DIRECT SUPPLIER CARDS */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-600">
-                01. Direct Vendor &amp; Distributor Supplier Cards
+                <DataLabel kind="contract">01. Direct Vendor &amp; Distributor Supplier Cards</DataLabel>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                 
@@ -2514,18 +2515,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             {/* MODALITY 2: COMPLETE EQUIPMENT & PROCUREMENT AUDIT TABLE */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-600">
-                02. Complete Equipment &amp; Supplier Procurement Table
+                <DataLabel kind="equipment">02. Complete Equipment &amp; Supplier Procurement Table</DataLabel>
               </h3>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-3 px-4">Equipment / System Category</th>
-                      <th className="py-3 px-4">Actual Model / Software in Use</th>
+                      <th className="py-3 px-4"><DataLabel kind="equipment">Equipment / System Category</DataLabel></th>
+                      <th className="py-3 px-4"><DataLabel kind="service">Actual Model / Software in Use</DataLabel></th>
                       <th className="py-3 px-4">Active Units</th>
-                      <th className="py-3 px-4">Age &amp; Warranty Status</th>
+                      <th className="py-3 px-4"><DataLabel kind="warranty">Age &amp; Warranty Status</DataLabel></th>
                       <th className="py-3 px-4">Current Supplier / Distributor</th>
-                      <th className="py-3 px-4">Maintenance Contract &amp; Renewal</th>
+                      <th className="py-3 px-4"><DataLabel kind="expiration">Maintenance Contract &amp; Renewal</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -2617,7 +2618,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <th className="py-3 px-4">Operational Domain</th>
                       <th className="py-3 px-4">Current Equipment &amp; Supplier at {agency.name}</th>
                       <th className="py-3 px-4">Recommended ZOLL Integrated Solution</th>
-                      <th className="py-3 px-4">Clinical &amp; Financial Impact for Provider</th>
+                      <th className="py-3 px-4"><DataLabel kind="clinical">Clinical &amp; Financial Impact for Provider</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -2700,7 +2701,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-2.5 px-4">5-Year Lifecycle Cost Driver ({tcoModel.unitCount} Frontline Units)</th>
+                      <th className="py-2.5 px-4"><DataLabel kind="cost">5-Year Lifecycle Cost Driver ({tcoModel.unitCount} Frontline Units)</DataLabel></th>
                       <th className="py-2.5 px-4 text-right">Incumbent ({tcoModel.incumbentModel})</th>
                       <th className="py-2.5 px-4 text-right">ZOLL ({tcoModel.zollModel})</th>
                       <th className="py-2.5 px-4 text-right">5-Yr Savings Delta</th>
@@ -2814,27 +2815,27 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
               <dl className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Ambulance Fleet</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="ambulances">Ambulance Fleet</DataLabel></dt>
                   <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.totalAmbulances)} Frontline Units</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Fire Apparatus</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="apparatus">Fire Apparatus</DataLabel></dt>
                   <dd className="text-base font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.totalFireEngines)} Engines / Ladders</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Current Maintenance Vendor</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="contract">Current Maintenance Vendor</DataLabel></dt>
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.competitorContract.vendor}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Contract Expiration Date</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="expiration">Contract Expiration Date</DataLabel></dt>
                   <dd className="font-semibold pi-data-inline text-slate-900 dark:text-white mt-0.5">{agency.competitorContract.contractEndDate}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Annual Service Cost / Unit</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="cost">Annual Service Cost / Unit</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatCurrency(agency.competitorContract.annualServiceCostPerUnit, { perYear: true, compact: false })}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Renewal Notice Window</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="expiration">Renewal Notice Window</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-amber-600 dark:text-amber-400 mt-0.5">{agency.competitorContract.renewalWindowDays} Days ({agency.competitorContract.status})</dd>
                 </div>
               </dl>
@@ -2964,7 +2965,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden text-xs">
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Service Model</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="service">Service Model</DataLabel></dt>
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.agencyType}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
@@ -2972,37 +2973,37 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <dd className="font-semibold text-slate-900 dark:text-white mt-0.5">{agency.jurisdictionLevel} Jurisdiction</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Population Served</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="population">Population Served</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{reportMetric(agency.populationServed)}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Stations &amp; Facilities</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="stations">Stations &amp; Facilities</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.stationsCount)} Active Stations</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Certified Personnel</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="personnel">Certified Personnel</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatInteger(agency.totalEMSStaff)} Responders</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Coverage Territory</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="coverage">Coverage Territory</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{agency.responseAreaSqMiles} Sq. Miles</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Senior Population (65+)</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="population">Senior Population (65+)</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatPercent(agency.gisData.seniorPopulationPct)} of Residents</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Median Household Income</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="income">Median Household Income</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatCurrency(agency.gisData.medianHouseholdIncome, { compact: false })}</dd>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900">
-                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium">Community Poverty Rate</dt>
+                  <dt className="text-slate-500 dark:text-slate-400 text-xs font-medium"><DataLabel kind="poverty">Community Poverty Rate</DataLabel></dt>
                   <dd className="font-semibold pi-metric-card text-slate-900 dark:text-white mt-0.5">{formatPercent(agency.gisData.povertyRate)}</dd>
                 </div>
               </dl>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-800/50">
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                  Geography links and relationship basis
+                  <DataLabel kind="location">Geography links and relationship basis</DataLabel>
                 </h3>
                 <p className="mt-1 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">
                   Location is kept separate from operating coverage. A county or city label is not treated as a service-area boundary.
@@ -3085,7 +3086,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-2.5 px-4">Contract Vehicle &amp; Master ID</th>
+                      <th className="py-2.5 px-4"><DataLabel kind="contract">Contract Vehicle &amp; Master ID</DataLabel></th>
                       <th className="py-2.5 px-4">Ceiling Discount &amp; Trade-In Terms</th>
                       <th className="py-2.5 px-4">Procurement Cycle Saved</th>
                       <th className="py-2.5 px-4">Statutory Piggyback Clause</th>
@@ -3127,12 +3128,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                        <th className="py-2.5 px-4">Fiscal Year</th>
-                        <th className="py-2.5 px-4">Federal Grant Program</th>
-                        <th className="py-2.5 px-4">Approved Equipment &amp; Operational Scope</th>
-                        <th className="py-2.5 px-4 text-right">Federal Award</th>
+                        <th className="py-2.5 px-4"><DataLabel kind="period">Fiscal Year</DataLabel></th>
+                        <th className="py-2.5 px-4"><DataLabel kind="funding">Federal Grant Program</DataLabel></th>
+                        <th className="py-2.5 px-4"><DataLabel kind="equipment">Approved Equipment &amp; Operational Scope</DataLabel></th>
+                        <th className="py-2.5 px-4 text-right"><DataLabel kind="funding">Federal Award</DataLabel></th>
                         <th className="py-2.5 px-4 text-right">Local Match</th>
-                        <th className="py-2.5 px-4 text-right">Status</th>
+                        <th className="py-2.5 px-4 text-right"><DataLabel kind="funding">Status</DataLabel></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -3269,7 +3270,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
               <div>
                   <h2 className="pi-section-heading">
-                    Source Evidence &amp; Data Mapping
+                    <DataLabel kind="source">Source Evidence &amp; Data Mapping</DataLabel>
                   </h2>
                 <p className="pi-supporting mt-0.5">
                     This page maps available values and source records to {agency.name}. API results are candidates only; the end user decides whether a record belongs to this agency and whether its information is accurate. Search results never overwrite profile fields.
@@ -3408,8 +3409,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <th>Domain / Metric</th>
                     <th>Recorded Value</th>
                     <th>Record status</th>
-                    <th>Primary Registry / Citation</th>
-                    <th>Open source</th>
+                    <th><DataLabel kind="source">Primary Registry / Citation</DataLabel></th>
+                    <th><DataLabel kind="source">Open source</DataLabel></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3576,7 +3577,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         >
           <div>
             <h2 className="text-sm font-semibold text-[#14283F] dark:text-white">
-              Additional profile details
+              <DataLabel kind="agency">Additional profile details</DataLabel>
             </h2>
             <p className="mt-1 text-xs text-[#53657B] dark:text-slate-400">
               Registry identifiers, planning estimates, assessment context, and your review.

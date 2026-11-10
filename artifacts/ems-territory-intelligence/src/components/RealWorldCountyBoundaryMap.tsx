@@ -20,6 +20,7 @@ import {
 import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
+import { DataLabel } from './DataLabel';
 
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
@@ -365,7 +366,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     <p className="ci-kicker">{hoveredCountyFips ? 'Map preview' : 'County preview'}</p>
                     <h4 className="ci-name">{inspectedCounty.countyName}</h4>
                     <p className="ci-ident">
-                      Seat <strong>{inspectedCounty.countySeat}</strong> · Area <strong>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</strong> · FIPS <strong>{inspectedCounty.countyFips}</strong>
+                      <DataLabel kind="places">Seat</DataLabel> <strong>{inspectedCounty.countySeat}</strong> · <DataLabel kind="area">Area</DataLabel> <strong>{inspectedCounty.landAreaSqMiles.toLocaleString()} sq mi</strong> · <DataLabel kind="identifier">FIPS</DataLabel> <strong>{inspectedCounty.countyFips}</strong>
                     </p>
                   </header>
 
@@ -382,32 +383,32 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   })()}
 
                   <section className="ci-fema" style={riskStyle(inspectedNri?.riskRating)} aria-label="FEMA National Risk Index">
-                    <p className="ci-band-label">FEMA hazard risk</p>
+                    <p className="ci-band-label"><DataLabel kind="risk">FEMA hazard risk</DataLabel></p>
                     <div className="ci-fema-row">
                       <span className={`ci-risk-rating ${inspectedNri?.riskRating ? '' : 'ci-risk-rating--none'}`}>
                         <span className="ci-swatch" aria-hidden="true" />
                         {inspectedNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No record')}
                       </span>
                       {inspectedNri && (
-                        <span>Score <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong></span>
+                        <span><DataLabel kind="score">Score</DataLabel> <strong>{inspectedNri.riskScore != null ? inspectedNri.riskScore.toFixed(2) : 'not stated'}</strong></span>
                       )}
-                      {inspectedNri && <span>Vintage <strong>{inspectedNri.sourceVersion}</strong></span>}
+                      {inspectedNri && <span><DataLabel kind="period">Vintage</DataLabel> <strong>{inspectedNri.sourceVersion}</strong></span>}
                       {inspectedNri?.sourceUrl && (
                         <a href={inspectedNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="ci-link">FEMA record <ExternalLink aria-hidden="true" /></a>
                       )}
                     </div>
                     {inspectedNri && (
                       <dl className="ci-fema-facts" aria-label="FEMA National Risk Index details">
-                        <div><dt>Expected annual loss</dt><dd>{formatLoss(inspectedNri.expectedAnnualLoss)}</dd></div>
-                        <div><dt>Social vulnerability</dt><dd>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
-                        <div><dt>Community resilience</dt><dd>{inspectedNri.communityResilienceRating ?? 'not stated'}</dd></div>
+                        <div><dt><DataLabel kind="cost">Expected annual loss</DataLabel></dt><dd>{formatLoss(inspectedNri.expectedAnnualLoss)}</dd></div>
+                        <div><dt><DataLabel kind="vulnerability">Social vulnerability</DataLabel></dt><dd>{inspectedNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                        <div><dt><DataLabel kind="resilience">Community resilience</DataLabel></dt><dd>{inspectedNri.communityResilienceRating ?? 'not stated'}</dd></div>
                       </dl>
                     )}
                   </section>
 
 
                   <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section">Mapped places <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
+                    <h5 className="ci-section"><DataLabel kind="places">Mapped places</DataLabel> <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
                     <ul className="ci-place-list">
                       {inspectedCounty.node.citiesList.map((cityNode) => (
                         <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">
@@ -426,7 +427,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     </ul>
                     {inspectedCounty.node.primaryZipCodes.length > 0 && (
                       <p className="ci-zips">
-                        <span className="ci-k">All county ZIPs ({inspectedCounty.node.primaryZipCodes.length})</span>{' '}
+                        <span className="ci-k"><DataLabel kind="zip">All county ZIPs ({inspectedCounty.node.primaryZipCodes.length})</DataLabel></span>{' '}
                         {inspectedCounty.node.primaryZipCodes.join(', ')}
                       </p>
                     )}
@@ -556,7 +557,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="cv-kicker">{stateNode.stateName}</p>
-                  <h4 className="cv-title">Places in {activeCountyNode.countyName}</h4>
+                  <h4 className="cv-title"><DataLabel kind="places">Places in {activeCountyNode.countyName}</DataLabel></h4>
                   <p className="cv-meta tabular-nums" data-testid="text-county-place-summary">
                     {projectedSingleCounty.cityPins.length} mapped places · {projectedSingleCounty.providerRecordCount} unique provider records
                   </p>
@@ -604,7 +605,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </div>
 
               <div>
-                <div className="cv-section-label"><span>County ZIP references</span><span>{activeCountyNode.primaryZipCodes.length}</span></div>
+                <div className="cv-section-label"><DataLabel kind="zip">County ZIP references</DataLabel><span>{activeCountyNode.primaryZipCodes.length}</span></div>
                 <p className="cv-zips mt-1">{activeCountyNode.primaryZipCodes.join(', ') || 'None listed'}</p>
               </div>
 

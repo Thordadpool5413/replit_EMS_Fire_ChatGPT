@@ -41,6 +41,7 @@ import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import { calculateAgencyFleetTco, calculateAgencyHcpcsBreakdown } from '../data/clinicalAndCompetitiveIntelligence';
 import { explainAgencyScore } from '../utils/pulseIqExplanation';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { DataLabel } from './DataLabel';
 
 interface ExecutiveBriefingDossierProps {
   agency: Agency;
@@ -48,6 +49,18 @@ interface ExecutiveBriefingDossierProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type PdfTextRun = {
+  text: string; left: number; top: number; height: number;
+  fontSize: number; bold: boolean; italic: boolean;
+};
+type PdfSourceLink = {
+  url: string; left: number; top: number; width: number; height: number;
+};
+type PdfCapture = {
+  key: string; canvas: HTMLCanvasElement; text: PdfTextRun[];
+  links: PdfSourceLink[]; layoutWidth: number;
+};
 
 const reportNumber = (value: number | null | undefined, suffix = '') =>
   value == null || !Number.isFinite(value) ? 'Not reported' : `${value.toLocaleString()}${suffix}`;
@@ -147,6 +160,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     allReportSectionsIncluded,
   );
   const documentRef = useRef<HTMLDivElement>(null);
+  const pdfCaptureRef = useRef<PdfCapture | null>(null);
+  useEffect(() => {
+    if (!isOpen) pdfCaptureRef.current = null;
+  }, [isOpen]);
   const denialMetric = agency ? getAgencyMedicareDenialMetricForDisplay(agency) : null;
 
   // Support closing with Escape key
@@ -274,40 +291,57 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
     try {
       const element = documentRef.current;
+      // A4 and Letter use the same document capture; only page crops differ.
+      // Reuse it for repeat downloads, invalidating on content/theme/width changes.
+      const captureKey = [
+        element.innerHTML, element.clientWidth,
+        document.documentElement.className, document.documentElement.dataset.theme,
+      ].join('|');
+      const previousCapture = pdfCaptureRef.current?.key === captureKey
+        ? pdfCaptureRef.current : null;
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf')
       ]);
 
       // Capture at 2x scale with guaranteed solid white background
-      const searchableText: Array<{
-        text: string;
-        left: number;
-        top: number;
-        height: number;
-        fontSize: number;
-        bold: boolean;
-        italic: boolean;
-      }> = [];
-      const sourceLinkAnnotations: Array<{
-        url: string;
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-      }> = [];
-      let searchableLayoutWidth = element.getBoundingClientRect().width;
-      const canvas = await html2canvas(element, {
+      const searchableText: PdfTextRun[] = previousCapture ? [...previousCapture.text] : [];
+      const sourceLinkAnnotations: PdfSourceLink[] = previousCapture ? [...previousCapture.links] : [];
+      let searchableLayoutWidth = previousCapture?.layoutWidth ?? element.getBoundingClientRect().width;
+      const canvas = previousCapture?.canvas ?? await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1200,
-        onclone: (clonedDoc) => {
+        onclone: async (clonedDoc) => {
           const docEl = clonedDoc.querySelector('.print-dossier-document') as HTMLElement | null;
           if (docEl) {
             docEl.style.backgroundColor = '#ffffff';
             docEl.style.color = '#0f172a';
+            // html2canvas serializes inline SVGs separately. Resolve CSS-dependent
+            // label icons once in the export clone so repeated exports don't wait
+            // on SVGs with inherited currentColor/theme styles. Live UI and native
+            // print retain their original accessible, decorative SVGs.
+            for (const icon of docEl.querySelectorAll<SVGSVGElement>('svg.pi-data-label-icon')) {
+              const bounds = icon.getBoundingClientRect();
+              const standalone = icon.cloneNode(true) as SVGSVGElement;
+              standalone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+              standalone.setAttribute('width', String(bounds.width || 14));
+              standalone.setAttribute('height', String(bounds.height || 14));
+              standalone.setAttribute('stroke', '#334155');
+              standalone.setAttribute('color', '#334155');
+              standalone.removeAttribute('class');
+              standalone.removeAttribute('style');
+              const image = clonedDoc.createElement('img');
+              image.alt = '';
+              image.width = Math.ceil(bounds.width || 14);
+              image.height = Math.ceil(bounds.height || 14);
+              image.style.cssText = 'display:inline-block;flex-shrink:0;vertical-align:middle';
+              image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(standalone))}`;
+              icon.replaceWith(image);
+              await image.decode();
+            }
             const statusColors: Record<string, [string, string, string]> = {
               fire: ['#991b1b', '#fee2e2', '#fca5a5'],
               ems: ['#1e3a8a', '#dbeafe', '#93c5fd'],
@@ -422,6 +456,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
           }
         }
       });
+      pdfCaptureRef.current = {
+        key: captureKey, canvas, text: searchableText,
+        links: sourceLinkAnnotations, layoutWidth: searchableLayoutWidth,
+      };
 
       const pdf = new jsPDF({
         orientation: 'p',
@@ -857,7 +895,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
 
               <div className="text-right shrink-0">
-                <div className="text-xs text-slate-500 font-medium">Dossier publication date</div>
+                <div className="text-xs text-slate-500 font-medium"><DataLabel kind="period">Dossier publication date</DataLabel></div>
                 <div className="text-xs font-semibold text-slate-900 mt-0.5">{currentDate}</div>
                   <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-slate-700 text-xs font-medium">
                   <FileText className="w-3.5 h-3.5 text-slate-600" />
@@ -867,26 +905,26 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             </div>
 
             <div className="print-summary rounded-lg border border-slate-200 border-l-4 border-l-blue-900 bg-slate-50 p-3">
-              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700">Operations summary</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700"><DataLabel kind="agency">Operations summary</DataLabel></h2>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
-                  <div className="text-slate-500">{isFire ? 'Annual fire-rescue calls' : 'Annual EMS transports'}</div>
+                  <div className="text-slate-500"><DataLabel kind={isFire ? 'calls' : 'transports'}>{isFire ? 'Annual fire-rescue calls' : 'Annual EMS transports'}</DataLabel></div>
                   <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(isFire ? agency.annualCallVolume : agency.annual911Transports)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-500">{isFire ? 'Stations' : 'Annual calls / dispatches'}</div>
+                  <div className="text-slate-500"><DataLabel kind={isFire ? 'stations' : 'calls'}>{isFire ? 'Stations' : 'Annual calls / dispatches'}</DataLabel></div>
                   <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(isFire ? agency.stationsCount : agency.annualCallVolume)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-500">Population served</div>
+                  <div className="text-slate-500"><DataLabel kind="population">Population served</DataLabel></div>
                   <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">{reportNumber(agency.populationServed)}</div>
                 </div>
                 <div>
-                  <div className="text-slate-500">Frontline units</div>
+                  <div className="text-slate-500"><DataLabel kind="ambulances">Frontline units</DataLabel></div>
                   <div className="print-summary-value text-base font-bold text-slate-900 tabular-nums">
                     {reportNumber(agency.frontlineRescueUnitCount ?? fleet?.totalActiveUnits)}
                   </div>
@@ -898,7 +936,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             </div>
 
             <div className="print-agency-identifiers flex flex-wrap gap-x-2 text-[10px] text-slate-500">
-              <span>Registry IDs</span>
+              <span><DataLabel kind="identifier">Registry IDs</DataLabel></span>
               <span>FDID: {agency.fdid || 'Not recorded'}</span>
               <span>NPI: {agency.npiNumber || 'Unassigned'}</span>
               <span>Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
@@ -918,7 +956,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <div>
-                  <div className="text-[11px] font-medium text-slate-500">Authorized official</div>
+                  <div className="text-[11px] font-medium text-slate-500"><DataLabel kind="contact">Authorized official</DataLabel></div>
                   <div className="text-sm font-semibold text-slate-900 mt-0.5">
                     {agency.nppesOfficialName || primaryContact?.name || 'Not reported'}
                   </div>
@@ -931,7 +969,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div>
-                  <div className="text-[11px] font-medium text-slate-500">Command headquarters contact</div>
+                  <div className="text-[11px] font-medium text-slate-500"><DataLabel kind="phone">Command headquarters contact</DataLabel></div>
                   <div className="text-xs font-semibold text-[#1E3A8A] mt-0.5 tabular-nums">
                     {departmentPhone}
                   </div>
@@ -946,7 +984,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div>
-                  <div className="text-[11px] font-medium text-slate-500">Clinical software stack</div>
+                  <div className="text-[11px] font-medium text-slate-500"><DataLabel kind="service">Clinical software stack</DataLabel></div>
                   <div className="text-xs font-semibold text-slate-900 mt-0.5">
                     Billing: {agency.installedFleet?.billingSoftware || 'Not reported'}
                   </div>
@@ -965,10 +1003,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <table className="w-full text-left border-collapse text-xs">
                     <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                       <tr>
-                        <th className="py-2 px-3">Contact official</th>
-                        <th className="py-2 px-3">Functional role</th>
-                        <th className="py-2 px-3">Direct phone</th>
-                        <th className="py-2 px-3">Official email</th>
+                        <th className="py-2 px-3"><DataLabel kind="contact">Contact official</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="contact">Functional role</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="phone">Direct phone</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="email">Official email</DataLabel></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -995,11 +1033,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {/* 4 Core Executive Metric Callouts */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2">
-                Executive operational and clinical indicators
+                <DataLabel kind="incidents">Executive operational and clinical indicators</DataLabel>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">Annual 911 transports</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="transports">Annual 911 transports</DataLabel></div>
                   <div className="text-[24px] font-[650] text-slate-900 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.annual911Transports)}
                   </div>
@@ -1009,7 +1047,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">Installed defib fleet</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="monitor">Installed defib fleet</DataLabel></div>
                   <div className="text-sm font-semibold text-slate-900 mt-1 truncate" title={agency.installedFleet?.defibBrand}>
                     {agency.installedFleet?.defibBrand || 'Not reported'}
                   </div>
@@ -1019,7 +1057,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="print-planning-estimate p-3.5 rounded-lg border border-slate-200 bg-slate-50">
-                  <div className="text-xs text-emerald-800 font-medium">Billing recovery potential</div>
+                  <div className="text-xs text-emerald-800 font-medium"><DataLabel kind="claims">Billing recovery potential</DataLabel></div>
                   <div className="text-sm font-semibold text-slate-700 mt-1 tabular-nums leading-tight">
                     Estimate unavailable
                   </div>
@@ -1030,7 +1068,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">Cardiac survival &amp; acuity</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="survival">Cardiac survival &amp; acuity</DataLabel></div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.utsteinSurvivalRate, '%')}
                   </div>
@@ -1094,10 +1132,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
-                      <th className="py-2 px-3">Vehicle apparatus classification</th>
-                      <th className="py-2 px-3 text-center">Active count</th>
-                      <th className="py-2 px-3">Primary equipment payload</th>
-                      <th className="py-2 px-3">Lifecycle status</th>
+                      <th className="py-2 px-3"><DataLabel kind="apparatus">Vehicle apparatus classification</DataLabel></th>
+                      <th className="py-2 px-3 text-center"><DataLabel kind="equipment">Active count</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="equipment">Primary equipment payload</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="maintenance">Lifecycle status</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -1152,7 +1190,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               logistics?.cathLabDistanceMiles != null || logistics?.avgEdOffloadLatencyMinutes != null) && (
             <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               <div>
-                <div className="text-xs text-slate-500 font-medium">Primary receiving trauma hospital</div>
+                <div className="text-xs text-slate-500 font-medium"><DataLabel kind="hospital">Primary receiving trauma hospital</DataLabel></div>
                 <div className="text-sm font-semibold text-slate-900 mt-0.5">{logistics?.primaryTraumaHospital || 'Not reported'}</div>
                 <div className="text-xs text-slate-600 mt-1 tabular-nums">
                   Driving distance: <strong className="font-medium text-slate-800">{reportNumber(logistics?.distanceToTraumaMiles, ' miles')}</strong> &middot; Transit time: <strong className="font-medium text-slate-800">{reportNumber(logistics?.transportTimeMinutes, ' mins')}</strong>
@@ -1212,7 +1250,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">STEMI 12-lead acquisition</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="clinical">STEMI 12-lead acquisition</DataLabel></div>
                   <div className="text-[24px] font-[650] text-blue-900 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.qualityMetrics?.nemsqaStemi12LeadAcquisitionPct, '%')}
                   </div>
@@ -1222,7 +1260,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">Chest compression fraction</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="clinical">Chest compression fraction</DataLabel></div>
                   <div className="text-[24px] font-[650] text-emerald-800 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.qualityMetrics?.nemsqaChestCompressionFractionPct, '%')}
                   </div>
@@ -1232,7 +1270,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">ETCO2 ventilation compliance</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="clinical">ETCO2 ventilation compliance</DataLabel></div>
                   <div className="text-[24px] font-[650] text-amber-800 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.qualityMetrics?.nemsqaEtco2VentilationCompliancePct, '%')}
                   </div>
@@ -1242,7 +1280,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
 
                 <div className="p-3.5 rounded-lg border border-slate-200 bg-white">
-                  <div className="text-xs text-slate-500 font-medium">Pediatric respiratory support</div>
+                  <div className="text-xs text-slate-500 font-medium"><DataLabel kind="clinical">Pediatric respiratory support</DataLabel></div>
                   <div className="text-[24px] font-[650] text-purple-900 mt-1 tabular-nums leading-none">
                     {reportNumber(agency.qualityMetrics?.nemsqaPediatricRespiratorySupportPct, '%')}
                   </div>
@@ -1271,7 +1309,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="print-planning-estimate text-xs text-slate-600 font-medium">Estimated annual recoverable cash:</span>
+                  <span className="print-planning-estimate text-xs text-slate-600 font-medium"><DataLabel kind="savings">Estimated annual recoverable cash:</DataLabel></span>
                   <div className="print-planning-estimate text-sm font-semibold text-slate-700 tabular-nums leading-tight mt-0.5">
                     Not reported: estimate inputs and method unavailable
                   </div>
@@ -1288,25 +1326,25 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
                   <div className="p-2 rounded bg-white border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Medicare</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="claims">Medicare</DataLabel></div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
                       {reportNumber(agency.cmsData?.medicarePayerPct ?? agency.cmsData?.payerMix?.medicare, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Medicaid</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="claims">Medicaid</DataLabel></div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
                       {reportNumber(agency.cmsData?.medicaidPayerPct ?? agency.cmsData?.payerMix?.medicaid, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Commercial</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="claims">Commercial</DataLabel></div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
                       {reportNumber(agency.cmsData?.commercialPayerMixPct ?? agency.cmsData?.payerMix?.commercial, '%')}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-white border border-slate-200">
-                    <div className="text-xs text-slate-500 font-medium">Self-Pay / Other</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="claims">Self-Pay / Other</DataLabel></div>
                     <div className="font-semibold text-slate-900 text-sm mt-0.5 tabular-nums">
                       {reportNumber(agency.cmsData?.selfPayPayerPct ?? agency.cmsData?.payerMix?.selfPay, '%')}
                     </div>
@@ -1329,19 +1367,19 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 text-xs space-y-2">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Incumbent provider</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="contract">Incumbent provider</DataLabel></div>
                     <div className="text-sm font-semibold text-slate-900 mt-0.5">
                       {agency.competitorContract?.vendor || 'Not reported'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Expiration date</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="expiration">Expiration date</DataLabel></div>
                     <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">
                       {agency.competitorContract?.contractEndDate || 'Not reported'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Renewal window</div>
+                    <div className="text-xs text-slate-500 font-medium"><DataLabel kind="expiration">Renewal window</DataLabel></div>
                     <div className="text-sm font-semibold text-amber-800 mt-0.5 tabular-nums">
                       {reportNumber(agency.competitorContract?.renewalWindowDays, ' days')}
                     </div>
@@ -1363,10 +1401,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                       <tr>
-                        <th className="py-2 px-3">Date</th>
-                        <th className="py-2 px-3">Interaction</th>
-                        <th className="py-2 px-3">Field notes</th>
-                        <th className="py-2 px-3">Next action</th>
+                        <th className="py-2 px-3"><DataLabel kind="period">Date</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="visit">Interaction</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="notes">Field notes</DataLabel></th>
+                        <th className="py-2 px-3"><DataLabel kind="visit">Next action</DataLabel></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -1432,10 +1470,10 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
-                      <th className="py-2.5 px-3">TCO cost component</th>
+                      <th className="py-2.5 px-3"><DataLabel kind="cost">TCO cost component</DataLabel></th>
                       <th className="py-2.5 px-3">Incumbent ({tcoModel?.incumbentModel || agency.installedFleet?.defibBrand || 'Not reported'})</th>
                       <th className="py-2.5 px-3">ZOLL {tcoModel?.zollModel || 'model not selected'}</th>
-                      <th className="py-2.5 px-3 text-right">5-year savings</th>
+                      <th className="py-2.5 px-3 text-right"><DataLabel kind="savings">5-year savings</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -1507,11 +1545,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
-                      <th className="py-2 px-3">HCPCS code</th>
-                      <th className="py-2 px-3">Procedure descriptor</th>
-                      <th className="py-2 px-3 text-right">Annual runs</th>
-                      <th className="py-2 px-3 text-right">Gross billing</th>
-                      <th className="py-2 px-3 text-right">Denial loss</th>
+                      <th className="py-2 px-3"><DataLabel kind="identifier">HCPCS code</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="clinical">Procedure descriptor</DataLabel></th>
+                      <th className="py-2 px-3 text-right"><DataLabel kind="transports">Annual runs</DataLabel></th>
+                      <th className="py-2 px-3 text-right"><DataLabel kind="claims">Gross billing</DataLabel></th>
+                      <th className="py-2 px-3 text-right"><DataLabel kind="cost">Denial loss</DataLabel></th>
                       <th className="py-2 px-3">Automated documentation mitigation</th>
                     </tr>
                   </thead>
@@ -1618,11 +1656,11 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-medium">
                     <tr>
-                      <th className="py-2 px-3">Fiscal year</th>
-                      <th className="py-2 px-3">Grant program</th>
-                      <th className="py-2 px-3">Funded scope</th>
-                      <th className="py-2 px-3 text-right">Award amount</th>
-                      <th className="py-2 px-3 text-center">Status</th>
+                      <th className="py-2 px-3"><DataLabel kind="period">Fiscal year</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">Grant program</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">Funded scope</DataLabel></th>
+                      <th className="py-2 px-3 text-right"><DataLabel kind="funding">Award amount</DataLabel></th>
+                      <th className="py-2 px-3 text-center"><DataLabel kind="review">Status</DataLabel></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">

@@ -30,6 +30,7 @@ import {
   Download,
   Printer
 } from 'lucide-react';
+import { DataLabel } from './DataLabel';
 
 interface FieldModeViewProps {
   agencies: Agency[];
@@ -281,7 +282,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
             </details>
 
             <div className="text-xs font-medium text-[var(--pi-text-secondary)] bg-[var(--pi-surface-subtle)] border border-[var(--pi-border)] px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 pi-data-inline">
-              <strong className="pi-data-number font-semibold">{dayRouteAgencies.length}</strong> stops planned
+              <DataLabel kind="visit"><strong className="pi-data-number font-semibold">{dayRouteAgencies.length}</strong> stops planned</DataLabel>
             </div>
           </div>
         </div>
@@ -307,19 +308,19 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                             {agency.name}
                           </h3>
                           <span className="field-route-score text-xs font-medium text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md tabular-nums">
-                            Score {agency.zollOpportunity.pulseIqScore}/100
+                            <DataLabel kind="score">Score</DataLabel> {agency.zollOpportunity.pulseIqScore}/100
                           </span>
                         </div>
 
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
-                          <span>{agency.address}</span>
+                          <span><DataLabel kind="location">{agency.address}</DataLabel></span>
                           <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">&middot;</span>
-                          <span>Target: <strong className="text-slate-800 dark:text-slate-200 font-medium">{agency.zollOpportunity.primaryTargetProduct}</strong></span>
+                          <span><DataLabel kind="equipment">Target:</DataLabel> <strong className="text-slate-800 dark:text-slate-200 font-medium">{agency.zollOpportunity.primaryTargetProduct}</strong></span>
                         </div>
 
                         {chief && (
                           <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex flex-wrap items-center gap-3">
-                            <span className="font-semibold text-slate-800 dark:text-slate-100">{chief.name} ({chief.title})</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-100"><DataLabel kind="contact">{chief.name} ({chief.title})</DataLabel></span>
                             <a
                               href={agency.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`}
                               target="_blank"
@@ -480,13 +481,13 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                 </div>
                 <div className="space-y-2 text-slate-600 dark:text-slate-300">
                   <div>
-                    <span className="text-slate-400 text-xs block font-medium">Displaces competitors:</span>
+                    <span className="text-slate-400 text-xs block font-medium"><DataLabel kind="contract">Displaces competitors:</DataLabel></span>
                     <span className="text-rose-700 dark:text-rose-400 font-medium">
                       {ZOLL_PRODUCTS[activeBattlecard].displacementTargets.join(', ')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-xs block font-medium">CMS reimbursement impact:</span>
+                    <span className="text-slate-400 text-xs block font-medium"><DataLabel kind="claims">CMS reimbursement impact:</DataLabel></span>
                     <span className="text-slate-700 dark:text-slate-200 font-normal">
                       {ZOLL_PRODUCTS[activeBattlecard].cmsBenefit}
                     </span>
@@ -601,6 +602,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
           }
 
           #field-route-sheet .no-print,
+          #field-route-sheet details,
           #field-route-sheet button,
           #field-route-sheet .field-route-launch-link {
             display: none !important;

@@ -27,6 +27,7 @@ import {
   deriveFleetTelemetryFromAgencies,
   executeSafeHarborAnonymization
 } from '../data/procurementAndTelemetryData';
+import { DataLabel } from './DataLabel';
 
 interface LiveOpenFemaAward {
   id: string;
@@ -372,9 +373,9 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                     <th className="py-2.5 px-4">State &amp; Region</th>
                     <th className="py-2.5 px-4 text-right">Loaded Agencies</th>
                     <th className="py-2.5 px-4 text-right">Cloud Synced</th>
-                    <th className="py-2.5 px-4 text-right">Medicare Claims</th>
+                    <th className="py-2.5 px-4 text-right"><DataLabel kind="claims">Medicare Claims</DataLabel></th>
                     <th className="py-2.5 px-4 text-right">Billed Volume</th>
-                    <th className="py-2.5 px-4 text-right">Claim records</th>
+                    <th className="py-2.5 px-4 text-right"><DataLabel kind="claims">Claim records</DataLabel></th>
                     <th className="py-2.5 px-4 text-right">Recoverable Rev</th>
                     <th className="py-2.5 px-4">Data Provenance</th>
                   </tr>
@@ -468,12 +469,12 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="py-2 px-3">FEMA Award Number</th>
-                      <th className="py-2 px-3">Grantee Organization</th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">FEMA Award Number</DataLabel></th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">Grantee Organization</DataLabel></th>
                       <th className="py-2 px-3">City / State</th>
-                      <th className="py-2 px-3">Micro-Grant / Program Activity</th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">Micro-Grant / Program Activity</DataLabel></th>
                       <th className="py-2 px-3 text-right">Federal Payout</th>
-                      <th className="py-2 px-3">Award Date</th>
+                      <th className="py-2 px-3"><DataLabel kind="funding">Award Date</DataLabel></th>
                       <th className="py-2 px-3 text-right">Verify</th>
                     </tr>
                   </thead>
@@ -743,11 +744,11 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="py-2.5 px-4">Agency &amp; Jurisdiction</th>
-                  <th className="py-2.5 px-4">Incumbent Monitor Fleet</th>
-                  <th className="py-2.5 px-4 text-right">Fleet Age</th>
-                  <th className="py-2.5 px-4">Warranty Status</th>
-                  <th className="py-2.5 px-4">Contract End</th>
+                  <th className="py-2.5 px-4"><DataLabel kind="agency">Agency &amp; Jurisdiction</DataLabel></th>
+                  <th className="py-2.5 px-4"><DataLabel kind="monitor">Incumbent Monitor Fleet</DataLabel></th>
+                  <th className="py-2.5 px-4 text-right"><DataLabel kind="equipment">Fleet Age</DataLabel></th>
+                  <th className="py-2.5 px-4"><DataLabel kind="warranty">Warranty Status</DataLabel></th>
+                  <th className="py-2.5 px-4"><DataLabel kind="contract">Contract End</DataLabel></th>
                   <th className="py-2.5 px-4 text-right">5-Yr Net TCO Savings</th>
                   <th className="py-2.5 px-4">Provenance</th>
                 </tr>

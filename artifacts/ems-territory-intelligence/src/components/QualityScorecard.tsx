@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Stethoscope
 } from 'lucide-react';
+import { DataLabel } from './DataLabel';
 
 interface QualityScorecardProps {
   agency: Agency;
@@ -174,11 +175,11 @@ export const QualityScorecard: React.FC<QualityScorecardProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800 text-xs">
-                <th className="py-3 px-4">Clinical quality measure</th>
-                <th className="py-3 px-3 text-right">Agency baseline</th>
-                <th className="py-3 px-3 text-right">US benchmark</th>
-                <th className="py-3 px-3 text-right">With ZOLL uplift</th>
-                <th className="py-3 px-4">Clinical mechanism</th>
+                <th className="py-3 px-4"><DataLabel kind="clinical">Clinical quality measure</DataLabel></th>
+                <th className="py-3 px-3 text-right"><DataLabel kind="agency">Agency baseline</DataLabel></th>
+                <th className="py-3 px-3 text-right"><DataLabel kind="clinical">US benchmark</DataLabel></th>
+                <th className="py-3 px-3 text-right"><DataLabel kind="clinical">With ZOLL uplift</DataLabel></th>
+                <th className="py-3 px-4"><DataLabel kind="clinical">Clinical mechanism</DataLabel></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

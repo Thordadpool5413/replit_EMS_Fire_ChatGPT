@@ -1,3 +1,30 @@
+/* Semantic information labels: icons support text, never replace it. */
+.pi-data-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .375rem;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: baseline;
+  line-height: 1.4;
+}
+.pi-data-label > span { min-width: 0; overflow-wrap: anywhere; }
+.pi-data-label-icon {
+  width: 1em;
+  height: 1em;
+  min-width: 1em;
+  flex-shrink: 0;
+  align-self: baseline;
+  transform: translateY(.12em);
+  color: var(--pi-action-ink);
+  stroke-width: 1.8;
+}
+@media (forced-colors: active) {
+  .pi-data-label-icon { color: CanvasText; }
+}
+@media print {
+  .pi-data-label-icon { color: #334155; }
+}
 /* Owner: shared. Cascade phase: contracts. See ../README.md. */
 .pi-workspace-tabs {
   min-height: 2.75rem;

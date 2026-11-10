@@ -16,6 +16,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
+import { DataLabel, inferDataLabelKind } from './DataLabel';
 
 const HOME_MAP_TRANSLATE_X = 48;
 const HOME_MAP_GEOMETRY_SCALE = 1.08;
@@ -502,7 +503,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             >
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
-                  Shade states by
+                  <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
                     id="home-state-map-metric"
                     data-testid="select-state-map-metric"
@@ -521,7 +522,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </label>
                 {isQualityMapMetric(mapMetric) && (
                   <label htmlFor="home-map-color-palette" className="home-map-palette-control flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
-                    Map palette
+                    <DataLabel kind="coverage">Map palette</DataLabel>
                     <select
                       id="home-map-color-palette"
                       data-testid="select-map-color-palette"
@@ -553,7 +554,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
               <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
-                  {activeMapMetric.label}
+                  <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
                     <span className="home-map-legend-palette-note"> · Color-blind safe</span>
                   )}

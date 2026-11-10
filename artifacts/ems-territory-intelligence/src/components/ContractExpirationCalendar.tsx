@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatInteger, formatDate } from '../utils/numberFormatting';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
+import { DataLabel } from './DataLabel';
 
 interface ContractExpirationCalendarProps {
   agencies: Agency[];
@@ -139,7 +140,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
           </div>
 
           <div className="pl-4 border-l border-slate-200 dark:border-slate-800 text-right shrink-0">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Expiring Within 90 Days</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium"><DataLabel kind="expiration">Expiring Within 90 Days</DataLabel></div>
             <div className="pi-metric-hero font-bold text-amber-700 dark:text-amber-400 mt-0.5">
               {formatInteger(expiringAgencies.filter(a => a.competitorContract.renewalWindowDays <= 90).length)} Accounts
             </div>
@@ -229,12 +230,12 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800 text-xs">
-                <th className="py-3 px-4">Agency / jurisdiction</th>
-                <th className="py-3 px-3">Incumbent vendor &amp; fleet</th>
-                <th className="py-3 px-3 hidden sm:table-cell">End date</th>
-                <th className="py-3 px-3 hidden md:table-cell">Renewal window</th>
-                <th className="py-3 px-3 text-right hidden lg:table-cell">Rival annual cost</th>
-                <th className="py-3 px-4 hidden xl:table-cell">Sales intervention strategy</th>
+                <th className="py-3 px-4"><DataLabel kind="agency">Agency / jurisdiction</DataLabel></th>
+                <th className="py-3 px-3"><DataLabel kind="contract">Incumbent vendor &amp; fleet</DataLabel></th>
+                <th className="py-3 px-3 hidden sm:table-cell"><DataLabel kind="expiration">End date</DataLabel></th>
+                <th className="py-3 px-3 hidden md:table-cell"><DataLabel kind="expiration">Renewal window</DataLabel></th>
+                <th className="py-3 px-3 text-right hidden lg:table-cell"><DataLabel kind="cost">Rival annual cost</DataLabel></th>
+                <th className="py-3 px-4 hidden xl:table-cell"><DataLabel kind="visit">Sales intervention strategy</DataLabel></th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>

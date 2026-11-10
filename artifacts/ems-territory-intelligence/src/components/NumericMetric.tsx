@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { DataLabel, type DataLabelKind } from './DataLabel';
 
 export type MetricHierarchySize = 
   | 'hero'        // Primary executive metric (28–32px, 600–650)
@@ -17,6 +18,7 @@ export type MetricHierarchySize =
 export interface NumericMetricProps {
   value: React.ReactNode;
   label?: React.ReactNode;
+  labelKind?: DataLabelKind;
   context?: React.ReactNode;
   size?: MetricHierarchySize;
   trend?: {
@@ -43,6 +45,7 @@ const SIZE_CLASS_MAP: Record<MetricHierarchySize, string> = {
 export const NumericMetric: React.FC<NumericMetricProps> = ({
   value,
   label,
+  labelKind,
   context,
   size = 'standard',
   trend,
@@ -78,7 +81,7 @@ export const NumericMetric: React.FC<NumericMetricProps> = ({
       {/* 2. Label (What the measurement means) */}
       {label && (
         <span className={`text-xs font-medium text-[#53657B] dark:text-[#94A3B8] leading-tight ${labelClassName}`}>
-          {label}
+          <DataLabel kind={labelKind}>{label}</DataLabel>
         </span>
       )}
 

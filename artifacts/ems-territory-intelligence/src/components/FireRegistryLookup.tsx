@@ -6,6 +6,7 @@ import {
 import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import type { AgencySourceRecordAssociation } from "../types";
 import { findAgencySourceRecordAssociation } from "../services/agencySourceRecordStore";
+import { DataLabel } from './DataLabel';
 
 type FireRegistryLookupProps = {
   agencyName: string;
@@ -325,7 +326,7 @@ export function FireRegistryLookup({
                     {record.headquartersAddress && (
                       <div className="col-span-2">
                         <dt className="text-slate-500 dark:text-slate-400">
-                          Registry address
+                          <DataLabel kind="location">Registry address</DataLabel>
                         </dt>
                         <dd className="font-medium text-slate-800 dark:text-slate-100">
                           {record.headquartersAddress}
@@ -335,7 +336,7 @@ export function FireRegistryLookup({
                     {record.stationCount !== null && (
                       <div>
                         <dt className="text-slate-500 dark:text-slate-400">
-                          Reported stations
+                          <DataLabel kind="stations">Reported stations</DataLabel>
                         </dt>
                         <dd className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                           {record.stationCount}
@@ -372,7 +373,7 @@ export function FireRegistryLookup({
                     )}
                     <div>
                       <dt className="text-slate-500 dark:text-slate-400">
-                        Record export date
+                        <DataLabel kind="period">Record export date</DataLabel>
                       </dt>
                       <dd className="font-medium text-slate-800 dark:text-slate-100">
                         {displayDate(record.exportDate)}

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { QualityScorecard } from './QualityScorecard';
 import { formatCurrency, formatInteger, formatPercent } from '../utils/numberFormatting';
+import { DataLabel } from './DataLabel';
 
 interface ClinicalCompetitiveKnowledgeHubProps {
   agencies: Agency[];
@@ -374,8 +375,8 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                   <th className="py-3 px-4">Lifecycle cost driver ({tcoModel.years} years &middot; {tcoModel.unitCount} devices)</th>
                   <th className="py-3 px-4 text-right">Incumbent: {tcoModel.incumbentModel}</th>
                   <th className="py-3 px-4 text-right">ZOLL: {tcoModel.zollModel}</th>
-                  <th className="py-3 px-4 text-right">Net municipal savings</th>
-                  <th className="py-3 px-4">Clinical &amp; biomedical justification</th>
+                  <th className="py-3 px-4 text-right"><DataLabel kind="savings">Net municipal savings</DataLabel></th>
+                  <th className="py-3 px-4"><DataLabel kind="clinical">Clinical &amp; biomedical justification</DataLabel></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -611,7 +612,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
-                  <th className="py-3 px-4">Contract vehicle</th>
+                  <th className="py-3 px-4"><DataLabel kind="contract">Contract vehicle</DataLabel></th>
                   <th className="py-3 px-4">Eligible agencies</th>
                   <th className="py-3 px-4">Discount terms</th>
                   <th className="py-3 px-4">Procurement time saved</th>
@@ -685,10 +686,10 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
                     <th className="py-3 px-4">HCPCS code</th>
-                    <th className="py-3 px-4">Procedure &amp; clinical trigger</th>
+                    <th className="py-3 px-4"><DataLabel kind="clinical">Procedure &amp; clinical trigger</DataLabel></th>
                     <th className="py-3 px-4 text-right">CMS base rate</th>
-                    <th className="py-3 px-4 text-right">Est. annual claims</th>
-                    <th className="py-3 px-4 text-right">Gross annual billing</th>
+                    <th className="py-3 px-4 text-right"><DataLabel kind="claims">Est. annual claims</DataLabel></th>
+                    <th className="py-3 px-4 text-right"><DataLabel kind="claims">Gross annual billing</DataLabel></th>
                     <th className="py-3 px-4 text-right">Denial exposure</th>
                     <th className="py-3 px-4">ZOLL documentation mitigation</th>
                   </tr>
@@ -742,11 +743,11 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
-                    <th className="py-3 px-4">Regional clinical protocol</th>
+                    <th className="py-3 px-4"><DataLabel kind="clinical">Regional clinical protocol</DataLabel></th>
                     <th className="py-3 px-4">Target benchmark</th>
-                    <th className="py-3 px-4">Incumbent hardware limitation</th>
-                    <th className="py-3 px-4">ZOLL clinical technology</th>
-                    <th className="py-3 px-4 text-right">Status</th>
+                    <th className="py-3 px-4"><DataLabel kind="equipment">Incumbent hardware limitation</DataLabel></th>
+                    <th className="py-3 px-4"><DataLabel kind="clinical">ZOLL clinical technology</DataLabel></th>
+                    <th className="py-3 px-4 text-right"><DataLabel kind="review">Status</DataLabel></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

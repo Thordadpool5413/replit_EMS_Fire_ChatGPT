@@ -1732,7 +1732,10 @@ async function checkProfilePrintCase(
       `The direct agency PDF paper-size choices are missing: ${JSON.stringify(paperSizeOptions)}`,
     );
 
-    for (const directPaperSize of printPaperSizes) {
+    for (const directPaperSize of printPaperSizes.filter((paper) =>
+      !process.env.PROFILE_DIRECT_PAPER ||
+      paper.name.toLowerCase() === process.env.PROFILE_DIRECT_PAPER.toLowerCase(),
+    )) {
       const selectedValue = directPaperSize.name === 'A4' ? 'a4' : 'letter';
       const selectedPaperSize = await evaluate(cdp, `(() => {
         const select = document.querySelector(
@@ -1864,7 +1867,7 @@ async function checkFieldRoutePrint(cdp, pdfDirectory) {
 
   const openedFieldWork = await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('button')].find((candidate) =>
-      candidate.innerText.trim() === 'Field Work');
+      /^Field\\s*Work(?:\\s*\\d+)?$/i.test(candidate.innerText.trim()));
     if (!button) return false;
     button.click();
     return true;
@@ -1986,7 +1989,7 @@ async function checkFieldRoutePrint(cdp, pdfDirectory) {
             stop.address,
             stop.target,
             stop.contact,
-          ].every((detail) => normalizedPdfText.includes(detail.toLowerCase()))) &&
+          ].every((detail) => normalizedPdfText.includes(detail.replace(/\s+/g, ' ').toLowerCase()))) &&
           normalizedPdfText.includes('google maps lookup') &&
           !normalizedPdfText.includes('field clinical & financial battlecards'),
         `Field route ${paperSize.name} PDF lost content, printed unrelated panels, or paginated unexpectedly in ${theme}: ${pageCount} pages (${pageSize})`,
@@ -4967,9 +4970,16 @@ async function main() {
           );
         })();`,
       });
-      for (const theme of ['daylight', 'dark', 'miami-vice']) {
-        for (const testCase of profilePrintCases) {
-          for (const paperSize of printPaperSizes) {
+      for (const theme of ['daylight', 'dark', 'miami-vice'].filter((theme) =>
+        !process.env.PROFILE_PRINT_THEME || theme === process.env.PROFILE_PRINT_THEME,
+      )) {
+        for (const testCase of profilePrintCases.filter((item) =>
+          !process.env.PROFILE_PRINT_CATEGORY || item.category === process.env.PROFILE_PRINT_CATEGORY,
+        )) {
+          for (const paperSize of printPaperSizes.filter((paper) =>
+            !process.env.PROFILE_PRINT_PAPER ||
+            paper.name.toLowerCase() === process.env.PROFILE_PRINT_PAPER.toLowerCase(),
+          )) {
             await checkProfilePrintCase(
               cdp,
               testCase,

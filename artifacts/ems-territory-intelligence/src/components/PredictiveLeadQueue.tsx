@@ -88,6 +88,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
+import { DataLabel } from './DataLabel';
 
 export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   agencies,
@@ -1299,8 +1300,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   >
                     Score {sortBy === 'pulseIq' ? '↓' : ''}
                   </th>
-                  <th className="py-2.5 px-4">Agency &amp; jurisdiction</th>
-                  <th className="py-2.5 px-3 hidden 2xl:table-cell">Apparatus &amp; command</th>
+                  <th className="py-2.5 px-4"><DataLabel kind="agency">Agency &amp; jurisdiction</DataLabel></th>
+                  <th className="py-2.5 px-3 hidden 2xl:table-cell"><DataLabel kind="apparatus">Apparatus &amp; command</DataLabel></th>
                   <th
                     onClick={() => setSortBy('fleetAge')}
                     className="py-2.5 px-3 hidden md:table-cell cursor-pointer hover:text-[#1E3A8A]"
@@ -1308,8 +1309,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                   >
                     Frontline fleet {sortBy === 'fleetAge' ? '↓' : ''}
                   </th>
-                  <th className="py-2.5 px-3 text-right hidden xl:table-cell">Claim summary</th>
-                  <th className="py-2.5 px-3 text-right hidden lg:table-cell">AFG grant</th>
+                  <th className="py-2.5 px-3 text-right hidden xl:table-cell"><DataLabel kind="claims">Claim summary</DataLabel></th>
+                  <th className="py-2.5 px-3 text-right hidden lg:table-cell"><DataLabel kind="funding">AFG grant</DataLabel></th>
                   <th
                     onClick={() => setSortBy('value')}
                     className="py-2.5 px-3 text-right hidden sm:table-cell cursor-pointer hover:text-[#1E3A8A]"

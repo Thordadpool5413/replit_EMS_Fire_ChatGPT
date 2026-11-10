@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowUpRight, Building2, ClipboardList, MapPin, Shield
 import type { Agency, AgencyFactEvidenceKey, AgencySourceFact, PredictiveWeights } from '../types';
 import { getPulseIqFormula, getPulseIqWeightDetails } from '../utils/pulseIqScoring';
 import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
+import { DataLabel, inferDataLabelKind } from './DataLabel';
 
 type AgencyComparisonPanelProps = {
   agencies: Agency[];
@@ -556,7 +557,7 @@ export function AgencyComparisonPanel({ agencies, weights, onClose, onRemoveAgen
                     </div>
                     {section.rows.map((row) => (
                       <div key={`${section.title}-${row.label}`} className="grid border-b border-[#E0E7EC] last:border-b-0 dark:border-[#263951]" style={columnStyle}>
-                        <div className="flex items-start px-4 py-3 text-[11px] font-semibold leading-5 text-[#61758A] dark:text-slate-300">{row.label}{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</div>
+                        <div className="flex items-start px-4 py-3 text-[11px] font-semibold leading-5 text-[#61758A] dark:text-slate-300"><DataLabel kind={inferDataLabelKind(row.label)}>{row.label}</DataLabel>{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</div>
                          {orderedAgencies.map((agency) => <div key={agency.id} className="border-l border-[#E0E7EC] dark:border-[#263951]"><ValueCell agency={agency} row={row} /></div>)}
                       </div>
                     ))}
@@ -588,7 +589,7 @@ export function AgencyComparisonPanel({ agencies, weights, onClose, onRemoveAgen
                   <div className="space-y-2 pt-2">
                       {section.rows.map((row) => (
                         <article key={`${section.title}-${row.label}`} className="overflow-hidden rounded-lg border border-[#D5DFE8] bg-[#F9FBFC] dark:border-[#263951] dark:bg-[#111C2D]" data-testid={`comparison-mobile-row-${row.key}-${row.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
-                          <h3 className="break-words px-3 pt-2.5 text-[11px] font-bold text-[#455B71] dark:text-slate-200">{row.label}{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</h3>
+                          <h3 className="break-words px-3 pt-2.5 text-[11px] font-bold text-[#455B71] dark:text-slate-200"><DataLabel kind={inferDataLabelKind(row.label)}>{row.label}</DataLabel>{row.unit && <span className="ml-1 font-normal text-[#8492A1]">({row.unit})</span>}</h3>
                           <div className="divide-y divide-[#E0E7EC] dark:divide-[#263951]">
                              {orderedAgencies.map((agency) => <ValueCell key={agency.id} agency={agency} row={row} compact />)}
                           </div>

@@ -477,6 +477,17 @@ try {
       if (viewport.width>=1024) {
         assert(frame.stageBottom<=frame.height, `${label}: map stage extends below screen ${JSON.stringify(frame)}`);
         assert(frame.shortcutsVisible, `${label}: shortcut controls clipped ${JSON.stringify(frame)}`);
+        const railContrast = await evaluate(`(() => {
+          const rgb=s=>(s.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);
+          const lum=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+          const stage=document.querySelector('.home-map-stage-v2');
+          const bg=lum(rgb(getComputedStyle(stage).backgroundColor));
+          return [...stage.querySelectorAll('.home-map-layer-select,.home-map-legend-title,.home-map-legend-endpoint,.home-map-legend-missing-note')].map(e=>{
+            const fg=lum(rgb(getComputedStyle(e).color));
+            return {text:e.textContent.trim(),ratio:(Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05)};
+          });
+        })()`);
+        assert(railContrast.every(e=>e.ratio>=4.5), `${label}: map control contrast ${JSON.stringify(railContrast)}`);
       }
       console.log(`✓ ${label}: full US ${Math.round(frame.geoWidth)}×${Math.round(frame.geoHeight)}px, fitted without cropping`);
       continue;

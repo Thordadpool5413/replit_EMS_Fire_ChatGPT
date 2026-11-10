@@ -1057,4 +1057,55 @@
     margin-top: 0.35rem;
   }
   .home-territory-map-screen-v2 .home-map-shortcut-row > button { min-height: 2.25rem !important; min-width: 0 !important; }
+
+  /* The geography retains its fixed dark canvas; controls use the app surface
+     (white in Daylight) rather than inheriting the cartographic background. */
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    --home-control-ink: var(--pi-text-primary);
+    background: var(--pi-surface-bg) !important;
+    border-color: var(--pi-border) !important;
+    box-shadow: 0 4px 16px -12px rgba(15, 23, 42, .2) !important;
+  }
+  .home-territory-map-screen-v2 .home-map-toolbar-v2 > label,
+  .home-territory-map-screen-v2 .home-map-zoom-control > span,
+  .home-territory-map-screen-v2 .home-map-shortcuts-heading,
+  .home-territory-map-screen-v2 .home-map-state-preview-kicker,
+  .home-territory-map-screen-v2 .home-map-state-preview-id strong span,
+  .home-territory-map-screen-v2 .home-map-state-preview-facts dt,
+  .home-territory-map-screen-v2 .home-map-stage-v2 .home-map-legend-v2 > span,
+  .home-territory-map-screen-v2 .home-map-stage-v2 .home-map-legend-endpoint {
+    color: var(--pi-text-secondary) !important;
+  }
+  .home-territory-map-screen-v2 .home-map-layer-select,
+  .home-territory-map-screen-v2 .home-map-zoom-control,
+  .home-territory-map-screen-v2 .home-map-legend-v2,
+  .home-territory-map-screen-v2 .home-map-state-preview,
+  .home-territory-map-screen-v2 .home-map-shortcut-row > button {
+    background: var(--pi-surface-bg) !important;
+    color: var(--pi-text-primary) !important;
+    border-color: var(--pi-border) !important;
+    box-shadow: none !important;
+  }
+  .home-territory-map-screen-v2 .home-map-zoom-control button,
+  .home-territory-map-screen-v2 .home-map-state-preview-id strong,
+  .home-territory-map-screen-v2 .home-map-state-preview-facts dd,
+  .home-territory-map-screen-v2 .home-map-stage-v2 .home-map-legend-v2 > .home-map-legend-title {
+    color: var(--pi-text-primary) !important;
+  }
+  .home-territory-map-screen-v2 .home-map-zoom-control button:hover:not(:disabled),
+  .home-territory-map-screen-v2 .home-map-shortcut-row > button:hover {
+    background: var(--pi-action-subtle) !important;
+    color: var(--pi-action-ink) !important;
+  }
+  .home-territory-map-screen-v2 .home-map-shortcut-row > button[aria-pressed="true"] {
+    background: var(--pi-action) !important;
+    color: #fff !important;
+    border-color: var(--pi-action) !important;
+    outline-color: var(--pi-focus-ring) !important;
+  }
+  .home-territory-map-screen-v2 .home-map-shortcuts { border-color: var(--pi-border) !important; }
+  .home-territory-map-screen-v2 .home-map-layer-select:focus-visible,
+  .home-territory-map-screen-v2 .home-map-zoom-control button:focus-visible {
+    outline-color: var(--pi-focus-ring) !important;
+  }
 }

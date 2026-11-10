@@ -63,6 +63,12 @@ Keep every county detail visible; do not move secondary figures, geography, plac
 
 **How to apply:** Reduce redundant chrome and improve composition rather than hiding content, truncating labels, omitting records, or making essential type smaller. On phones, let county place lists flow with the page rather than capping them inside a nested scroll box; this preserves the same visible-detail requirement during touch browsing.
 
+Use a clearly colored blue county-name header, not an almost-white tint. Keep Home's desktop map controls on the normal app surface (white in Daylight), separate from the dark geographic canvas.
+
+**Why:** The user explicitly requested a header color for each county and proposed white for the map's side options after rejecting the oversized cards and all-dark options panel.
+
+**How to apply:** Preserve legible header metadata and icons on blue. Recheck actual control and legend text contrast when separating the light control surface from the fixed dark map; legacy map text colors must not carry over onto white.
+
 Restore blue, not green/teal, as the Daylight theme's action and selection color. Preserve source-defined map/risk colors and use stronger hierarchy rather than giving every descriptive metric a decorative accent.
 
 **Why:** The user explicitly asked to return Daylight to the blue color previously used, rejecting the green appearance.

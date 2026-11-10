@@ -11,6 +11,12 @@ Keep the entire app compact, clean, and scannable on laptop and phone. Reduce ov
 
 For EMS and Fire profiles, use an agency intelligence brief: one identity/contact header, one agency-specific operational snapshot, and findings paired with their basis and a suggested next step. Distinguish EMS, fire, and combined operations without duplicate summaries. Use recognizable unboxed icons, aligned numbers and units, restrained colors, and shared theme tokens. Start supporting detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
 
+Current technology and equipment identification is a primary profile goal, not just supporting detail. Keep the installed-technology summary prominent on phones rather than burying all equipment in collapsed panels.
+
+**Why:** The user clarified: “the goal is to identify what current technology and or equipment is being used as well.”
+
+**How to apply:** Prioritize available device and software information alongside the agency overview. Distinguish reported equipment from historical purchases or planned replacements, and do not imply a dated or unconfirmed reference proves current use.
+
 **Why:** The user said profile sheets looked repetitive and oversized, asked for essentials first with secondary material moved to the bottom, and approved the agency intelligence brief redesign for both EMS and fire profiles.
 
 **How to apply:** Keep one identity header, one operations summary, and one topic bar; derive findings from available records without invented thresholds or verification claims. Keep working-reference values visible until the user confirms or corrects them. Collapse supporting panels by default, reset profile state when the agency changes, and verify source details and layout on phone and laptop. Carry the same hierarchy into paper-safe exports.

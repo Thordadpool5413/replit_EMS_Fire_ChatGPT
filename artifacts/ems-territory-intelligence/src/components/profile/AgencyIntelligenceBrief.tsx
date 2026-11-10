@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
 import { hasAgencyFactEvidence } from '../../data/agencyFactEvidence';
-import { DataLabel, type DataLabelKind } from '../DataLabel';
+import { DataLabel, dataLabelTone, inferDataLabelKind, type DataLabelKind } from '../DataLabel';
 
 type IconType = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
 
@@ -55,7 +55,7 @@ type Figure = {
 };
 
 const Fig: React.FC<Figure> = ({ label, value, unit, period, icon: Icon, testId }) => (
-  <div className="aib-figure" data-testid={testId}>
+  <div className="aib-figure" data-testid={testId} data-label-tone={dataLabelTone(inferDataLabelKind(label))}>
     <dt><Icon className="aib-icon" aria-hidden="true" />{label}</dt>
     <dd className={isNum(value) ? '' : 'is-missing'}>
       <span className="aib-num">{fmt(value)}</span>

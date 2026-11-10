@@ -67,6 +67,19 @@ export const DATA_LABELS = {
 
 export type DataLabelKind = keyof typeof DATA_LABELS;
 
+/** Topic tone families. Tones identify subject matter only, never performance or risk. */
+export type DataLabelTone = 'operations' | 'community' | 'planning' | 'clinical' | 'reference';
+const TONE_KINDS: Record<Exclude<DataLabelTone, 'reference'>, DataLabelKind[]> = {
+  operations: ['personnel', 'transports', 'transportTime', 'calls', 'incidents', 'stations', 'ambulances', 'apparatus', 'fire', 'agency', 'service'],
+  community: ['population', 'age', 'income', 'poverty', 'distance', 'location', 'area', 'coordinates', 'places', 'zip', 'resilience', 'vulnerability'],
+  planning: ['equipment', 'maintenance', 'software', 'warranty', 'contract', 'expiration', 'budget', 'funding', 'cost', 'savings', 'claims', 'score', 'coverage'],
+  clinical: ['cardiac', 'survival', 'clinical', 'hospital', 'monitor'],
+};
+export function dataLabelTone(kind: DataLabelKind): DataLabelTone {
+  for (const [tone, kinds] of Object.entries(TONE_KINDS)) if (kinds.includes(kind)) return tone as DataLabelTone;
+  return 'reference';
+}
+
 /** Conservative label inference for generic metric components. Explicit kinds win. */
 export function inferDataLabelKind(label: string): DataLabelKind {
   const text = label.toLowerCase();
@@ -111,7 +124,7 @@ export function DataLabel({ kind, children, className = '', iconClassName = '' }
   const resolved = kind ?? (typeof children === 'string' ? inferDataLabelKind(children) : 'info');
   const { icon: Icon, label } = DATA_LABELS[resolved];
   return (
-    <span className={`pi-data-label ${className}`} data-label-kind={resolved}>
+    <span className={`pi-data-label ${className}`} data-label-kind={resolved} data-label-tone={dataLabelTone(resolved)}>
       <Icon className={`pi-data-label-icon ${iconClassName}`} aria-hidden="true" focusable="false" />
       <span>{children ?? label}</span>
     </span>

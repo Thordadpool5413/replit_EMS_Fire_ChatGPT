@@ -59,7 +59,7 @@ export const NumericMetric: React.FC<NumericMetricProps> = ({
   const sizeClass = SIZE_CLASS_MAP[size];
 
   return (
-    <div className={`flex flex-col gap-0.5 ${alignClass} ${className}`}>
+    <div className={`flex flex-col gap-0.5 ${alignment === 'left' && size !== 'id' ? 'pi-metric-toned' : ''} ${alignClass} ${className}`}>
       {/* 1. Value (Primary Measurement) */}
       <div className="flex items-baseline gap-1.5 flex-wrap">
         <span className={`${sizeClass} ${valueClassName}`}>

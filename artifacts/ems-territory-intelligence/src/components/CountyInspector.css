@@ -19,7 +19,10 @@
 .ci .ci-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem 1rem; }
 .ci .ci-stat { min-width: 0; display: grid; gap: .2rem; }
 .ci .ci-stats dt { display: flex; align-items: center; gap: .4rem; font-size: 14px; font-weight: 550; color: var(--pi-text-secondary); }
-.ci .ci-ico { width: 18px; height: 18px; flex: none; color: var(--pi-action-ink); }
+.ci .ci-ico { width: 18px; height: 18px; flex: none; color: var(--pi-topic-operations); }
+.ci .ci-stat:first-child .ci-ico { color: var(--pi-topic-community); }
+.ci .ci-head { margin: -1rem -1.1rem 0; padding: 1rem 1.1rem .7rem; background: color-mix(in srgb, var(--pi-topic-operations) 5%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--pi-topic-operations) 14%, var(--pi-border)); border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.ci .ci-kicker { color: var(--pi-topic-operations); }
 .ci .ci-stat--cardiac .ci-ico { color: var(--ci-cardiac); }
 .ci .ci-stats dd { font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ci .ci-stats dd small { font-size: 14px; font-weight: 500; color: var(--pi-text-secondary); letter-spacing: 0; }
@@ -79,7 +82,8 @@
 @media (forced-colors: active) {
   .cv-panel.county-inspector-panel.ci,
   .ci > * + * { border-color: CanvasText; }
-  .ci .ci-ico { color: CanvasText; }
+  .ci .ci-ico, .ci .ci-stat:first-child .ci-ico { color: CanvasText; }
+  .ci .ci-head { background: Canvas; }
   .ci .ci-swatch { background: Canvas; border: 1px solid CanvasText; box-shadow: none; }
   .ci .ci-btn { background: ButtonFace; color: ButtonText; border: 1px solid ButtonText; }
   .ci .ci-link { color: LinkText; text-decoration-color: LinkText; }

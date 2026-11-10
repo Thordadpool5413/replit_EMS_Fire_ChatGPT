@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { DATA_LABELS, DataLabel, inferDataLabelKind } from './DataLabel';
+import { DATA_LABELS, DataLabel, dataLabelTone, inferDataLabelKind } from './DataLabel';
 import { NumericMetric } from './NumericMetric';
 
 test('every semantic category has a visible label and decorative icon', () => {
@@ -24,6 +24,19 @@ test('specific meanings take precedence over broad terms', () => {
   assert.equal(inferDataLabelKind('Median household income'), 'income');
   assert.equal(inferDataLabelKind('Warranty expiration'), 'warranty');
   assert.equal(inferDataLabelKind('Something not mapped'), 'info');
+});
+
+test('topic colors identify subject without turning risk or review into a status', () => {
+  assert.equal(dataLabelTone('population'), 'community');
+  assert.equal(dataLabelTone('transports'), 'operations');
+  assert.equal(dataLabelTone('equipment'), 'planning');
+  assert.equal(dataLabelTone('cardiac'), 'clinical');
+  assert.equal(dataLabelTone('risk'), 'reference');
+  assert.equal(dataLabelTone('review'), 'reference');
+  for (const kind of Object.keys(DATA_LABELS) as (keyof typeof DATA_LABELS)[]) {
+    const html = renderToStaticMarkup(<DataLabel kind={kind} />);
+    assert.ok(html.includes(`data-label-tone="${dataLabelTone(kind)}"`));
+  }
 });
 
 test('explicit category and custom source wording are preserved', () => {

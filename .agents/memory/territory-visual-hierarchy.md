@@ -13,7 +13,13 @@ Use shared app theme tokens for county and provider surfaces. County figures use
 
 **Why:** After rejecting the multicolor county cards as visually cluttered, the user explicitly chose “Use restrained colors (recommended),” superseding the earlier request for a separate color on every metric.
 
-**How to apply:** Use shared canvas, surface, text, border, and action tokens in all themes. Do not restore rainbow metric colors or the tinted metric block. Keep readable neutral numbers and cardiac red without implying performance thresholds or unvalidated risk ratings. Preserve FEMA/map palettes.
+**How to apply:** Use shared canvas, surface, text, border, and action tokens in all themes. Do not restore rainbow metric colors or competing saturated metric panels. Keep readable neutral numbers and cardiac red without implying performance thresholds or unvalidated risk ratings. Preserve FEMA/map palettes.
+
+The user subsequently requested more color in visuals, icons, cards, and text. Use a small coordinated set of topic accents and subtle header/context tints rather than returning to a separate accent for every metric. Operations, community/geography, planning/equipment, and clinical information can have distinct topic hues while sources/review/risk labels remain neutral.
+
+**Why:** The user wanted a more visually appealing experience after the shared icon rollout; restrained topic color adds distinction without reviving the multicolor numeric clutter they previously rejected.
+
+**How to apply:** Treat these hues as subject identifiers, never performance or validation states. Keep values legible, use shared theme-specific tokens, check contrast on tinted surfaces, and preserve paper-safe and forced-colors rendering.
 
 Do not modify the existing app logo during visual or responsive changes. If it appears clipped, correct the surrounding layout rather than changing the logo asset or its styling.
 

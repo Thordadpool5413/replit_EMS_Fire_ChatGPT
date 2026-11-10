@@ -92,6 +92,13 @@
   --brand-primary: var(--pi-action);
   --brand-primary-hover: var(--pi-action-hover);
 
+  /* Topic accents: identify subject, never performance. Risk/status palette above is separate. */
+  --pi-topic-operations: #1f56b8;
+  --pi-topic-community: #0d7468;
+  --pi-topic-planning: #8a4b0c;
+  --pi-topic-clinical: #a3245a;
+  --pi-topic-reference: #4f5f78;
+
   --radius-card: 0.7rem;
   --radius-control: 0.45rem;
   --shadow-card: 0 1px 2px rgba(24, 49, 58, 0.045);
@@ -142,6 +149,11 @@
   --border-strong: var(--pi-border-strong);
   --brand-primary: var(--pi-action);
   --brand-primary-hover: var(--pi-action-hover);
+  --pi-topic-operations: #8fb6ff;
+  --pi-topic-community: #6fd3c2;
+  --pi-topic-planning: #f0bd72;
+  --pi-topic-clinical: #f39ac0;
+  --pi-topic-reference: #aebfc0;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28);
   --shadow-card-hover: 0 4px 12px -8px rgba(0, 0, 0, 0.5);
 }
@@ -188,6 +200,11 @@ html[data-theme="miami-vice"] {
   --pi-critical-bg: #47263b;
   --pi-critical-text: #ff9fbd;
   --pi-critical-border: #985174;
+  --pi-topic-operations: #70e6e8;
+  --pi-topic-community: #b59af7;
+  --pi-topic-planning: #f3d28b;
+  --pi-topic-clinical: #ff8fc4;
+  --pi-topic-reference: #b1bbce;
   --shadow-card: 0 2px 8px rgba(2, 5, 18, 0.22);
   --shadow-card-hover: 0 8px 20px -12px rgba(2, 5, 18, 0.55);
 

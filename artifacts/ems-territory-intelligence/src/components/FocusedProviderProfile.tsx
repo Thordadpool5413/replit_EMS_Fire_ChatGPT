@@ -430,6 +430,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
   const [profileReviewError, setProfileReviewError] = useState('');
   const [profileDetailsHost, setProfileDetailsHost] = useState<HTMLDivElement | null>(null);
+  const [compactOpening, setCompactOpening] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  const [contactOpen, setContactOpen] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setCompactOpening(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     setProfileReviewedAt(getAgencyProfileReviewedAt(rawAgency.id));
@@ -1127,10 +1137,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       {agency.address || 'Address not reported'}
                     </span>
                     <FactVerificationTag agency={agency} field="providerAddress" />
-                    <span aria-hidden="true">·</span>
-                    <span>{agency.county}, {agency.state} ({agency.stateCode})</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{agency.agencyType}</span>
+                    <span className="profile-identity-area">{agency.county}, {agency.stateCode} · {agency.agencyType}</span>
                     {hasAgencyFactEvidence(agency, 'decisionMakers') && agency.headquartersPhone && (
                       <>
                         <span aria-hidden="true">·</span>
@@ -1168,7 +1175,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 {/* Fast-review summary: location is already in the identity line above. */}
                 <div className="profile-summary-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
-                    <h2 className="font-semibold text-[#53657B] dark:text-slate-300"><DataLabel kind="contact">Agency contact</DataLabel></h2>
+                    <details className="profile-header-contact profile-header-sources" open={!compactOpening || contactOpen}
+                      onToggle={(event) => { if (compactOpening) setContactOpen(event.currentTarget.open); }}>
+                    <summary><h2><DataLabel kind="contact">Agency contact</DataLabel></h2><ChevronDown aria-hidden="true" /></summary>
+                    <div className="profile-contact-detail">
                     <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white [overflow-wrap:anywhere]">{primaryContact?.name || 'Not reported'}</p>
                     {primaryContact?.title && <p className="break-words text-[#53657B] dark:text-slate-400 [overflow-wrap:anywhere]">{primaryContact.title}</p>}
                     {(primaryContact?.phone || agency.headquartersPhone) && (
@@ -1181,6 +1191,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {primaryContact.email}
                       </a>
                     )}
+                    </div>
+                    </details>
                   </section>
 
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">

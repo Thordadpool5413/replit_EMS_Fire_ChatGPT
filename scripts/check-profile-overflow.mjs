@@ -4897,6 +4897,26 @@ async function checkMobileEquipmentBrief(cdp, viewport, category, agencyName) {
   await openAgencyProfile(cdp, category, agencyName);
   await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-equipment-summary"]'))`, 'equipment brief');
   await assertNoHorizontalOverflow(cdp, viewport.width, 'phone-first equipment brief');
+  if (viewport.width < 768) {
+    const opening=await evaluate(cdp, `(() => {
+      document.querySelector('.provider-profile-overlay').scrollTop=0;
+      const contact=document.querySelector('.profile-header-contact');
+      const closedInitially=!contact.open;
+      contact.querySelector('summary').click();
+      const expanded=contact.open && contact.querySelector('.profile-contact-detail').getBoundingClientRect().height>0;
+      contact.querySelector('summary').click();
+      const header=document.querySelector('.profile-executive-header').getBoundingClientRect();
+      const monitor=document.querySelector('[data-testid="equipment-line-monitor"]').getBoundingClientRect();
+      const bottomNav=document.querySelector('[aria-label="Mobile navigation"]');
+      return {closedInitially,expanded,headerHeight:header.height,monitorBottom:monitor.bottom};
+    })()`);
+    assert(opening.closedInitially && opening.expanded, 'mobile contact disclosure is not accessible');
+    assert(opening.headerHeight < 350, `mobile identity block is still oversized: ${JSON.stringify(opening)}`);
+    assert(opening.monitorBottom < viewport.height - 65, `primary equipment is below the opening screen: ${JSON.stringify(opening)}`);
+    console.log(`Opening ${viewport.width}px: identity ${Math.round(opening.headerHeight)}px, first equipment ends at ${Math.round(opening.monitorBottom)}px`);
+    const initialShot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(`/tmp/profile-opening-${viewport.width}.png`,Buffer.from(initialShot.result.data,'base64'));
+  }
   const result = await evaluate(cdp, `(() => {
     const tech=document.querySelector('[data-testid="profile-equipment-summary"]');
     const buyback=document.querySelector('[data-testid="profile-buyback-insights"]');
@@ -4947,7 +4967,11 @@ async function checkMobileEquipmentBrief(cdp, viewport, category, agencyName) {
   await evaluate(cdp, `(() => {const e=document.querySelector('.aib');e.style.zoom='2';e.style.width='50%';})()`);
   const enlarged=await evaluate(cdp, `(() => {
     const host=document.querySelector('.aib');
-    return [...host.querySelectorAll('p,dt,dd,summary')].filter(e=>e.getBoundingClientRect().height>0&&e.scrollWidth>e.clientWidth+2).map(e=>e.innerText);
+    return [...host.querySelectorAll('p,dt,dd,summary')].filter(e=>{
+      const banner=e.closest('.aib-top');
+      if (banner && getComputedStyle(banner).clipPath === 'inset(50%)') return false;
+      return e.getBoundingClientRect().height>0&&e.scrollWidth>e.clientWidth+2;
+    }).map(e=>e.innerText);
   })()`);
   assert(enlarged.length === 0, `200% brief text clipped: ${JSON.stringify(enlarged)}`);
   await evaluate(cdp, `(() => {const e=document.querySelector('.aib');e.style.zoom='';e.style.width='';})()`);

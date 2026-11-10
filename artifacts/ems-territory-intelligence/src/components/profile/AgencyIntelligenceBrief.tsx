@@ -186,21 +186,21 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
   return (
     <section className="aib-block aib-tech" data-testid="profile-equipment-summary" aria-labelledby="aib-tech-title">
       <h3 id="aib-tech-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Technology &amp; equipment in use</h3>
-      <p className="aib-scope">Reported installed equipment as recorded in this profile. Not a record of historical purchases, planned replacements or confirmed current deployment.</p>
+      <p className="aib-scope">Reported inventory · current use needs confirmation.</p>
+      <p className="aib-sub">Clinical hardware</p>
+      <ul className="aib-eqlist">{hardware.map(line)}</ul>
+      <dl className="aib-keyfacts">
+        <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
+        <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
+      </dl>
+      <p className="aib-sub">Software</p>
+      <ul className="aib-eqlist">{software.map(line)}</ul>
       <div className="aib-tags">
         {renderFactTag('defibrillatorBiomedicalFleet')}
         {renderFactTag('verifiedHardware')}
         {renderFactTag('epcrSystem')}
         {renderFactTag('maintenanceContracts')}
       </div>
-      <dl className="aib-keyfacts">
-        <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
-        <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
-      </dl>
-      <p className="aib-sub">Clinical hardware</p>
-      <ul className="aib-eqlist">{hardware.map(line)}</ul>
-      <p className="aib-sub">Software</p>
-      <ul className="aib-eqlist">{software.map(line)}</ul>
       <SourceBasis agency={agency} fields={lines.flatMap((l) => l.evidenceKeys).concat('maintenanceContracts')} />
     </section>
   );

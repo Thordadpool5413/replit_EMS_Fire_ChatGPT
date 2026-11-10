@@ -1,6 +1,6 @@
 /**
  * Agency operational baseline, presented as an intelligence brief:
- * snapshot figures -> findings (finding / basis / next step) -> equipment and contract facts.
+ * equipment in use + buy-back -> snapshot figures -> findings (finding / basis / next step) -> equipment and contract facts.
  * Presentation only; every value comes from the existing agency record.
  * Missing values render "Not reported"; reported zeros are preserved.
  * Provider-scope claim denial figures are intentionally not shown here.
@@ -12,8 +12,12 @@ import {
   ArrowRight,
   Building2,
   CalendarClock,
+  ClipboardCheck,
   Cpu,
   Flame,
+  Monitor,
+  Repeat,
+  Wind,
   HeartPulse,
   Landmark,
   Map as MapIcon,
@@ -24,6 +28,17 @@ import {
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
 import { hasAgencyFactEvidence } from '../../data/agencyFactEvidence';
 import { DataLabel, dataLabelTone, inferDataLabelKind, type DataLabelKind } from '../DataLabel';
+import {
+  NOT_REPORTED,
+  TRADE_IN_CHECKLIST,
+  buildEquipmentLines,
+  getDocumentedOffers,
+  offerKindLabel,
+  offerTotal,
+  offerValue,
+  summarizeEvidence,
+  type EquipmentLine,
+} from './equipmentInsights';
 
 type IconType = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
 
@@ -77,16 +92,6 @@ type Finding = { key: string; icon: IconType; finding: string; basis: string; ne
 
 const buildFindings = (agency: Agency): Finding[] => {
   const out: Finding[] = [];
-  const fleet = agency.installedFleet;
-  if (fleet && isNum(fleet.defibAgeYears)) {
-    out.push({
-      key: 'defib',
-      icon: HeartPulse,
-      finding: `Monitor/defibrillator fleet recorded at ${fleet.defibAgeYears.toLocaleString()} years${fleet.defibBrand && fleet.defibBrand !== 'Not reported' ? ` (${fleet.defibBrand})` : ''}.`,
-      basis: `Installed fleet record · ${isNum(fleet.defibUnitsCount) ? `${fleet.defibUnitsCount.toLocaleString()} units` : 'unit count not reported'} · warranty ${fleet.defibWarrantyStatus || 'not reported'}`,
-      next: 'Confirm age, unit count and replacement timing with the equipment lead.',
-    });
-  }
   const contract = agency.competitorContract;
   if (contract?.contractEndDate) {
     out.push({
@@ -120,6 +125,135 @@ const buildFindings = (agency: Agency): Finding[] => {
   return out;
 };
 
+const categoryIcon: Record<EquipmentLine['category'], IconType> = {
+  monitor: Monitor, cpr: HeartPulse, ventilator: Wind, software: Cpu,
+};
+
+const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }> = ({ agency, fields }) => {
+  const items = Array.from(new Set(fields)).map((f) => summarizeEvidence(agency, f));
+  const labels: Partial<Record<AgencyFactEvidenceKey, string>> = {
+    defibrillatorBiomedicalFleet: 'Monitor / defibrillator', verifiedHardware: 'Clinical hardware',
+    epcrSystem: 'ePCR / CAD record', communicationsSystems: 'Dispatch communications',
+    billingSoftware: 'Billing software', maintenanceContracts: 'Warranty / service',
+  };
+  return (
+    <details className="aib-sources" data-testid="equipment-source-basis">
+      <summary>Source basis &amp; review state</summary>
+      <ul>
+        {items.map((e) => (
+          <li key={e.field} data-state={e.state}>
+            <p className="aib-eq-label">{labels[e.field] || 'Equipment record'}</p>
+            <p className="aib-src-state">{e.stateLabel}</p>
+            {e.state !== 'none' && (
+              <p className="aib-src-meta">
+                {e.sourceUrl
+                  ? <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">{e.sourceName}</a>
+                  : e.sourceName}
+                {[e.period && `Period ${e.period}`, e.scope && `Scope ${e.scope}`, e.reviewedAt && `Marker ${e.reviewedAt.slice(0, 10)}`]
+                  .filter(Boolean).map((t) => <span key={String(t)}> · {t}</span>)}
+              </p>
+            )}
+            {e.note && <p className="aib-src-meta">{e.note}</p>}
+          </li>
+        ))}
+      </ul>
+      <p className="aib-src-meta">A source or review marker shows where a value came from; it does not prove the equipment is in current use.</p>
+    </details>
+  );
+};
+
+const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntelligenceBriefProps['renderFactTag'] }> = ({ agency, renderFactTag }) => {
+  const lines = buildEquipmentLines(agency);
+  const f = agency.installedFleet ?? ({} as Agency['installedFleet']);
+  const warranty = (f.defibWarrantyStatus || '').trim() || NOT_REPORTED;
+  const warrantyAlert = hasAgencyFactEvidence(agency, 'maintenanceContracts') && warranty.includes('Expired');
+  const hardware = lines.filter((l) => l.category !== 'software');
+  const software = lines.filter((l) => l.category === 'software');
+  const line = (l: EquipmentLine) => {
+    const Icon = categoryIcon[l.category];
+    const missing = l.value === NOT_REPORTED;
+    return (
+      <li key={l.key} className="aib-eq" data-testid={`equipment-line-${l.key}`}>
+        <Icon className="aib-icon" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="aib-eq-label">{l.label}</p>
+          <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
+        </div>
+        {l.quantity && <p className={`aib-eq-qty${l.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>{l.quantity === NOT_REPORTED ? 'Qty not reported' : l.quantity}</p>}
+      </li>
+    );
+  };
+  return (
+    <section className="aib-block aib-tech" data-testid="profile-equipment-summary" aria-labelledby="aib-tech-title">
+      <h3 id="aib-tech-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Technology &amp; equipment in use</h3>
+      <p className="aib-scope">Reported installed equipment as recorded in this profile. Not a record of historical purchases, planned replacements or confirmed current deployment.</p>
+      <div className="aib-tags">
+        {renderFactTag('defibrillatorBiomedicalFleet')}
+        {renderFactTag('verifiedHardware')}
+        {renderFactTag('epcrSystem')}
+        {renderFactTag('maintenanceContracts')}
+      </div>
+      <dl className="aib-keyfacts">
+        <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
+        <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
+      </dl>
+      <p className="aib-sub">Clinical hardware</p>
+      <ul className="aib-eqlist">{hardware.map(line)}</ul>
+      <p className="aib-sub">Software</p>
+      <ul className="aib-eqlist">{software.map(line)}</ul>
+      <SourceBasis agency={agency} fields={lines.flatMap((l) => l.evidenceKeys).concat('maintenanceContracts')} />
+    </section>
+  );
+};
+
+const BuybackInsights: React.FC<{ agency: Agency }> = ({ agency }) => {
+  const offers = getDocumentedOffers(agency);
+  return (
+    <section className="aib-block aib-buyback" data-testid="profile-buyback-insights" aria-labelledby="aib-buyback-title">
+      <h3 id="aib-buyback-title" className="aib-label"><Repeat className="aib-icon" aria-hidden="true" />Buy-back &amp; trade-in</h3>
+      <p className="aib-sub">Agency-specific offer records</p>
+      {offers.length === 0 ? (
+        <p className="aib-noquote" data-testid="text-no-current-quote">No current quote recorded</p>
+      ) : (
+        <ul className="aib-offers">
+          {offers.map((o) => {
+            const total = offerTotal(o);
+            return (
+              <li key={o.id} className="aib-offer" data-testid={`offer-${o.id}`}>
+                <p className="aib-eq-label">{offerKindLabel(o.kind)} · {o.provider}</p>
+                <dl className="aib-rows">
+                  <Row label="Eligible device" kind="equipment">{o.eligibleDevice || NOT_REPORTED}</Row>
+                  <Row label="Offer date" kind="period">{o.offerDate || NOT_REPORTED}</Row>
+                  <Row label="Expires" kind="expiration">{o.expiryDate || 'Not stated'}</Row>
+                  <Row label="Per-unit value" kind="funding">{offerValue(o.perUnitValue, o.currency)}</Row>
+                  <Row label="Eligible quantity" kind="equipment">{fmt(o.eligibleQuantity)}</Row>
+                  <Row label="Quoted total" kind="funding" tone={total == null ? 'muted' : undefined}>{total == null ? 'Not calculated: device, currency, unit value and eligible quantity required' : offerValue(total, o.currency)}</Row>
+                  <Row label="Conditions" kind="notes">{o.conditions || 'Not stated; confirm with offer provider'}</Row>
+                  <Row label="Source" kind="source">{o.sourceUrl ? <a href={o.sourceUrl} target="_blank" rel="noopener noreferrer">{o.sourceName || 'Offer document'}</a> : o.sourceName || 'Source not stated'}</Row>
+                </dl>
+                <p className="aib-scope">Recorded quote, not a guarantee of current eligibility. Confirm dates and terms with the provider before use.</p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="aib-scope">Confirm the recorded model and units with the equipment lead, then request separate cash and replacement-credit quotes. Inventory alone does not establish eligibility.</p>
+      <details className="aib-sources">
+        <summary><ClipboardCheck className="aib-icon" aria-hidden="true" /> Prepare for a quote · 8 checks</summary>
+        <ul className="aib-check">{TRADE_IN_CHECKLIST.map((c) => <li key={c}>{c}</li>)}</ul>
+      </details>
+      <details className="aib-sources">
+        <summary>General knowledge: cash vs credit</summary>
+        <ul className="aib-explain">
+          <li><strong>Cash buy-back</strong> is a payment for retired units, often from a reseller or refurbisher. It usually does not depend on buying new equipment.</li>
+          <li><strong>Vendor replacement credit</strong> reduces the price of a new purchase from that vendor. It has no value without the purchase and should not also be counted as savings.</li>
+          <li><strong>Illustrative scenarios</strong> in Purchasing use planning assumptions only. They are not current, guaranteed or agency-confirmed offers.</li>
+        </ul>
+      </details>
+    </section>
+  );
+};
+
 export interface AgencyIntelligenceBriefProps {
   agency: Agency;
   /** Renders the existing per-field source status tag. */
@@ -131,8 +265,6 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
   const mode = getAgencyServiceMode(agency);
   const isFire = mode !== 'ems';
   const findings = buildFindings(agency);
-  const fleet = agency.installedFleet;
-  const warrantyExpired = hasAgencyFactEvidence(agency, 'maintenanceContracts') && (fleet.defibWarrantyStatus || '').includes('Expired');
   const modeLabel = mode === 'combined' ? 'Fire & EMS' : mode === 'fire' ? 'Fire department' : 'EMS provider';
 
   const callsFigure: Figure = {
@@ -168,18 +300,22 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
     >
       <header className="aib-top">
         <div className="min-w-0">
-          <p className="aib-eyebrow"><Activity className="aib-icon" aria-hidden="true" />Operational baseline · {modeLabel}</p>
-          <h2 id="agency-operational-baseline-title" className="aib-title">Operations &amp; agency intelligence</h2>
-          <p className="aib-note">Values as recorded in this profile; source, period and scope appear where mapped. Address and license sources do not verify operational metrics.</p>
+          <h2 id="agency-operational-baseline-title" className="aib-title">Agency intelligence</h2>
+          <p className="aib-note">{modeLabel} · Reported values; confirm current use with the agency.</p>
         </div>
         {onOpenSources && (
           <button type="button" className="aib-link" onClick={onOpenSources} data-testid="button-brief-open-sources">
             <ShieldCheck className="aib-icon" aria-hidden="true" />
-            Source records
+            Sources
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
       </header>
+
+      <div className="aib-equipment-row">
+        <EquipmentSummary agency={agency} renderFactTag={renderFactTag} />
+        <BuybackInsights agency={agency} />
+      </div>
 
       <div className="aib-grid">
         <section className="aib-block aib-snapshot" data-testid="baseline-operational-metrics" aria-labelledby="aib-snapshot-title">
@@ -211,26 +347,10 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
               ))}
             </ol>
           ) : (
-            <p className="aib-empty">No fleet age, contract, grant or budget-cycle records are present yet. Add or confirm them in source records.</p>
+            <p className="aib-empty">No contract, grant or budget-cycle records are present yet. Add or confirm them in source records.</p>
           )}
 
           <div className="aib-facts">
-            <section aria-labelledby="aib-equipment-title">
-              <h3 id="aib-equipment-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Fleet &amp; hardware</h3>
-              <div className="aib-tags">
-                {renderFactTag('defibrillatorBiomedicalFleet')}
-                {renderFactTag('verifiedHardware')}
-                {renderFactTag('epcrSystem')}
-                {renderFactTag('maintenanceContracts')}
-              </div>
-              <dl className="aib-rows">
-                <Row label="Monitor brand" kind="monitor">{fleet.defibBrand || 'Not reported'}</Row>
-                <Row label="Deployed fleet age" kind="period">{isNum(fleet.defibAgeYears) ? `${fleet.defibAgeYears.toLocaleString()} years` : 'Not reported'}</Row>
-                <Row label="Defibrillator units" kind="equipment">{isNum(fleet.defibUnitsCount) ? `${fleet.defibUnitsCount.toLocaleString()} units` : 'Not reported'}</Row>
-                <Row label="Warranty support" kind="warranty" tone={warrantyExpired ? 'alert' : undefined}>{fleet.defibWarrantyStatus || 'Not reported'}</Row>
-                <Row label="ePCR system" kind="equipment">{fleet.epcrCadSoftware || 'Not reported'}</Row>
-              </dl>
-            </section>
             <section aria-labelledby="aib-contracts-title">
               <h3 id="aib-contracts-title" className="aib-label"><Landmark className="aib-icon" aria-hidden="true" />Contracts &amp; funding</h3>
               <div className="aib-tags">

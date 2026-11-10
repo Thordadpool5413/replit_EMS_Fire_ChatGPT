@@ -2,11 +2,12 @@
    Uses shared --pi-* theme tokens so every theme stays coherent. */
 
 /* ---------- Operational baseline brief ---------- */
-.aib { min-width: 0; padding: 1rem 1rem 1.1rem; border-radius: 12px; }
+.aib { min-width: 0; padding: 1rem 1rem 1.1rem; border-radius: 12px; container-type: inline-size; overflow-wrap: anywhere; }
 @media (min-width: 640px) { .aib { padding: 1.1rem 1.35rem 1.3rem; } }
 .aib-top { margin: -1rem -1rem 0; padding: 1rem 1rem .7rem !important; background: color-mix(in srgb, var(--pi-topic-operations) 5%, transparent); border-radius: 12px 12px 0 0; }
 @media (min-width: 640px) { .aib-top { margin: -1.1rem -1.35rem 0; padding: 1.1rem 1.35rem .75rem !important; } }
 .aib-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .5rem 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--pi-border); }
+.aib-top > div:first-child { flex: 1 1 10rem; }
 .aib-eyebrow { display: flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 650; letter-spacing: .03em; color: var(--pi-action-ink); }
 .aib-title { margin-top: .25rem; font-size: 1.125rem; font-weight: 650; line-height: 1.3; color: var(--pi-text-primary); }
 .aib-note { margin-top: .3rem; max-width: 80ch; font-size: .8125rem; line-height: 1.45; color: var(--pi-text-muted); }
@@ -24,6 +25,8 @@
 .aib-figure dt .pi-data-label-icon, .aib-figure dt .aib-icon { color: var(--pi-topic, var(--pi-topic-operations)); }
 .aib-tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .4rem; }
 .aib-tags:empty { display: none; }
+.profile-workspace .aib .profile-evidence-tag,
+.profile-workspace .profile-executive-header .profile-evidence-tag { background: var(--pi-action-subtle) !important; color: var(--pi-action-ink) !important; border: 1px solid var(--pi-border); border-radius: .3rem; font-size: .75rem; line-height: 1.4; padding: .15rem .4rem; }
 
 .aib-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.25rem; margin-top: .15rem; }
 .aib-figure { display: flex; flex-direction: column; gap: .25rem; padding: .6rem 0; min-width: 0; }
@@ -60,6 +63,14 @@
 .aib-row dd.is-alert { color: var(--pi-critical-text); }
 
 /* ---------- Unboxed identity summary ---------- */
+.profile-contact-actions { display: flex; flex-wrap: wrap; gap: .4rem .75rem; margin-top: .65rem; }
+.profile-contact-actions a { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 44px; padding: .25rem .6rem; border: 1px solid var(--pi-border); border-radius: .45rem; color: var(--pi-action-ink); font-size: .8125rem; font-weight: 650; }
+.profile-contact-actions svg { width: 1rem; height: 1rem; flex: none; }
+.profile-contact-actions a:hover { background: var(--pi-action-subtle); border-color: var(--pi-action); }
+.profile-header-sources summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 44px; cursor: pointer; list-style: none; color: var(--pi-action-ink); }
+.profile-header-sources summary::-webkit-details-marker { display: none; }
+.profile-header-sources summary > svg { width: 1rem; height: 1rem; flex: none; }
+.profile-header-sources[open] summary > svg { transform: rotate(180deg); }
 .profile-executive-header .profile-summary-panel { background: transparent !important; border-width: 0 0 0 2px !important; border-color: var(--pi-border) !important; border-radius: 0 !important; padding: .1rem 0 .1rem .75rem !important; transition: border-color .15s ease; }
 .profile-executive-header .profile-summary-panel:hover { border-color: var(--pi-action) !important; }
 .profile-executive-header .profile-summary-panel h2 { font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pi-text-secondary); }
@@ -115,6 +126,87 @@
   .aib-link { display: none; }
   .aib-top { background: transparent; margin: 0; padding: 0 0 .7rem !important; }
   .aib-label .aib-icon, .aib-figure dt .aib-icon { color: #1e3a8a; }
+}
+
+
+/* ---------- Technology & equipment + buy-back (phone-first) ---------- */
+.aib-equipment-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1rem; margin-top: .9rem; min-width: 0; }
+@media (min-width: 900px) { .aib-equipment-row { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 2rem; } }
+.aib-tech .aib-label .aib-icon { color: var(--pi-action-ink); }
+.aib-buyback .aib-label .aib-icon { color: var(--pi-topic-planning, var(--pi-action-ink)); }
+.aib-scope { margin-top: .4rem; font-size: .75rem; line-height: 1.45; color: var(--pi-text-muted); overflow-wrap: anywhere; }
+.aib-keyfacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem 1rem; margin-top: .5rem; }
+.aib-keyfacts > div { min-width: 0; padding: .45rem 0; border-bottom: 1px solid var(--pi-border); }
+.aib-keyfacts dt { display: flex; align-items: center; gap: .35rem; font-size: .75rem; color: var(--pi-text-secondary); }
+.aib-keyfacts dd { margin-top: .15rem; padding-left: 1.4rem; font-size: .95rem; font-weight: 650; color: var(--pi-text-primary); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.aib-keyfacts dd.is-missing, .aib-eq-value.is-missing, .aib-eq-qty.is-missing { font-size: .78rem; font-weight: 500; color: var(--pi-text-muted); }
+.aib-keyfacts dd.is-alert { color: var(--pi-critical-text); }
+.aib-sub { display: flex; align-items: center; gap: .35rem; margin-top: .8rem; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pi-text-secondary); }
+.aib-eqlist, .aib-offers, .aib-check, .aib-explain, .aib-sources ul { list-style: none; margin: 0; padding: 0; }
+.aib-eq { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .2rem .55rem; align-items: start; padding: .55rem 0; border-bottom: 1px solid var(--pi-border); }
+.aib-eq > .aib-icon { margin-top: .1rem; color: var(--pi-text-secondary); }
+.aib-eq-label { font-size: .75rem; color: var(--pi-text-secondary); overflow-wrap: anywhere; }
+.aib-eq-value { font-size: .875rem; font-weight: 650; line-height: 1.35; color: var(--pi-text-primary); overflow-wrap: anywhere; }
+.aib-eq-note { margin-top: .15rem; font-size: .7rem; line-height: 1.4; color: var(--pi-text-muted); }
+.aib-eq-qty { font-family: var(--pi-font-data); font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 650; color: var(--pi-text-primary); text-align: right; white-space: nowrap; }
+@media (max-width: 359px) { .aib-eq { grid-template-columns: auto minmax(0, 1fr); } .aib-eq-qty { grid-column: 2; text-align: left; } }
+.aib-sources { margin-top: .7rem; font-size: .78rem; }
+.aib-sources > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--pi-action); list-style: none; }
+.aib-sources > summary::-webkit-details-marker { display: none; }
+.aib-sources > summary::after { content: "+"; margin-left: auto; padding-left: .5rem; color: var(--pi-text-muted); }
+.aib-sources[open] > summary::after { content: "\2212"; }
+.aib-sources li { padding: .45rem 0; border-top: 1px solid var(--pi-border); min-width: 0; }
+.aib-src-state { font-weight: 600; color: var(--pi-text-primary); }
+.aib-sources li[data-state="none"] .aib-src-state { font-weight: 500; color: var(--pi-text-muted); }
+.aib-src-meta { margin-top: .15rem; font-size: .74rem; line-height: 1.45; color: var(--pi-text-secondary); overflow-wrap: anywhere; }
+.aib-src-meta a { color: var(--pi-action); text-decoration: underline; text-underline-offset: 2px; }
+.aib-noquote { margin-top: .35rem; padding: .5rem 0; font-size: .9rem; font-weight: 650; color: var(--pi-text-primary); border-bottom: 1px solid var(--pi-border); }
+.aib-offer { padding: .5rem 0; border-bottom: 1px solid var(--pi-border); }
+.aib-check { margin-top: .3rem; display: grid; gap: .1rem; }
+.aib-check li { position: relative; padding: .3rem 0 .3rem 1.1rem; font-size: .8rem; line-height: 1.4; color: var(--pi-text-secondary); overflow-wrap: anywhere; }
+.aib-check li::before { content: ""; position: absolute; left: .15rem; top: .72rem; width: .4rem; height: .4rem; border: 1.5px solid var(--pi-text-muted); border-radius: 2px; }
+.aib-explain li { padding: .45rem 0; border-top: 1px solid var(--pi-border); font-size: .78rem; line-height: 1.5; color: var(--pi-text-secondary); }
+.aib-explain strong { color: var(--pi-text-primary); font-weight: 650; }
+.aib-equipment-row + .aib-grid { padding-top: .9rem; border-top: 1px solid var(--pi-border); }
+@container (max-width: 650px) {
+  .aib-equipment-row, .aib-grid { grid-template-columns: minmax(0, 1fr); }
+  .aib-finding { grid-template-columns: minmax(0, 1fr); }
+  .aib-findings-cols { display: none; }
+  .aib-tag { display: inline-block; }
+  .aib-b, .aib-n { padding-left: 1.35rem; }
+}
+@container (max-width: 210px) {
+  .aib-figures, .aib-keyfacts, .aib-row { grid-template-columns: minmax(0, 1fr); }
+  .aib-eq { grid-template-columns: auto minmax(0, 1fr); }
+  .aib-eq-qty { grid-column: 2; white-space: normal; text-align: left; }
+  .aib-figure dd, .aib-keyfacts dd { padding-left: 0; }
+  .aib-row dd { text-align: left; }
+  .aib-sources > summary { flex-wrap: wrap; }
+  .aib-sub, .aib-eyebrow, .aib-keyfacts dt, .aib-figure dt { flex-wrap: wrap; }
+  .aib .pi-data-label { flex-wrap: wrap; white-space: normal; }
+}
+@media (max-width: 767px) {
+  .aib-row dd { max-width: none; }
+  .aib-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .profile-workspace .aib, .profile-workspace .aib * { min-width: 0; }
+  .profile-workspace :is(input, textarea, select) { scroll-margin-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+  .profile-workspace .profile-executive-header { padding: .8rem !important; }
+  .profile-workspace .profile-executive-header > div:first-child { padding-bottom: .35rem !important; gap: .5rem !important; }
+  .profile-workspace .profile-summary-grid { gap: .3rem !important; }
+  .profile-executive-header h1 { font-size: 1.4rem !important; overflow-wrap: anywhere; }
+  .profile-identity-location { font-size: .8125rem; line-height: 1.45; }
+  .profile-contact-actions { gap: .35rem; }
+  .profile-contact-actions a { padding-inline: .45rem; }
+  .aib-keyfacts dd, .aib-figure dd { padding-left: 0; }
+  .aib-figures { gap: 0 .8rem; }
+  .aib-figure { border-bottom: 1px solid var(--pi-border); }
+  .aib-eq { padding-block: .45rem; }
+  .aib-sources > summary { gap: .35rem; }
+}
+@media print {
+  .aib-equipment-row { grid-template-columns: 1.5fr 1fr; }
+  .aib-sources > summary::after { content: none; }
+  .aib-eq-value, .aib-keyfacts dd, .aib-noquote { color: #0f172a; }
 }
 
 /* ---------- Executive briefing dossier (paper-safe hex values only; html2canvas rejects oklch) ---------- */

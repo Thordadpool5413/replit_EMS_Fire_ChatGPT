@@ -4890,6 +4890,70 @@ function assertFireOperationsDifferAtViewport(viewport) {
   );
 }
 
+async function checkMobileEquipmentBrief(cdp, viewport, category, agencyName) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Agencies'))`, 'agency navigation', 60_000);
+  await openAgencyProfile(cdp, category, agencyName);
+  await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-equipment-summary"]'))`, 'equipment brief');
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'phone-first equipment brief');
+  const result = await evaluate(cdp, `(() => {
+    const tech=document.querySelector('[data-testid="profile-equipment-summary"]');
+    const buyback=document.querySelector('[data-testid="profile-buyback-insights"]');
+    const operations=document.querySelector('[data-testid="baseline-operational-metrics"]');
+    const actions=[...document.querySelectorAll('.profile-contact-actions a')];
+    const details=tech.querySelector('details');
+    details.querySelector('summary').click();
+    const visible=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0};
+    return {
+      order:!!(tech.compareDocumentPosition(buyback)&Node.DOCUMENT_POSITION_FOLLOWING)&&
+        !!(buyback.compareDocumentPosition(operations)&Node.DOCUMENT_POSITION_FOLLOWING),
+      lines:tech.querySelectorAll('.aib-eq').length,
+      icons:tech.querySelectorAll('.aib-eq > svg').length,
+      sourceOpen:details.open, sourceVisible:visible(details.querySelector('li')),
+      sourceText:details.innerText,
+      noQuote:buyback.innerText.includes('No current quote recorded'),
+      actions:actions.map(e=>({href:e.getAttribute('href'),height:e.getBoundingClientRect().height})),
+      clipped:[...tech.querySelectorAll('p,dt,dd')].filter(e=>visible(e)&&e.scrollWidth>e.clientWidth+2).map(e=>e.textContent),
+    };
+  })()`);
+  assert(result.order && result.lines === 6 && result.icons === 6, `equipment structure: ${JSON.stringify(result)}`);
+  assert(result.sourceOpen && result.sourceVisible && result.sourceText.includes('does not prove'), 'source basis is not touch-readable');
+  assert(result.noQuote, 'a real agency was given an invented offer');
+  assert(result.clipped.length === 0, `equipment facts clipped: ${JSON.stringify(result.clipped)}`);
+  assert(result.actions.length > 0 && result.actions.every(a=>a.href && a.height >= 43), 'contact action is missing or too small');
+  if (viewport.width === 390) {
+    for (const theme of ['dark', 'miami-vice', 'daylight']) {
+      await setPrintTheme(cdp, theme);
+      await assertNoHorizontalOverflow(cdp, viewport.width, `${theme} equipment brief`);
+    }
+    await evaluate(cdp, `document.querySelector('[aria-label="Account 360 Executive Decision Header"]').scrollIntoView({block:'start'});`);
+    const identityShot=await cdp.send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
+    await writeFile('/tmp/profile-mobile-identity.png', Buffer.from(identityShot.result.data,'base64'));
+  }
+  await evaluate(cdp, `document.querySelector('[data-testid="equipment-source-basis"]').open=false;
+    document.querySelector('[data-testid="profile-equipment-summary"]').scrollIntoView({block:'start'});`);
+  // The first row must remain below the actual sticky header/action geometry.
+  const clearance=await evaluate(cdp, `(() => {
+    const row=document.querySelector('[data-testid="equipment-line-monitor"]').getBoundingClientRect();
+    const headers=[...document.querySelectorAll('main.profile-workspace > header,.profile-action-dock')]
+      .filter(e=>['sticky','fixed'].includes(getComputedStyle(e).position)).map(e=>e.getBoundingClientRect().bottom);
+    return {rowTop:row.top,bottom:Math.max(0,...headers)};
+  })()`);
+  assert(clearance.rowTop>=clearance.bottom-1, `equipment row hidden under actions: ${JSON.stringify(clearance)}`);
+  const shot=await cdp.send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
+  await writeFile(`/tmp/profile-equipment-${viewport.width}-${category}.png`, Buffer.from(shot.result.data,'base64'));
+  // Enlarge just the new brief to exercise long values and natural reflow, not unrelated app chrome.
+  await evaluate(cdp, `(() => {const e=document.querySelector('.aib');e.style.zoom='2';e.style.width='50%';})()`);
+  const enlarged=await evaluate(cdp, `(() => {
+    const host=document.querySelector('.aib');
+    return [...host.querySelectorAll('p,dt,dd,summary')].filter(e=>e.getBoundingClientRect().height>0&&e.scrollWidth>e.clientWidth+2).map(e=>e.innerText);
+  })()`);
+  assert(enlarged.length === 0, `200% brief text clipped: ${JSON.stringify(enlarged)}`);
+  await evaluate(cdp, `(() => {const e=document.querySelector('.aib');e.style.zoom='';e.style.width='';})()`);
+  console.log(`PASS ${viewport.width}px ${category}: equipment first, buy-back, touch sources, contact targets, 200% reflow`);
+}
+
 async function main() {
   if (
     process.env.PROFILE_LAYOUT_ONLY !== '1' &&
@@ -4998,6 +5062,20 @@ async function main() {
 
     if (process.env.NAV_LAYOUT_ONLY === '1') {
       await checkSharedNavigation(cdp);
+      return;
+    }
+
+    if (process.env.PROFILE_EQUIPMENT_ONLY === '1') {
+      for (const [viewport, category, name] of [
+        [{width:320,height:740,mobile:true}, 'ems', emsProfileCases[1]],
+        [{width:390,height:844,mobile:true}, 'fire', fireProfileCases[1]],
+        [{width:430,height:932,mobile:true}, 'ems', emsProfileCases[0]],
+        [{width:844,height:390,mobile:true}, 'fire', fireProfileCases[0]],
+        [{width:1280,height:900,mobile:false}, 'ems', emsProfileCases[0]],
+      ]) {
+        if (process.env.PROFILE_TEST_WIDTH && viewport.width !== Number(process.env.PROFILE_TEST_WIDTH)) continue;
+        await checkMobileEquipmentBrief(cdp, viewport, category, name);
+      }
       return;
     }
 

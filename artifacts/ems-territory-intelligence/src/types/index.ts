@@ -216,7 +216,25 @@ export interface CompetitorContractExpiry {
   contractSourceDoc?: string;
 }
 
+/** A written agency-specific offer, never a competitive-intelligence benchmark. */
+export interface DocumentedTradeInOffer {
+  id: string;
+  kind: 'cash-buyback' | 'vendor-credit';
+  provider: string;
+  eligibleDevice?: string;
+  offerDate?: string;
+  expiryDate?: string;
+  conditions?: string;
+  perUnitValue?: number | null;
+  eligibleQuantity?: number | null;
+  /** Explicit currency code; missing currency must not imply USD. */
+  currency?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+}
+
 export interface Agency {
+  documentedTradeInOffers?: DocumentedTradeInOffer[];
   id: string;
   name: string;
   fdid: string; // Fire Dept Identification or State EMS ID

@@ -354,72 +354,18 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
 }
 
 /**
- * Resolves the specific manufacturer/distributor supplier for each installed equipment and software line.
+ * Inventory brand names do not identify an agency's contracted supplier.
+ * No supplier fields are available in the current record.
  */
-function resolveEquipmentSuppliers(agency: Agency) {
-  const fleet = agency.installedFleet;
-
-  const defibSupplier = fleet.defibBrand.toLowerCase().includes('stryker') || fleet.defibBrand.toLowerCase().includes('lifepak')
-    ? 'Stryker Medical / Physio-Control ProCare'
-    : fleet.defibBrand.toLowerCase().includes('philips')
-      ? 'Philips Healthcare Emergency Care'
-      : fleet.defibBrand.toLowerCase().includes('zoll')
-        ? 'ZOLL Medical Corporation (Direct OEM)'
-        : 'Stryker Medical / Third-Party Biomedical ISO';
-
-  const cprSupplier = fleet.mechanicalCPR.toLowerCase().includes('lucas') || fleet.mechanicalCPR.toLowerCase().includes('stryker')
-    ? 'Stryker Medical (LUCAS Resuscitation Division)'
-    : fleet.mechanicalCPR.toLowerCase().includes('autopulse') || fleet.mechanicalCPR.toLowerCase().includes('zoll')
-      ? 'ZOLL Medical Corporation'
-      : 'None Installed (Manual Compressions Only — Bound Tree Consumables)';
-
-  const ventSupplier = fleet.transportVentilator.toLowerCase().includes('hamilton')
-    ? 'Hamilton Medical AG / Bound Tree Distribution'
-    : fleet.transportVentilator.toLowerCase().includes('zoll') || fleet.transportVentilator.toLowerCase().includes('z vent')
-      ? 'ZOLL Medical Corporation'
-      : fleet.transportVentilator.toLowerCase().includes('impact')
-        ? 'Legacy Impact Instrumentation (End-of-Life)'
-        : 'Teleflex / Ambu Disposable BVM Supply (No Automated Ventilator)';
-
-  const epcrSupplier = fleet.epcrCadSoftware.toLowerCase().includes('imagetrend')
-    ? 'ImageTrend, Inc. (Elite EMS Cloud)'
-    : fleet.epcrCadSoftware.toLowerCase().includes('eso')
-      ? 'ESO Solutions, Inc. (ESO EHR Suite)'
-      : fleet.epcrCadSoftware.toLowerCase().includes('zoll')
-        ? 'ZOLL Data Systems (RescueNet ePCR)'
-        : 'Regional State NEMSIS Vendor';
-
-  const cadSupplier = (fleet.dispatchCadVendor || '').toLowerCase().includes('centralsquare')
-    ? 'CentralSquare Technologies (Enterprise Public Safety)'
-    : (fleet.dispatchCadVendor || '').toLowerCase().includes('motorola')
-      ? 'Motorola Solutions (PremierOne CAD)'
-      : (fleet.dispatchCadVendor || '').toLowerCase().includes('hexagon')
-        ? 'Hexagon Safety, Infrastructure & Geospatial (HxGN OnCall)'
-        : (fleet.dispatchCadVendor || '').toLowerCase().includes('tyler')
-          ? 'Tyler Technologies (New World Public Safety CAD)'
-          : 'ZOLL Data Systems (ZOLL Respond CAD)';
-
-  const billingSupplier = fleet.billingSoftware.toLowerCase().includes('digitech')
-    ? 'Digitech Computer LLC (EMS Billing & RCM)'
-    : fleet.billingSoftware.toLowerCase().includes('optum')
-      ? 'Optum Revenue Cycle Management'
-      : fleet.billingSoftware.toLowerCase().includes('zoll')
-        ? 'ZOLL Data Systems (ZOLL Billing / AR Boost)'
-        : 'In-House Municipal Finance & Revenue Division';
-
-  const medicalDistributor =
-    agency.populationServed % 2 === 0
-      ? 'Bound Tree Medical (Primary EMS Disposables & Electrodes)'
-      : 'Henry Schein EMS & Medical Supplies (Primary Contract Distributor)';
-
+function resolveEquipmentSuppliers() {
   return {
-    defibSupplier,
-    cprSupplier,
-    ventSupplier,
-    epcrSupplier,
-    cadSupplier,
-    billingSupplier,
-    medicalDistributor
+    defibSupplier: 'Not reported',
+    cprSupplier: 'Not reported',
+    ventSupplier: 'Not reported',
+    epcrSupplier: 'Not reported',
+    cadSupplier: 'Not reported',
+    billingSupplier: 'Not reported',
+    medicalDistributor: 'Not reported',
   };
 }
 
@@ -455,7 +401,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [rawAgency.id]);
 
   const agency = useMemo(() => ensureCompleteAgencyData(rawAgency), [rawAgency]);
-  const suppliers = useMemo(() => resolveEquipmentSuppliers(agency), [agency]);
+  const suppliers = resolveEquipmentSuppliers();
   const geographicLinks = useMemo(
     () => getAgencyGeographicLinks(agency),
     [agency],
@@ -888,7 +834,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         ? `${reportMetric(agency.annualCallVolume)} Fire Rescue calls were received in ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'the cited reporting period'}; this is not an EMS transport count.`
         : 'Annual Fire Rescue call volume not reported in the record.',
       hasAgencyFactEvidence(agency, 'epcrSystem')
-        ? `${agency.installedFleet.epcrCadSoftware} is identified as the department’s primary ePCR; review CAD and transport details in their respective fields.`
+        ? `${agency.installedFleet.epcrCadSoftware} is recorded in the combined ePCR/CAD field; separate systems and current use need confirmation.`
         : 'Current ePCR and CAD systems not reported in the record.',
       hasAgencyFactEvidence(agency, 'monitorModelTransition')
         ? 'The county reports LIFEPAK-15 devices in use and LIFEPAK-35 replacement activity; exact counts and completion are unknown.'
@@ -1176,7 +1122,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <h1 className="pi-page-title text-[24px] font-[650] leading-[1.2] text-[#14283F] dark:text-white sm:text-[32px]">
                     {agency.name}
                   </h1>
-                  <p className="pi-supporting mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="profile-identity-location pi-supporting mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold text-[#14283F] dark:text-white">
                       {agency.address || 'Address not reported'}
                     </span>
@@ -1191,29 +1137,32 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <span>Public main: {agency.headquartersPhone}</span>
                       </>
                     )}
-                    <span aria-hidden="true">·</span>
+                  </p>
+                  <div className="profile-contact-actions" aria-label="Agency contact actions">
+                    {(primaryContact?.phone || agency.headquartersPhone) && (
+                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`}>
+                        <Phone aria-hidden="true" /><span>Call agency</span>
+                      </a>
+                    )}
                     <a
                       href={agency.googleMapsUri}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
                     >
-                      <span>Google Maps</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <Navigation aria-hidden="true" /><span>Directions</span>
                     </a>
-                    <span aria-hidden="true">·</span>
-                    {agency.officialWebsite && (
+                    {safeExternalUrl(agency.officialWebsite) && (
                       <a
-                        href={agency.officialWebsite}
+                        href={safeExternalUrl(agency.officialWebsite)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
                       >
-                        <span>Official Portal</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <Globe aria-hidden="true" /><span>Website</span>
                       </a>
                     )}
-                  </p>
+                  </div>
                 </div>
 
                 {/* Fast-review summary: location is already in the identity line above. */}
@@ -1235,8 +1184,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </section>
 
                   <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
+                    <details className="profile-header-sources">
+                    <summary><h2><DataLabel kind="source">Source references</DataLabel></h2><ChevronDown aria-hidden="true" /></summary>
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold text-[#53657B] dark:text-slate-300"><DataLabel kind="source">Source references</DataLabel></h2>
                       <button type="button" onClick={() => setIsSourceDrawerOpen(true)} className="min-h-8 shrink-0 font-semibold text-[#285EE8] hover:underline dark:text-blue-300">Review all</button>
                     </div>
                     {topSourceItems.length > 0 ? (
@@ -1254,6 +1204,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     ) : (
                       <p className="mt-1 text-[#53657B] dark:text-slate-400">Open source records for this agency.</p>
                     )}
+                    </details>
                   </section>
                 </div>
 
@@ -2431,7 +2382,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-[#1E3A8A]">ePCR Clinical Charting</span>
+                    <span className="text-[11px] font-bold text-[#1E3A8A]">ePCR / CAD (combined record)</span>
                     <span className="font-mono text-[11px] font-semibold text-slate-600">
                       NEMSIS v3.5
                     </span>
@@ -2727,7 +2678,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.incumbentConsumablesTotal - tcoModel.zollConsumablesTotal, { compact: false })}</td>
                     </tr>
                     <tr className="bg-emerald-50/40">
-                      <td className="py-2.5 px-4 font-semibold text-[#0F172A]">Retired Competitor Fleet Trade-In Credit ({formatCurrency(tcoModel.matchedIntel.zollTradeInCreditPerUnit, { compact: false })}/unit)</td>
+                      <td className="py-2.5 px-4 font-semibold text-[#0F172A]">Illustrative trade-in credit assumption, not a quote ({formatCurrency(tcoModel.matchedIntel.zollTradeInCreditPerUnit, { compact: false })}/unit)</td>
                       <td className="py-2.5 px-4 text-right pi-metric-table text-slate-400">$0</td>
                       <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">-{formatCurrency(tcoModel.totalTradeInCredit, { compact: false })}</td>
                       <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.totalTradeInCredit, { compact: false })}</td>
@@ -2868,7 +2819,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
 
               <div className="p-4 bg-white dark:bg-slate-900 space-y-2">
-                <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">Electronic Patient Care Report (ePCR)</div>
+                <div className="font-semibold text-[#1E3A8A] dark:text-blue-400 font-mono text-[10px] uppercase tracking-wider">ePCR / CAD (combined record)</div>
                 <div className="text-base font-bold text-slate-900 dark:text-white">
                   {agency.installedFleet.epcrCadSoftware || 'Not reported'}
                 </div>
@@ -2877,7 +2828,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 )}
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
                   {hasAgencyFactEvidence(agency, 'epcrSystem')
-                    ? 'The county identifies MetroPCR as its primary ePCR system; this source does not verify annual EMS transports.'
+                    ? 'A source is mapped to this software record. Separate ePCR/CAD systems and current deployment require confirmation; this source does not verify annual EMS transports.'
                     : 'System details are not listed in this record.'}
                 </p>
                 {hasAgencyFactEvidence(agency, 'epcrSystem') && (

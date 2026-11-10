@@ -27,3 +27,4 @@
 - [Browser contrast color sampling](browser-contrast-color-sampling.md) — parse Chromium's normalized `color(srgb ...)` values and anchor contrast checks to the rendered surface.
 - [Print theme readability](print-theme-readability.md) — use paper-first print colors, preserve semantic status contrast and page breaks, and validate actual PDFs across themes.
 - [Direct PDF export compatibility](direct-pdf-export.md) — keep searchable, theme-safe agency PDFs with clean A4 and Letter page crops and margins.
+- [Equipment evidence boundaries](equipment-evidence-boundaries.md) — product brands are not contracted suppliers; inventories and illustrative credits do not establish buy-back offers.

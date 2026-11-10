@@ -8,6 +8,35 @@ const marker = (id: string, latitude: number, longitude: number) => ({
   longitude,
 });
 
+test('handles an empty plotted territory', () => {
+  assert.deepEqual(groupOverlappingMapMarkers([], 10), []);
+});
+
+test('preserves a single agency including zero-valued coordinates', () => {
+  const agency = marker('single', 0, 0);
+  assert.deepEqual(groupOverlappingMapMarkers([agency], 12), [[agency]]);
+});
+
+test('keeps separated agencies individually inspectable without mutating input', () => {
+  const agencies = Object.freeze([
+    Object.freeze(marker('chicago', 41.88, -87.63)),
+    Object.freeze(marker('springfield', 39.8, -89.65)),
+    Object.freeze(marker('peoria', 40.69, -89.59)),
+  ]);
+  const groups = groupOverlappingMapMarkers(agencies, 10);
+  assert.deepEqual(groups, agencies.map((agency) => [agency]));
+  assert.equal(new Set(groups.flat()).size, agencies.length);
+});
+
+test('retains every agency in a transitive overlap chain', () => {
+  const agencies = [
+    marker('left', 41.88, -87.63),
+    marker('middle', 41.88, -87.615),
+    marker('right', 41.88, -87.6),
+  ];
+  assert.deepEqual(groupOverlappingMapMarkers(agencies, 12), [agencies]);
+});
+
 test('groups overlapping marker badges at common territory zoom levels', () => {
   const groups = groupOverlappingMapMarkers(
     [

@@ -73,6 +73,15 @@ For Letter-print regressions, capture PDFs with Chromium's DevTools print comman
 
 **How to apply:** Use the installed `pdfinfo` and `pdftotext` tools alongside DOM measurements under print media when validating agency brief output.
 
+Compare Google Maps camera coordinates with a small numeric tolerance, not
+strict equality, even after moving to an exact latitude/longitude.
+
+**Why:** The live SDK normalizes coordinates and can return floating-point
+rounding differences for a correctly centered camera.
+
+**How to apply:** Use tolerance-based assertions for camera centers and distinguish
+intentional filter-target moves from unwanted resets during unrelated rerenders.
+
 In Plan mode, a temporary Chromium user-data directory alone does not prevent browser writes to the workspace: ancillary crash-report and NSS certificate stores can still use workspace-backed OS profile locations.
 
 **Why:** Read-only audits were blocked by Chromium writing crash settings and certificate database files outside its requested temporary user-data directory.

@@ -173,9 +173,8 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
     const ev = summarizeEvidence(agency, l.evidenceKeys[0]);
     return (
       <li key={l.key} className="aib-eq" data-testid={`equipment-line-${l.key}`}>
-        <span className="aib-eq-ico" data-category={l.category} aria-hidden="true"><Icon className="aib-icon" aria-hidden="true" /></span>
         <div className="min-w-0">
-          <p className="aib-eq-label">{l.label}</p>
+          <p className="aib-eq-label"><span className="aib-eq-ico" data-category={l.category} aria-hidden="true"><Icon className="aib-icon" aria-hidden="true" /></span>{l.label}</p>
           <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
           <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
             <span className="aib-eq-srcstate" data-state={ev.state}>{ev.state === 'none' ? 'No source mapped' : ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>

@@ -8,7 +8,7 @@ import path from 'node:path';
 process.env.PROFILE_HELPERS_ONLY = '1';
 const { createCdpClient, evaluate, waitFor, reservePort, waitForJson } = await import('./check-profile-overflow.mjs');
 const base = process.env.PROFILE_TEST_URL || 'http://127.0.0.1:80/';
-const out = 'generated-artifacts/profile-polish';
+const out = process.env.PROFILE_POLISH_OUTPUT || 'generated-artifacts/profile-polish';
 await mkdir(out, { recursive: true });
 const dir = await mkdtemp(path.join(os.tmpdir(), 'profile-polish-'));
 const port = await reservePort();
@@ -23,9 +23,9 @@ try {
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   const ev = value => evaluate(cdp, value);
-  for (const width of [1366, 390]) {
-    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width === 390 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
-    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: width === 390, maxTouchPoints: 1 });
+  for (const width of [1366, 390, 320]) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width < 768 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: width < 768, maxTouchPoints: 1 });
     await cdp.send('Page.navigate', { url: base });
     await waitFor(cdp, `Boolean(document.querySelector('main'))`, 'app', 60000);
     await ev(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||b.innerText).trim()==='Agencies'&&b.getBoundingClientRect().height>0);if(!b)throw Error('Missing Agencies');b.click()})()`);
@@ -34,7 +34,7 @@ try {
     await waitFor(cdp, `Boolean(document.querySelector('.acp-header'))`, 'agency profile', 60000);
     await ev(`document.fonts.ready.then(()=>true)`);
     await new Promise(resolve => setTimeout(resolve, 500));
-    for (const topic of process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'evidence']) {
+    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'evidence'])) {
       if (topic !== 'overview') {
         await ev(`(()=>{const s=document.querySelector('.acp-nav-select');if(s&&getComputedStyle(s).display!=='none'){s.value=${JSON.stringify(topic)};s.dispatchEvent(new Event('change',{bubbles:true}))}else{document.querySelector('[data-testid="tab-profile-${topic}"]').click()}})()`);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -49,6 +49,10 @@ try {
           page:document.documentElement.scrollWidth,
           profileWidth:r.width,profileScroll:root.scrollWidth,
           headerHeight:document.querySelector('.acp-header').getBoundingClientRect().height,
+          summariesHeight:root.querySelector('.acp-summaries')?.getBoundingClientRect().height??null,
+          summaryFont:root.querySelector('.acp-summary-value')?getComputedStyle(root.querySelector('.acp-summary-value')).fontSize:null,
+          nameFont:getComputedStyle(root.querySelector('.acp-name')).fontSize,
+          equipmentHeight:root.querySelector('[data-testid="profile-equipment-summary"]')?.getBoundingClientRect().height??null,
           removed:!root.querySelector('[data-testid="panel-recommended-next-action"]'),
           icons:[...root.querySelectorAll('svg')].filter(shown).length,
           summaryIcons:[...root.querySelectorAll('.acp-summary svg')].filter(shown).length,
@@ -62,18 +66,23 @@ try {
       assert.ok(geometry.removed, 'Removed next-action section must stay removed');
       assert.ok(geometry.icons > 5, `${width}/${topic}: meaningful icons rendered`);
       assert.equal(geometry.active, `tab-profile-${topic}`, 'Topic navigation must work');
-      if (width === 390) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');
+      if (width < 768) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');
       if (topic === 'overview') assert.ok(geometry.summaryIcons >= 4, 'Each overview summary needs an icon');
       results.push(geometry);
       if (['overview', 'equipment'].includes(topic)) {
         await ev(`document.querySelector('.agency-command-profile').scrollTop=0`);
         const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
         await writeFile(`${out}/${width}-${topic}.png`, Buffer.from(shot.result.data, 'base64'));
+        if (topic === 'equipment') {
+          await ev(`document.querySelector('[data-testid="profile-equipment-summary"]').scrollIntoView({block:'start',behavior:'instant'})`);
+          const equipmentShot = await cdp.send('Page.captureScreenshot', { format: 'png' });
+          await writeFile(`${out}/${width}-equipment-content.png`, Buffer.from(equipmentShot.result.data, 'base64'));
+        }
       }
     }
   }
   await writeFile(`${out}/${process.env.PROFILE_POLISH_HEADER_ONLY ? 'header-results' : 'results'}.json`, JSON.stringify(results, null, 2));
-  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'six topic tabs'}, icons, retained section removal.`);
+  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'six topic tabs')}, icons, retained section removal.`);
   console.log(JSON.stringify(results, null, 2));
 } finally {
   cdp?.close();

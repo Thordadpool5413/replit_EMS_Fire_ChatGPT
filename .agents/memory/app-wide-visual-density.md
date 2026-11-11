@@ -23,6 +23,12 @@ Keep the entire app compact, clean, and scannable on laptop and phone. Reduce ov
 
 For EMS and Fire profiles, use an agency intelligence brief: one identity/contact header, one agency-specific operational snapshot, and findings paired with their basis and a suggested next step. Distinguish EMS, fire, and combined operations without duplicate summaries. Use recognizable unboxed icons, aligned numbers and units, restrained colors, and shared theme tokens. Start supporting detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
 
+Individual profile cards and display fonts must be smaller, not merely restyled.
+
+**Why:** After the icon/visual polish, the user repeated that the profile sheets were not impressive or polished and said “the cards and fonts needs to be reduced in size too. everything is too large.”
+
+**How to apply:** Reduce actual rendered header, summary and equipment-block heights on laptop and phone through tighter typography and layout. Keep readable detail text, source notices and touch targets; more icon decoration is not a substitute for smaller, better-organized profiles.
+
 Current technology and equipment identification is a primary profile goal, not just supporting detail. Keep the installed-technology summary prominent on phones rather than burying all equipment in collapsed panels.
 
 **Why:** The user clarified: “the goal is to identify what current technology and or equipment is being used as well.”

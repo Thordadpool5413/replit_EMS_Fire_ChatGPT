@@ -122,7 +122,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .workspace-grid-shell .pi-section-heading { letter-spacing: -0.035em; }
 
 @media (max-width: 767px) {
-  .workspace-grid-shell { padding: 0.7rem 0.7rem max(5.5rem, env(safe-area-inset-bottom)) !important; }
+  .workspace-grid-shell { padding: 0.7rem max(0.7rem, env(safe-area-inset-right)) calc(5.5rem + env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left)) !important; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -194,4 +194,35 @@ button { -webkit-tap-highlight-color: transparent; }
     font-size: 0.68rem !important;
     line-height: 1rem !important;
   }
+}
+
+/* Shared dialogs and drawers: fit the visual viewport on phones and short landscape screens. */
+@media (max-width: 767px), (max-height: 500px) {
+  .pi-dialog-overlay {
+    height: var(--app-visible-height, 100dvh);
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left)) !important;
+    align-items: flex-start !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .pi-dialog-panel {
+    max-height: calc(var(--app-visible-height, 100dvh) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    margin-block: auto;
+  }
+  /* Only single-surface panels scroll themselves; flex-column panels keep their own body scroller (no nested scroll). */
+  .pi-dialog-panel:not(.flex-col) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .pi-dialog-overlay:has(> .pi-dialog-panel) { overflow-y: hidden; }
+  .pi-dialog-panel :is(input, select, textarea) { font-size: max(16px, 1em); }
+  .pi-dialog-panel :is(button, [role="button"], select, input:not([type="range"]):not([type="checkbox"]):not([type="radio"])) { min-height: 2.75rem; }
+  .pi-drawer-overlay { height: var(--app-visible-height, 100dvh); overscroll-behavior: contain; }
+  .pi-drawer-overlay > :is(div, section, aside)[class*="h-full"] {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pi-dialog-overlay, .pi-dialog-panel, .pi-drawer-overlay { animation: none !important; transition: none !important; }
 }

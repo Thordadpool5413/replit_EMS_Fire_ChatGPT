@@ -166,8 +166,8 @@ test('agency profiles, Field Work, and system tools keep alerts record-backed', 
 
   // These existing uses are legitimate validation feedback or domain-specific recall information.
   assert.match(profile, /role="alert">[\s\S]*?\{profileReviewError\}/);
-  assert.match(profile, /tcoModel\.matchedIntel\.fdaRecallId/);
-  assert.match(profile, /tcoModel\.matchedIntel\.fdaRecallSummary/);
+  assert.match(profile, /benchmarkIntel\.fdaRecallId/);
+  assert.match(profile, /benchmarkIntel\.fdaRecallSummary/);
 
   // "Mock alerts" is permitted only as an explicitly excluded data-audit category, never as a feed.
   assert.match(dataHealth, /5\. Mock \/ Sample \/ Test Data[\s\S]*?Blocked by DataSanitizationService[\s\S]*?&amp; mock alerts[\s\S]*?0 active \([\s\S]*?stripped\)/);

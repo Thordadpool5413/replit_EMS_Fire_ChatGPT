@@ -952,7 +952,7 @@ export const ThreeApparatusStudio: React.FC<ThreeApparatusStudioProps> = ({ acti
   }, []);
 
   return (
-    <div className="relative w-full h-[620px] rounded-xl overflow-hidden border border-slate-300 dark:border-slate-800 bg-slate-950 shadow-md select-none">
+    <div className="apparatus-studio-stage relative w-full h-[min(620px,calc(var(--app-visible-height,100dvh)-9rem))] min-h-[22rem] md:h-[620px] rounded-xl overflow-hidden border border-slate-300 dark:border-slate-800 bg-slate-950 shadow-md select-none">
       
       {/* 3D WebGL Canvas Container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />

@@ -1522,7 +1522,7 @@ export default function App() {
 
         {/* FEMA AFG & SAFER Grants Tracker (Opportunities Workspace) */}
         {activeTab === 'grants' && (
-          <div className="workspace-view-container min-w-0 w-full">
+          <div className="workspace-view-container operations-workspace min-w-0 w-full">
             <AfgGrantsTracker
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}

@@ -792,3 +792,14 @@
     border-radius: 50%;
   }
 }
+
+/* On-screen keyboard open (set by the PWA lifecycle): hide only the bottom bar so the focused
+   form and its actions stay visible. The More panel and dialogs remain, sized to the visible height. */
+@media (max-width: 767px) {
+  html[data-mobile-keyboard="open"] .pi-mobile-nav { display: none !important; }
+  html[data-mobile-keyboard="open"] .pi-mobile-more-sheet {
+    bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
+    max-height: calc(var(--app-visible-height, 100dvh) - 1rem) !important;
+  }
+  html[data-mobile-keyboard="open"] .workspace-grid-shell { padding-bottom: 1rem !important; }
+}

@@ -168,7 +168,7 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
   ];
 
   return (
-    <div className="workspace-view-container min-w-0 w-full pb-12 transition-colors duration-200">
+    <div className="workspace-view-container field-work-workspace field-dashboard-workspace min-w-0 w-full pb-12 transition-colors duration-200" data-testid="workspace-field-dashboard">
       
       {/* 1. MINIMALIST EXECUTIVE FIELD COCKPIT HEADER */}
       <motion.div 

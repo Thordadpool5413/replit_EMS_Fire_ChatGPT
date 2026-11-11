@@ -112,3 +112,17 @@ mtime_ms = 1794359122277
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/442ae778-6b37-4420-a977-665ae093c68c/31867ec2-77ce-4b56-883d-7e4f651b1411"
 storage_version_token = "1794359183237319"
 content_type = "text/html"
+
+[[outputs]]
+id = "2x3unhMh9oB1BCmCupqhV"
+uri = "file://generated-artifacts/mobile-polish/mobile-pwa-review.html"
+type = "html"
+title = "Mobile & PWA review"
+description = "Actual phone screenshots, implemented improvements, verification results and physical-device testing limits."
+logical_id = "8bb12d4b-2136-4897-8bf7-68cf2cf5a2a2"
+content_hash = "sha256:f41cb6332a728f4a1370b088ea71f26ec9201d60226b8c1296a27e78d04d8b5f"
+size = 1422521
+mtime_ms = 1794366302302
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/8bb12d4b-2136-4897-8bf7-68cf2cf5a2a2/f450f437-3c19-44d1-b487-ef8c38fa22bf"
+storage_version_token = "1794366388606680"
+content_type = "text/html"

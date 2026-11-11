@@ -93,11 +93,11 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-60 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-100"
+      className="pi-dialog-overlay fixed inset-0 z-60 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-100"
     >
       <div 
         ref={modalCardRef}
-        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4 text-slate-900 dark:text-slate-100"
+        className="pi-dialog-panel bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4 text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">

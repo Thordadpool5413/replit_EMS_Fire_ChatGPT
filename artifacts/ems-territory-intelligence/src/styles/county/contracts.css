@@ -18,6 +18,11 @@
 .cv-map-stage { position: relative; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; min-height: 15rem; padding-block: .35rem; }
 
 .cv-map-stage svg { display: block; width: 100%; height: auto; max-height: min(62vh, 34rem); }
+@media (max-height: 500px) {
+  /* Phone landscape: keep the whole state/county map visible above the fold with its controls. */
+  .cv-map-stage { min-height: 11rem; }
+  .cv-map-stage svg { max-height: calc(100dvh - 7rem); }
+}
 
 .cv-map-stage--county svg { max-height: min(58vh, 30rem); }
 

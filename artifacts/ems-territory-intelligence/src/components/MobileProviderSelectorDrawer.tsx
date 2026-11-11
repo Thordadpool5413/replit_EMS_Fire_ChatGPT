@@ -187,7 +187,7 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200"
+      className="pi-drawer-overlay fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="mobile-finder-title"

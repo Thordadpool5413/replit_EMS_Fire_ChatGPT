@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react';
+import {getPwaState, installPwa, subscribePwa} from '../pwa/lifecycle';
 import brandLogoAsset from '../assets/images/nicks_ems_logo_1792367124466.jpg';
 import {
   Search,
@@ -64,11 +65,6 @@ interface TopBarProps {
   onOpenProviderFinder?: () => void;
 }
 
-interface InstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-}
-
 export const TopBar: React.FC<TopBarProps> = ({
   activeTab,
   setActiveTab,
@@ -99,53 +95,20 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [logoFailed, setLogoFailed] = useState<boolean>(false);
   const [isUtilityMenuOpen, setIsUtilityMenuOpen] = useState<boolean>(false);
   const [isMobileToolsMenuOpen, setIsMobileToolsMenuOpen] = useState<boolean>(false);
-  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const pwaState = useSyncExternalStore(subscribePwa,getPwaState,getPwaState);
+  const installPrompt = pwaState.installAvailable;
+  const isAppInstalled = pwaState.installed;
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const desktopUtilityRef = useRef<HTMLDivElement>(null);
   const mobileUtilityRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const standaloneMedia = window.matchMedia('(display-mode: standalone)');
-    const updateInstalledState = () => {
-      const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
-      setIsAppInstalled(standaloneMedia.matches || iosStandalone);
-    };
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as InstallPromptEvent);
-    };
-    const handleAppInstalled = () => {
-      setIsAppInstalled(true);
-      setInstallPrompt(null);
-      setShowInstallHelp(false);
-    };
-
-    updateInstalledState();
-    standaloneMedia.addEventListener('change', updateInstalledState);
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    return () => {
-      standaloneMedia.removeEventListener('change', updateInstalledState);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
 
   const handleInstallApp = async () => {
     if (!installPrompt) {
       setShowInstallHelp((show) => !show);
       return;
     }
-    try {
-      await installPrompt.prompt();
-      const choice = await installPrompt.userChoice;
-      setInstallPrompt(null);
-      if (choice.outcome === 'accepted') setIsAppInstalled(true);
-    } catch (error) {
-      console.error('Unable to open the app install prompt:', error);
-      setShowInstallHelp(true);
-    }
+    await installPwa();
+    if(getPwaState().error)setShowInstallHelp(true);
   };
 
   const isIosBrowser = typeof navigator !== 'undefined'

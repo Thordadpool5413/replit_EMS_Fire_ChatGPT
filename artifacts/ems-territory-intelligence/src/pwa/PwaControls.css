@@ -1,0 +1,9 @@
+.pwa-controls { color:var(--pi-text-primary,#142238); font-size:.875rem; line-height:1.5; }
+.pwa-controls h3 { display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:700;margin:0 0 .6rem; }
+.pwa-controls p { margin:.5rem 0;color:var(--pi-text-secondary,#526378);overflow-wrap:anywhere; }
+.pwa-controls .pwa-controls-status {display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;color:var(--pi-text-primary,#142238);}
+.pwa-controls-status span {font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--pi-border,#dce4ef);border-radius:4px;}
+.pwa-controls button {display:flex;align-items:center;gap:.6rem;min-height:44px;width:100%;padding:.6rem .75rem;margin:.5rem 0;border:1px solid var(--pi-border,#dce4ef);border-radius:8px;background:var(--pi-action-subtle,#edf4ff);color:var(--pi-action-ink,#194aa0);font:inherit;font-weight:600;text-align:left;touch-action:manipulation;}
+.pwa-controls button:focus-visible {outline:2px solid var(--pi-focus-ring,#2454c6);outline-offset:2px;}
+.pwa-controls-help {padding:.25rem .75rem;border-left:2px solid var(--pi-border,#dce4ef);}
+.pwa-controls .pwa-controls-error {color:var(--pi-danger-ink,#a32b3c);}

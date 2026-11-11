@@ -83,11 +83,11 @@ Define any field trial, duration, number of evaluation units, clinical measures,
 
   return (
     <div
-      className="fixed inset-0 z-60 overflow-y-auto bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+      className="pi-dialog-overlay fixed inset-0 z-60 overflow-y-auto bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
     >
       <div 
         ref={modalCardRef}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl shadow-2xl p-5 sm:p-6 space-y-4 max-h-[92vh] flex flex-col text-slate-900 dark:text-white"
+        className="pi-dialog-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-4xl shadow-2xl p-5 sm:p-6 space-y-4 max-h-[92vh] flex flex-col text-slate-900 dark:text-white"
         onClick={(e) => e.stopPropagation()}
       >
         

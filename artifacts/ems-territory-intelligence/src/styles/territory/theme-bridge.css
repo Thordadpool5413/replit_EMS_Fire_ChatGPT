@@ -1,3 +1,18 @@
+/* Intentional dark map surfaces keep legible ink in the default light app theme. */
+.fleet-map-workspace .fleet-map-layer-story,
+.fleet-map-workspace .fleet-map-canvas[data-map-theme="dark"],
+.fleet-map-workspace .fleet-map-controls {
+  --pi-text-primary:#edf4ff;
+  --pi-text-secondary:#c8d8ea;
+  --pi-text-muted:#aabed6;
+  --pi-action-ink:#a9ceff;
+}
+.fleet-map-workspace .fleet-map-layer-story [class~="bg-white"] {
+  --pi-text-primary:#142238;
+  --pi-text-secondary:#526378;
+  --pi-text-muted:#526378;
+  --pi-action-ink:#194aa0;
+}
 /* Owner: territory. Cascade phase: theme-bridge. See ../README.md. */
 .agency-directory-card {
   background-color: var(--pi-surface-bg);

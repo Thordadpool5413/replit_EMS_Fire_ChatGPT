@@ -141,14 +141,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-start justify-center pt-16 sm:pt-20 p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-100"
+      className="pi-dialog-overlay fixed inset-0 z-60 flex items-start justify-center pt-16 sm:pt-20 p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-100"
       role="dialog"
       aria-modal="true"
       aria-label="Agency and tool search"
     >
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col"
+        className="pi-dialog-panel bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col"
       >
         
         {/* Search Input Bar */}
@@ -187,7 +187,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         </div>
 
         {/* Results List (Agencies First for Instant Lookup) */}
-        <div className="max-h-[420px] overflow-y-auto p-2 space-y-1 text-xs">
+        <div className="max-h-[min(420px,calc(var(--app-visible-height,100dvh)-11rem))] overflow-y-auto p-2 space-y-1 text-xs">
           
           {/* Agencies Items */}
           {filteredAgencies.length > 0 && (

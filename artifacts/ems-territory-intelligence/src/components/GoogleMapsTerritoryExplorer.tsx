@@ -148,9 +148,10 @@ const RecenterControl: React.FC<RecenterControlProps> = ({ userLocation, isPermi
           onClick={handleRecenter}
           className="gmap-ctl"
           title="Recenter map to your current location"
+          aria-label="Recenter map to your current location"
         >
-          <LocateFixed className="w-4 h-4 text-[#285EE8]" />
-          <span>Recenter to Location</span>
+          <LocateFixed className="w-4 h-4 text-[#285EE8]" aria-hidden="true" />
+          <span className="gmap-ctl-label">Recenter to Location</span>
         </button>
       </div>
     </MapControl>
@@ -177,10 +178,11 @@ interface FitAreaControlProps {
   points: { lat: number; lng: number }[];
   fallbackCenter: { lat: number; lng: number };
   fallbackZoom: number;
+  automatic?: boolean;
 }
 
 /** Fits the camera to the real bounds of the agency coordinates currently plotted. */
-const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter, fallbackZoom }) => {
+const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter, fallbackZoom, automatic = true }) => {
   const map = useMap();
   const handleFit = () => {
     if (!map) return;
@@ -199,6 +201,13 @@ const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter,
     }
     map.fitBounds({ south, west, north, east }, 48);
   };
+  const locationKey=points.map(point=>`${point.lat},${point.lng}`).join(';');
+  useEffect(()=>{
+    // Fit a changed record set once. Hovering or manually panning must not reset the camera.
+    if(automatic)handleFit();
+    // The serialized coordinates deliberately replace the freshly allocated points array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[map,locationKey,automatic]);
   return (
     <MapControl position={ControlPosition.RIGHT_TOP}>
       <div className="m-2.5">
@@ -385,8 +394,9 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     const maxScore = maxPulseIqScore === '' ? null : Number(maxPulseIqScore);
     let pool = agencies.filter((agency) => {
       // Must have valid coordinates
-      return typeof agency.latitude === 'number' && !isNaN(agency.latitude) && 
-             typeof agency.longitude === 'number' && !isNaN(agency.longitude);
+      return Number.isFinite(agency.latitude) && Math.abs(agency.latitude)<=90 &&
+             Number.isFinite(agency.longitude) && Math.abs(agency.longitude)<=180 &&
+             !(agency.latitude===0 && agency.longitude===0);
     });
 
     // 1. Discipline Filter (All / EMS / Fire)
@@ -537,7 +547,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   };
 
   return (
-    <div className="workspace-view-container min-w-0 w-full space-y-4">
+    <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP
@@ -1010,7 +1020,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
           </div>
 
           {/* Interactive Google Map Canvas */}
-          <div className="gmap-frame relative w-full h-[440px] sm:h-[560px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+          <div className="gmap-frame relative w-full h-[min(440px,calc(var(--app-visible-height,100dvh)-9rem))] min-h-[17rem] sm:h-[560px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
             {activeApiKey ? (
               <APIProvider apiKey={activeApiKey} libraries={['marker', 'routes']}>
                 <Map
@@ -1046,6 +1056,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
                   <CameraSync center={mapCenter} zoom={mapZoom} />
                   <FitAreaControl
+                    automatic={!activeAccount}
                     points={filteredAgencies.map((a) => ({ lat: a.latitude, lng: a.longitude }))}
                     fallbackCenter={mapCenter}
                     fallbackZoom={mapZoom}

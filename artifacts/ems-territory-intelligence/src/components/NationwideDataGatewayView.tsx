@@ -20,6 +20,7 @@ import {
   Award,
   Sliders
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { Agency } from '../types';
 import {
   computeNationwideStateAggregations,
@@ -366,7 +367,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <ScrollableTableRegion label="State-by-state aggregation table">
               <table className="w-full text-xs text-left">
                 <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
@@ -413,7 +414,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTableRegion>
           </div>
         </div>
       )}
@@ -465,7 +466,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             </div>
 
             {liveFemaAwards.length > 0 ? (
-              <div className="overflow-x-auto max-h-72">
+              <ScrollableTableRegion label="FEMA award records table" maxHeightClassName="max-h-72">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                     <tr>
@@ -514,7 +515,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             ) : (
               <div className="break-all p-4 text-xs text-slate-500 font-mono">
                 {isLoadingFema ? 'Querying https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants...' : afgQuery.isError ? 'OpenFEMA request failed. Federal award records are unavailable; no local estimates are presented as verified awards.' : 'No OpenFEMA awards returned for this state.'}
@@ -740,7 +741,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <ScrollableTableRegion label="Agency fleet lifecycle table">
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                 <tr>
@@ -793,7 +794,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         </div>
       )}
     </div>

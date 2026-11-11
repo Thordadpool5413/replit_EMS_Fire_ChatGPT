@@ -1,3 +1,8 @@
+@media (max-width:767px) {
+  .lead-queue-workspace .agency-discipline-switcher {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+  .lead-queue-workspace .agency-discipline-switcher > button {flex-wrap:wrap;white-space:nowrap;gap:.15rem .3rem;min-width:0;line-height:1.2;padding:.4rem .25rem;}
+  .lead-queue-workspace .agency-discipline-switcher .pi-data-number {flex:0 0 100%;font-size:.6875rem;line-height:1.2;}
+}
 /* Owner: Opportunities lead queue. Cascade phase: responsive. */
 .pulseiq-factor-disclosure > div > section[aria-label="PulseIQ factor scores and weighted contributions"] {
   border: 0 !important;
@@ -30,4 +35,34 @@
   .agency-lead-cards-grid details {
     padding-top: 0.35rem !important;
   }
+}
+
+/* Phone: Opportunities and contract tools get touch-sized controls and readable small text.
+   Scoped to the lead-queue/contract workspaces only. */
+@media (max-width: 767px) {
+  .lead-queue-workspace :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])):where([class*="h-7"], [class*="h-8"]) {
+    min-height: 2.75rem;
+  }
+  .lead-queue-workspace :is(input, select, textarea) { font-size: 16px !important; }
+  .lead-queue-workspace :is(button, select)[class*="text-[10px]"],
+  .lead-queue-workspace :is(button, select)[class*="text-[9px]"] { font-size: 0.75rem !important; }
+  .lead-queue-workspace .lead-stage-select { max-width: none; flex: 1 1 auto; }
+  .lead-queue-workspace :is(button, select):active:not(:disabled) { transform: scale(0.98); }
+  .lead-pipeline-board { scroll-padding-inline: 0.25rem; overscroll-behavior-x: contain; }
+  .lead-pipeline-board:focus-visible { outline: 2px solid var(--pi-action); outline-offset: 2px; }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .lead-queue-workspace :is(button, select):active:not(:disabled) { transform: none; }
+}
+
+/* Field Work (routes & notes, field dashboard): same touch contract on phones. */
+@media (max-width: 767px) {
+  .field-work-workspace :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])):where([class*="h-7"], [class*="h-8"], [class*="h-9"]) {
+    min-height: 2.75rem;
+  }
+  .field-work-workspace :is(input, select, textarea) { font-size: 16px !important; }
+  .field-work-workspace :is(button, select)[class*="text-[10px]"],
+  .field-work-workspace :is(button, select)[class*="text-[9px]"] { font-size: 0.75rem !important; }
+  .field-work-workspace :is(button, a):focus-visible { outline: 2px solid var(--pi-action); outline-offset: 2px; }
 }

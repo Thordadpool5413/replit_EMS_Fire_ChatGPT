@@ -132,7 +132,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-slate-900/25 backdrop-blur-[1px] animate-in fade-in duration-150"
+      className="pi-drawer-overlay fixed inset-0 z-50 flex justify-end bg-slate-900/25 backdrop-blur-[1px] animate-in fade-in duration-150"
       onClick={onClose}
       role="dialog"
       aria-modal="true"

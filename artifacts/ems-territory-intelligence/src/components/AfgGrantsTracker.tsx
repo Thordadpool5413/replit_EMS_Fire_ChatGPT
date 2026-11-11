@@ -9,6 +9,7 @@ import { Agency } from '../types';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { Award, ChevronRight, ExternalLink, Filter, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { formatCurrency, formatInteger, formatScore } from '../utils/numberFormatting';
 import { DataLabel } from './DataLabel';
 
@@ -253,7 +254,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           {' '}Each record keeps OpenFEMA’s grantee location and award period; the API does not provide a county for these records.
         </p>
 
-        <div className="overflow-x-auto max-h-64">
+        <ScrollableTableRegion label="AFG grant awards table" maxHeightClassName="max-h-64">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800 text-xs">
@@ -320,7 +321,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               )}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </div>
 
       {/* Territory Granted Accounts Table */}
@@ -339,7 +340,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <ScrollableTableRegion label="AFG grant records table">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800 text-xs">
@@ -425,7 +426,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
 
         {/* Pagination Bar */}
         {totalPages > 1 && (

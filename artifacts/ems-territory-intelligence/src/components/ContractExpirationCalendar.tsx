@@ -18,6 +18,7 @@ import {
   FileText,
   Filter
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { formatCurrency, formatInteger, formatDate } from '../utils/numberFormatting';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { DataLabel } from './DataLabel';
@@ -121,7 +122,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
   }, [expiringAgencies, currentPage]);
 
   return (
-    <div className="workspace-view-container min-w-0 w-full">
+    <div className="workspace-view-container lead-queue-workspace contracts-workspace min-w-0 w-full" data-testid="workspace-contracts">
       
       {/* Calendar Header & Filter Bar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -226,7 +227,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <ScrollableTableRegion label="Contract expiration table">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800 text-xs">
@@ -315,7 +316,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
 
         {/* Pagination Bar */}
         {totalPages > 1 && (

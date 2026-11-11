@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Agency, PredictiveWeights, TerritoryCluster } from '../types';
 import { DEFAULT_WEIGHTS } from '../utils/pulseIqScoring';
 import { TERRITORY_CLUSTERS } from '../data/healthcareData';
@@ -192,6 +192,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   const [cursorGeoCoords, setCursorGeoCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [isDraggingMap, setIsDraggingMap] = useState<boolean>(false);
   const [dragStartPt, setDragStartPt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const touchPan = useRef<{x:number;y:number;panX:number;panY:number;moved:boolean}|null>(null);
+  const suppressTouchClick = useRef(false);
   const [sidebarTab, setSidebarTab] = useState<'nemsis_epicenters' | 'acuity_distribution' | 'product_matrix'>('nemsis_epicenters');
   const [showDensityHalos, setShowDensityHalos] = useState<boolean>(true);
   const [showPulseAnimations, setShowPulseAnimations] = useState<boolean>(true);
@@ -201,7 +203,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   const [showCorridors, setShowCorridors] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [showLegend, setShowLegend] = useState<boolean>(true);
+  const [showLegend, setShowLegend] = useState<boolean>(() =>
+    typeof window==='undefined'||!window.matchMedia('(max-width:767px), (max-height:500px)').matches);
 
   // Escape key closes Theater Mode
   React.useEffect(() => {
@@ -1490,7 +1493,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   };
 
   return (
-    <div className="workspace-section-grid">
+    <div className="workspace-section-grid fleet-map-workspace" data-testid="workspace-fleet-map">
       
       {/* Top GIS Header */}
       <div className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-4 sm:p-6 shadow-2xs min-w-0">
@@ -1837,7 +1840,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           </div>
 
           {/* Dynamic GIS Telemetry & Layer Filter Strip (Active across all 5 layers) */}
-          <div className={`p-4 sm:p-5 text-white border-b min-w-0 ${
+          <div className={`fleet-map-layer-story p-4 sm:p-5 text-white border-b min-w-0 ${
             selectedLayer === 'nemsis_cardiac' ? 'bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 border-rose-900/40' :
             selectedLayer === 'cardiac' ? 'bg-gradient-to-r from-red-950 via-slate-900 to-slate-950 border-red-900/40' :
             selectedLayer === 'aed' ? 'bg-gradient-to-r from-fuchsia-950 via-slate-900 to-slate-950 border-fuchsia-900/40' :
@@ -2298,16 +2301,17 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
           </div>
 
           <div
-            className={`relative flex-1 ${
+            data-map-theme={basemapTheme}
+            className={`fleet-map-canvas relative flex-1 ${
               basemapTheme === 'dark'
                 ? 'bg-gradient-to-b from-[#040914] via-[#071022] to-[#050B16]'
                 : 'bg-gradient-to-b from-[#F1F5F9] to-[#E2E8F0]'
             } p-2 sm:p-3 ${
-              isExpandedView ? 'min-h-[640px] lg:min-h-[720px]' : 'min-h-[560px] lg:min-h-[640px]'
+              isExpandedView ? 'min-h-[min(640px,calc(var(--app-visible-height,100dvh)-6rem))] md:min-h-[640px] lg:min-h-[720px]' : 'min-h-[min(560px,calc(var(--app-visible-height,100dvh)-7rem))] md:min-h-[560px] lg:min-h-[640px]'
             } flex flex-col justify-between overflow-hidden transition-colors`}
           >
             {/* Interactive Map Zoom, Pan & Opacity Control Cluster */}
-            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-auto">
+            <div className="fleet-map-controls absolute top-2 left-2 sm:top-4 sm:left-4 z-20 flex flex-col gap-2 pointer-events-auto">
               <div role="group" aria-label="Territory map zoom controls" className="relative bg-slate-950/95 border border-white/20 text-slate-100 rounded-lg overflow-hidden p-0.5">
                 <div className="flex flex-col">
                   <button 
@@ -2316,7 +2320,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     disabled={zoomLevel >= 3.5}
                     onClick={() => setZoomLevel(z => Math.min(3.5, +(z + 0.35).toFixed(2)))} 
                     title="Zoom In (+)" 
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
@@ -2326,7 +2330,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     disabled={zoomLevel <= 1}
                     onClick={() => setZoomLevel(z => Math.max(1, +(z - 0.35).toFixed(2)))} 
                     title="Zoom Out (-)" 
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-b border-white/10 cursor-pointer text-slate-200"
                   >
                     <ZoomOut className="w-4 h-4" />
                   </button>
@@ -2335,7 +2339,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                     aria-label="Fit nationwide territory map"
                     onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }} 
                     title="Fit nationwide view"
-                    className="p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 transition-colors cursor-pointer text-slate-200"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 hover:bg-sky-500/20 hover:text-sky-400 focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 transition-colors cursor-pointer text-slate-200"
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -2350,6 +2354,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               <button
                 type="button"
                 onClick={() => setShowLegend(prev => !prev)}
+                aria-label={showLegend?'Hide map color key':'Show map color key'}
+                aria-expanded={showLegend}
                 className={`px-2.5 py-1.5 rounded-xl border text-xs font-medium shadow-2xl flex items-center gap-1.5 cursor-pointer transition-all backdrop-blur-md ${
                   showLegend
                     ? 'bg-slate-900/90 border-sky-400/40 text-sky-300'
@@ -2358,7 +2364,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
                 title="Toggle Spatial Legend"
               >
                 <Layers className="w-3.5 h-3.5 text-sky-400" />
-                <span className="hidden sm:inline">Legend</span>
+                <span>Color key</span>
               </button>
 
               {/* Active Geodesic Route Corridors Toggle */}
@@ -2385,6 +2391,36 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
               data-selected-layer={selectedLayer}
               data-basemap-theme={basemapTheme}
               className={`w-full flex-1 select-none ${isDraggingMap ? 'cursor-grabbing' : zoomLevel > 1 ? 'cursor-grab' : 'cursor-crosshair'}`}
+              style={{touchAction:zoomLevel>1?'none':'pan-y'}}
+              onPointerDown={(event)=>{
+                if(event.pointerType!=='touch'||zoomLevel<=1)return;
+                touchPan.current={x:event.clientX,y:event.clientY,panX:panOffset.x,panY:panOffset.y,moved:false};
+              }}
+              onPointerMove={(event)=>{
+                const gesture=touchPan.current;
+                if(event.pointerType!=='touch'||!gesture)return;
+                const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+                if(!gesture.moved&&Math.hypot(dx,dy)<5)return;
+                gesture.moved=true;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                setIsDraggingMap(true);
+                const rect=event.currentTarget.getBoundingClientRect();
+                const ratio=Math.max(mapWidth/rect.width,mapHeight/rect.height);
+                setPanOffset({
+                  x:Math.max(-420*zoomLevel,Math.min(420*zoomLevel,gesture.panX+dx*ratio)),
+                  y:Math.max(-240*zoomLevel,Math.min(240*zoomLevel,gesture.panY+dy*ratio)),
+                });
+              }}
+              onPointerUp={(event)=>{
+                if(event.pointerType!=='touch')return;
+                if(touchPan.current?.moved){
+                  suppressTouchClick.current=true;
+                  window.setTimeout(()=>{suppressTouchClick.current=false;},350);
+                }
+                touchPan.current=null;setIsDraggingMap(false);
+              }}
+              onPointerCancel={()=>{touchPan.current=null;setIsDraggingMap(false);}}
+              onClickCapture={(event)=>{if(suppressTouchClick.current){event.stopPropagation();event.preventDefault();}}}
               onMouseDown={(e) => {
                 if (e.button !== 0) return;
                 setIsDraggingMap(true);

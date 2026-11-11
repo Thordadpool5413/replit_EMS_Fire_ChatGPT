@@ -39,6 +39,7 @@ import {
   ArrowRight,
   HelpCircle
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
@@ -386,7 +387,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   ];
 
   return (
-    <div className="workspace-section-grid">
+    <div className="workspace-section-grid lead-queue-workspace" data-testid="workspace-lead-queue">
       
       {/* Streamlined Single-Row Filter Bar + Progressive "More Filters" Drawer */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-3 min-w-0">
@@ -396,7 +397,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
           
           {/* Left: Search Box + State Dropdown + Quick Segments */}
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <div className="relative flex-1 basis-full min-w-0 sm:basis-auto sm:min-w-[220px] max-w-full sm:max-w-sm">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -423,7 +424,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
             {/* Provider Discipline Switcher (All / EMS / Fire) - Always Visible on Mobile & Desktop */}
             <div 
-              className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 w-full sm:w-auto shrink-0"
+              className="agency-discipline-switcher flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 w-full sm:w-auto shrink-0"
               role="group"
               aria-label="Provider Discipline Filter"
             >
@@ -1149,7 +1150,15 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       ) : viewMode === 'kanban' ? (
         /* Interactive 6-Stage Kanban Deal Pipeline Board */
         <div className="space-y-3">
-          <div className="flex overflow-x-auto gap-3.5 items-start pb-4 max-w-full">
+          <p className="lead-pipeline-hint text-xs font-medium text-slate-600 dark:text-slate-300 md:hidden">
+            {stages.length} pipeline stages · swipe sideways to move between stages
+          </p>
+          <div
+            className="lead-pipeline-board flex overflow-x-auto gap-3.5 items-start pb-4 max-w-full snap-x snap-proximity"
+            role="region"
+            aria-label="Deal pipeline stages, scrolls horizontally"
+            tabIndex={0}
+          >
             {stages.map((stage, stageIdx) => {
               const stageAgencies = filteredAgencies.filter(a => a.zollOpportunity.salesStage === stage);
               const totalStagePipeline = stageAgencies.reduce((sum, a) => sum + (a.zollOpportunity.projectedPipelineValue || 0), 0);
@@ -1163,7 +1172,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               return (
                 <div
                   key={stage}
-                  className="w-[280px] shrink-0 bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5"
+                  className="lead-pipeline-column w-[min(280px,84vw)] shrink-0 snap-start bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5"
                 >
                   {/* Column Header */}
                   <div className="pb-2.5 border-b border-slate-200 dark:border-slate-800">
@@ -1248,7 +1257,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             <select
                               value={agency.zollOpportunity.salesStage}
                               onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
-                              className="h-7 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 text-[10px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none max-w-[125px] truncate"
+                              aria-label={`Sales stage for ${agency.name}`}
+                              className="lead-stage-select h-7 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 text-[10px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none max-w-[125px] truncate"
                             >
                               {stages.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
@@ -1289,7 +1299,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       ) : (
         /* High-Density Clinical Executive Table View */
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          <ScrollableTableRegion label="Lead queue comparison table">
             <table className="w-full text-left text-xs border-collapse tabular-nums">
               <thead>
                 <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs">
@@ -1517,7 +1527,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         </div>
       )}
 

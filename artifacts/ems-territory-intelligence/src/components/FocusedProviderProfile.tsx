@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Agency,
@@ -57,6 +57,7 @@ import {
   HelpCircle,
   Home
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import {
   COOPERATIVE_CONTRACTS,
   calculateAgencyFleetTco,
@@ -448,6 +449,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
   // Default to Overview in the 7-topic Account 360 navigation
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
+  // Measure the sticky profile header so the topic navigation docks directly beneath it
+  // on every phone width and text size instead of relying on a fixed pixel guess.
+  const profileRootRef = useRef<HTMLDivElement | null>(null);
+  const profileHeaderRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const header = profileHeaderRef.current;
+    const root = profileRootRef.current;
+    if (!header || !root || typeof ResizeObserver === 'undefined') return;
+    const apply = () => root.style.setProperty('--acp-sticky-header-h', `${Math.ceil(header.getBoundingClientRect().height)}px`);
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
   const [profileReviewError, setProfileReviewError] = useState('');
@@ -958,17 +973,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
-    <div className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
+    <div ref={profileRootRef} className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
         className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24 lg:pb-8"
       >
         {/* Top Sticky Account 360 Bar */}
-        <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur border-b border-[#DFE6EF] dark:border-[#1E2D42] px-4 sm:px-6 lg:px-8 py-2 sm:py-0 min-h-16 flex items-center shadow-2xs">
+        <header ref={profileHeaderRef} data-testid="profile-sticky-header" className="sticky top-0 z-40 bg-white/95 dark:bg-[#111C2D]/95 backdrop-blur border-b border-[#DFE6EF] dark:border-[#1E2D42] px-3 sm:px-6 lg:px-8 py-1.5 sm:py-0 min-h-14 sm:min-h-16 flex items-center shadow-2xs">
           <div className="mx-auto flex w-full min-w-0 max-w-[1640px] flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             {/* Back Navigation & Geographic Breadcrumb */}
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex min-w-0 flex-row items-center gap-2 sm:flex-col sm:items-stretch sm:gap-1.5">
+              <div className="flex min-w-0 shrink-0 items-center gap-2 sm:shrink sm:gap-2.5">
                 <button
                   type="button"
                   onClick={guardedBack}
@@ -1020,7 +1035,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </div>
 
-              <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-[11px] text-[#53657B] dark:text-slate-400 md:hidden" aria-label="Selected agency area">
+              <div className="profile-mobile-breadcrumb flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs text-[#53657B] dark:text-slate-400 md:hidden" aria-label="Selected agency area" data-testid="profile-mobile-breadcrumb">
                 {onNavigateGeography ? (
                   <>
                     <button type="button" onClick={() => { if (confirmLeaveReview()) onNavigateGeography(agency.stateCode, 'all', 'all'); }} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.stateCode}</button>
@@ -1568,7 +1583,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <nav
             data-testid="profile-topic-navigation"
             aria-label="Account 360 Topic Navigation"
-            className="acp-nav sticky top-[108px] z-30 md:top-16"
+            className="acp-nav sticky top-[var(--acp-sticky-header-h,108px)] z-30 md:top-[var(--acp-sticky-header-h,4rem)]"
           >
             <div className="w-full md:hidden">
               <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
@@ -1923,7 +1938,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </span>
               </div>
 
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <ScrollableTableRegion label="Regional clinical protocol table" className="border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
@@ -1953,7 +1968,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             </section>
           </div>
         )}
@@ -2023,7 +2038,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </span>
               </div>
 
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <ScrollableTableRegion label="HCPCS ambulance fee schedule table" className="border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
@@ -2055,7 +2070,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             </div>
           </section>
         )}
@@ -2216,7 +2231,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <h3 className="text-xs font-bold text-slate-600">
                 <DataLabel kind="equipment">02. Complete Equipment &amp; Supplier Procurement Table</DataLabel>
               </h3>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <ScrollableTableRegion label="Equipment and supplier procurement table" className="border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
@@ -2301,7 +2316,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             </div>
 
             {/* MODALITY 3: SIDE-BY-SIDE CURRENT VENDOR VS. ZOLL COMPARISON MATRIX */}
@@ -2310,7 +2325,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <Scale className="w-3.5 h-3.5 text-[#1E3A8A]" />
                 <span>03. Side-by-Side Current Supplier vs. Integrated ZOLL Replacement Matrix</span>
               </h3>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <ScrollableTableRegion label="Current supplier versus replacement matrix" className="border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#0F172A] text-white font-semibold">
@@ -2375,7 +2390,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             </div>
 
           </section>
@@ -2727,7 +2742,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </div>
 
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <ScrollableTableRegion label="Cooperative purchasing contracts table" className="border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
@@ -2751,7 +2766,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTableRegion>
             </section>
 
             {/* 5-Year Federal FEMA AFG, SAFER & Homeland Security Grant History */}
@@ -2769,7 +2784,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </div>
                 </div>
 
-                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <ScrollableTableRegion label="Federal grant history table" className="border border-slate-200 rounded-lg">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
@@ -2802,7 +2817,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollableTableRegion>
               </section>
             )}
 
@@ -3160,7 +3175,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       {/* Sticky Account Quick-Action Bar aligned with the 256px desktop sidebar */}
       <aside 
         aria-label="Account Action Dock"
-         className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#DFE6EF] bg-white/95 px-2.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-md transition-all dark:border-[#1E2D42] dark:bg-[#111C2D]/95 print:hidden sm:left-64 sm:px-6 sm:py-2.5 lg:hidden"
+         data-testid="profile-action-dock"
+         className="profile-mobile-dock fixed bottom-0 left-0 right-0 z-40 border-t border-[#DFE6EF] bg-white/95 px-2.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-md transition-all dark:border-[#1E2D42] dark:bg-[#111C2D]/95 print:hidden sm:left-64 sm:px-6 sm:py-2.5 lg:hidden"
       >
         <div className="mx-auto flex max-w-[1600px] flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:overflow-x-auto sm:no-scrollbar">
           {/* Left: Department Identity & Quick Pipeline Stage Switcher */}

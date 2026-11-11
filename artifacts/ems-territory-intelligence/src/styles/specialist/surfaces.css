@@ -113,3 +113,23 @@
 .operations-workspace {
   min-width: 0;
 }
+
+/* Phone: specialist and data/system tools (opened from More) get touch-sized controls,
+   readable small labels, Safari-safe inputs and compact headers. Content is not hidden. */
+@media (max-width: 767px) {
+  .operations-workspace :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])):where([class*="h-7"], [class*="h-8"], [class*="h-9"], [class*="py-1"]) {
+    min-height: 2.75rem;
+  }
+  .operations-workspace :is(input, select, textarea) { font-size: 16px !important; }
+  .operations-workspace :is(button, select, label)[class*="text-[10px]"],
+  .operations-workspace :is(button, select, label)[class*="text-[9px]"] { font-size: 0.75rem !important; }
+  .operations-workspace > div:first-child[class*="p-5"] { padding: 0.85rem !important; gap: 0.6rem !important; }
+  .operations-workspace :is(button, a):focus-visible { outline: 2px solid var(--pi-action); outline-offset: 2px; }
+  .operations-workspace button:active:not(:disabled) { transform: scale(0.98); }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .operations-workspace button:active:not(:disabled) { transform: none; }
+}
+@media (max-height: 500px) {
+  .operations-workspace .apparatus-studio-stage { height: calc(var(--app-visible-height, 100dvh) - 2rem) !important; min-height: 16rem !important; }
+}

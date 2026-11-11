@@ -24,6 +24,7 @@ import {
   Calculator,
   Search
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { QualityScorecard } from './QualityScorecard';
 import { formatCurrency, formatInteger, formatPercent } from '../utils/numberFormatting';
 import { DataLabel } from './DataLabel';
@@ -368,7 +369,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
           </div>
 
           {/* Granular Line-Item Comparison Table */}
-          <div className="overflow-x-auto">
+          <ScrollableTableRegion label="Total cost of ownership line items table">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -474,7 +475,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </ScrollableTableRegion>
         </section>
       )}
 
@@ -608,7 +609,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <ScrollableTableRegion label="Cooperative purchasing contracts table">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -653,7 +654,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableRegion>
         </section>
       )}
 
@@ -681,7 +682,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <ScrollableTableRegion label="Knowledge hub reference table">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -722,7 +723,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTableRegion>
           </section>
 
           {/* Regional Clinical Protocols & Receiving Hospital Network */}
@@ -739,7 +740,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <ScrollableTableRegion label="Regional EMS clinical protocols table">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -769,7 +770,7 @@ export const ClinicalCompetitiveKnowledgeHub: React.FC<ClinicalCompetitiveKnowle
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTableRegion>
           </section>
         </div>
       )}

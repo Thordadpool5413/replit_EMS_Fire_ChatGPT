@@ -175,14 +175,14 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150"
+      className="pi-dialog-overlay fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
       aria-labelledby="data-lineage-modal-title"
     >
       <div 
         ref={modalCardRef}
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
+        className="pi-dialog-panel bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         

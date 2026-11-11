@@ -1,5 +1,12 @@
 /* Owner: territory. Cascade phase: surfaces. See ../README.md. */
 @media (max-width: 767px) {
+  .fleet-map-workspace .fleet-map-canvas {
+    height: min(440px,58dvh,calc(var(--app-visible-height,100dvh) - 5rem));
+    min-height: 15rem !important;
+    max-height: calc(var(--app-visible-height,100dvh) - 5rem);
+    flex: 0 0 auto;
+  }
+  .fleet-map-workspace .fleet-map-canvas > svg { min-height:0; }
 
   .territory-explorer-screen {
     gap: 0.85rem !important;
@@ -358,3 +365,22 @@
 .gmap-ctl:hover { background: #eef3f8; }
 .gmap-ctl:focus-visible { outline: 2px solid #285ee8; outline-offset: 2px; }
 .gmap-ctl svg { color: #285ee8; }
+
+/* Phone and short landscape: reachable live-map and fleet-map controls, adequate canvas. */
+@media (max-width: 767px) {
+  .gmap-ctl { height: 2.75rem; padding: 0 .8rem; font-size: .8rem; }
+  .gmap-ctl-label { display: none; }
+  .gmap-workspace :is(button, select, input:not([type="checkbox"]):not([type="radio"])):where([class*="h-9"], [class*="h-8"]) { min-height: 2.75rem; }
+  .gmap-workspace :is(input, select, textarea),
+  .fleet-map-workspace :is(input, select, textarea) { font-size: 16px !important; }
+  .fleet-map-workspace :is(button, select):where([class*="h-7"], [class*="h-8"], [class*="py-1"]) { min-height: 2.75rem; }
+  .fleet-map-workspace :is(button, select)[class*="text-[10px]"],
+  .fleet-map-workspace :is(button, select)[class*="text-[9px]"] { font-size: .75rem !important; }
+}
+@media (max-height: 500px) {
+  .fleet-map-workspace .fleet-map-canvas { height:calc(var(--app-visible-height,100dvh) - 7rem);min-height:12rem !important;max-height:none;flex:0 0 auto; }
+  .gmap-workspace .gmap-frame { height: calc(var(--app-visible-height, 100dvh) - 3.5rem) !important; min-height: 15rem; }
+  .gmap-ctl { height: 2.5rem; }
+  .gmap-ctl-label { display: none; }
+  .fleet-map-workspace .fleet-map-controls { top: .4rem; left: .4rem; }
+}

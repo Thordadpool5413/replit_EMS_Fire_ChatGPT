@@ -1923,11 +1923,29 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </button>
               )}
 
-              {/* Hybrid Cards | Table View Toggle */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              {/* Sort control: always available, including phone card lists where table headers are hidden */}
+              <label className="provider-sort-control inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                <span>Sort</span>
+                <select
+                  value={providerSortBy}
+                  onChange={(e) => { setProviderSortBy(e.target.value as 'pulseIq' | 'fleetAge' | 'value'); setAgencyPage(1); }}
+                  data-testid="select-provider-sort"
+                  aria-label="Sort agencies"
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <option value="pulseIq">PulseIQ estimate</option>
+                  <option value="fleetAge">Monitor fleet age</option>
+                  <option value="value">Upgrade value estimate</option>
+                </select>
+              </label>
+
+              {/* Hybrid Cards | Table View Toggle (table falls back to labeled cards below md) */}
+              <div role="group" aria-label="Agency layout" className="provider-view-toggle flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setProviderViewMode('cards')}
+                  aria-pressed={providerViewMode === 'cards'}
+                  data-testid="button-provider-view-cards"
                   className={`h-7 px-2.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                     providerViewMode === 'cards'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
@@ -1942,6 +1960,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 <button
                   type="button"
                   onClick={() => setProviderViewMode('table')}
+                  aria-pressed={providerViewMode === 'table'}
+                  data-testid="button-provider-view-table"
                   className={`h-7 px-2.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                     providerViewMode === 'table'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
@@ -1950,7 +1970,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   title="Compact Comparison Table View"
                 >
                   <TableIcon className="w-3.5 h-3.5" />
-                  <span>Table</span>
+                  <span className="hidden md:inline">Table</span>
+                  <span className="md:hidden">List</span>
                 </button>
               </div>
             </div>
@@ -2282,11 +2303,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </div>
           ) : (
             <>
-              <div className="provider-mobile-list space-y-2 md:hidden">
+              <div className="provider-mobile-list space-y-2 md:hidden" role="list" aria-label="Agencies, compact phone summaries">
                 {paginatedAgencies.map((agency) => {
                   const isFire = agency.agencyType.toLowerCase().includes('fire');
                   return (
                     <article
+                      role="listitem"
                       key={agency.id}
                       className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_5px_16px_-14px_rgba(24,50,70,.45)] dark:border-slate-800 dark:bg-slate-900"
                     >
@@ -2356,7 +2378,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
               {/* High-Density Sortable Provider Comparison Table */}
               <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:block">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Agency comparison table, scrolls horizontally" tabIndex={0}>
                 <table className="w-full text-left text-xs border-collapse tabular-nums">
                   <thead>
                     <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase font-bold tracking-wider text-[11px]">

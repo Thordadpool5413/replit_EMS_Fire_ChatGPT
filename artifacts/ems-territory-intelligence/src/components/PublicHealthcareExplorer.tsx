@@ -29,6 +29,7 @@ import {
   Flame,
   Siren
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { DataLabel } from './DataLabel';
 interface PublicHealthcareExplorerProps {
   agencies?: Agency[];
@@ -233,7 +234,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
           </span>
         </div>
 
-        <div className="overflow-x-auto mt-4">
+        <ScrollableTableRegion label="Public healthcare records table" className="mt-4">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
@@ -317,7 +318,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </div>
 
       {/* Strategic Territory Consultant Playbooks */}

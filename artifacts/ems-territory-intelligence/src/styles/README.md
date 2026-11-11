@@ -14,7 +14,7 @@ declarations and Tailwind utilities.
 | `territory` | Territory explorer, geographic selection header, agency directory and surviving county layout hooks |
 | `profile` | Provider dossier, summary, actions and evidence presentation |
 | `specialist` | Specialist/data-management workspace presentation |
-| `opportunities` | Lead queue cards and PulseIQ factor disclosure presentation |
+| `opportunities` | Lead queue cards, PulseIQ factor disclosure, Opportunities/contract and Field Work phone touch sizing |
 | `county` | Current `cv-*` state/county maps, county records, inline source figures/table and map keyboard focus |
 
 ## Why the phases remain

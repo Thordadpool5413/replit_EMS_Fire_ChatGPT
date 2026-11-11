@@ -141,3 +141,26 @@ html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions
 html.dark[data-theme="miami-vice"] .pi-primary-sidebar .pi-sidebar-quick-actions button:hover {
   background-color: var(--pi-nav-secondary) !important;
 }
+
+/* Mobile nav item colors: explicit semantic tokens so utility-color remaps cannot wash out inactive labels. */
+.pi-app-shell .pi-mobile-nav button.pi-mobile-nav__item,
+.pi-mobile-nav button.pi-mobile-nav__item {
+  color: var(--pi-text-secondary) !important;
+}
+.pi-app-shell .pi-mobile-nav button.pi-mobile-nav__item svg,
+.pi-mobile-nav button.pi-mobile-nav__item svg {
+  color: currentColor !important;
+  opacity: 0.92;
+}
+.pi-app-shell .pi-mobile-nav button.pi-mobile-nav__item:hover,
+.pi-mobile-nav button.pi-mobile-nav__item:hover {
+  color: var(--pi-text-primary, var(--pi-text-secondary)) !important;
+}
+.pi-app-shell .pi-mobile-nav button.pi-mobile-nav__item.is-active,
+.pi-mobile-nav button.pi-mobile-nav__item.is-active,
+.pi-mobile-nav button.pi-mobile-nav__item[aria-current="page"] {
+  color: var(--pi-action-ink, var(--pi-action)) !important;
+}
+.pi-mobile-nav button.pi-mobile-nav__item.is-active svg { opacity: 1; }
+html.dark[data-theme="miami-vice"] .pi-mobile-nav button.pi-mobile-nav__item { color: var(--pi-nav-text) !important; }
+html.dark[data-theme="miami-vice"] .pi-mobile-nav button.pi-mobile-nav__item.is-active { color: var(--pi-action-ink, var(--pi-nav-text)) !important; }

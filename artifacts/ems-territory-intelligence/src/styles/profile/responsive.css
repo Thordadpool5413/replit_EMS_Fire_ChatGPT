@@ -178,3 +178,38 @@
     padding: 0.8rem !important;
   }
 }
+
+/* Phone profile: one-row sticky header and a readable two-row action dock (icon above label). */
+@media (max-width: 639px) {
+  .profile-mobile-breadcrumb :is(button, span) { min-height: 2.25rem; display: inline-flex; align-items: center; }
+  .profile-mobile-dock { padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right)) !important; }
+  .profile-mobile-dock > div > div:last-child { gap: 0.35rem !important; }
+  .profile-mobile-dock > div > div:last-child > :is(button, *) {
+    height: auto !important;
+    min-height: 2.9rem !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 0.15rem !important;
+    padding: 0.3rem 0.2rem !important;
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    text-align: center;
+  }
+  .profile-mobile-dock > div > div:last-child button svg { width: 1rem !important; height: 1rem !important; }
+  .profile-mobile-dock button:active:not(:disabled) { transform: scale(0.97); }
+  .profile-mobile-dock button:focus-visible { outline: 2px solid var(--pi-action); outline-offset: 2px; }
+}
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+  .profile-mobile-dock button:active:not(:disabled) { transform: none; }
+}
+/* Keyboard open on phones: let the focused review form use the space instead of the dock. */
+@media (max-width: 767px) {
+  html[data-mobile-keyboard="open"] .profile-mobile-dock { display: none !important; }
+}
+/* Short landscape (desktop shell): slimmer sticky header and dock so content keeps the screen. */
+@media (min-width: 640px) and (max-height: 500px) {
+  .agency-command-profile header[data-testid="profile-sticky-header"] { min-height: 2.75rem !important; }
+  .profile-mobile-dock { padding-block: 0.3rem !important; }
+  .profile-mobile-dock :is(button, select) { height: 2.5rem !important; }
+}

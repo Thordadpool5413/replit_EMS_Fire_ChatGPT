@@ -30,6 +30,7 @@ import {
   Fingerprint,
   FileText
 } from 'lucide-react';
+import { ScrollableTableRegion } from './ScrollableTableRegion';
 import { Agency } from '../types';
 import {
   dataSanitizationService,
@@ -532,7 +533,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         </div>
 
         {/* Interactive Audit Table */}
-        <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
+        <ScrollableTableRegion label="Data audit table" maxHeightClassName="max-h-[480px] overflow-y-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
               <tr>
@@ -659,7 +660,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       {/* 3. DATA SOURCE DIFFERENTIATION & TRANSPARENCY MATRIX */}
@@ -678,7 +679,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <ScrollableTableRegion label="Data source lineage table">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 font-semibold">
@@ -786,7 +787,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       {/* 4. RECORD-BY-RECORD DATA PROVENANCE & CLOUD SYNC INSPECTOR */}
@@ -841,7 +842,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
+        <ScrollableTableRegion label="Sync records table" maxHeightClassName="max-h-[460px] overflow-y-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
               <tr>
@@ -960,7 +961,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableRegion>
       </section>
 
       {/* 5. REAL-TIME SANITIZATION & CLOUD SYNC AUDIT LOG */}

@@ -90,6 +90,25 @@
   }
 }
 
+/* Phone landscape (e.g. 844x390) crosses the 768px breakpoint and renders the desktop shell.
+   Keep the map canvas dominant: compact heading, one-line toolbar, scroll-free legend. */
+@media (min-width: 768px) and (max-height: 500px) {
+  .home-territory-map-screen { gap: 0.4rem !important; padding: 0.4rem max(0.6rem, env(safe-area-inset-right)) max(0.6rem, env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left)) !important; }
+  .home-map-page-heading { flex-direction: row !important; align-items: center !important; padding-bottom: 0.3rem !important; }
+  .home-map-page-heading p { display: none !important; }
+  .home-map-page-heading h2 { font-size: 0.95rem !important; line-height: 1.2 !important; }
+  .home-territory-map-panel { padding: 0.45rem !important; gap: 0.4rem !important; }
+  .home-map-control-row { flex-direction: row !important; align-items: flex-end !important; flex-wrap: wrap; }
+  .home-map-control-row label { font-size: 0.62rem !important; }
+  .home-map-layer-select, .home-map-zoom-control button { min-height: 2.5rem !important; }
+  .home-map-zoom-control button { min-width: 2.5rem !important; }
+  .home-map-legend { padding-block: 0.3rem !important; }
+  .home-map-viewport svg[data-fit-screen="true"] {
+    width: min(100%, max(380px, calc((100dvh - 150px) * 1.85))) !important;
+    margin-inline: auto;
+  }
+}
+
 @media (max-width: 767px) {
 
   .home-territory-map-screen {

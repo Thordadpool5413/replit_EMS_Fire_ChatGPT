@@ -1,14 +1,13 @@
 /**
  * Curated Overview for a single agency profile.
  * Region C: four executive intelligence summaries. Region D: asymmetric workspace
- * (findings + meeting preparation on the left; next action, contact, dates, gaps on the right).
+ * (findings + meeting preparation on the left; contact, dates, gaps on the right).
  * Every value comes from the agency record; missing values stay "Not reported".
  */
 import React from 'react';
 import {
   ArrowRight,
   CalendarClock,
-  ClipboardList,
   Cpu,
   Landmark,
   Phone,
@@ -118,14 +117,6 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
 
   const evidenceCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) => hasMappedAgencyFactEvidence(agency, key)).length;
 
-  const nextAction = latestNote?.nextAction
-    ? { text: latestNote.nextAction, basis: `From your ${latestNote.meetingType.toLowerCase()} note on ${latestNote.date}` }
-    : contract?.contractEndDate && contractState === 'upcoming'
-      ? { text: `Confirm the renewal process before ${contract.contractEndDate}.`, basis: 'Recorded contract end date' }
-      : knownEquipment.length > 0
-        ? { text: `Confirm current use of ${monitor?.value !== NOT_REPORTED ? monitor?.value : knownEquipment[0].value}.`, basis: 'Recorded equipment, current use unconfirmed' }
-        : { text: 'Identify the monitor model and who approves equipment purchases.', basis: 'Equipment and contacts are not yet recorded' };
-
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
       <div className="acp-summaries" role="list" aria-label="Executive intelligence snapshot">
@@ -166,15 +157,6 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
       <div className="acp-workspace">
         <div className="acp-main">{children}</div>
         <aside className="acp-aside" aria-label="Account context">
-          <section className="acp-panel acp-next" data-testid="panel-recommended-next-action">
-            <h3 className="acp-panel-title"><ClipboardList aria-hidden="true" className="h-4 w-4" />Recommended next action</h3>
-            <p className="acp-next-text">{nextAction.text}</p>
-            <p className="acp-meta">Basis: {nextAction.basis}</p>
-            <button type="button" className="acp-link" onClick={() => onNavigate('evidence')} data-testid="button-overview-log-note">
-              Log a field note<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-            </button>
-          </section>
-
           <section className="acp-panel" data-testid="panel-overview-contact">
             <h3 className="acp-panel-title"><Users aria-hidden="true" className="h-4 w-4" />Most relevant contact</h3>
             {lead ? (

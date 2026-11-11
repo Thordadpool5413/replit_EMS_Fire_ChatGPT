@@ -16,19 +16,33 @@ const fixture = (overrides:Partial<Agency>):Agency=>({
 const render=(agency:Agency)=>renderToStaticMarkup(<ProfileCommandOverview agency={agency} onNavigate={()=>{}} onOpenSources={()=>{}}><p>Focused account briefing</p></ProfileCommandOverview>);
 test('populated EMS overview has four distinct summaries and useful account actions',()=>{
   const html=render(populated);
-  for(const id of ['summary-equipment','summary-purchasing','summary-people','summary-operations','panel-recommended-next-action'])assert.match(html,new RegExp(`data-testid="${id}"`));
+  for(const id of ['summary-equipment','summary-purchasing','summary-people','summary-operations','panel-overview-contact','panel-overview-dates','panel-overview-gaps','panel-overview-verification'])assert.match(html,new RegExp(`data-testid="${id}"`));
   assert.equal((html.match(/data-testid="summary-equipment"/g)||[]).length,1);
   assert.match(html,/View equipment/);assert.match(html,/Review evidence/);
 });
 test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
   const html=render(fixture({annualCallVolume:undefined,annual911Transports:undefined,stationsCount:undefined,totalAmbulances:undefined} as unknown as Partial<Agency>));
   assert.match(html,/No equipment recorded yet/);assert.match(html,/No signal recorded/);
-  assert.match(html,/No contact recorded/);assert.match(html,/Identify the monitor model/);
+  assert.match(html,/No contact recorded/);assert.match(html,/Monitor \/ defibrillator model/);
   assert.doesNotMatch(html,/NaN|undefined/);
 });
 test('populated data without source records is never counted as mapped evidence',()=>{
   const html=render(fixture({}));
   assert.match(html,/<strong class="acp-num">0<\/strong> of/);
+});
+test('EMS, fire and combined profiles omit the removed recommended-next-action section',()=>{
+  for(const agency of [
+    populated,
+    fixture({agencyType:'Volunteer Fire & Rescue',providerCategory:'FIRE',totalAmbulances:0}),
+    fixture({agencyType:'Fire & EMS',providerCategory:'FIRE',totalAmbulances:2}),
+  ]){
+    const html=render(agency);
+    assert.doesNotMatch(html,/Recommended next action|panel-recommended-next-action|button-overview-log-note/);
+    assert.match(html,/Most relevant contact/);
+    assert.match(html,/Important dates/);
+    assert.match(html,/Research gaps/);
+    assert.match(html,/Focused account briefing/);
+  }
 });
 test('source count uses mapped sources and ignores an unsupported broad source',()=>{
   const html=render(fixture({factEvidence:{

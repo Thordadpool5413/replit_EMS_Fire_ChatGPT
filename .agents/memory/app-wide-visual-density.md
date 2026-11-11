@@ -3,6 +3,12 @@ name: App-wide visual density
 description: User-stated sizing preference for the EMS & Fire Territory Intelligence app across screens.
 ---
 
+Do not show the standalone “Recommended next action” section on individual EMS, fire or combined agency profiles.
+
+**Why:** The user explicitly asked to remove that section.
+
+**How to apply:** Keep the other profile sections and field-note functionality. This does not request removing evidence-backed opportunity findings or their supporting explanations.
+
 Laptop size reductions must exclude Home; leave its current map, sizing and controls unchanged.
 
 **Why:** The user explicitly said “everything but the homescreen needs to be reduced in size” on laptops.

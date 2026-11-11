@@ -180,9 +180,6 @@
   font-size: 14px; font-weight: 650; color: var(--acp-navy);
 }
 .agency-command-profile .acp-panel-title svg { color: var(--acp-teal); }
-.agency-command-profile .acp-next { background: linear-gradient(0deg, var(--acp-blue-soft), var(--acp-blue-soft)); border-radius: 12px 12px 0 0; }
-.agency-command-profile .acp-next .acp-panel-title svg { color: var(--acp-blue); }
-.agency-command-profile .acp-next-text { font-size: 15px; font-weight: 600; color: var(--acp-text); line-height: 1.4; }
 .agency-command-profile .acp-meta { font-size: 13px; color: var(--acp-muted); line-height: 1.45; }
 .agency-command-profile .acp-meta a { color: var(--acp-blue); font-weight: 600; }
 .agency-command-profile .acp-strong { font-size: 15px; font-weight: 650; color: var(--acp-text); }

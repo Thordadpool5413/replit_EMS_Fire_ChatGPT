@@ -1,3 +1,9 @@
+/* A wide phone in landscape still needs the compact control hierarchy. */
+@media (max-width:1023px) and (max-height:500px) and (pointer:coarse) {
+  .mobile-opening-summary, .mobile-filter-toggle { display:flex; }
+  .mobile-filter-panel[data-open="false"], .mobile-filter-secondary[data-open="false"] { display:none; }
+  .mobile-filter-panel[data-open="true"], .mobile-filter-secondary[data-open="true"] { display:flex; }
+}
 /* Owner: shared. Cascade phase: responsive. See ../README.md. */
 html,
 body,

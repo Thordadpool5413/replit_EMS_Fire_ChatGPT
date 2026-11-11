@@ -126,3 +126,17 @@ mtime_ms = 1794366302302
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/8bb12d4b-2136-4897-8bf7-68cf2cf5a2a2/f450f437-3c19-44d1-b487-ef8c38fa22bf"
 storage_version_token = "1794366388606680"
 content_type = "text/html"
+
+[[outputs]]
+id = "UCtH47bJ_xYDr0CWaziJd"
+uri = "file://generated-artifacts/mobile-openings/review.html"
+type = "html"
+title = "Summary-first mobile views"
+description = "Actual mobile screenshots, verified filter and county-card behavior, and the physical-device checks still outstanding."
+logical_id = "d97c65e4-ae00-45e4-b268-33fec38bc100"
+content_hash = "sha256:fbcfb02f48522c0439b9e672e94e1a171d09e2739408bdcface6c9f189875831"
+size = 665106
+mtime_ms = 1794377113081
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/d97c65e4-ae00-45e4-b268-33fec38bc100/e8611bef-2d20-4464-a022-f45bae416b2c"
+storage_version_token = "1794377215897830"
+content_type = "text/html"

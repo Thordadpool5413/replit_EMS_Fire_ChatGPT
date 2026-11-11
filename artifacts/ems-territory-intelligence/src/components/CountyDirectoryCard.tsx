@@ -84,26 +84,30 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
         <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
           <section className="cb-group cb-group--snapshot" aria-labelledby={`${titleId}-snapshot`}>
-            <h4 id={`${titleId}-snapshot`} className="cb-group-cap"><DataLabel kind="incidents">Operational snapshot</DataLabel></h4>
+            <h4 id={`${titleId}-snapshot`} className="cb-group-cap">Population and response</h4>
             <dl className="cb-figs">
               {fig('population', Users, 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
               {fig('averageTransportMinutes', Ambulance, 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('annualEmergencyTransports', Ambulance, 'Transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-transports-${c.countyFips}`, 'Emergency EMS transports per year')}
               {fig('annualCardiacArrestIncidents', HeartPulse, 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
             </dl>
           </section>
-          <section className="cb-group cb-group--context" aria-labelledby={`${titleId}-context`}>
-            <h4 id={`${titleId}-context`} className="cb-group-cap"><DataLabel kind="population">County context</DataLabel></h4>
+          <section className="cb-group cb-group--context cb-group--access" aria-labelledby={`${titleId}-access`}>
+            <h4 id={`${titleId}-access`} className="cb-group-cap">Care access</h4>
             <dl className="cb-figs">
-              {fig('annualEmergencyTransports', null, <DataLabel kind="transports">Transports</DataLabel>, num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), undefined, 'Emergency EMS transports per year')}
-              {fig('primaryCathLabDistanceMiles', null, <DataLabel kind="distance">Cath lab</DataLabel>, num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), undefined, 'Distance to primary cath lab')}
-              {fig('seniorPopPct', null, <DataLabel kind="age">Age 65+</DataLabel>, num('seniorPopPct', v => `${v.toFixed(1)}%`), undefined, 'Residents age 65 and older')}
-              {fig('povertyRatePct', null, <DataLabel kind="poverty">Poverty rate</DataLabel>, num('povertyRatePct', v => `${v.toFixed(1)}%`))}
+              {fig('primaryCathLabDistanceMiles', null, <DataLabel kind="distance">Nearest cath lab</DataLabel>, num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), `text-county-cathlab-${c.countyFips}`, 'Distance to primary cath lab')}
+            </dl>
+          </section>
+          <section className="cb-group cb-group--context cb-group--community" aria-labelledby={`${titleId}-community`}>
+            <h4 id={`${titleId}-community`} className="cb-group-cap">Community context</h4>
+            <dl className="cb-figs">
+              {fig('seniorPopPct', null, <DataLabel kind="age">Age 65+</DataLabel>, num('seniorPopPct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Residents age 65 and older')}
+              {fig('povertyRatePct', null, <DataLabel kind="poverty">Poverty</DataLabel>, num('povertyRatePct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Poverty rate')}
               {fig('medianIncome', null, <DataLabel kind="income">Median income</DataLabel>, num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
             </dl>
           </section>
         </div>
-
-          <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
+        <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
             <span className="cb-risk-body">
               <span className="cb-risk-label" title="FEMA National Risk Index source-defined hazard category"><DataLabel kind="risk">FEMA NRI</DataLabel></span>
               {nriLoading ? (

@@ -39,11 +39,17 @@ The sidebar needs even layout, not merely enough space to fit. Keep navigation a
 
 **How to apply:** Check actual row and icon geometry as well as overflow. Avoid mixing cramped half-width utility controls with full-width destinations or introducing large gaps between related groups. Preserve the logo.
 
-County cards should communicate a visual story through related groups, rather than a flat inventory of numbers. Keep all county details visible and balance the county preview with the adjacent state map.
+County cards should communicate a visual story through related groups, rather than a flat inventory of numbers. Use the user's reading order: county identity → population and response → care access → risk → sources, with community context and supporting geography clearly labeled and all facts visible. Balance the county preview with the adjacent state map.
 
 **Why:** The user repeatedly rejected both multicolor metric grids and compressed inline numbers, then specifically requested a visual story of the county's data and a preview sized to match its map.
 
 **How to apply:** Group related figures with clear captions and a deliberate reading order. Do not mistake smaller text or more decorative color for better hierarchy, and verify the actual map/preview geometry at laptop widths.
+
+Mobile opening views should put the agency, county or equipment summary before secondary controls. Group those controls without silently hiding applied constraints, and explain missing model inputs instead of repeating “Not calculated.”
+
+**Why:** The user explicitly selected these as the next mobile-polish goals.
+
+**How to apply:** Keep summary and search immediately available, retain filter state when controls collapse, and use truthful missing-input explanations without inventing values or altering model eligibility.
 
 The map/preview pair and individual county cards must be roughly half the height of the rejected oversized grouped layout, not taller “polished” versions.
 

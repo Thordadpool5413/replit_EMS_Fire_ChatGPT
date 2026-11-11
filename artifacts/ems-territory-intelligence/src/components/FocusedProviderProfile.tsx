@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { MISSING_INPUT_COPY } from '../utils/missingInputCopy';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -1332,12 +1333,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 <div className="mt-3 space-y-3">
                 <div className="flex items-baseline justify-between gap-4">
                   <span className="text-xs font-medium text-[#53657B] dark:text-slate-400">
-                    <PulseIqEstimateLabel /> · <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {agency.zollOpportunity.priorityTier}
+                    <PulseIqEstimateLabel /> · <TermTooltip termKey="pulseiq" label="PulseIQ priority" /> · Modeled · {String(agency.zollOpportunity.priorityTier) === 'Not calculated' ? MISSING_INPUT_COPY.priority : agency.zollOpportunity.priorityTier}
                   </span>
                   <span className="font-semibold text-lg text-[#14283F] dark:text-white tabular-nums">
                     {Number.isFinite(agency.zollOpportunity.pulseIqScore)
                       ? <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs font-normal text-[#53657B]">/100</span></>
-                      : <span className="text-sm font-medium">Not calculated</span>}
+                      : <span className="text-sm font-medium">{MISSING_INPUT_COPY.pulseIqScore}</span>}
                   </span>
                 </div>
 
@@ -1355,7 +1356,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       Estimated CapEx
                     </div>
                     <div className="text-base font-semibold tabular-nums text-[#14283F] dark:text-white mt-0.5">
-                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.netCapExBase) : 'Not calculated'}
+                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.netCapExBase) : <span className="block text-xs font-medium text-[#53657B] dark:text-slate-400" data-testid="text-capex-missing-reason">{MISSING_INPUT_COPY.fleetPricing}; see evidence below</span>}
                     </div>
                   </div>
                   <div className="bg-[#F5F7FA] dark:bg-[#16243A] p-2.5 text-right">
@@ -1363,7 +1364,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       5-Yr TCO savings
                     </div>
                     <div className="text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true }) : 'Not calculated'}
+                      {hasDecisionGradeInputs ? formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true }) : <span className="block text-xs font-medium text-[#53657B] dark:text-slate-400" data-testid="text-tco-missing-reason">{MISSING_INPUT_COPY.tcoSavings}</span>}
                     </div>
                   </div>
                 </div>
@@ -2025,16 +2026,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <DataLabel kind="claims">Procedure-Level HCPCS Ambulance Fee Schedule &amp; CMS GADCS 10% Penalty Exposure</DataLabel>
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {hcpcsModel?.gadcs.cohortWave ?? 'Not calculated'} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel?.gadcs.reportingReadinessStatus ?? 'Not calculated'}</strong> · {hcpcsModel?.gadcs.keyComplianceGap ?? 'Reported annual transports and Medicare payer share are required.'}
+                    {hcpcsModel ? <>{hcpcsModel.gadcs.cohortWave} · Readiness: <strong className="text-[#0F172A]">{hcpcsModel.gadcs.reportingReadinessStatus}</strong> · {hcpcsModel.gadcs.keyComplianceGap}</> : <span data-testid="text-gadcs-missing-reason">Cohort, readiness and penalty exposure: {MISSING_INPUT_COPY.medicareInputs.toLowerCase()}.</span>}
                   </p>
                   <p className="text-xs text-slate-500">
                     Modeled estimate inputs: {hcpcsModel
                       ? `${hcpcsModel.inputs.annualTransports.toLocaleString()} reported transports and ${hcpcsModel.inputs.medicarePayerPct}% Medicare payer share. Method: ${hcpcsModel.inputs.method}`
-                      : 'not calculated because required reported inputs are missing.'}
+                      : 'awaiting the reported inputs above.'}
                   </p>
                 </div>
                 <span className="font-mono text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">
-                  GADCS 10% Medicare Penalty Risk: {hcpcsModel ? `-$${hcpcsModel.gadcs.gadcs10PctPenaltyExposure.toLocaleString()}/yr` : 'Not calculated'}
+                  GADCS 10% Medicare Penalty Risk: {hcpcsModel ? `-$${hcpcsModel.gadcs.gadcs10PctPenaltyExposure.toLocaleString()}/yr` : 'Pending inputs'}
                 </span>
               </div>
 
@@ -2063,7 +2064,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">{proc.estimatedAnnualClaims.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums font-semibold">${proc.grossAnnualBilling.toLocaleString()}</td>
                         <td className="py-2.5 px-4 text-right font-mono tabular-nums text-rose-700 font-semibold">
-                          {proc.annualRevenueAtRisk == null ? 'Not calculated' : `-$${proc.annualRevenueAtRisk.toLocaleString()}`}
+                          {proc.annualRevenueAtRisk == null ? <span className="font-sans text-xs font-medium text-slate-500">{MISSING_INPUT_COPY.procedureDenial}</span> : `-$${proc.annualRevenueAtRisk.toLocaleString()}`}
                         </td>
                         <td className="py-2.5 px-4 text-slate-600 max-w-md">{proc.zollDocumentationMitigation}</td>
                       </tr>

@@ -67,6 +67,9 @@ import { DealStoryBriefingView } from './DealStoryBriefingView';
 import { CompetitiveBattlecardView } from './CompetitiveBattlecardView';
 import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { DataLabel } from './DataLabel';
+import { MobileFilterDisclosure } from './MobileFilterDisclosure';
+import { MISSING_INPUT_COPY } from '../utils/missingInputCopy';
+
 
 const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
 
@@ -1809,7 +1812,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           
           {/* Streamlined Single-Row Filter Bar + Hybrid View Mode Toggle */}
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 min-w-0">
-            <div className="min-w-0">
+            <div className="min-w-0" data-testid="provider-mobile-summary">
               <div className="text-xs font-semibold text-[#1E3A8A] dark:text-blue-400">
                 {selectedCityName !== 'all'
                   ? `${selectedCityName} · ${selectedCountyName !== 'all' ? selectedCountyName : ''} ${selectedStateCode}`
@@ -1839,6 +1842,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 />
               </div>
 
+              <MobileFilterDisclosure
+                testId="provider-secondary-filters"
+                extraContext={[
+                  ...(providerSortBy !== 'pulseIq' ? [`Sort: ${providerSortBy === 'fleetAge' ? 'fleet age' : 'upgrade value'}`] : []),
+                  ...(providerViewMode !== 'cards' ? ['Table view'] : []),
+                ]}
+                filters={[
+                  { label: selectedCityName, active: selectedCityName !== 'all' },
+                  { label: agencyCategoryFilter === 'ems' ? 'EMS' : 'Fire', active: agencyCategoryFilter !== 'all' },
+                ]}
+              >
               {/* Compact City Selector Dropdown */}
               {availableCities.length > 0 && (
                 <select
@@ -1923,6 +1937,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </button>
               )}
 
+
               {/* Sort control: always available, including phone card lists where table headers are hidden */}
               <label className="provider-sort-control inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
                 <span>Sort</span>
@@ -1974,6 +1989,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <span className="md:hidden">List</span>
                 </button>
               </div>
+              </MobileFilterDisclosure>
             </div>
           </div>
 
@@ -2199,7 +2215,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
                             {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
                               ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
-                              : 'Not calculated'}
+                              : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">PulseIQ planning model · not agency performance</span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
@@ -2335,7 +2351,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                               {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
                                 ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
-                                : 'Not calculated'}
+                                : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
                             </span>
                           </p>
                         </div>
@@ -2443,7 +2459,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </td>
                           <td className="py-2.5 px-3 text-right hidden sm:table-cell">
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                              {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
+                              {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
                             </div>
                             <div className="text-[11px] text-slate-500 tabular-nums">
                               {agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}

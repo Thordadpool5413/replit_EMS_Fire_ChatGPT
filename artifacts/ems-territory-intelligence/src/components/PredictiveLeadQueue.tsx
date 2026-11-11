@@ -90,6 +90,9 @@ import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
 import { DataLabel } from './DataLabel';
+import { MobileFilterDisclosure } from './MobileFilterDisclosure';
+import { MISSING_INPUT_COPY } from '../utils/missingInputCopy';
+
 
 export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   agencies,
@@ -158,6 +161,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   const [expandedAgencyIds, setExpandedAgencyIds] = useState<Record<string, boolean>>({});
   const [activeClarityDrawer, setActiveClarityDrawer] = useState<Record<string, 'deal_story' | 'battlecard' | 'score_explainer' | null>>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [mobileControlsOpen, setMobileControlsOpen] = useState<boolean>(false);
   const [showUnderstandingModal, setShowUnderstandingModal] = useState<boolean>(false);
 
   const activeFilterCount =
@@ -372,6 +376,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     return baseSlice;
   }, [filteredAgencies, currentPage, pageSize, activeAccount, liveVerifiedVersion]);
 
+  const summaryDisciplineCounts = useMemo(() => {
+    let fire = 0;
+    for (const agency of filteredAgencies) {
+      if (agency.agencyType.toLowerCase().includes('fire')) fire++;
+    }
+    return {ems: filteredAgencies.length - fire, fire};
+  }, [filteredAgencies]);
+
   const totalPages = useMemo(() => {
     if (pageSize === -1) return 1;
     return Math.max(1, Math.ceil(filteredAgencies.length / pageSize));
@@ -389,6 +401,21 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   return (
     <div className="workspace-section-grid lead-queue-workspace" data-testid="workspace-lead-queue">
       
+      {/* Summary first: what is in scope, before any control */}
+      <div className="mobile-opening-summary sm:hidden flex items-baseline justify-between gap-3 px-1" data-testid="agency-mobile-summary">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+            {[selectedCity !== 'all' ? selectedCity : null, selectedCounty !== 'all' ? selectedCounty : null, selectedState !== 'all' ? selectedState : 'All states'].filter(Boolean).join(', ')}
+          </div>
+          <div className="text-base font-bold text-slate-900 dark:text-white">
+            <span className="pi-data-number" data-testid="text-agency-summary-count">{filteredAgencies.length.toLocaleString()}</span> agencies
+          </div>
+        </div>
+        <div className="text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap pi-data-number" data-testid="agency-summary-breakdown">
+          EMS {summaryDisciplineCounts.ems.toLocaleString()} <span className="text-slate-400">/</span> Fire {summaryDisciplineCounts.fire.toLocaleString()}
+        </div>
+      </div>
+
       {/* Streamlined Single-Row Filter Bar + Progressive "More Filters" Drawer */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-3 min-w-0">
         
@@ -422,7 +449,27 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               )}
             </div>
 
-            {/* Provider Discipline Switcher (All / EMS / Fire) - Always Visible on Mobile & Desktop */}
+            <MobileFilterDisclosure
+              testId="agency-secondary-filters"
+              additionalControlsId="agency-secondary-controls"
+              open={mobileControlsOpen}
+              onOpenChange={setMobileControlsOpen}
+              extraContext={[
+                ...(sortBy !== 'pulseIq' ? [`Sort: ${({ fleetAge: 'oldest fleet', calls: 'call volume', value: 'project value', claimEvidence: 'claim summary' } as const)[sortBy]}`] : []),
+                ...(viewMode !== 'cards' ? [`${viewMode === 'kanban' ? 'Board' : 'Table'} view`] : []),
+              ]}
+              filters={[
+                { label: selectedCategory === 'ems' ? 'EMS' : 'Fire', active: selectedCategory !== 'all' },
+                { label: selectedState, active: selectedState !== 'all' },
+                { label: selectedCounty, active: selectedCounty !== 'all' },
+                { label: selectedCity, active: selectedCity !== 'all' },
+                { label: `ZIP ${zipFilter}`, active: zipFilter.trim() !== '' },
+                { label: quickSegment === 'high_priority' ? 'Priority' : quickSegment === 'afg' ? 'AFG grant' : 'Saved', active: quickSegment !== 'all' },
+                { label: selectedProduct, active: selectedProduct !== 'all' },
+                { label: selectedStage, active: selectedStage !== 'all' },
+              ]}
+            >
+            {/* Provider Discipline Switcher (All / EMS / Fire) */}
             <div 
               className="agency-discipline-switcher flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 w-full sm:w-auto shrink-0"
               role="group"
@@ -488,6 +535,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               ))}
             </select>
 
+            </MobileFilterDisclosure>
+
             {/* Quick Segment Tabs */}
             <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
               {([
@@ -522,8 +571,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             </div>
           </div>
 
-          {/* Right: Sort + More Filters Toggle + Hybrid Cards/Table View Switcher */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Right: Sort + More Filters + View. On phones these follow the Filters & view toggle. */}
+          <div id="agency-secondary-controls" data-open={mobileControlsOpen ? 'true' : 'false'} className={`mobile-filter-secondary ${mobileControlsOpen ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-2 shrink-0`} data-testid="agency-secondary-controls">
             {/* Sort order */}
             <select
               value={sortBy}
@@ -940,7 +989,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       <div className="font-semibold text-sm text-[var(--pi-text-primary)] tabular-nums">
                         {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                           ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                          : 'Not calculated'}
+                          : <span className="text-xs font-medium text-[var(--pi-text-muted)]">{MISSING_INPUT_COPY.claimsRecovery}</span>}
                       </div>
                       <div className="text-xs text-[var(--pi-text-muted)] tabular-nums line-clamp-2 break-words">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} pipeline estimate` : 'Opportunity model not validated'}
@@ -1448,7 +1497,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                         <div className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
                           {hasAgencyFactEvidence(agency, 'cmsClaims') && agency.cmsData.estimatedRecoverableRevenue != null
                             ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
-                            : 'Not calculated'}
+                            : <span className="text-xs font-medium text-[var(--pi-text-muted)]">{MISSING_INPUT_COPY.claimsRecovery}</span>}
                         </div>
                         {medicareDenialMetric && <ProviderDenialDetails metric={medicareDenialMetric} />}
                       </td>

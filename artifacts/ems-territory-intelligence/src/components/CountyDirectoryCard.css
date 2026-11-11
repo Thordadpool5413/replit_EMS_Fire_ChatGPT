@@ -1,4 +1,5 @@
-/* County intelligence brief.
+/* County intelligence brief. Reading order: identity -> population and response -> care access
+   -> community context -> FEMA risk -> geography and places -> sources.
    Structure: blue identity bar -> 3 headline figures (icon label over value) -> context ledger
    (label left / value right, tabular) -> FEMA band (own source) -> geography ledger with a fixed
    label gutter -> quiet source footer. Type scale: name 17 / headline 21 / value 14.5 / label 13 / meta 12.5.
@@ -40,7 +41,6 @@
 
 /* Section captions: visible, small caps, consistent */
 .county-brief .cb-group-cap { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pi-text-secondary); margin-bottom: .15rem; }
-.county-brief .cb-group--snapshot .cb-group-cap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
 .county-brief .cb-groups { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; padding-inline: 0 !important; }
 .county-brief .cb-group { min-width: 0; padding: .45rem var(--cb-pad); }
 .county-brief .cb-group + .cb-group { border-top: 1px solid var(--cb-hair); }
@@ -51,13 +51,18 @@
 .county-brief .cb-na { font-size: 13px; font-weight: 500; color: var(--pi-text-secondary); letter-spacing: 0; }
 
 /* Headline figures */
-.county-brief .cb-group--snapshot .cb-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto; column-gap: .75rem; }
+.county-brief .cb-group--snapshot .cb-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto auto; column-gap: .75rem; }
+@container (max-width: 520px) {
+  .county-brief .cb-group--snapshot .cb-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: .5rem; }
+  .county-brief .cb-group--snapshot .cb-fig:nth-child(odd) { border-left: 0; padding-left: 0; }
+}
 .county-brief .cb-group--snapshot .cb-fig { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: .15rem; }
 .county-brief .cb-group--snapshot .cb-fig + .cb-fig { border-left: 1px solid var(--cb-hair); padding-left: .75rem; }
 .county-brief .cb-group--snapshot dt { display: flex; align-items: flex-start; gap: .3rem; font-size: 13px; font-weight: 600; line-height: 1.25; color: var(--pi-text-secondary); }
-.county-brief .cb-group--snapshot dd { align-self: end; font-size: 21px; font-weight: 700; line-height: 1.1; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.county-brief .cb-group--snapshot dd { align-self: end; justify-self: start; font-size: 21px; font-weight: 700; line-height: 1.1; letter-spacing: -.015em; overflow-wrap: anywhere; }
 .county-brief .cb-ico { width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--pi-topic-operations); stroke-width: 2; }
 .county-brief .cb-fig--population .cb-ico { color: var(--pi-topic-community); }
+.county-brief .cb-group--snapshot dt { white-space: nowrap; }
 .county-brief .cb-fig--annualCardiacArrestIncidents .cb-ico { color: var(--cb-cardiac); }
 
 /* Context ledger: label left, value right-aligned; two columns when room */
@@ -70,6 +75,7 @@
   .county-brief .cb-group--context .cb-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .county-brief .cb-group--context .cb-fig:last-child { border-bottom: 0; }
   .county-brief .cb-group--context .cb-fig:nth-last-child(2):nth-child(odd) { border-bottom: 0; }
+  .county-brief .cb-group--access .cb-figs { grid-template-columns: minmax(0, 1fr); }
 }
 @container (max-width: 370px) {
   .county-brief .cb-group--context .cb-figs { grid-template-columns: minmax(0, 1fr); }
@@ -125,7 +131,7 @@
 
 @container (max-width: 300px) {
   .county-brief { --cb-gutter: 1fr; }
-  .county-brief .cb-group--snapshot .cb-figs { grid-template-columns: minmax(0, 1fr); row-gap: .4rem; }
+  .county-brief .cb-group--snapshot .cb-figs { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.25rem), 1fr)); row-gap: .4rem; }
   .county-brief .cb-group--snapshot .cb-fig { grid-row: auto; grid-template-rows: none; }
   .county-brief .cb-group--snapshot .cb-fig + .cb-fig { border-left: 0; padding-left: 0; }
   .county-brief .cb-ref > div { grid-template-columns: minmax(0, 1fr) !important; }

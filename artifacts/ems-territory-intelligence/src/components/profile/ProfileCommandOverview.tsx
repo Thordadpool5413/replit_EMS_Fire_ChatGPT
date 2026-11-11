@@ -59,12 +59,15 @@ interface SummaryProps {
 
 const Summary: React.FC<SummaryProps> = ({ tone, icon: Icon, eyebrow, value, missing, detail, action, onAction, testId }) => (
   <article className="acp-summary" data-tone={tone} data-testid={testId}>
-    <p className="acp-eyebrow"><span className="acp-ico"><Icon aria-hidden="true" className="h-3.5 w-3.5" /></span>{eyebrow}</p>
-    <p className={`acp-summary-value${missing ? ' is-missing' : ''}`}>{value}</p>
-    <p className="acp-summary-detail">{detail}</p>
-    <button type="button" className="acp-link" onClick={onAction} data-testid={`${testId}-open`}>
-      {action}<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-    </button>
+    <span className="acp-summary-ico" aria-hidden="true"><Icon aria-hidden="true" className="h-5 w-5" /></span>
+    <div className="acp-summary-body">
+      <p className="acp-eyebrow">{eyebrow}</p>
+      <p className={`acp-summary-value${missing ? ' is-missing' : ''}`}>{value}</p>
+      <p className="acp-summary-detail">{detail}</p>
+      <button type="button" className="acp-link" onClick={onAction} data-testid={`${testId}-open`}>
+        {action}<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+      </button>
+    </div>
   </article>
 );
 

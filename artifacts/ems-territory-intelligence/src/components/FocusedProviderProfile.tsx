@@ -1057,7 +1057,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         <section className="acp-header" aria-labelledby="acp-agency-name" data-testid="profile-command-header">
           <div className="acp-header-identity">
             <p className="acp-type">
-              <span className="acp-type-ico" data-mode={profileServiceMode}>{profileServiceMode === 'ems' ? <Siren aria-hidden="true" className="h-3.5 w-3.5" /> : <Flame aria-hidden="true" className="h-3.5 w-3.5" />}</span>
+              <span className="acp-type-ico" data-mode={profileServiceMode}>{profileServiceMode === 'ems' ? <Siren aria-hidden="true" className="h-4 w-4" /> : <Flame aria-hidden="true" className="h-4 w-4" />}</span>
               {profileServiceMode === 'combined' ? 'Fire & EMS' : profileServiceMode === 'fire' ? 'Fire department' : 'EMS provider'}
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
@@ -1066,9 +1066,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
               <span>{[agency.city, agency.county, agency.stateCode].filter(Boolean).join(', ')}</span>
               <FactVerificationTag agency={agency} field="providerAddress" />
-              {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
-              {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
-              {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
+              {(agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
+                <span className="acp-ids" aria-label="Registry identifiers">
+                  {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
+                  {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
+                  {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
+                </span>
+              )}
               <span className="acp-fresh" data-testid="text-profile-source-period" title="Periods are stated by the source records, not import or review timestamps. Review each source separately when periods differ.">
                 <Clock aria-hidden="true" className="h-3 w-3" />
                 Source period {latestSourcePeriod ?? 'not stated'}

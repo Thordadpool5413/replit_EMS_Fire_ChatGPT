@@ -173,12 +173,12 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
     const ev = summarizeEvidence(agency, l.evidenceKeys[0]);
     return (
       <li key={l.key} className="aib-eq" data-testid={`equipment-line-${l.key}`}>
-        <Icon className="aib-icon" aria-hidden="true" />
+        <span className="aib-eq-ico" data-category={l.category} aria-hidden="true"><Icon className="aib-icon" aria-hidden="true" /></span>
         <div className="min-w-0">
           <p className="aib-eq-label">{l.label}</p>
           <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
           <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
-            <span className="aib-eq-srcstate">{ev.state === 'none' ? 'No source mapped' : ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
+            <span className="aib-eq-srcstate" data-state={ev.state}>{ev.state === 'none' ? 'No source mapped' : ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
             {ev.sourceName && <> · {ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
           </p>
         </div>
@@ -190,13 +190,13 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
     <section className="aib-block aib-tech" data-testid="profile-equipment-summary" aria-labelledby="aib-tech-title">
       <h3 id="aib-tech-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Technology &amp; equipment in use</h3>
       <p className="aib-scope">Reported inventory · current use needs confirmation.</p>
-      <p className="aib-sub">Clinical hardware</p>
+      <p className="aib-sub"><HeartPulse className="aib-icon" aria-hidden="true" />Clinical hardware</p>
       <ul className="aib-eqlist">{hardware.map(line)}</ul>
       <dl className="aib-keyfacts">
         <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
         <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
       </dl>
-      <p className="aib-sub">Software</p>
+      <p className="aib-sub"><Cpu className="aib-icon" aria-hidden="true" />Software</p>
       <ul className="aib-eqlist">{software.map(line)}</ul>
       <div className="aib-tags">
         {renderFactTag('defibrillatorBiomedicalFleet')}

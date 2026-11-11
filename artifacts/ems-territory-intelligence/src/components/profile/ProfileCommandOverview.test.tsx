@@ -1,0 +1,53 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ProfileCommandOverview } from './ProfileCommandOverview';
+import { ProcurementTimeline } from './ProcurementTimeline';
+import { getAgencyServiceMode } from './AgencyIntelligenceBrief';
+import { COMPREHENSIVE_NATIONWIDE_AGENCIES } from '../../data/nationalAgenciesData';
+import type { Agency } from '../../types';
+const populated = COMPREHENSIVE_NATIONWIDE_AGENCIES.find(a=>a.id==='zoll-agency-oh-cleveland')!;
+const fixture = (overrides:Partial<Agency>):Agency=>({
+  ...populated,id:'isolated-fixture',factEvidence:{},keyContacts:[],fieldNotes:[],
+  installedFleet:{} as Agency['installedFleet'],competitorContract:{} as Agency['competitorContract'],
+  femaGrantHistory:[],budgetCycleEndMonth:undefined,stateLicenseExpiration:undefined,...overrides,
+});
+const render=(agency:Agency)=>renderToStaticMarkup(<ProfileCommandOverview agency={agency} onNavigate={()=>{}} onOpenSources={()=>{}}><p>Focused account briefing</p></ProfileCommandOverview>);
+test('populated EMS overview has four distinct summaries and useful account actions',()=>{
+  const html=render(populated);
+  for(const id of ['summary-equipment','summary-purchasing','summary-people','summary-operations','panel-recommended-next-action'])assert.match(html,new RegExp(`data-testid="${id}"`));
+  assert.equal((html.match(/data-testid="summary-equipment"/g)||[]).length,1);
+  assert.match(html,/View equipment/);assert.match(html,/Review evidence/);
+});
+test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
+  const html=render(fixture({annualCallVolume:undefined,annual911Transports:undefined,stationsCount:undefined,totalAmbulances:undefined} as unknown as Partial<Agency>));
+  assert.match(html,/No equipment recorded yet/);assert.match(html,/No signal recorded/);
+  assert.match(html,/No contact recorded/);assert.match(html,/Identify the monitor model/);
+  assert.doesNotMatch(html,/NaN|undefined/);
+});
+test('populated data without source records is never counted as mapped evidence',()=>{
+  const html=render(fixture({}));
+  assert.match(html,/<strong class="acp-num">0<\/strong> of/);
+});
+test('source count uses mapped sources and ignores an unsupported broad source',()=>{
+  const html=render(fixture({factEvidence:{
+    providerAddress:{reviewed:false,sourceKind:'link',sourceName:'Agency website',sourceRecordId:'address',sourceUrl:'https://example.org/agency'},
+    stationCount:{reviewed:false,sourceKind:'dataset',sourceName:'State count',sourceRecordId:'state',note:'Not agency scope',geographicLevel:'state'},
+  }}));
+  assert.match(html,/<strong class="acp-num">1<\/strong> of/);
+});
+test('expired contracts are history rather than upcoming deadlines',()=>{
+  const agency=fixture({competitorContract:{contractEndDate:'2020-01-01',vendor:'Recorded vendor'} as Agency['competitorContract']});
+  assert.match(render(agency),/historical, not a deadline/);
+  const html=renderToStaticMarkup(<ProcurementTimeline agency={agency}/>);
+  assert.match(html,/History/);assert.match(html,/0 upcoming/);
+});
+test('fire-only fixture avoids EMS transport summary and combined record keeps its discipline',()=>{
+  const fire=fixture({agencyType:'Volunteer Fire & Rescue',providerCategory:'FIRE',totalAmbulances:0,annual911Transports:0,annualCallVolume:100});
+  assert.equal(getAgencyServiceMode(fire),'fire');
+  const html=render(fire);
+  assert.match(html,/reported fire-rescue calls/);assert.doesNotMatch(html,/ambulances/);
+  const combined=fixture({agencyType:'Fire & EMS',providerCategory:'FIRE',totalAmbulances:2,annual911Transports:500});
+  assert.equal(getAgencyServiceMode(combined),'combined');
+});

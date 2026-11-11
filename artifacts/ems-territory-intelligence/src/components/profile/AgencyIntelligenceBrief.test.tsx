@@ -25,8 +25,11 @@ const record = (overrides: Partial<Agency> = {}): Agency => ({
   ...overrides,
 } as Agency);
 
+// The brief is split by profile topic; tests assert across every view.
 const render = (agency: Agency) => renderToStaticMarkup(
-  <AgencyIntelligenceBrief agency={agency} renderFactTag={() => null} />,
+  <>{(['overview', 'equipment', 'purchasing', 'operations'] as const).map((view) => (
+    <AgencyIntelligenceBrief key={view} view={view} agency={agency} renderFactTag={() => null} />
+  ))}</>,
 );
 
 test('available operational figures remain visible without evidence tags', () => {

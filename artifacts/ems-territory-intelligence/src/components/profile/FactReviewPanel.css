@@ -1,0 +1,41 @@
+.agency-command-profile .fact-review{color:#142238;background:#fff;border:1px solid #dce4ef;border-radius:12px;overflow:hidden;font-size:14px;line-height:1.5}
+.fact-review .fr-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid #dce4ef}
+.fact-review .fr-heading h2{font-size:20px;font-weight:700;letter-spacing:-.025em;margin:5px 0}
+.fact-review .fr-heading p,.fact-review .fr-hint{color:#526378;font-size:12px}
+.fact-review .fr-eyebrow{color:#087f8c;display:flex;align-items:center;gap:7px;font-weight:650}
+.fact-review .fr-local{color:#526378;font-size:12px;white-space:nowrap}
+.fact-review .fr-workspace{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.8fr)}
+.fact-review .fr-list{border-right:1px solid #dce4ef;padding:16px;background:#f7f9fc}
+.fact-review .fr-facts{display:grid;gap:5px;margin-top:12px;max-height:740px;overflow:auto}
+.fact-review .fr-facts button{display:grid;text-align:left;gap:3px;padding:12px;border:1px solid transparent;border-radius:7px;overflow-wrap:anywhere;color:#142238}
+.fact-review .fr-facts button:hover{background:#edf2fa}
+.agency-command-profile .fact-review .fr-facts button[aria-pressed=true]{background:#edf4ff!important;color:#142238!important;border-color:#b7c9ed;box-shadow:inset 3px 0 #2454c6}
+.agency-command-profile .fact-review .fr-facts button[aria-pressed=true] small{color:#526378!important}
+.fact-review .fr-mobile-picker{display:none}
+.fact-review .fr-facts small{color:#526378;font-size:12px}
+.fact-review .fr-detail{padding:22px;min-width:0}
+.fact-review .fr-detail h3{font-size:18px;font-weight:650;margin:0 0 15px}
+.fact-review label{display:grid;gap:5px;font-size:13px;font-weight:600}
+.fact-review select,.fact-review input,.fact-review textarea{width:100%;min-width:0;min-height:44px;border:1px solid #c7d3e3;border-radius:6px;padding:9px 10px;background:#fff;color:#142238;font-size:14px;font-weight:400}
+.fact-review :is(button,input,select,textarea,a,summary):focus-visible{outline:3px solid #2454c6;outline-offset:3px}
+.fact-review .fr-values{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-bottom:14px;border-bottom:1px solid #dce4ef}
+.fact-review dt{font-size:12px;color:#526378}.fact-review dd{font-size:16px;font-weight:650;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.fact-review .fr-source{display:flex;flex-wrap:wrap;gap:8px 16px;padding:14px 0;font-size:12px}
+.fact-review a{display:inline-flex;gap:5px;align-items:center;color:#2454c6;text-decoration:underline;text-underline-offset:3px}
+.fact-review .fr-status{color:#08717b;font-weight:600}
+.fact-review form{display:grid;gap:13px}.fact-review .fr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fact-review .fr-save{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#526378;font-size:12px}
+.fact-review .fr-save button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:7px;background:#2454c6;color:#fff;padding:10px 16px;font-size:14px;font-weight:600}
+.fact-review .fr-save button:disabled{opacity:.5;cursor:not-allowed}
+.fact-review .fr-error{color:#982c33;background:#fff0f0;padding:12px;border-radius:6px}.fact-review .fr-success{color:#075c50;background:#ebf7f3;padding:12px;border-radius:6px}
+.fact-review .fr-history{margin-top:22px;border-top:1px solid #dce4ef;padding-top:14px}
+.fact-review summary{display:flex;gap:7px;align-items:center;cursor:pointer;font-weight:600;min-height:44px}
+.fact-review .fr-history li{display:grid;gap:4px;border-left:2px solid #dce4ef;padding:4px 0 12px 13px;margin-top:12px;font-size:12px;overflow-wrap:anywhere}
+.fact-review .fr-history li span{color:#526378}
+@media(max-width:767px){
+  .fact-review .fr-heading{padding:16px;display:block}.fact-review .fr-local{display:block;margin-top:8px}
+  .fact-review .fr-workspace{grid-template-columns:minmax(0,1fr)}.fact-review .fr-list{border-right:0;border-bottom:1px solid #dce4ef;padding:12px}
+  .fact-review .fr-facts,.fact-review .fr-desktop-filter{display:none}.fact-review .fr-mobile-picker{display:grid}.fact-review .fr-detail{padding:16px}
+  .fact-review .fr-form-grid{grid-template-columns:minmax(0,1fr)}
+  .fact-review .fr-values{grid-template-columns:minmax(0,1fr);gap:10px}
+}

@@ -19,6 +19,7 @@ node_modules
 
 # IDEs and editors
 /.idea
+/generated-artifacts/
 .project
 .classpath
 .c9/

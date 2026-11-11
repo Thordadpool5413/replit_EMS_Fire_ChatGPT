@@ -5350,7 +5350,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`Responsive browser check failed: ${error.message}`);
-  process.exitCode = 1;
-});
+export { createCdpClient, evaluate, waitFor, reservePort, waitForJson, clickVisibleButton };
+
+if (process.env.PROFILE_HELPERS_ONLY !== '1') {
+  main().catch((error) => {
+    console.error(`Responsive browser check failed: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

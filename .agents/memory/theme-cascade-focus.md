@@ -9,6 +9,12 @@ When centralizing theme colors, check legacy selectors with higher specificity; 
 
 **How to apply:** When changing shared theme tokens or focus styles, search for existing dark-state overrides, especially navigation selected states, and verify the keyboard-visible ring, focused controls, and settled colors in each theme.
 
+Verify selector matching against the rendered ancestor tree before increasing specificity. Shared action-link rules can override subtle evidence badges because they contain a background utility.
+
+**Why:** A declared badge color was not the rendered color; an attempted stronger rule also failed because the scope classes were on different ancestor elements.
+
+**How to apply:** Inspect computed foreground/background colors and actual class placement. Assert the settled rendered colors, not just stylesheet declarations, when fixing contrast.
+
 When changing a sidebar utility grid into a vertical list, audit legacy child placement as well as the parent layout. Old explicit grid-column rules can create unintended implicit columns even after the parent is set to one column.
 
 **Why:** The footer still rendered uneven widths and overlapping labels until the old grid-placement behavior was removed from the new row layout.

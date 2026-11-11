@@ -28,3 +28,4 @@
 - [Print theme readability](print-theme-readability.md) — use paper-first print colors, preserve semantic status contrast and page breaks, and validate actual PDFs across themes.
 - [Direct PDF export compatibility](direct-pdf-export.md) — keep searchable, theme-safe agency PDFs with clean A4 and Letter page crops and margins.
 - [Equipment evidence boundaries](equipment-evidence-boundaries.md) — product brands are not contracted suppliers; inventories and illustrative credits do not establish buy-back offers.
+- [Profile verification boundaries](profile-verification-boundaries.md) — retain unconfirmed research; separate sources, individual fact reviews, corrections and original history.

@@ -52,7 +52,8 @@ export const getAgencyServiceMode = (agency: Agency): ServiceMode => {
   const transports =
     (isNum(agency.totalAmbulances) && agency.totalAmbulances > 0) ||
     (isNum(agency.annual911Transports) && agency.annual911Transports > 0) ||
-    /\bems\b|rescue|ambulance/.test(type);
+    // 'Rescue' alone does not imply patient transport; only explicit transport evidence counts.
+    /\bems\b|ambulance|transport/.test(type);
   return transports ? 'combined' : 'fire';
 };
 
@@ -219,9 +220,13 @@ export interface AgencyIntelligenceBriefProps {
   /** Renders the existing per-field source status tag. */
   renderFactTag: (field: AgencyFactEvidenceKey) => React.ReactNode;
   onOpenSources?: () => void;
+  /** Which slice of the brief to render. Each profile section renders only its own slice, so nothing repeats. */
+  view?: BriefView;
 }
 
-export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = ({ agency, renderFactTag, onOpenSources }) => {
+export type BriefView = 'overview' | 'equipment' | 'purchasing' | 'operations';
+
+export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = ({ agency, renderFactTag, onOpenSources, view = 'overview' }) => {
   const mode = getAgencyServiceMode(agency);
   const isFire = mode !== 'ems';
   const findings = buildFindings(agency);
@@ -256,11 +261,12 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
       className="aib pi-surface"
       data-testid="agency-operational-baseline"
       data-service-mode={mode}
+      data-brief-view={view}
       aria-labelledby="agency-operational-baseline-title"
     >
       <header className="aib-top">
         <div className="min-w-0">
-          <h2 id="agency-operational-baseline-title" className="aib-title">Agency intelligence</h2>
+          <h2 id={`agency-operational-baseline-title`} className="aib-title">{view === 'equipment' ? 'Recorded equipment & buy-back' : view === 'purchasing' ? 'Findings, contracts & funding' : view === 'operations' ? 'Operational volume' : 'Account findings & meeting preparation'}</h2>
           <p className="aib-note">{modeLabel} · Reported values; confirm current use with the agency.</p>
         </div>
         {onOpenSources && (
@@ -272,22 +278,27 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
         )}
       </header>
 
-      <DecisionSupportStack key={agency.id} agency={agency}>
-        {(research) => (
-          <>
-            <div className="aib-equipment-row">
-              <EquipmentSummary agency={agency} renderFactTag={renderFactTag} />
-              <BuybackDecisionSupport agency={agency} research={research} />
-            </div>
+      {view === 'overview' && (
+        <DecisionSupportStack key={agency.id} agency={agency}>
+          {(research) => (
             <div className="pds-row">
               <ProfileDecisionSupport agency={agency} research={research} />
               <MeetingBriefPanel agency={agency} research={research.data} />
             </div>
-          </>
-        )}
-      </DecisionSupportStack>
-
-      <div className="aib-grid">
+          )}
+        </DecisionSupportStack>
+      )}
+      {view === 'equipment' && (
+        <DecisionSupportStack key={agency.id} agency={agency}>
+          {(research) => (
+            <div className="aib-equipment-row">
+              <EquipmentSummary agency={agency} renderFactTag={renderFactTag} />
+              <BuybackDecisionSupport agency={agency} research={research} />
+            </div>
+          )}
+        </DecisionSupportStack>
+      )}
+      {view === 'operations' && (
         <section className="aib-block aib-snapshot" data-testid="baseline-operational-metrics" aria-labelledby="aib-snapshot-title">
           <h3 id="aib-snapshot-title" className="aib-label"><DataLabel kind="calls">Operational volume &amp; acuity</DataLabel></h3>
           <div className="aib-tags">
@@ -303,6 +314,8 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
           </dl>
         </section>
 
+      )}
+      {(view === 'purchasing' || view === 'overview') && (
         <section className="aib-block aib-findings-block" aria-labelledby="aib-findings-title">
           <h3 id="aib-findings-title" className="aib-label"><DataLabel kind="notes">Findings to discuss</DataLabel></h3>
           {findings.length > 0 ? (
@@ -341,7 +354,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
             </section>
           </div>
         </section>
-      </div>
+      )}
     </section>
   );
 };

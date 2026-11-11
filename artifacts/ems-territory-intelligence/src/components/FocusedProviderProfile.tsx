@@ -70,16 +70,21 @@ import {
   getAgencyProfileReviewedAt,
   saveAgencyProfileReviewedAt
 } from '../services/agencyProfileReviewStore';
-import { ResuscitationSurvivalFunnel } from './ResuscitationSurvivalFunnel';
-import { TcoCumulativeSavingsChart } from './TcoCumulativeSavingsChart';
-import { QualityScorecard } from './QualityScorecard';
+import { ClinicalMeasures } from './profile/ClinicalMeasures';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { FireRegistryLookup } from './FireRegistryLookup';
 import { AgencySourceRecordWorkspace } from './AgencySourceRecordWorkspace';
 import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
-import { AgencyIntelligenceBrief } from './profile/AgencyIntelligenceBrief';
+import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
+import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
+import { ProfileDetail } from './profile/ProfileDetail';
+import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
+import { FieldNotesPanel } from './profile/FieldNotesPanel';
+import { ProcurementTimeline } from './profile/ProcurementTimeline';
+import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
+import { FactReviewPanel } from './profile/FactReviewPanel';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
@@ -187,8 +192,17 @@ type ProfileSection =
   | 'decision_makers'
   | 'operations'
   | 'medicare'
-  | 'evidence'
-  | 'all';
+  | 'evidence';
+
+const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
+  { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Curated account briefing.', icon: Layers },
+  { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison. Current use needs confirmation.', icon: Cpu },
+  { id: 'purchasing', label: 'Purchasing & Funding', short: 'Purchasing', purpose: 'Contract and supplier records, procurement timing, cooperative vehicles and grant history. Past dates are history, not deadlines.', icon: Scale },
+  { id: 'decision_makers', label: 'Decision Makers', short: 'People', purpose: 'Recorded leadership and purchasing authority with source context. Relationships are never inferred.', icon: UserCheck },
+  { id: 'operations', label: 'Operations & Clinical', short: 'Ops & clinical', purpose: 'Operational scale, apparatus, receiving hospitals and source-supported clinical measures.', icon: Activity },
+  { id: 'medicare', label: 'Financial Intelligence', short: 'Financial', purpose: 'Reported claims data separated from planning estimates. Assumptions are adjustable; projections are not agency outcomes.', icon: DollarSign },
+  { id: 'evidence', label: 'Evidence & Verification', short: 'Evidence', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and keep field notes.', icon: FileCheck2 },
+];
 
 type NppesSourceCandidate = {
   npiNumber: string;
@@ -273,7 +287,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
         awardAmount: a.federalShareAwarded,
         localMatchAmount: null,
         federalSharePct: null,
-        status: 'Awarded & Disbursed' as const,
+        status: 'Award recorded — disbursement not reported' as const,
         applicationRound: a.awardNumber || 'Not reported'
       }))
     : (raw.grantStatus?.afgAwarded && hasReportedValue(raw.grantStatus.afgFiscalYear) && hasReportedValue(raw.grantStatus.afgAwardAmount)
@@ -285,7 +299,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
               awardAmount: raw.grantStatus.afgAwardAmount,
               localMatchAmount: null,
               federalSharePct: null,
-              status: 'Awarded & Disbursed' as const,
+              status: 'Award recorded — disbursement not reported' as const,
               applicationRound: raw.grantStatus.afgAwardNumber || 'Not reported'
             }
           ]
@@ -415,16 +429,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const stationGeographicLinks = geographicLinks.filter(
     (link) => link.relationship === 'operates-station-in',
   );
+  // Benchmark comparison only for a recorded model match, or a comparison model the user explicitly selects.
+  const matchedBenchmarkId = useMemo(() => matchBenchmarkModelId(agency), [agency]);
+  const [selectedBenchmarkId, setSelectedBenchmarkId] = useState<string | null>(null);
+  const [includedUnits, setIncludedUnits] = useState<number | null>(null);
+  useEffect(() => { setSelectedBenchmarkId(null); setIncludedUnits(null); }, [rawAgency.id]);
+  const effectiveBenchmarkId = matchedBenchmarkId ?? selectedBenchmarkId;
+  const reportedDefibUnits = agency.installedFleet.defibUnitsCount;
+  const comparisonUnits = hasReportedValue(reportedDefibUnits) && Number.isInteger(reportedDefibUnits) && reportedDefibUnits > 0
+    ? Math.min(reportedDefibUnits, includedUnits ?? reportedDefibUnits)
+    : null;
   const tcoModel = useMemo(() => {
-    const reportedDefibCount = agency.installedFleet.defibUnitsCount;
-    if (!hasReportedValue(reportedDefibCount) || reportedDefibCount <= 0) return null;
-    return calculateAgencyFleetTco(agency, 5, reportedDefibCount);
-  }, [agency]);
+    if (comparisonUnits == null || comparisonUnits <= 0 || !effectiveBenchmarkId) return null;
+    return calculateAgencyFleetTco(agency, 5, comparisonUnits, effectiveBenchmarkId);
+  }, [agency, comparisonUnits, effectiveBenchmarkId]);
   const hcpcsModel = useMemo(() => calculateAgencyHcpcsBreakdown(agency), [agency]);
   const protocolModel = useMemo(() => getAgencyClinicalProtocolAlignment(agency), [agency]);
 
   // Default to Overview in the 7-topic Account 360 navigation
-  const [showActuarialMath, setShowActuarialMath] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
   const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
@@ -433,6 +455,21 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const [compactOpening, setCompactOpening] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const [contactOpen, setContactOpen] = useState(false);
+  // FactReviewPanel announces unsaved review forms; leaving the section or profile asks first.
+  const reviewDirtyRef = React.useRef(false);
+  useEffect(() => {
+    const onDirty = (event: Event) => { reviewDirtyRef.current = Boolean((event as CustomEvent<boolean>).detail); };
+    window.addEventListener('agency-profile-review-dirty', onDirty);
+    return () => window.removeEventListener('agency-profile-review-dirty', onDirty);
+  }, []);
+  useEffect(() => { reviewDirtyRef.current = false; }, [rawAgency.id]);
+  const confirmLeaveReview = () => {
+    if (!reviewDirtyRef.current) return true;
+    if (!window.confirm('You have an unsaved fact review. Discard it?')) return false;
+    reviewDirtyRef.current = false;
+    return true;
+  };
+  const guardedBack = () => { if (confirmLeaveReview()) onBack(); };
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
     const update = () => setCompactOpening(query.matches);
@@ -456,17 +493,29 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     setProfileReviewError('');
   };
 
-  // Field Note Form State
-  const [meetingType, setMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
-  const [noteText, setNoteText] = useState('');
-  const [nextAction, setNextAction] = useState('');
-
   // Interactive Actuarial Forecasting Sensitivity Controls (Low / Base / High Confidence Intervals)
   const [customUnitMsrp, setCustomUnitMsrp] = useState<number>(38500);
   const [customTradeInCredit, setCustomTradeInCredit] = useState<number>(4000);
   const [customDenialCapturePct, setCustomDenialCapturePct] = useState<number>(65);
+  useEffect(() => {
+    setActiveSection('overview');
+    setCustomUnitMsrp(38500); setCustomTradeInCredit(4000); setCustomDenialCapturePct(65);
+    setContactOpen(false); setShowDossierModal(false); setIsSourceDrawerOpen(false);
+  }, [rawAgency.id]);
 
-  const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
+  const profileServiceMode = getAgencyServiceMode(agency);
+  const isFire = profileServiceMode !== 'ems';
+  const latestSourcePeriod = useMemo(() => {
+    const periods = Object.values(agency.factEvidence ?? {})
+      .map((e) => e?.reportingPeriod?.trim())
+      .filter((p): p is string => Boolean(p));
+    const unique = [...new Set(periods)];
+    return unique.length > 1 ? 'multiple — see Evidence' : unique[0] ?? null;
+  }, [agency]);
+  const benchmarkIntel = useMemo(
+    () => (matchedBenchmarkId ? calculateAgencyFleetTco(agency, 5, 0, matchedBenchmarkId).matchedIntel : null),
+    [agency, matchedBenchmarkId],
+  );
   const linkedNppesAssociation = agency.sourceRecordAssociations?.find(
     (association) =>
       association.sourceName.toLowerCase().includes('nppes') &&
@@ -478,11 +527,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     ? getAgencyMedicareDenialMetricForDisplay(agency)
     : null;
   const actuarialForecast = useMemo(() => {
-    const reportedUnitCount = agency.installedFleet.defibUnitsCount ?? agency.totalAmbulances;
+    const reportedUnitCount = comparisonUnits ?? undefined;
     const hasUnitCount = hasReportedValue(reportedUnitCount);
     const units = reportedUnitCount ?? 0;
     const grossCapExBase = units * customUnitMsrp;
-    const totalTradeIn = units * customTradeInCredit;
+    const totalTradeIn = units * Math.min(customTradeInCredit, customUnitMsrp);
     const netCapExBase = Math.max(0, grossCapExBase - totalTradeIn);
     const netCapExLow = Math.round(netCapExBase * 0.85);
     const netCapExHigh = Math.round(netCapExBase * 1.15);
@@ -503,7 +552,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     const annualRecoveryLow = Math.round(annualRecoveryBase * 0.82);
     const annualRecoveryHigh = Math.round(annualRecoveryBase * 1.18);
 
-    const fiveYrTcoBase = (tcoModel?.fiveYearOperatingSavings ?? 0) + totalTradeIn;
+    // Operating difference only; trade-in credit is already applied to net capital and is not counted twice.
+    const fiveYrTcoBase = tcoModel?.fiveYearOperatingSavings ?? 0;
     const fiveYrTcoLow = Math.round(fiveYrTcoBase * 0.85);
     const fiveYrTcoHigh = Math.round(fiveYrTcoBase * 1.15);
 
@@ -522,7 +572,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       fiveYrTcoBase,
       fiveYrTcoHigh
     };
-  }, [agency, customUnitMsrp, customTradeInCredit, customDenialCapturePct, tcoModel]);
+  }, [agency, comparisonUnits, customUnitMsrp, customTradeInCredit, customDenialCapturePct, tcoModel]);
 
   const triggerLiveVerification = async () => {
     if (isVerifyingLive) return;
@@ -642,7 +692,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onBack();
+        if (!reviewDirtyRef.current) onBack();
       }
     };
 
@@ -662,26 +712,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     'Contract Won'
   ];
 
-  const handleNoteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!noteText.trim()) return;
-    onAddFieldNote(agency.id, {
-      date: new Date().toISOString().split('T')[0],
-      repName: 'Territory Director',
-      meetingType,
-      notes: noteText.trim(),
-      nextAction: nextAction.trim() || `Follow up with ${agency.keyContacts[0]?.name || 'department leadership'}`,
-      dueDate: '2026-11-15'
-    });
-    setNoteText('');
-    setNextAction('');
-  };
-
   const handlePrintBrief = () => {
     window.print();
   };
 
-  const isFireAgency = agency.agencyType?.toLowerCase().includes('fire') ?? false;
   const primaryContact = agency.keyContacts[0];
   const topSourceItems = [
     { label: 'Agency address', sourceName: agency.factEvidence?.providerAddress?.sourceName, period: agency.factEvidence?.providerAddress?.reportingPeriod, url: agency.factEvidence?.providerAddress?.sourceUrl },
@@ -704,14 +738,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       candidate.period === source.period &&
       candidate.url === source.url,
     ) === index)
-    .slice(0, 3);
+    ;
 
   const showSection = (
     sec:
-      | 'deal_story'
       | 'battlecard'
       | 'leadership'
       | 'fleet'
+      | 'apparatus'
       | 'software'
       | 'suppliers'
       | 'grants'
@@ -720,19 +754,25 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       | 'notes'
       | 'evidence_ledger'
   ) => {
-    if (activeSection === 'all') return true;
-    if (activeSection === 'overview') return sec === 'deal_story';
+    // Each section belongs to exactly one profile topic, so no content group can render twice.
     if (activeSection === 'equipment') return sec === 'fleet' || sec === 'software' || sec === 'battlecard';
     if (activeSection === 'purchasing') return sec === 'suppliers' || sec === 'grants';
     if (activeSection === 'decision_makers') return sec === 'leadership';
-    if (activeSection === 'operations') return sec === 'clinical' || sec === 'fleet';
-    if (activeSection === 'medicare') return sec === 'billing';
+    if (activeSection === 'operations') return sec === 'apparatus' || (sec === 'clinical' && profileServiceMode !== 'fire');
+    if (activeSection === 'medicare') return sec === 'billing' && profileServiceMode !== 'fire';
     if (activeSection === 'evidence') return sec === 'evidence_ledger' || sec === 'notes';
     return false;
   };
 
-  const navigateProfileSection = (section: ProfileSection) => {
+  const changeSection = (section: ProfileSection) => {
+    if (section === activeSection) return true;
+    if (activeSection === 'evidence' && !confirmLeaveReview()) return false;
     setActiveSection(section);
+    return true;
+  };
+
+  const navigateProfileSection = (section: ProfileSection) => {
+    if (!changeSection(section)) return;
     window.requestAnimationFrame(() => {
       document.querySelector('[data-testid="profile-topic-navigation"]')?.scrollIntoView({
         behavior: 'smooth',
@@ -742,7 +782,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   };
 
   const openProfileSources = () => {
-    setActiveSection('evidence');
+    if (!changeSection('evidence')) return;
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         document.getElementById('profile-source-evidence')?.scrollIntoView({
@@ -814,7 +854,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
   // Comprehensive Evidence-Backed Account Assessment
   const accountAssessment = useMemo(() => {
-    const isFire = agency.providerCategory === 'FIRE' || agency.agencyType.toLowerCase().includes('fire');
     const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
     const grantAmt = agency.grantStatus?.afgAwardAmount ?? 0;
     const defibBrand = agency.installedFleet?.defibBrand || 'Not reported';
@@ -919,7 +958,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
-    <div className="provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
+    <div className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
         className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24 lg:pb-8"
@@ -932,7 +971,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="flex min-w-0 items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={onBack}
+                  onClick={guardedBack}
                   aria-label={backLabel}
                   data-testid="profile-back-button"
                   className="whitespace-nowrap shrink-0 inline-flex min-h-10 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#14283F] dark:text-slate-100 bg-[#F5F7FA] dark:bg-[#16243A] hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-[#DFE6EF] dark:border-[#1E2D42] transition-colors cursor-pointer"
@@ -942,13 +981,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <span className="sm:hidden">Back</span>
                   <span className="hidden sm:inline">{backLabel}</span>
                 </button>
+                {onGoHome && (
+                  <button type="button" onClick={() => { if (confirmLeaveReview()) onGoHome(); }} aria-label="Go to home" data-testid="profile-home-button" className="acp-home-btn">
+                    <Home className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                )}
 
                 <div className="hidden md:flex items-center gap-1.5 text-xs text-[#53657B] dark:text-slate-400 font-medium truncate">
                 {onNavigateGeography ? (
                   <>
                     <button
                       type="button"
-                      onClick={() => onNavigateGeography(agency.stateCode, 'all', 'all')}
+                      onClick={() => { if (confirmLeaveReview()) onNavigateGeography(agency.stateCode, 'all', 'all'); }}
                       className="text-[#285EE8] dark:text-blue-400 hover:underline cursor-pointer truncate"
                     >
                       {agency.state} ({agency.stateCode})
@@ -956,7 +1000,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span aria-hidden="true">›</span>
                     <button
                       type="button"
-                      onClick={() => onNavigateGeography(agency.stateCode, agency.county, 'all')}
+                      onClick={() => { if (confirmLeaveReview()) onNavigateGeography(agency.stateCode, agency.county, 'all'); }}
                       className="text-[#285EE8] dark:text-blue-400 hover:underline cursor-pointer truncate"
                     >
                       {agency.county}
@@ -979,9 +1023,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-[11px] text-[#53657B] dark:text-slate-400 md:hidden" aria-label="Selected agency area">
                 {onNavigateGeography ? (
                   <>
-                    <button type="button" onClick={() => onNavigateGeography(agency.stateCode, 'all', 'all')} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.stateCode}</button>
+                    <button type="button" onClick={() => { if (confirmLeaveReview()) onNavigateGeography(agency.stateCode, 'all', 'all'); }} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.stateCode}</button>
                     <span aria-hidden="true">›</span>
-                    <button type="button" onClick={() => onNavigateGeography(agency.stateCode, agency.county, 'all')} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.county}</button>
+                    <button type="button" onClick={() => { if (confirmLeaveReview()) onNavigateGeography(agency.stateCode, agency.county, 'all'); }} className="shrink-0 font-semibold text-[#285EE8] dark:text-blue-300">{agency.county}</button>
                     <span aria-hidden="true">›</span>
                     <span className="truncate font-semibold text-[#14283F] dark:text-slate-200">{agency.city}</span>
                   </>
@@ -993,6 +1037,40 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </div>
         </header>
 
+        {/* Region A: compact agency command header. Identity appears once; sections never repeat it. */}
+        <section className="acp-header" aria-labelledby="acp-agency-name" data-testid="profile-command-header">
+          <div className="acp-header-identity">
+            <p className="acp-type">
+              <span className="acp-type-ico" data-mode={profileServiceMode}>{profileServiceMode === 'ems' ? <Siren aria-hidden="true" className="h-3.5 w-3.5" /> : <Flame aria-hidden="true" className="h-3.5 w-3.5" />}</span>
+              {profileServiceMode === 'combined' ? 'Fire & EMS' : profileServiceMode === 'fire' ? 'Fire department' : 'EMS provider'}
+              {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
+            </p>
+            <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
+            <p className="acp-loc">
+              <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
+              <span>{[agency.city, agency.county, agency.stateCode].filter(Boolean).join(', ')}</span>
+              <FactVerificationTag agency={agency} field="providerAddress" />
+              {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
+              {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
+              {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
+              <span className="acp-fresh" data-testid="text-profile-source-period" title="Periods are stated by the source records, not import or review timestamps. Review each source separately when periods differ.">
+                <Clock aria-hidden="true" className="h-3 w-3" />
+                Source period {latestSourcePeriod ?? 'not stated'}
+              </span>
+              <span className="acp-fresh" data-testid="text-profile-freshness" title="Browser-local review marker; not an authenticated identity.">
+                {profileReviewedAt ? `Your review ${profileReviewedAt.slice(0, 10)}` : 'Not reviewed in this browser'}
+              </span>
+            </p>
+            <div className="acp-contact-row" aria-label="Agency contact actions">
+              {(primaryContact?.phone || agency.headquartersPhone) && (
+                <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Call</a>
+              )}
+              <a href={agency.googleMapsUri} target="_blank" rel="noopener noreferrer" data-testid="link-header-directions"><Navigation aria-hidden="true" className="h-3.5 w-3.5" />Directions</a>
+              {safeExternalUrl(agency.officialWebsite) && (
+                <a href={safeExternalUrl(agency.officialWebsite)} target="_blank" rel="noopener noreferrer" data-testid="link-header-website"><Globe aria-hidden="true" className="h-3.5 w-3.5" />Website</a>
+              )}
+            </div>
+          </div>
         {/* One clear next step; the remaining tools stay together in a disclosure. */}
         <div
           className="profile-action-dock flex max-w-full items-center gap-2 py-2 no-scrollbar"
@@ -1001,7 +1079,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <button
             type="button"
             onClick={() => {
-              setActiveSection('overview');
+              if (!changeSection('overview')) return;
               setTimeout(() => {
                 const el = document.getElementById('meeting-preparation-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -1109,116 +1187,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </details>
         </div>
+          <p className="acp-notice" role="note" data-testid="text-profile-verification-notice">
+            <ShieldAlert aria-hidden="true" className="h-3.5 w-3.5" />
+            Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.
+          </p>
+        </section>
 
         {/* Main Account 360 Workspace Content */}
         <div className="profile-brief-layout mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           {/* ================================================================
               ABOVE THE FOLD — 3 PRIMARY DECISION BLOCKS (SECTION 9)
              ================================================================ */}
-          <section
-            aria-label="Account 360 Executive Decision Header"
-            className="profile-executive-header pi-surface p-4 sm:p-5 lg:p-6 space-y-5"
-          >
+          {/* Registry identifiers, planning estimates, assessment and review controls are portaled
+              into the Financial / Evidence detail host below; this container renders nothing in place. */}
+          <div hidden aria-hidden="true" className="profile-portal-sources">
             {/* BLOCK 1: AGENCY IDENTITY, OFFICIAL IDENTIFIERS & SOURCE VERIFICATION */}
             <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
               <div className="space-y-3 min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#53657B] dark:text-slate-400">
-                  <span className="font-semibold text-[#285EE8] dark:text-blue-400">
-                    {isFire ? 'Fire Department' : 'EMS Provider'}
-                  </span>
-                </div>
-
-                <div>
-                  <h1 className="pi-page-title text-[24px] font-[650] leading-[1.2] text-[#14283F] dark:text-white sm:text-[32px]">
-                    {agency.name}
-                  </h1>
-                  <p className="profile-identity-location pi-supporting mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="font-semibold text-[#14283F] dark:text-white">
-                      {agency.address || 'Address not reported'}
-                    </span>
-                    <FactVerificationTag agency={agency} field="providerAddress" />
-                    <span className="profile-identity-area">{agency.county}, {agency.stateCode} · {agency.agencyType}</span>
-                    {hasAgencyFactEvidence(agency, 'decisionMakers') && agency.headquartersPhone && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span>Public main: {agency.headquartersPhone}</span>
-                      </>
-                    )}
-                  </p>
-                  <div className="profile-contact-actions" aria-label="Agency contact actions">
-                    {(primaryContact?.phone || agency.headquartersPhone) && (
-                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`}>
-                        <Phone aria-hidden="true" /><span>Call agency</span>
-                      </a>
-                    )}
-                    <a
-                      href={agency.googleMapsUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
-                    >
-                      <Navigation aria-hidden="true" /><span>Directions</span>
-                    </a>
-                    {safeExternalUrl(agency.officialWebsite) && (
-                      <a
-                        href={safeExternalUrl(agency.officialWebsite)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#285EE8] dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
-                      >
-                        <Globe aria-hidden="true" /><span>Website</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Fast-review summary: location is already in the identity line above. */}
-                <div className="profile-summary-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
-                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Agency contact summary">
-                    <details className="profile-header-contact profile-header-sources" open={!compactOpening || contactOpen}
-                      onToggle={(event) => { if (compactOpening) setContactOpen(event.currentTarget.open); }}>
-                    <summary><h2><DataLabel kind="contact">Agency contact</DataLabel></h2><ChevronDown aria-hidden="true" /></summary>
-                    <div className="profile-contact-detail">
-                    <p className="mt-1 break-words font-semibold text-[#14283F] dark:text-white [overflow-wrap:anywhere]">{primaryContact?.name || 'Not reported'}</p>
-                    {primaryContact?.title && <p className="break-words text-[#53657B] dark:text-slate-400 [overflow-wrap:anywhere]">{primaryContact.title}</p>}
-                    {(primaryContact?.phone || agency.headquartersPhone) && (
-                      <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} className="mt-1 inline-flex min-h-8 max-w-full items-center gap-1.5 break-words font-semibold text-[#285EE8] dark:text-blue-300 [overflow-wrap:anywhere]">
-                        <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {primaryContact?.phone || agency.headquartersPhone}
-                      </a>
-                    )}
-                    {primaryContact?.email && (
-                      <a href={`mailto:${primaryContact.email}`} className="flex min-h-8 items-center gap-1.5 break-all text-[#285EE8] dark:text-blue-300">
-                        <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {primaryContact.email}
-                      </a>
-                    )}
-                    </div>
-                    </details>
-                  </section>
-
-                  <section className="profile-summary-panel min-w-0 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-3 text-xs dark:border-[#1E2D42] dark:bg-[#16243A]" aria-label="Available source references">
-                    <details className="profile-header-sources">
-                    <summary><h2><DataLabel kind="source">Source references</DataLabel></h2><ChevronDown aria-hidden="true" /></summary>
-                    <div className="flex items-center justify-between gap-2">
-                      <button type="button" onClick={() => setIsSourceDrawerOpen(true)} className="min-h-8 shrink-0 font-semibold text-[#285EE8] hover:underline dark:text-blue-300">Review all</button>
-                    </div>
-                    {topSourceItems.length > 0 ? (
-                      <ul className="mt-1 space-y-1.5">
-                        {topSourceItems.map((source, index) => {
-                          const href = safeExternalUrl(source.url);
-                          return (
-                            <li key={`${source.label}-${source.sourceName}-${index}`} className="min-w-0">
-                              {href ? <a href={href} target="_blank" rel="noopener noreferrer" className="block break-words font-semibold text-[#285EE8] hover:underline dark:text-blue-300 [overflow-wrap:anywhere]">{source.label}: {source.sourceName}</a> : <p className="break-words font-semibold text-[#30465C] dark:text-slate-200 [overflow-wrap:anywhere]">{source.label}: {source.sourceName}</p>}
-                              <p className="break-words text-[10px] text-[#718398] dark:text-slate-400 [overflow-wrap:anywhere]">{source.period || 'Period not stated'}</p>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <p className="mt-1 text-[#53657B] dark:text-slate-400">Open source records for this agency.</p>
-                    )}
-                    </details>
-                  </section>
-                </div>
 
                 {profileDetailsHost && createPortal(
                   <div
@@ -1413,14 +1398,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowActuarialMath((prev) => !prev)}
-                  className="text-xs font-semibold text-[#285EE8] dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
-                >
-                  <span>{showActuarialMath ? 'Hide financial assumptions' : 'Calibrate financial assumptions'}</span>
-                  {showActuarialMath ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
+                <button type="button" onClick={() => navigateProfileSection('medicare')} className="text-xs font-semibold text-[#285EE8] hover:underline">Edit assumptions in Financial</button>
               </div>
 
               {/* 4 Assessment Columns */}
@@ -1493,7 +1471,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       type="button"
                       onClick={() => {
                         if (accountAssessment.primaryMove.nextStep === 'Prepare for Meeting') {
-                          setActiveSection('overview');
+                          if (!changeSection('overview')) return;
                           setTimeout(() => {
                             const el = document.getElementById('meeting-preparation-section');
                             if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -1578,100 +1556,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </div>
 
-            {/* Expandable Actuarial Sensitivity Controls */}
-            {showActuarialMath && (
-              <div className="p-4 sm:p-5 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-semibold text-[#285EE8] dark:text-blue-400">
-                      Actuarial sensitivity model ({actuarialForecast.hasUnitCount ? actuarialForecast.units : 'Not reported'} frontline units)
-                    </div>
-                    <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      PulseIQ uses fleet age, clinical volume, grant readiness, and software inputs. Local claim-denial percentages and claim-based recovery estimates are excluded; imported counts and sources remain separate for review.
-                    </div>
-                    <div className="mt-1 text-xs text-[#53657B] dark:text-slate-300">
-                      Scenario method: unit count × selected MSRP less selected trade-in credit, with low/high scenarios at ±15%. Five-year savings use reported unit count × benchmark service, battery, and consumables savings plus trade-in credit. Recovery scenarios are not displayed without the required agency-specific inputs and method.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium text-[#53657B] dark:text-slate-300">Unit MSRP assumption</span>
-                      <span className="font-semibold tabular-nums text-[#285EE8] dark:text-blue-400">${customUnitMsrp.toLocaleString()}/unit</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={32000}
-                      max={48000}
-                      step={500}
-                      value={customUnitMsrp}
-                      onChange={e => setCustomUnitMsrp(Number(e.target.value))}
-                      className="w-full accent-[#285EE8] cursor-pointer"
-                    />
-                    <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExLow) : 'Not calculated'}</span>
-                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExBase) : 'Not calculated'}</strong>
-                      <span>High: {actuarialForecast.hasUnitCount ? formatCurrency(actuarialForecast.netCapExHigh) : 'Not calculated'}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium text-[#53657B] dark:text-slate-300">OEM trade-in credit / unit</span>
-                      <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">-${customTradeInCredit.toLocaleString()}/unit</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={2000}
-                      max={5500}
-                      step={250}
-                      value={customTradeInCredit}
-                      onChange={e => setCustomTradeInCredit(Number(e.target.value))}
-                      className="w-full accent-emerald-600 cursor-pointer"
-                    />
-                    <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoLow, { showSign: true }) : 'Not calculated'}</span>
-                      <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Base: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true }) : 'Not calculated'}</strong>
-                      <span>High: {actuarialForecast.hasTcoInputs ? formatCurrency(actuarialForecast.fiveYrTcoHigh, { showSign: true }) : 'Not calculated'}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium text-[#53657B] dark:text-slate-300">CO-16 denial capture rate</span>
-                      <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-400">{customDenialCapturePct}% recovered</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={35}
-                      max={85}
-                      step={5}
-                      value={customDenialCapturePct}
-                      onChange={e => setCustomDenialCapturePct(Number(e.target.value))}
-                      className="w-full accent-amber-600 cursor-pointer"
-                    />
-                    <div className="text-xs text-[#53657B] flex justify-between tabular-nums">
-                      <span>Low: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryLow, { perYear: true, showSign: true }) : 'Not calculated'}</span>
-                      <strong className="text-[#14283F] dark:text-white font-semibold">Base: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true }) : 'Not calculated'}</strong>
-                      <span>High: {actuarialForecast.hasRecoveryInputs ? formatCurrency(actuarialForecast.annualRecoveryHigh, { perYear: true, showSign: true }) : 'Not calculated'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
               </div>
             </details>,
             profileDetailsHost,
             )}
-          </section>
-
-          <AgencyIntelligenceBrief
-            agency={agency}
-            renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />}
-            onOpenSources={() => setIsSourceDrawerOpen(true)}
-          />
+          </div>
 
           {/* ================================================================
               7-TOPIC ACCOUNT 360 NAVIGATION (SECTION 9)
@@ -1679,149 +1568,90 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <nav
             data-testid="profile-topic-navigation"
             aria-label="Account 360 Topic Navigation"
-            className="pi-surface sticky top-[108px] z-30 flex items-center justify-between gap-2 overflow-hidden p-1.5 md:top-16"
+            className="acp-nav sticky top-[108px] z-30 md:top-16"
           >
             <div className="w-full md:hidden">
               <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
               <select
                 id="profile-section-select"
                 value={activeSection}
-                onChange={(event) => setActiveSection(event.target.value as ProfileSection)}
-                className="min-h-11 w-full rounded-lg border border-[#DFE6EF] bg-white px-3 text-sm font-semibold text-[#14283F] dark:border-[#1E2D42] dark:bg-[#16243A] dark:text-white"
+                onChange={(event) => navigateProfileSection(event.target.value as ProfileSection)}
+                className="acp-nav-select"
                 data-testid="select-profile-section-mobile"
               >
-                <option value="overview">Overview</option>
-                <option value="equipment">Equipment &amp; technology</option>
-                <option value="purchasing">Purchasing &amp; grants</option>
-                <option value="decision_makers">Decision makers</option>
-                <option value="operations">Operations</option>
-                <option value="medicare">Medicare &amp; financial</option>
-                <option value="evidence">Evidence &amp; notes</option>
-                <option value="all">All topics</option>
+                {PROFILE_SECTIONS.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
               </select>
             </div>
-            <div className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-              {[
-                { id: 'overview', label: '1. Overview' },
-                { id: 'equipment', label: '2. Equipment & Tech' },
-                { id: 'purchasing', label: '3. Purchasing & Grants' },
-                { id: 'decision_makers', label: '4. Decision Makers' },
-                { id: 'operations', label: '5. Operations' },
-                { id: 'medicare', label: '6. Medicare & Financial' },
-                { id: 'evidence', label: `7. Evidence (${agency.fieldNotes.length} Notes)` }
-              ].map((tab) => {
+            <div className="acp-nav-tabs hidden md:flex" role="tablist" aria-label="Profile sections" onKeyDown={(event) => {
+              if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+              const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="tab"]'));
+              const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+              if (index < 0) return;
+              event.preventDefault();
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+              if (changeSection(PROFILE_SECTIONS[next].id)) buttons[next].focus();
+            }}>
+              {PROFILE_SECTIONS.map((tab) => {
                 const isActive = activeSection === tab.id;
+                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveSection(tab.id as ProfileSection)}
-                    className={`whitespace-nowrap shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[#285EE8] text-white shadow-2xs'
-                        : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
-                    }`}
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    data-testid={`tab-profile-${tab.id}`}
+                    onClick={() => changeSection(tab.id)}
+                    className={`acp-tab${isActive ? ' is-active' : ''}`}
                   >
-                    {tab.label}
+                    <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                    {tab.short}
+                    {tab.id === 'evidence' && agency.fieldNotes.length > 0 && <span className="acp-tab-count">{agency.fieldNotes.length}</span>}
                   </button>
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={() => setActiveSection(activeSection === 'all' ? 'overview' : 'all')}
-              className={`whitespace-nowrap shrink-0 hidden md:inline-flex px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                activeSection === 'all'
-                  ? 'bg-[#0B1728] text-white'
-                  : 'text-[#53657B] dark:text-slate-400 hover:text-[#14283F] dark:hover:text-white'
-              }`}
-            >
-              {activeSection === 'all' ? 'Showing All Topics' : 'Expand All'}
-            </button>
           </nav>
 
-          {(activeSection === 'overview' || activeSection === 'all') && (
-            <AgencyIntelligenceOverview
-              agency={agency}
-              onOpenSources={openProfileSources}
-              onNavigateSection={navigateProfileSection}
-            />
+          {activeSection === 'overview' && (
+            <ProfileCommandOverview agency={agency} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
+              <AgencyIntelligenceBrief
+                view="overview"
+                agency={agency}
+                renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />}
+                onOpenSources={openProfileSources}
+              />
+              <details className="acp-disclosure" data-testid="details-deal-story">
+                <summary>Deal story &amp; discovery playbook<ChevronDown aria-hidden="true" className="h-4 w-4" /></summary>
+                <div id="legacy-meeting-playbook-section" className="scroll-mt-32">
+                  <DealStoryBriefingView agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
+                </div>
+              </details>
+            </ProfileCommandOverview>
+          )}
+
+          {activeSection !== 'overview' && (
+            <header className="acp-section-intro" data-section={activeSection} data-testid="profile-section-intro">
+              <h2>{PROFILE_SECTIONS.find((tab) => tab.id === activeSection)?.label}</h2>
+              <p>{PROFILE_SECTIONS.find((tab) => tab.id === activeSection)?.purpose}</p>
+            </header>
+          )}
+
+          {activeSection === 'equipment' && (
+            <AgencyIntelligenceBrief view="equipment" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
+          )}
+          {activeSection === 'purchasing' && (
+            <AgencyIntelligenceBrief view="purchasing" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
+          )}
+          {activeSection === 'operations' && (
+            <AgencyIntelligenceBrief view="operations" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
           )}
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
-          {showSection('leadership') && (
-            <section className="pi-surface p-6 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-4">
-                <div>
-                    <h2 className="pi-section-heading">
-                    <DataLabel kind="contact">Decision Makers &amp; Command Directory</DataLabel>
-                  </h2>
-                  <p className="pi-supporting mt-0.5">
-                    Names and roles reflect the available agency record; confirm current command details directly with the agency.
-                  </p>
-                </div>
-                {agency.officialWebsite && (
-                  <a
-                    href={agency.officialWebsite}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF3FE] dark:bg-blue-950/60 text-[#285EE8] dark:text-blue-400 hover:underline inline-flex items-center gap-1.5"
-                  >
-                    <span>Open agency website</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </div>
+          {showSection('leadership') && <DecisionMakerDirectory agency={agency} />}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {hasAgencyFactEvidence(agency, 'decisionMakers')
-                  ? agency.keyContacts.map((contact) => (
-                  <div
-                    key={contact.id}
-                    className="p-4 rounded-xl bg-[#F5F7FA] dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#285EE8] dark:text-blue-400 font-semibold">
-                        {contact.role}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>Roster source reviewed</span>
-                      </span>
-                    </div>
-                    <div className="text-base font-bold text-[#14283F] dark:text-white">
-                      {contact.name}
-                    </div>
-                    <div className="text-[#53657B] dark:text-slate-300 font-medium">
-                      {contact.title}
-                    </div>
-                    <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400 space-y-1">
-                      <div>HQ: <strong className="text-[#14283F] dark:text-slate-200">{contact.headquartersAddress || agency.address}</strong></div>
-                      <div>Source: <a href={agency.factEvidence?.decisionMakers?.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-700 hover:underline dark:text-blue-300">{agency.factEvidence?.decisionMakers?.sourceName}</a></div>
-                    </div>
-                  </div>
-                ))
-                  : (
-                    <div className="profile-not-reported col-span-full rounded-lg border p-4 text-sm">
-                      Not reported in the current agency record.
-                    </div>
-                  )}
-              </div>
-            </section>
-          )}
-
-          {/* 1. Executive Deal Story & Conversion Playbook Section */}
-          {showSection('deal_story') && (
-            <div id="legacy-meeting-playbook-section" className="scroll-mt-32">
-              <DealStoryBriefingView
-                agency={agency}
-                variant="full"
-                onOpenDossier={() => setShowDossierModal(true)}
-              />
-            </div>
-          )}
-
+          {showSection('battlecard') && (<ProfileDetail testId="detail-battlecard" icon={Scale} tone="navy" kind="reference" title="Head-to-head comparison" summary={`Recorded incumbent ${agency.installedFleet.defibBrand} vs. benchmark alternative · manufacturer claims, not agency outcomes`}>
           {/* 2. Competitive Battlecard & Head-to-Head Spec Matrix Section */}
           {showSection('battlecard') &&
           !(
@@ -1835,9 +1665,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           ) : showSection('battlecard') && (
             <CompetitiveBattlecardView agency={agency} variant="full" />
           )}
+          </ProfileDetail>)}
 
+                  {showSection('apparatus') && (<ProfileDetail testId="detail-apparatus" icon={Truck} tone="teal" kind="reported" defaultOpen title="Apparatus & receiving hospitals" summary="Vehicle breakdown, trauma and STEMI transport logistics">
           {/* Granular Apparatus Vehicle Fleet, Hospital Transport Logistics & Multi-Year FEMA Grant History */}
-          {showSection('fleet') &&
+          {showSection('apparatus') &&
           !(
             hasAgencyFactEvidence(agency, 'apparatusBreakdown') &&
             hasAgencyFactEvidence(agency, 'receivingHospitalStemi')
@@ -1845,7 +1677,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
               Detailed fleet and receiving-hospital values are not listed in this account record.
             </div>
-          ) : showSection('fleet') && agency.apparatusFleet && agency.hospitalLogistics && (
+          ) : showSection('apparatus') && agency.apparatusFleet && agency.hospitalLogistics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Granular Apparatus Vehicle Breakdown */}
               <section className="bg-white rounded-xl border border-[#E5E4DF] p-6 shadow-[0_1px_3px_rgba(17,24,39,0.03)] space-y-4">
@@ -1922,7 +1754,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </section>
             </div>
           )}
+          </ProfileDetail>)}
 
+                {showSection('clinical') && (<ProfileDetail testId="detail-clinical" icon={HeartPulse} tone="red" kind="reported" title="Clinical performance & quality measures" summary="Survival funnel, quality measures and protocol alignment. Modeled uplift is labeled and never an achieved outcome.">
         {/* SECTION: CLINICAL EMERGENCY PERFORMANCE, QUALITY & PATIENT OUTCOMES */}
         {showSection('clinical') &&
           !(
@@ -1934,11 +1768,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           ) : showSection('clinical') && (
           <div className="space-y-6">
-            {/* Interactive Longitudinal Performance & Survival Funnel Visualizer */}
-            <ResuscitationSurvivalFunnel agency={agency} />
-
-            {/* Interactive NEMSQA, AHA Mission: Lifeline & CARES Quality Uplift Simulator */}
-            <QualityScorecard agency={agency} onOpenRfpGenerator={onOpenRfpGenerator} />
+            {/* Reported measures only. The legacy survival funnel and quality simulator substituted
+                default values and projected survivors, so they are not shown on agency profiles. */}
+            <ClinicalMeasures agency={agency} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
@@ -2125,7 +1957,29 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </section>
           </div>
         )}
+        </ProfileDetail>)}
 
+                {activeSection === 'medicare' && (
+          <FinancialIntelligence
+            agency={agency}
+            mode={profileServiceMode}
+            tcoModel={tcoModel}
+            benchmarkMatched={Boolean(matchedBenchmarkId)}
+            selectedBenchmarkId={effectiveBenchmarkId}
+            onSelectBenchmark={setSelectedBenchmarkId}
+            includedUnits={comparisonUnits}
+            onIncludedUnits={setIncludedUnits}
+            unitMsrp={customUnitMsrp}
+            tradeInPerUnit={customTradeInCredit}
+            capturePct={customDenialCapturePct}
+            onUnitMsrp={setCustomUnitMsrp}
+            onTradeIn={setCustomTradeInCredit}
+            onCapturePct={setCustomDenialCapturePct}
+            recoveryPool={actuarialForecast.hasRecoveryInputs ? (agency.cmsData.medicareDeniedAmountAnnual ?? null) : null}
+          />
+        )}
+
+        {showSection('billing') && (<ProfileDetail testId="detail-hcpcs" icon={FileText} tone="blue" kind="reported" title="HCPCS procedure breakdown & GADCS status" summary="Procedure-level claim records where a CMS source is attached">
         {/* SECTION: INSURANCE OUTCOMES (MEDICARE, MEDICAID, COMMERCIAL, SELF-PAY) & DENIALS / RECOVERABLE */}
         {showSection('billing') && !hasAgencyFactEvidence(agency, 'cmsClaims') ? (
           <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
@@ -2146,127 +2000,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <span className="text-xs font-semibold text-slate-700">
                 GADCS Status: <strong className="text-[#0F172A]">{agency.cmsData.gadcsReportingStatus || 'Not reported'}</strong> · Cost-to-Charge Ratio: <strong className="font-mono tabular-nums text-[#0F172A]">{reportMetric(agency.qualityMetrics.gadcsCostToChargeRatio)}</strong>
               </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Left 6 Cols: 4-Tier Insurance Payer Outcomes */}
-              <div className="lg:col-span-6 space-y-4">
-                <h3 className="text-xs font-bold text-slate-600">
-                  <DataLabel kind="claims">Insurance Payer Mix &amp; Reimbursement Outcomes</DataLabel>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#0F172A] text-sm">01. Medicare</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.medicarePayerPct, '%')} of Runs</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#0F172A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.medicarePayerPct) ? agency.cmsData.medicarePayerPct : 0}%` }} />
-                    </div>
-                    <div className="pt-1 text-slate-600 space-y-0.5 font-mono tabular-nums">
-                      <div>Annual Billed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicareBilledAnnual)}</strong></div>
-                      <div>Annual Allowed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicareAllowedAnnual)}</strong></div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#0F172A] text-sm">02. Medicaid</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.medicaidPayerPct, '%')} of Runs</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.medicaidPayerPct) ? agency.cmsData.medicaidPayerPct : 0}%` }} />
-                    </div>
-                    <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Annual Billed: <strong className="text-[#0F172A]">{reportCurrency(agency.cmsData.medicaidBilledAnnual)}</strong></div>
-                      <div>Supplemental GEMT / IGT Eligible</div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#0F172A] text-sm">03. Commercial Insurance</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-[#1E3A8A]">{reportMetric(agency.cmsData.commercialPayerMixPct, '%')} of Runs</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#1E3A8A] h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.commercialPayerMixPct) ? agency.cmsData.commercialPayerMixPct : 0}%` }} />
-                    </div>
-                    <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div className="font-mono tabular-nums">Underpayment Gap: <strong className="text-[#0F172A]">{reportCurrency(agency.qualityMetrics.commercialUnderpaymentPerTrip)} / trip</strong></div>
-                      <div>Out-of-Network Balance Billing Protected</div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#0F172A] text-sm">04. Self-Pay / Uninsured</span>
-                      <span className="text-sm font-bold font-mono tabular-nums text-amber-700">{reportMetric(agency.cmsData.selfPayPayerPct, '%')} of Runs</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-600 h-full rounded-full" style={{ width: `${hasReportedValue(agency.cmsData.selfPayPayerPct) ? agency.cmsData.selfPayPayerPct : 0}%` }} />
-                    </div>
-                    <div className="pt-1 text-slate-600 space-y-0.5">
-                      <div>High bad-debt write-off exposure</div>
-                      <div>Eligible for automated insurance discovery</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right 6 Cols: Claims Denials & Recoverable Revenue Breakdown */}
-              <div className="lg:col-span-6 space-y-4">
-                <h3 className="text-xs font-bold text-slate-600">
-                  <DataLabel kind="claims">Medicare Billing &amp; Revenue Cycle Analysis</DataLabel>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="hidden">
-                    <div className="text-xs font-semibold text-slate-600">Medicare claim summary</div>
-                    <div className="text-sm font-semibold text-slate-700">{medicareDenialMetric ? 'Claim summary attached' : 'No claim summary attached'}</div>
-                    <div className="text-[11px] text-slate-600">
-                      {medicareDenialMetric
-                        ? `${medicareDenialMetric.deniedClaimCount.toLocaleString()} denied / ${medicareDenialMetric.adjudicatedClaimCount.toLocaleString()} adjudicated · ${medicareDenialMetric.reportingPeriod} · ${medicareDenialMetric.claimScope} · ${medicareDenialMetric.denialDefinition}`
-                        : 'No exact-NPI claim summary is attached.'}
-                    </div>
-                    {medicareDenialMetric?.sourceUrl ? (
-                      <a href={medicareDenialMetric.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-700 underline underline-offset-2">
-                        Source: {medicareDenialMetric.source}{medicareDenialMetric.sourceReference ? ` · ${medicareDenialMetric.sourceReference}` : ''}
-                      </a>
-                    ) : medicareDenialMetric && (
-                      <p className="text-[11px] text-slate-600">
-                        Source: {medicareDenialMetric.source}{medicareDenialMetric.sourceReference ? ` · ${medicareDenialMetric.sourceReference}` : ''}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                    <div className="text-xs font-semibold text-slate-600">Net Annual Recoverable Revenue</div>
-                    <div className="text-3xl font-bold font-mono tabular-nums text-emerald-700">
-                      Not reported with a reproducible method
-                    </div>
-                    <div className="text-[11px] text-slate-600">
-                      Recapturable via ZOLL AR Boost &amp; ePCR NEMSIS validation
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2">
-                  <div>
-                    <span className="text-slate-500 font-medium">Primary Claim Denial Cause: </span>
-                    <strong className="text-[#0F172A]">{agency.cmsData.topDenialReason || 'Not reported'}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Current Revenue Cycle Software in Use: </span>
-                    <strong className="text-[#0F172A]">{agency.installedFleet.billingSoftware || 'Not reported'}</strong> · Supplied by: <strong className="text-[#0F172A]">{suppliers.billingSupplier || 'Not reported'}</strong>
-                  </div>
-                  <p className="text-slate-600 leading-relaxed pt-2 border-t border-slate-200">
-                    No agency-specific recovery amount is shown because its inputs and calculation method are not attached to this record.
-                  </p>
-                </div>
-              </div>
-
             </div>
 
             {/* Granular HCPCS Procedure Breakdown & CMS GADCS 10% Penalty Risk Table */}
@@ -2326,7 +2059,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </section>
         )}
+        </ProfileDetail>)}
 
+                {showSection('suppliers') && <ProcurementTimeline agency={agency} />}
+        {showSection('suppliers') && (<ProfileDetail testId="detail-suppliers" defaultOpen icon={PackageCheck} tone="teal" kind="reported" title="Supplier, contract & procurement audit records" summary="Supplier records, procurement document IDs and incumbent-versus-alternative matrix. Brand is not supplier.">
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
           {showSection('suppliers') &&
           !(
@@ -2642,80 +2378,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </div>
 
-            {/* MODALITY 4: INCUMBENT FDA RECALL EXPOSURE & 5-YEAR FLEET TCO COMPARISON */}
-            {tcoModel ? (
-            <div className="pt-4 border-t border-slate-200 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-700" />
-                    <span>04. Incumbent FDA Recall Alert &amp; 5-Year Total Cost of Ownership (TCO) Comparison ({tcoModel.unitCount} Units)</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5">
-                    Active Alert: <strong className="font-mono text-rose-700">{tcoModel.matchedIntel.fdaRecallId}</strong> ({tcoModel.matchedIntel.eolStatus}) — {tcoModel.matchedIntel.fdaRecallSummary}
-                  </p>
-                </div>
-                <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                  Estimated 5-Yr Net ZOLL Lifecycle Savings: {formatCurrency(tcoModel.totalSavingsIncludingTradeIn)}
-                </span>
-              </div>
-
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                      <th className="py-2.5 px-4"><DataLabel kind="cost">5-Year Lifecycle Cost Driver ({tcoModel.unitCount} Frontline Units)</DataLabel></th>
-                      <th className="py-2.5 px-4 text-right">Incumbent ({tcoModel.incumbentModel})</th>
-                      <th className="py-2.5 px-4 text-right">ZOLL ({tcoModel.zollModel})</th>
-                      <th className="py-2.5 px-4 text-right">5-Yr Savings Delta</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    <tr>
-                      <td className="py-2.5 px-4 font-medium text-[#0F172A]">OEM Preventive Maintenance &amp; Service Contracts (60 Mos)</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table">{formatCurrency(tcoModel.incumbentServiceTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table font-semibold">{formatCurrency(tcoModel.zollServiceTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.incumbentServiceTotal - tcoModel.zollServiceTotal, { compact: false })}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-2.5 px-4 font-medium text-[#0F172A]">Smart Battery Fleet Lifecycle Replacements</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table">{formatCurrency(tcoModel.incumbentBatteryTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table font-semibold">{formatCurrency(tcoModel.zollBatteryTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.incumbentBatteryTotal - tcoModel.zollBatteryTotal, { compact: false })}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-2.5 px-4 font-medium text-[#0F172A]">Electrodes, Capnography &amp; Resuscitation Consumables</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table">{formatCurrency(tcoModel.incumbentConsumablesTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table font-semibold">{formatCurrency(tcoModel.zollConsumablesTotal, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.incumbentConsumablesTotal - tcoModel.zollConsumablesTotal, { compact: false })}</td>
-                    </tr>
-                    <tr className="bg-emerald-50/40">
-                      <td className="py-2.5 px-4 font-semibold text-[#0F172A]">Illustrative trade-in credit assumption, not a quote ({formatCurrency(tcoModel.matchedIntel.zollTradeInCreditPerUnit, { compact: false })}/unit)</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-slate-400">$0</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">-{formatCurrency(tcoModel.totalTradeInCredit, { compact: false })}</td>
-                      <td className="py-2.5 px-4 text-right pi-metric-table text-emerald-700 font-bold">+{formatCurrency(tcoModel.totalTradeInCredit, { compact: false })}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                Illustrative benchmark, not reported agency spending. Inputs: {reportMetric(tcoModel.unitCount)} reported defibrillator units and five years; benchmark {tcoModel.incumbentModel} vs {tcoModel.zollModel}; per-unit annual service {reportCurrency(tcoModel.matchedIntel.incumbentAnnualServicePerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries {reportCurrency(tcoModel.matchedIntel.incumbentBattery5YrCostPerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables {reportCurrency(tcoModel.matchedIntel.incumbentConsumableAnnualPerUnit)} vs {reportCurrency(tcoModel.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption {reportCurrency(tcoModel.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: five-year service, battery, and consumables cost difference plus modeled trade-in credit.
-              </p>
-
-              {/* Interactive 5-Year Cumulative TCO Savings Area Chart */}
-              <TcoCumulativeSavingsChart agency={agency} className="mt-4" />
-            </div>
-            ) : (
-              <div role="status" className="pt-4 border-t border-slate-200 text-xs text-amber-800">
-                {hasReportedValue(agency.installedFleet.defibUnitsCount)
-                  ? 'TCO estimate not calculated: 0 defibrillator units reported.'
-                  : 'TCO estimate not calculated: defibrillator unit count not reported.'}
-              </div>
-            )}
           </section>
         )}
+        </ProfileDetail>)}
 
+                {showSection('fleet') && (<ProfileDetail testId="detail-device-fleet" defaultOpen icon={Layers} tone="blue" kind="reported" title="Device-level fleet & maintenance contract records" summary="Unit counts, warranty documents and frontline apparatus maintenance detail">
         {/* SECTION: ACTIVE DEFIBRILLATOR & BIOMEDICAL FLEET + FRONTLINE APPARATUS & MAINTENANCE CONTRACTS */}
         {showSection('fleet') &&
           hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
@@ -2810,7 +2477,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </section>
           </div>
         )}
+        </ProfileDetail>)}
 
+                {activeSection === 'equipment' && benchmarkIntel && (
+          <ProfileDetail testId="detail-recall-reference" icon={ShieldAlert} tone="red" kind="reference" title={`Benchmark reference: ${benchmarkIntel.incumbentModel}`} summary="Model-level regulatory and lifecycle notes. Confirm that the agency's units are affected before raising it.">
+            <dl className="acp-kv">
+              <div><dt>Lifecycle status</dt><dd>{benchmarkIntel.eolStatus}</dd></div>
+              <div><dt>Lifecycle note</dt><dd>{benchmarkIntel.eolTimelineNote}</dd></div>
+              <div><dt>Regulatory record</dt><dd>{benchmarkIntel.fdaRecallId} · {benchmarkIntel.fdaRecallClass}</dd></div>
+              <div><dt>Summary</dt><dd>{benchmarkIntel.fdaRecallSummary}</dd></div>
+            </dl>
+            <p className="acp-kv-note">Applies to the model family recorded as {agency.installedFleet.defibBrand}; serial-level applicability is not known. Library reference, not an agency source.</p>
+          </ProfileDetail>
+        )}
+        {showSection('software') && (<ProfileDetail testId="detail-software" icon={Cpu} tone="navy" kind="reported" title="Dispatch, ePCR & billing systems" summary={[agency.installedFleet.dispatchCadVendor, agency.installedFleet.epcrCadSoftware, agency.installedFleet.billingSoftware].filter((v) => v && v !== 'Not reported').join(' · ') || 'No systems recorded'}>
         {/* SECTION: CAD, ePCR & BILLING SOFTWARE */}
         {showSection('software') && (
           <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
@@ -2865,7 +2545,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </section>
         )}
+        </ProfileDetail>)}
 
+                {showSection('grants') && (<ProfileDetail testId="detail-grants" icon={Award} tone="teal" kind="reported" title="Grants, cooperative contracts & jurisdiction" summary={`${(agency.femaGrantHistory ?? []).length} grant record(s) · cooperative purchasing vehicles · service demographics`}>
         {/* SECTION: FEDERAL FEMA GRANT READINESS & FUNDING STATUS + JURISDICTION & SERVICE DEMOGRAPHICS */}
         {showSection('grants') && !hasAgencyFactEvidence(agency, 'federalGrant') ? (
           <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
@@ -3126,106 +2808,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           </div>
         )}
+        </ProfileDetail>)}
 
-        {/* SECTION: FIELD NOTES & CRM INTERACTION LOG */}
-        {showSection('notes') && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Left: Past Notes History (7 cols) */}
-            <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
-              <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#1E3A8A]" />
-                <span>Field Interaction History</span>
-              </h2>
-
-              {agency.fieldNotes.length === 0 ? (
-                <div className="text-xs text-slate-500 py-6 text-center">
-                  No notes recorded yet. Use the form on the right to log your first interaction.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {agency.fieldNotes.map(note => (
-                    <div key={note.id} className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#0F172A]">{note.meetingType}</span>
-                        <span className="text-[11px] font-mono tabular-nums text-slate-500">{note.date} · {note.repName}</span>
-                      </div>
-                      <p className="text-slate-700 leading-relaxed">{note.notes}</p>
-                      {note.nextAction && (
-                        <div className="text-[11px] text-[#0F172A] bg-white border border-slate-200 rounded-md p-2 mt-1">
-                          <strong>Next Action:</strong> {note.nextAction} {note.dueDate && `(Due ${note.dueDate})`}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Right: Quick Note Logger Form (5 cols) */}
-            <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
-              <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#1E3A8A]" />
-                <span>Log New Interaction</span>
-              </h2>
-
-              <form onSubmit={handleNoteSubmit} className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Meeting / Call Type
-                  </label>
-                  <select
-                    value={meetingType}
-                    onChange={(e) => setMeetingType(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#0F172A] focus:outline-none focus:border-[#1E3A8A]"
-                  >
-                    <option value="On-Site Station Visit">On-Site Station Visit</option>
-                    <option value="Phone Call">Phone Call</option>
-                    <option value="Virtual Demo">Virtual Demo</option>
-                    <option value="RFP Review">RFP Review</option>
-                    <option value="Ride-Along">Ride-Along</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Meeting Notes
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Describe discussion, chief priorities, clinical interest..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-[#0F172A] placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Next Follow-up Action
-                  </label>
-                  <input
-                    type="text"
-                    value={nextAction}
-                    onChange={(e) => setNextAction(e.target.value)}
-                    placeholder="e.g. Deliver pre-emptive RFP specification"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-[#0F172A] placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!noteText.trim()}
-                  className="w-full py-2 px-4 rounded-lg text-xs font-semibold bg-[#0F172A] text-white hover:bg-[#1E3A8A] disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Save Interaction to Cloud CRM</span>
-                </button>
-              </form>
-            </div>
-
-          </div>
+                {activeSection === 'evidence' && (
+          <section className="acp-fact-review" aria-label="Fact review" data-testid="section-fact-review">
+            <FactReviewPanel key={agency.id} agency={agency} />
+          </section>
         )}
+
+        {/* SECTION: FIELD NOTES */}
+        {showSection('notes') && <FieldNotesPanel key={agency.id} agency={agency} onAdd={onAddFieldNote} />}
 
         {/* TOPIC 7: EVIDENCE & SOURCES PROVENANCE LEDGER */}
         {showSection('evidence_ledger') && (
@@ -3493,7 +3085,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <td>
                       <button
                         type="button"
-                        onClick={() => setShowActuarialMath(true)}
+                        onClick={() => navigateProfileSection('medicare')}
                         className="text-[#285EE8] hover:underline font-semibold cursor-pointer"
                       >
                         Adjust Assumptions
@@ -3534,6 +3126,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </section>
         )}
 
+        {activeSection === 'evidence' && (
+          <details className="acp-disclosure" data-testid="details-complete-agency-record">
+            <summary>Complete agency record &amp; source associations<ChevronDown aria-hidden="true" className="h-4 w-4" /></summary>
+            <AgencyIntelligenceOverview agency={agency} onOpenSources={openProfileSources} onNavigateSection={navigateProfileSection} />
+          </details>
+        )}
+
+        {(activeSection === 'medicare' || activeSection === 'evidence') && (
         <section
           aria-label="Additional profile details"
           className="pi-surface space-y-4 p-4 sm:p-5"
@@ -3552,6 +3152,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             data-testid="profile-bottom-details"
           />
         </section>
+        )}
 
       </div>
       </main>
@@ -3634,7 +3235,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <button
               type="button"
               onClick={() => {
-                setActiveSection('overview');
+                if (!changeSection('overview')) return;
                 setTimeout(() => {
                   const el = document.getElementById('meeting-preparation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });

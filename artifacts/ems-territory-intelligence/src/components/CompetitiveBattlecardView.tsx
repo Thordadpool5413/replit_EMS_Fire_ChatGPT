@@ -257,7 +257,7 @@ export const CompetitiveBattlecardView: React.FC<CompetitiveBattlecardViewProps>
                 $0 (Stryker proprietary lock-in)
               </td>
               <td className="py-3 px-4 font-mono text-emerald-700 dark:text-emerald-400 bg-blue-50/30 dark:bg-blue-950/10 font-bold tabular-nums">
-                ${activeIntel.zollTradeInCreditPerUnit}/unit guaranteed credit
+                ${activeIntel.zollTradeInCreditPerUnit}/unit illustrative trade-in assumption, not a quote
               </td>
             </tr>
             <tr>

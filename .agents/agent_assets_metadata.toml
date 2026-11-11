@@ -98,3 +98,17 @@ mtime_ms = 1793569366237
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/7319d5da-50ba-43e5-8977-5a3178aa57f8/a88933b2-db04-405b-b657-773ef7d248d8"
 storage_version_token = "1793569409884057"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HoOO7pblgEiLjTaKkF-Rq"
+uri = "file://generated-artifacts/agency-transformation/agency-profile-implementation-report.html"
+type = "html"
+title = "Agency profiles — implementation and QA report"
+description = "Actual desktop and phone before/after screenshots, changed components, 41 passing tests, browser findings, scope and known limitations."
+logical_id = "442ae778-6b37-4420-a977-665ae093c68c"
+content_hash = "sha256:9c12be6c402ece02551bd25c87a601d847948cf6224404ead35ed7589a223704"
+size = 3007746
+mtime_ms = 1794359122277
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/442ae778-6b37-4420-a977-665ae093c68c/31867ec2-77ce-4b56-883d-7e4f651b1411"
+storage_version_token = "1794359183237319"
+content_type = "text/html"

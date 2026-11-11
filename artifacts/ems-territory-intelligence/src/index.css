@@ -35,6 +35,7 @@
 @import "./styles/territory/theme-bridge.css";
 @import "./styles/profile/theme-bridge.css";
 @import "./styles/profile/theme-bridge-brief.css";
+@import "./styles/profile/theme-bridge-command.css";
 @import "./styles/shared/contracts.css";
 @import "./styles/shell/contracts.css";
 @import "./styles/county/contracts.css";

@@ -480,7 +480,7 @@ export interface Agency {
     awardAmount: number;
     localMatchAmount: number | null;
     federalSharePct: number | null;
-    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible';
+    status: 'Awarded & Disbursed' | 'Awarded - Active Spending' | 'Application Pending' | 'Eligible' | 'Award recorded — disbursement not reported';
     applicationRound?: string;
   }>;
 

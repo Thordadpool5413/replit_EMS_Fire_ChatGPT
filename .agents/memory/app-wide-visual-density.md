@@ -57,9 +57,9 @@ The sidebar needs even layout, not merely enough space to fit. Keep navigation a
 
 **How to apply:** Check actual row and icon geometry as well as overflow. Avoid mixing cramped half-width utility controls with full-width destinations or introducing large gaps between related groups. Preserve the logo.
 
-County cards should communicate a visual story through related groups, rather than a flat inventory of numbers. Use the user's reading order: county identity → population and response → care access → risk → sources, with community context and supporting geography clearly labeled and all facts visible. Balance the county preview with the adjacent state map.
+County cards should communicate a visual story through related groups, rather than a flat inventory of numbers. Apply compact sizing to all county cards, not only individual provider profiles or the selected county. Use the user's reading order: county identity → population and response → care access → risk → sources, with community context and supporting geography clearly labeled and all facts visible. Balance the county preview with the adjacent state map.
 
-**Why:** The user repeatedly rejected both multicolor metric grids and compressed inline numbers, then specifically requested a visual story of the county's data and a preview sized to match its map.
+**Why:** The user repeatedly rejected both multicolor metric grids and compressed inline numbers, then specifically requested a visual story of the county's data and a preview sized to match its map. They reiterated that “all of the county cards are still to big.”
 
 **How to apply:** Group related figures with clear captions and a deliberate reading order. Do not mistake smaller text or more decorative color for better hierarchy, and verify the actual map/preview geometry at laptop widths.
 

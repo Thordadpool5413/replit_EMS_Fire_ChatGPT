@@ -2,20 +2,20 @@
    -> FEMA band -> places ledger -> actions. Shared label gutter aligns secondary groups.
    Type: name 18 / headline 22 / value 14.5 / label 13 / meta 12.5. */
 .cv-panel.county-inspector-panel.ci {
-  --ci-cardiac: #b42332; --ci-pad: .9rem; --ci-gutter: 5.5rem;
+  --ci-cardiac: #b42332; --ci-pad: .6rem; --ci-gutter: 4rem;
   container-type: inline-size; display: flex; flex-direction: column; gap: 0; padding: 0 !important; min-width: 0;
   box-shadow: none !important; font-family: 'Instrument Sans Variable', 'Manrope Variable', system-ui, sans-serif; font-size: 14px; line-height: 1.4;
 }
 .dark .ci { --ci-cardiac: #ff8a94; }
 .ci :is(p, dl, dd, dt, h4, h5) { margin: 0; }
-.ci > * { min-width: 0; box-sizing: border-box; padding: .45rem var(--ci-pad); }
+.ci > * { min-width: 0; box-sizing: border-box; padding: .25rem var(--ci-pad); }
 .ci > * + * { border-top: 1px solid var(--pi-border); }
 
 /* Identity bar */
-.ci .ci-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: .05rem; padding-block: .45rem; background: #2456c8; color: #fff; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.ci .ci-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: .05rem; padding-block: .25rem; background: #2456c8; color: #fff; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .ci .ci-kicker { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #c9d9ff; }
-.ci .ci-name { font-family: 'Manrope Variable', Manrope, sans-serif; font-size: 18px; font-weight: 750; line-height: 1.2; letter-spacing: -.01em; color: #fff; overflow-wrap: anywhere; }
-.ci .ci-ident { display: flex; flex-wrap: wrap; gap: .1rem 1.1rem; margin-top: .2rem; padding-top: .2rem; border-top: 1px solid rgba(255,255,255,.18); font-size: 13px; font-variant-numeric: tabular-nums; }
+.ci .ci-name { font-family: 'Manrope Variable', Manrope, sans-serif; font-size: 16px; font-weight: 750; line-height: 1.2; letter-spacing: -.01em; color: #fff; overflow-wrap: anywhere; }
+.ci .ci-ident { display: flex; flex-wrap: wrap; gap: .1rem .6rem; margin-top: .1rem; padding-top: .1rem; border-top: 1px solid rgba(255,255,255,.18); font-size: 13px; font-variant-numeric: tabular-nums; }
 .ci .ci-ident > div { display: flex; align-items: baseline; gap: .35rem; min-width: 0; }
 .ci .ci-ident dt { color: #d6e3ff; }
 .ci .ci-ident dd { color: #fff; font-weight: 600; overflow-wrap: anywhere; }
@@ -30,7 +30,7 @@
 .ci .ci-ico { width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--pi-topic-operations); }
 .ci .ci-stat:first-child .ci-ico { color: var(--pi-topic-community); }
 .ci .ci-stat--cardiac .ci-ico { color: var(--ci-cardiac); }
-.ci .ci-stats dd { align-self: end; font-size: 22px; font-weight: 700; line-height: 1.1; letter-spacing: -.015em; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ci .ci-stats dd { align-self: end; font-size: 18px; font-weight: 700; line-height: 1.1; letter-spacing: -.015em; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ci .ci-stats dd small { font-size: 12.5px; font-weight: 500; color: var(--pi-text-secondary); letter-spacing: 0; margin-left: .1rem; }
 .ci .ci-na { font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--pi-text-secondary); }
 
@@ -44,7 +44,7 @@
 .ci .ci-fema-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1.1rem; font-size: 12.5px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
 
 .ci .ci-fema-row strong { color: var(--pi-text-primary); font-weight: 650; font-size: 13.5px; }
-.ci .ci-risk-rating { display: inline-flex; align-items: center; gap: .4rem; flex-basis: 100%; font-size: 15px; font-weight: 700; color: var(--pi-text-primary); }
+.ci .ci-risk-rating { display: inline-flex; align-items: center; gap: .4rem; font-size: 14px; font-weight: 700; color: var(--pi-text-primary); }
 .ci .ci-risk-rating--none { color: var(--pi-text-secondary) !important; font-weight: 600 !important; }
 .ci .ci-swatch { width: .8rem; height: .8rem; flex: none; border-radius: 3px; background: var(--risk, #94a3b8); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
 .ci .ci-fema-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .15rem .8rem; margin-top: .1rem; padding-top: .25rem; border-top: 1px dotted var(--pi-border); }
@@ -56,9 +56,12 @@
 .ci .ci-place-list { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 1.25rem; list-style: none; margin: 0; padding: 0; }
 .ci .ci-place-item { min-width: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: .6rem; border-bottom: 1px dotted var(--pi-border); }
 @container (min-width: 330px) { .ci .ci-place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .8rem; } }
+@container (min-width: 260px) and (max-width: 420px) {
+  .ci .ci-place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .6rem; }
+}
 .ci .ci-place { display: inline-flex; align-items: center; gap: .4rem; justify-self: start; min-height: 24px; padding: 0 .15rem; border-radius: .25rem; background: transparent; cursor: pointer; text-align: left; transition: background-color 140ms ease; }
 .ci .ci-place:hover { background: var(--pi-action-subtle); }
-.ci .ci-place-name { font-size: 14px; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--pi-action) 40%, transparent); overflow-wrap: anywhere; }
+.ci .ci-place-name { font-size: 13px; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--pi-action) 40%, transparent); overflow-wrap: anywhere; }
 .ci .ci-tag { padding: 0 .35rem; border: 1px solid var(--pi-border); border-radius: 999px; font-size: 11.5px; font-weight: 650; color: var(--pi-text-secondary); }
 .ci .ci-place-sub { margin-left: auto; text-align: right; font-size: 12.5px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ci .ci-zips { display: grid; gap: 0; margin-top: .3rem; }
@@ -79,7 +82,7 @@
 @container (max-width: 420px) {
   .ci .ci-stats { column-gap: .55rem; }
   .ci .ci-stat + .ci-stat { padding-left: .55rem; }
-  .ci .ci-stats dd { font-size: 19px; }
+  .ci .ci-stats dd { font-size: 17px; }
   .ci .ci-fema-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ci .ci-fema-facts > div:first-child { grid-column: 1 / -1; }
 }
@@ -89,7 +92,7 @@
   .ci .ci-stat + .ci-stat { border-left: 0; padding-left: 0; }
 }
 @media (max-width: 767px) {
-  .ci { --ci-pad: .75rem; }
+  .ci { --ci-pad: .6rem; }
   .ci .ci-place, .ci .ci-link { min-height: 28px; }
   .ci .ci-btn { min-height: 44px; width: 100%; justify-content: center; }
 }
@@ -128,7 +131,7 @@
 
 /* Selected-county map + places panel. */
 @media screen and (min-width: 1024px) {
-  [data-laptop-density="compact"] .county-inspector-panel.ci { --ci-pad: .65rem; }
+  [data-laptop-density="compact"] .county-inspector-panel.ci { --ci-pad: .6rem; }
   [data-laptop-density="compact"] .ci > * { padding-block: .3rem; }
   [data-laptop-density="compact"] .ci .ci-head { padding-block: .35rem; }
   [data-laptop-density="compact"] .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport {

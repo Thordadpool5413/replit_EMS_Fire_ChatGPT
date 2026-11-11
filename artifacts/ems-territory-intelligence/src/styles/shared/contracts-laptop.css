@@ -1,0 +1,64 @@
+/* Owner: shared. Cascade phase: contracts.
+   Density is opt-in: Home and the navigation/logo never acquire this marker.
+   No zoom/transforms, global root-font changes, clipped content or print changes.
+   Phone and narrow-window layouts retain their existing spacing and targets.
+   Width, not pointer type, includes touch/keyboard-only laptops consistently. */
+@media screen and (min-width: 1024px) {
+  .workspace-grid-shell[data-laptop-density="compact"] {
+    padding: .5rem 1rem 1rem !important;
+    gap: .5rem !important;
+  }
+
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.p-8, .p-10, .p-12, [class~="sm:p-8"], [class~="lg:p-8"]) {
+    padding: 1rem !important;
+  }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.p-6, [class~="sm:p-6"], [class~="md:p-6"], [class~="lg:p-6"], .p-5) {
+    padding: .75rem !important;
+  }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.p-4, [class~="sm:p-4"], [class~="lg:p-4"], .p-3) {
+    padding: .5rem !important;
+  }
+  [data-laptop-density="compact"] [class~="p-2.5"] { padding: .45rem !important; }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.px-6, .px-8, [class~="sm:px-6"], [class~="lg:px-8"]) {
+    padding-inline: .85rem !important;
+  }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.py-4, .py-5, .py-6, .py-8, [class~="sm:py-6"]) {
+    padding-block: .6rem !important;
+  }
+
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.gap-8, .gap-6, [class~="sm:gap-6"], [class~="lg:gap-6"]) { gap: .75rem !important; }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.gap-5, .gap-4, .gap-3, [class~="sm:gap-4"], [class~="lg:gap-4"]) { gap: .5rem !important; }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.space-y-8, .space-y-6, .space-y-5, .space-y-4) > :not([hidden]) ~ :not([hidden]) {
+    margin-block-start: .65rem !important;
+  }
+  [data-laptop-density="compact"] :is(.workspace-view-container, .workspace-section-grid) { gap: .5rem !important; }
+  [data-laptop-density="compact"] .workspace-cards-grid {
+    gap: .65rem !important;
+  }
+  [data-laptop-density="compact"] > .pi-workspace-tabs { min-height: 2.25rem; margin-bottom: .45rem !important; }
+  [data-laptop-density="compact"] > .pi-workspace-tabs > button {
+    min-height: 2rem !important; padding-block: .25rem !important;
+  }
+
+  /* Reduce oversized display type, not readable labels/body text. */
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.text-5xl, .text-6xl) { font-size: 2rem !important; line-height: 1.15 !important; }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.text-3xl, .text-4xl, [class~="sm:text-4xl"]) { font-size: 1.5rem !important; line-height: 1.2 !important; }
+  :is([data-laptop-density="compact"], body:has([data-laptop-density="compact"]) [role="dialog"])
+  :is(.text-2xl, [class~="sm:text-2xl"]) { font-size: 1.25rem !important; line-height: 1.25 !important; }
+  [data-laptop-density="compact"] .pi-page-title { font-size: 1.35rem !important; }
+
+  /* Mouse controls remain comfortably above the 24px minimum target. */
+  [data-laptop-density="compact"] :is(button, input, select):is(.h-10, .h-11, .h-12, .min-h-11) {
+    height: 2.125rem !important; min-height: 2.125rem !important;
+  }
+}

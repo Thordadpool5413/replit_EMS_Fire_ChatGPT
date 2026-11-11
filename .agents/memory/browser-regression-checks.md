@@ -3,6 +3,12 @@ name: Browser regression checks
 description: Browser automation constraints and conventions for the EMS territory app.
 ---
 
+Disabling touch emulation does not guarantee a fine pointer. Headless Chromium here can report `pointer: none` at laptop widths.
+
+**Why:** A fine-pointer-only density rule appeared unchanged at 1366px in the rendered audit even though the compact marker was present.
+
+**How to apply:** Inspect `matchMedia` when a media rule seems inactive. Use width for desktop layout contracts that must also work on keyboard-only and hybrid laptops; reserve pointer conditions for actual interaction differences.
+
 Check component-level overflow as well as document width; an ancestor with hidden overflow can clip a source table while the page still passes a horizontal-overflow assertion.
 
 **Why:** A county source table visibly lost columns even though the document's measured width fit the laptop viewport.

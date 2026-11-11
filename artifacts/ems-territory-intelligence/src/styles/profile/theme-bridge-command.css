@@ -16,6 +16,23 @@
 }
 .agency-command-profile .profile-workspace { background: var(--acp-bg); color: var(--acp-text); }
 
+@media screen and (min-width: 1024px) {
+  .agency-command-profile[data-laptop-density="compact"] .acp-header {
+    padding: .6rem 1rem .45rem; gap: .4rem .8rem;
+  }
+  .agency-command-profile[data-laptop-density="compact"] .acp-name { font-size: 22px; }
+  .agency-command-profile[data-laptop-density="compact"] .acp-overview { gap: .65rem; }
+  .agency-command-profile[data-laptop-density="compact"] .acp-panel { padding: .6rem .75rem; }
+  .agency-command-profile[data-laptop-density="compact"] .acp-detail-body {
+    padding: .75rem; gap: .65rem;
+  }
+  .agency-command-profile[data-laptop-density="compact"] .acp-disclosure > :not(summary) { padding: .75rem; }
+  .agency-command-profile[data-laptop-density="compact"] .aib { padding: .75rem; }
+  .agency-command-profile[data-laptop-density="compact"] .aib-grid { gap: 1rem; margin-top: .6rem; }
+  .agency-command-profile[data-laptop-density="compact"] .aib-figure { padding-block: .35rem; gap: .2rem; }
+  .agency-command-profile[data-laptop-density="compact"] .aib-num { font-size: 1.25rem; }
+}
+
 /* Region A: header */
 .agency-command-profile .acp-header {
   max-width: 1640px; width: 100%; margin: 0 auto;

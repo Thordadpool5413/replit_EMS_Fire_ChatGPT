@@ -16,6 +16,29 @@
   font-size: 14px; line-height: 1.4; color: var(--pi-text-primary); transition: border-color 160ms ease;
 }
 .dark .county-brief { --cb-cardiac: #ff8a94; }
+@media screen and (min-width: 1024px) {
+  [data-laptop-density="compact"] .county-brief { --cb-pad: .65rem; }
+  [data-laptop-density="compact"] .county-brief .cb-head { padding-block: .4rem; }
+  [data-laptop-density="compact"] .county-brief .cb-group { padding-block: .3rem; }
+  /* Keep all four operational figures on one row at typical half-width laptop sizes. */
+  [data-laptop-density="compact"] .county-brief .cb-group--snapshot .cb-figs {
+    grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: .5rem;
+  }
+  [data-laptop-density="compact"] .county-brief .cb-group--snapshot dt {
+    white-space: normal;
+  }
+  [data-laptop-density="compact"] .county-brief .cb-group--snapshot dd { font-size: 19px; }
+  [data-laptop-density="compact"] .county-brief .cb-group--snapshot .cb-fig + .cb-fig { padding-left: .4rem; }
+  @container (min-width: 381px) {
+    [data-laptop-density="compact"] .county-brief .cb-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    [data-laptop-density="compact"] .county-brief .cb-group--snapshot { grid-column: 1 / -1; }
+    [data-laptop-density="compact"] .county-brief .cb-group--context .cb-figs { grid-template-columns: minmax(0, 1fr); }
+    [data-laptop-density="compact"] .county-brief .cb-group--context:not(.cb-group--access) { border-left: 1px solid var(--cb-hair); }
+  }
+  @container (max-width: 380px) {
+    [data-laptop-density="compact"] .county-brief .cb-group--snapshot .cb-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+}
 .county-brief:hover { border-color: color-mix(in srgb, var(--pi-action) 40%, var(--cb-hair)); }
 .county-brief:focus-within { border-color: var(--pi-action); }
 .county-brief :is(dl, dd, dt, p, h3, h4) { margin: 0; }

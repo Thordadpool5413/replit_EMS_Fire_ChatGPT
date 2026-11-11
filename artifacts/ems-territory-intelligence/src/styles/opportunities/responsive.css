@@ -37,6 +37,21 @@
   }
 }
 
+/* Do not stretch short agency records to the height of the longest record in a row. */
+@media screen and (min-width: 1024px) {
+  [data-laptop-density="compact"] .agency-lead-cards-grid { align-items: start; }
+  [data-laptop-density="compact"] .agency-lead-cards-grid > div {
+    justify-content: flex-start; gap: .4rem !important;
+  }
+  [data-laptop-density="compact"] .agency-lead-cards-grid > div > .agency-card-actions {
+    padding-top: .4rem; gap: .35rem !important;
+  }
+  [data-laptop-density="compact"] .agency-card-actions > select {
+    width: 7.5rem; min-width: 0; max-width: 100%; padding-inline: .4rem;
+  }
+  [data-laptop-density="compact"] .agency-card-actions > div { gap: .25rem !important; }
+}
+
 /* Phone: Opportunities and contract tools get touch-sized controls and readable small text.
    Scoped to the lead-queue/contract workspaces only. */
 @media (max-width: 767px) {

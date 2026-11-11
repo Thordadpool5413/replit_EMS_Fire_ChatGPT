@@ -127,6 +127,20 @@
 @media (forced-colors: active) { .cv-county-label { fill: CanvasText; stroke: Canvas; } .cv-zoom-hint { color: CanvasText; } }
 
 /* Selected-county map + places panel. */
+@media screen and (min-width: 1024px) {
+  [data-laptop-density="compact"] .county-inspector-panel.ci { --ci-pad: .65rem; }
+  [data-laptop-density="compact"] .ci > * { padding-block: .3rem; }
+  [data-laptop-density="compact"] .ci .ci-head { padding-block: .35rem; }
+  [data-laptop-density="compact"] .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport {
+    min-height: 12rem !important; height: clamp(12rem, 36vh, 20rem) !important; max-height: 20rem !important;
+  }
+  [data-laptop-density="compact"] .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg {
+    min-height: 12rem !important;
+  }
+  [data-laptop-density="compact"] .county-single-map-panel .cv-map-stage--county svg {
+    height: 9rem; max-height: 9rem;
+  }
+}
 .county-single-map-panel { padding: .45rem .6rem; }
 .county-single-map-panel .cv-map-stage--county { min-height: 0; padding-block: .15rem; }
 .county-single-map-panel .cv-map-stage--county svg { height: 11.5rem; max-height: 11.5rem; }

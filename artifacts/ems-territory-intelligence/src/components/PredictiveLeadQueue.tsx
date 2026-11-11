@@ -1128,12 +1128,13 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
                 {/* TIER 3: BOTTOM ACTION SHELF — STAGE SELECT + CLEAN TEXT ACTIONS */}
                 <div 
-                  className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs"
+                  className="agency-card-actions pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Sales Stage Select */}
                   <select
                     value={agency.zollOpportunity.salesStage}
+                    title={agency.zollOpportunity.salesStage}
                     onChange={(e) => onUpdateStage(agency.id, e.target.value as LeadStage)}
                     className="h-8 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#1E3A8A] cursor-pointer"
                   >

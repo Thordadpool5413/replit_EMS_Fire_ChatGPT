@@ -17,9 +17,6 @@
 }
 .dark .county-brief { --cb-cardiac: #ff8a94; }
 @media screen and (min-width: 1024px) {
-  [data-laptop-density="compact"] .county-brief { --cb-pad: .6rem; }
-  [data-laptop-density="compact"] .county-brief .cb-head { padding-block: .25rem; }
-  [data-laptop-density="compact"] .county-brief .cb-group { padding-block: .2rem; }
   /* Keep all four operational figures on one row at typical half-width laptop sizes. */
   [data-laptop-density="compact"] .county-brief .cb-group--snapshot .cb-figs {
     grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: .5rem;
@@ -195,7 +192,13 @@
   overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
 }
 .county-brief { grid-template-rows: auto 1fr; line-height: 1.25; }
-.county-brief .cb-body { grid-template-rows: auto auto 1fr auto; }
+.county-brief { --cb-pad: .65rem; --cb-row: .25rem; }
+/* Share spare height across the data sections, not an empty geography tail.
+   The sources row stays content-sized; data sections centre their content. */
+.county-brief .cb-body { grid-template-rows: auto auto auto min-content; align-content: stretch; }
+.county-brief .cb-body > :is(.cb-risk, .cb-geo),
+.county-brief .cb-group { display: grid; align-content: center; padding-block: var(--cb-row); }
+.county-brief .cb-group--access .cb-figs { align-self: center; }
 .county-brief .cb-groups { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
 .county-brief .cb-group--snapshot { grid-column: 1 / -1; }
 .county-brief .cb-group--access { display: block; }
@@ -204,25 +207,19 @@
 .county-brief .cb-group--community { border-left: 1px solid var(--cb-hair); }
 .county-brief .cb-group--context dt { font-size: 12.5px; }
 .county-brief .cb-group--context dd { font-size: 14px; }
-.county-brief .cb-group--context { padding-block: .25rem; }
-.county-brief .cb-geo { align-self: start; }
-.county-brief .cb-sources { align-self: end; }
-.county-brief .cb-ref { gap: .1rem; font-size: 13px; }
+.county-brief .cb-group--snapshot .cb-figs { row-gap: .3rem; }
+.county-brief .cb-ref { gap: .2rem .8rem; font-size: 13px; }
 .county-brief .cb-ref > div:not(.cb-ref-wide) { display: flex; flex-wrap: wrap; gap: .1rem .4rem; }
 .county-brief .cb-zip-run { line-height: 1.25; }
 .county-brief .cb-risk-chip { font-size: 13px; gap: .25rem; }
 .county-brief .cb-risk-label { flex-basis: auto; letter-spacing: .02em; }
-.county-brief .cb-risk-body { gap: .05rem .35rem; }
-.county-brief .cb-sources { line-height: 1.25 !important; }
+.county-brief .cb-risk-body { gap: .15rem .4rem; }
+.county-brief .cb-sources { line-height: 1.3 !important; padding-block: var(--cb-row) !important; }
+.county-brief .cb-head { padding-block: .15rem; }
 @media screen and (min-width: 1024px) {
   [data-laptop-density="compact"] .county-brief .cb-groups { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
-  [data-laptop-density="compact"] .county-brief .cb-head { padding-block: 0; }
+  [data-laptop-density="compact"] .county-brief { --cb-row: .15rem; }
   [data-laptop-density="compact"] .county-brief .cb-inspect { min-height: 30px; }
-  [data-laptop-density="compact"] .county-brief .cb-group { padding-block: 1px; }
-  [data-laptop-density="compact"] .county-brief .cb-group--context dt { line-height: 1.15; }
-  [data-laptop-density="compact"] .county-brief .cb-geo { padding-block: 0; }
-  [data-laptop-density="compact"] .county-brief .cb-risk { padding-block: 1px; }
-  [data-laptop-density="compact"] .county-brief .cb-sources { padding-block: 1px !important; }
 }
 @container (max-width: 420px) {
   .county-brief .cb-groups { grid-template-columns: minmax(0, 1fr); }

@@ -109,4 +109,4 @@ County directory cards must share a consistent size within the displayed directo
 
 **Why:** The user explicitly requested “make sure that all the cards are the same size” alongside further percentage reductions.
 
-**How to apply:** Use responsive equal-height grid tracks that expand with the longest visible record rather than a fixed height or hidden content. Preserve all facts and allow enlarged text to grow. Measure percentage changes against the current version, and distinguish laptop reductions from phone reductions when reporting results.
+**How to apply:** Use responsive equal-height grid tracks that expand with the longest visible record rather than a fixed height or hidden content. Preserve all facts and allow enlarged text to grow. Measure percentage changes against the current version, and distinguish laptop reductions from phone reductions when reporting results. The user later rejected squeezed rows with unused space below: redistribute the available height among the content groups instead of pooling it above sources. Do not interpret the earlier reduction targets as permission to crowd the labels and figures.

@@ -43,6 +43,23 @@ try {
     }
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2));
+  if (phase === 'balance') {
+    const before = JSON.parse(await readFile(process.env.COUNTY_DENSITY_BASELINE, 'utf8'));
+    for (const a of results) {
+      const b = before.find(b => b.width === a.width);
+      for (const card of a.cards) {
+        const old = b.cards.find(c => c.id === card.id);
+        assert.equal(card.text.replace(/\s/g, ''), old.text.replace(/\s/g, ''), `${card.id}: retain all information`);
+        const source = card.sections.find(s => s.cls.includes('cb-sources'));
+        // A missing-source message should stay a quiet footer, not absorb the
+        // space needed by readable metric and geography rows.
+        if (card.text.includes('No source details attached')) assert.ok(source.height < 65, `${card.id}: compact sources footer`);
+      }
+      assert.ok(Math.max(...a.cards.map(c => c.height)) - Math.min(...a.cards.map(c => c.height)) <= 1, 'Uniform directory card heights');
+      assert.equal(a.preview?.text, b.preview?.text, 'Preview facts unchanged');
+      console.log(`${a.width}: ${a.cards.length} equal-height cards, ${Math.round(a.cards[0].height)}px; all facts retained`);
+    }
+  }
   if (phase === 'after') {
     const before = JSON.parse(await readFile(process.env.COUNTY_DENSITY_BASELINE || `generated-artifacts/${run}-before/results.json`, 'utf8'));
     for (const a of results) {

@@ -29,13 +29,6 @@
 
 @media (max-width: 767px) {
 
-  .profile-workspace [data-testid="profile-topic-navigation"] {
-    top: calc(9.75rem + env(safe-area-inset-top)) !important;
-  }
-}
-
-@media (max-width: 767px) {
-
   .profile-action-dock {
     position: sticky;
     top: calc(5.5rem + env(safe-area-inset-top));

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Agency } from '../types';
 import { 
   calculateAgencyFleetTco, 
@@ -118,18 +118,51 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
     }
   ], [agency, isFire, defibAgeQuestionPhrase, hasGrant, grantAmt, grantFiscalYear, coopContract]);
 
-  const handleCopyPitch = () => {
-    navigator.clipboard.writeText(elevatorPitch);
-    setCopiedPitch(true);
-    setTimeout(() => setCopiedPitch(false), 2200);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const timers = useRef<number[]>([]);
+  const mounted = useRef(false);
+  const copyRequest = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      timers.current.forEach((t) => window.clearTimeout(t));
+    };
+  }, []);
+
+  const copyText = async (text: string, onDone: (v: boolean) => void) => {
+    const request = ++copyRequest.current;
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+    setCopiedPitch(false);
+    setCopiedQuestions(false);
+    setCopyError(null);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('unavailable');
+      await navigator.clipboard.writeText(text);
+      if (!mounted.current || request !== copyRequest.current) return;
+      onDone(true);
+      timers.current.push(window.setTimeout(() => onDone(false), 2200));
+    } catch {
+      if (!mounted.current || request !== copyRequest.current) return;
+      onDone(false);
+      setCopyError('Copy was not available in this browser. Select the text and copy it manually.');
+      timers.current.push(window.setTimeout(() => setCopyError(null), 6000));
+    }
   };
+
+  const handleCopyPitch = () => { void copyText(elevatorPitch, setCopiedPitch); };
 
   const handleCopyQuestions = () => {
     const text = discoveryQuestions.map((q, idx) => `Q${idx + 1} (${q.role}):\n"${q.question}"\nStrategic Objective: ${q.objective}\n`).join('\n');
-    navigator.clipboard.writeText(text);
-    setCopiedQuestions(true);
-    setTimeout(() => setCopiedQuestions(false), 2200);
+    void copyText(text, setCopiedQuestions);
   };
+
+  const copyStatus = (
+    <p role="status" aria-live="polite" className={copyError ? 'dsb-copy-error text-xs font-semibold text-[#B42318] dark:text-red-300' : 'sr-only'} data-testid="status-dealstory-copy">
+      {copyError ?? (copiedPitch ? 'Opening copied' : copiedQuestions ? 'Questions copied' : '')}
+    </p>
+  );
 
   if (variant === 'compact') {
     return (
@@ -147,6 +180,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
 
           <button
             type="button"
+            data-testid="button-dealstory-copy-pitch"
             onClick={handleCopyPitch}
             title="Copy Elevator Pitch"
             className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:border-[#285EE8] transition-colors shrink-0 cursor-pointer"
@@ -165,6 +199,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
           </button>
         </div>
 
+        {copyStatus}
         {/* 3 Pillars Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 my-3 text-xs">
           <div className="p-2.5 rounded-lg bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -246,6 +281,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
           <button
             type="button"
             onClick={handleCopyPitch}
+            data-testid="button-dealstory-copy-pitch"
             className="h-9 px-3.5 rounded-lg text-xs font-semibold bg-[#285EE8] hover:bg-[#194BC8] text-white transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
           >
             {copiedPitch ? (
@@ -263,6 +299,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
         </div>
       </div>
 
+      {copyStatus}
       {/* Sub-Navigation Strip */}
       <div className="dsb-tabs flex w-fit max-w-full flex-wrap items-center gap-1 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-1 dark:border-[#1E2D42] dark:bg-[#16243A]">
         {[
@@ -417,6 +454,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </p>
             <button
               type="button"
+              data-testid="button-dealstory-copy-questions"
               onClick={handleCopyQuestions}
               className="h-8 px-3 rounded-lg text-xs font-semibold bg-white dark:bg-[#16243A] border border-[#DFE6EF] dark:border-[#1E2D42] text-[#14283F] dark:text-slate-200 hover:border-[#285EE8] cursor-pointer inline-flex items-center gap-1.5"
             >

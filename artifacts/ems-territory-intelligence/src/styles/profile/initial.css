@@ -245,7 +245,6 @@
 }
 
 .profile-workspace [aria-label="Account 360 Topic Navigation"] {
-  top: 3.35rem !important;
   min-height: 2.65rem;
   padding: .22rem !important;
   box-shadow: 0 5px 16px -14px rgba(24, 50, 70, .55);
@@ -348,12 +347,5 @@
 
   .profile-workspace .profile-summary-panel {
     padding: .75rem !important;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .profile-workspace [aria-label="Account 360 Topic Navigation"] {
-    top: 0 !important;
   }
 }

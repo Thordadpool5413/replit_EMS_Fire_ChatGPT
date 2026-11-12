@@ -453,12 +453,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const hcpcsModel = useMemo(() => calculateAgencyHcpcsBreakdown(agency), [agency]);
   const protocolModel = useMemo(() => getAgencyClinicalProtocolAlignment(agency), [agency]);
 
-  // Default to Overview in the 7-topic Account 360 navigation
+  // Default to Overview; every topic shares one accessible content region.
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.
   const profileRootRef = useRef<HTMLDivElement | null>(null);
   const profileHeaderRef = useRef<HTMLElement | null>(null);
+  const profileTopicRef = useRef<HTMLDivElement | null>(null);
+  const profileScrollFrameRef = useRef<number | null>(null);
+  useEffect(() => {
+    profileRootRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    return () => {
+      if (profileScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(profileScrollFrameRef.current);
+        profileScrollFrameRef.current = null;
+      }
+    };
+  }, [rawAgency.id]);
   useEffect(() => {
     const header = profileHeaderRef.current;
     const root = profileRootRef.current;
@@ -792,26 +803,32 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     return true;
   };
 
-  const navigateProfileSection = (section: ProfileSection) => {
-    if (!changeSection(section)) return;
-    window.requestAnimationFrame(() => {
-      document.querySelector('[data-testid="profile-topic-navigation"]')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    });
-  };
-
-  const openProfileSources = () => {
-    if (!changeSection('evidence')) return;
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        document.getElementById('profile-source-evidence')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
+  const navigateProfileSection = (section: ProfileSection, targetId?: string) => {
+    if (!changeSection(section)) return false;
+    if (profileScrollFrameRef.current !== null) window.cancelAnimationFrame(profileScrollFrameRef.current);
+    // Mount the topic before positioning it below both sticky bars.
+    // Native scrollIntoView used to put the first heading behind navigation.
+    profileScrollFrameRef.current = window.requestAnimationFrame(() => {
+      profileScrollFrameRef.current = window.requestAnimationFrame(() => {
+        profileScrollFrameRef.current = null;
+        const root = profileRootRef.current;
+        const nav = root?.querySelector<HTMLElement>('[data-testid="profile-topic-navigation"]');
+        const target = targetId ? root?.querySelector<HTMLElement>(`#${targetId}`) : profileTopicRef.current;
+        if (!root || !target) return;
+        const stickyHeight = (profileHeaderRef.current?.getBoundingClientRect().height ?? 0)
+          + (nav?.getBoundingClientRect().height ?? 0);
+        const top = root.scrollTop + target.getBoundingClientRect().top - root.getBoundingClientRect().top - stickyHeight - 12;
+        root.scrollTo({
+          top: Math.max(0, top),
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
         });
       });
     });
+    return true;
+  };
+
+  const openProfileSources = () => {
+    navigateProfileSection('evidence', 'profile-source-evidence');
   };
 
   const hasDecisionGradeInputs =
@@ -1071,20 +1088,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
               <span>{[agency.city, agency.county, agency.stateCode].filter(Boolean).join(', ')}</span>
               <FactVerificationTag agency={agency} field="providerAddress" />
-              {(agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
-                <span className="acp-ids" aria-label="Registry identifiers">
-                  {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
-                  {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
-                  {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
-                </span>
-              )}
-              <span className="acp-fresh" data-testid="text-profile-source-period" title="Periods are stated by the source records, not import or review timestamps. Review each source separately when periods differ.">
-                <Clock aria-hidden="true" className="h-3 w-3" />
-                Source period {latestSourcePeriod ?? 'not stated'}
-              </span>
-              <span className="acp-fresh" data-testid="text-profile-freshness" title="Browser-local review marker; not an authenticated identity.">
-                {profileReviewedAt ? `Your review ${profileReviewedAt.slice(0, 10)}` : 'Not reviewed in this browser'}
-              </span>
             </p>
             <div className="acp-contact-row" aria-label="Agency contact actions">
               {(primaryContact?.phone || agency.headquartersPhone) && (
@@ -1094,6 +1097,31 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {safeExternalUrl(agency.officialWebsite) && (
                 <a href={safeExternalUrl(agency.officialWebsite)} target="_blank" rel="noopener noreferrer" data-testid="link-header-website"><Globe aria-hidden="true" className="h-3.5 w-3.5" />Website</a>
               )}
+              <details className="acp-record-context" data-testid="profile-record-context" onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus({ preventScroll: true });
+                  event.stopPropagation();
+                }
+              }}>
+                <summary><FileText aria-hidden="true" className="h-3.5 w-3.5" />Record details<ChevronDown aria-hidden="true" className="h-3 w-3" /></summary>
+                <div className="acp-record-context-body">
+                  {(agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
+                    <div className="acp-ids" aria-label="Registry identifiers">
+                      {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
+                      {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
+                      {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
+                    </div>
+                  )}
+                  <p className="acp-fresh" data-testid="text-profile-source-period" title="Periods are stated by the source records, not import or review timestamps. Review each source separately when periods differ.">
+                    <Clock aria-hidden="true" className="h-3.5 w-3.5" />Source period {latestSourcePeriod ?? 'not stated'}
+                  </p>
+                  <p className="acp-fresh" data-testid="text-profile-freshness" title="Browser-local review marker; not an authenticated identity.">
+                    <UserCheck aria-hidden="true" className="h-3.5 w-3.5" />
+                    {profileReviewedAt ? `Your review ${profileReviewedAt.slice(0, 10)}` : 'Not reviewed in this browser'}
+                  </p>
+                </div>
+              </details>
             </div>
           </div>
         {/* One clear next step; the remaining tools stay together in a disclosure. */}
@@ -1104,11 +1132,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (!changeSection('meeting')) return;
-              setTimeout(() => {
-                const el = document.getElementById('meeting-preparation-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 50);
+              navigateProfileSection('meeting');
             }}
             className="profile-meeting-primary inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors"
             aria-label="Prepare for meeting"
@@ -1600,6 +1624,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <select
                 id="profile-section-select"
                 value={activeSection}
+                aria-controls="profile-topic-panel"
                 onChange={(event) => navigateProfileSection(event.target.value as ProfileSection)}
                 className="acp-nav-select"
                 data-testid="select-profile-section-mobile"
@@ -1614,7 +1639,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               if (index < 0) return;
               event.preventDefault();
               const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
-              if (changeSection(PROFILE_SECTIONS[next].id)) buttons[next].focus();
+              if (navigateProfileSection(PROFILE_SECTIONS[next].id)) buttons[next].focus({ preventScroll: true });
             }}>
               {PROFILE_SECTIONS.map((tab) => {
                 const isActive = activeSection === tab.id;
@@ -1624,10 +1649,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     key={tab.id}
                     type="button"
                     role="tab"
+                    id={`profile-tab-${tab.id}`}
+                    aria-controls="profile-topic-panel"
                     aria-selected={isActive}
                     tabIndex={isActive ? 0 : -1}
                     data-testid={`tab-profile-${tab.id}`}
-                    onClick={() => changeSection(tab.id)}
+                    onClick={() => navigateProfileSection(tab.id)}
                     className={`acp-tab${isActive ? ' is-active' : ''}`}
                   >
                     <Icon aria-hidden="true" className="h-3.5 w-3.5" />
@@ -1639,6 +1666,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </nav>
 
+          <div
+            key={activeSection}
+            ref={profileTopicRef}
+            id="profile-topic-panel"
+            className="acp-topic-content"
+            role="tabpanel"
+            aria-labelledby={`profile-tab-${activeSection}`}
+            tabIndex={0}
+          >
           {activeSection === 'overview' && (
             <ProfileCommandOverview agency={agency} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
               <ProfileAttentionSummary key={agency.id} agency={agency} onNavigate={navigateProfileSection} />
@@ -1689,7 +1725,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
           </ProfileDetail>)}
 
-                  {showSection('apparatus') && (<ProfileDetail testId="detail-apparatus" icon={Truck} tone="teal" kind="reported" defaultOpen title="Apparatus & receiving hospitals" summary="Vehicle breakdown, trauma and STEMI transport logistics">
+                  {showSection('apparatus') && (<ProfileDetail testId="detail-apparatus" icon={Truck} tone="teal" kind="reported" title="Apparatus & receiving hospitals" summary="Vehicle breakdown, trauma and STEMI transport logistics">
           {/* Granular Apparatus Vehicle Fleet, Hospital Transport Logistics & Multi-Year FEMA Grant History */}
           {showSection('apparatus') &&
           !(
@@ -2084,7 +2120,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </ProfileDetail>)}
 
                 {showSection('suppliers') && <ProcurementTimeline agency={agency} />}
-        {showSection('suppliers') && (<ProfileDetail testId="detail-suppliers" defaultOpen icon={PackageCheck} tone="teal" kind="reported" title="Supplier, contract & procurement audit records" summary="Supplier records, procurement document IDs and incumbent-versus-alternative matrix. Brand is not supplier.">
+        {showSection('suppliers') && (<ProfileDetail testId="detail-suppliers" icon={PackageCheck} tone="teal" kind="reported" title="Supplier, contract & procurement audit records" summary="Supplier records, procurement document IDs and incumbent-versus-alternative matrix. Brand is not supplier.">
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
           {showSection('suppliers') &&
           !(
@@ -2404,7 +2440,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
-                {showSection('fleet') && (<ProfileDetail testId="detail-device-fleet" defaultOpen icon={Layers} tone="blue" kind="reported" title="Device-level fleet & maintenance contract records" summary="Unit counts, warranty documents and frontline apparatus maintenance detail">
+                {showSection('fleet') && (<ProfileDetail testId="detail-device-fleet" icon={Layers} tone="blue" kind="reported" title="Device-level fleet & maintenance contract records" summary="Unit counts, warranty documents and frontline apparatus maintenance detail">
         {/* SECTION: ACTIVE DEFIBRILLATOR & BIOMEDICAL FLEET + FRONTLINE APPARATUS & MAINTENANCE CONTRACTS */}
         {showSection('fleet') &&
           hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
@@ -3176,6 +3212,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </section>
         )}
 
+          </div>
       </div>
       </main>
 
@@ -3258,11 +3295,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (!changeSection('meeting')) return;
-                setTimeout(() => {
-                  const el = document.getElementById('meeting-preparation-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 50);
+                navigateProfileSection('meeting');
               }}
               className="inline-flex h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#EEF3FE] px-1.5 text-[10px] font-semibold text-[#285EE8] transition-colors hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 sm:w-auto sm:gap-2 sm:px-3.5 sm:text-xs"
               aria-label="Prepare for meeting"

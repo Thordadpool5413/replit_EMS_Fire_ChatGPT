@@ -15,6 +15,12 @@ Verify selector matching against the rendered ancestor tree before increasing sp
 
 **How to apply:** Inspect computed foreground/background colors and actual class placement. Assert the settled rendered colors, not just stylesheet declarations, when fixing contrast.
 
+Audit legacy attribute selectors as well as component classes when changing sticky navigation.
+
+**Why:** Conflicting ARIA-label and test-attribute rules can override a measured sticky offset; removing one stale override can expose another. A correct custom property alone does not prove the rendered position is correct.
+
+**How to apply:** Inspect the settled computed position and assert both relationships: navigation below the back bar, and topic content below navigation. Include phone widths and keyboard selection.
+
 When changing a sidebar utility grid into a vertical list, audit legacy child placement as well as the parent layout. Old explicit grid-column rules can create unintended implicit columns even after the parent is set to one column.
 
 **Why:** The footer still rendered uneven widths and overlapping labels until the old grid-placement behavior was removed from the new row layout.

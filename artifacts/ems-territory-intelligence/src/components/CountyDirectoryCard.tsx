@@ -124,9 +124,9 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
                     {nri.riskRating || 'Rating not stated'}
                   </span>
                   <span className="cb-risk-meta" data-testid={`text-fema-nri-score-${c.countyFips}`}>
-                    {nriScore ? <>Score <strong>{nriScore}</strong></> : 'Score not stated'}
+                    {nriScore ? <>Score <strong>{nriScore}</strong></> : null}
                   </span>
-                  <span className="cb-risk-meta">{vintage ? `Vintage ${vintage}` : 'Vintage not stated'}</span>
+                  {vintage && <span className="cb-risk-meta">Vintage {vintage}</span>}
                   {nriSourceUrl && (
                     <a className="cb-link" href={nriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
                       Source <ExternalLink aria-hidden="true" />

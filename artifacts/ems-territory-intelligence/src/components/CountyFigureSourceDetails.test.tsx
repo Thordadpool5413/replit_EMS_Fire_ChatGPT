@@ -13,7 +13,7 @@ test('all eight county figures remain visible without disclosures, including zer
   assert.equal((html.match(/data-figure-key=/g) ?? []).length, 8);
   assert(!html.includes('<details'));
   assert(!html.includes('Not reported'));
-  assert.equal((html.match(/Source details are not attached/g) ?? []).length, 1);
+  assert(!html.includes('Source details are not attached'));
   assert(html.includes('county FIPS 12001'));
 });
 
@@ -27,7 +27,7 @@ test('source, vintage, scope and reporting period remain associated with their f
     assert(html.includes(text), `Missing source metadata: ${text}`);
   }
   assert(!html.includes('href="javascript:'));
-  assert(html.includes('Average EMS transport time'));
+  assert(html.includes('Population'));
   assert(!html.includes('<details'));
 });
 
@@ -44,11 +44,15 @@ test('directory cards can suppress only general explanations without hiding sour
   const html = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" showValues={false} showGeneralNotes={false}
     sources={{ population: { source: 'County population record', sourceUrl: 'https://example.org/population',
       vintage: '2025', scope: 'County', reportingPeriod: '2024' } }} />);
-  for (const value of ['County population record', 'https://example.org/population', '2025', 'County', '2024',
-    'Average EMS transport time', 'Source details not attached for:']) {
+  for (const value of ['County population record', 'https://example.org/population', '2025', 'County', '2024']) {
     assert(html.includes(value), `Source information lost: ${value}`);
   }
   assert(!html.includes('data standard'));
   assert(!html.includes('does not establish'));
   assert(!html.includes('<details'));
+});
+
+test('empty source footers are omitted without duplicating the figures above', () => {
+  const html = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" showValues={false} showGeneralNotes={false} record={{population: 123456}} />);
+  assert.equal(html, '');
 });

@@ -62,12 +62,13 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
     return Boolean(metadata && Object.values(metadata).some(value => typeof value === 'string' && value.trim()));
   };
   const attached = COUNTY_FIGURES.filter(({ key }) => hasMetadata(key));
-  const missing = COUNTY_FIGURES.filter(({ key }) => !hasMetadata(key));
+  const visibleFigures = COUNTY_FIGURES.filter(({ key }) => !omitValuesFor.includes(key));
+  if (!attached.length && !showGeneralNotes && (!withValues || !visibleFigures.length)) return null;
   return (
     <div className={`county-figure-source-details cv-sources${className ? ` ${className}` : ''}`} data-testid={`sources-county-${countyFips}`}>
       {withValues && (
         <dl className="cv-source-figures" aria-label="County reference figures">
-          {COUNTY_FIGURES.filter(({ key }) => !omitValuesFor.includes(key)).map(({ key, label, format }) => (
+          {visibleFigures.map(({ key, label, format }) => (
             <div key={key} data-figure-key={key}>
               <dt>{label}</dt>
               <dd>{isNum(values[key]) ? format(values[key]) : 'Not reported'}</dd>
@@ -75,7 +76,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
           ))}
         </dl>
       )}
-      <div className="cv-section-label"><span>{showGeneralNotes ? 'Sources & coverage' : 'Sources'}</span></div>
+      {(attached.length > 0 || showGeneralNotes) && <div className="cv-section-label"><span>{showGeneralNotes ? 'Sources & coverage' : 'Sources'}</span></div>}
       {attached.length > 0 && <table className="cv-sources-table">
         <thead>
           <tr>
@@ -110,19 +111,14 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
           })}
         </tbody>
       </table>}
-      <p className="cv-sources-foot">
-        {missing.length === COUNTY_FIGURES.length
-          ? (showGeneralNotes ? 'Source details are not attached to the eight county figures displayed here.' : 'No source details attached to these 8 figures.')
-          : missing.length > 0
-            ? `Source details not attached for: ${missing.map(({ label }) => label).join('; ')}.`
-            : 'Source scope and reporting periods are shown for each figure.'}
-        {showGeneralNotes && (
+      {showGeneralNotes && <p className="cv-sources-foot">
+        {(
           <>
-            {' '}Display geography: county FIPS {countyFips}; this does not establish a source&apos;s own scope.
+            Display geography: county FIPS {countyFips}; this does not establish a source&apos;s own scope.
             {' '}NEMSIS v3.5 is a data standard, not a source citation.
           </>
         )}
-      </p>
+      </p>}
     </div>
   );
 };

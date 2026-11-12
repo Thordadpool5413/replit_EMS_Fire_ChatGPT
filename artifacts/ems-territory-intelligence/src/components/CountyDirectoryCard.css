@@ -4,7 +4,7 @@
    (label left / value right, tabular) -> FEMA band (own source) -> geography ledger with a fixed
    label gutter -> quiet source footer. Type scale: name 16 / headline 17–18 / value 14 / label 13 / meta 12.5.
    The shared label gutter (--cb-gutter) is what aligns every secondary group. */
-.county-signal-list:has(> .county-brief) { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: .55rem !important; align-items: stretch; grid-auto-rows: 1fr; }
+.county-signal-list:has(> .county-brief) { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: .55rem !important; align-items: stretch; grid-auto-rows: auto; }
 @media (min-width: 900px) { .county-signal-list:has(> .county-brief) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
 
 .county-brief {
@@ -248,3 +248,10 @@
   .county-brief .cb-link, .county-brief .cb-sources a { color: LinkText !important; text-decoration: underline !important; }
   .county-brief :is(button, a):focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
 }
+
+/* Equal-height siblings without giant empty footers: body stretches, sources sit flush at bottom. */
+.county-brief { grid-template-rows: auto 1fr; }
+.county-brief .cb-body { grid-template-rows: auto auto auto auto 1fr; }
+.county-brief .cb-sources { align-self: end; }
+.county-brief .cb-group--snapshot dd { font-size: 19px; font-weight: 720; letter-spacing: -.02em; }
+@media (prefers-reduced-motion: reduce) { .county-brief, .county-brief .cb-inspect, .county-brief .cb-inspect svg { transition: none !important; } }

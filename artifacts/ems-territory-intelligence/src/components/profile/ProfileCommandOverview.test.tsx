@@ -20,6 +20,15 @@ test('populated EMS overview has four distinct summaries and useful account acti
   assert.equal((html.match(/data-testid="summary-equipment"/g)||[]).length,1);
   assert.match(html,/View equipment/);assert.match(html,/Review evidence/);
 });
+test('long contact names appear once in context rather than inflating the summary row',()=>{
+  const name='Anderson County Emergency Medical Services Command & Administration';
+  const title='Office of the EMS Director & Medical Command';
+  const html=render(fixture({keyContacts:[{name,title,role:'EMS Chief'} as Agency['keyContacts'][number]]}));
+  assert.equal((html.match(/Anderson County Emergency Medical Services Command &amp; Administration/g)||[]).length,1);
+  assert.match(html,/1 recorded/);
+  assert.match(html,/Office of the EMS Director &amp; Medical Command/);
+  assert.match(html,/data-testid="summary-people-open"/);
+});
 test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
   const html=render(fixture({annualCallVolume:undefined,annual911Transports:undefined,stationsCount:undefined,totalAmbulances:undefined} as unknown as Partial<Agency>));
   assert.match(html,/No equipment recorded yet/);assert.match(html,/No signal recorded/);

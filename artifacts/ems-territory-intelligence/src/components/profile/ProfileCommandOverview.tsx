@@ -142,9 +142,9 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
         />
         <Summary
           tone="navy" icon={Users} eyebrow="Key people" testId="summary-people"
-          value={lead ? lead.name : 'None recorded'}
+          value={lead ? `${contacts.length} recorded` : 'None recorded'}
           missing={!lead}
-          detail={lead ? `${lead.title || lead.role || 'Title not reported'}${contacts.length > 1 ? ` · +${contacts.length - 1} more` : ''}` : 'Identify purchasing authority'}
+          detail={lead ? 'Names, roles and contact details below' : 'Identify purchasing authority'}
           action="Decision makers" onAction={() => onNavigate('decision_makers')}
         />
         <Summary

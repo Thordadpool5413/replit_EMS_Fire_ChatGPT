@@ -4,7 +4,7 @@
    (label left / value right, tabular) -> FEMA band (own source) -> geography ledger with a fixed
    label gutter -> quiet source footer. Type scale: name 16 / headline 17–18 / value 14 / label 13 / meta 12.5.
    The shared label gutter (--cb-gutter) is what aligns every secondary group. */
-.county-signal-list:has(> .county-brief) { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: .55rem !important; align-items: start; }
+.county-signal-list:has(> .county-brief) { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: .55rem !important; align-items: stretch; grid-auto-rows: 1fr; }
 @media (min-width: 900px) { .county-signal-list:has(> .county-brief) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
 
 .county-brief {
@@ -188,6 +188,52 @@
 .county-brief .cb-ref > div:has(.cb-place-list) > dt { float: left; margin-right: .6rem; min-height: 24px; align-items: center; }
 .county-brief .cb-place-list { display: block; }
 .county-brief .cb-place { margin-inline-end: .5rem; }
+/* A compact two-tier brief. Section names remain available to assistive
+   technology; the visible metric labels already identify every figure. */
+.county-brief .cb-group-cap {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.county-brief { grid-template-rows: auto 1fr; line-height: 1.25; }
+.county-brief .cb-body { grid-template-rows: auto auto 1fr auto; }
+.county-brief .cb-groups { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
+.county-brief .cb-group--snapshot { grid-column: 1 / -1; }
+.county-brief .cb-group--access { display: block; }
+.county-brief .cb-group--access .cb-fig { display: grid; gap: .05rem; }
+.county-brief .cb-group--access dd { text-align: left; }
+.county-brief .cb-group--community { border-left: 1px solid var(--cb-hair); }
+.county-brief .cb-group--context dt { font-size: 12.5px; }
+.county-brief .cb-group--context dd { font-size: 14px; }
+.county-brief .cb-group--context { padding-block: .25rem; }
+.county-brief .cb-geo { align-self: start; }
+.county-brief .cb-sources { align-self: end; }
+.county-brief .cb-ref { gap: .1rem; font-size: 13px; }
+.county-brief .cb-ref > div:not(.cb-ref-wide) { display: flex; flex-wrap: wrap; gap: .1rem .4rem; }
+.county-brief .cb-zip-run { line-height: 1.25; }
+.county-brief .cb-risk-chip { font-size: 13px; gap: .25rem; }
+.county-brief .cb-risk-label { flex-basis: auto; letter-spacing: .02em; }
+.county-brief .cb-risk-body { gap: .05rem .35rem; }
+.county-brief .cb-sources { line-height: 1.25 !important; }
+@media screen and (min-width: 1024px) {
+  [data-laptop-density="compact"] .county-brief .cb-groups { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
+  [data-laptop-density="compact"] .county-brief .cb-head { padding-block: 0; }
+  [data-laptop-density="compact"] .county-brief .cb-inspect { min-height: 30px; }
+  [data-laptop-density="compact"] .county-brief .cb-group { padding-block: 1px; }
+  [data-laptop-density="compact"] .county-brief .cb-group--context dt { line-height: 1.15; }
+  [data-laptop-density="compact"] .county-brief .cb-geo { padding-block: 0; }
+  [data-laptop-density="compact"] .county-brief .cb-risk { padding-block: 1px; }
+  [data-laptop-density="compact"] .county-brief .cb-sources { padding-block: 1px !important; }
+}
+@container (max-width: 420px) {
+  .county-brief .cb-groups { grid-template-columns: minmax(0, 1fr); }
+  .county-brief .cb-group--community { border-left: 0; }
+  .county-brief .cb-group--access .cb-fig { display: flex; }
+  .county-brief .cb-group--community .cb-fig { display: flex; flex-wrap: wrap; gap: .1rem .35rem; }
+  .county-brief .cb-group--community .cb-figs { display: flex; flex-wrap: wrap; gap: .2rem .8rem; }
+  .county-brief .cb-group--community .cb-fig--medianIncome { flex-basis: 100%; justify-content: space-between; }
+  .county-brief .cb-group--community .cb-fig--seniorPopPct,
+  .county-brief .cb-group--community .cb-fig--povertyRatePct { flex: 1; justify-content: space-between; }
+}
 @media (prefers-reduced-motion: reduce) { .county-brief, .county-brief * { transition: none !important; } }
 @media print {
   .county-brief .cb-head, .county-brief .cb-group--context, .county-brief .cb-sources { background: transparent; }

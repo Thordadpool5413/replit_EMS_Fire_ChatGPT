@@ -27,7 +27,7 @@ Individual profile cards and display fonts must be smaller, not merely restyled.
 
 **Why:** After the icon/visual polish, the user repeated that the profile sheets were not impressive or polished and said “the cards and fonts needs to be reduced in size too. everything is too large.”
 
-**How to apply:** Reduce actual rendered header, summary and equipment-block heights on laptop and phone through tighter typography and layout. Keep readable detail text, source notices and touch targets; more icon decoration is not a substitute for smaller, better-organized profiles.
+**How to apply:** Reduce actual rendered header, summary and equipment-block heights on laptop and phone through tighter typography and layout. Keep readable detail text, source notices and touch targets; more icon decoration is not a substitute for smaller, better-organized profiles. Do not repeat long contact names and roles in the executive snapshot when the full contact panel already displays them: a short contact count prevents that repetition from stretching all summary cards.
 
 Current technology and equipment identification is a primary profile goal, not just supporting detail. Keep the installed-technology summary prominent on phones rather than burying all equipment in collapsed panels.
 
@@ -104,3 +104,9 @@ When the user requests a percentage reduction in county cards, target rendered h
 **Why:** The user again rejected the compact version and explicitly requested a further 25% reduction. Phone wrapping and oversized repeated link targets can retain substantially more height than the same desktop card.
 
 **How to apply:** Reflow supporting figures into aligned label/value rows and shorten unambiguous captions before reducing numeric hierarchy. Preserve all facts and icons. Secondary text links may use compact targets no smaller than 24 CSS pixels with clear spacing; keep the primary phone Inspect action at 44 pixels. Allow dense records and enlarged text to grow rather than clipping them to a fixed height.
+
+County directory cards must share a consistent size within the displayed directory, not end at different heights based on their number of places.
+
+**Why:** The user explicitly requested “make sure that all the cards are the same size” alongside further percentage reductions.
+
+**How to apply:** Use responsive equal-height grid tracks that expand with the longest visible record rather than a fixed height or hidden content. Preserve all facts and allow enlarged text to grow. Measure percentage changes against the current version, and distinguish laptop reductions from phone reductions when reporting results.

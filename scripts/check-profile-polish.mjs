@@ -23,14 +23,22 @@ try {
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   const ev = value => evaluate(cdp, value);
-  for (const width of [1366, 390, 320]) {
+  for (const width of (process.env.PROFILE_POLISH_WIDTHS || '1366,390,320').split(',').map(Number)) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width < 768 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: width < 768, maxTouchPoints: 1 });
     await cdp.send('Page.navigate', { url: base });
     await waitFor(cdp, `Boolean(document.querySelector('main'))`, 'app', 60000);
     await ev(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||b.innerText).trim()==='Agencies'&&b.getBoundingClientRect().height>0);if(!b)throw Error('Missing Agencies');b.click()})()`);
     await waitFor(cdp, `Boolean(document.querySelector('.agency-lead-cards-grid > div'))`, 'agency cards', 60000);
-    await ev(`document.querySelector('.agency-lead-cards-grid > div').click()`);
+    if (process.env.PROFILE_POLISH_AGENCY) {
+      await ev(`(()=>{
+        const input=document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]');
+        const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+        setter.call(input,${JSON.stringify(process.env.PROFILE_POLISH_AGENCY)});input.dispatchEvent(new Event('input',{bubbles:true}));
+      })()`);
+      await waitFor(cdp, `[...document.querySelectorAll('.agency-lead-cards-grid > div')].some(e=>e.textContent.includes(${JSON.stringify(process.env.PROFILE_POLISH_AGENCY)}))`, 'requested agency', 60000);
+    }
+    await ev(`(()=>{const cards=[...document.querySelectorAll('.agency-lead-cards-grid > div')];const target=${JSON.stringify(process.env.PROFILE_POLISH_AGENCY || '')};(target?cards.find(c=>c.textContent.includes(target)):cards[0]).click()})()`);
     await waitFor(cdp, `Boolean(document.querySelector('.acp-header'))`, 'agency profile', 60000);
     await ev(`document.fonts.ready.then(()=>true)`);
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -48,6 +56,9 @@ try {
           viewport:document.documentElement.clientWidth,
           page:document.documentElement.scrollWidth,
           profileWidth:r.width,profileScroll:root.scrollWidth,
+          profileCount:document.querySelectorAll('.agency-command-profile').length,
+          overviewCount:root.querySelectorAll('[data-testid="profile-command-overview"]').length,
+          navCount:root.querySelectorAll('.acp-nav').length,
           headerHeight:document.querySelector('.acp-header').getBoundingClientRect().height,
           summariesHeight:root.querySelector('.acp-summaries')?.getBoundingClientRect().height??null,
           summaryFont:root.querySelector('.acp-summary-value')?getComputedStyle(root.querySelector('.acp-summary-value')).fontSize:null,
@@ -64,6 +75,9 @@ try {
       assert.ok(geometry.page <= geometry.viewport + 1, `${width}/${topic}: page overflow`);
       assert.ok(geometry.profileScroll <= geometry.profileWidth + 1, `${width}/${topic}: profile overflow`);
       assert.ok(geometry.removed, 'Removed next-action section must stay removed');
+      assert.equal(geometry.profileCount, 1, 'Only one profile may be mounted');
+      assert.equal(geometry.navCount, 1, 'Only one topic navigation may be mounted');
+      assert.equal(geometry.overviewCount, topic === 'overview' ? 1 : 0, 'Overview must not repeat');
       assert.ok(geometry.icons > 5, `${width}/${topic}: meaningful icons rendered`);
       assert.equal(geometry.active, `tab-profile-${topic}`, 'Topic navigation must work');
       if (width < 768) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');

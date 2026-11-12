@@ -153,6 +153,31 @@
 .county-city-directory-panel .cv-title { font-size: 1rem; }
 .county-city-directory-panel .cv-place-list { max-height: 7.5rem; }
 .county-city-directory-panel .cv-place-row { padding: .3rem .6rem; }
+.ci .ci-head { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
+.ci .ci-kicker { grid-column: 2; grid-row: 1; font-size: 11px; letter-spacing: .02em; }
+.ci .ci-name { grid-column: 1; grid-row: 1; }
+.ci .ci-ident { grid-column: 1 / -1; border-top: 0; padding-top: 0; margin-top: 0; }
+.ci .ci-zips { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5rem; margin-top: .1rem; }
+.ci .ci-places { padding-block: .15rem; }
+.ci .ci-fema { gap: .1rem; }
+.ci .ci-fema > .ci-section { display: inline; }
+.ci .ci-fema-facts { margin: 0; padding-top: 0; }
+.ci .ci-fema-facts dt { font-size: 12px; }
+.ci .ci-fema-facts dd { font-size: 13px; }
+.ci .ci-fema-row { column-gap: .6rem; row-gap: .05rem; }
+.ci .ci-foot { gap: .15rem .5rem; padding-block: .1rem; }
+.ci .ci-ident { line-height: 1.25; }
+@container (min-width: 420px) {
+  .ci .ci-place-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .1rem .6rem; }
+  .ci .ci-place-item { display: grid; align-content: start; justify-content: stretch; }
+  .ci .ci-place-sub { margin: 0; text-align: left; }
+  .ci .ci-place { gap: .2rem; }
+}
+@media screen and (min-width: 1024px) {
+  [data-laptop-density="compact"] .ci > * { padding-block: .15rem; }
+  [data-laptop-density="compact"] .ci .ci-head { padding-block: .2rem; }
+  [data-laptop-density="compact"] .ci .ci-foot { padding-block: .1rem; }
+}
 .county-city-directory-panel .cv-zips { max-height: 2.6em; overflow-y: auto; margin-top: 0; }
 @media (min-width: 1024px) { .cv-state-grid:has(> .county-city-directory-panel) { align-items: start; } }
 @media (max-width: 1023px) {

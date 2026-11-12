@@ -103,6 +103,9 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
+  const monitorLine = lines.find((line) => line.key === 'monitor')!;
+  const clinicalLines = lines.filter((line) => line.key !== 'monitor' && line.category !== 'software');
+  const softwareLines = lines.filter((line) => line.category === 'software');
   const contacts = (agency.keyContacts ?? []).filter((c) => real(c.name));
   const lead = contacts[0];
   const contract = agency.competitorContract;
@@ -138,6 +141,20 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   if (!isNum(agency.annualCallVolume)) gaps.push({ label: 'Annual call volume', section: 'operations' });
 
   const evidenceCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) => hasMappedAgencyFactEvidence(agency, key)).length;
+  const renderEquipmentLine = (line: typeof lines[number]) => {
+    const Icon = LINE_ICON[line.key] ?? Cpu;
+    const missing = line.value === NOT_REPORTED;
+    return (
+      <li key={line.key} className="acp-ledger-row" data-category={line.category} data-missing={missing || undefined} data-testid={`row-overview-equipment-${line.key}`}>
+        <Icon aria-hidden="true" className="acp-ledger-ico" />
+        <span className="acp-ledger-label">{line.label}</span>
+        <span className={`acp-ledger-value${missing ? ' is-missing' : ''}`}>{line.value}</span>
+        <span className={`acp-ledger-qty${!line.quantity || line.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
+          {line.quantity && line.quantity !== NOT_REPORTED ? line.quantity : line.category !== 'software' ? 'Units not reported' : ''}
+        </span>
+      </li>
+    );
+  };
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
@@ -145,10 +162,10 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
         <section className="acp-ledger" data-testid="summary-equipment" aria-labelledby="acp-ledger-title">
           <header className="acp-ledger-head">
             <div>
-              <h2 id="acp-ledger-title" className="acp-ledger-title"><Cpu aria-hidden="true" className="h-[18px] w-[18px]" />Recorded equipment</h2>
+              <p className="acp-ledger-overline">Agency inventory · as recorded</p>
+              <h2 id="acp-ledger-title" className="acp-ledger-title"><Cpu aria-hidden="true" className="h-[18px] w-[18px]" />Equipment record</h2>
               <p className="acp-ledger-meta">
                 <span className="acp-num-inline">{knownEquipment.length}</span> of {lines.length} categories recorded
-                {isNum(agency.installedFleet?.defibAgeYears) && <> · monitor age on record <span className="acp-num-inline">{agency.installedFleet.defibAgeYears} yrs</span></>}
               </p>
             </div>
             <button type="button" className="acp-link" onClick={() => onNavigate('equipment')} data-testid="summary-equipment-open" aria-label="View equipment">
@@ -156,22 +173,50 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             </button>
           </header>
           {knownEquipment.length === 0 && <p className="acp-ledger-empty">No equipment recorded yet. Confirm the devices and software currently used by the agency.</p>}
-          <ul className="acp-ledger-list">
-            {lines.map((l) => {
-              const Icon = LINE_ICON[l.key] ?? Cpu;
-              const missing = l.value === NOT_REPORTED;
-              return (
-                <li key={l.key} className="acp-ledger-row" data-category={l.category} data-missing={missing || undefined} data-testid={`row-overview-equipment-${l.key}`}>
-                  <Icon aria-hidden="true" className="acp-ledger-ico" />
-                  <span className="acp-ledger-label">{l.label}</span>
-                  <span className={`acp-ledger-value${missing ? ' is-missing' : ''}`}>{l.value}</span>
-                  <span className={`acp-ledger-qty${!l.quantity || l.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
-                    {l.quantity && l.quantity !== NOT_REPORTED ? l.quantity : l.category !== 'software' ? 'Units not reported' : ''}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="acp-monitor-feature" data-category="monitor" data-testid="row-overview-equipment-monitor">
+            <div className="acp-monitor-art" aria-hidden="true">
+              <svg viewBox="0 0 180 150" role="presentation" focusable="false">
+                <path className="monitor-cable" d="M129 111c13 8 21 6 28-2" />
+                <path className="monitor-base" d="M66 121h49l9 9H57z" />
+                <path className="monitor-stand" d="M86 106h11v15H86z" />
+                <rect className="monitor-shell" x="26" y="20" width="112" height="88" rx="10" />
+                <rect className="monitor-screen" x="36" y="30" width="92" height="62" rx="4" />
+                <path className="monitor-trace monitor-trace-one" d="M43 61h14l5-11 8 23 8-17 5 5h12l5-9 8 19 7-10h10" />
+                <path className="monitor-trace monitor-trace-two" d="M44 77h17m6 0h13m6 0h13m7 0h19" />
+                <circle className="monitor-control" cx="119" cy="101" r="2.5" />
+                <path className="monitor-foot" d="M72 136h40" />
+              </svg>
+            </div>
+            <div className="acp-monitor-copy">
+              <p className="acp-monitor-kicker"><HeartPulse aria-hidden="true" />Clinical device · monitor</p>
+              <p className="acp-monitor-label">{monitorLine.label}</p>
+              <p className={`acp-monitor-model${monitorLine.value === NOT_REPORTED ? ' is-missing' : ''}`} data-testid="text-overview-monitor-model">{monitorLine.value}</p>
+              <div className="acp-monitor-facts">
+                <div>
+                  <span>Recorded unit count</span>
+                  <strong className={!monitorLine.quantity || monitorLine.quantity === NOT_REPORTED ? 'is-missing' : ''} data-testid="text-overview-monitor-quantity">
+                    {monitorLine.quantity && monitorLine.quantity !== NOT_REPORTED ? monitorLine.quantity : 'Units not reported'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Monitor age on record</span>
+                  <strong className={isNum(agency.installedFleet?.defibAgeYears) ? '' : 'is-missing'} data-testid="text-overview-monitor-age">
+                    {isNum(agency.installedFleet?.defibAgeYears) ? `${agency.installedFleet.defibAgeYears} yrs` : NOT_REPORTED}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="acp-ledger-catalog">
+            <section className="acp-equipment-group" aria-label="Other clinical devices">
+              <h3><Activity aria-hidden="true" />Other clinical devices</h3>
+              <ul className="acp-ledger-list">{clinicalLines.map(renderEquipmentLine)}</ul>
+            </section>
+            <section className="acp-equipment-group acp-equipment-group--software" aria-label="Agency software">
+              <h3><Cpu aria-hidden="true" />Agency software</h3>
+              <ul className="acp-ledger-list">{softwareLines.map(renderEquipmentLine)}</ul>
+            </section>
+          </div>
           <p className="acp-ledger-foot">Inventory as recorded. Age and quantity describe the record, not condition, intent or buy-back eligibility.</p>
         </section>
 

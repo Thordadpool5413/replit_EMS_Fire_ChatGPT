@@ -51,7 +51,7 @@ test('overview keeps all six equipment and software rows, missing labels, and in
     assert.ok(html.includes(value),`missing equipment category: ${value}`);
   }
   assert.match(html,/12 units/);
-  assert.equal((html.match(/Not reported/g)||[]).length,5);
+  assert.equal((html.match(/Not reported/g)||[]).length,6); // Five category values plus the monitor age.
   assert.equal((html.match(/Units not reported/g)||[]).length,2);
   assert.match(html,/Inventory as recorded/);
   assert.match(html,/not condition, intent or buy-back eligibility/);

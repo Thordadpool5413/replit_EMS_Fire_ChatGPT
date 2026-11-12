@@ -4,11 +4,21 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 process.env.PROFILE_HELPERS_ONLY = '1';
 const { createCdpClient, evaluate, waitFor, reservePort, waitForJson } = await import('./check-profile-overflow.mjs');
 const base = process.env.PROFILE_TEST_URL || 'http://127.0.0.1:80/';
-const out = process.env.PROFILE_POLISH_OUTPUT || 'generated-artifacts/profile-polish';
+const equipmentTextOnly = process.env.PROFILE_POLISH_EQUIPMENT_TEXT_ONLY === '1';
+const out = process.env.PROFILE_POLISH_OUTPUT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../generated-artifacts/profile-polish');
+const equipmentStressCases = [
+  { key: 'monitor', value: 'Stryker LIFEPAK 15 V4.2 critical care monitor with integrated capnography', quantity: '0 units', missingQuantity: false },
+  { key: 'cpr', value: 'ZOLL AutoPulse NXT integrated load-distributing band mechanical CPR system', quantity: 'Units not reported', missingQuantity: true },
+  { key: 'vent', value: 'Hamilton T1 transport ventilator with integrated oxygen monitoring and alarms', quantity: '0 units', missingQuantity: false },
+  { key: 'epcrcad', value: 'ESO electronic patient care reporting and computer-aided dispatch platform' },
+  { key: 'dispatch', value: 'Motorola Solutions PremierOne computer-aided dispatch and records suite' },
+  { key: 'billing', value: 'ImageTrend Continuum EMS billing and revenue-cycle management software' },
+];
 await mkdir(out, { recursive: true });
 const dir = await mkdtemp(path.join(os.tmpdir(), 'profile-polish-'));
 const port = await reservePort();
@@ -50,19 +60,44 @@ try {
     await waitFor(cdp, `Boolean(document.querySelector('.acp-header'))`, 'agency profile', 60000);
     await ev(`document.fonts.ready.then(()=>true)`);
     await new Promise(resolve => setTimeout(resolve, 500));
-    assert.equal(await ev(`document.querySelector('[data-testid="profile-record-context"]').open`),false,'Secondary record metadata starts collapsed');
-    await ev(`document.querySelector('[data-testid="profile-record-context"] summary').click()`);
-    assert.equal(await ev(`document.querySelector('[data-testid="text-profile-source-period"]').getBoundingClientRect().height>0`),true,'Record metadata remains available');
-    await ev(`document.querySelector('[data-testid="profile-record-context"] summary').click()`);
-    // The header action must follow the moved preparation content.
-    await ev(`document.querySelector('[data-testid="button-profile-prepare-meeting"]').click()`);
-    await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-meeting-brief"]'))`, 'meeting prep action', 10000);
-    await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
+    if (!equipmentTextOnly) {
+      assert.equal(await ev(`document.querySelector('[data-testid="profile-record-context"]').open`),false,'Secondary record metadata starts collapsed');
+      await ev(`document.querySelector('[data-testid="profile-record-context"] summary').click()`);
+      assert.equal(await ev(`document.querySelector('[data-testid="text-profile-source-period"]').getBoundingClientRect().height>0`),true,'Record metadata remains available');
+      await ev(`document.querySelector('[data-testid="profile-record-context"] summary').click()`);
+      // The header action must follow the moved preparation content.
+      await ev(`document.querySelector('[data-testid="button-profile-prepare-meeting"]').click()`);
+      await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-meeting-brief"]'))`, 'meeting prep action', 10000);
+      await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
+    }
     await settleProfileScroll();
-    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'medicare', 'meeting', 'deal_story', 'evidence'])) {
+    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (equipmentTextOnly || process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'medicare', 'meeting', 'deal_story', 'evidence'])) {
       if (topic !== 'overview') {
         await ev(`(()=>{const s=document.querySelector('.acp-nav-select');if(s&&getComputedStyle(s).display!=='none'){s.value=${JSON.stringify(topic)};s.dispatchEvent(new Event('change',{bubbles:true}))}else{document.querySelector('[data-testid="tab-profile-${topic}"]').click()}})()`);
         await settleProfileScroll();
+      }
+      if (equipmentTextOnly && topic === 'overview') {
+        await ev(`(()=>{
+          const root=document.querySelector('[data-testid="profile-command-overview"]');
+          // Emulate browser text enlargement without page zoom or persisted changes.
+          const textElements=[...root.querySelectorAll('*')].filter(e=>!e.closest('svg')&&e.getClientRects().length);
+          const originalSizes=textElements.map(e=>parseFloat(getComputedStyle(e).fontSize)||16);
+          textElements.forEach((e,i)=>e.style.setProperty('font-size',originalSizes[i]*1.35+'px','important'));
+          const cases=${JSON.stringify(equipmentStressCases)};
+          for(const item of cases){
+            const row=root.querySelector('[data-testid="row-overview-equipment-'+item.key+'"]');
+            if(!row)throw Error('Missing equipment category '+item.key);
+            const value=item.key==='monitor'?root.querySelector('[data-testid="text-overview-monitor-model"]'):row.querySelector('.acp-ledger-value');
+            if(!value)throw Error('Missing equipment value '+item.key);
+            value.textContent=item.value;
+            if(item.quantity){
+              const quantity=item.key==='monitor'?root.querySelector('[data-testid="text-overview-monitor-quantity"]'):row.querySelector('.acp-ledger-qty');
+              if(!quantity)throw Error('Missing equipment quantity '+item.key);
+              quantity.textContent=item.quantity;
+              quantity.classList.toggle('is-missing',item.missingQuantity);
+            }
+          }
+        })()`);
       }
       const geometry = await ev(`(()=>{
         const root=document.querySelector('.agency-command-profile');
@@ -138,6 +173,58 @@ try {
         assert.equal(await ev(`document.querySelectorAll('[data-testid^="row-overview-equipment-"]').length`),6,'All six recorded equipment categories are available in the opening profile');
         assert.ok(await ev(`document.querySelector('[data-testid="summary-equipment"]').getBoundingClientRect().top <= document.querySelector('[data-testid="summary-operations"]').getBoundingClientRect().top+1`),'Recorded equipment leads the overview reading order');
       }
+      if (equipmentTextOnly && topic === 'overview') {
+        const presentation = await ev(`(()=>{
+          const root=document.querySelector('.agency-command-profile');
+          const ledger=root.querySelector('[data-testid="summary-equipment"]');
+          const cases=${JSON.stringify(equipmentStressCases)};
+          const failures=[];
+          const measurements=[];
+          for(const item of cases){
+            const row=root.querySelector('[data-testid="row-overview-equipment-'+item.key+'"]');
+            const value=item.key==='monitor'?root.querySelector('[data-testid="text-overview-monitor-model"]'):row?.querySelector('.acp-ledger-value');
+            const quantity=item.quantity?(item.key==='monitor'?root.querySelector('[data-testid="text-overview-monitor-quantity"]'):row?.querySelector('.acp-ledger-qty')):null;
+            if(!row||!value||value.textContent.trim()!==item.value)failures.push(item.key+' value missing');
+            if(value&&value.scrollWidth>value.clientWidth+1)failures.push(item.key+' value clips horizontally');
+            if(value){
+              const r=value.getBoundingClientRect(), bounds=ledger.getBoundingClientRect();
+              if(r.left<bounds.left-1||r.right>bounds.right+1)failures.push(item.key+' value leaves inventory bounds');
+            }
+            if(item.quantity&&(!quantity||quantity.textContent.trim()!==item.quantity||quantity.classList.contains('is-missing')!==item.missingQuantity))failures.push(item.key+' quantity state changed');
+            if(quantity&&quantity.scrollWidth>quantity.clientWidth+1)failures.push(item.key+' quantity clips horizontally');
+            measurements.push({category:item.key,valueWidth:value?.clientWidth??0,valueScroll:value?.scrollWidth??0,valueHeight:value?.getBoundingClientRect().height??0,quantityWidth:quantity?.clientWidth??null,quantityScroll:quantity?.scrollWidth??null});
+          }
+          const action=root.querySelector('[data-testid="summary-equipment-open"]');
+          const actionRect=action.getBoundingClientRect(), ledgerRect=ledger.getBoundingClientRect();
+          const actionText=action.innerText.trim();
+          if(actionText!=='Details')failures.push('equipment action label is not readable');
+          if(action.scrollWidth>action.clientWidth+1||actionRect.left<ledgerRect.left-1||actionRect.right>ledgerRect.right+1)failures.push('equipment action overflows inventory');
+          const overviewActions=[...root.querySelectorAll('button[data-testid^="summary-"],button[data-testid^="button-gap-"],button[data-testid="button-overview-review-evidence"]')].filter(e=>e.getClientRects().length);
+          const actionMeasurements=overviewActions.map(e=>{
+            const r=e.getBoundingClientRect(), name=(e.getAttribute('aria-label')||e.innerText||'').trim();
+            if(!name)failures.push('overview action has no readable name');
+            if(e.scrollWidth>e.clientWidth+1||r.left<root.getBoundingClientRect().left-1||r.right>root.getBoundingClientRect().right+1)failures.push('overview action overflows: '+name);
+            if(innerWidth<768&&r.height<44)failures.push('phone overview action is below 44px: '+name);
+            return {name,width:r.width,height:r.height};
+          });
+          if(!ledger.textContent.includes('Inventory as recorded. Age and quantity describe the record, not condition, intent or buy-back eligibility.'))failures.push('inventory source caveat missing');
+          if(document.documentElement.scrollWidth>document.documentElement.clientWidth+1)failures.push('page overflows viewport');
+          if(root.scrollWidth>root.clientWidth+1)failures.push('profile overflows viewport');
+          if(ledger.scrollWidth>ledger.clientWidth+1)failures.push('inventory overflows its container');
+          const font=parseFloat(getComputedStyle(root.querySelector('[data-testid="text-overview-monitor-model"]')).fontSize);
+          return {failures,measurements,actionMeasurements,font,viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,profile:root.clientWidth,profileScroll:root.scrollWidth,ledger:ledger.clientWidth,ledgerScroll:ledger.scrollWidth,actionHeight:actionRect.height,actionName:action.getAttribute('aria-label'),categories:root.querySelectorAll('[data-testid^="row-overview-equipment-"]').length};
+        })()`);
+        assert.equal(presentation.categories, 6, `${width}px: all six equipment categories remain present`);
+        assert.equal(presentation.actionName, 'View equipment', `${width}px: equipment action keeps its accessible name`);
+        assert.deepEqual(presentation.failures, [], `${width}px: enlarged equipment overview remains readable: ${JSON.stringify(presentation)}`);
+        assert.ok(presentation.font >= 20, `${width}px: browser text enlargement is active (${presentation.font}px)`);
+        await writeFile(`${out}/${width}-overview-enlarged-equipment.png`, Buffer.from((await cdp.send('Page.captureScreenshot', {format:'png'})).result.data, 'base64'));
+        await ev(`document.querySelector('[data-testid="summary-equipment-open"]').click()`);
+        await waitFor(cdp, `document.querySelector('[data-testid="tab-profile-equipment"]')?.getAttribute('aria-selected')==='true'`,'equipment action navigation',10000);
+        await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
+        await waitFor(cdp, `document.querySelector('[data-testid="tab-profile-overview"]')?.getAttribute('aria-selected')==='true'`,'return to Overview',10000);
+        console.log(`PASS enlarged equipment overview at ${width}px: ${JSON.stringify(presentation)}`);
+      }
       if (['overview','equipment','operations','medicare','meeting','deal_story'].includes(topic)) {
         assert.ok(geometry.contentIcons >= 3, `${topic}: topic content needs its own icons, not just navigation icons`);
       }
@@ -203,7 +290,7 @@ try {
     }
   }
   await writeFile(`${out}/${process.env.PROFILE_POLISH_HEADER_ONLY ? 'header-results' : 'results'}.json`, JSON.stringify(results, null, 2));
-  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'nine topic tabs')}, icons, retained section removal.`);
+  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (equipmentTextOnly ? 'enlarged equipment Overview' : process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'nine topic tabs')}, icons, retained section removal.`);
   console.log(JSON.stringify(results, null, 2));
 } finally {
   cdp?.close();

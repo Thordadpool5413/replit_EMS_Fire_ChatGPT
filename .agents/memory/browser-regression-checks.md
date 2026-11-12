@@ -39,6 +39,12 @@ Run feature-specific profile checks from the app shell and navigate directly to 
 
 **How to apply:** Give focused profile checks their own mode and wait only for the app shell and profile directory controls they need.
 
+For a focused profile-topic layout check, open the profile directly on that topic instead of visiting another topic and returning first.
+
+**Why:** A sibling-topic round trip can preserve a scroll position beneath sticky profile navigation, making an unrelated viewport look clipped.
+
+**How to apply:** Keep the setup path limited to the topic being measured; test topic switching separately when navigation itself is in scope.
+
 When selecting a named agency from the card directory, locate its exact heading and click the profile action within that heading's nearest card. Do not match the agency name against broad ancestor text, which can select another card when the ancestor contains multiple results.
 
 **Why:** A broad ancestor can contain a matching agency name elsewhere in the results while the first profile button belongs to a different agency.

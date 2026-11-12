@@ -467,6 +467,96 @@
   .agency-command-profile :is(.afi-switch button.is-active, .dsb-tab[data-active]) { border-bottom-color: Highlight !important; color: Highlight !important; }
 }
 @media print {
+  @page { size: auto; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) {
+    background: #fff !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) > :not(:has(.agency-command-profile[data-profile-topic="overview"])),
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) *:has(.agency-command-profile[data-profile-topic="overview"]) > :not(:has(.agency-command-profile[data-profile-topic="overview"])):not(.agency-command-profile) {
+    display: none !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile.provider-profile-overlay {
+    position: static !important; inset: auto !important; z-index: auto !important;
+    width: 100% !important; height: auto !important; max-height: none !important;
+    overflow: visible !important; background: #fff !important; color: #15263D !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-workspace {
+    min-height: 0 !important; height: auto !important; overflow: visible !important;
+    padding: 0 !important; background: #fff !important; color: #15263D !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-workspace > header {
+    position: static !important; min-height: 0 !important; padding: .25rem 0 .6rem !important;
+    border: 0 !important; background: #fff !important; box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-action-dock,
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-brief-layout > :not(#profile-topic-panel),
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile #profile-topic-panel > :not(.acp-overview) {
+    display: none !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-brief-layout,
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile #profile-topic-panel,
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-overview {
+    display: block !important; width: 100% !important; max-width: none !important;
+    min-height: 0 !important; height: auto !important; overflow: visible !important;
+    margin: 0 !important; padding: 0 !important; background: #fff !important;
+    color: #15263D !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-overview {
+    display: grid !important; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: .55rem !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-hero,
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-workspace {
+    display: contents !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger {
+    grid-column: 1; grid-row: 1 / span 2;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-context {
+    grid-column: 2; grid-row: 1;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-main {
+    grid-column: 1 / -1; grid-row: 3;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-aside {
+    grid-column: 1 / -1; grid-row: 4;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger, .acp-context, .acp-panel) {
+    min-width: 0 !important; overflow: visible !important; box-shadow: none !important;
+    border-color: #CDD4DF !important; background: #fff !important; color: #15263D !important;
+    break-inside: avoid;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger::before { display: none !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger-list { column-gap: .55rem; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger-row {
+    min-width: 0; overflow: visible !important; border-color: #CDD4DF !important;
+    break-inside: avoid; background: #fff !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger-label { color: #52617A !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger-value { color: #15263D !important; overflow-wrap: anywhere; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger-value.is-missing, .acp-ledger-qty.is-missing, .acp-ledger-foot, .acp-ledger-meta, .acp-meta, .acp-ctx-detail) { color: #52617A !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ledger-qty { color: #15263D !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-link, .acp-ctx-open) { display: none !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ctx { border-color: #CDD4DF !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ctx-value { color: #15263D !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-ctx-value.is-missing { color: #7A4B00 !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-scale, .acp-scale-grid, .acp-panel, .acp-panel *) {
+    background: #fff !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger-title, .acp-num-inline, .acp-ctx-label,
+    .acp-ctx-value, .acp-scale-grid dd, .acp-panel-title, .acp-strong, .acp-date,
+    .acp-gaps button, .acp-num) { color: #15263D !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger, .acp-context, .acp-panel) a {
+    color: #1D4ED8 !important; text-decoration: underline !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger, .acp-context, .acp-panel) svg {
+    color: #334155 !important;
+  }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .acp-gaps button { min-height: 0 !important; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile .profile-attention { break-inside: avoid; }
+  body:has(.agency-command-profile[data-profile-topic="overview"]):not(:has(#briefing-dossier-modal-container)) .agency-command-profile :is(.acp-ledger, .acp-context, .acp-aside, .acp-panel,
+    .profile-attention, .acp-ledger-row) { box-shadow: none !important; }
   .agency-command-profile[data-profile-topic] {
     --tp-ink: #15263D; --tp-sub: #52617A; --tp-faint: #52617A;
     --tp-rule: #CDD4DF; --tp-rule-strong: #94A3B8; --tp-card: #fff; --tp-wash: #fff;

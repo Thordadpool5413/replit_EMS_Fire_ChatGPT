@@ -1010,7 +1010,7 @@ async function checkSharedNavigation(cdp) {
   console.log('Shared desktop and mobile navigation regression checks passed.');
 }
 
-async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = null) {
+async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = null, options = {}) {
   const isMobile = await evaluate(cdp, 'innerWidth < 768');
   if (isMobile) {
     const searchOpened = await evaluate(cdp, `(() => {
@@ -1160,6 +1160,14 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
     `Boolean(document.querySelector('main.profile-workspace'))`,
     'the agency profile',
   );
+  if (options.commandOverview) {
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('[data-testid="profile-command-overview"] .acp-ledger'))`,
+      'the equipment-first provider Overview',
+    );
+    return;
+  }
   await waitFor(
     cdp,
     `Boolean(document.querySelector('[data-testid="agency-intelligence-overview"]'))`,
@@ -1392,6 +1400,237 @@ async function setPrintTheme(cdp, theme) {
   );
 }
 
+async function checkProviderOverviewPrintCase(cdp, testCase, pdfDirectory, theme, paperSize) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 1280,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      Boolean([...document.querySelectorAll('button')].find((button) =>
+        button.innerText.trim() === 'Agencies'))`,
+    'the app shell before opening a printable Overview',
+    60_000,
+  );
+  await setPrintTheme(cdp, theme);
+  await openAgencyProfile(cdp, testCase.category, testCase.agency, { commandOverview: true });
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('[data-testid="profile-command-overview"] .acp-ledger')) &&
+      document.querySelectorAll('[data-testid^="row-overview-equipment-"]').length === 6`,
+    `the six-row ${testCase.category} provider Overview`,
+  );
+
+  const fixture = {
+    longModel: 'ZOLL X Series Advanced Pro Defibrillator with Extended Clinical Monitoring and Transport Package Model 12A-Clinical-Plus',
+    categories: [
+      ['monitor', 'Monitor / defibrillator'],
+      ['cpr', 'Mechanical CPR'],
+      ['vent', 'Transport ventilator'],
+      ['epcrcad', 'ePCR / CAD (combined record)'],
+      ['dispatch', 'Dispatch CAD vendor'],
+      ['billing', 'Billing software'],
+    ],
+  };
+  const prepared = await evaluate(cdp, `(() => {
+    const overview = document.querySelector('[data-testid="profile-command-overview"]');
+    const ledger = overview?.querySelector('.acp-ledger');
+    if (!overview || !ledger) return null;
+    const rows = [...ledger.querySelectorAll('.acp-ledger-row')];
+    if (rows.length !== 6) return null;
+    for (const row of rows) {
+      const value = row.querySelector('.acp-ledger-value');
+      const quantity = row.querySelector('.acp-ledger-qty');
+      if (!value || !quantity) return null;
+      if (row.dataset.category === 'monitor') {
+        value.textContent = ${JSON.stringify(fixture.longModel)};
+        value.classList.remove('is-missing');
+        row.removeAttribute('data-missing');
+        quantity.textContent = '1,204 units';
+        quantity.classList.remove('is-missing');
+      } else {
+        value.textContent = 'Not reported';
+        value.classList.add('is-missing');
+        row.dataset.missing = 'true';
+        quantity.textContent = row.dataset.category === 'software' ? '' : 'Units not reported';
+        quantity.classList.toggle('is-missing', row.dataset.category !== 'software');
+      }
+    }
+    return {
+      rowCount: rows.length,
+      labels: rows.map((row) => row.querySelector('.acp-ledger-label')?.innerText.trim() ?? ''),
+      values: rows.map((row) => row.querySelector('.acp-ledger-value')?.innerText.trim() ?? ''),
+      quantities: rows.map((row) => row.querySelector('.acp-ledger-qty')?.innerText.trim() ?? ''),
+      agency: document.querySelector('.profile-workspace h1')?.innerText.trim() ?? '',
+      caveat: ledger.querySelector('.acp-ledger-foot')?.innerText.trim() ?? '',
+    };
+  })()`);
+  assert(
+    prepared?.rowCount === 6 &&
+      prepared.labels.length === fixture.categories.length &&
+      prepared.values.includes(fixture.longModel) &&
+      prepared.quantities.includes('1,204 units') &&
+      prepared.quantities.filter((quantity) => quantity === 'Units not reported').length === 2 &&
+      prepared.values.filter((value) => value === 'Not reported').length === 5 &&
+      /Inventory as recorded/i.test(prepared.caveat) &&
+      /not condition, intent or buy-back eligibility/i.test(prepared.caveat),
+    `${testCase.category} print fixture does not cover the full sparse equipment ledger: ${JSON.stringify(prepared)}`,
+  );
+
+  await cdp.send('Emulation.setEmulatedMedia', { media: 'print' });
+  const printState = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('.agency-command-profile');
+    const ledger = profile?.querySelector('.acp-ledger');
+    const foot = ledger?.querySelector('.acp-ledger-foot');
+    const rows = [...(ledger?.querySelectorAll('.acp-ledger-row') ?? [])];
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 &&
+        style.display !== 'none' && style.visibility === 'visible';
+    };
+    const rgb = (color) => (color.match(/[\\d.]+/g) ?? []).slice(0, 3).map(Number);
+    const luminance = (color) => {
+      const channels = rgb(color).map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    const contrast = (foreground, background) => {
+      const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+      return (values[0] + 0.05) / (values[1] + 0.05);
+    };
+    const white = 'rgb(255, 255, 255)';
+    const longValue = ledger?.querySelector('[data-category="monitor"] .acp-ledger-value');
+    const missingValue = ledger?.querySelector('[data-category="cpr"] .acp-ledger-value');
+    const missingQuantity = ledger?.querySelector('[data-category="cpr"] .acp-ledger-qty');
+    const measuredRows = rows.map((row) => {
+      const bounds = row.getBoundingClientRect();
+      const texts = [...row.querySelectorAll('.acp-ledger-label, .acp-ledger-value, .acp-ledger-qty')];
+      return {
+        category: row.dataset.category,
+        visible: visible(row),
+        textInside: texts.every((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 &&
+            element.scrollWidth <= element.clientWidth + 2 &&
+            element.scrollHeight <= element.clientHeight + 2;
+        }),
+      };
+    });
+    const outsideVisibleText = [...document.body.querySelectorAll('*')]
+      .filter((element) => element.children.length === 0 && element.textContent?.trim())
+      .filter((element) => !profile?.contains(element))
+      .filter((element) => visible(element))
+      .map((element) => element.textContent.trim()).slice(0, 5);
+    return {
+      printMedia: matchMedia('print').matches,
+      overviewVisible: visible(ledger),
+      rowCount: rows.length,
+      rows: measuredRows,
+      longValueWraps: (() => {
+        if (!longValue) return false;
+        const range = document.createRange();
+        range.selectNodeContents(longValue);
+        return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size > 1;
+      })(),
+      longValueColor: longValue ? getComputedStyle(longValue).color : '',
+      missingValueColor: missingValue ? getComputedStyle(missingValue).color : '',
+      missingQuantityColor: missingQuantity ? getComputedStyle(missingQuantity).color : '',
+      caveatColor: foot ? getComputedStyle(foot).color : '',
+      background: ledger ? getComputedStyle(ledger).backgroundColor : '',
+      caveatVisible: Boolean(foot && visible(foot)),
+      caveatText: foot?.innerText.trim() ?? '',
+      contrast: {
+        longValue: longValue ? contrast(getComputedStyle(longValue).color, white) : 0,
+        missingValue: missingValue ? contrast(getComputedStyle(missingValue).color, white) : 0,
+        missingQuantity: missingQuantity ? contrast(getComputedStyle(missingQuantity).color, white) : 0,
+        caveat: foot ? contrast(getComputedStyle(foot).color, white) : 0,
+      },
+      outsideVisibleText,
+    };
+  })()`);
+  assert(
+    printState?.printMedia &&
+      printState.overviewVisible &&
+      printState.rowCount === 6 &&
+      printState.rows.every((row) => row.visible && row.textInside) &&
+      printState.longValueWraps &&
+      printState.background === 'rgb(255, 255, 255)' &&
+      printState.contrast.longValue >= 4.5 &&
+      printState.contrast.missingValue >= 4.5 &&
+      printState.contrast.missingQuantity >= 4.5 &&
+      printState.contrast.caveat >= 4.5 &&
+      printState.caveatVisible &&
+      /buy-back eligibility/i.test(printState.caveatText) &&
+      printState.outsideVisibleText.length === 0,
+    `${testCase.category} Overview print layout clips content, loses paper-safe contrast, or exposes other workspace content: ${JSON.stringify(printState)}`,
+  );
+
+  const pdfResult = await cdp.send('Page.printToPDF', {
+    paperWidth: paperSize.width,
+    paperHeight: paperSize.height,
+    preferCSSPageSize: false,
+    printBackground: true,
+    transferMode: 'ReturnAsBase64',
+  });
+  const pdfPath = path.join(
+    pdfDirectory,
+    `overview-${testCase.category}-${theme}-${paperSize.name.toLowerCase()}.pdf`,
+  );
+  await writeFile(pdfPath, Buffer.from(pdfResult.result.data, 'base64'));
+  const [{ stdout: pdfInfo }, { stdout: extractedText }] = await Promise.all([
+    execFileAsync('pdfinfo', [pdfPath], { maxBuffer: 2 * 1024 * 1024 }),
+    execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 4 * 1024 * 1024 }),
+  ]);
+  const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+  const pageSize = pdfInfo.match(/^Page size:\s+(.+)$/m)?.[1] ?? '';
+  const pages = extractedText.split('\f').map((page) => page.trim()).filter(Boolean);
+  const normalizedPdfText = extractedText.replace(/\s+/g, ' ').toLowerCase();
+  const alphanumericPdfText = normalizedPdfText.replace(/[^a-z0-9]/g, '');
+  const containsWords = (value) => value.toLowerCase().split(/\s+/)
+    .filter(Boolean)
+    .every((word) => alphanumericPdfText.includes(word.replace(/[^a-z0-9]/g, '')));
+  const missingLabels = fixture.categories
+    .map(([, label]) => label)
+    .filter((label) => !containsWords(label));
+  const longModelMissingWords = fixture.longModel.split(/\s+/)
+    .filter((word) => !normalizedPdfText.includes(word.toLowerCase()));
+  assert(
+    paperSize.expectedSize.test(pageSize),
+    `${testCase.category} Overview PDF is not ${paperSize.name} portrait paper: ${pageSize}`,
+  );
+  assert(
+    pageCount > 0 && pageCount <= 8 &&
+      pages.length === pageCount && pages.every((page) => page.length > 0),
+    `${testCase.category} Overview PDF has empty or unexpected pages (${pageCount} pages, ${pages.length} with text)`,
+  );
+  assert(
+    containsWords(testCase.agency) &&
+      missingLabels.length === 0 &&
+      longModelMissingWords.length === 0 &&
+      containsWords('1,204 units') &&
+      containsWords('Units not reported') &&
+      normalizedPdfText.includes('not reported') &&
+      containsWords('Inventory as recorded') &&
+      containsWords('not condition, intent or buy-back eligibility'),
+    `${testCase.category} ${paperSize.name} Overview PDF lost category, quantity, missing-value, long-model, or caveat text: ${JSON.stringify({
+      missingLabels,
+      longModelMissingWords,
+      text: normalizedPdfText.slice(0, 1800),
+    })}`,
+  );
+  await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
+  console.log(
+    `✓ Provider Overview / ${testCase.category} / ${theme} / ${paperSize.name}: ${pageCount} non-empty page(s), six categories, sparse values, long model, caveat, and contrast retained`,
+  );
+}
+
 async function checkProfilePrintCase(
   cdp,
   testCase,
@@ -1410,7 +1649,7 @@ async function checkProfilePrintCase(
     60_000,
   );
   await setPrintTheme(cdp, theme);
-  await openAgencyProfile(cdp, testCase.category, testCase.agency);
+  await openAgencyProfile(cdp, testCase.category, testCase.agency, { commandOverview: true });
 
   const briefOpened = await evaluate(cdp, `(() => {
     const actions = document.querySelector('.profile-more-actions');
@@ -5146,6 +5385,31 @@ async function main() {
       return;
     }
 
+    if (process.env.PROFILE_OVERVIEW_PRINT_ONLY === '1') {
+      for (const theme of ['daylight', 'dark', 'miami-vice'].filter((theme) =>
+        !process.env.PROFILE_PRINT_THEME || theme === process.env.PROFILE_PRINT_THEME,
+      )) {
+        for (const testCase of profilePrintCases.filter((item) =>
+          !process.env.PROFILE_PRINT_CATEGORY || item.category === process.env.PROFILE_PRINT_CATEGORY,
+        )) {
+          for (const paperSize of printPaperSizes.filter((paper) =>
+            !process.env.PROFILE_PRINT_PAPER ||
+            paper.name.toLowerCase() === process.env.PROFILE_PRINT_PAPER.toLowerCase(),
+          )) {
+            await checkProviderOverviewPrintCase(
+              cdp,
+              testCase,
+              userDataDir,
+              theme,
+              paperSize,
+            );
+          }
+        }
+      }
+      console.log('Provider Overview A4 and Letter print checks passed in Daylight, Dark, and Miami Vice.');
+      return;
+    }
+
     if (process.env.PROFILE_PRINT_ONLY === '1') {
       const emsSourceFixture = {
         'zoll-agency-oh-cleveland': {
@@ -5195,8 +5459,31 @@ async function main() {
           }
         }
       }
+      const overviewThemes = ['daylight', 'dark', 'miami-vice'].filter((theme) =>
+        !process.env.PROFILE_PRINT_THEME || theme === process.env.PROFILE_PRINT_THEME,
+      );
+      const overviewCases = profilePrintCases.filter((item) =>
+        !process.env.PROFILE_PRINT_CATEGORY || item.category === process.env.PROFILE_PRINT_CATEGORY,
+      );
+      const overviewPaperSizes = printPaperSizes.filter((paper) =>
+        !process.env.PROFILE_PRINT_PAPER ||
+        paper.name.toLowerCase() === process.env.PROFILE_PRINT_PAPER.toLowerCase(),
+      );
+      for (const theme of overviewThemes) {
+        for (const testCase of overviewCases) {
+          for (const paperSize of overviewPaperSizes) {
+            await checkProviderOverviewPrintCase(
+              cdp,
+              testCase,
+              userDataDir,
+              theme,
+              paperSize,
+            );
+          }
+        }
+      }
       await checkFieldRoutePrint(cdp, userDataDir);
-      console.log('Provider and Field Work A4 and Letter print checks passed in Daylight, Dark, and Miami Vice.');
+      console.log('Provider dossier and Overview, plus Field Work A4 and Letter print checks passed in Daylight, Dark, and Miami Vice.');
       return;
     }
 

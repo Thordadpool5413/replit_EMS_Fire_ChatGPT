@@ -38,6 +38,24 @@ test('equipment-first overview retains recorded quantities and age, including ze
   assert.match(html,/0 (?:years|yrs)/);
   assert.doesNotMatch(html,/eligible units|confirmed deployment|verified equipment/i);
 });
+test('overview keeps all six equipment and software rows, missing labels, and inventory caveat',()=>{
+  const html=render(fixture({installedFleet:{
+    defibBrand:'Recorded Monitor Model',defibUnitsCount:12,
+    mechanicalCPR:undefined,transportVentilator:undefined,epcrCadSoftware:undefined,
+    dispatchCadVendor:undefined,billingSoftware:undefined,
+  } as unknown as Agency['installedFleet']}));
+  for(const key of ['monitor','cpr','vent','epcrcad','dispatch','billing']){
+    assert.match(html,new RegExp(`data-testid="row-overview-equipment-${key}"`));
+  }
+  for(const value of ['Monitor / defibrillator','Mechanical CPR','Transport ventilator','ePCR / CAD (combined record)','Dispatch CAD vendor','Billing software']){
+    assert.ok(html.includes(value),`missing equipment category: ${value}`);
+  }
+  assert.match(html,/12 units/);
+  assert.equal((html.match(/Not reported/g)||[]).length,5);
+  assert.equal((html.match(/Units not reported/g)||[]).length,2);
+  assert.match(html,/Inventory as recorded/);
+  assert.match(html,/not condition, intent or buy-back eligibility/);
+});
 test('unknown equipment quantity and age are not displayed as reported zeros',()=>{
   const html=render(fixture({installedFleet:{
     defibBrand:'Recorded Monitor Model',

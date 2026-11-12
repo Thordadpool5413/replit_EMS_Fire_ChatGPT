@@ -4,7 +4,8 @@
  * Trade-in credit is applied once (capital scenario) and never added to operating savings.
  */
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Calculator, Coins, FileBarChart, Receipt, Wrench } from 'lucide-react';
+import { ScrollableTableRegion } from '../ScrollableTableRegion';
+import { AlertTriangle, Ban, Calculator, Coins, FileBarChart, HandCoins, Landmark, Percent, Receipt, ServerCog, ShieldCheck, Wallet, Wrench } from 'lucide-react';
 import type { Agency } from '../../types';
 import type { AgencyTcoComparison } from '../../data/clinicalAndCompetitiveIntelligence';
 import type { ServiceMode } from './AgencyIntelligenceBrief';
@@ -137,7 +138,7 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
           <dl className="afi-payers">
             {payers.map((p) => (
               <div key={p.key} data-tone={p.tone} data-testid={`payer-${p.key}`}>
-                <dt>{p.label}</dt>
+                <dt><Percent aria-hidden="true" className="afi-ico" />{p.label}</dt>
                 <dd className={isNum(p.value) ? '' : 'is-missing'}>{pct(p.value)}</dd>
               </div>
             ))}
@@ -151,14 +152,14 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
           {!allReported && reported.length > 0 && !payerDiscrepancy && (
             <p className="afi-note">Only {reported.length} of 4 payer shares are reported; the remainder is unknown, not zero.</p>
           )}
-          <dl className="afi-rows">
-            <div><dt>Medicare billed / yr</dt><dd>{usd(cms.medicareBilledAnnual)}</dd></div>
-            <div><dt>Medicare allowed / yr</dt><dd>{usd(cms.medicareAllowedAnnual)}</dd></div>
-            <div><dt>Medicaid billed / yr</dt><dd>{usd(cms.medicaidBilledAnnual)}</dd></div>
-            <div><dt>Commercial underpayment / trip</dt><dd>{usd(agency.qualityMetrics?.commercialUnderpaymentPerTrip)}</dd></div>
-            <div><dt>Top denial reason</dt><dd>{cms.topDenialReason || 'Not reported'}</dd></div>
-            <div><dt>GADCS status</dt><dd>{cms.gadcsReportingStatus || 'Not reported'}</dd></div>
-            <div><dt>Billing software</dt><dd>{agency.installedFleet?.billingSoftware || 'Not reported'}</dd></div>
+          <dl className="afi-rows afi-rows--icons">
+            <div><dt><Receipt aria-hidden="true" className="afi-ico" />Medicare billed / yr</dt><dd>{usd(cms.medicareBilledAnnual)}</dd></div>
+            <div><dt><ShieldCheck aria-hidden="true" className="afi-ico" />Medicare allowed / yr</dt><dd>{usd(cms.medicareAllowedAnnual)}</dd></div>
+            <div><dt><Landmark aria-hidden="true" className="afi-ico" />Medicaid billed / yr</dt><dd>{usd(cms.medicaidBilledAnnual)}</dd></div>
+            <div><dt><Wallet aria-hidden="true" className="afi-ico" />Commercial underpayment / trip</dt><dd>{usd(agency.qualityMetrics?.commercialUnderpaymentPerTrip)}</dd></div>
+            <div><dt><Ban aria-hidden="true" className="afi-ico" />Top denial reason</dt><dd>{cms.topDenialReason || 'Not reported'}</dd></div>
+            <div><dt><FileBarChart aria-hidden="true" className="afi-ico" />GADCS status</dt><dd>{cms.gadcsReportingStatus || 'Not reported'}</dd></div>
+            <div><dt><ServerCog aria-hidden="true" className="afi-ico" />Billing software</dt><dd>{agency.installedFleet?.billingSoftware || 'Not reported'}</dd></div>
           </dl>
         </section>
       ) : (
@@ -188,8 +189,8 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
         ) : scenario === 'operating' && tcoModel ? (
           <div className="afi-body">
             <p className="afi-note">{benchmarkMatched ? `Benchmark matched to the recorded model: ${agency.installedFleet.defibBrand}.` : `Selected comparison assumption: the recorded monitor is "${agency.installedFleet.defibBrand}", which is not confirmed as ${tcoModel.incumbentModel}.`}</p>
-            <p className="afi-result"><span>Illustrative 5-year operating difference</span><strong>{usd(tcoModel.fiveYearOperatingSavings)}</strong></p>
-            <table className="afi-table">
+            <p className="afi-result"><span><Wrench aria-hidden="true" className="afi-ico" />Illustrative 5-year operating difference</span><strong>{usd(tcoModel.fiveYearOperatingSavings)}</strong></p>
+            <ScrollableTableRegion label="Operating cost comparison"><table className="afi-table">
               <thead><tr><th>Cost driver ({tcoModel.unitCount} of {units} reported units)</th><th>{tcoModel.incumbentModel}</th><th>{tcoModel.zollModel}</th><th>Difference</th></tr></thead>
               <tbody>
                 <tr><td>Service contracts, 60 months</td><td>{usd(tcoModel.incumbentServiceTotal)}</td><td>{usd(tcoModel.zollServiceTotal)}</td><td>{usd(tcoModel.incumbentServiceTotal - tcoModel.zollServiceTotal)}</td></tr>
@@ -197,7 +198,7 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
                 <tr><td>Electrodes and consumables</td><td>{usd(tcoModel.incumbentConsumablesTotal)}</td><td>{usd(tcoModel.zollConsumablesTotal)}</td><td>{usd(tcoModel.incumbentConsumablesTotal - tcoModel.zollConsumablesTotal)}</td></tr>
                 <tr className="is-total"><td>Total</td><td>{usd(tcoModel.incumbentOperatingTotal)}</td><td>{usd(zollOperating)}</td><td>{usd(tcoModel.fiveYearOperatingSavings)}</td></tr>
               </tbody>
-            </table>
+            </table></ScrollableTableRegion>
             <p className="afi-note">Benchmark per-unit rates from the app's competitive library, not agency spending. Trade-in credit is not included here; it is applied once in Replacement capital.</p>
             <details className="afi-more"><summary>Cumulative by year</summary>
               <ol className="afi-cumulative" aria-label="Cumulative operating difference by year, excluding trade-in">
@@ -212,8 +213,8 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
           </div>
         ) : scenario === 'capital' ? (
           <div className="afi-body">
-            <p className="afi-result"><span>Illustrative net replacement capital</span><strong>{usd(net)}</strong></p>
-            <table className="afi-table">
+            <p className="afi-result"><span><HandCoins aria-hidden="true" className="afi-ico" />Illustrative net replacement capital</span><strong>{usd(net)}</strong></p>
+            <ScrollableTableRegion label="Replacement capital calculation"><table className="afi-table">
               <tbody>
                 <tr><td>Reported monitor units (inventory)</td><td colSpan={3}>{isNum(units) ? units.toLocaleString() : 'Not reported'}</td></tr>
                 <tr><td>Units included (assumed eligible)</td><td colSpan={3}>{n != null ? n.toLocaleString() : 'Not reported'}</td></tr>
@@ -221,19 +222,19 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
                 <tr><td>Less trade-in = included units x per-unit credit</td><td colSpan={3}>-{usd(credit)}</td></tr>
                 <tr className="is-total"><td>Net capital</td><td colSpan={3}>{usd(net)}</td></tr>
               </tbody>
-            </table>
+            </table></ScrollableTableRegion>
             <p className="afi-note">Inventory is not an eligible-quantity confirmation. Trade-in is an assumption, not a written offer; record quotes in Equipment buy-back research.</p>
           </div>
         ) : (
           <div className="afi-body">
-            <p className="afi-result"><span>Illustrative annual claims recovery</span><strong>{usd(recovery)}</strong></p>
-            <table className="afi-table">
+            <p className="afi-result"><span><Coins aria-hidden="true" className="afi-ico" />Illustrative annual claims recovery</span><strong>{usd(recovery)}</strong></p>
+            <ScrollableTableRegion label="Claims recovery calculation"><table className="afi-table">
               <tbody>
                 <tr><td>Recorded denied amount / yr</td><td colSpan={3}>{usd(recoveryPool)}</td></tr>
                 <tr><td>x capture assumption</td><td colSpan={3}>{capturePct}%</td></tr>
                 <tr className="is-total"><td>Recovery</td><td colSpan={3}>{usd(recovery)}</td></tr>
               </tbody>
-            </table>
+            </table></ScrollableTableRegion>
             <p className="afi-note">Denied claims are not all recoverable. Scope and period: {cms.medicareDenialClaimScope || 'not recorded'} · {cms.medicareDenialReportingPeriod || 'not recorded'}.</p>
           </div>
         )}

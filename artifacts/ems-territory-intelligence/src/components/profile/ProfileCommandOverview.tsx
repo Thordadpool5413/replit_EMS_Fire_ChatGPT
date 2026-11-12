@@ -1,7 +1,7 @@
 /**
  * Curated Overview for a single agency profile.
  * Region C: four executive intelligence summaries. Region D: asymmetric workspace
- * (findings + meeting preparation on the left; contact, dates, gaps on the right).
+ * (concise attention summary on the left; contact, dates, gaps on the right).
  * Every value comes from the agency record; missing values stay "Not reported".
  */
 import React from 'react';
@@ -29,6 +29,8 @@ export type CommandSection =
   | 'decision_makers'
   | 'operations'
   | 'medicare'
+  | 'meeting'
+  | 'deal_story'
   | 'evidence';
 
 const isNum = (v: number | null | undefined): v is number => v != null && Number.isFinite(v);
@@ -74,7 +76,7 @@ export interface ProfileCommandOverviewProps {
   agency: Agency;
   onNavigate: (section: CommandSection) => void;
   onOpenSources: () => void;
-  /** Main column content (findings + meeting preparation). */
+  /** Concise agency focus summary; detailed preparation lives in its own topic. */
   children: React.ReactNode;
 }
 

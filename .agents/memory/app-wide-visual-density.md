@@ -23,6 +23,12 @@ Keep the entire app compact, clean, and scannable on laptop and phone. Reduce ov
 
 For EMS and Fire profiles, use an agency intelligence brief: one identity/contact header, one agency-specific operational snapshot, and findings paired with their basis and a suggested next step. Distinguish EMS, fire, and combined operations without duplicate summaries. Use recognizable unboxed icons, aligned numbers and units, restrained colors, and shared theme tokens. Start supporting detail panels collapsed and avoid repeating the same figures in their collapsed labels; retain full facts and citations when expanded, and keep registry, planning, assessment, and review details at the profile end.
 
+Keep detailed account findings and meeting preparation toward the end of the profile tabs, and give Deal story & discovery playbook its own tab. The opening Overview should communicate the most important provider facts and reasons to investigate, not the full preparation workspace.
+
+**Why:** The user explicitly requested this profile organization while asking for denser, more polished Equipment, Operations & Clinical and Financial views.
+
+**How to apply:** Keep a concise evidence/confidence-aware focus summary on Overview. Direct meeting actions to the preparation topic; keep the complete findings, citations and discovery workflows accessible without repeating them on the opening page.
+
 Individual profile cards and display fonts must be smaller, not merely restyled.
 
 **Why:** After the icon/visual polish, the user repeated that the profile sheets were not impressive or polished and said “the cards and fonts needs to be reduced in size too. everything is too large.”

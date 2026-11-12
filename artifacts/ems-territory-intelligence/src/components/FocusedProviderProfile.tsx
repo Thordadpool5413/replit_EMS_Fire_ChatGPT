@@ -81,6 +81,7 @@ import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
+import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
 import { ProfileDetail } from './profile/ProfileDetail';
 import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
@@ -194,6 +195,8 @@ type ProfileSection =
   | 'decision_makers'
   | 'operations'
   | 'medicare'
+  | 'meeting'
+  | 'deal_story'
   | 'evidence';
 
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
@@ -203,6 +206,8 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string
   { id: 'decision_makers', label: 'Decision Makers', short: 'People', purpose: 'Recorded leadership and purchasing authority with source context. Relationships are never inferred.', icon: UserCheck },
   { id: 'operations', label: 'Operations & Clinical', short: 'Ops & clinical', purpose: 'Operational scale, apparatus, receiving hospitals and source-supported clinical measures.', icon: Activity },
   { id: 'medicare', label: 'Financial Intelligence', short: 'Financial', purpose: 'Reported claims data separated from planning estimates. Assumptions are adjustable; projections are not agency outcomes.', icon: DollarSign },
+  { id: 'meeting', label: 'Account findings & meeting preparation', short: 'Meeting prep', purpose: 'Evidence, confidence, cited signals and a practical meeting brief. Records are working references, not proof of buying intent.', icon: FileText },
+  { id: 'deal_story', label: 'Deal story & discovery playbook', short: 'Deal story', purpose: 'Prepare an agency-specific conversation, discovery questions and a clearly labeled planning comparison.', icon: Sparkles },
   { id: 'evidence', label: 'Evidence & Verification', short: 'Evidence', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and keep field notes.', icon: FileCheck2 },
 ];
 
@@ -1099,7 +1104,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (!changeSection('overview')) return;
+              if (!changeSection('meeting')) return;
               setTimeout(() => {
                 const el = document.getElementById('meeting-preparation-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -1583,7 +1588,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </div>
 
           {/* ================================================================
-              7-TOPIC ACCOUNT 360 NAVIGATION (SECTION 9)
+              ACCOUNT 360 TOPIC NAVIGATION
              ================================================================ */}
           <nav
             data-testid="profile-topic-navigation"
@@ -1636,18 +1641,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {activeSection === 'overview' && (
             <ProfileCommandOverview agency={agency} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
-              <AgencyIntelligenceBrief
-                view="overview"
-                agency={agency}
-                renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />}
-                onOpenSources={openProfileSources}
-              />
-              <details className="acp-disclosure" data-testid="details-deal-story">
-                <summary>Deal story &amp; discovery playbook<ChevronDown aria-hidden="true" className="h-4 w-4" /></summary>
-                <div id="legacy-meeting-playbook-section" className="scroll-mt-32">
-                  <DealStoryBriefingView agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
-                </div>
-              </details>
+              <ProfileAttentionSummary key={agency.id} agency={agency} onNavigate={navigateProfileSection} />
             </ProfileCommandOverview>
           )}
 
@@ -1660,6 +1654,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {activeSection === 'equipment' && (
             <AgencyIntelligenceBrief view="equipment" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
+          )}
+          {activeSection === 'meeting' && (
+            <AgencyIntelligenceBrief view="overview" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
+          )}
+          {activeSection === 'deal_story' && (
+            <div className="profile-deal-workspace" data-testid="profile-deal-story">
+              <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
+            </div>
           )}
           {activeSection === 'purchasing' && (
             <AgencyIntelligenceBrief view="purchasing" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
@@ -3256,7 +3258,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (!changeSection('overview')) return;
+                if (!changeSection('meeting')) return;
                 setTimeout(() => {
                   const el = document.getElementById('meeting-preparation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });

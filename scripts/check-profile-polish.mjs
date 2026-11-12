@@ -42,7 +42,11 @@ try {
     await waitFor(cdp, `Boolean(document.querySelector('.acp-header'))`, 'agency profile', 60000);
     await ev(`document.fonts.ready.then(()=>true)`);
     await new Promise(resolve => setTimeout(resolve, 500));
-    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'evidence'])) {
+    // The header action must follow the moved preparation content.
+    await ev(`document.querySelector('[data-testid="button-profile-prepare-meeting"]').click()`);
+    await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-meeting-brief"]'))`, 'meeting prep action', 10000);
+    await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
+    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'medicare', 'meeting', 'deal_story', 'evidence'])) {
       if (topic !== 'overview') {
         await ev(`(()=>{const s=document.querySelector('.acp-nav-select');if(s&&getComputedStyle(s).display!=='none'){s.value=${JSON.stringify(topic)};s.dispatchEvent(new Event('change',{bubbles:true}))}else{document.querySelector('[data-testid="tab-profile-${topic}"]').click()}})()`);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -70,20 +74,27 @@ try {
           name:root.querySelector('.acp-name').textContent,
           active:root.querySelector('.acp-tab.is-active')?.getAttribute('data-testid'),
           prepareHeight:root.querySelector('[data-testid="button-profile-prepare-meeting"]')?.getBoundingClientRect().height??null
+          ,meetingCount:root.querySelectorAll('[data-testid="profile-meeting-brief"]').length
+          ,dealCount:root.querySelectorAll('[data-testid="deal-story-full"]').length
+          ,focusCount:root.querySelectorAll('[data-testid="profile-attention-summary"]').length
         }
       })()`);
       assert.ok(geometry.page <= geometry.viewport + 1, `${width}/${topic}: page overflow`);
+      if (geometry.profileScroll > geometry.profileWidth + 1) console.log(await ev(`JSON.stringify([...document.querySelectorAll('.agency-command-profile *')].filter(e=>e.clientWidth>0&&e.scrollWidth>e.clientWidth+2).map(e=>({cls:e.className,width:e.clientWidth,scroll:e.scrollWidth,text:e.textContent.slice(0,100)})).slice(0,15))`));
       assert.ok(geometry.profileScroll <= geometry.profileWidth + 1, `${width}/${topic}: profile overflow`);
       assert.ok(geometry.removed, 'Removed next-action section must stay removed');
       assert.equal(geometry.profileCount, 1, 'Only one profile may be mounted');
       assert.equal(geometry.navCount, 1, 'Only one topic navigation may be mounted');
       assert.equal(geometry.overviewCount, topic === 'overview' ? 1 : 0, 'Overview must not repeat');
+      assert.equal(geometry.meetingCount, topic === 'meeting' ? 1 : 0, 'Meeting preparation only in its own topic');
+      assert.equal(geometry.dealCount, topic === 'deal_story' ? 1 : 0, 'Deal story only in its own topic');
+      assert.equal(geometry.focusCount, topic === 'overview' ? 1 : 0, 'Opening focus brief only in overview');
       assert.ok(geometry.icons > 5, `${width}/${topic}: meaningful icons rendered`);
       assert.equal(geometry.active, `tab-profile-${topic}`, 'Topic navigation must work');
       if (width < 768) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');
       if (topic === 'overview') assert.ok(geometry.summaryIcons >= 4, 'Each overview summary needs an icon');
       results.push(geometry);
-      if (['overview', 'equipment'].includes(topic)) {
+      if (['overview', 'equipment', 'operations', 'medicare', 'meeting', 'deal_story'].includes(topic)) {
         await ev(`document.querySelector('.agency-command-profile').scrollTop=0`);
         const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
         await writeFile(`${out}/${width}-${topic}.png`, Buffer.from(shot.result.data, 'base64'));
@@ -93,10 +104,17 @@ try {
           await writeFile(`${out}/${width}-equipment-content.png`, Buffer.from(equipmentShot.result.data, 'base64'));
         }
       }
+      if (topic === 'deal_story') {
+        for (const subtopic of ['questions','solution','conversation','brief']) {
+          await ev(`document.querySelector('[data-testid="button-dealstory-tab-${subtopic}"]').click()`);
+          assert.equal(await ev(`document.querySelector('[data-testid="button-dealstory-tab-${subtopic}"]').getAttribute('aria-pressed')`),'true','Deal story subtopic selected');
+          assert.ok(await ev(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`),'Deal story subtopic fits viewport');
+        }
+      }
     }
   }
   await writeFile(`${out}/${process.env.PROFILE_POLISH_HEADER_ONLY ? 'header-results' : 'results'}.json`, JSON.stringify(results, null, 2));
-  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'six topic tabs')}, icons, retained section removal.`);
+  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'nine topic tabs')}, icons, retained section removal.`);
   console.log(JSON.stringify(results, null, 2));
 } finally {
   cdp?.close();

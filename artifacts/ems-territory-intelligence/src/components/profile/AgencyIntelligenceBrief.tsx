@@ -307,7 +307,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
             {renderFactTag('annualEmergencyVolume')}
             {renderFactTag('clinicalOutcomes')}
           </div>
-          <dl className="aib-figures">
+          <dl className="aib-figures aib-figures--cards">
             {figures.map((f) => <Fig key={f.id} {...f} />)}
             {contextFigures.map((f) => <Fig key={f.id} {...f} />)}
           </dl>

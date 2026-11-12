@@ -2,8 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ArrowUpRight, Building2, ChevronDown, ChevronRight, ExternalLink, FileSearch, MapPin, Radio, Shield, Truck, Users } from 'lucide-react';
 import { AGENCY_FACT_EVIDENCE_FIELDS } from '../data/agencyFactEvidence';
 import type { Agency, AgencyFactEvidence, AgencyFactEvidenceKey } from '../types';
-
-type ProfileSection = 'overview' | 'equipment' | 'purchasing' | 'decision_makers' | 'operations' | 'medicare' | 'evidence' | 'all';
+import type { CommandSection as ProfileSection } from './profile/ProfileCommandOverview';
 
 const EMPTY_VALUE_LABELS = new Set([
   'not reported',

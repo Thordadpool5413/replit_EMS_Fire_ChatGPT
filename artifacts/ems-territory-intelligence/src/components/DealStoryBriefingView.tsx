@@ -77,26 +77,20 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   const fiveYrSavings = hasTcoInputs ? `$${Math.round(tco.fiveYearOperatingSavings / 1000)}K` : 'Not calculated';
   const tradeIn = hasTcoInputs ? `$${Math.round(tco.totalTradeInCredit / 1000)}K` : 'Not calculated';
   const tcoMethod = hasTcoInputs
-    ? `Inputs: ${reportMetric(tco.unitCount)} reported defibrillator units; five years; benchmark ${tco.incumbentModel} vs ${tco.zollModel}; per-unit annual service ${reportCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs ${reportCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${reportCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${reportCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and trade-in assumption ${reportCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Method: operating cost difference plus trade-in; modeled values, not an agency quote.`
+    ? `Inputs: ${reportMetric(tco.unitCount)} reported defibrillator units; five years; benchmark ${tco.incumbentModel} vs ${tco.zollModel}; per-unit annual service ${reportCurrency(tco.matchedIntel.incumbentAnnualServicePerUnit)} vs ${reportCurrency(tco.matchedIntel.zollAnnualServicePerUnit)}, 5-year batteries ${reportCurrency(tco.matchedIntel.incumbentBattery5YrCostPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollBattery5YrCostPerUnit)}, annual consumables ${reportCurrency(tco.matchedIntel.incumbentConsumableAnnualPerUnit)} vs ${reportCurrency(tco.matchedIntel.zollConsumableAnnualPerUnit)}, and separate trade-in assumption ${reportCurrency(tco.matchedIntel.zollTradeInCreditPerUnit)}/unit. Operating differences exclude trade-in; these are modeled values, not an agency quote.`
     : 'Not calculated: no positive reported defibrillator unit count.';
   const recoverableEstimate = 'Not calculated — agency-specific inputs and a reproducible method are unavailable.';
   const hasGrant = Boolean(agency.grantStatus?.afgAwarded);
   const grantAmt = reportCurrency(agency.grantStatus?.afgAwardAmount);
   const grantFiscalYear = reportMetric(agency.grantStatus?.afgFiscalYear);
 
-  // Strategic Executive Elevator Pitch
+  // A spoken opening, not the entire financial methodology or a presumed buying signal.
   const elevatorPitch = useMemo(() => {
-    const leaderTitle = isFire ? 'Chief' : 'Director';
-    const leaderName = agency.keyContacts[0]?.name ? `${leaderTitle} ${agency.keyContacts[0].name.split(' ').pop()}` : leaderTitle;
-    const grantSentence = hasGrant
-      ? ` A FEMA AFG award is listed for FY${grantFiscalYear}, with an amount of ${grantAmt}; current availability and eligible uses are not verified here.`
-      : '';
-
-    const tcoSentence = hasTcoInputs
-      ? ` Illustrative 5-year estimate for ${defibCount} reported defibrillator units: ${fiveYrSavings} operating savings plus ${tradeIn} trade-in credit. ${tcoMethod}`
-      : ` A 5-year fleet estimate is not calculated because a positive reported defibrillator unit count is unavailable. ${tcoMethod}`;
-    return `${leaderName} at ${agency.name}: Recorded defibrillator details are ${defibCount} units, ${defibBrand} brand, age ${defibAge}, and warranty status ${warranty}.${tcoSentence} Medicare claim records can be reviewed in the account; recoverable revenue: ${recoverableEstimate}${grantSentence} Cooperative purchasing option listed: ${coopContract.contractName} (${coopContract.contractNumber}); local eligibility and requirements need confirmation.`;
-  }, [agency, isFire, defibBrand, defibCount, defibAge, warranty, hasTcoInputs, fiveYrSavings, tradeIn, tcoMethod, recoverableEstimate, hasGrant, grantAmt, grantFiscalYear, coopContract]);
+    const inventory = defibBrand !== 'Not reported'
+      ? `Our working record for ${agency.name} lists ${defibBrand}${hasReportedDefibCount ? ` (${defibCount} units)` : ''}. Can you confirm what is deployed today?`
+      : `For ${agency.name}, we would like to establish which monitors and software are currently deployed.`;
+    return `${inventory} We would like to understand your service coverage, equipment plans and purchasing process. Any financial comparison or buy-back discussion would require confirmed quantities, eligibility and written terms—not assumptions from equipment age.`;
+  }, [agency.name, defibBrand, hasReportedDefibCount, defibCount]);
 
   // Tailored Discovery Questions (3+ for different command roles)
   const discoveryQuestions = useMemo(() => [
@@ -190,7 +184,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
               {hasTcoInputs
-                ? <>Illustrative estimate: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">{fiveYrSavings}</strong> five-year operating savings plus <strong className="text-[#14283F] dark:text-white tabular-nums">{tradeIn}</strong> trade-in credit. {tcoMethod}</>
+                ? <>Illustrative estimate: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">{fiveYrSavings}</strong> modeled five-year operating difference; <strong className="text-[#14283F] dark:text-white tabular-nums">{tradeIn}</strong> trade-in assumption (not a written offer). {tcoMethod}</>
                 : tcoMethod}
             </p>
           </div>
@@ -201,7 +195,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <span>3. Procurement vehicle</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
-              Eligible for <strong className="text-[#14283F] dark:text-white">{coopContract.contractName.split(' ')[0]}</strong> ({coopContract.contractNumber}), subject to local purchasing limits.
+              Listed cooperative option <strong className="text-[#14283F] dark:text-white">{coopContract.contractName.split(' ')[0]}</strong> ({coopContract.contractNumber}), local eligibility and purchasing limits unconfirmed.
             </p>
           </div>
         </div>
@@ -219,7 +213,8 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   return (
     <section 
       aria-label="Prepare for Meeting Intelligence Workspace"
-      className={`pi-surface p-5 sm:p-6 lg:p-7 space-y-6 ${className}`}
+      className={`pi-surface dsb-full p-4 sm:p-5 space-y-4 ${className}`}
+      data-testid="deal-story-full"
     >
       {/* Top Banner Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -228,10 +223,10 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             Account preparation
           </div>
           <h2 className="pi-section-heading text-xl sm:text-2xl">
-            Prepare for Meeting: {agency.name}
+            Deal story: {agency.name}
           </h2>
           <p className="pi-supporting mt-1">
-            Evidence-backed account briefing, strategic discovery questions, and conversational guidance.
+            Recorded account facts, research gaps, discovery questions and conversation guidance. Confirm every value with the agency.
           </p>
         </div>
 
@@ -280,7 +275,10 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            aria-pressed={activeTab === tab.id}
+            data-testid={`button-dealstory-tab-${tab.id}`}
+            data-active={activeTab === tab.id || undefined}
+            className={`dsb-tab px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-white dark:bg-[#111C2D] text-[#14283F] dark:text-white shadow-2xs'
                 : 'text-[#53657B] dark:text-slate-400 hover:text-[#14283F] dark:hover:text-white'
@@ -312,18 +310,18 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               &ldquo;{elevatorPitch}&rdquo;
             </p>
             <div className="text-[11px] text-[#53657B] dark:text-slate-400 pt-1">
-              Note: Financial values are modeled estimates based on CMS Medicare Part B public use files and standard equipment replacement lifecycle assumptions.
+              Note: Financial values are illustrative benchmark models, not agency spending, quotes or trade-in offers.
             </div>
           </div>
 
           {/* Two-Column Grid: What We Know vs. What We Need to Confirm */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="dsb-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* What We Know (Supported Facts) */}
-            <div className="p-5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-3.5">
+            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
-                  What we know (Supported facts)
+                  What the record shows (unconfirmed)
                 </h3>
               </div>
               <ul className="space-y-2.5 text-xs text-[#53657B] dark:text-slate-300">
@@ -359,7 +357,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                   <li className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                     <span>
-                      <strong className="text-[#14283F] dark:text-white">Public Grant Liquidity: </strong>
+                      <strong className="text-[#14283F] dark:text-white">Recorded grant: </strong>
                       FEMA AFG award listed for FY{grantFiscalYear}, amount {grantAmt}; current availability not verified.
                     </span>
                   </li>
@@ -368,7 +366,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* What We Need to Confirm (Research Gaps) */}
-            <div className="p-5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-3.5">
+            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <HelpCircle className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
@@ -427,11 +425,11 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {discoveryQuestions.map((q, idx) => (
               <div
                 key={idx}
-                className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
+                className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
@@ -456,12 +454,12 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       {activeTab === 'solution' && (
         <div className="space-y-4">
           <p className="text-xs text-[#53657B] dark:text-slate-300">
-            Applicable ZOLL product categories evaluated based on documented department needs and clinical operational metrics.
+            Possible ZOLL product categories to discuss. Agency need and fit are not verified.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Solution 1: X Series Advanced */}
-            <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   ZOLL X Series Advanced
@@ -480,7 +478,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* Solution 2: AutoPulse Mechanical CPR */}
-            <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   AutoPulse Resuscitation System
@@ -490,7 +488,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </span>
               </div>
               <p className="text-[#53657B] dark:text-slate-300 leading-relaxed">
-                Load-distributing band CPR delivering continuous, consistent compressions during transport to {agency.hospitalLogistics?.primaryCathLabHospital || 'the cath lab'} without paramedic fatigue.
+                Possible discussion: load-distributing band CPR for continuous, consistent compressions during transport to {agency.hospitalLogistics?.primaryCathLabHospital || 'the cath lab'} . Agency need not verified.
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Transport Logistics: </strong>
@@ -499,7 +497,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* Solution 3: RescueNet CaseReview & Billing */}
-            <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   RescueNet ePCR &amp; Billing Boost
@@ -509,7 +507,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </span>
               </div>
               <p className="text-[#53657B] dark:text-slate-300 leading-relaxed">
-                Automated NEMSIS v3.5.0 code generation and ECG telemetry attachment to reduce Medicare Part B {agency.cmsData?.topDenialReasonCode || 'CO-16'} claim rejections.
+                Automated NEMSIS v3.5.0 code generation and ECG telemetry attachment that may help address recorded denial reason {agency.cmsData?.topDenialReasonCode || 'not reported'}; impact not established.
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Modeled Recovery: </strong>
@@ -552,7 +550,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <div>
                 <div className="font-semibold text-[#14283F] dark:text-white">Introduce Pre-Competed Cooperative Purchasing</div>
                 <p className="text-[#53657B] dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Explain how {coopContract.contractName} ({coopContract.contractNumber}) allows the municipality to adopt best-in-class technology with pre-negotiated volume pricing, while respecting all applicable public purchasing regulations.
+                  Explain how {coopContract.contractName} ({coopContract.contractNumber}) allows the municipality to use a pre-competed contract, if local rules allow, while respecting all applicable public purchasing regulations.
                 </p>
               </div>
             </div>
@@ -565,7 +563,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Verified Public Registry Citations</span>
+            <span>Public registry identifiers · verify before citing</span>
           </span>
           <span aria-hidden="true">·</span>
           <span>CMS NPPES NPI: {agency.npiNumber ? `#${agency.npiNumber}` : 'Unassigned'}</span>
@@ -576,7 +574,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
         </div>
 
         <div className="text-[11px] text-[#53657B] dark:text-slate-400 italic">
-          Complies with municipal public procurement standards and HIPAA de-identification requirements.
+          Recorded identifiers only; confirm current status with each registry.
         </div>
       </div>
     </section>

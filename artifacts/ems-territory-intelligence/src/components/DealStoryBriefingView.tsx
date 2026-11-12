@@ -217,9 +217,9 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       data-testid="deal-story-full"
     >
       {/* Top Banner Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
+      <div className="dsb-hero flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
         <div>
-          <div className="text-xs font-semibold text-[#285EE8] dark:text-blue-400 mb-1">
+          <div className="dsb-kicker text-xs font-semibold text-[#285EE8] dark:text-blue-400 mb-1">
             Account preparation
           </div>
           <h2 className="pi-section-heading text-xl sm:text-2xl">
@@ -264,12 +264,12 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       </div>
 
       {/* Sub-Navigation Strip */}
-      <div className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-1 dark:border-[#1E2D42] dark:bg-[#16243A]">
+      <div className="dsb-tabs flex w-fit max-w-full flex-wrap items-center gap-1 rounded-lg border border-[#DFE6EF] bg-[#F5F7FA] p-1 dark:border-[#1E2D42] dark:bg-[#16243A]">
         {[
-          { id: 'brief', label: '1. Account Brief' },
-          { id: 'questions', label: '2. Discovery Questions' },
-          { id: 'solution', label: '3. Potential Solution Fit' },
-          { id: 'conversation', label: '4. Recommended Conversation' }
+          { id: 'brief', label: '1. Account Brief', icon: FileText },
+          { id: 'questions', label: '2. Discovery Questions', icon: HelpCircle },
+          { id: 'solution', label: '3. Potential Solution Fit', icon: HeartPulse },
+          { id: 'conversation', label: '4. Recommended Conversation', icon: MessageSquare }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -284,7 +284,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 : 'text-[#53657B] dark:text-slate-400 hover:text-[#14283F] dark:hover:text-white'
             }`}
           >
-            {tab.label}
+            <tab.icon aria-hidden="true" />{tab.label}
           </button>
         ))}
       </div>
@@ -293,7 +293,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       {activeTab === 'brief' && (
         <div className="space-y-6">
           {/* Executive Opening Pitch Box */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[#EEF3FE]/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-2">
+          <div className="dsb-opening p-4 sm:p-5 rounded-xl bg-[#EEF3FE]/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#285EE8] dark:text-blue-400">
                 Recommended 30-second executive opening
@@ -317,7 +317,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
           {/* Two-Column Grid: What We Know vs. What We Need to Confirm */}
           <div className="dsb-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* What We Know (Supported Facts) */}
-            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
+            <div className="dsb-card dsb-know p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
@@ -366,7 +366,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* What We Need to Confirm (Research Gaps) */}
-            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
+            <div className="dsb-card dsb-confirm p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <HelpCircle className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
@@ -429,7 +429,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             {discoveryQuestions.map((q, idx) => (
               <div
                 key={idx}
-                className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
+                className="dsb-card dsb-question p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#285EE8] dark:text-blue-400">
@@ -459,7 +459,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Solution 1: X Series Advanced */}
-            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card dsb-solution p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   ZOLL X Series Advanced
@@ -478,7 +478,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* Solution 2: AutoPulse Mechanical CPR */}
-            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card dsb-solution p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   AutoPulse Resuscitation System
@@ -497,7 +497,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
 
             {/* Solution 3: RescueNet CaseReview & Billing */}
-            <div className="dsb-card p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
+            <div className="dsb-card dsb-solution p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[#14283F] dark:text-white text-sm">
                   RescueNet ePCR &amp; Billing Boost
@@ -520,7 +520,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
 
       {/* TAB 4: RECOMMENDED CONVERSATION ROADMAP */}
       {activeTab === 'conversation' && (
-        <div className="p-5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-4 text-xs">
+        <div className="dsb-card dsb-roadmap p-5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-4 text-sm">
           <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
             Recommended Consultative Roadmap
           </h3>
@@ -559,7 +559,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       )}
 
       {/* Supporting Source Lineage Strip */}
-      <div className="pt-4 border-t border-[#DFE6EF] dark:border-[#1E2D42] flex flex-wrap items-center justify-between gap-3 text-xs text-[#53657B] dark:text-slate-400">
+      <div className="dsb-lineage pt-4 border-t border-[#DFE6EF] dark:border-[#1E2D42] flex flex-wrap items-center justify-between gap-3 text-xs text-[#53657B] dark:text-slate-400">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />

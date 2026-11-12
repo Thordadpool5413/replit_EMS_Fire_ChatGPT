@@ -31,7 +31,7 @@ export const ProfileAttentionSummary: React.FC<{
       {highlights.length ? (
         <ol className="profile-attention-list">
           {highlights.map(item => (
-            <li key={item.id}>
+            <li key={item.id} data-confidence={item.confidence.toLowerCase()}>
               <div className="profile-attention-label">
                 {item.id === 'record-age' ? <SearchCheck aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
                 <h3>{item.title}</h3>

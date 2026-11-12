@@ -71,6 +71,14 @@ try {
           removed:!root.querySelector('[data-testid="panel-recommended-next-action"]'),
           icons:[...root.querySelectorAll('svg')].filter(shown).length,
           summaryIcons:[...root.querySelectorAll('.acp-summary svg')].filter(shown).length,
+          contentIcons:[...root.querySelectorAll(${JSON.stringify({
+            overview: '.acp-summaries svg',
+            equipment: '.aib-tech svg',
+            operations: '.aib-snapshot svg',
+            medicare: '.afi svg',
+            meeting: '.pds-row svg',
+            deal_story: '.dsb-full svg',
+          }[topic] || '.acp-section-intro svg')})].filter(shown).length,
           name:root.querySelector('.acp-name').textContent,
           active:root.querySelector('.acp-tab.is-active')?.getAttribute('data-testid'),
           prepareHeight:root.querySelector('[data-testid="button-profile-prepare-meeting"]')?.getBoundingClientRect().height??null
@@ -93,11 +101,31 @@ try {
       assert.equal(geometry.active, `tab-profile-${topic}`, 'Topic navigation must work');
       if (width < 768) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');
       if (topic === 'overview') assert.ok(geometry.summaryIcons >= 4, 'Each overview summary needs an icon');
+      if (['overview','equipment','operations','medicare','meeting','deal_story'].includes(topic)) {
+        assert.ok(geometry.contentIcons >= 3, `${topic}: topic content needs its own icons, not just navigation icons`);
+      }
       results.push(geometry);
       if (['overview', 'equipment', 'operations', 'medicare', 'meeting', 'deal_story'].includes(topic)) {
         await ev(`document.querySelector('.agency-command-profile').scrollTop=0`);
         const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
         await writeFile(`${out}/${width}-${topic}.png`, Buffer.from(shot.result.data, 'base64'));
+        const contentSelector = {
+          overview: '[data-testid="profile-command-overview"]',
+          equipment: '[data-testid="profile-equipment-summary"]',
+          operations: '[data-testid="baseline-operational-metrics"]',
+          medicare: '[data-testid="financial-intelligence"]',
+          meeting: '[data-testid="profile-meeting-brief"]',
+          deal_story: '[data-testid="deal-story-full"]',
+        }[topic];
+        await ev(`(()=>{
+          const target=document.querySelector(${JSON.stringify(contentSelector)});
+          const root=document.querySelector('.agency-command-profile');
+          const nav=document.querySelector('.acp-nav');
+          if(target)root.scrollTop+=target.getBoundingClientRect().top-nav.getBoundingClientRect().bottom-12;
+        })()`);
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const contentShot = await cdp.send('Page.captureScreenshot', { format: 'png' });
+        await writeFile(`${out}/${width}-${topic}-detail.png`, Buffer.from(contentShot.result.data, 'base64'));
         if (topic === 'equipment') {
           await ev(`document.querySelector('[data-testid="profile-equipment-summary"]').scrollIntoView({block:'start',behavior:'instant'})`);
           const equipmentShot = await cdp.send('Page.captureScreenshot', { format: 'png' });

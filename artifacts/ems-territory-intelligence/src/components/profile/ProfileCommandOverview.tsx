@@ -38,6 +38,12 @@ const num = (v: number | null | undefined) => (isNum(v) ? v.toLocaleString() : N
 const real = (v?: string | null) => Boolean(v && v.trim() && !/^not (reported|selected|calculated|listed)/i.test(v.trim()));
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const displayDate = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  }).format(date);
+};
 
 /** Classifies a recorded date honestly: past dates are history, not deadlines. */
 const dateState = (value?: string) => {
@@ -62,7 +68,7 @@ interface SummaryProps {
 const Summary: React.FC<SummaryProps> = ({ tone, icon: Icon, eyebrow, value, missing, detail, action, onAction, testId }) => (
   <article className="acp-summary" data-tone={tone} data-testid={testId}>
     <div className="acp-summary-body">
-      <p className="acp-eyebrow"><span className="acp-summary-ico" aria-hidden="true"><Icon aria-hidden="true" className="h-3.5 w-3.5" /></span>{eyebrow}</p>
+      <p className="acp-eyebrow"><span className="acp-summary-ico" aria-hidden="true"><Icon aria-hidden="true" className="h-5 w-5" /></span>{eyebrow}</p>
       <p className={`acp-summary-value${missing ? ' is-missing' : ''}`}>{value}</p>
       <p className="acp-summary-detail">{detail}</p>
       <button type="button" className="acp-link" onClick={onAction} data-testid={`${testId}-open`}>
@@ -95,7 +101,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const latestNote = notes[0];
 
   const purchasingValue = contract?.contractEndDate
-    ? `${contractState === 'past' ? 'Ended' : 'Ends'} ${contract.contractEndDate}`
+    ? displayDate(contract.contractEndDate)
     : latestGrant
       ? `FY${latestGrant.fiscalYear} grant`
       : agency.budgetCycleEndMonth
@@ -134,11 +140,11 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
           action="View equipment" onAction={() => onNavigate('equipment')}
         />
         <Summary
-          tone={contractState === 'upcoming' ? 'red' : 'teal'} icon={Landmark} eyebrow="Purchasing signal" testId="summary-purchasing"
+          tone={contractState === 'upcoming' ? 'red' : 'teal'} icon={Landmark} eyebrow={contract?.contractEndDate ? 'Contract timing' : 'Purchasing context'} testId="summary-purchasing"
           value={purchasingValue}
           missing={!contract?.contractEndDate && !latestGrant && !agency.budgetCycleEndMonth}
           detail={contract?.contractEndDate
-            ? `${contract.vendor || 'Vendor not reported'}${contractState === 'past' ? ' · historical, not a deadline' : ''}`
+            ? `${contract.vendor || 'Vendor not reported'} · ${contractState === 'past' ? 'historical, not a deadline' : 'recorded contract end'}`
             : latestGrant ? latestGrant.programName : 'Research procurement timing'}
           action="Review purchasing" onAction={() => onNavigate('purchasing')}
         />

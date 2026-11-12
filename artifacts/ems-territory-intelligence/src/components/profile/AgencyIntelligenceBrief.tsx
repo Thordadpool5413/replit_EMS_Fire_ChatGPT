@@ -309,6 +309,9 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
           </div>
           <dl className="aib-figures aib-figures--cards">
             {figures.map((f) => <Fig key={f.id} {...f} />)}
+          </dl>
+          <h4 className="aib-sub aib-footprint-title"><MapIcon className="aib-icon" aria-hidden="true" />Service footprint</h4>
+          <dl className="aib-figures aib-figures--cards aib-figures--footprint">
             {contextFigures.map((f) => <Fig key={f.id} {...f} />)}
           </dl>
         </section>

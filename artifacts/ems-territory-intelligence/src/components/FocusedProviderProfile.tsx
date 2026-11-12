@@ -979,7 +979,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
-    <div ref={profileRootRef} data-laptop-density="compact" className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
+    <div ref={profileRootRef} data-laptop-density="compact" data-profile-topic={activeSection} className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
         className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24 lg:pb-8"

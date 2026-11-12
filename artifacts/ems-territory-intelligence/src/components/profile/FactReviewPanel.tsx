@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCheck, ExternalLink, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert } from 'lucide-react';
+import { CheckCheck, ExternalLink, FileCheck2, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert, UserCheck } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
 import { appendFactReview, effectiveFactValue, factReviewStatus, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
 import './FactReviewPanel.css';
@@ -96,12 +96,13 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
         <label className="fr-mobile-picker">Fact to review<select value={fact.id} onChange={e=>changeFact(e.target.value)} data-testid="select-review-fact-mobile">{facts.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></label>
         <div className="fr-facts">{facts.filter(f=>filter==='all'||(filter==='reviewed'?entries.some(e=>e.fieldId===f.id):!entries.some(e=>e.fieldId===f.id))).map(f=>{
           const reviews=entries.filter(e=>e.fieldId===f.id);
-          return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`}><span>{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><small>{factReviewStatus(f.value,reviews)}</small></button>;
+          const hasSource=Boolean(agency.factEvidence?.[f.sourceKey]);
+          return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`} data-source={hasSource?'yes':undefined} data-reviewed={reviews.length>0?'yes':undefined}><span className="fr-fact-label">{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><span className="fr-fact-marks">{hasSource&&<span className="fr-mark fr-mark--source"><FileCheck2 size={13} aria-hidden="true"/>Source</span>}{reviews.length>0&&<span className="fr-mark fr-mark--review"><UserCheck size={13} aria-hidden="true"/>{reviews.length}</span>}</span><small>{factReviewStatus(f.value,reviews)}</small></button>;
         })}</div>
       </div>
       <div className="fr-detail">
-        <h3>{fact.label}</h3><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div><div><dt>Current research value</dt><dd>{current}</dd></div></dl>
-        <div className="fr-source"><span>Source type: <strong>{source?.sourceKind||'Not specified'}</strong></span><span>{source?.sourceName||'No source attached to this field'}</span>{source?.reportingPeriod&&<span>Period: {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}<span className="fr-status">{factReviewStatus(fact.value,history)}</span></div>
+        <h3>{fact.label}</h3><div className="fr-zones"><div className="fr-zone fr-zone--source"><p className="fr-zone-label"><FileCheck2 size={15} aria-hidden="true"/>Record</p><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div></dl>
+        {source&&<div className="fr-source">{source.sourceKind&&<span>Type <strong>{source.sourceKind}</strong></span>}{source.sourceName&&<span>{source.sourceName}</span>}{source.reportingPeriod&&<span>Period {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}</div>}</div><div className="fr-zone fr-zone--review"><p className="fr-zone-label"><UserCheck size={15} aria-hidden="true"/>Your review</p><dl className="fr-values"><div><dt>Current research value</dt><dd>{current}</dd></div></dl><p className="fr-status">{factReviewStatus(fact.value,history)}</p></div></div>
         <form onSubmit={save} onChange={()=>{setDirty(true);setMessage('');}}>
           <label>Review action<select value={action} onChange={e=>setAction(e.target.value as FactReviewAction)} data-testid="fact-review-action">{Object.entries(labels).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
           <div className="fr-form-grid"><label>Reviewer name<input required maxLength={120} value={reviewer} onChange={e=>setReviewer(e.target.value)} autoComplete="name" data-testid="fact-review-reviewer"/></label><label>Review method<input required maxLength={240} placeholder="e.g. agency phone call, document review" value={method} onChange={e=>setMethod(e.target.value)} data-testid="fact-review-method"/></label></div>

@@ -32,6 +32,15 @@ const render = (agency: Agency) => renderToStaticMarkup(
   ))}</>,
 );
 
+test('populated equipment remains visible without repetitive missing-source messages', () => {
+  const agency = record({ installedFleet: { defibBrand: 'Recorded monitor' } as Agency['installedFleet'] });
+  const html = render(agency);
+  assert.match(html, /Recorded monitor/);
+  assert.doesNotMatch(html, /No source mapped/i);
+  assert.equal(summarizeEvidence(agency, 'verifiedHardware').state, 'none');
+  assert.equal(summarizeEvidence(agency, 'verifiedHardware').stateLabel, '');
+});
+
 test('available operational figures remain visible without evidence tags', () => {
   const html = render(record());
   assert.match(html, /12,500/);

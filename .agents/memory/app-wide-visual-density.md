@@ -35,6 +35,12 @@ The user's visual quality reference for individual profiles is “something that
 
 **How to apply:** Use this as an Apple-inspired quality direction for coherent hierarchy, composition and interaction, not as approval of an existing implementation. Preserve the compact, readable, evidence-aware profile requirements.
 
+Apply profile visual improvements to every profile tab, not only Overview. Remove the “No source mapped” statement from profile displays while retaining available data and real citations.
+
+**Why:** The user explicitly repeated that the redesign must cover every single tab and asked to remove this statement when information is still presented.
+
+**How to apply:** Omit repetitive absent-source status lines; do not turn an absent citation into a verified claim or discard populated records. Preserve evidence editing and actual source links.
+
 Individual profile cards and display fonts must be smaller, not merely restyled.
 
 **Why:** After the icon/visual polish, the user repeated that the profile sheets were not impressive or polished and said “the cards and fonts needs to be reduced in size too. everything is too large.”

@@ -94,7 +94,7 @@ const safeUrl = (value?: string) => {
 
 export const summarizeEvidence = (agency: Agency, field: AgencyFactEvidenceKey): EvidenceSummary => {
   const e: AgencyFactEvidence | undefined = agency.factEvidence?.[field];
-  if (!e) return { field, state: 'none', stateLabel: 'No source mapped' };
+  if (!e) return { field, state: 'none', stateLabel: '' };
   return {
     field,
     state: e.reviewed ? 'reviewed' : 'mapped',

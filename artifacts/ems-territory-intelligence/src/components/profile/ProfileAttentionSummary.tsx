@@ -40,9 +40,9 @@ export const ProfileAttentionSummary: React.FC<{
               <p className="profile-attention-evidence">{item.evidence}</p>
               <p>{item.rationale}</p>
               {item.timing && <p className="profile-attention-timing">{item.timing}</p>}
-              <p className="profile-attention-source">Source: {item.sourceUrl
+              {(item.sourceUrl || item.sourceName) && <p className="profile-attention-source">Source: {item.sourceUrl
                 ? <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">{item.sourceName || 'Recorded source'}<ExternalLink aria-hidden="true" /></a>
-                : item.sourceName || 'Not mapped—confirm with the agency'}</p>
+                : item.sourceName}</p>}
             </li>
           ))}
         </ol>

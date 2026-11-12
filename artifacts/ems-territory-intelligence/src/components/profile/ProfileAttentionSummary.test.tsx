@@ -20,5 +20,5 @@ test('recorded equipment age stays a low-confidence discovery prompt, never buyi
   assert.match(html, /Recorded monitor age: 9 years/);
   assert.match(html, /Low confidence/);
   assert.match(html, /not evidence of failure/);
-  assert.match(html, /Source: /);
+  assert.doesNotMatch(html, /Source: |No source mapped|Not mapped/);
 });

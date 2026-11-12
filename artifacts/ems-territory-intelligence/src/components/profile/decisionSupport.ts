@@ -132,10 +132,13 @@ export function buildMeetingBrief(agency: Agency, research: ProfileResearch, now
     '', 'Recorded equipment and software',
     ...equipment.map(e => {
       const sources = e.evidenceKeys.map(k => summarizeEvidence(agency, k)).filter(s => s.sourceName);
-      return `${e.label}: ${e.value}${e.quantity ? ` · ${e.quantity}` : ''}\nSource: ${sources.length ? sources.map(s=>`${s.sourceName} ${s.sourceUrl || ''} · period ${s.period || 'not stated'} · ${s.stateLabel}`).join('; ') : 'No source mapped'}`;
+      const citation = sources.length
+        ? `\nSource: ${sources.map(s=>`${s.sourceName} ${s.sourceUrl || ''} · period ${s.period || 'not stated'} · ${s.stateLabel}`).join('; ')}`
+        : '';
+      return `${e.label}: ${e.value}${e.quantity ? ` · ${e.quantity}` : ''}${citation}`;
     }),
     '', 'Relevant signals and evidence',
-    ...(recommendations.length ? recommendations.map(r => `${r.title}: ${r.evidence}. Confidence: ${r.confidence} — ${r.rationale}${r.timing ? ` ${r.timing}.` : ''} Source: ${r.sourceName || 'Not mapped'} ${r.sourceUrl || ''}\nNext: ${r.nextAction}`) : ['No documented opportunity signals recorded. Do not infer buying intent.']),
+    ...(recommendations.length ? recommendations.map(r => `${r.title}: ${r.evidence}. Confidence: ${r.confidence} — ${r.rationale}${r.timing ? ` ${r.timing}.` : ''}${r.sourceName || r.sourceUrl ? ` Source: ${r.sourceName || ''} ${r.sourceUrl || ''}` : ''}\nNext: ${r.nextAction}`) : ['No documented opportunity signals recorded. Do not infer buying intent.']),
     '', 'Buy-back records',
     ...(!getDocumentedOffers(agency).length && !research.offers.length ? ['No current quote recorded. Request written offers; inventory does not establish eligibility.'] : []),
     ...([...getDocumentedOffers(agency), ...research.offers].map(o => `${offerKindLabel(o.kind)} · ${o.provider} · ${o.eligibleDevice || 'Device not stated'} · ${quoteState(o, now)} · quoted total ${offerTotal(o) == null ? 'not calculated' : offerValue(offerTotal(o), o.currency)} · conditions: ${o.conditions || 'not stated'} · source: ${o.sourceName || 'not stated'} ${o.sourceUrl || ''}`)),

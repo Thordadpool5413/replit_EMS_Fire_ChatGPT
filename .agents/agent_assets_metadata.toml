@@ -154,3 +154,17 @@ mtime_ms = 1794505926084
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/13547698-1262-4bd3-a397-bc713ff9deb6/bf45c235-6253-4a5e-bf48-7618ac88d7c5"
 storage_version_token = "1794505976345726"
 content_type = "image/png"
+
+[[outputs]]
+id = "LbbgzwHKYRxhFr4iRbdlk"
+uri = "file://generated-artifacts/profile-all-tabs/1366-equipment-content.png"
+type = "image"
+title = "Updated Equipment tab"
+description = "Actual laptop view of recorded inventory and buy-back research."
+logical_id = "565dd85e-ec67-4e60-883c-234b1a7b5c6c"
+content_hash = "sha256:2751ed45b847b31836891ab6a8324aa3f2ed5694c69b5aef67e35ad8fc1b7ec9"
+size = 221946
+mtime_ms = 1794513533524
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/565dd85e-ec67-4e60-883c-234b1a7b5c6c/2478883f-dd39-4222-ab62-0021451a9cad"
+storage_version_token = "1794513621565319"
+content_type = "image/png"

@@ -40,7 +40,7 @@ export const ProfileDecisionSupport: React.FC<{ agency: Agency; research: Profil
                 <div><dt>Evidence</dt><dd>{r.evidence}</dd></div>
                 <div><dt>Why</dt><dd>{r.rationale}</dd></div>
                 {r.timing && <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Timing</dt><dd>{r.timing}</dd></div>}
-                <div><dt>Source</dt><dd>{r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">{r.sourceName || 'Source'}<ExternalLink className="pds-ext" aria-hidden="true" /></a> : r.sourceName || 'Not mapped'}</dd></div>
+                {(r.sourceUrl || r.sourceName) && <div><dt>Source</dt><dd>{r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">{r.sourceName || 'Source'}<ExternalLink className="pds-ext" aria-hidden="true" /></a> : r.sourceName}</dd></div>}
                 <div className="is-next"><dt>Next action</dt><dd>{r.nextAction}</dd></div>
               </dl>
             </li>

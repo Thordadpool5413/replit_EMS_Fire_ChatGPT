@@ -20,11 +20,12 @@ const QuoteCard: React.FC<{ o: DocumentedTradeInOffer; local: boolean; blocked: 
   const usable = state.startsWith('Within') || state.startsWith('Expires today');
   const total = offerTotal(o);
   return (
-    <li className="pds-quote" data-testid={`offer-${o.id}`} data-state={expired ? 'expired' : usable ? 'dated' : 'check'}>
+    <li className="pds-quote" data-testid={`offer-${o.id}`} data-kind={o.kind} data-state={expired ? 'expired' : usable ? 'dated' : 'check'}>
       <div className="pds-rec-head">
         <p className="pds-rec-t">{o.provider}</p>
         <span className="pds-chip">{local ? 'Your record' : 'Agency record'}</span>
       </div>
+      <p className={`pds-quote-total${expired ? ' is-struck' : ''}`}>{total == null ? 'Total not calculated' : offerValue(total, o.currency)}<span>{offerKindLabel(o.kind)}</span></p>
       <p className={`pds-state${usable ? '' : ' is-warn'}`} data-testid={`status-quote-${o.id}`}>{!usable && <AlertTriangle className="aib-icon" aria-hidden="true" />}{state}</p>
       <dl className="pds-kv">
         <div><dt>Device</dt><dd>{o.eligibleDevice || NOT_REPORTED}</dd></div>
@@ -76,14 +77,14 @@ export const BuybackDecisionSupport: React.FC<{ agency: Agency; research: Profil
       <h3 id="aib-buyback-title" className="aib-label"><Repeat className="aib-icon" aria-hidden="true" />Buy-back decision support</h3>
       <p className="aib-scope">Checks record what is known. They do not make any device eligible; only the provider can.</p>
 
-      <p className="aib-sub">Device checks</p>
+      <p className="aib-sub"><ClipboardCheck className="aib-icon" aria-hidden="true" />Device checks</p>
       <ul className="pds-list">
         {DEVICES.map(({ key, line, label, icon: Icon }) => {
           const check = data.devices[key];
           const gaps = preparationGaps(check);
           const recorded = lines.find(l => l.key === line)?.value ?? NOT_REPORTED;
           return (
-            <li key={key} className="pds-device" data-testid={`device-check-${key}`}>
+            <li key={key} className="pds-device" data-testid={`device-check-${key}`} data-ready={gaps.length === 0 ? 'yes' : undefined}>
               <div className="pds-device-head">
                 <Icon className="aib-icon" aria-hidden="true" />
                 <div className="min-w-0"><p className="aib-eq-label">{label}</p><p className={`aib-eq-value${recorded === NOT_REPORTED ? ' is-missing' : ''}`}>{recorded}</p></div>
@@ -102,7 +103,7 @@ export const BuybackDecisionSupport: React.FC<{ agency: Agency; research: Profil
       </ul>
 
       <div className="pds-sub-row">
-        <p className="aib-sub">Documented quotes</p>
+        <p className="aib-sub"><Repeat className="aib-icon" aria-hidden="true" />Documented quotes</p>
         {editQuote !== 'new' && <button type="button" className="pds-btn" disabled={blocked} onClick={() => setEditQuote('new')} data-testid="button-add-quote"><Plus className="aib-icon" aria-hidden="true" />Add quote</button>}
       </div>
       {editQuote === 'new' && <QuoteForm disabled={blocked} onSave={saveQuote} onCancel={() => setEditQuote(null)} />}

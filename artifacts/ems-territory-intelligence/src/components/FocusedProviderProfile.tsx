@@ -1683,8 +1683,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {activeSection !== 'overview' && (
             <header className="acp-section-intro" data-section={activeSection} data-testid="profile-section-intro">
-              <h2>{PROFILE_SECTIONS.find((tab) => tab.id === activeSection)?.label}</h2>
-              <p>{PROFILE_SECTIONS.find((tab) => tab.id === activeSection)?.purpose}</p>
+              {(() => {
+                const topic = PROFILE_SECTIONS.find((tab) => tab.id === activeSection);
+                const TopicIcon = topic?.icon;
+                return (
+                  <>
+                    {TopicIcon && <TopicIcon aria-hidden="true" className="acp-intro-ico" />}
+                    <div className="acp-intro-text">
+                      <h2>{topic?.label}</h2>
+                      <p>{topic?.purpose}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </header>
           )}
 
@@ -1738,7 +1749,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           ) : showSection('apparatus') && agency.apparatusFleet && agency.hospitalLogistics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Granular Apparatus Vehicle Breakdown */}
-              <section className="bg-white rounded-xl border border-[#E5E4DF] p-6 shadow-[0_1px_3px_rgba(17,24,39,0.03)] space-y-4">
+              <section className="acp-card space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-bold text-[#111827] flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#1E3A8A]" />
@@ -1781,7 +1792,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </section>
 
               {/* Hospital Trauma & STEMI PCI Cath Lab Transport Logistics */}
-              <section className="bg-white rounded-xl border border-[#E5E4DF] p-6 shadow-[0_1px_3px_rgba(17,24,39,0.03)] space-y-4">
+              <section className="acp-card space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-bold text-[#111827] flex items-center gap-2">
                     <HeartPulse className="w-4 h-4 text-[#B91C1C]" />
@@ -1833,7 +1844,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* Card A: Clinical Emergency Performance & Patient Outcomes */}
-              <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
+              <section className="acp-card space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
                     <Activity className="w-4 h-4 text-[#1E3A8A]" />
@@ -1905,7 +1916,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </section>
 
               {/* Card B: NEMSQA Quality & Clinical Care Outcomes */}
-              <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
+              <section className="acp-card space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
                     <Stethoscope className="w-4 h-4 text-[#1E3A8A]" />
@@ -1965,7 +1976,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* Card C: Regional EMS Clinical Protocols & Receiving Hospital Telemetry Alignment */}
-            <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
+            <section className="acp-card space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
@@ -2044,7 +2055,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             CMS claim and revenue fields are not listed in this account record. Available financial fields remain listed in the operational baseline above.
           </div>
         ) : showSection('billing') && (
-          <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-6">
+          <section className="acp-card space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
@@ -2147,7 +2158,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               )}
             </div>
           ) : showSection('suppliers') && (
-          <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-6">
+          <section className="acp-card space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
@@ -2447,7 +2458,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
           hasAgencyFactEvidence(agency, 'frontlineApparatusStations') && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+            <section className="acp-card space-y-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
                 <span>Active Defibrillator &amp; Biomedical Fleet</span>
@@ -2495,7 +2506,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
             </section>
 
-            <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+            <section className="acp-card space-y-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
                 <span>Frontline Apparatus &amp; Maintenance Contracts</span>
@@ -2551,7 +2562,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         {showSection('software') && (<ProfileDetail testId="detail-software" icon={Cpu} tone="navy" kind="reported" title="Dispatch, ePCR & billing systems" summary={[agency.installedFleet.dispatchCadVendor, agency.installedFleet.epcrCadSoftware, agency.installedFleet.billingSoftware].filter((v) => v && v !== 'Not reported').join(' · ') || 'No systems recorded'}>
         {/* SECTION: CAD, ePCR & BILLING SOFTWARE */}
         {showSection('software') && (
-          <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+          <section className="acp-card space-y-4">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Cpu className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
               <span>Emergency Communications, 911 CAD Dispatch &amp; Clinical ePCR Systems</span>
@@ -2615,7 +2626,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* Federal FEMA Grant Readiness & Funding Status */}
-            <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+            <section className="acp-card space-y-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
                 <span>Federal FEMA Grant Readiness &amp; Funding Status</span>
@@ -2660,7 +2671,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </section>
 
             {/* Jurisdiction & Service Demographics */}
-            <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+            <section className="acp-card space-y-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-[#1E3A8A] dark:text-blue-400" />
                 <span>Jurisdiction &amp; Service Demographics</span>
@@ -2772,7 +2783,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </section>
 
             {/* Pre-Competed Cooperative Purchasing Contracts & Grant Vehicles */}
-            <section className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
+            <section className="lg:col-span-2 acp-card space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
@@ -2814,7 +2825,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
             {/* 5-Year Federal FEMA AFG, SAFER & Homeland Security Grant History */}
             {agency.femaGrantHistory && agency.femaGrantHistory.length > 0 && (
-              <section className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
+              <section className="lg:col-span-2 acp-card space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">

@@ -5,7 +5,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { ScrollableTableRegion } from '../ScrollableTableRegion';
-import { AlertTriangle, Ban, Calculator, Coins, FileBarChart, HandCoins, Landmark, Percent, Receipt, ServerCog, ShieldCheck, Wallet, Wrench } from 'lucide-react';
+import { AlertTriangle, Ban, Calculator, Coins, FileBarChart, HandCoins, Percent, Receipt, ServerCog, Wallet, Wrench } from 'lucide-react';
 import type { Agency } from '../../types';
 import type { AgencyTcoComparison } from '../../data/clinicalAndCompetitiveIntelligence';
 import type { ServiceMode } from './AgencyIntelligenceBrief';
@@ -126,10 +126,15 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
             <h3 id="afi-reported-title"><Receipt aria-hidden="true" className="h-4 w-4" />Reported payer &amp; billing data</h3>
             <span className="afi-kind" data-kind="reported">Reported</span>
           </header>
-          <p className="afi-note">Source: {safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl)
+          <dl className="afi-lead" data-testid="financial-lead-figures">
+            <div><dt>Medicare billed / yr</dt><dd className={isNum(cms.medicareBilledAnnual) ? '' : 'is-missing'}>{usd(cms.medicareBilledAnnual)}</dd></div>
+            <div><dt>Medicare allowed / yr</dt><dd className={isNum(cms.medicareAllowedAnnual) ? '' : 'is-missing'}>{usd(cms.medicareAllowedAnnual)}</dd></div>
+            <div><dt>Medicaid billed / yr</dt><dd className={isNum(cms.medicaidBilledAnnual) ? '' : 'is-missing'}>{usd(cms.medicaidBilledAnnual)}</dd></div>
+          </dl>
+          <p className="afi-note">{(safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl) || agency.factEvidence?.cmsClaims?.sourceName) ? <>Source: {safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl)
             ? <a href={safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl)} target="_blank" rel="noopener noreferrer">{agency.factEvidence?.cmsClaims?.sourceName || 'Claim source'}</a>
-            : agency.factEvidence?.cmsClaims?.sourceName || 'No financial source mapped; unconfirmed record entries'}.
-            {' '}Claim-source period: {agency.factEvidence?.cmsClaims?.reportingPeriod || 'not reported'}. A shared claim citation does not establish the denominator or period of each payer share.</p>
+            : agency.factEvidence?.cmsClaims?.sourceName}. </> : 'Unconfirmed record entries. '}
+            Claim-source period: {agency.factEvidence?.cmsClaims?.reportingPeriod || 'not reported'}. A shared claim citation does not establish the denominator or period of each payer share.</p>
           <div className="afi-payer-bar" role="img" aria-label={`Reported payer shares: ${payers.map((p) => `${p.label} ${pct(p.value)}`).join(', ')}`}>
             {reported.map((p) => (
               <span key={p.key} data-tone={p.tone} style={{ width: `${Math.min(100, ((p.value as number) / Math.max(100, payerSum)) * 100)}%` }} />
@@ -153,9 +158,6 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
             <p className="afi-note">Only {reported.length} of 4 payer shares are reported; the remainder is unknown, not zero.</p>
           )}
           <dl className="afi-rows afi-rows--icons">
-            <div><dt><Receipt aria-hidden="true" className="afi-ico" />Medicare billed / yr</dt><dd>{usd(cms.medicareBilledAnnual)}</dd></div>
-            <div><dt><ShieldCheck aria-hidden="true" className="afi-ico" />Medicare allowed / yr</dt><dd>{usd(cms.medicareAllowedAnnual)}</dd></div>
-            <div><dt><Landmark aria-hidden="true" className="afi-ico" />Medicaid billed / yr</dt><dd>{usd(cms.medicaidBilledAnnual)}</dd></div>
             <div><dt><Wallet aria-hidden="true" className="afi-ico" />Commercial underpayment / trip</dt><dd>{usd(agency.qualityMetrics?.commercialUnderpaymentPerTrip)}</dd></div>
             <div><dt><Ban aria-hidden="true" className="afi-ico" />Top denial reason</dt><dd>{cms.topDenialReason || 'Not reported'}</dd></div>
             <div><dt><FileBarChart aria-hidden="true" className="afi-ico" />GADCS status</dt><dd>{cms.gadcsReportingStatus || 'Not reported'}</dd></div>
@@ -214,6 +216,13 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
         ) : scenario === 'capital' ? (
           <div className="afi-body">
             <p className="afi-result"><span><HandCoins aria-hidden="true" className="afi-ico" />Illustrative net replacement capital</span><strong>{usd(net)}</strong></p>
+            {gross != null && gross > 0 && net != null && credit != null && (
+              <div className="afi-split" role="img" aria-label={`Of gross ${usd(gross)}: net ${usd(net)}, assumed trade-in ${usd(credit)}`}>
+                <span className="afi-split-net" style={{ width: `${(net / gross) * 100}%` }} />
+                <span className="afi-split-credit" style={{ width: `${(credit / gross) * 100}%` }} />
+              </div>
+            )}
+            {gross != null && gross > 0 && <p className="afi-split-key"><span data-k="net">Net</span><span data-k="credit">Assumed trade-in</span></p>}
             <ScrollableTableRegion label="Replacement capital calculation"><table className="afi-table">
               <tbody>
                 <tr><td>Reported monitor units (inventory)</td><td colSpan={3}>{isNum(units) ? units.toLocaleString() : 'Not reported'}</td></tr>

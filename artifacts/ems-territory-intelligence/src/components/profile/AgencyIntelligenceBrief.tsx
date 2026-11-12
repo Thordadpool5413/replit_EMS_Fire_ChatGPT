@@ -67,8 +67,8 @@ type Figure = {
   testId?: string;
 };
 
-const Fig: React.FC<Figure> = ({ label, value, unit, period, icon: Icon, testId }) => (
-  <div className="aib-figure" data-testid={testId} data-label-tone={dataLabelTone(inferDataLabelKind(label))}>
+const Fig: React.FC<Figure & { lead?: boolean }> = ({ label, value, unit, period, icon: Icon, testId, lead }) => (
+  <div className="aib-figure" data-lead={lead || undefined} data-testid={testId} data-label-tone={dataLabelTone(inferDataLabelKind(label))}>
     <dt><Icon className="aib-icon" aria-hidden="true" />{label}</dt>
     <dd className={isNum(value) ? '' : 'is-missing'}>
       <span className="aib-num">{fmt(value)}</span>
@@ -128,7 +128,7 @@ const categoryIcon: Record<EquipmentLine['category'], IconType> = {
 };
 
 const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }> = ({ agency, fields }) => {
-  const items = Array.from(new Set(fields)).map((f) => summarizeEvidence(agency, f));
+  const items = Array.from(new Set(fields)).map((f) => summarizeEvidence(agency, f)).filter((e) => e.state !== 'none');
   const labels: Partial<Record<AgencyFactEvidenceKey, string>> = {
     defibrillatorBiomedicalFleet: 'Monitor / defibrillator', verifiedHardware: 'Clinical hardware',
     epcrSystem: 'ePCR / CAD record', communicationsSystems: 'Dispatch communications',
@@ -136,8 +136,8 @@ const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }>
   };
   return (
     <details className="aib-sources" data-testid="equipment-source-basis">
-      <summary>Source basis &amp; review state</summary>
-      <ul>
+      <summary>Source basis &amp; review state{items.length > 0 && <span className="aib-sources-count">{items.length}</span>}</summary>
+      {items.length > 0 && <ul>
         {items.map((e) => (
           <li key={e.field} data-state={e.state}>
             <p className="aib-eq-label">{labels[e.field] || 'Equipment record'}</p>
@@ -154,7 +154,7 @@ const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }>
             {e.note && <p className="aib-src-meta">{e.note}</p>}
           </li>
         ))}
-      </ul>
+      </ul>}
       <p className="aib-src-meta">A source or review marker shows where a value came from; it does not prove the equipment is in current use.</p>
     </details>
   );
@@ -166,6 +166,8 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
   const warranty = (f.defibWarrantyStatus || '').trim() || NOT_REPORTED;
   const warrantyAlert = hasAgencyFactEvidence(agency, 'maintenanceContracts') && warranty.includes('Expired');
   const hardware = lines.filter((l) => l.category !== 'software');
+  const featured = hardware[0];
+  const otherHardware = hardware.slice(1);
   const software = lines.filter((l) => l.category === 'software');
   const line = (l: EquipmentLine) => {
     const Icon = categoryIcon[l.category];
@@ -176,10 +178,12 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
         <div className="min-w-0">
           <p className="aib-eq-label"><span className="aib-eq-ico" data-category={l.category} aria-hidden="true"><Icon className="aib-icon" aria-hidden="true" /></span>{l.label}</p>
           <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
-          <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
-            <span className="aib-eq-srcstate" data-state={ev.state}>{ev.state === 'none' ? 'No source mapped' : ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
-            {ev.sourceName && <> · {ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
-          </p>
+          {ev.state !== 'none' && (
+            <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
+              <span className="aib-eq-srcstate" data-state={ev.state}>{ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
+              {ev.sourceName && <> · {ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
+            </p>
+          )}
         </div>
         {l.quantity && <p className={`aib-eq-qty${l.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>{l.quantity === NOT_REPORTED ? 'Qty not reported' : l.quantity}</p>}
       </li>
@@ -189,13 +193,19 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
     <section className="aib-block aib-tech" data-testid="profile-equipment-summary" aria-labelledby="aib-tech-title">
       <h3 id="aib-tech-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Recorded inventory</h3>
       <p className="aib-scope">Reported inventory · current use needs confirmation.</p>
-      <p className="aib-sub"><HeartPulse className="aib-icon" aria-hidden="true" />Clinical hardware</p>
-      <ul className="aib-eqlist">{hardware.map(line)}</ul>
-      <dl className="aib-keyfacts">
-        <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
-        <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
-      </dl>
-      <p className="aib-sub"><Cpu className="aib-icon" aria-hidden="true" />Software</p>
+      <div className="aib-device-feature" data-testid="equipment-featured-device">
+        {featured && <ul className="aib-eqlist aib-eqlist--feature">{line(featured)}</ul>}
+        <dl className="aib-keyfacts">
+          <div><dt><CalendarClock className="aib-icon" aria-hidden="true" />Monitor fleet age</dt><dd className={isNum(f.defibAgeYears) ? '' : 'is-missing'}>{isNum(f.defibAgeYears) ? `${f.defibAgeYears.toLocaleString()} years` : NOT_REPORTED}</dd></div>
+          <div><dt><ShieldCheck className="aib-icon" aria-hidden="true" />Warranty / support</dt><dd className={warrantyAlert ? 'is-alert' : warranty === NOT_REPORTED ? 'is-missing' : ''}>{warranty}</dd></div>
+        </dl>
+        <p className="aib-device-note">Age describes the record, not buying intent.</p>
+      </div>
+      {otherHardware.length > 0 && <>
+        <p className="aib-sub"><HeartPulse className="aib-icon" aria-hidden="true" />Other clinical hardware</p>
+        <ul className="aib-eqlist">{otherHardware.map(line)}</ul>
+      </>}
+      <p className="aib-sub"><Monitor className="aib-icon" aria-hidden="true" />Software</p>
       <ul className="aib-eqlist">{software.map(line)}</ul>
       <div className="aib-tags">
         {renderFactTag('defibrillatorBiomedicalFleet')}
@@ -308,7 +318,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
             {renderFactTag('clinicalOutcomes')}
           </div>
           <dl className="aib-figures aib-figures--cards">
-            {figures.map((f) => <Fig key={f.id} {...f} />)}
+            {figures.map((f, i) => <Fig key={f.id} {...f} lead={i < 2} />)}
           </dl>
           <h4 className="aib-sub aib-footprint-title"><MapIcon className="aib-icon" aria-hidden="true" />Service footprint</h4>
           <dl className="aib-figures aib-figures--cards aib-figures--footprint">
@@ -319,7 +329,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
       )}
       {(view === 'purchasing' || view === 'overview') && (
         <section className="aib-block aib-findings-block" aria-labelledby="aib-findings-title">
-          <h3 id="aib-findings-title" className="aib-label"><DataLabel kind="notes">Findings to discuss</DataLabel></h3>
+          <h3 id="aib-findings-title" className="aib-label"><DataLabel kind="notes">Findings to discuss</DataLabel>{findings.length > 0 && <span className="aib-count">{findings.length}</span>}</h3>
           {findings.length > 0 ? (
             <ol className="aib-findings">
               <li className="aib-findings-cols" aria-hidden="true"><span>Finding</span><span>Basis</span><span>Next step</span></li>

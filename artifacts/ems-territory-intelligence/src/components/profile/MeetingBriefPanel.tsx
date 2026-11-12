@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Copy, Download, ExternalLink, FileText, MessageSquareText } from 'lucide-react';
+import { Copy, Cpu, Download, ExternalLink, FileText, MessageSquareText, Radar } from 'lucide-react';
 import type { Agency } from '../../types';
 import { buildMeetingBrief, type ProfileResearch } from './decisionSupport';
 
@@ -37,13 +37,13 @@ export const MeetingBriefPanel: React.FC<{ agency: Agency; research: ProfileRese
       <p className="aib-scope">Generated from recorded fields and your cited sources. Working references, not confirmed current deployment.</p>
       <div className="pds-meeting-grid">
         <div>
-          <p className="aib-sub">Recorded equipment</p>
+          <p className="aib-sub"><Cpu className="aib-icon" aria-hidden="true" />Recorded equipment</p>
           <ul className="pds-brief-list">{brief.equipment.map(e => <li key={e.key}><span>{e.label}</span><strong>{e.value}{e.quantity ? ` · ${e.quantity}` : ''}</strong></li>)}</ul>
-          <p className="aib-sub">Sourced signals</p>
+          <p className="aib-sub"><Radar className="aib-icon" aria-hidden="true" />Sourced signals</p>
           {brief.recommendations.length === 0 ? <p className="aib-scope">No documented opportunity signals. Do not infer buying intent.</p> : (
             <ul className="pds-brief-list">{brief.recommendations.map(r => (
               <li key={r.id}><span>{r.confidence} · {r.timing || 'No date'}</span><strong>{r.title}</strong>
-                {r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">{r.sourceName || 'Source'}<ExternalLink className="pds-ext" aria-hidden="true" /></a> : <em>{r.sourceName || 'Source not mapped'}</em>}
+                {r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">{r.sourceName || 'Source'}<ExternalLink className="pds-ext" aria-hidden="true" /></a> : r.sourceName ? <em>{r.sourceName}</em> : null}
               </li>))}</ul>
           )}
         </div>

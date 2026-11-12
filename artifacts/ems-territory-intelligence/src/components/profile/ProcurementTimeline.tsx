@@ -31,13 +31,22 @@ export const ProcurementTimeline: React.FC<{ agency: Agency }> = ({ agency }) =>
     title: 'Budget cycle ends', detail: 'Recurring month; confirm the capital request deadline.' });
   events.sort((a, b) => b.sort.localeCompare(a.sort));
   const upcoming = events.filter((e) => e.state === 'upcoming').length;
+  const history = events.filter((e) => e.state === 'past').length;
+  const recurring = events.filter((e) => e.state === 'undated').length;
 
   return (
     <section className="apt" aria-labelledby="apt-title" data-testid="procurement-timeline">
       <header className="apt-head">
-        <h3 id="apt-title">Procurement timeline</h3>
+        <h3 id="apt-title"><CalendarClock aria-hidden="true" className="apt-title-ico" />Procurement timeline</h3>
         <p>{events.length ? `${events.length} dated record${events.length === 1 ? '' : 's'} · ${upcoming} upcoming` : 'No contract, grant, license or budget dates recorded.'}</p>
       </header>
+      {events.length > 0 && (
+        <dl className="apt-counts" data-testid="procurement-timeline-counts">
+          <div data-state="upcoming"><dt>Upcoming</dt><dd>{upcoming}</dd></div>
+          <div data-state="past"><dt>History</dt><dd>{history}</dd></div>
+          <div data-state="undated"><dt>Recurring</dt><dd>{recurring}</dd></div>
+        </dl>
+      )}
       {events.length > 0 && (
         <ol className="apt-list">
           {events.map((e) => {

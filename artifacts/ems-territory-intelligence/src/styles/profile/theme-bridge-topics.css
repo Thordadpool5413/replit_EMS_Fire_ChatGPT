@@ -62,7 +62,12 @@
 }
 .agency-command-profile .acp-section-intro :is(h1,h2,h3) { color: var(--tp-ink) !important; font-size: 17px !important; font-weight: 700 !important; }
 .agency-command-profile .acp-section-intro p { color: var(--tp-sub) !important; font-size: 13.5px !important; }
-.agency-command-profile .acp-section-intro svg { color: var(--tp-topic) !important; width: 20px; height: 20px; }
+.agency-command-profile .acp-section-intro { display: flex; align-items: flex-start; gap: .6rem; }
+.agency-command-profile .acp-section-intro .acp-intro-ico { flex: none; width: 20px; height: 20px; margin-top: .1rem; color: var(--tp-topic) !important; stroke-width: 1.9; }
+.agency-command-profile .acp-intro-text { min-width: 0; }
+.agency-command-profile .acp-intro-text h2 { margin: 0; line-height: 1.25; }
+.agency-command-profile .acp-intro-text p { margin: .1rem 0 0; line-height: 1.45; max-width: 72ch; }
+.agency-command-profile .acp-topic-content > * + * { margin-top: .75rem; }
 
 /* ---------- Brief wrapper: no outer frame; toolbar only ---------- */
 .agency-command-profile .aib.pi-surface { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
@@ -262,6 +267,33 @@
 .agency-command-profile :is(.aib-src-state, .aib-src-meta) { font-size: 12.5px; color: var(--tp-sub); margin: .1rem 0 0; }
 .agency-command-profile .aib-sources li[data-state="none"] .aib-src-state { color: var(--tp-gap); }
 
+/* Equipment: the primary monitor record is featured; keyfacts sit inside it */
+.agency-command-profile .aib-device-feature { margin: .55rem 0 .2rem; padding: .7rem .85rem .6rem; border: 1px solid color-mix(in srgb, var(--tp-equip) 22%, var(--tp-rule)); border-radius: 9px; background: color-mix(in srgb, var(--tp-equip) 4%, var(--tp-card)); }
+.agency-command-profile .aib-tech .aib-eqlist--feature { display: block; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq { padding: 0 0 .55rem !important; border-bottom: 0 !important; grid-column: auto; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq:hover { background: none !important; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq-ico .aib-icon { width: 22px !important; height: 22px !important; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq-value { font-size: 18px !important; letter-spacing: -.01em; margin-left: 1.9rem; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq-src { margin-left: 1.9rem; }
+.agency-command-profile .aib-tech .aib-eqlist--feature .aib-eq-qty { font-size: 15px !important; }
+.agency-command-profile .aib-tech .aib-device-feature .aib-keyfacts { margin: 0; background: var(--tp-card); }
+.agency-command-profile .aib-device-note { margin: .4rem 0 0; font-size: 12px; color: var(--tp-faint); }
+
+/* Buy-back: device readiness + quotes led by their quoted total; cash and credit tinted apart */
+.agency-command-profile .aib-buyback .aib-sub { display: flex; align-items: center; gap: .4rem; }
+.agency-command-profile .aib-buyback .aib-sub .aib-icon { width: 15px; height: 15px; color: var(--tp-equip); }
+.agency-command-profile .aib-buyback .pds-device-head > .aib-icon { width: 19px; height: 19px; color: var(--tp-equip); flex: none; }
+.agency-command-profile .aib-buyback .pds-gaps { font-size: 12.5px; color: var(--tp-gap); }
+.agency-command-profile .aib-buyback .pds-gaps.is-done { color: var(--tp-src); }
+.agency-command-profile .aib-buyback .pds-device[data-ready] .pds-device-head > .aib-icon { color: var(--tp-src); }
+.agency-command-profile .pds-quote { --q: var(--tp-src); border-left: 2px solid var(--q) !important; padding-left: .7rem !important; }
+.agency-command-profile .pds-quote[data-kind="vendor-credit"] { --q: var(--tp-model); }
+.agency-command-profile .pds-quote[data-state="expired"] { --q: var(--tp-faint); }
+.agency-command-profile .pds-quote-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: .45rem; margin: .15rem 0 .3rem; font-size: 18px; font-weight: 700; color: var(--tp-ink); font-variant-numeric: tabular-nums; }
+.agency-command-profile .pds-quote-total span { font-size: 12px; font-weight: 600; color: var(--q); }
+.agency-command-profile .pds-quote-total.is-struck { color: var(--tp-faint); text-decoration: line-through; }
+.agency-command-profile .pds-quote-total.is-struck span { text-decoration: none; }
+
 /* Buy-back: keep content, flatten its inner frames */
 .agency-command-profile .aib-buyback :is(.pds-device) { margin: 0 !important; padding: .6rem 0 !important; border: 0 !important; border-bottom: 1px solid var(--tp-rule) !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; }
 .agency-command-profile .aib-buyback .pds-device-head { align-items: start; }
@@ -288,6 +320,11 @@
 .agency-command-profile .aib-figures--cards dd.is-missing .aib-num { font-size: 14px !important; font-weight: 600; color: var(--tp-gap) !important; }
 .agency-command-profile .aib-figures--cards .aib-unit { font-size: 12px; color: var(--tp-faint); }
 .agency-command-profile .aib-figures--footprint { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.agency-command-profile .aib-figures--cards .aib-figure[data-lead] { grid-column: span 2; background: color-mix(in srgb, var(--tp-ops) 4%, var(--tp-card)) !important; }
+.agency-command-profile .aib-figures--cards .aib-figure[data-lead] .aib-num { font-size: 26px !important; letter-spacing: -.02em; }
+.agency-command-profile .aib-figures--cards .aib-figure[data-lead] dd.is-missing .aib-num { font-size: 15px !important; letter-spacing: 0; }
+.agency-command-profile .aib-footprint-title { display: flex; align-items: center; gap: .4rem; margin: .85rem 0 0 !important; }
+.agency-command-profile .aib-footprint-title .aib-icon { width: 15px; height: 15px; color: var(--tp-people) !important; }
 .agency-command-profile .acp-detail-ico { width: auto; height: auto; padding: 0; background: transparent !important; border: 0; }
 
 /* ---------- Purchasing findings ---------- */
@@ -306,7 +343,44 @@
 .agency-command-profile .aib-row dd.is-muted { color: var(--tp-faint); font-weight: 500; }
 .agency-command-profile .aib-empty { font-size: 13px; color: var(--tp-gap); margin: .4rem 0; }
 
+/* Purchasing: procurement timeline on a dated rail, counts first */
+.agency-command-profile .apt { background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); padding: .85rem 1rem; }
+.agency-command-profile .apt-head h3 { display: flex; align-items: center; gap: .5rem; margin: 0; font-size: 14px; font-weight: 700; color: var(--tp-ink); }
+.agency-command-profile .apt-title-ico { width: 18px; height: 18px; color: var(--tp-buy); }
+.agency-command-profile .apt-head p { margin: .1rem 0 0; font-size: 12.5px; color: var(--tp-sub); }
+.agency-command-profile .apt-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: .6rem 0 .2rem; border-block: 1px solid var(--tp-rule); }
+.agency-command-profile .apt-counts > div { display: flex; flex-direction: column; padding: .45rem .7rem; }
+.agency-command-profile .apt-counts > div + div { border-left: 1px solid var(--tp-rule); }
+.agency-command-profile .apt-counts dd { order: -1; margin: 0; font-size: 20px; font-weight: 700; color: var(--tp-ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.agency-command-profile .apt-counts [data-state="upcoming"] dd { color: var(--tp-buy); }
+.agency-command-profile .apt-counts dt { font-size: 12px; color: var(--tp-sub); }
+.agency-command-profile .apt-list { list-style: none; margin: .3rem 0 0; padding: 0; }
+.agency-command-profile .apt-list li { --c: var(--tp-faint); position: relative; display: grid; grid-template-columns: 22px 5.5rem minmax(0,1fr) auto; gap: .6rem; align-items: start; padding: .5rem 0; }
+.agency-command-profile .apt-list li + li::before { content: ""; position: absolute; left: 10px; top: -.5rem; height: 1rem; border-left: 1px solid var(--tp-rule-strong); }
+.agency-command-profile .apt-list li[data-state="upcoming"] { --c: var(--tp-buy); }
+.agency-command-profile .apt-list li[data-state="undated"] { --c: var(--tp-fin); }
+.agency-command-profile .apt-dot { display: grid; place-items: center; width: 22px; height: 22px; color: var(--c); }
+.agency-command-profile .apt-dot svg { width: 17px; height: 17px; }
+.agency-command-profile .apt-when { font-size: 12.5px; font-weight: 700; color: var(--tp-ink); font-variant-numeric: tabular-nums; padding-top: .1rem; }
+.agency-command-profile .apt-title { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--tp-ink); }
+.agency-command-profile .apt-detail { margin: 0; font-size: 12.5px; color: var(--tp-sub); }
+.agency-command-profile .apt-state { font-size: 11.5px; font-weight: 700; color: var(--c); padding-top: .15rem; }
+.agency-command-profile .apt-list li[data-state="past"] :is(.apt-title, .apt-when) { color: var(--tp-sub); }
+.agency-command-profile .apt-foot { margin: .4rem 0 0; padding-top: .45rem; border-top: 1px solid var(--tp-rule); font-size: 12px; color: var(--tp-faint); }
+
 /* ---------- Financial: reported vs hypothetical ---------- */
+.agency-command-profile .afi-lead { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: .1rem 1rem .3rem; border-bottom: 1px solid var(--tp-rule); }
+.agency-command-profile .afi-lead > div { display: flex; flex-direction: column; padding: .3rem .6rem .55rem 0; min-width: 0; }
+.agency-command-profile .afi-lead > div + div { padding-left: .7rem; border-left: 1px solid var(--tp-rule); }
+.agency-command-profile .afi-lead dd { order: -1; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.015em; color: var(--tp-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.agency-command-profile .afi-lead dd.is-missing { font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--tp-gap); line-height: 1.9; }
+.agency-command-profile .afi-lead dt { font-size: 12px; color: var(--tp-sub); }
+.agency-command-profile .afi-split { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin: .1rem 0 .3rem; background: var(--tp-rule); }
+.agency-command-profile .afi-split-net { background: var(--tp-model); }
+.agency-command-profile .afi-split-credit { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--tp-model) 45%, transparent) 0 3px, transparent 3px 6px); }
+.agency-command-profile .afi-split-key { display: flex; gap: 1rem; margin: 0 0 .4rem; font-size: 12px; color: var(--tp-sub); }
+.agency-command-profile .afi-split-key span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: .35rem; border-radius: 2px; background: var(--tp-model); }
+.agency-command-profile .afi-split-key [data-k="credit"]::before { background: color-mix(in srgb, var(--tp-model) 35%, transparent); }
 .agency-command-profile .afi { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; gap: .85rem; }
 .agency-command-profile .afi-reported, .agency-command-profile .afi-scenario { padding: 0 !important; overflow: hidden; }
 .agency-command-profile .afi-reported > :not(.afi-head), .agency-command-profile .afi-scenario > :not(.afi-head) { margin-inline: 1rem; }
@@ -416,6 +490,108 @@
   background: transparent !important; color: var(--tp-buy) !important;
   border-bottom-color: var(--tp-buy) !important; box-shadow: none !important;
 }
+
+/* ---------- Topic workspaces: shared composition for every non-Overview tab ---------- */
+/* Legacy research cards (Equipment, Purchasing, Ops, Financial, Evidence) use one card language */
+.agency-command-profile .acp-card { background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); padding: .85rem 1rem; min-width: 0; color: var(--tp-ink); }
+.agency-command-profile .acp-card > * + * { margin-top: .6rem !important; }
+.agency-command-profile .acp-card :is(h3, h4) { font-size: 14px; font-weight: 700; color: var(--tp-ink); }
+.agency-command-profile .acp-card table { font-size: 13px; }
+.agency-command-profile .acp-card th { font-size: 12px; font-weight: 600; color: var(--tp-sub); }
+.agency-command-profile .acp-card td { font-variant-numeric: tabular-nums; }
+
+/* Disclosure rows: tighter, topic-tinted glyph, quiet chevron motion */
+.agency-command-profile .acp-detail { background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); transition: border-color .15s; }
+.agency-command-profile .acp-detail:hover { border-color: var(--tp-rule-strong); }
+.agency-command-profile .acp-detail > summary { padding: .65rem .9rem; gap: .65rem; }
+.agency-command-profile .acp-detail .acp-detail-ico { color: var(--tp-topic) !important; }
+.agency-command-profile .acp-detail .acp-detail-ico svg { width: 18px; height: 18px; }
+.agency-command-profile .acp-detail-title { font-size: 14px; font-weight: 700; color: var(--tp-ink); }
+.agency-command-profile .acp-detail-summary { font-size: 12.5px; color: var(--tp-sub); }
+.agency-command-profile .acp-detail-chev { color: var(--tp-faint); transition: transform .2s; }
+.agency-command-profile .acp-detail[open] .acp-detail-chev { transform: rotate(180deg); }
+.agency-command-profile .acp-detail[open] > summary { border-bottom: 1px solid var(--tp-rule); }
+.agency-command-profile .acp-detail-body { padding: .75rem .9rem .9rem; }
+.agency-command-profile .acp-detail-body .acp-card { box-shadow: none; padding: .7rem .8rem; }
+.agency-command-profile .afi-kind[data-kind="reference"] { color: var(--tp-sub); background: var(--tp-wash); border: 1px solid var(--tp-rule); }
+
+/* Counts beside section labels */
+.agency-command-profile :is(.aib-count, .aib-sources-count) { margin-left: .4rem; padding: 0 .4rem; min-width: 1.3rem; text-align: center; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--tp-topic); background: color-mix(in srgb, var(--tp-topic) 10%, transparent); font-variant-numeric: tabular-nums; }
+
+/* Purchasing: findings carry a topic rail */
+.agency-command-profile[data-profile-topic="purchasing"] .aib-finding { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--tp-buy) 55%, transparent); padding-left: .6rem; }
+.agency-command-profile[data-profile-topic="purchasing"] .aib-findings-cols { padding-left: .6rem; }
+
+/* People: grouped roster with role glyphs */
+.agency-command-profile .adm { display: grid; gap: .75rem; }
+.agency-command-profile .adm-source { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; font-size: 12.5px; color: var(--tp-sub); }
+.agency-command-profile .adm-source a { display: inline-flex; align-items: center; gap: .2rem; color: var(--tp-accent); font-weight: 600; }
+.agency-command-profile .adm-hint { flex-basis: 100%; color: var(--tp-faint); }
+.agency-command-profile .adm-group { background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); overflow: hidden; }
+.agency-command-profile .adm-group h3 { display: flex; align-items: center; gap: .5rem; margin: 0; padding: .6rem .9rem; font-size: 13px; font-weight: 700; color: var(--tp-ink); border-bottom: 1px solid var(--tp-rule); }
+.agency-command-profile .adm-group h3 > span { margin-left: auto; font-size: 12px; color: var(--tp-faint); font-variant-numeric: tabular-nums; }
+.agency-command-profile .adm-group-ico { width: 17px; height: 17px; color: var(--tp-people); }
+.agency-command-profile .adm-group ul { list-style: none; margin: 0; padding: 0; }
+.agency-command-profile .adm-row { display: grid; grid-template-columns: 34px minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: "a w c" "a s c"; gap: .1rem .75rem; align-items: center; padding: .6rem .9rem; border-top: 1px solid var(--tp-rule); transition: background-color .15s; }
+.agency-command-profile .adm-row:first-child { border-top: 0; }
+.agency-command-profile .adm-row:hover { background: var(--tp-wash); }
+.agency-command-profile .adm-avatar { grid-area: a; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-size: 12px; font-weight: 700; color: var(--tp-people); background: color-mix(in srgb, var(--tp-people) 11%, transparent); }
+.agency-command-profile .adm-who { grid-area: w; min-width: 0; }
+.agency-command-profile .adm-name { margin: 0; font-size: 14px; font-weight: 700; color: var(--tp-ink); }
+.agency-command-profile .adm-title { margin: 0; font-size: 12.5px; color: var(--tp-sub); }
+.agency-command-profile .adm-contact { grid-area: c; display: grid; gap: .15rem; justify-items: end; font-size: 12.5px; min-width: 0; }
+.agency-command-profile .adm-contact a { display: inline-flex; align-items: center; gap: .3rem; color: var(--tp-accent); overflow-wrap: anywhere; }
+.agency-command-profile .adm-contact .is-missing { color: var(--tp-faint); }
+.agency-command-profile .adm-src { grid-area: s; margin: 0; font-size: 12px; color: var(--tp-faint); }
+.agency-command-profile .adm-empty { display: flex; gap: .7rem; padding: .85rem 1rem; border: 1px dashed var(--tp-rule-strong); border-radius: var(--tp-r); font-size: 13px; color: var(--tp-sub); }
+.agency-command-profile .adm-empty svg { color: var(--tp-people); flex: none; }
+.agency-command-profile .adm-empty-title { margin: 0 0 .15rem; font-weight: 700; color: var(--tp-ink); }
+.agency-command-profile .adm-empty a { color: var(--tp-accent); }
+
+/* Meeting: sub-labels carry glyphs; questions read as a numbered script */
+.agency-command-profile .pds-meeting .aib-sub { display: flex; align-items: center; gap: .4rem; margin: .7rem 0 .25rem; }
+.agency-command-profile .pds-meeting .aib-sub .aib-icon { width: 15px; height: 15px; color: var(--tp-topic) !important; }
+.agency-command-profile .pds-questions { counter-reset: q; list-style: none; margin: 0; padding: 0; }
+.agency-command-profile .pds-questions li { counter-increment: q; display: grid; grid-template-columns: 1.6rem minmax(0,1fr); padding: .45rem 0; border-top: 1px solid var(--tp-rule); font-size: 13.5px; line-height: 1.45; color: var(--tp-ink); }
+.agency-command-profile .pds-questions li::before { content: counter(q); font: 700 12px/1.7 var(--pi-font-data, ui-monospace, monospace); color: var(--tp-topic); }
+
+/* Evidence: fact review and source workspace share the card language */
+.agency-command-profile[data-profile-topic="evidence"] :is(.acp-fact-review, #profile-source-evidence, .acp-disclosure) { background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); padding: .85rem 1rem !important; }
+.agency-command-profile[data-profile-topic="evidence"] .acp-disclosure > summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--tp-ink); }
+
+/* Deal story: recorded figures lead the brief; list items carry meaning icons */
+.agency-command-profile .dsb-card > div:first-child svg { color: var(--tp-buy); }
+.agency-command-profile .dsb-facts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; border: 1px solid var(--tp-rule); border-radius: 8px; overflow: hidden; }
+.agency-command-profile .dsb-facts > div { display: flex; flex-direction: column; padding: .5rem .7rem; min-width: 0; transition: background-color .15s; }
+.agency-command-profile .dsb-facts > div:hover { background: var(--tp-wash); }
+.agency-command-profile .dsb-facts > div + div { border-left: 1px solid var(--tp-rule); }
+.agency-command-profile .dsb-facts dd { order: -1; margin: 0; font-size: 18px; font-weight: 700; color: var(--tp-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.agency-command-profile .dsb-facts dt { display: flex; align-items: center; gap: .3rem; font-size: 12px; color: var(--tp-sub); }
+.agency-command-profile .dsb-facts dt svg { width: 14px; height: 14px; color: var(--tp-buy); flex: none; }
+.agency-command-profile .dsb-li-ico { width: 15px; height: 15px; margin-top: .1rem; flex: none; color: var(--tp-src); }
+.agency-command-profile .dsb-confirm .dsb-li-ico { color: var(--tp-gap); }
+
+@media (max-width: 767px) {
+  .agency-command-profile .acp-card { padding: .75rem .8rem; }
+  .agency-command-profile .adm-row { grid-template-columns: 34px minmax(0,1fr); grid-template-areas: "a w" "a s" "a c"; }
+  .agency-command-profile .adm-contact { justify-items: start; margin-top: .2rem; }
+  .agency-command-profile .dsb-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .agency-command-profile .dsb-facts > div { border-left: 0 !important; border-top: 1px solid var(--tp-rule); }
+  .agency-command-profile .dsb-facts > div:nth-child(-n+2) { border-top: 0; }
+  .agency-command-profile .dsb-facts > div:nth-child(even) { border-left: 1px solid var(--tp-rule) !important; }
+  .agency-command-profile .afi-lead { grid-template-columns: minmax(0,1fr); }
+  .agency-command-profile .afi-lead > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--tp-rule); padding-top: .35rem; }
+  .agency-command-profile .aib-figures--cards .aib-figure[data-lead] { grid-column: span 1; }
+  .agency-command-profile .apt-list li { grid-template-columns: 22px minmax(0,1fr) auto; }
+  .agency-command-profile .apt-when { grid-column: 2; }
+  .agency-command-profile .apt-list li > div { grid-column: 2 / -1; }
+  .agency-command-profile .apt-state { grid-column: 3; grid-row: 1; }
+  .agency-command-profile .acp-detail > summary { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agency-command-profile :is(.acp-detail, .acp-detail-chev, .adm-row, .dsb-facts > div) { transition: none !important; }
+}
+:where(.agency-command-profile) :is(.acp-detail > summary, .adm-contact a, .aib-sources > summary):focus-visible { outline: 2px solid var(--tp-accent); outline-offset: 2px; border-radius: 6px; }
 
 /* Supporting topics: flatten legacy padding inside detail bodies */
 .agency-command-profile:is([data-profile-topic="equipment"],[data-profile-topic="operations"],[data-profile-topic="medicare"]) .acp-detail-body :is(.p-6,.p-5) { padding: .8rem !important; }

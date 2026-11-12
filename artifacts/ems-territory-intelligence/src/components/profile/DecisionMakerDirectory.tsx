@@ -1,6 +1,6 @@
 /** Compact decision-maker directory. Buying role is derived from the recorded title/role text only; never inferred relationships. */
 import React from 'react';
-import { ExternalLink, Mail, Phone, UserRound } from 'lucide-react';
+import { Briefcase, ClipboardList, ExternalLink, Landmark, Mail, Phone, Stethoscope, UserRound, Users, Wrench } from 'lucide-react';
 import type { Agency, KeyContact } from '../../types';
 import { hasMappedAgencyFactEvidence } from '../../data/agencyFactEvidence';
 
@@ -16,6 +16,10 @@ const classify = (c: KeyContact): Influence => {
   return 'Role not classified';
 };
 const ORDER: Influence[] = ['Recorded economic buyer', 'Leadership · authority unconfirmed', 'Procurement role', 'Clinical role', 'Operational role', 'Role not classified'];
+const GROUP_ICON: Record<Influence, React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>> = {
+  'Recorded economic buyer': Landmark, 'Leadership · authority unconfirmed': Briefcase, 'Procurement role': ClipboardList,
+  'Clinical role': Stethoscope, 'Operational role': Wrench, 'Role not classified': Users,
+};
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 
 const safeUrl = (v?: string) => { try { const u = new URL(v ?? ''); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined; } catch { return undefined; } };
@@ -29,7 +33,7 @@ export const DecisionMakerDirectory: React.FC<{ agency: Agency }> = ({ agency })
   return (
     <div className="adm" data-testid="decision-maker-directory">
       <div className="adm-source">
-        <span className="afi-kind" data-kind={mapped ? 'reported' : 'reference'}>{mapped ? 'Source mapped' : 'No roster source mapped'}</span>
+        {mapped && <span className="afi-kind" data-kind="reported">Source mapped</span>}
         {ev?.sourceName && (safeUrl(ev.sourceUrl)
           ? <a href={safeUrl(ev.sourceUrl)} target="_blank" rel="noopener noreferrer">{ev.sourceName}<ExternalLink aria-hidden="true" className="h-3 w-3" /></a>
           : <span>{ev.sourceName}</span>)}
@@ -45,9 +49,9 @@ export const DecisionMakerDirectory: React.FC<{ agency: Agency }> = ({ agency })
           </div>
         </div>
       ) : (
-        grouped.map(({ g, list }) => (
-          <section key={g} className="adm-group" aria-label={g}>
-            <h3>{g} <span>{list.length}</span></h3>
+        grouped.map(({ g, list }) => { const GroupIcon = GROUP_ICON[g]; return (
+          <section key={g} className="adm-group" data-group={ORDER.indexOf(g)} aria-label={g}>
+            <h3><GroupIcon aria-hidden="true" className="adm-group-ico" />{g} <span>{list.length}</span></h3>
             <ul>
               {list.map((c, i) => (
                 <li key={c.id || `${c.name}-${i}`} className="adm-row" data-testid={`row-contact-${c.id || i}`}>
@@ -65,7 +69,7 @@ export const DecisionMakerDirectory: React.FC<{ agency: Agency }> = ({ agency })
               ))}
             </ul>
           </section>
-        ))
+        ); })
       )}
     </div>
   );

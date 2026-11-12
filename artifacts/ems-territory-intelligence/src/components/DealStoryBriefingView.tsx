@@ -24,7 +24,16 @@ import {
   ExternalLink,
   MessageSquare,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Activity,
+  Ambulance,
+  Building2,
+  CalendarClock,
+  ClipboardCheck,
+  IdCard,
+  Landmark,
+  Monitor,
+  Scale
 } from 'lucide-react';
 
 interface DealStoryBriefingViewProps {
@@ -257,7 +266,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
           <div className="dsb-kicker text-xs font-semibold text-[#285EE8] dark:text-blue-400 mb-1">
             Account preparation
           </div>
-          <h2 className="pi-section-heading text-xl sm:text-2xl">
+          <h2 className="pi-section-heading text-base">
             Deal story: {agency.name}
           </h2>
           <p className="pi-supporting mt-1">
@@ -351,6 +360,13 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
           </div>
 
+          <dl className="dsb-facts" data-testid="dealstory-fact-strip" aria-label="Recorded account figures, unconfirmed">
+            <div><dt><Ambulance aria-hidden="true" />Ambulances</dt><dd>{reportMetric(agency.totalAmbulances)}</dd></div>
+            <div><dt><Building2 aria-hidden="true" />Stations</dt><dd>{reportMetric(agency.stationsCount)}</dd></div>
+            <div><dt><Monitor aria-hidden="true" />Monitor units</dt><dd>{defibCount}</dd></div>
+            <div><dt><Activity aria-hidden="true" />Transports / yr</dt><dd>{reportMetric(agency.annual911Transports)}</dd></div>
+            <div><dt><HeartPulse aria-hidden="true" />Arrest runs / yr</dt><dd>{reportMetric(agency.annualCardiacArrestCalls)}</dd></div>
+          </dl>
           {/* Two-Column Grid: What We Know vs. What We Need to Confirm */}
           <div className="dsb-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* What We Know (Supported Facts) */}
@@ -363,28 +379,28 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               </div>
               <ul className="space-y-2.5 text-xs text-[#53657B] dark:text-slate-300">
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                  <Ambulance aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Apparatus &amp; Stations: </strong>
                     {reportMetric(agency.totalAmbulances)} frontline ambulances across {reportMetric(agency.stationsCount)} stations; population served {reportMetric(agency.populationServed)}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                  <Monitor aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Installed Defibrillators: </strong>
                     Reported units: {defibCount}; brand: {defibBrand}; age: {defibAge}; warranty: {warranty}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                  <IdCard aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Federal Identifiers: </strong>
                     NPI {agency.npiNumber || 'Not reported'} and USFA FDID {agency.fdid || 'Not reported'}.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                  <Activity aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Call Volume &amp; Acuity: </strong>
                     {reportMetric(agency.annual911Transports)} annual transports and {reportMetric(agency.annualCardiacArrestCalls)} cardiac arrest runs per year.
@@ -392,7 +408,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </li>
                 {hasGrant && (
                   <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                    <Landmark aria-hidden="true" className="dsb-li-ico" />
                     <span>
                       <strong className="text-[#14283F] dark:text-white">Recorded grant: </strong>
                       FEMA AFG award listed for FY{grantFiscalYear}, amount {grantAmt}; current availability not verified.
@@ -412,28 +428,28 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               </div>
               <ul className="space-y-2.5 text-xs text-[#53657B] dark:text-slate-300">
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                  <ClipboardCheck aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Biomedical Trade-In Serial Numbers: </strong>
                     Confirm serial numbers, battery health, and accessory compatibility for the reported {defibCount} {defibBrand} units.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                  <CalendarClock aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Budget Approval Gates: </strong>
                     Identify municipal council or district board voting schedules for capital equipment authorizations in FY2026.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                  <HeartPulse aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Clinical Resuscitation Priorities: </strong>
                     Determine whether Medical Direction prioritizes Real BVM Help® tidal volume guidance or automated mechanical CPR adoption.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                  <Scale aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Procurement Vehicle Policy: </strong>
                     Confirm whether local municipal ordinance permits piggybacking on {coopContract.contractName} ({coopContract.contractNumber}) or requires sealed bidding.

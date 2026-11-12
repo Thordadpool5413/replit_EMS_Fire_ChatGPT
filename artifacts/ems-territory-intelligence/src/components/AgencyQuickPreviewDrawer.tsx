@@ -154,10 +154,10 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                   <span>
                     {agency.stateLicenseNumber
                       ? <><DataLabel kind="identifier">State EMS license</DataLabel> <span className="font-mono text-[11px]">{agency.stateLicenseNumber}</span></>
-                      : <><DataLabel kind="identifier">FDID</DataLabel> <span className="font-mono text-[11px]">{agency.fdid || 'No source mapped'}</span></>}
+                      : <><DataLabel kind="identifier">FDID</DataLabel> <span className="font-mono text-[11px]">{agency.fdid || 'Not reported'}</span></>}
                   </span>
                 <span>·</span>
-                <span><DataLabel kind="identifier">NPI</DataLabel> <span className="font-mono text-[11px]">{npiNumber || 'No source mapped'}</span></span>
+                <span><DataLabel kind="identifier">NPI</DataLabel> <span className="font-mono text-[11px]">{npiNumber || 'Not reported'}</span></span>
               </div>
 
               <h2
@@ -171,7 +171,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {agency.city}, {agency.stateCode} · {agency.county} · ZIP {agency.zipCode}
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'No address source mapped'}
+                {hasAgencyFactEvidence(agency, 'providerAddress') ? agency.address : 'Address not reported'}
               </p>
             </div>
 
@@ -254,11 +254,11 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                       ? agency.installedFleet.defibBrand
                       : 'Not listed'}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'monitorModelTransition')
-                    ? 'County memo reports LIFEPAK-35 replacement underway; count and completion are not reported.'
-                    : 'No source mapped for exact fleet count, age, or contract terms.'}
-                </span>
+                {hasAgencyFactEvidence(agency, 'monitorModelTransition') && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
+                    County memo reports LIFEPAK-35 replacement underway; count and completion are not reported.
+                  </span>
+                )}
               </div>
 
               <div className="p-3.5 bg-white dark:bg-slate-900">
@@ -295,7 +295,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                     ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reporting period not listed'
                     : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
                       ? `${formatPercent(agency.utsteinSurvivalRate)} Utstein survival`
-                    : 'No clinical-outcome source mapped'}
+                    : 'Clinical outcomes not reported'}
                 </span>
               </div>
             </div>
@@ -310,7 +310,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               <span className="font-semibold text-slate-900 dark:text-white text-right">
                 {hasAgencyFactEvidence(agency, 'agencyLeadership') && primaryContact
                   ? `${primaryContact.name} (${primaryContact.title})`
-                  : 'No leadership source mapped'}
+                  : 'Leadership not reported'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
@@ -319,13 +319,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
                   ? `${agency.totalAmbulances} Ambulances · ${agency.totalFireEngines} Engines · ${agency.stationsCount} Stations`
                     : [
-                        hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'No station-count source mapped',
+                        hasAgencyFactEvidence(agency, 'stationCount') ? `${agency.stationsCount} stations` : 'Station count not reported',
                         hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.frontlineRescueUnitCount
                           ? `${agency.frontlineRescueUnitCount} front-line rescue units`
-                          : 'No rescue-unit source mapped',
+                          : 'Rescue units not reported',
                         hasAgencyFactEvidence(agency, 'frontlineRescueUnits') && agency.responseUnitCount
                           ? `${agency.responseUnitCount} total response units`
-                          : 'No vehicle-type source mapped'
+                          : 'Vehicle types not reported'
                       ].join(' · ')}
               </span>
             </div>
@@ -333,8 +333,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               <span className="text-slate-500 dark:text-slate-400">Installed ePCR &amp; CAD</span>
               <span className="font-semibold text-slate-900 dark:text-white text-right">
                 {hasAgencyFactEvidence(agency, 'epcrSystem')
-                  ? `${agency.installedFleet.epcrCadSoftware} · no CAD source mapped`
-                  : 'No ePCR or CAD source mapped'}
+                  ? agency.installedFleet.epcrCadSoftware
+                  : 'ePCR / CAD not reported'}
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">

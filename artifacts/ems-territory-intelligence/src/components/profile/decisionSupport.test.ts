@@ -76,6 +76,7 @@ test('meeting brief contains six recorded systems, citations, quote warnings, an
   research.offers.push(quote);
   const brief = buildMeetingBrief(agency(), research, today);
   assert.equal(brief.equipment.length, 6);
+  assert.doesNotMatch(brief.text, /No source mapped|Source: Not mapped/i);
   assert.equal(brief.questions.length, 5);
   assert.match(brief.text, /Combined software/);
   assert.match(brief.text, /Expired/);

@@ -29,6 +29,22 @@ test('long contact names appear once in context rather than inflating the summar
   assert.match(html,/Office of the EMS Director &amp; Medical Command/);
   assert.match(html,/data-testid="summary-people-open"/);
 });
+test('equipment-first overview retains recorded quantities and age, including zeros',()=>{
+  const html=render(fixture({installedFleet:{
+    defibBrand:'Recorded Monitor Model',defibUnitsCount:0,defibAgeYears:0,
+  } as Agency['installedFleet']}));
+  assert.match(html,/Recorded Monitor Model/);
+  assert.match(html,/0 units/);
+  assert.match(html,/0 (?:years|yrs)/);
+  assert.doesNotMatch(html,/eligible units|confirmed deployment|verified equipment/i);
+});
+test('unknown equipment quantity and age are not displayed as reported zeros',()=>{
+  const html=render(fixture({installedFleet:{
+    defibBrand:'Recorded Monitor Model',
+  } as Agency['installedFleet']}));
+  assert.match(html,/Recorded Monitor Model/);
+  assert.doesNotMatch(html,/>0 units|>0 years|>0 yrs/);
+});
 test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
   const html=render(fixture({annualCallVolume:undefined,annual911Transports:undefined,stationsCount:undefined,totalAmbulances:undefined} as unknown as Partial<Agency>));
   assert.match(html,/No equipment recorded yet/);assert.match(html,/No signal recorded/);

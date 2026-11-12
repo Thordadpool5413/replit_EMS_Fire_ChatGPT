@@ -29,6 +29,12 @@ Keep detailed account findings and meeting preparation toward the end of the pro
 
 **How to apply:** Keep a concise evidence/confidence-aware focus summary on Overview. Direct meeting actions to the preparation topic; keep the complete findings, citations and discovery workflows accessible without repeating them on the opening page.
 
+The user's visual quality reference for individual profiles is “something that Steve Jobs would approve.”
+
+**Why:** The user supplied this reference after rejecting both the stronger colored-band redesign and the subsequent flat cleanup as unimpressive.
+
+**How to apply:** Use this as an Apple-inspired quality direction for coherent hierarchy, composition and interaction, not as approval of an existing implementation. Preserve the compact, readable, evidence-aware profile requirements.
+
 Individual profile cards and display fonts must be smaller, not merely restyled.
 
 **Why:** After the icon/visual polish, the user repeated that the profile sheets were not impressive or polished and said “the cards and fonts needs to be reduced in size too. everything is too large.”

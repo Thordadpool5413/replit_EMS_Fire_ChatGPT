@@ -77,15 +77,15 @@ try {
           overviewCount:root.querySelectorAll('[data-testid="profile-command-overview"]').length,
           navCount:root.querySelectorAll('.acp-nav').length,
           headerHeight:document.querySelector('.acp-header').getBoundingClientRect().height,
-          summariesHeight:root.querySelector('.acp-summaries')?.getBoundingClientRect().height??null,
-          summaryFont:root.querySelector('.acp-summary-value')?getComputedStyle(root.querySelector('.acp-summary-value')).fontSize:null,
+          summariesHeight:root.querySelector('.acp-hero')?.getBoundingClientRect().height??null,
+          summaryFont:root.querySelector('.acp-ledger-value')?getComputedStyle(root.querySelector('.acp-ledger-value')).fontSize:null,
           nameFont:getComputedStyle(root.querySelector('.acp-name')).fontSize,
           equipmentHeight:root.querySelector('[data-testid="profile-equipment-summary"]')?.getBoundingClientRect().height??null,
           removed:!root.querySelector('[data-testid="panel-recommended-next-action"]'),
           icons:[...root.querySelectorAll('svg')].filter(shown).length,
-          summaryIcons:[...root.querySelectorAll('.acp-summary svg')].filter(shown).length,
+          summaryIcons:[...root.querySelectorAll('.acp-hero svg')].filter(shown).length,
           contentIcons:[...root.querySelectorAll(${JSON.stringify({
-            overview: '.acp-summaries svg',
+            overview: '.acp-hero svg',
             equipment: '.aib-tech svg',
             operations: '.aib-snapshot svg',
             medicare: '.afi svg',
@@ -133,7 +133,11 @@ try {
       assert.ok(geometry.panelTop >= geometry.navBottom - 1, `${width}/${topic}: sticky bars must not obscure the topic opening`);
       assert.ok(geometry.navTop >= geometry.stickyBottom - 1, `${width}/${topic}: topic selector must stay below the back bar: ${JSON.stringify(geometry)}`);
       if (width < 768) assert.ok(geometry.prepareHeight >= 44, 'Phone meeting-preparation action must be at least 44px tall');
-      if (topic === 'overview') assert.ok(geometry.summaryIcons >= 4, 'Each overview summary needs an icon');
+      if (topic === 'overview') {
+        assert.ok(geometry.summaryIcons >= 4, 'The overview needs meaningful topic icons');
+        assert.equal(await ev(`document.querySelectorAll('[data-testid^="row-overview-equipment-"]').length`),6,'All six recorded equipment categories are available in the opening profile');
+        assert.ok(await ev(`document.querySelector('[data-testid="summary-equipment"]').getBoundingClientRect().top <= document.querySelector('[data-testid="summary-operations"]').getBoundingClientRect().top+1`),'Recorded equipment leads the overview reading order');
+      }
       if (['overview','equipment','operations','medicare','meeting','deal_story'].includes(topic)) {
         assert.ok(geometry.contentIcons >= 3, `${topic}: topic content needs its own icons, not just navigation icons`);
       }

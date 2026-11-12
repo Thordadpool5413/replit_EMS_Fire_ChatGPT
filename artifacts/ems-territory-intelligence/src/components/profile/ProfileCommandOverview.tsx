@@ -1,12 +1,19 @@
 /**
  * Curated Overview for a single agency profile.
- * Region C: four executive intelligence summaries. Region D: asymmetric workspace
+ * Region C: equipment ledger (all six categories) beside operating scale, purchasing and people. Region D: asymmetric workspace
  * (concise attention summary on the left; contact, dates, gaps on the right).
  * Every value comes from the agency record; missing values stay "Not reported".
  */
 import React from 'react';
 import {
+  Activity,
   ArrowRight,
+  ChevronRight,
+  FileText,
+  Gauge,
+  HeartPulse,
+  Receipt,
+  Wind,
   CalendarClock,
   Cpu,
   Landmark,
@@ -53,10 +60,15 @@ const dateState = (value?: string) => {
   return new Date(t).toISOString().slice(0, 10) < todayIso() ? 'past' as const : 'upcoming' as const;
 };
 
-interface SummaryProps {
-  tone: 'blue' | 'teal' | 'red' | 'navy';
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
-  eyebrow: string;
+type IconT = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>;
+const LINE_ICON: Record<string, IconT> = {
+  monitor: HeartPulse, cpr: Activity, vent: Wind, epcrcad: FileText, dispatch: Radio, billing: Receipt,
+};
+
+interface ContextRowProps {
+  tone: 'buy' | 'people' | 'risk';
+  icon: IconT;
+  label: string;
   value: string;
   missing?: boolean;
   detail: string;
@@ -65,17 +77,18 @@ interface SummaryProps {
   testId: string;
 }
 
-const Summary: React.FC<SummaryProps> = ({ tone, icon: Icon, eyebrow, value, missing, detail, action, onAction, testId }) => (
-  <article className="acp-summary" data-tone={tone} data-testid={testId}>
-    <div className="acp-summary-body">
-      <p className="acp-eyebrow"><span className="acp-summary-ico" aria-hidden="true"><Icon aria-hidden="true" className="h-5 w-5" /></span>{eyebrow}</p>
-      <p className={`acp-summary-value${missing ? ' is-missing' : ''}`}>{value}</p>
-      <p className="acp-summary-detail">{detail}</p>
-      <button type="button" className="acp-link" onClick={onAction} data-testid={`${testId}-open`}>
-        {action}<ArrowRight aria-hidden="true" className="h-3 w-3" />
-      </button>
+const ContextRow: React.FC<ContextRowProps> = ({ tone, icon: Icon, label, value, missing, detail, action, onAction, testId }) => (
+  <div className="acp-ctx" data-tone={tone} data-testid={testId}>
+    <Icon aria-hidden="true" className="acp-ctx-ico" />
+    <div className="acp-ctx-body">
+      <p className="acp-ctx-label">{label}</p>
+      <p className={`acp-ctx-value${missing ? ' is-missing' : ''}`}>{value}</p>
+      <p className="acp-ctx-detail">{detail}</p>
     </div>
-  </article>
+    <button type="button" className="acp-ctx-open" onClick={onAction} data-testid={`${testId}-open`} aria-label={action}>
+      <span>{action}</span><ChevronRight aria-hidden="true" className="h-4 w-4" />
+    </button>
+  </div>
 );
 
 export interface ProfileCommandOverviewProps {
@@ -90,7 +103,6 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
-  const monitor = lines.find((l) => l.category === 'monitor');
   const contacts = (agency.keyContacts ?? []).filter((c) => real(c.name));
   const lead = contacts[0];
   const contract = agency.competitorContract;
@@ -129,39 +141,74 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
-      <div className="acp-summaries" role="list" aria-label="Executive intelligence snapshot">
-        <Summary
-          tone="blue" icon={Cpu} eyebrow="Current equipment" testId="summary-equipment"
-          value={monitor && monitor.value !== NOT_REPORTED ? monitor.value : knownEquipment[0]?.value ?? NOT_REPORTED}
-          missing={knownEquipment.length === 0}
-          detail={knownEquipment.length > 0
-            ? `${knownEquipment.length} of ${lines.length} categories recorded${isNum(agency.installedFleet?.defibAgeYears) ? ` · monitors ${agency.installedFleet.defibAgeYears} yrs` : ''}`
-            : 'No equipment recorded yet'}
-          action="View equipment" onAction={() => onNavigate('equipment')}
-        />
-        <Summary
-          tone={contractState === 'upcoming' ? 'red' : 'teal'} icon={Landmark} eyebrow={contract?.contractEndDate ? 'Contract timing' : 'Purchasing context'} testId="summary-purchasing"
-          value={purchasingValue}
-          missing={!contract?.contractEndDate && !latestGrant && !agency.budgetCycleEndMonth}
-          detail={contract?.contractEndDate
-            ? `${contract.vendor || 'Vendor not reported'} · ${contractState === 'past' ? 'historical, not a deadline' : 'recorded contract end'}`
-            : latestGrant ? latestGrant.programName : 'Research procurement timing'}
-          action="Review purchasing" onAction={() => onNavigate('purchasing')}
-        />
-        <Summary
-          tone="navy" icon={Users} eyebrow="Key people" testId="summary-people"
-          value={lead ? `${contacts.length} recorded` : 'None recorded'}
-          missing={!lead}
-          detail={lead ? 'Names, roles and contact details below' : 'Identify purchasing authority'}
-          action="Decision makers" onAction={() => onNavigate('decision_makers')}
-        />
-        <Summary
-          tone="teal" icon={Radio} eyebrow="Operations" testId="summary-operations"
-          value={opsPrimary.value}
-          missing={opsPrimary.value === NOT_REPORTED}
-          detail={`${opsPrimary.label} · ${num(agency.stationsCount)} stations${mode !== 'fire' ? ` · ${num(agency.totalAmbulances)} ambulances` : ` · ${num(agency.totalFireEngines)} engines`}`}
-          action="Ops & clinical" onAction={() => onNavigate('operations')}
-        />
+      <div className="acp-hero">
+        <section className="acp-ledger" data-testid="summary-equipment" aria-labelledby="acp-ledger-title">
+          <header className="acp-ledger-head">
+            <div>
+              <h2 id="acp-ledger-title" className="acp-ledger-title"><Cpu aria-hidden="true" className="h-[18px] w-[18px]" />Recorded equipment</h2>
+              <p className="acp-ledger-meta">
+                <span className="acp-num-inline">{knownEquipment.length}</span> of {lines.length} categories recorded
+                {isNum(agency.installedFleet?.defibAgeYears) && <> · monitor age on record <span className="acp-num-inline">{agency.installedFleet.defibAgeYears} yrs</span></>}
+              </p>
+            </div>
+            <button type="button" className="acp-link" onClick={() => onNavigate('equipment')} data-testid="summary-equipment-open" aria-label="View equipment">
+              Details<ArrowRight aria-hidden="true" className="h-3 w-3" />
+            </button>
+          </header>
+          {knownEquipment.length === 0 && <p className="acp-ledger-empty">No equipment recorded yet. Confirm the devices and software currently used by the agency.</p>}
+          <ul className="acp-ledger-list">
+            {lines.map((l) => {
+              const Icon = LINE_ICON[l.key] ?? Cpu;
+              const missing = l.value === NOT_REPORTED;
+              return (
+                <li key={l.key} className="acp-ledger-row" data-category={l.category} data-missing={missing || undefined} data-testid={`row-overview-equipment-${l.key}`}>
+                  <Icon aria-hidden="true" className="acp-ledger-ico" />
+                  <span className="acp-ledger-label">{l.label}</span>
+                  <span className={`acp-ledger-value${missing ? ' is-missing' : ''}`}>{l.value}</span>
+                  <span className={`acp-ledger-qty${!l.quantity || l.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
+                    {l.quantity && l.quantity !== NOT_REPORTED ? l.quantity : l.category !== 'software' ? 'Units not reported' : ''}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="acp-ledger-foot">Inventory as recorded. Age and quantity describe the record, not condition, intent or buy-back eligibility.</p>
+        </section>
+
+        <div className="acp-context">
+          <section className="acp-scale" data-testid="summary-operations" aria-label="Operating scale">
+            <div className="acp-scale-head">
+              <p className="acp-ctx-label"><Gauge aria-hidden="true" className="h-4 w-4" />Operating scale</p>
+              <button type="button" className="acp-link" onClick={() => onNavigate('operations')} data-testid="summary-operations-open">
+                Ops & clinical<ArrowRight aria-hidden="true" className="h-3 w-3" />
+              </button>
+            </div>
+            <dl className="acp-scale-grid">
+              <div><dt>{opsPrimary.label}</dt><dd className={opsPrimary.value === NOT_REPORTED ? 'is-missing' : ''}>{opsPrimary.value}</dd></div>
+              <div><dt>stations</dt><dd className={isNum(agency.stationsCount) ? '' : 'is-missing'}>{num(agency.stationsCount)}</dd></div>
+              {mode !== 'fire'
+                ? <div><dt>ambulances</dt><dd className={isNum(agency.totalAmbulances) ? '' : 'is-missing'}>{num(agency.totalAmbulances)}</dd></div>
+                : <div><dt>engines</dt><dd className={isNum(agency.totalFireEngines) ? '' : 'is-missing'}>{num(agency.totalFireEngines)}</dd></div>}
+            </dl>
+          </section>
+          <ContextRow
+            tone={contractState === 'upcoming' ? 'risk' : 'buy'} icon={Landmark}
+            label={contract?.contractEndDate ? 'Contract timing' : 'Purchasing context'} testId="summary-purchasing"
+            value={purchasingValue}
+            missing={!contract?.contractEndDate && !latestGrant && !agency.budgetCycleEndMonth}
+            detail={contract?.contractEndDate
+              ? `${contract.vendor || 'Vendor not reported'} · ${contractState === 'past' ? 'historical, not a deadline' : 'recorded contract end'}`
+              : latestGrant ? latestGrant.programName : 'Research procurement timing'}
+            action="Purchasing" onAction={() => onNavigate('purchasing')}
+          />
+          <ContextRow
+            tone="people" icon={Users} label="Key people" testId="summary-people"
+            value={lead ? `${contacts.length} recorded` : 'None recorded'}
+            missing={!lead}
+            detail={lead ? 'Names, roles and contact details below' : 'Identify purchasing authority'}
+            action="People" onAction={() => onNavigate('decision_makers')}
+          />
+        </div>
       </div>
 
       <div className="acp-workspace">

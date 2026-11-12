@@ -104,6 +104,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
   const monitorLine = lines.find((line) => line.key === 'monitor')!;
+  const artworkId = React.useId().replace(/:/g, '');
   const clinicalLines = lines.filter((line) => line.key !== 'monitor' && line.category !== 'software');
   const softwareLines = lines.filter((line) => line.category === 'software');
   const contacts = (agency.keyContacts ?? []).filter((c) => real(c.name));
@@ -159,11 +160,12 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
       <div className="acp-hero">
+        <div className="acp-overview-primary">
         <section className="acp-ledger" data-testid="summary-equipment" aria-labelledby="acp-ledger-title">
           <header className="acp-ledger-head">
             <div>
               <p className="acp-ledger-overline">Agency inventory · as recorded</p>
-              <h2 id="acp-ledger-title" className="acp-ledger-title"><Cpu aria-hidden="true" className="h-[18px] w-[18px]" />Equipment record</h2>
+              <h2 id="acp-ledger-title" className="acp-ledger-title"><Cpu aria-hidden="true" className="h-[18px] w-[18px]" />Equipment &amp; technology</h2>
               <p className="acp-ledger-meta">
                 <span className="acp-num-inline">{knownEquipment.length}</span> of {lines.length} categories recorded
               </p>
@@ -176,30 +178,43 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
           <div className="acp-monitor-feature" data-category="monitor" data-testid="row-overview-equipment-monitor">
             <div className="acp-monitor-art" aria-hidden="true">
               <svg viewBox="0 0 180 150" role="presentation" focusable="false">
-                <path className="monitor-cable" d="M129 111c13 8 21 6 28-2" />
-                <path className="monitor-base" d="M66 121h49l9 9H57z" />
-                <path className="monitor-stand" d="M86 106h11v15H86z" />
-                <rect className="monitor-shell" x="26" y="20" width="112" height="88" rx="10" />
-                <rect className="monitor-screen" x="36" y="30" width="92" height="62" rx="4" />
-                <path className="monitor-trace monitor-trace-one" d="M43 61h14l5-11 8 23 8-17 5 5h12l5-9 8 19 7-10h10" />
-                <path className="monitor-trace monitor-trace-two" d="M44 77h17m6 0h13m6 0h13m7 0h19" />
-                <circle className="monitor-control" cx="119" cy="101" r="2.5" />
-                <path className="monitor-foot" d="M72 136h40" />
+                <defs>
+                  <linearGradient id={`${artworkId}-case`} x1="0" y1="0" x2=".8" y2="1">
+                    <stop stopColor="#40566A" /><stop offset="1" stopColor="#14293B" />
+                  </linearGradient>
+                  <linearGradient id={`${artworkId}-screen`} x1="0" y1="0" x2="1" y2="1">
+                    <stop stopColor="#203F4E" /><stop offset="1" stopColor="#0D2530" />
+                  </linearGradient>
+                  <filter id={`${artworkId}-shadow`} x="-20%" y="-20%" width="140%" height="160%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#14293B" floodOpacity=".18" />
+                  </filter>
+                </defs>
+                <path className="monitor-handle" d="M61 32V21a7 7 0 0 1 7-7h40a7 7 0 0 1 7 7v11" />
+                <path className="monitor-cable" d="M150 100c17 0 20 7 20 16s-11 13-19 5" />
+                <rect className="monitor-shell" x="22" y="31" width="132" height="91" rx="13" style={{fill:`url(#${artworkId}-case)`}} filter={`url(#${artworkId}-shadow)`} />
+                <rect className="monitor-screen" x="33" y="43" width="82" height="58" rx="5" style={{fill:`url(#${artworkId}-screen)`}} />
+                <path d="M38 45h72L38 76z" fill="#FFFFFF" opacity=".06" />
+                <path className="monitor-trace monitor-trace-one" d="M57 57c-5-7-17-1-12 8l17 17 17-17c5-9-7-15-12-8l-5 5z" />
+                <circle className="monitor-control" cx="134" cy="61" r="8" />
+                <circle className="monitor-control-small" cx="129" cy="86" r="3" />
+                <circle className="monitor-control-small" cx="140" cy="86" r="3" />
+                <path className="monitor-port" d="M43 111h16m13 0h16m13 0h16" />
+                <path className="monitor-foot" d="M37 122v6h18v-6m65 0v6h18v-6" />
               </svg>
+              <span className="acp-monitor-art-label">Illustration</span>
             </div>
             <div className="acp-monitor-copy">
-              <p className="acp-monitor-kicker"><HeartPulse aria-hidden="true" />Clinical device · monitor</p>
-              <p className="acp-monitor-label">{monitorLine.label}</p>
+              <p className="acp-monitor-kicker"><HeartPulse aria-hidden="true" />{monitorLine.label}</p>
               <p className={`acp-monitor-model${monitorLine.value === NOT_REPORTED ? ' is-missing' : ''}`} data-testid="text-overview-monitor-model">{monitorLine.value}</p>
               <div className="acp-monitor-facts">
                 <div>
-                  <span>Recorded unit count</span>
+                  <span>Units recorded</span>
                   <strong className={!monitorLine.quantity || monitorLine.quantity === NOT_REPORTED ? 'is-missing' : ''} data-testid="text-overview-monitor-quantity">
                     {monitorLine.quantity && monitorLine.quantity !== NOT_REPORTED ? monitorLine.quantity : 'Units not reported'}
                   </strong>
                 </div>
                 <div>
-                  <span>Monitor age on record</span>
+                  <span>Age on record</span>
                   <strong className={isNum(agency.installedFleet?.defibAgeYears) ? '' : 'is-missing'} data-testid="text-overview-monitor-age">
                     {isNum(agency.installedFleet?.defibAgeYears) ? `${agency.installedFleet.defibAgeYears} yrs` : NOT_REPORTED}
                   </strong>
@@ -209,7 +224,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
           </div>
           <div className="acp-ledger-catalog">
             <section className="acp-equipment-group" aria-label="Other clinical devices">
-              <h3><Activity aria-hidden="true" />Other clinical devices</h3>
+              <h3><Activity aria-hidden="true" />Clinical devices</h3>
               <ul className="acp-ledger-list">{clinicalLines.map(renderEquipmentLine)}</ul>
             </section>
             <section className="acp-equipment-group acp-equipment-group--software" aria-label="Agency software">
@@ -219,7 +234,9 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
           </div>
           <p className="acp-ledger-foot">Inventory as recorded. Age and quantity describe the record, not condition, intent or buy-back eligibility.</p>
         </section>
-
+        <div className="acp-main">{children}</div>
+        </div>
+        <div className="acp-overview-secondary">
         <div className="acp-context">
           <section className="acp-scale" data-testid="summary-operations" aria-label="Operating scale">
             <div className="acp-scale-head">
@@ -254,10 +271,6 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             action="People" onAction={() => onNavigate('decision_makers')}
           />
         </div>
-      </div>
-
-      <div className="acp-workspace">
-        <div className="acp-main">{children}</div>
         <aside className="acp-aside" aria-label="Account context">
           <section className="acp-panel" data-testid="panel-overview-contact">
             <h3 className="acp-panel-title"><Users aria-hidden="true" className="h-4 w-4" />Most relevant contact</h3>
@@ -313,6 +326,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             </button>
           </section>
         </aside>
+        </div>
       </div>
     </div>
   );

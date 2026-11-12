@@ -91,7 +91,8 @@
 .agency-command-profile .aib-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin: .45rem 0; }
 
 /* ---------- Overview: equipment ledger + context column ---------- */
-.agency-command-profile .acp-hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 1fr); gap: .85rem; align-items: stretch; }
+.agency-command-profile .acp-hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 1fr); gap: .85rem; align-items: start; }
+.agency-command-profile :is(.acp-overview-primary, .acp-overview-secondary) { display: grid; gap: .85rem; min-width: 0; align-content: start; }
 .agency-command-profile :is(.acp-ledger, .acp-context) {
   background: var(--tp-card); border: 1px solid var(--tp-rule); border-radius: var(--tp-r); box-shadow: var(--tp-lift); min-width: 0;
 }
@@ -477,13 +478,13 @@
 
 /* ---------- Overview equipment: a featured clinical record, not an inventory table ---------- */
 .agency-command-profile .acp-ledger {
-  --ledger-ink: #193b38;
-  --ledger-muted: #496966;
-  --ledger-faint: #607d79;
-  --ledger-rule: #cbded9;
-  --ledger-teal: #08766d;
-  --ledger-teal-wash: #e7f2ee;
-  --ledger-rust: #a74b31;
+  --ledger-ink: var(--tp-ink);
+  --ledger-muted: var(--tp-sub);
+  --ledger-faint: var(--tp-faint);
+  --ledger-rule: var(--tp-rule);
+  --ledger-teal: var(--tp-ops);
+  --ledger-teal-wash: color-mix(in srgb, var(--tp-ops) 8%, var(--tp-card));
+  --ledger-rust: var(--tp-fin);
   padding: .2rem 0 .35rem;
   overflow: visible;
   background: transparent;
@@ -525,29 +526,31 @@
 }
 .agency-command-profile .acp-monitor-feature {
   display: grid;
-  grid-template-columns: minmax(112px,  .42fr) minmax(0, 1fr);
+  grid-template-columns: 136px minmax(0, 1fr);
   align-items: center;
   gap: 1.05rem;
   min-width: 0;
   padding: .9rem 1rem;
   background: var(--ledger-teal-wash);
+  border-radius: 12px;
 }
 .agency-command-profile .acp-monitor-art {
   display: grid;
   min-width: 0;
-  min-height: 138px;
+  min-height: 112px;
   place-items: center;
-  background: #d7eae4;
+  background: transparent;
 }
-.agency-command-profile .acp-monitor-art svg { display: block; width: min(100%, 178px); height: auto; }
-.agency-command-profile .acp-monitor-art .monitor-shell { fill: #f4f8f5; stroke: #245b56; stroke-width: 2.4; }
-.agency-command-profile .acp-monitor-art .monitor-screen { fill: #f9fcfa; stroke: #a7c6bd; stroke-width: 1.4; }
-.agency-command-profile .acp-monitor-art .monitor-trace { fill: none; stroke: var(--ledger-teal); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.agency-command-profile .acp-monitor-art svg { display: block; width: min(100%, 136px); height: auto; }
+.agency-command-profile .acp-monitor-art-label { max-width: 100%; white-space: normal; color: var(--ledger-muted); font-size: 11.5px; line-height: 1.3; text-align: center; }
+.agency-command-profile .acp-monitor-art .monitor-shell { fill: var(--tp-card); stroke: var(--ledger-teal); stroke-width: 2.4; }
+.agency-command-profile .acp-monitor-art .monitor-screen { fill: var(--ledger-teal-wash); stroke: var(--ledger-teal); stroke-width: 1.4; }
+.agency-command-profile .acp-monitor-art .monitor-handle { fill: none; stroke: var(--ledger-teal); stroke-width: 5; }
+.agency-command-profile .acp-monitor-art .monitor-trace { fill: none; stroke: #8EE7D6; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .agency-command-profile .acp-monitor-art .monitor-trace-two { stroke: #87aaa2; stroke-width: 1.5; }
-.agency-command-profile .acp-monitor-art .monitor-base,
-.agency-command-profile .acp-monitor-art .monitor-stand,
-.agency-command-profile .acp-monitor-art .monitor-foot { fill: #b5d0c8; }
-.agency-command-profile .acp-monitor-art .monitor-foot { stroke: #245b56; stroke-linecap: round; stroke-width: 2; }
+.agency-command-profile .acp-monitor-art .monitor-foot { fill: var(--ledger-teal); stroke: var(--ledger-teal); stroke-linecap: round; stroke-width: 2; }
+.agency-command-profile .acp-monitor-art .monitor-port { fill: none; stroke: var(--ledger-teal); stroke-linecap: round; stroke-width: 3; }
+.agency-command-profile .acp-monitor-art .monitor-control-small { fill: var(--ledger-teal); }
 .agency-command-profile .acp-monitor-art .monitor-control { fill: var(--ledger-rust); }
 .agency-command-profile .acp-monitor-art .monitor-cable { fill: none; stroke: #729b92; stroke-linecap: round; stroke-width: 2; }
 .agency-command-profile .acp-monitor-copy { min-width: 0; }
@@ -582,6 +585,7 @@
 .agency-command-profile .acp-monitor-facts > div { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
 .agency-command-profile .acp-monitor-facts span { color: var(--ledger-muted); font-size: 12.5px; line-height: 1.3; }
 .agency-command-profile .acp-monitor-facts strong { color: var(--ledger-ink); font-size: 15px; font-weight: 750; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.agency-command-profile .acp-monitor-facts > div:first-child strong:not(.is-missing) { font-size: 24px; line-height: 1.1; letter-spacing: -.025em; }
 .agency-command-profile .acp-monitor-facts strong.is-missing { color: var(--ledger-faint); font-size: 13.5px; font-weight: 600; }
 .agency-command-profile .acp-ledger-catalog {
   display: grid;
@@ -645,11 +649,12 @@
   .agency-command-profile .acp-ledger-head > .acp-link { min-height: 44px; }
   .agency-command-profile .acp-monitor-feature { grid-template-columns: 82px minmax(0, 1fr); gap: .7rem; padding: .7rem; }
   .agency-command-profile .acp-monitor-art { min-height: 100px; }
-  .agency-command-profile .acp-monitor-art svg { width: 100px; }
+  .agency-command-profile .acp-monitor-art svg { width: 100%; }
   .agency-command-profile .acp-monitor-model { margin-bottom: .5rem; font-size: 20px; }
   .agency-command-profile .acp-monitor-facts { gap: .45rem; }
   .agency-command-profile .acp-monitor-facts span { font-size: 12px; }
   .agency-command-profile .acp-monitor-facts strong { font-size: 14px; }
+  .agency-command-profile .acp-monitor-facts > div:first-child strong:not(.is-missing) { font-size: 20px; }
   .agency-command-profile .acp-ledger-catalog { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
   .agency-command-profile .acp-equipment-group h3 { padding-bottom: .25rem; }
   .agency-command-profile .acp-ledger-row { padding-block: .45rem; }

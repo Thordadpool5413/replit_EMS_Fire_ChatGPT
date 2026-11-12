@@ -140,3 +140,17 @@ mtime_ms = 1794377113081
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/d97c65e4-ae00-45e4-b268-33fec38bc100/e8611bef-2d20-4464-a022-f45bae416b2c"
 storage_version_token = "1794377215897830"
 content_type = "text/html"
+
+[[outputs]]
+id = "wc9LnZvTK7h4U_BMYBbJM"
+uri = "file://generated-artifacts/profile-monitor-final/1366-overview.png"
+type = "image"
+title = "Updated provider Overview"
+description = "Actual rendered laptop view showing the featured device record, quantities, grouped clinical devices and agency software."
+logical_id = "13547698-1262-4bd3-a397-bc713ff9deb6"
+content_hash = "sha256:ba4a264571d021ae72f5d81535e80c0be740212b61a05176df85abc82f1635a5"
+size = 232953
+mtime_ms = 1794505926084
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/13547698-1262-4bd3-a397-bc713ff9deb6/bf45c235-6253-4a5e-bf48-7618ac88d7c5"
+storage_version_token = "1794505976345726"
+content_type = "image/png"

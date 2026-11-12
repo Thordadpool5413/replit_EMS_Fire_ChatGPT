@@ -31,7 +31,7 @@ Keep detailed account findings and meeting preparation toward the end of the pro
 
 The user's visual quality reference for individual profiles is “something that Steve Jobs would approve.”
 
-**Why:** The user supplied this reference after rejecting both the stronger colored-band redesign and the subsequent flat cleanup as unimpressive.
+**Why:** The user supplied this reference after rejecting both stronger colored bands and a flat cleanup as unimpressive, then also rejected a plain inventory grid with small icons as boring.
 
 **How to apply:** Use this as an Apple-inspired quality direction for coherent hierarchy, composition and interaction, not as approval of an existing implementation. Preserve the compact, readable, evidence-aware profile requirements.
 

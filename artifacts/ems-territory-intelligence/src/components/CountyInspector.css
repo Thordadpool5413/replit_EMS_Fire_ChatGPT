@@ -54,16 +54,16 @@
 
 /* Places ledger: name (+seat tag) left, ZIPs right, aligned rows */
 .ci .ci-place-list { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 1.25rem; list-style: none; margin: 0; padding: 0; }
-.ci .ci-place-item { min-width: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: .6rem; border-bottom: 1px dotted var(--pi-border); }
+.ci .ci-place-item { min-width: 0; display: grid; align-content: start; gap: .1rem; padding-block: .25rem; border-bottom: 1px dotted var(--pi-border); }
 @container (min-width: 330px) { .ci .ci-place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .8rem; } }
 @container (min-width: 260px) and (max-width: 420px) {
   .ci .ci-place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .6rem; }
 }
-.ci .ci-place { display: inline-flex; align-items: center; gap: .4rem; justify-self: start; min-height: 24px; padding: 0 .15rem; border-radius: .25rem; background: transparent; cursor: pointer; text-align: left; transition: background-color 140ms ease; }
+.ci .ci-place { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .3rem; justify-self: start; min-height: 24px; padding: 0 .15rem; border-radius: .25rem; background: transparent; cursor: pointer; text-align: left; transition: background-color 140ms ease; }
 .ci .ci-place:hover { background: var(--pi-action-subtle); }
 .ci .ci-place-name { font-size: 13px; font-weight: 600; color: var(--pi-action-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--pi-action) 40%, transparent); overflow-wrap: anywhere; }
 .ci .ci-tag { padding: 0 .35rem; border: 1px solid var(--pi-border); border-radius: 999px; font-size: 11.5px; font-weight: 650; color: var(--pi-text-secondary); }
-.ci .ci-place-sub { margin-left: auto; text-align: right; font-size: 12.5px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ci .ci-place-sub { padding-left: 1.3rem; text-align: left; font-size: 12.5px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ci .ci-zips { display: grid; gap: 0; margin-top: .3rem; }
 .ci .ci-zips .ci-section { margin-bottom: 0; }
 .ci .ci-zip-run { font-size: 13px; line-height: 1.5; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -141,17 +141,17 @@
     min-height: 12rem !important;
   }
   [data-laptop-density="compact"] .county-single-map-panel .cv-map-stage--county svg {
-    height: 9rem; max-height: 9rem;
+    height: 13rem; max-height: 13rem;
   }
 }
 .county-single-map-panel { padding: .45rem .6rem; }
 .county-single-map-panel .cv-map-stage--county { min-height: 0; padding-block: .15rem; }
-.county-single-map-panel .cv-map-stage--county svg { height: 11.5rem; max-height: 11.5rem; }
+.county-single-map-panel .cv-map-stage--county svg { height: 15rem; max-height: 15rem; }
 .county-single-map-panel .cv-legend { padding-top: .25rem; }
 .county-city-directory-panel { padding: .5rem .7rem; gap: .35rem; }
 .county-city-directory-panel .cv-kicker { display: none; }
 .county-city-directory-panel .cv-title { font-size: 1rem; }
-.county-city-directory-panel .cv-place-list { max-height: 7.5rem; }
+.county-city-directory-panel .cv-place-list { max-height: 17rem; overflow-y: auto; }
 .county-city-directory-panel .cv-place-row { padding: .3rem .6rem; }
 .ci .ci-head { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
 .ci .ci-kicker { grid-column: 2; grid-row: 1; font-size: 11px; letter-spacing: .02em; }
@@ -168,26 +168,45 @@
 .ci .ci-foot { gap: .15rem .5rem; padding-block: .1rem; }
 .ci .ci-ident { line-height: 1.25; }
 @container (min-width: 420px) {
-  .ci .ci-place-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .1rem .6rem; }
+  .ci .ci-place-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .1rem .8rem; }
   .ci .ci-place-item { display: grid; align-content: start; justify-content: stretch; }
   .ci .ci-place-sub { margin: 0; text-align: left; }
   .ci .ci-place { gap: .2rem; }
 }
 @media screen and (min-width: 1024px) {
-  [data-laptop-density="compact"] .ci > * { padding-block: .15rem; }
-  [data-laptop-density="compact"] .ci .ci-head { padding-block: .2rem; }
+  [data-laptop-density="compact"] .ci > * { padding-block: .35rem; }
+  [data-laptop-density="compact"] .ci .ci-head { padding-block: .4rem; }
   [data-laptop-density="compact"] .ci .ci-foot { padding-block: .1rem; }
 }
-.county-city-directory-panel .cv-zips { max-height: 2.6em; overflow-y: auto; margin-top: 0; }
+.county-city-directory-panel .cv-zips { margin-top: 0; font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; }
 @media (min-width: 1024px) { .cv-state-grid:has(> .county-city-directory-panel) { align-items: start; } }
 @media (max-width: 1023px) {
   .county-single-map-panel { padding: .35rem .6rem; }
   .county-single-map-panel .cv-map-stage--county { flex: none; }
-  .county-single-map-panel .cv-map-stage--county svg { height: 4.5rem; max-height: 4.5rem; }
+  .county-single-map-panel .cv-map-stage--county svg { height: 10rem; max-height: 10rem; }
   .county-single-map-panel .cv-map-head { gap: .1rem .5rem; }
   .county-single-map-panel .cv-map-head strong { font-size: .8rem; }
   .county-single-map-panel .cv-legend { font-size: .7rem; gap: .15rem .6rem; padding-top: .2rem; }
   .county-single-map-panel .cv-map-head span { font-size: 12px; }
-  .county-city-directory-panel .cv-place-list { max-height: 6rem; }
+  .county-city-directory-panel .cv-place-list { max-height: none; overflow: visible; }
   .county-city-directory-panel .cv-place-row { min-height: 44px; }
 }
+
+/* Brief polish: unboxed topic icons, ledger-style places, readable counts. */
+.cv-head-ico { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; }
+.cv-head-ico > svg { width: 1rem; height: 1rem; flex: none; color: #7fa7f5; }
+.cv-panel .cv-title.cv-head-ico > svg { color: var(--pi-action); }
+.county-city-directory-panel .cv-place-list { display: grid; gap: 0; border-top: 1px solid var(--pi-border); }
+.county-city-directory-panel .cv-place-list > [role="listitem"] + [role="listitem"] { border-top: 1px dotted var(--pi-border); }
+.county-city-directory-panel .cv-place-row { display: flex; align-items: center; gap: .55rem; width: 100%; border-radius: .35rem; text-align: left; }
+.county-city-directory-panel .cv-place-row[aria-pressed="true"] { background: var(--pi-action-subtle); box-shadow: inset 3px 0 0 var(--pi-action); }
+.county-city-directory-panel .cv-place-name { font-size: 14px; font-weight: 650; color: var(--pi-text-primary); }
+.county-city-directory-panel .cv-place-sub { font-size: 12.5px; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
+.cv-place-ico, .ci-place-ico { width: 15px; height: 15px; flex: none; color: #6f8fd6; }
+.cv-place-ico.is-seat, .ci-place-ico.is-seat { color: #c98a12; }
+.cv-place-count { display: inline-flex; align-items: center; gap: .3rem; flex: none; font-size: 13px; font-weight: 650; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
+.cv-place-count svg { width: 14px; height: 14px; color: var(--pi-text-secondary); }
+.ci .ci-head { background: linear-gradient(90deg, #1f4fbf, #2456c8); }
+.ci .ci-stat:nth-child(2) .ci-ico { color: #0f7f8c; }
+.ci .ci-fema { box-shadow: inset 3px 0 0 var(--risk, #b6c1cf); }
+@media (forced-colors: active) { .cv-place-ico, .ci-place-ico, .cv-head-ico > svg { color: CanvasText; } .ci .ci-fema { box-shadow: none; } }

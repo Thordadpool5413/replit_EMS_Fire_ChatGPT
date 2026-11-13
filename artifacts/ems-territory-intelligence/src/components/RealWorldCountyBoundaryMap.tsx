@@ -17,7 +17,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, Ambulance, HeartPulse, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './CountyInspector.css';
 import { DataLabel } from './DataLabel';
@@ -371,7 +371,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <div className="cv-state-grid county-state-map-grid">
             <div className="cv-map-panel county-state-map-panel">
               <div className="cv-map-head">
-                <strong>{stateNode.stateName} · FEMA NRI risk by county</strong>
+                <strong className="cv-head-ico"><ShieldAlert aria-hidden="true" />{stateNode.stateName} · FEMA NRI risk by county</strong>
                 <span className="tabular-nums">
                   {projectedState.projectedCounties.length} of {stateNode.countiesList.length} boundaries drawn
                 </span>
@@ -589,7 +589,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             onClick={() => onSelectCity(cityNode.cityName, inspectedCounty.countyName, stateNode.stateCode)}
                             title={`${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
                           >
-                            <span className="ci-place-name">{cityNode.cityName}</span>
+                            <MapPin className={`ci-place-ico${cityNode.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" /><span className="ci-place-name">{cityNode.cityName}</span>
                             {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
                           </button>
                           <span className="ci-place-sub">{cityNode.zipCodes.join(', ') || 'ZIP not listed'}</span>
@@ -639,7 +639,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <div className="cv-state-grid">
             <div className="cv-map-panel county-single-map-panel county-municipality-map-panel">
               <div className="cv-map-head">
-                <strong>{activeCountyNode.countyName} boundary and mapped places</strong>
+                <strong className="cv-head-ico"><MapIcon aria-hidden="true" />{activeCountyNode.countyName} boundary and mapped places</strong>
                 <span className="tabular-nums">{activeCountyNode.landAreaSqMiles.toLocaleString()} sq mi · FIPS {activeCountyNode.countyFips}</span>
               </div>
               <div className="cv-map-stage cv-map-stage--county">
@@ -757,6 +757,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                         onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
                         data-testid={`button-place-${pin.cityName}`}
                       >
+                        <MapPin className={`cv-place-ico${pin.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" />
                         <span className="min-w-0 flex-1">
                           <span className="flex flex-wrap items-center gap-1.5">
                             <span className="cv-place-name">{pin.cityName}</span>
@@ -767,7 +768,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           </span>
                         </span>
                         <span className="cv-place-count">
-                          {pin.providersCount} {pin.providersCount === 1 ? 'record' : 'records'}
+                          <Building2 aria-hidden="true" />{pin.providersCount} {pin.providersCount === 1 ? 'record' : 'records'}
                         </span>
                       </button>
                     </div>
@@ -794,7 +795,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <section className="cv-panel" aria-label={`${activeCountyNode.countyName} reference figures and sources`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h4 className="cv-title !text-base">County reference figures</h4>
+                <h4 className="cv-title cv-head-ico !text-base"><Landmark aria-hidden="true" />County reference figures</h4>
                 <p className="cv-note">County-level working references for your confirmation; not values for an individual provider.</p>
               </div>
               <div className="cv-risk">

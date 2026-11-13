@@ -35,9 +35,9 @@ The user's visual quality reference for individual profiles is “something that
 
 **How to apply:** Use this as an Apple-inspired quality direction for coherent hierarchy, composition and interaction, not as approval of an existing implementation. Preserve the compact, readable, evidence-aware profile requirements.
 
-Apply profile visual improvements to every profile tab, not only Overview. Remove the “No source mapped” statement from profile displays while retaining available data and real citations.
+Apply profile visual improvements to every profile tab, not only Overview, and throughout the state overview, county previews, county cards and selected-county pages. Remove the “No source mapped” statement while retaining available data and real citations.
 
-**Why:** The user explicitly repeated that the redesign must cover every single tab and asked to remove this statement when information is still presented.
+**Why:** The user explicitly repeated that the redesign must cover every single tab and asked to remove this statement when information is still presented, then requested the same treatment for all state/county views.
 
 **How to apply:** Omit repetitive absent-source status lines; do not turn an absent citation into a verified claim or discard populated records. Preserve evidence editing and actual source links.
 

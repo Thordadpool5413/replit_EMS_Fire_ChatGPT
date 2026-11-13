@@ -2105,27 +2105,28 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <div
                     key={agency.id}
                     onClick={() => onSelectAgency(agency)}
-                    className={`agency-directory-card ${isFire ? 'agency-directory-card--fire' : 'agency-directory-card--ems'} group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-5`}
+                    className={`agency-directory-card ${isFire ? 'agency-directory-card--fire' : 'agency-directory-card--ems'} group relative grid min-w-0 cursor-pointer grid-cols-1 content-between gap-3 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_6px_18px_-16px_rgba(15,23,42,0.5)] transition-colors duration-150 hover:border-blue-300 hover:shadow-[0_18px_42px_-28px_rgba(30,64,175,0.38)] dark:border-slate-800 dark:bg-slate-900 sm:p-4`}
                     data-testid={`agency-card-${agency.id}`}
                   >
                     <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${isFire ? 'bg-gradient-to-r from-rose-500 to-orange-300' : 'bg-gradient-to-r from-blue-700 to-cyan-300'}`} />
-                    <div className="space-y-3.5">
+                    <div className="space-y-2.5">
                       {/* Agency identity and linked public-record context */}
                       <div className="agency-identity-strip flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 pt-1 dark:border-slate-800">
                         <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'}`}>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide inline-flex items-center gap-1 ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300'}`}>
+                            {isFire ? <Flame className="h-3.5 w-3.5" aria-hidden="true" /> : <Siren className="h-3.5 w-3.5" aria-hidden="true" />}
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
-                          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             FDID {agency.fdid || 'Not reported'}
                           </span>
                           {agency.npiNumber && (
-                            <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-[10px] font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                               NPI {agency.npiNumber}
                             </span>
                           )}
                           {agency.grantStatus.afgAwarded && (
-                            <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold tabular-nums text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold tabular-nums text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                                 FEMA AFG ${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K
                             </span>
                           )}
@@ -2148,7 +2149,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       {/* Provider Name + Connected Hierarchy + Score */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="agency-card-title text-lg font-bold leading-snug tracking-[-0.025em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300 sm:text-xl">
+                          <h3 className="agency-card-title text-[17px] font-bold leading-snug tracking-[-0.02em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300">
                             {agency.name}
                           </h3>
                           <div className="agency-card-geography mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -2174,14 +2175,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div className="grid gap-2">
                           {primaryContact && (
                             <p className="text-sm leading-snug text-slate-700 dark:text-slate-200">
-                              <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><DataLabel kind="contact">Leadership</DataLabel></span>
+                              <span className="mr-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><DataLabel kind="contact">Leadership</DataLabel></span>
                               <strong className="font-semibold text-slate-950 dark:text-white">{primaryContact.name}</strong>
                               <span className="text-slate-500 dark:text-slate-400"> · {primaryContact.title}</span>
                             </p>
                           )}
                           <div className="flex flex-wrap items-end justify-between gap-2">
                             <p className="min-w-0 break-words text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                              <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><DataLabel kind="location">Address</DataLabel></span>
+                              <span className="mr-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><DataLabel kind="location">Address</DataLabel></span>
                               {agency.address || 'Not reported'}
                             </p>
                             <div className="flex shrink-0 items-center gap-1.5 font-semibold">
@@ -2331,10 +2332,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 p-2.5">
                         <div className="min-w-0">
                           <div className="mb-1 flex items-center gap-2">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300'}`}>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide inline-flex items-center gap-1 ${isFire ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300'}`}>
+                              {isFire ? <Flame className="h-3.5 w-3.5" aria-hidden="true" /> : <Siren className="h-3.5 w-3.5" aria-hidden="true" />}
                               {isFire ? 'Fire' : 'EMS'}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
                               FDID {agency.fdid || 'Not reported'}
                             </span>
                           </div>
@@ -2345,7 +2347,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {agency.city}, {agency.stateCode} · {agency.county}
                           </p>
                           <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-xs">
-                            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                               Planning value · estimate
                             </span>
                             <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
@@ -2357,7 +2359,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                         <div className="self-start text-right">
                           <PulseIqScoreTooltip agency={agency} weights={weights} size="badge" />
-                          <PulseIqEstimateLabel className="mt-1 block text-[9px] leading-tight text-slate-500 dark:text-slate-400" />
+                          <PulseIqEstimateLabel className="mt-1 block text-xs leading-tight text-slate-500 dark:text-slate-400" />
                         </div>
 
                         <div className="col-span-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
@@ -2397,7 +2399,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               <div className="overflow-x-auto" role="region" aria-label="Agency comparison table, scrolls horizontally" tabIndex={0}>
                 <table className="w-full text-left text-xs border-collapse tabular-nums">
                   <thead>
-                    <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase font-bold tracking-wider text-[11px]">
+                    <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase font-bold tracking-wider text-xs">
                       <th
                         onClick={() => setProviderSortBy('pulseIq')}
                         className="py-2.5 px-3 w-24 font-mono cursor-pointer hover:text-[#1E3A8A]"
@@ -2433,15 +2435,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         >
                           <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums">
                             <div>
-                              <>{agency.zollOpportunity.pulseIqScore}<span className="text-[10px] text-slate-400 font-normal">/100</span></>
+                              <>{agency.zollOpportunity.pulseIqScore}<span className="text-xs text-slate-400 font-normal">/100</span></>
                             </div>
-                            <PulseIqEstimateLabel className="block text-[10px] font-normal text-slate-500 dark:text-slate-400" />
+                            <PulseIqEstimateLabel className="block text-xs font-normal text-slate-500 dark:text-slate-400" />
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
                               {agency.name}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
                               <span className={`provider-discipline ${isFire ? 'provider-discipline--fire' : 'provider-discipline--ems'}`}>{isFire ? 'Fire' : 'EMS'}</span> <span className="provider-fdid">FDID {agency.fdid || 'Not reported'}</span> · {agency.city}, {agency.stateCode} · {agency.county}
                             </div>
                           </td>
@@ -2453,7 +2455,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                   ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
                                 : 'Not reported'}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
                               <span className="provider-sub-k">ePCR/CAD</span> {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not reported'}
                             </div>
                           </td>
@@ -2461,7 +2463,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <div className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
                               {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
                             </div>
-                            <div className="text-[11px] text-slate-500 tabular-nums">
+                            <div className="text-xs text-slate-500 tabular-nums">
                               {agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}
                             </div>
                           </td>
@@ -2473,7 +2475,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                                   ? agency.annual911Transports.toLocaleString()
                               : 'Not reported'}
                             </div>
-                            <div className="text-[11px] text-slate-500 tabular-nums">
+                            <div className="text-xs text-slate-500 tabular-nums">
                               <span className="provider-sub-k">Outcome</span> {hasAgencyFactEvidence(agency, 'clinicalOutcomes') ? `${agency.utsteinSurvivalRate}% ROSC` : 'ROSC · Not reported'}
                             </div>
                           </td>
@@ -2490,7 +2492,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               <button
                                 type="button"
                                 onClick={() => (onPreviewAgency ? onPreviewAgency(agency) : onSelectAgency(agency))}
-                                className="h-8 shrink-0 whitespace-nowrap px-2.5 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                className="h-8 shrink-0 whitespace-nowrap px-2.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                               >
                                 Preview
                               </button>

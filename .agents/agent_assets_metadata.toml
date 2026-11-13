@@ -168,3 +168,17 @@ mtime_ms = 1794513533524
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/565dd85e-ec67-4e60-883c-234b1a7b5c6c/2478883f-dd39-4222-ab62-0021451a9cad"
 storage_version_token = "1794513621565319"
 content_type = "image/png"
+
+[[outputs]]
+id = "Y0oT3CXReeTe9tMePoyLS"
+uri = "file://generated-artifacts/county-visual-polish-final/1366-directory.png"
+type = "image"
+title = "Updated county directory"
+description = "Actual laptop view with aligned county cards, clearer figures and no empty source footers."
+logical_id = "a72f1c0e-6048-41d0-92b2-8ae83e6b2001"
+content_hash = "sha256:4a9e8a2be65c0446c3934566e412d66307e2f564e7d9d9dc82e0e2fbcac6552f"
+size = 298164
+mtime_ms = 1794538627872
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/a72f1c0e-6048-41d0-92b2-8ae83e6b2001/fff804a5-3068-40ca-815a-9861e8618d11"
+storage_version_token = "1794538700020446"
+content_type = "image/png"

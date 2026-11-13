@@ -56,3 +56,16 @@ test('empty source footers are omitted without duplicating the figures above', (
   const html = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" showValues={false} showGeneralNotes={false} record={{population: 123456}} />);
   assert.equal(html, '');
 });
+
+test('brief variant leads with primary figures and cites only supplied source metadata', () => {
+  const html = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" variant="brief" showGeneralNotes={false}
+    record={{ population: 278468, annualEmergencyTransports: 0, annualCardiacArrestIncidents: 312 }}
+    sources={{ population: { source: 'Census ACS', vintage: '2023' } }} />);
+  assert.equal((html.match(/data-figure-key=/g) ?? []).length, 8);
+  const pos = (k: string) => html.indexOf(`data-figure-key="${k}"`);
+  assert(pos('population') < pos('averageTransportMinutes') && pos('averageTransportMinutes') < pos('annualCardiacArrestIncidents'));
+  assert(pos('annualCardiacArrestIncidents') < pos('annualEmergencyTransports'));
+  assert(html.includes('Census ACS') && html.includes('2023'));
+  assert(!html.includes('Not provided'));
+  assert(!html.includes('<table'));
+});

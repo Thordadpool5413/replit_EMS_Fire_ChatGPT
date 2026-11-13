@@ -1,0 +1,59 @@
+/* County figure composition, shared by the directory brief, map preview and selected-county reference.
+   Two tiers only:
+   .cfs-lead   – the three figures a field rep scans first (population, average EMS transport time, cardiac arrests).
+                 Large tabular numerals, a short topic rule above each, label beside its icon.
+   .cfs-ledger – care access + community context. Label left, value right, hairline between rows,
+                 so long labels never wrap into narrow matrix cells.
+   Tokens: countyGeoTokens.css. */
+.cfs-brief { min-width: 0; }
+.cfs-brief :is(dl, dt, dd, p, ul) { margin: 0; }
+.cfs-ico { width: 16px; height: 16px; flex: none; stroke-width: 2; color: var(--geo-ref); }
+.cfs-brief [data-tone="community"] .cfs-ico { color: var(--geo-community); }
+.cfs-brief [data-tone="ops"] .cfs-ico { color: var(--geo-ops); }
+.cfs-brief [data-tone="cardiac"] .cfs-ico { color: var(--geo-cardiac); }
+.cfs-brief [data-tone="access"] .cfs-ico { color: var(--geo-access); }
+.cfs-na { font-size: var(--geo-label); font-weight: 520; letter-spacing: 0; color: var(--pi-text-muted); }
+
+/* Lead tier */
+.cfs-lead { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem 1.1rem; }
+.cfs-lead .cfs-fig { --tone: var(--geo-ref); min-width: 0; display: grid; align-content: start; gap: .3rem; padding-top: .5rem; border-top: 2px solid color-mix(in srgb, var(--tone) 55%, transparent); }
+.cfs-lead [data-tone="community"] { --tone: var(--geo-community); }
+.cfs-lead [data-tone="ops"] { --tone: var(--geo-ops); }
+.cfs-lead [data-tone="cardiac"] { --tone: var(--geo-cardiac); }
+.cfs-lead dt { display: flex; align-items: center; gap: .35rem; font-size: var(--geo-label); font-weight: 620; line-height: 1.2; color: var(--pi-text-secondary); white-space: nowrap; }
+.cfs-lead dd { font-family: var(--geo-display); font-size: var(--geo-fig); font-weight: 760; letter-spacing: -.025em; line-height: 1.05; color: var(--pi-text-primary); font-variant-numeric: tabular-nums lining-nums; }
+.cfs-brief dd small { margin-left: .18rem; font-family: var(--geo-font); font-size: var(--geo-meta); font-weight: 560; letter-spacing: 0; color: var(--pi-text-secondary); }
+
+/* Ledger tier */
+.cfs-ledger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.4rem; }
+.cfs-ledger .cfs-fig { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; min-height: 2rem; padding-block: .3rem; border-bottom: 1px solid var(--geo-hair); }
+.cfs-ledger dt { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; align-self: center; font-size: var(--geo-label); font-weight: 560; color: var(--pi-text-secondary); white-space: nowrap; }
+.cfs-ledger dd { font-size: 15px; font-weight: 680; color: var(--pi-text-primary); font-variant-numeric: tabular-nums lining-nums; text-align: right; white-space: nowrap; }
+
+/* Citations: one line per figure, only supplied metadata */
+.cfs-cites .cv-section-label { margin: 0 0 .2rem; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pi-text-muted); }
+.cfs-cite-list { display: grid; gap: .2rem; padding: 0; list-style: none; font-size: var(--geo-meta); line-height: 1.45; color: var(--pi-text-secondary); }
+.cfs-cite-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .55rem; min-width: 0; padding: 0; border: 0; }
+.cfs-cite-fig { min-width: 8.5rem; font-weight: 650; color: var(--pi-text-primary); }
+.cfs-cite-name { color: var(--pi-text-primary); }
+.cfs-cite-meta { display: inline-flex; flex-wrap: wrap; gap: 0 .55rem; }
+.cfs-cite-meta > span + span::before { content: "·"; margin-right: .55rem; color: var(--pi-text-muted); }
+.cfs-cite-list .cv-link { display: inline-flex; align-items: center; gap: .25rem; overflow-wrap: anywhere; }
+.cfs-cite-list .cv-link svg { width: .75rem; height: .75rem; flex: none; }
+
+@container (max-width: 380px) {
+  .cfs-lead { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .cfs-lead .cfs-fig { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding-block: .45rem; border-top: 0; border-bottom: 1px solid var(--geo-hair); box-shadow: inset 2px 0 0 color-mix(in srgb, var(--tone) 70%, transparent); padding-left: .55rem; }
+  .cfs-lead dt { align-self: center; }
+}
+@container (max-width: 480px) {
+  .cfs-ledger { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .cfs-ledger { grid-template-columns: minmax(0, 1fr); }
+  .cfs-cite-fig { min-width: 0; }
+}
+@media (forced-colors: active) {
+  .cfs-ico { color: CanvasText !important; }
+  .cfs-lead .cfs-fig { border-color: CanvasText; box-shadow: none; }
+}

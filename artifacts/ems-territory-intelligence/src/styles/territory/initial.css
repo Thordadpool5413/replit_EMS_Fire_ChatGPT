@@ -9,85 +9,83 @@
   background: var(--pi-surface-bg);
 }
 
-/* State/county identity header: blue band (same anatomy as county briefs and map panels)
-   above a quiet tool row. Controls stay secondary to the heading. Tokens: countyGeoTokens.css. */
+/* State header: a light masthead, not a slab. Breadcrumb row, state name in blue display type
+   with its county count, and the tools (search, all providers) on the same baseline at laptop
+   width. A single hairline separates it from the map. Tokens: countyGeoTokens.css. */
 .territory-explorer-screen .county-selection-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: .6rem 1.25rem;
   min-width: 0;
-  border: 1px solid var(--geo-hair);
-  border-radius: var(--geo-radius);
+  padding: .15rem .1rem .7rem;
+  border-bottom: 1px solid var(--geo-hair);
   font-family: var(--geo-font);
 }
 
-.territory-explorer-screen .county-selection-copy {
-  display: grid;
-  gap: .2rem;
-  min-width: 0;
-  padding: .6rem var(--geo-pad) .65rem;
-  background: var(--geo-id);
-  color: var(--geo-id-ink);
-  border-radius: calc(var(--geo-radius) - 1px) calc(var(--geo-radius) - 1px) 0 0;
-}
+.territory-explorer-screen .county-selection-copy { display: grid; gap: .25rem; min-width: 0; }
 
 .territory-explorer-screen .county-selection-title {
   display: flex;
-  align-items: center;
-  gap: .45rem;
-  margin: .15rem 0 0;
+  align-items: baseline;
+  gap: .5rem;
+  margin: .1rem 0 0;
   font-family: var(--geo-display);
-  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
-  font-weight: 770;
-  letter-spacing: -.015em;
-  line-height: 1.15;
-  color: var(--geo-id-ink);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  font-weight: 790;
+  letter-spacing: -.025em;
+  line-height: 1.1;
+  color: var(--geo-name);
   overflow-wrap: anywhere;
 }
 
-.territory-explorer-screen .county-selection-title > svg { width: 18px; height: 18px; flex: none; color: var(--geo-id-sub); }
+.territory-explorer-screen .county-selection-title > svg { width: 20px; height: 20px; flex: none; align-self: center; color: var(--geo-name); }
 
 .territory-explorer-screen .county-selection-meta {
   margin: 0;
   font-size: var(--geo-label);
   line-height: 1.35;
-  color: var(--geo-id-sub);
+  color: var(--pi-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.territory-explorer-screen .county-selection-meta strong { color: var(--geo-id-ink); font-weight: 680; }
+.territory-explorer-screen .county-selection-meta strong { color: var(--pi-text-primary); font-weight: 700; }
 
 .territory-explorer-screen .county-selection-context-row {
   display: flex;
   min-width: 0;
   align-items: center;
   flex-wrap: wrap;
-  gap: .4rem;
+  gap: .35rem;
 }
 
 .territory-explorer-screen .county-selection-back,
 .territory-explorer-screen .county-selection-context-row .geography-area-menu > summary {
   display: inline-flex;
-  min-height: 1.9rem;
+  min-height: 1.85rem;
   align-items: center;
   gap: .3rem;
-  padding: .2rem .55rem;
-  border: 1px solid rgba(255,255,255,.3);
-  border-radius: .45rem;
-  background: rgba(255,255,255,.1);
-  color: var(--geo-id-ink);
+  padding: .15rem .5rem;
+  margin-inline-start: -.5rem;
+  border: 0;
+  border-radius: .4rem;
+  background: transparent;
+  color: var(--pi-action-ink);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
   transition: background-color 140ms ease;
 }
 
-.territory-explorer-screen .county-selection-back svg { width: 14px; height: 14px; }
+.territory-explorer-screen .county-selection-context-row .geography-area-menu > summary { margin-inline-start: 0; color: var(--pi-text-secondary); }
+.territory-explorer-screen .county-selection-back svg { width: 14px; height: 14px; transition: transform 140ms ease; }
+.territory-explorer-screen .county-selection-back:hover svg { transform: translateX(-2px); }
 
 .territory-explorer-screen .county-selection-back:hover,
-.territory-explorer-screen .county-selection-context-row .geography-area-menu > summary:hover { background: rgba(255,255,255,.2); }
+.territory-explorer-screen .county-selection-context-row .geography-area-menu > summary:hover { background: var(--pi-action-subtle); }
 
-.territory-explorer-screen .county-selection-copy :focus-visible { outline: 2px solid var(--geo-id-ink); outline-offset: 2px; }
+.territory-explorer-screen .county-selection-copy :focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; }
 
 .territory-explorer-screen .county-selection-context-row .geography-area-menu {
   position: relative;
@@ -105,15 +103,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: .5rem;
   min-width: 0;
-  padding: .5rem var(--geo-pad);
-  background: var(--geo-wash);
-  border-top: 1px solid var(--geo-hair);
-  border-radius: 0 0 calc(var(--geo-radius) - 1px) calc(var(--geo-radius) - 1px);
 }
 
-.territory-explorer-screen .county-selection-search { position: relative; flex: 1 1 16rem; max-width: 24rem; min-width: 0; }
+.territory-explorer-screen .county-selection-search { position: relative; flex: 0 1 17rem; min-width: 0; }
 
 .territory-explorer-screen .county-selection-search > svg {
   position: absolute; left: .65rem; top: 50%; width: 15px; height: 15px;
@@ -122,15 +117,17 @@
 
 .territory-explorer-screen .county-selection-search input {
   width: 100%;
-  height: 2.1rem;
+  height: 2.25rem;
   padding: 0 3.4rem 0 2.1rem;
   border: 1px solid var(--geo-hair);
   border-radius: .5rem;
   background: var(--pi-surface-bg);
   color: var(--pi-text-primary);
-  font-size: 13.5px;
+  font-size: 14px;
+  transition: border-color 140ms ease;
 }
 
+.territory-explorer-screen .county-selection-search input:hover { border-color: color-mix(in srgb, var(--geo-id) 35%, var(--geo-hair)); }
 .territory-explorer-screen .county-selection-search input::placeholder { color: var(--pi-text-muted); }
 .territory-explorer-screen .county-selection-search input:focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; border-color: var(--geo-id); }
 
@@ -146,56 +143,53 @@
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  min-height: 2.1rem;
-  margin-left: auto;
-  padding: 0 .75rem;
-  border: 1px solid color-mix(in srgb, var(--geo-id) 35%, var(--geo-hair));
+  min-height: 2.25rem;
+  padding: 0 .8rem;
+  border: 0;
   border-radius: .5rem;
-  background: var(--pi-surface-bg);
-  color: var(--geo-id-deep);
-  font-size: 13px;
-  font-weight: 650;
+  background: var(--geo-id);
+  color: var(--geo-id-ink);
+  font-size: 13.5px;
+  font-weight: 680;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 140ms ease, border-color 140ms ease;
+  transition: background-color 140ms ease;
 }
 
-.dark .territory-explorer-screen .county-selection-providers { color: var(--pi-action-ink); }
-.territory-explorer-screen .county-selection-providers svg { width: 15px; height: 15px; flex: none; color: var(--geo-community); }
-.territory-explorer-screen .county-selection-providers:hover { background: var(--pi-action-subtle); border-color: var(--geo-id); }
+.territory-explorer-screen .county-selection-providers svg { width: 15px; height: 15px; flex: none; }
+.territory-explorer-screen .county-selection-providers:hover { background: var(--geo-id-deep); }
 .territory-explorer-screen :is(.county-selection-providers, .county-selection-clear):focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; }
 
 .territory-explorer-screen .county-selection-count {
-  padding: 0 .4rem; border-radius: 999px; background: var(--pi-surface-subtle);
-  font-size: 12px; font-weight: 700; color: var(--pi-text-secondary); font-variant-numeric: tabular-nums;
+  padding: 0 .4rem; border-radius: 999px; background: rgba(255,255,255,.18);
+  font-size: 12px; font-weight: 700; color: inherit; font-variant-numeric: tabular-nums;
 }
 
 @media screen and (min-width: 1024px) {
   [data-laptop-density="compact"] .territory-explorer-screen .county-drilldown-shell { gap: .55rem; padding: .6rem; }
-  [data-laptop-density="compact"] .territory-explorer-screen .county-selection-copy { padding-block: .45rem .5rem; }
-  [data-laptop-density="compact"] .territory-explorer-screen .county-selection-actions { padding-block: .4rem; }
+  [data-laptop-density="compact"] .territory-explorer-screen .county-selection-header { padding-bottom: .55rem; }
 }
 
 @media (max-width: 767px) {
   .territory-explorer-screen .county-drilldown-shell { padding: .55rem; gap: .6rem; }
-  .territory-explorer-screen .county-selection-header { --geo-pad: .7rem; }
+  .territory-explorer-screen .county-selection-header { grid-template-columns: minmax(0, 1fr); }
+  .territory-explorer-screen .county-selection-actions { justify-content: stretch; }
   .territory-explorer-screen .county-selection-context-row { flex-wrap: nowrap; }
   .territory-explorer-screen .county-selection-context-row .geography-area-menu { margin-left: auto; }
   .territory-explorer-screen .county-selection-context-row .geography-area-menu > .geography-drilldown-controls { right: 0; left: auto; }
   .territory-explorer-screen .county-selection-back,
   .territory-explorer-screen .county-selection-context-row .geography-area-menu > summary { min-height: 2.5rem; }
-  .territory-explorer-screen .county-selection-search { flex-basis: 100%; max-width: none; }
+  .territory-explorer-screen .county-selection-search { flex-basis: 100%; }
   .territory-explorer-screen .county-selection-search input { height: 2.75rem; font-size: 16px; }
-  .territory-explorer-screen .county-selection-providers { width: 100%; min-height: 2.75rem; justify-content: center; margin-left: 0; }
+  .territory-explorer-screen .county-selection-providers { width: 100%; min-height: 2.75rem; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .territory-explorer-screen :is(.county-selection-back, .county-selection-providers, .geography-area-menu > summary) { transition: none; }
+  .territory-explorer-screen :is(.county-selection-back, .county-selection-providers, .geography-area-menu > summary, .county-selection-search input, .county-selection-back svg) { transition: none; transform: none; }
 }
 
 @media (forced-colors: active) {
-  .territory-explorer-screen :is(.county-selection-copy, .county-selection-actions) { background: Canvas; }
-  .territory-explorer-screen .county-selection-copy * { color: CanvasText !important; }
+  .territory-explorer-screen .county-selection-title { color: CanvasText; }
   .territory-explorer-screen :is(.county-selection-back, .county-selection-providers) { border: 1px solid ButtonText; background: ButtonFace; color: ButtonText; }
 }
 

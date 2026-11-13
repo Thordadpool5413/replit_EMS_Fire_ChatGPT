@@ -17,9 +17,10 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, Hash } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, Ambulance, Hospital, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, Hash } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './countyGeoTokens.css';
+import './CountyFigures.css';
 import './CountyInspector.css';
 
 interface RealWorldCountyBoundaryMapProps {
@@ -542,14 +543,21 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </header>
 
                   {(() => {
-                    const ohca = inspectedCounty.node.countyRecord?.annualCardiacArrestIncidents;
-                    const hasOhca = typeof ohca === 'number' && Number.isFinite(ohca);
+                    const rec = inspectedCounty.node.countyRecord;
+                    const n = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+                    const na = <span className="cfs-na">Not reported</span>;
                     return (
-                      <dl className="ci-stats">
-                        <div className="ci-stat" data-tone="community"><dt><Users className="ci-ico" aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
-                        <div className="ci-stat" data-tone="ops"><dt title="Average EMS transport time"><Timer className="ci-ico" aria-hidden="true" />Avg EMS transport</dt><dd>{inspectedCounty.averageTransportMinutes}<small> min</small></dd></div>
-                        <div className="ci-stat ci-stat--cardiac" data-tone="cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><HeartPulse className="ci-ico" aria-hidden="true" />Cardiac arrests</dt><dd>{hasOhca ? <>{ohca.toLocaleString()}<small> /yr</small></> : <span className="ci-na">Not reported</span>}</dd></div>
-                      </dl>
+                      <div className="ci-figs cfs-brief">
+                        <dl className="cfs-lead" aria-label="Primary county figures">
+                          <div className="cfs-fig" data-tone="community"><dt><Users className="cfs-ico" aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                          <div className="cfs-fig" data-tone="ops"><dt><Timer className="cfs-ico" aria-hidden="true" />Avg transport time</dt><dd>{n(inspectedCounty.averageTransportMinutes) ? <>{inspectedCounty.averageTransportMinutes}<small>min</small></> : na}</dd></div>
+                          <div className="cfs-fig" data-tone="cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><HeartPulse className="cfs-ico" aria-hidden="true" />Cardiac arrests</dt><dd>{n(rec?.annualCardiacArrestIncidents) ? <>{rec!.annualCardiacArrestIncidents.toLocaleString()}<small>/yr</small></> : na}</dd></div>
+                        </dl>
+                        <dl className="cfs-ledger" aria-label="Supporting county figures">
+                          <div className="cfs-fig" data-tone="ops"><dt title="Emergency EMS transports per year"><Ambulance className="cfs-ico" aria-hidden="true" />EMS transports</dt><dd>{n(rec?.annualEmergencyTransports) ? <>{rec!.annualEmergencyTransports.toLocaleString()}<small>/yr</small></> : na}</dd></div>
+                          <div className="cfs-fig" data-tone="access"><dt><Hospital className="cfs-ico" aria-hidden="true" />Nearest cath lab</dt><dd>{n(rec?.primaryCathLabDistanceMiles) ? <>{rec!.primaryCathLabDistanceMiles.toFixed(1)}<small>mi</small></> : na}</dd></div>
+                        </dl>
+                      </div>
                     );
                   })()}
 
@@ -795,29 +803,46 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
             </div>
           </div>
 
+          {(() => {
+            const sel = nriByCountyFips.get(activeCountyNode.countyFips);
+            return (
           <section className="cv-panel county-geo county-reference-panel" aria-label={`${activeCountyNode.countyName} reference figures and sources`}>
             <div className="cv-geo-head">
               <div className="min-w-0">
-                <h4 className="cv-geo-title"><Landmark aria-hidden="true" />{activeCountyNode.countyName} reference figures</h4>
-                <p className="cv-geo-kicker">County-level working references for your confirmation; not values for an individual provider.</p>
+                <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference · {stateNode.stateName}</p>
+                <h4 className="cv-geo-title">{activeCountyNode.countyName}</h4>
               </div>
-              <div className="cv-risk cv-geo-risk">
-                <Shield className="cv-geo-risk-ico" aria-hidden="true" />
-                <span className={`cv-risk-badge ${nriByCountyFips.get(activeCountyNode.countyFips)?.riskRating ? '' : 'cv-risk-badge--none'}`} style={riskStyle(nriByCountyFips.get(activeCountyNode.countyFips)?.riskRating)}>
-                  FEMA NRI · {nriByCountyFips.get(activeCountyNode.countyFips)?.riskRating ?? 'No record'}
-                </span>
-                {nriByCountyFips.get(activeCountyNode.countyFips)?.riskScore != null && (
-                  <span className="cv-risk-score">Score <strong>{nriByCountyFips.get(activeCountyNode.countyFips)!.riskScore!.toFixed(2)}</strong></span>
-                )}
-              </div>
+              <p className="cv-geo-note">County-level working references for your confirmation; not values for an individual provider.</p>
             </div>
             <CountyFigureSourceDetails
               countyFips={activeCountyNode.countyFips}
               sources={activeCountyNode.countyRecord.figureSources}
               record={activeCountyNode.countyRecord}
+              variant="brief"
+              className="cv-ref-figures"
             />
+            <div className="cv-ref-fema" style={riskStyle(sel?.riskRating)} aria-label="FEMA National Risk Index natural hazard">
+              <p className="cv-ref-fema-head">
+                <span className="cv-ref-fema-label"><Shield aria-hidden="true" />FEMA natural hazard</span>
+                <span className={`cv-ref-fema-rating${sel?.riskRating ? '' : ' is-none'}`}>
+                  {sel?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No county-equivalent record')}
+                </span>
+                {sel?.riskScore != null && <span className="cv-ref-fema-meta">Score <strong>{sel.riskScore.toFixed(2)}</strong></span>}
+                {sel && <span className="cv-ref-fema-meta">{sel.sourceVersion}</span>}
+                {sel?.sourceUrl && <a href={sel.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">FEMA record <ExternalLink aria-hidden="true" /></a>}
+              </p>
+              {sel && (
+                <dl className="cv-ref-fema-facts">
+                  <div><dt><BadgeDollarSign aria-hidden="true" />Expected annual loss</dt><dd>{formatLoss(sel.expectedAnnualLoss)}</dd></div>
+                  <div><dt><Users aria-hidden="true" />Social vulnerability</dt><dd>{sel.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                  <div><dt><HeartHandshake aria-hidden="true" />Community resilience</dt><dd>{sel.communityResilienceRating ?? 'not stated'}</dd></div>
+                </dl>
+              )}
+            </div>
             {sourceStrip}
           </section>
+            );
+          })()}
           {unmatchedSection}
         </>
       )}

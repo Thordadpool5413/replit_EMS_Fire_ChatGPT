@@ -36,7 +36,7 @@ try {
     assert(info.places > 0 && info.map > 0, 'Place list and interactive map retained');
     assert(info.icons >= info.places, 'Meaningful place icons');
     assert(!info.stale, 'Absent-source notices removed');
-    for (const [name, selector] of [['county', '.county-single-map-panel'], ['providers', '.agency-directory-card']]) {
+    for (const [name, selector] of [['county', '.county-single-map-panel'], ['reference', '.county-reference-panel'], ['providers', '.agency-directory-card']]) {
       if (name === 'providers') {
         await evaluate(cdp, `document.querySelector('[data-testid="button-provider-view-cards"]')?.click()`);
         await waitFor(cdp, `Boolean(document.querySelector('.agency-directory-card'))`, 'provider cards', 15000);

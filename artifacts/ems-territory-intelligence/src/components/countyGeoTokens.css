@@ -7,6 +7,8 @@
   --geo-id-deep: #193f9c;
   --geo-id-ink: #ffffff;
   --geo-id-sub: #d3e0ff;
+  /* County / state names on light surfaces: blue type, the one identity colour */
+  --geo-name: #1c47b0;
   --geo-hair: var(--pi-border);
   --geo-wash: color-mix(in srgb, var(--pi-topic-operations) 4%, var(--pi-surface-bg));
   --geo-ops: var(--pi-topic-operations);
@@ -28,6 +30,7 @@
   --geo-id: #23477f;
   --geo-id-deep: #1b3a69;
   --geo-id-sub: #c3d4f2;
+  --geo-name: #9cbcff;
   --geo-seat: #e8b04a;
   --geo-wash: color-mix(in srgb, var(--pi-topic-operations) 6%, var(--pi-surface-bg));
 }

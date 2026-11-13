@@ -26,7 +26,7 @@
 [data-label-tone="reference"] { --pi-topic: var(--pi-topic-reference); }
 .pi-data-label[data-label-tone] > .pi-data-label-icon { color: var(--pi-topic); }
 /* Section captions built from a label take a quiet topic ink; values stay neutral. */
-:is(h2, h3, h4, .cb-group-cap, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: color-mix(in srgb, var(--pi-topic) 72%, var(--pi-text-primary)); }
+:is(h2, h3, h4, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: color-mix(in srgb, var(--pi-topic) 72%, var(--pi-text-primary)); }
 /* Generic metric containers that hold a toned label get a hairline topic edge. */
 .pi-metric-toned:has(.pi-data-label[data-label-tone]) {
   border-left: 2px solid color-mix(in srgb, var(--pi-topic, var(--pi-border)) 45%, transparent);
@@ -38,12 +38,12 @@
 .pi-metric-toned:has([data-label-tone="clinical"]) { --pi-topic: var(--pi-topic-clinical); }
 @media (forced-colors: active) {
   .pi-data-label-icon, .pi-data-label[data-label-tone] > .pi-data-label-icon { color: CanvasText; }
-  :is(h2, h3, h4, .cb-group-cap, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: CanvasText; }
+  :is(h2, h3, h4, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: CanvasText; }
   .pi-metric-toned:has(.pi-data-label[data-label-tone]) { border-left-color: CanvasText; }
 }
 @media print {
   .pi-data-label-icon, .pi-data-label[data-label-tone] > .pi-data-label-icon { color: #334155; }
-  :is(h2, h3, h4, .cb-group-cap, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: #1e293b; }
+  :is(h2, h3, h4, .aib-label, .ci-section, .ci-band-label) > .pi-data-label[data-label-tone] { color: #1e293b; }
   .pi-metric-toned:has(.pi-data-label[data-label-tone]) { border-left-color: #cbd5e1; }
 }
 /* Owner: shared. Cascade phase: contracts. See ../README.md. */

@@ -182,3 +182,17 @@ mtime_ms = 1794538627872
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/a72f1c0e-6048-41d0-92b2-8ae83e6b2001/fff804a5-3068-40ca-815a-9861e8618d11"
 storage_version_token = "1794538700020446"
 content_type = "image/png"
+
+[[outputs]]
+id = "JgqSnGbuthgygpWVrfjR_"
+uri = "file://generated-artifacts/county-composition-review/1366-preview.png"
+type = "image"
+title = "Revised state and county preview"
+description = "Rendered laptop view showing the revised hierarchy, map presentation and county preview."
+logical_id = "f58bce26-192b-402c-8efb-5e66318c0290"
+content_hash = "sha256:51481293a68d518000e4a1c16eea499423d91b0bbecd015ed122be1e8d04b733"
+size = 235278
+mtime_ms = 1794544388623
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/f58bce26-192b-402c-8efb-5e66318c0290/6ca1f0a6-4761-4252-92df-15a6d59ed2fb"
+storage_version_token = "1794544544036753"
+content_type = "image/png"

@@ -1,0 +1,48 @@
+/* County/city provider list: same band + ledger language as the county brief and map panels.
+   Tokens: countyGeoTokens.css. Utility classes in the markup are neutralised here by owner scope,
+   so this file is the single presentation source for the provider shell. */
+.county-providers-shell {
+  gap: 0; padding: 0; border: 1px solid var(--geo-hair); border-radius: var(--geo-radius);
+  background: var(--pi-surface-bg); color: var(--pi-text-primary); font-family: var(--geo-font);
+}
+.county-providers-shell > :not(.county-providers-head) { margin: .75rem var(--geo-pad) 0; }
+.county-providers-shell > :last-child { margin-bottom: var(--geo-pad); }
+
+/* Identity band + tool row */
+.county-providers-head { display: grid; gap: 0; }
+.county-providers-head > .cv-geo-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .8rem; min-height: 3.6rem; padding: .55rem var(--geo-pad); background: var(--geo-id); color: var(--geo-id-ink); border-radius: calc(var(--geo-radius) - 1px) calc(var(--geo-radius) - 1px) 0 0; }
+.county-providers-head .cv-geo-kicker { font-size: var(--geo-label); font-weight: 600; color: var(--geo-id-sub); }
+.county-providers-head .cv-geo-title { display: flex; align-items: center; gap: .4rem; margin: 0; font-family: var(--geo-display); font-size: 17px; font-weight: 760; letter-spacing: -.012em; color: var(--geo-id-ink); font-variant-numeric: tabular-nums; }
+.county-providers-head .cv-geo-title svg { width: 16px; height: 16px; color: var(--geo-id-sub); }
+.county-providers-tools { padding: .6rem var(--geo-pad); border-bottom: 1px solid var(--geo-hair); background: var(--geo-wash); }
+.county-providers-tools :is(input, select) { border-color: var(--geo-hair) !important; background: var(--pi-surface-bg) !important; color: var(--pi-text-primary) !important; font-size: 13px !important; }
+.county-providers-tools :is(input, select):focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; border-color: var(--geo-id) !important; }
+.county-providers-tools button[aria-pressed="true"], .county-providers-tools .provider-view-toggle button[aria-pressed="true"] { color: var(--geo-id-deep) !important; }
+.county-providers-tools button { font-size: 12.5px !important; }
+.county-providers-tools button:focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; }
+
+/* Cards, table and phone list share hairline, radius and tabular figures */
+.county-providers-shell :is(.rounded-xl.border, table) { border-color: var(--geo-hair) !important; }
+.county-providers-shell .rounded-xl.border { border-radius: .65rem !important; box-shadow: none !important; }
+.county-providers-shell table { font-size: 13px !important; font-variant-numeric: tabular-nums lining-nums; }
+.county-providers-shell thead th { font-size: 12.5px; font-weight: 650; color: var(--pi-text-secondary); background: var(--geo-wash); border-bottom: 1px solid var(--geo-hair); }
+.county-providers-shell tbody tr { border-color: var(--geo-hair) !important; transition: background-color 120ms ease; }
+.county-providers-shell tbody tr:hover { background: var(--geo-wash); }
+.county-providers-shell .agency-card-metric-value { font-variant-numeric: tabular-nums lining-nums; font-size: 18px !important; }
+.county-providers-shell .provider-metric { border-left-width: 3px !important; }
+.county-providers-shell .provider-metric--planning { border-left-color: var(--geo-access) !important; }
+.county-providers-shell .provider-metric--equipment { border-left-color: var(--geo-ops) !important; }
+.county-providers-shell .provider-metric--operations { border-left-color: var(--geo-community) !important; }
+.county-providers-shell .provider-metric--calls { border-left-color: var(--geo-cardiac) !important; }
+.county-providers-shell .text-xs { font-size: 12.5px; }
+
+@media (max-width: 767px) {
+  .county-providers-shell { --geo-pad: .7rem; }
+  .county-providers-tools :is(input, select, button) { min-height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .county-providers-shell * { transition: none !important; animation: none !important; } }
+@media (forced-colors: active) {
+  .county-providers-head > .cv-geo-head, .county-providers-tools { background: Canvas; }
+  .county-providers-head * { color: CanvasText !important; }
+  .county-providers-shell .provider-metric { border-left-color: CanvasText !important; }
+}

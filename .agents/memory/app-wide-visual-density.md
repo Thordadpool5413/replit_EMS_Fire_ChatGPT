@@ -39,7 +39,7 @@ Apply profile visual improvements to every profile tab, not only Overview, and t
 
 **Why:** The user explicitly repeated that the redesign must cover every single tab and asked to remove this statement when information is still presented, then requested the same treatment for all state/county views.
 
-**How to apply:** Omit repetitive absent-source status lines; do not turn an absent citation into a verified claim or discard populated records. Preserve evidence editing and actual source links.
+**How to apply:** Omit repetitive absent-source status lines; do not turn an absent citation into a verified claim or discard populated records. Preserve evidence editing and actual source links. The user rejected a partial geography pass as failing this scope: check the state controls, map/preview, directory cards, selected-county towns and figures, and provider list as distinct surfaces before claiming coverage.
 
 Individual profile cards and display fonts must be smaller, not merely restyled.
 

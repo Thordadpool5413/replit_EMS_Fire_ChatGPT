@@ -1,12 +1,15 @@
 import React from 'react';
-import { ArrowRight, ExternalLink, Users, Ambulance, HeartPulse } from 'lucide-react';
+import {
+  ArrowRight, ExternalLink, Users, Ambulance, HeartPulse, Timer, Hospital, Wallet, UserRound,
+  HandCoins, Shield, MapPinned, Navigation, Hash, MapPin,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import { formatCoordinates, uniquePlaceNames } from '../utils/countyPresentation';
+import './countyGeoTokens.css';
 import './CountyDirectoryCard.css';
-import { DataLabel } from './DataLabel';
 
 /** Minimal structural view of the FEMA NRI county record used by this card. */
 export interface CountyBriefNriRecord {
@@ -34,6 +37,8 @@ const ALL_FIGURE_KEYS: CountyFigureSourceKey[] = [
   'seniorPopPct', 'medianIncome', 'povertyRatePct', 'primaryCathLabDistanceMiles',
 ];
 
+type Tone = 'community' | 'ops' | 'cardiac' | 'access';
+
 export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
   county: c, nri, nriSourceUrl, nriLoading, nriError, onInspectCounty, onSelectPlace,
 }) => {
@@ -52,10 +57,10 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
   };
 
   const fig = (
-    key: CountyFigureSourceKey, Icon: LucideIcon | null, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string,
+    key: CountyFigureSourceKey, Icon: LucideIcon, tone: Tone, label: React.ReactNode, value: React.ReactNode, testId?: string, title?: string,
   ) => (
-    <div className={`cb-fig cb-fig--${key}`} data-figure-key={key}>
-      <dt title={title}>{Icon && <Icon className="cb-ico" aria-hidden="true" />}{label}</dt>
+    <div className={`cb-fig cb-fig--${key}`} data-figure-key={key} data-tone={tone}>
+      <dt title={title}><Icon className="cb-ico" aria-hidden="true" /><span>{label}</span></dt>
       <dd data-testid={testId}>{value}</dd>
     </div>
   );
@@ -64,10 +69,11 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
     <article aria-labelledby={titleId} className="county-brief county-signal-row" data-testid={`row-county-signals-${c.countyFips}`}>
       <header className="cb-head">
         <div className="cb-ident">
-          <div className="cb-ident-text">
           <h3 id={titleId} className="cb-name">{c.countyName}</h3>
-          <p className="cb-seat"><DataLabel kind="places">Seat</DataLabel> <strong>{c.countySeat}</strong><span className="cb-sep" aria-hidden="true">·</span><span className="cb-fips"><DataLabel kind="identifier">FIPS</DataLabel> {c.countyFips}</span></p>
-          </div>
+          <p className="cb-seat">
+            <span>Seat <strong>{c.countySeat}</strong></span>
+            <span className="cb-fips">FIPS <strong>{c.countyFips}</strong></span>
+          </p>
         </div>
         <button
           type="button"
@@ -80,73 +86,73 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
         </button>
       </header>
 
-
       <div className="cb-body" data-testid={`details-county-context-${c.countyFips}`}>
         <div className="cb-groups" aria-label={`County figures for ${c.countyName}`}>
           <section className="cb-group cb-group--snapshot" aria-labelledby={`${titleId}-snapshot`}>
             <h4 id={`${titleId}-snapshot`} className="cb-group-cap">Population and response</h4>
             <dl className="cb-figs">
-              {fig('population', Users, 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
-              {fig('averageTransportMinutes', Ambulance, 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small> min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
-              {fig('annualEmergencyTransports', Ambulance, 'Transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-transports-${c.countyFips}`, 'Emergency EMS transports per year')}
-              {fig('annualCardiacArrestIncidents', HeartPulse, 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small> /yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
+              {fig('population', Users, 'community', 'Population', num('population', v => v.toLocaleString()), `text-county-population-${c.countyFips}`)}
+              {fig('averageTransportMinutes', Timer, 'ops', 'Avg transport', num('averageTransportMinutes', v => <>{v.toLocaleString()}<small>min</small></>), `text-county-transport-${c.countyFips}`, 'Average EMS transport time')}
+              {fig('annualEmergencyTransports', Ambulance, 'ops', 'Transports', num('annualEmergencyTransports', v => <>{v.toLocaleString()}<small>/yr</small></>), `text-county-transports-${c.countyFips}`, 'Emergency EMS transports per year')}
+              {fig('annualCardiacArrestIncidents', HeartPulse, 'cardiac', 'Cardiac arrests', num('annualCardiacArrestIncidents', v => <>{v.toLocaleString()}<small>/yr</small></>), `text-county-ohca-${c.countyFips}`, 'Out-of-hospital cardiac arrest (OHCA) incidents per year')}
             </dl>
           </section>
           <section className="cb-group cb-group--context cb-group--access" aria-labelledby={`${titleId}-access`}>
             <h4 id={`${titleId}-access`} className="cb-group-cap">Care access</h4>
             <dl className="cb-figs">
-              {fig('primaryCathLabDistanceMiles', null, <DataLabel kind="distance">Nearest cath lab</DataLabel>, num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small> mi</small></>), `text-county-cathlab-${c.countyFips}`, 'Distance to primary cath lab')}
+              {fig('primaryCathLabDistanceMiles', Hospital, 'access', 'Nearest cath lab', num('primaryCathLabDistanceMiles', v => <>{v.toFixed(1)}<small>mi</small></>), `text-county-cathlab-${c.countyFips}`, 'Distance to primary cath lab')}
             </dl>
           </section>
           <section className="cb-group cb-group--context cb-group--community" aria-labelledby={`${titleId}-community`}>
             <h4 id={`${titleId}-community`} className="cb-group-cap">Community context</h4>
             <dl className="cb-figs">
-              {fig('seniorPopPct', null, <DataLabel kind="age">Age 65+</DataLabel>, num('seniorPopPct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Residents age 65 and older')}
-              {fig('povertyRatePct', null, <DataLabel kind="poverty">Poverty</DataLabel>, num('povertyRatePct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Poverty rate')}
-              {fig('medianIncome', null, <DataLabel kind="income">Median income</DataLabel>, num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
+              {fig('seniorPopPct', UserRound, 'community', 'Age 65+', num('seniorPopPct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Residents age 65 and older')}
+              {fig('povertyRatePct', HandCoins, 'community', 'Poverty', num('povertyRatePct', v => <>{v.toFixed(1)}<small>%</small></>), undefined, 'Poverty rate')}
+              {fig('medianIncome', Wallet, 'community', 'Median income', num('medianIncome', v => `$${v.toLocaleString()}`), undefined, 'Median household income')}
             </dl>
           </section>
         </div>
-        <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk">
-            <span className="cb-risk-body">
-              <span className="cb-risk-label" title="FEMA National Risk Index source-defined hazard category"><DataLabel kind="risk">FEMA NRI</DataLabel></span>
-              {nriLoading ? (
-                <span className="cb-risk-status" role="status">Loading FEMA record</span>
-              ) : nriError ? (
-                <span className="cb-risk-status" role="status">FEMA NRI source unavailable</span>
-              ) : nri ? (
-                <>
-                  <span
-                    className={`cb-risk-chip${riskColor ? '' : ' cb-risk-chip--none'}`}
-                    style={{ '--cb-risk': riskColor ?? '#b6c1cf' } as React.CSSProperties}
-                    data-testid={`text-fema-nri-rating-${c.countyFips}`}
-                  >
-                    {nri.riskRating || 'Rating not stated'}
-                  </span>
-                  <span className="cb-risk-meta" data-testid={`text-fema-nri-score-${c.countyFips}`}>
-                    {nriScore ? <>Score <strong>{nriScore}</strong></> : null}
-                  </span>
-                  {vintage && <span className="cb-risk-meta">Vintage {vintage}</span>}
-                  {nriSourceUrl && (
-                    <a className="cb-link" href={nriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
-                      Source <ExternalLink aria-hidden="true" />
-                    </a>
-                  )}
-                </>
-              ) : (
-                <span className="cb-risk-chip cb-risk-chip--none" data-testid={`text-fema-nri-rating-${c.countyFips}`}>No county-equivalent record</span>
-              )}
-            </span>
-          </section>
+
+        <section className="cb-risk" aria-label="FEMA National Risk Index hazard risk" style={{ '--cb-risk': riskColor ?? '#b6c1cf' } as React.CSSProperties}>
+          <span className="cb-risk-label" title="FEMA National Risk Index source-defined natural hazard category">
+            <Shield className="cb-ico" aria-hidden="true" />FEMA natural hazard
+          </span>
+          <span className="cb-risk-body">
+            {nriLoading ? (
+              <span className="cb-risk-status" role="status">Loading FEMA record</span>
+            ) : nriError ? (
+              <span className="cb-risk-status" role="status">FEMA NRI source unavailable</span>
+            ) : nri ? (
+              <>
+                <span className={`cb-risk-chip${riskColor ? '' : ' cb-risk-chip--none'}`} data-testid={`text-fema-nri-rating-${c.countyFips}`}>
+                  {nri.riskRating || 'Rating not stated'}
+                </span>
+                <span className="cb-risk-meta" data-testid={`text-fema-nri-score-${c.countyFips}`}>
+                  {nriScore ? <>Score <strong>{nriScore}</strong></> : null}
+                </span>
+                {vintage && <span className="cb-risk-meta">Vintage <strong>{vintage}</strong></span>}
+                {nriSourceUrl && (
+                  <a className="cb-link" href={nriSourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-fema-nri-${c.countyFips}`}>
+                    Source <ExternalLink aria-hidden="true" />
+                  </a>
+                )}
+              </>
+            ) : (
+              <span className="cb-risk-chip cb-risk-chip--none" data-testid={`text-fema-nri-rating-${c.countyFips}`}>No county-equivalent record</span>
+            )}
+          </span>
+        </section>
 
         <section className="cb-geo" aria-labelledby={`${titleId}-geo`}>
-          <h4 id={`${titleId}-geo`} className="cb-group-cap"><DataLabel kind="location">Geography and places</DataLabel></h4>
+          <h4 id={`${titleId}-geo`} className="cb-group-cap">Geography and places</h4>
           <dl className="cb-ref" aria-label={`Geography for ${c.countyName}`}>
-            <div><dt><DataLabel kind="area">Area</DataLabel></dt><dd>{isNum(c.landAreaSqMiles) ? <>{c.landAreaSqMiles.toLocaleString()}<small> sq mi</small></> : NOT_REPORTED}</dd></div>
-            <div><dt><DataLabel kind="coordinates">Centroid</DataLabel></dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
-            <div className="cb-ref-wide"><dt><DataLabel kind="zip">ZIPs</DataLabel>{zips.length > 0 && <span className="cb-count">{zips.length}</span>}</dt><dd className="cb-zip-run">{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
+            <div className="cb-ref-pair">
+              <div><dt><MapPinned className="cb-ico" aria-hidden="true" />Area</dt><dd>{isNum(c.landAreaSqMiles) ? <>{c.landAreaSqMiles.toLocaleString()}<small>sq mi</small></> : NOT_REPORTED}</dd></div>
+              <div><dt><Navigation className="cb-ico" aria-hidden="true" />Centroid</dt><dd>{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</dd></div>
+            </div>
+            <div className="cb-ref-wide"><dt><Hash className="cb-ico" aria-hidden="true" />ZIPs{zips.length > 0 && <span className="cb-count">{zips.length}</span>}</dt><dd className="cb-zip-run">{zips.length > 0 ? zips.join(', ') : 'None listed'}</dd></div>
             <div className="cb-ref-wide">
-              <dt><DataLabel kind="places">{hasMappedPlaces ? 'Places' : 'Seat ref.'}</DataLabel>{hasMappedPlaces && <span className="cb-count">{places.length}</span>}</dt>
+              <dt><MapPin className="cb-ico" aria-hidden="true" />{hasMappedPlaces ? 'Places' : 'Seat ref.'}{hasMappedPlaces && <span className="cb-count">{places.length}</span>}</dt>
               <dd className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>
                 {places.map(name => (
                   <button key={`${c.stateCode}-${c.countyName}-${name}`} type="button" className="cb-place county-profile-place-button" onClick={() => onSelectPlace(name)}>{name}</button>

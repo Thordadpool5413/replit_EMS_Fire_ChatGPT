@@ -16,6 +16,8 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
 import { CountyDirectoryCard } from './CountyDirectoryCard';
+import './countyGeoTokens.css';
+import './CountyProviders.css';
 import {
   getStateZipDenialProfileSummary,
 } from '../services/countyDenialProfileService';
@@ -52,7 +54,9 @@ import {
   Zap,
   LayoutGrid,
   Table as TableIcon,
-  Share2
+  Share2,
+  ArrowLeft,
+  MapPinned
 } from 'lucide-react';
 import { PulseIqRegionalBreakdownChart } from './PulseIqRegionalBreakdownChart';
 import { RealWorldCountyBoundaryMap } from './RealWorldCountyBoundaryMap';
@@ -1650,8 +1654,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
       {activeFocusLevel === 'counties' && (
-        <div className="county-drilldown-shell grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-[var(--pi-border)] bg-[var(--pi-surface-bg)] p-3 sm:p-4">
-          <div className="county-selection-header grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] items-start lg:items-center gap-3 pb-3 border-b border-[var(--pi-border)] min-w-0">
+        <div className="county-drilldown-shell county-geo grid min-w-0 grid-cols-1">
+          <div className="county-selection-header">
             <div className="county-selection-copy min-w-0">
               <div className="county-selection-context-row">
                 <button
@@ -1660,22 +1664,23 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   className="county-selection-back"
                   title="Return to the national state map"
                 >
-                  <span aria-hidden="true">&larr;</span>
+                  <ArrowLeft aria-hidden="true" />
                   <span>All states</span>
                 </button>
                 {geographyAreaMenu}
               </div>
-              <h2 className="cv-title !text-[1.3rem] mt-1">
+              <h2 className="county-selection-title">
+                <MapPinned aria-hidden="true" />
                 {activeStateSummary?.state || selectedStateCode}
               </h2>
-              <p className="cv-meta">
-                {availableCounties.length.toLocaleString()} counties · select one on the map or in the directory below
+              <p className="county-selection-meta">
+                <strong>{availableCounties.length.toLocaleString()}</strong> counties · select one on the map or in the directory below
               </p>
             </div>
 
-            <div className="county-selection-actions flex flex-wrap items-center gap-2 w-full lg:w-auto">
-              <div className="relative flex-1 sm:w-72">
-                <Search className="w-4 h-4 text-[var(--pi-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+            <div className="county-selection-actions">
+              <div className="county-selection-search">
+                <Search aria-hidden="true" />
                 <input
                   type="text"
                   value={countyFilterInput}
@@ -1686,7 +1691,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   placeholder="Search county or seat"
                   aria-label="Search counties or county seats"
                   data-testid="input-county-search"
-                  className="w-full h-9 bg-[var(--pi-surface-subtle)] border border-[var(--pi-border)] rounded-lg pl-9 pr-14 text-sm text-[var(--pi-text-primary)] placeholder:text-[var(--pi-text-muted)] focus:outline-none focus:border-[var(--pi-action)]"
                 />
                 {countyFilterInput && (
                   <button
@@ -1695,7 +1699,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       setCountyFilterInput('');
                       setCountyPage(1);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--pi-action-ink)] hover:underline"
+                    className="county-selection-clear"
                   >
                     Clear
                   </button>
@@ -1704,11 +1708,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               <button
                 type="button"
                 onClick={() => setMiddleTab('cities')}
-                className="cv-btn county-providers-action"
+                className="county-selection-providers county-providers-action"
                 aria-label={`View all ${matchingAgencies.length} providers in ${activeStateSummary?.state || selectedStateCode}`}
               >
+                <Building2 aria-hidden="true" />
                 All providers
-                <span className="tabular-nums opacity-80">{matchingAgencies.length}</span>
+                <span className="county-selection-count">{matchingAgencies.length.toLocaleString()}</span>
                 <ChevronRight aria-hidden="true" />
               </button>
             </div>
@@ -1808,25 +1813,27 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           LEVEL 3: PROVIDERS IN SELECTED COUNTY / CITY (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
       {activeFocusLevel === 'providers' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 grid grid-cols-1 gap-4 min-w-0">
+        <div className="county-geo county-providers-shell grid grid-cols-1 min-w-0">
           
           {/* Streamlined Single-Row Filter Bar + Hybrid View Mode Toggle */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 min-w-0">
-            <div className="min-w-0" data-testid="provider-mobile-summary">
-              <div className="text-xs font-semibold text-[#1E3A8A] dark:text-blue-400">
+          <div className="county-providers-head min-w-0">
+            <div className="cv-geo-head" data-testid="provider-mobile-summary">
+              <div className="min-w-0">
+              <div className="cv-geo-kicker">
                 {selectedCityName !== 'all'
                   ? `${selectedCityName} · ${selectedCountyName !== 'all' ? selectedCountyName : ''} ${selectedStateCode}`
                   : selectedCountyName !== 'all'
                     ? `${selectedCountyName}, ${activeStateSummary?.state || selectedStateCode}`
                     : `${activeStateSummary?.state || selectedStateCode} Statewide Providers`}
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                EMS &amp; Fire Providers ({matchingAgencies.length.toLocaleString()})
+              <h2 className="cv-geo-title">
+                <Building2 aria-hidden="true" />EMS &amp; Fire Providers ({matchingAgencies.length.toLocaleString()})
               </h2>
+              </div>
             </div>
 
             {/* Right Single-Row Filter Controls */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="county-providers-tools flex flex-wrap items-center gap-2">
               {/* Instant Search Input */}
               <div className="relative w-full sm:w-56">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />

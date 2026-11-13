@@ -34,6 +34,7 @@ try {
     assert.ok(result.scroll <= result.client + 1, `Page overflow at ${width}`);
     assert.ok(result.cards.length >= 2, 'County cards rendered');
     assert.deepEqual(result.clipped, [], `County content overflow at ${width}`);
+    assert.ok(Math.max(...result.cards.map(c => c.height)) - Math.min(...result.cards.map(c => c.height)) <= 1, `Uniform directory card heights at ${width}`);
     if (width < 768) assert.ok(result.inspectHeight >= 44, 'Keep phone Inspect target');
     results.push(result);
     for (const [label, selector] of [['directory', '.county-brief'], ['preview', '.county-inspector-panel.ci']]) {

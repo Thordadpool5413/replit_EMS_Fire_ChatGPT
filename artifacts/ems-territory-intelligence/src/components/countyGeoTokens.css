@@ -1,0 +1,33 @@
+/* Shared county-intelligence vocabulary. One source for every geography surface:
+   directory brief (.county-brief), state-map preview (.ci), selected-county map,
+   places panel, reference figures and provider shell (.county-geo).
+   Domain colours mirror the profile topic tokens; an icon names a topic, never a judgement. */
+:is(.county-brief, .ci, .county-geo) {
+  --geo-id: #1f4fbf;
+  --geo-id-deep: #193f9c;
+  --geo-id-ink: #ffffff;
+  --geo-id-sub: #d3e0ff;
+  --geo-hair: var(--pi-border);
+  --geo-wash: color-mix(in srgb, var(--pi-topic-operations) 4%, var(--pi-surface-bg));
+  --geo-ops: var(--pi-topic-operations);
+  --geo-community: var(--pi-topic-community);
+  --geo-cardiac: var(--pi-topic-clinical);
+  --geo-access: var(--pi-topic-planning);
+  --geo-ref: var(--pi-topic-reference);
+  --geo-seat: #b7790f;
+  --geo-radius: .75rem;
+  --geo-pad: .8rem;
+  --geo-fig: 20px;
+  --geo-value: 14.5px;
+  --geo-label: 13px;
+  --geo-meta: 12.5px;
+  --geo-font: 'Instrument Sans Variable', 'Manrope Variable', system-ui, sans-serif;
+  --geo-display: 'Manrope Variable', Manrope, system-ui, sans-serif;
+}
+.dark :is(.county-brief, .ci, .county-geo) {
+  --geo-id: #23477f;
+  --geo-id-deep: #1b3a69;
+  --geo-id-sub: #c3d4f2;
+  --geo-seat: #e8b04a;
+  --geo-wash: color-mix(in srgb, var(--pi-topic-operations) 6%, var(--pi-surface-bg));
+}

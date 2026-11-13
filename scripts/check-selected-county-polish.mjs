@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 process.env.PROFILE_HELPERS_ONLY = '1';
 const { createCdpClient, evaluate, waitFor, reservePort, waitForJson } = await import('./check-profile-overflow.mjs');
-const out = 'generated-artifacts/selected-county-polish';
+const out = process.env.COUNTY_POLISH_OUT || 'generated-artifacts/selected-county-polish';
 await mkdir(out, { recursive: true });
 const dir = await mkdtemp(path.join(os.tmpdir(), 'selected-county-'));
 const port = await reservePort();
@@ -19,7 +19,7 @@ try {
   await cdp.connect();
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
-  for (const width of [1366, 390, 320]) {
+  for (const width of (process.env.COUNTY_POLISH_WIDTHS || '1366,390,320').split(',').map(Number)) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width < 768 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send('Page.navigate', { url: new URL('/?state=FL&county=Alachua%20County', process.env.COUNTY_TEST_URL || 'http://127.0.0.1:80/').href });
     await waitFor(cdp, `Boolean(document.querySelector('.county-city-directory-panel .cv-place-row'))`, 'county places', 60000);

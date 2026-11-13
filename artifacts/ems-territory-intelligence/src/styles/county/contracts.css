@@ -279,6 +279,6 @@ th .pi-data-label { white-space: nowrap; }
 /* Laptop-only counterparts to the shared compact workspace contract. */
 @media screen and (min-width: 1024px) {
   [data-laptop-density="compact"] :is(.cv-stack, .cv-state-grid) { gap: .5rem; }
-  [data-laptop-density="compact"] .cv-panel { padding: .6rem .7rem !important; gap: .25rem; }
-  [data-laptop-density="compact"] .cv-map-panel:not(.county-single-map-panel) { padding: .55rem .65rem; }
+  [data-laptop-density="compact"] .cv-panel:not(.county-geo):not(.ci) { padding: .6rem .7rem !important; gap: .25rem; }
+  [data-laptop-density="compact"] .cv-map-panel:not(.county-geo) { padding: .55rem .65rem; }
 }

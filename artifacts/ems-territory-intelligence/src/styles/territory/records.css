@@ -13,7 +13,7 @@
   box-shadow: var(--shadow-card) !important;
 }
 
-.county-figure-source-details {
+.county-figure-source-details:not(.cb-sources, .county-reference-panel > *) {
   min-width: 0;
   padding: .15rem 0 0 !important;
   border: 0 !important;
@@ -365,20 +365,6 @@
   font-size: 0.68rem;
 }
 
-.territory-explorer-screen .county-selection-header {
-  border-color: var(--pi-border);
-}
-
-.territory-explorer-screen .county-selection-header h2 {
-  color: var(--pi-text-primary);
-  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
-  letter-spacing: -0.035em;
-}
-
-.territory-explorer-screen .county-selection-header p {
-  color: var(--pi-text-secondary);
-}
-
 @media (max-width: 767px) {
   .territory-explorer-screen .geography-drilldown-breadcrumb {
     padding: 0.45rem !important;
@@ -420,65 +406,5 @@
   .territory-explorer-screen .geography-area-menu .geography-drilldown-select select {
     width: 100%;
     max-width: none;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .territory-explorer-screen .county-selection-header {
-    gap: 0.75rem;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .territory-explorer-screen .county-selection-header > div:last-child {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) max-content !important;
-    align-items: center;
-    width: 100% !important;
-    gap: 0.45rem;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .territory-explorer-screen .county-selection-header > div:last-child > .relative {
-    grid-column: 1;
-    min-width: 0 !important;
-    width: auto !important;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .territory-explorer-screen .county-selection-header > div:last-child > .relative input {
-    min-width: 0;
-    padding-right: 0.5rem;
-  }
-}
-
-@media (max-width: 767px) {
-
-  .territory-explorer-screen .county-selection-header > div:last-child > button {
-    grid-column: 2;
-    min-height: 2.1rem;
-    width: max-content !important;
-    max-width: max-content !important;
-    padding-inline: 0.6rem;
-    white-space: nowrap;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .territory-explorer-screen .county-selection-header {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-
-  .territory-explorer-screen .county-selection-actions {
-    width: 100%;
   }
 }

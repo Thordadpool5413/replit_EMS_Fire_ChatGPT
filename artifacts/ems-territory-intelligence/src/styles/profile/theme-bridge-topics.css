@@ -635,6 +635,39 @@
   .agency-command-profile .profile-attention-head { flex-wrap: wrap; }
   .agency-command-profile :is(.acp-link, .dsb-tab, .afi-switch button, .acp-gaps button, .aib-link, .dsb-hero button, .aib-sources > summary) { min-height: 44px; }
 }
+
+/* Phone profiles: keep full field names and values inside every topic card. */
+@media (max-width: 767px) {
+  .agency-command-profile :is(
+    .acp-ledger, .acp-context, .acp-summary, .aib-block, .afi-reported,
+    .afi-scenario, .dsb-full, .adm-group, .profile-attention, .profile-summary-panel
+  ),
+  .agency-command-profile :is(
+    .acp-ledger, .acp-context, .acp-summary, .aib-block, .afi-reported,
+    .afi-scenario, .dsb-full, .adm-group, .profile-attention, .profile-summary-panel
+  ) *:not(svg):not(img) {
+    min-width: 0;
+  }
+  .agency-command-profile :is(
+    .acp-ledger, .acp-context, .acp-summary, .aib-block, .afi-reported,
+    .afi-scenario, .dsb-full, .adm-group, .profile-attention, .profile-summary-panel
+  ) :is(p, li, dt, dd, span, strong, small, a, label, h1, h2, h3, h4, th, td) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+  .agency-command-profile :is(
+    .acp-ledger, .acp-context, .acp-summary, .aib-block, .afi-reported,
+    .afi-scenario, .dsb-full, .adm-group, .profile-attention, .profile-summary-panel
+  ) :is(.truncate, [class*="line-clamp-"]) {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    -webkit-line-clamp: unset !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .agency-command-profile :is(.acp-ledger-row, .acp-ctx, .acp-ctx-open, .acp-ctx-open svg, .acp-gaps button, .acp-link svg, .aib-eq, .aib-figure, .aib-finding, .dsb-card, .dsb-tab, .afi-switch button, .afi-assumption-input) { transition: none !important; transform: none !important; }
 }

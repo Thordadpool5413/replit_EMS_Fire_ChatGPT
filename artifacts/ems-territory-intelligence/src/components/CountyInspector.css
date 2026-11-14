@@ -172,6 +172,19 @@
 }
 @media (max-width: 767px) {
   :is(.ci, .county-geo) { --geo-pad: .75rem; --geo-fig: 20px; }
+  :is(.ci, .county-geo) :is(h1, h2, h3, h4, p, li, dt, dd, span, strong, small, a, label) {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+  :is(.ci, .county-geo) :is(.truncate, [class*="line-clamp-"]) {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    -webkit-line-clamp: unset !important;
+  }
   .ci .ci-place, .ci .ci-link, .county-geo .cv-link { min-height: 32px; }
   .ci .ci-btn { min-height: 44px; width: 100%; justify-content: center; }
 }

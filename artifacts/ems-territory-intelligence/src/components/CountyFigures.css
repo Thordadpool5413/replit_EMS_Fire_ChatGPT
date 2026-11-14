@@ -44,10 +44,12 @@
 @container (max-width: 380px) {
   .cfs-lead { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .cfs-lead .cfs-fig { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding-block: .45rem; border-top: 0; border-bottom: 1px solid var(--geo-hair); box-shadow: inset 2px 0 0 color-mix(in srgb, var(--tone) 70%, transparent); padding-left: .55rem; }
-  .cfs-lead dt { align-self: center; }
+  .cfs-lead dt { align-self: center; white-space: normal; }
 }
 @container (max-width: 480px) {
   .cfs-ledger { grid-template-columns: minmax(0, 1fr); }
+  .cfs-ledger dt { white-space: normal; overflow-wrap: anywhere; }
+  .cfs-ledger dd { max-width: 56%; white-space: normal; overflow-wrap: anywhere; }
 }
 @media (max-width: 520px) {
   .cfs-ledger { grid-template-columns: minmax(0, 1fr); }

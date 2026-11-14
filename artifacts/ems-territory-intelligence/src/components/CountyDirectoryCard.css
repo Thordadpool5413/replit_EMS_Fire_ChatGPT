@@ -86,6 +86,24 @@
   .county-brief { --geo-pad: .75rem; --geo-fig: 20px; }
   .county-brief .cb-inspect { min-height: 44px; }
   .county-brief .cb-place { min-height: 32px; }
+  .county-brief,
+  .county-brief *:not(svg):not(img) { min-width: 0; }
+  .county-brief :is(h3, p, span, strong, small, a, label, dt, dd) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+  .county-brief .cb-risk-label,
+  .county-brief .cb-geo-label { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .county-brief .cb-geo-row { min-width: 0; }
+  .county-brief .cb-risk { min-width: 0; }
+  .county-brief :is(.truncate, [class*="line-clamp-"]) {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    -webkit-line-clamp: unset !important;
+  }
 }
 @media (min-width: 768px) { .county-brief { --geo-fig: 23px; } }
 

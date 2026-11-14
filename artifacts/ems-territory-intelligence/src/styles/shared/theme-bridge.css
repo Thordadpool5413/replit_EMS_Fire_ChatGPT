@@ -182,6 +182,15 @@ body [data-radix-portal] :is([class~="text-slate-600"], [class~="text-slate-500"
   color: var(--pi-text-secondary) !important;
 }
 
+.pi-app-shell :is(
+  [class~="text-gray-400"], [class~="text-gray-500"], [class~="text-gray-600"],
+  [class~="text-[#6B7280]"], [class~="text-[#9CA3AF]"], [class~="text-[#94A3B8]"],
+  [class~="text-[#8291A1]"], [class~="text-[#8492A1]"], [class~="text-[#91A1AD]"],
+  [class~="text-[#8298AE]"]
+) {
+  color: var(--pi-text-secondary) !important;
+}
+
 .pi-app-shell [class~="text-slate-400"],
 body [data-radix-portal] [class~="text-slate-400"] {
   color: var(--pi-text-muted) !important;

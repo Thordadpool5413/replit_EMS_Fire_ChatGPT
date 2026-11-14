@@ -131,6 +131,41 @@ button { -webkit-tap-highlight-color: transparent; }
   .workspace-grid-shell { padding: 0.7rem max(0.7rem, env(safe-area-inset-right)) calc(5.5rem + env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left)) !important; }
 }
 
+/* Phone cards must reflow their content instead of clipping long labels or values. */
+@media (max-width: 767px) {
+  .pi-app-shell :is(
+    .pi-surface, .surface-card, .pi-surface-interactive, [data-testid*="-card"]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .pi-app-shell :is(
+    .pi-surface, .surface-card, .pi-surface-interactive, [data-testid*="-card"]
+  ) *:not(svg):not(img) {
+    min-width: 0;
+  }
+
+  .pi-app-shell :is(
+    .pi-surface, .surface-card, .pi-surface-interactive, [data-testid*="-card"]
+  ) :is(p, li, dt, dd, span, strong, small, a, label, h1, h2, h3, h4, th, td) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: normal !important;
+  }
+
+  .pi-app-shell :is(
+    .pi-surface, .surface-card, .pi-surface-interactive, [data-testid*="-card"]
+  ) :is(.truncate, [class*="line-clamp-"]) {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    -webkit-line-clamp: unset !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .workspace-grid-shell { animation: workspace-arrive 240ms ease-out both; }
 }

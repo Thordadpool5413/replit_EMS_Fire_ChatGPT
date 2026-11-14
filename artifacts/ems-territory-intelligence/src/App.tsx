@@ -388,7 +388,61 @@ export default function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState<boolean>(false);
   const [isWeightsModalOpen, setIsWeightsModalOpen] = useState<boolean>(false);
   const [isMobileProviderFinderOpen, setIsMobileProviderFinderOpen] = useState<boolean>(false);
+  const [mobileFinderNearbyMode, setMobileFinderNearbyMode] = useState(false);
+  const [mobileFinderLocation, setMobileFinderLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [mobileFinderLocationStatus, setMobileFinderLocationStatus] = useState<'idle' | 'locating' | 'ready' | 'error'>('idle');
+  const [mobileFinderLocationError, setMobileFinderLocationError] = useState<string | null>(null);
+  const mobileFinderLocationRequestIdRef = useRef(0);
   const [gmpQuotaExceeded, setGmpQuotaExceeded] = useState<boolean>(false);
+
+  const openProviderFinder = useCallback(() => {
+    mobileFinderLocationRequestIdRef.current += 1;
+    setMobileFinderLocation(null);
+    setMobileFinderNearbyMode(false);
+    setMobileFinderLocationStatus('idle');
+    setMobileFinderLocationError(null);
+    setIsMobileProviderFinderOpen(true);
+  }, []);
+
+  const openNearbyProviderFinder = useCallback(() => {
+    const requestId = ++mobileFinderLocationRequestIdRef.current;
+    setMobileFinderNearbyMode(true);
+    setMobileFinderLocation(null);
+    setMobileFinderLocationError(null);
+    setMobileFinderLocationStatus('locating');
+    setIsMobileProviderFinderOpen(true);
+
+    if (!navigator.geolocation) {
+      setMobileFinderLocationStatus('error');
+      setMobileFinderLocationError('Location is not available in this browser. You can still browse by state, county, or ZIP.');
+      return;
+    }
+
+    // Request location only in response to the user's explicit “near me” action.
+    // Coordinates stay in app memory and are used only for local distance sorting.
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (mobileFinderLocationRequestIdRef.current !== requestId) return;
+        setMobileFinderLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setMobileFinderLocationStatus('ready');
+      },
+      (error) => {
+        if (mobileFinderLocationRequestIdRef.current !== requestId) return;
+        setMobileFinderLocationStatus('error');
+        if (error.code === error.PERMISSION_DENIED) {
+          setMobileFinderLocationError('Location permission was denied. Allow location in your browser settings, or browse by state, county, or ZIP.');
+        } else if (error.code === error.TIMEOUT) {
+          setMobileFinderLocationError('The location request timed out. Try again, or browse by state, county, or ZIP.');
+        } else {
+          setMobileFinderLocationError('Your location could not be determined. Try again, or browse by state, county, or ZIP.');
+        }
+      },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 },
+    );
+  }, []);
 
   // Listen to Google Maps Platform quota defense events
   useEffect(() => {
@@ -996,7 +1050,8 @@ export default function App() {
         onClearGeography={handleClearGeography}
         activeAccountName={currentActive?.name || null}
         dayRouteCount={dayRouteCount}
-        onOpenProviderFinder={() => setIsMobileProviderFinderOpen(true)}
+        onOpenProviderFinder={openProviderFinder}
+        onOpenNearbyProviderFinder={openNearbyProviderFinder}
       />
 
       {/* Main Workspace Body with a synchronized desktop sidebar offset */}
@@ -1759,7 +1814,14 @@ export default function App() {
       {/* Mobile Provider Quick Finder & Selector Drawer */}
       {isMobileProviderFinderOpen && <MobileProviderSelectorDrawer
         isOpen={isMobileProviderFinderOpen}
-        onClose={() => setIsMobileProviderFinderOpen(false)}
+        onClose={() => {
+          mobileFinderLocationRequestIdRef.current += 1;
+          setIsMobileProviderFinderOpen(false);
+          setMobileFinderNearbyMode(false);
+          setMobileFinderLocation(null);
+          setMobileFinderLocationStatus('idle');
+          setMobileFinderLocationError(null);
+        }}
         agencies={agencies}
         onSelectAgency={handleOpenAgencyProfile}
         onToggleBookmark={handleToggleBookmark}
@@ -1770,6 +1832,12 @@ export default function App() {
         onSelectState={(st) => handleSelectGlobalGeography(st, 'all', 'all')}
         selectedCounty={globalCounty}
         onSelectCounty={(co) => handleSelectGlobalGeography(globalState, co, 'all')}
+        nearbyMode={mobileFinderNearbyMode}
+        nearbyLocation={mobileFinderLocation}
+        nearbyStatus={mobileFinderLocationStatus}
+        nearbyError={mobileFinderLocationError}
+        onRetryNearby={openNearbyProviderFinder}
+        onBrowseAll={openProviderFinder}
       />}
       {isAgencyComparisonOpen && (
         <AgencyComparisonPanel

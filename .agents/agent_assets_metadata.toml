@@ -196,3 +196,17 @@ mtime_ms = 1794544388623
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/f58bce26-192b-402c-8efb-5e66318c0290/6ca1f0a6-4761-4252-92df-15a6d59ed2fb"
 storage_version_token = "1794544544036753"
 content_type = "image/png"
+
+[[outputs]]
+id = "EqDOehGKYEBM4odlMD-Pd"
+uri = "file://generated-artifacts/mobile-nearby-review/nearby-390.png"
+type = "image"
+title = "Nearby agency search on a phone"
+description = "Emulated phone view showing nearest-first EMS and fire records, distance choices, and location-use limits."
+logical_id = "4b92a8fd-bb35-414f-ab53-2e1d64d7793d"
+content_hash = "sha256:b8a3abb1d485969f79249b5c27b648432e54bb299cd970266693cb030f19fcb4"
+size = 72801
+mtime_ms = 1794630504959
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:41009bb1-0b9e-4cbe-91f9-18fe8269e137/4b92a8fd-bb35-414f-ab53-2e1d64d7793d/4d6b7f12-1c8a-481a-b5d5-a616233fd6be"
+storage_version_token = "1794630551919081"
+content_type = "image/png"

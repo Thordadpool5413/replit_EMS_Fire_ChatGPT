@@ -239,6 +239,19 @@
     width: 2.5rem;
     height: 2.5rem;
   }
+
+  .pi-header-actions > .nearby-search-trigger {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 767px) {
+  .pi-header-actions > .nearby-search-trigger {
+    width: auto;
+  }
 }
 
 @media (max-width: 767px) {

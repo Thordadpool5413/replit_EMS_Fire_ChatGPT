@@ -29,3 +29,4 @@
 - [Direct PDF export compatibility](direct-pdf-export.md) — keep searchable, theme-safe agency PDFs with clean A4 and Letter page crops and margins.
 - [Equipment evidence boundaries](equipment-evidence-boundaries.md) — product brands are not contracted suppliers; inventories and illustrative credits do not establish buy-back offers.
 - [Profile verification boundaries](profile-verification-boundaries.md) — retain unconfirmed research; separate sources, individual fact reviews, corrections and original history.
+- [Mobile nearby provider discovery](mobile-nearby-provider-discovery.md) — make location-assisted EMS/fire lookup immediate on phones, with a manual fallback and clear mapped-location limits.

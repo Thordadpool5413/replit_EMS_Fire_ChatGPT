@@ -25,6 +25,7 @@ import {
   CircleHelp,
   Palette,
   MapPin,
+  LocateFixed,
   RefreshCw,
   Download,
   WifiOff
@@ -63,6 +64,7 @@ interface TopBarProps {
   activeAccountName?: string | null;
   dayRouteCount?: number;
   onOpenProviderFinder?: () => void;
+  onOpenNearbyProviderFinder?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -88,7 +90,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onClearGeography,
   activeAccountName = null,
   dayRouteCount = 0,
-  onOpenProviderFinder
+  onOpenProviderFinder,
+  onOpenNearbyProviderFinder
 }) => {
   const fallbackLogo = `${import.meta.env.BASE_URL}logo.jpg`;
   const [logoSrc, setLogoSrc] = useState<string>(brandLogoAsset || fallbackLogo);
@@ -468,6 +471,19 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <WifiOff className="h-3 w-3 shrink-0" />
                 Offline
               </span>
+            )}
+            {onOpenNearbyProviderFinder && (
+              <button
+                type="button"
+                onClick={onOpenNearbyProviderFinder}
+                className="nearby-search-trigger h-11 min-h-[44px] w-11 min-w-[44px] min-[375px]:w-auto min-[375px]:px-2.5 sm:px-3 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] bg-white dark:bg-[#16243A] hover:bg-[#F5F7FA] dark:hover:bg-slate-800 text-[#285EE8] dark:text-blue-300 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                aria-label="Find EMS and fire agencies near me"
+                data-testid="button-mobile-nearby-search"
+                title="Find nearby EMS and fire agencies"
+              >
+                <LocateFixed className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="hidden min-[375px]:inline sm:inline">Near me</span>
+              </button>
             )}
             {/* Universal Agency & Territory Search (⌘K) */}
             {openCommandPalette && (

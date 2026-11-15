@@ -2,7 +2,18 @@
 """Stream a local official NPPES CSV into an ambulance-organization staging file.
 Does not fetch files, merge agencies, or modify production data.
 """
-import argparse, csv, datetime, json, os, pathlib, tempfile
+import argparse, csv, datetime, json, os, pathlib, tempfile, io, zipfile, sys
+from contextlib import contextmanager
+
+@contextmanager
+def open_source(source):
+    if str(source).lower().endswith('.zip'):
+        with zipfile.ZipFile(source) as archive:
+            names=[name for name in archive.namelist() if pathlib.Path(name).name.startswith('npidata_pfile_') and name.endswith('.csv') and 'fileheader' not in name]
+            if len(names)!=1: raise ValueError('Expected one primary NPPES provider CSV in archive.')
+            with archive.open(names[0]) as raw, io.TextIOWrapper(raw,encoding='utf-8-sig',newline='') as stream: yield stream
+    else:
+        with open(source,encoding='utf-8-sig',newline='') as stream: yield stream
 
 def valid_npi(value):
     if len(value) != 10 or not value.isdigit(): return False
@@ -16,7 +27,7 @@ def stage(source, destination, reporting_period, source_url):
     required=['NPI','Entity Type Code','Provider Organization Name (Legal Business Name)']
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.nppes-stage-',suffix='.tmp')
     try:
-        with open(source,encoding='utf-8-sig',newline='') as src,os.fdopen(fd,'w',encoding='utf-8') as out:
+        with open_source(source) as src,os.fdopen(fd,'w',encoding='utf-8') as out:
             reader=csv.DictReader(src)
             if not reader.fieldnames or any(key not in reader.fieldnames for key in required): raise ValueError('Not an organization NPPES dissemination CSV: required headers missing.')
             taxonomy=[key for key in reader.fieldnames if key.startswith('Healthcare Provider Taxonomy Code_')]
@@ -24,6 +35,7 @@ def stage(source, destination, reporting_period, source_url):
             out.write(json.dumps(dict(kind='manifest',schemaVersion=1,sourceUrl=source_url,reportingPeriod=reporting_period,stagedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),scope='Type 2 organizations with ambulance taxonomy; not an EMS licensing or fire registry'))+'\n')
             for row in reader:
                 counts['received']+=1
+                if counts['received']%1000000==0: print(json.dumps(counts),file=sys.stderr,flush=True)
                 codes=[row.get(key,'').strip() for key in taxonomy if row.get(key)]
                 if row.get('Entity Type Code')!='2' or not any(code.startswith('3416') for code in codes): counts['excluded']+=1;continue
                 npi=row.get('NPI','').strip();name=row.get(required[2],'').strip()

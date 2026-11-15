@@ -115,6 +115,7 @@ export function getAgencyFactValues(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): unknown[] {
+  if (agency.verificationSource?.includes('Geographic prospect generator') && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
   const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
     providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
     departmentRegistry: [agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],

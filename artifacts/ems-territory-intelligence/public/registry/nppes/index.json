@@ -1,0 +1,422 @@
+{
+  "manifest": {
+    "kind": "manifest",
+    "schemaVersion": 1,
+    "sourceUrl": "https://download.cms.gov/nppes/NPPES_Data_Dissemination_November_2026_V2.zip",
+    "reportingPeriod": "2026-11-09 monthly release",
+    "stagedAt": "2026-11-15T17:39:19.741366+00:00",
+    "scope": "Type 2 organizations with ambulance taxonomy; not an EMS licensing or fire registry"
+  },
+  "summary": {
+    "kind": "summary",
+    "received": 9891116,
+    "accepted": 20554,
+    "excluded": 9870562,
+    "rejected": 0,
+    "duplicates": 0
+  },
+  "chunks": [
+    {
+      "file": "part-000.gz.b64",
+      "state": "AK",
+      "count": 107,
+      "sha256": "ed5dc58e5a82f0a1c8c9a696f9bad43d0136b8072bf4b1f4cc94552a6b90313e"
+    },
+    {
+      "file": "part-001.gz.b64",
+      "state": "AL",
+      "count": 296,
+      "sha256": "bccaa0fa0e1788099f4c227b184d29d8dc24a3d96a1f67762490f5bc58cef16c"
+    },
+    {
+      "file": "part-002.gz.b64",
+      "state": "AR",
+      "count": 178,
+      "sha256": "ab41369fc031c1511a82675842c2d63dd9575687bb50854943caa1a6a386e9ef"
+    },
+    {
+      "file": "part-003.gz.b64",
+      "state": "AS",
+      "count": 1,
+      "sha256": "50ecb0f4e702e1a64003fa5bcc7f0fd51db4ef2ac97674b6789ba7d63471bde2"
+    },
+    {
+      "file": "part-004.gz.b64",
+      "state": "AZ",
+      "count": 269,
+      "sha256": "84341085cfc0872e4fd6cbd68ab39aee8c17f784868c2ab92bb5c513a725c873"
+    },
+    {
+      "file": "part-005.gz.b64",
+      "state": "BAJA CALIFORNIA SUR",
+      "count": 5,
+      "sha256": "8a7a55f5c3fd1cfa5d116d9d37303636f99f905bcfc2319bab22a56fb34f80d5"
+    },
+    {
+      "file": "part-006.gz.b64",
+      "state": "CA",
+      "count": 772,
+      "sha256": "761dcf0dde87d81fd4e1f5aeba74e03bcb4088814cc81d65c4f168538918f0db"
+    },
+    {
+      "file": "part-007.gz.b64",
+      "state": "CO",
+      "count": 385,
+      "sha256": "fa9f251e77d32bf27b80dd5e0b249b6be9d3d00af0c87d0d19749b21becb9a98"
+    },
+    {
+      "file": "part-008.gz.b64",
+      "state": "CT",
+      "count": 185,
+      "sha256": "a3b69068dbef9a5c35608bf092e5b3927cc99161c01bd7829a1cd17cd2d69862"
+    },
+    {
+      "file": "part-009.gz.b64",
+      "state": "CUSCO",
+      "count": 1,
+      "sha256": "b8d315f1da7a3f75aa606c7a3872d9491a4707f10fe06617a99f1538fe035f02"
+    },
+    {
+      "file": "part-010.gz.b64",
+      "state": "DC",
+      "count": 5,
+      "sha256": "481d31bdcc73c4416f07fb26477235a482cdd70bc6f4a46f31560433c4df4934"
+    },
+    {
+      "file": "part-011.gz.b64",
+      "state": "DE",
+      "count": 91,
+      "sha256": "ca56a04d9c61118e3027dd7515dd2c90cc12cbc1a6726cb82f51872801469574"
+    },
+    {
+      "file": "part-012.gz.b64",
+      "state": "FL",
+      "count": 433,
+      "sha256": "fd439d977b8ad60fe939a10084fc3da6957842248e2a45364789955a7485224f"
+    },
+    {
+      "file": "part-013.gz.b64",
+      "state": "GA",
+      "count": 722,
+      "sha256": "6a8c29b12a0a6cf423d8dd053f4b234ca119af9ba7fd617759c5428b5fe2962f"
+    },
+    {
+      "file": "part-014.gz.b64",
+      "state": "GU",
+      "count": 6,
+      "sha256": "9f2c4179567a9cc0f138de1fa9134cfb928e539beffc86678c513723d10c6385"
+    },
+    {
+      "file": "part-015.gz.b64",
+      "state": "GUANACASTE",
+      "count": 2,
+      "sha256": "14136991cba1c7925db1812ea46707b93f630553cab50dd727954242182f5db5"
+    },
+    {
+      "file": "part-016.gz.b64",
+      "state": "HI",
+      "count": 28,
+      "sha256": "f390450850cd220c12cca83c9c9d90cb62b3263a17e86bd45a557649ba6a537c"
+    },
+    {
+      "file": "part-017.gz.b64",
+      "state": "IA",
+      "count": 481,
+      "sha256": "b4648f63b883fb9b1a65a6f715048ef9272cf146f8b2ad1c8e0395620ab6886e"
+    },
+    {
+      "file": "part-018.gz.b64",
+      "state": "ID",
+      "count": 126,
+      "sha256": "75a82fb12dd80fbe8432095314a8e82586d21960a29eb5de798d139878efb40e"
+    },
+    {
+      "file": "part-019.gz.b64",
+      "state": "IL",
+      "count": 854,
+      "sha256": "ea301b80cb254307d3742db0ec7e42e56570153c626e6c92108a351884a0b716"
+    },
+    {
+      "file": "part-020.gz.b64",
+      "state": "IN",
+      "count": 560,
+      "sha256": "f4684d06176a5e771452d2ba3171a594bea5bd6e65e870522a0d617cf29755fe"
+    },
+    {
+      "file": "part-021.gz.b64",
+      "state": "JALISCO",
+      "count": 3,
+      "sha256": "b3e88d7c4dbc69b15a5ed0308b3978e99e7f79cb0cdf365befa7609373708f7c"
+    },
+    {
+      "file": "part-022.gz.b64",
+      "state": "KS",
+      "count": 225,
+      "sha256": "83f36bf064b3573f0559b7830457bd6fa793807cb16a0bbf3db5ff34928ffb8e"
+    },
+    {
+      "file": "part-023.gz.b64",
+      "state": "KY",
+      "count": 296,
+      "sha256": "a815a21a70a4508a0dccf1b1198093c35f10eaf2728a737ec94d7e5a62258629"
+    },
+    {
+      "file": "part-024.gz.b64",
+      "state": "LA",
+      "count": 94,
+      "sha256": "8f1e4e535e6ef7ac6b94e34308d2929870587f760994e07b7eb308db0667b4af"
+    },
+    {
+      "file": "part-025.gz.b64",
+      "state": "MA",
+      "count": 371,
+      "sha256": "1553c46db05e07e74088860c58f128808c1e6b018ecb7429c3e13db77121629f"
+    },
+    {
+      "file": "part-026.gz.b64",
+      "state": "MD",
+      "count": 261,
+      "sha256": "eeecfaef0b4e3c7b239b2315bc0be72be786a40e3b6f2432f658bac8e9d08191"
+    },
+    {
+      "file": "part-027.gz.b64",
+      "state": "ME",
+      "count": 194,
+      "sha256": "f90ae2ce6e810e9712635ef3aa4896c71d141871f56beb9d1e6a323fd40c1a9f"
+    },
+    {
+      "file": "part-028.gz.b64",
+      "state": "MEXICO",
+      "count": 1,
+      "sha256": "c6ff0b927475eaad947978f525e05d07f46f5fc1b8c8faa317a8d778f37c9718"
+    },
+    {
+      "file": "part-029.gz.b64",
+      "state": "MI",
+      "count": 400,
+      "sha256": "68f8bef805f4363528b7b4f1295fb7e17212becc5f0562fcb9b3bc97c70e5cd2"
+    },
+    {
+      "file": "part-030.gz.b64",
+      "state": "MN",
+      "count": 222,
+      "sha256": "c7b14880c57ff835f6caacfd2413a6682032292985e6a8ba1836fcf489a103ed"
+    },
+    {
+      "file": "part-031.gz.b64",
+      "state": "MO",
+      "count": 315,
+      "sha256": "0c385c9b508ffbda4c86042f70819eca5cfbdc34976c234eb95768e5fe08b75e"
+    },
+    {
+      "file": "part-032.gz.b64",
+      "state": "MP",
+      "count": 5,
+      "sha256": "64f2a4166e47b9842cca45c63eb095f1a57ad0168ef395b5705a10aca42a990e"
+    },
+    {
+      "file": "part-033.gz.b64",
+      "state": "MS",
+      "count": 112,
+      "sha256": "0e3595a328c2d733264c5ff57978c50b46b939fcbe197ab58c14270fb125fba1"
+    },
+    {
+      "file": "part-034.gz.b64",
+      "state": "MT",
+      "count": 195,
+      "sha256": "0af728c23d220c8298804b22f2029474f52f091d178593536d8b56c457f32d6c"
+    },
+    {
+      "file": "part-035.gz.b64",
+      "state": "NC",
+      "count": 422,
+      "sha256": "9b4bbef3e8236b8d5a1ae16351c6b18936aa60e27bc7999ef5170ecf17601de9"
+    },
+    {
+      "file": "part-036.gz.b64",
+      "state": "ND",
+      "count": 161,
+      "sha256": "d3c5f427e52a756058f5c0b248b3bc62c8f0cf53d8f3200a556b20a7d27642a0"
+    },
+    {
+      "file": "part-037.gz.b64",
+      "state": "NE",
+      "count": 428,
+      "sha256": "4c5d07e933617f30911d73915a442a85a2ba1785b9c211f040f967a0536fd3a3"
+    },
+    {
+      "file": "part-038.gz.b64",
+      "state": "NH",
+      "count": 188,
+      "sha256": "fad038d2ba8f93ec01bcdc79729329fdf028f5d711bfeca2a7fdc9429dda9dbb"
+    },
+    {
+      "file": "part-039.gz.b64",
+      "state": "NJ",
+      "count": 732,
+      "sha256": "ad95785373576e7933814cbe909739155749b160f340c536a40793e49c754d2a"
+    },
+    {
+      "file": "part-040.gz.b64",
+      "state": "NM",
+      "count": 169,
+      "sha256": "c889693c2d64cc3d638560b78ea1e76cc5487de75045707cfc065be12714d309"
+    },
+    {
+      "file": "part-041.gz.b64",
+      "state": "NV",
+      "count": 94,
+      "sha256": "55261ad7657806a4f3b3374896ca77ecd4802a4b1b1c47ecdc1f923658e2276e"
+    },
+    {
+      "file": "part-042.gz.b64",
+      "state": "NY",
+      "count": 950,
+      "sha256": "8b61c083b22769ca83fcf9e7751577c99867c0e862c47fa21c5a62c7d730ef7b"
+    },
+    {
+      "file": "part-043.gz.b64",
+      "state": "OH",
+      "count": 1310,
+      "sha256": "7034bc17fabce90c31b4f22523fce7cceaf24474ac432d903816bb2998fffb7d"
+    },
+    {
+      "file": "part-044.gz.b64",
+      "state": "OK",
+      "count": 249,
+      "sha256": "9a46e1616083ed2c0d4ac4449533849ad4a2d412176c126d42d07a3c381bc85d"
+    },
+    {
+      "file": "part-045.gz.b64",
+      "state": "OR",
+      "count": 190,
+      "sha256": "dd616c4a62d16435f2c68c22a0340addc7292e8ff0e79135cfd4162dd4c0c421"
+    },
+    {
+      "file": "part-046.gz.b64",
+      "state": "PA",
+      "count": 1428,
+      "sha256": "38abbf27a324a716d2a58481cef9feebc03bd6ddf15b1c85d1e60b6b901e479e"
+    },
+    {
+      "file": "part-047.gz.b64",
+      "state": "PANAMA",
+      "count": 2,
+      "sha256": "87ac2931390542d06f8809828ea2fcbbe83f56518e75a2c5047af973ab634fa9"
+    },
+    {
+      "file": "part-048.gz.b64",
+      "state": "PR",
+      "count": 928,
+      "sha256": "a7407110617523732fdc66109a9547405c46670693e2a06a61335f90bdc782b6"
+    },
+    {
+      "file": "part-049.gz.b64",
+      "state": "PUERTO RICO",
+      "count": 2,
+      "sha256": "b7380630fa90d77775dc0c40e650d74e16da014eeb494ce509e62e4ab0a8a361"
+    },
+    {
+      "file": "part-050.gz.b64",
+      "state": "QUINTANA ROO",
+      "count": 3,
+      "sha256": "4b283a5ee2d7844915128e41010d4974f7509e052eaa7ca1798ece703ca05f20"
+    },
+    {
+      "file": "part-051.gz.b64",
+      "state": "RI",
+      "count": 89,
+      "sha256": "2746bdde31e8267661571d6ad403e5898b1b8393de4440ff055022a502b1af1c"
+    },
+    {
+      "file": "part-052.gz.b64",
+      "state": "ROATAN",
+      "count": 1,
+      "sha256": "48eb9734399a32011c70ae3daec4325716357e85029f555f5bffa210b29cb8c0"
+    },
+    {
+      "file": "part-053.gz.b64",
+      "state": "SAN JOSE",
+      "count": 3,
+      "sha256": "34916e7aa81802a48438f51009ab60071551d69a705df9652cf86c3536d5be27"
+    },
+    {
+      "file": "part-054.gz.b64",
+      "state": "SC",
+      "count": 370,
+      "sha256": "2b56849a1adbbd89aefa2b80c991caf13283ec4f96c8704139189dbf61b91023"
+    },
+    {
+      "file": "part-055.gz.b64",
+      "state": "SD",
+      "count": 163,
+      "sha256": "646941169ba6a46579349b98474eeaa94ae3ffc62dc86513a958fda4f6d2cb88"
+    },
+    {
+      "file": "part-056.gz.b64",
+      "state": "ST JAMES",
+      "count": 1,
+      "sha256": "454a9a0b9ca85f44a25f6aca5ce5140a65a8e049bbe102897520f622deb271de"
+    },
+    {
+      "file": "part-057.gz.b64",
+      "state": "TN",
+      "count": 296,
+      "sha256": "c0cdf772f912af86f1d24323a2ff096ad8fd5bcf39f69739fc76afe6e3309a94"
+    },
+    {
+      "file": "part-058.gz.b64",
+      "state": "TX",
+      "count": 2260,
+      "sha256": "40f8c66f243b3f8c126206391a1af18b5b010069a3576099cd9485799f9d862c"
+    },
+    {
+      "file": "part-059.gz.b64",
+      "state": "UT",
+      "count": 123,
+      "sha256": "2f7e58ecd7fb37e84e73d8a77893fc7af1201fdd9e6ea0fbbdf02cb7d806f72e"
+    },
+    {
+      "file": "part-060.gz.b64",
+      "state": "VA",
+      "count": 492,
+      "sha256": "afd5ce100edc85b9f591c2b5f7c47bf34a87e516985bb1abea64c325c8d9a694"
+    },
+    {
+      "file": "part-061.gz.b64",
+      "state": "VI",
+      "count": 23,
+      "sha256": "2f95fa92a17507e0d1fb62460e11782aeb6d80f2e8c580ef5c16abe7abfe6d1b"
+    },
+    {
+      "file": "part-062.gz.b64",
+      "state": "VT",
+      "count": 83,
+      "sha256": "875183cf07e65a22c3b43a93922173c450a2b58b6c9f5f4eaae9a8099108aaf3"
+    },
+    {
+      "file": "part-063.gz.b64",
+      "state": "WA",
+      "count": 347,
+      "sha256": "75e15bf512da2ff0d9234322b954dbb25757c386dd5dc4132bb28a27403cb7e6"
+    },
+    {
+      "file": "part-064.gz.b64",
+      "state": "WI",
+      "count": 491,
+      "sha256": "34616b0c152dacc792c7d06ad51e341b4f9e2812fda066bf1093436f2202d1bc"
+    },
+    {
+      "file": "part-065.gz.b64",
+      "state": "WV",
+      "count": 253,
+      "sha256": "aaa200a5f894699f7249e54bd500b2050222b51babc576eede5c2b8215dd54fd"
+    },
+    {
+      "file": "part-066.gz.b64",
+      "state": "WY",
+      "count": 102,
+      "sha256": "c5afdabf3ef62a3879fd105139355a8157be7a8fff0283aacc57da382b641a5f"
+    }
+  ]
+}

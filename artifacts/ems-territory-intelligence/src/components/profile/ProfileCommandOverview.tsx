@@ -151,7 +151,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
     return (
       <li key={line.key} className="acp-ledger-row" data-category={line.category} data-missing={missing || undefined} data-testid={`row-overview-equipment-${line.key}`}>
         <Icon aria-hidden="true" className="acp-ledger-ico" />
-        <span className="acp-ledger-label">{line.label}</span>
+        <span className="acp-ledger-label">{line.label}{agency.verificationSource?.includes('Geographic prospect generator')&&<small className="block">Generated prospect · confirm each value</small>}</span>
         <span className={`acp-ledger-value${missing ? ' is-missing' : ''}`}>{line.value}</span>
         <span className={`acp-ledger-qty${!line.quantity || line.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
           {line.quantity && line.quantity !== NOT_REPORTED ? line.quantity : line.category !== 'software' ? 'Units not reported' : ''}

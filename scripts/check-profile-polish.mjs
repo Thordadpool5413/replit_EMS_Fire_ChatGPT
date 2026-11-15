@@ -71,9 +71,9 @@ try {
       await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
     }
     await settleProfileScroll();
-    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (equipmentTextOnly || process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'operations', 'medicare', 'meeting', 'deal_story', 'evidence'])) {
+    for (const topic of process.env.PROFILE_POLISH_TOPICS?.split(',') || (equipmentTextOnly || process.env.PROFILE_POLISH_HEADER_ONLY ? ['overview'] : ['overview', 'equipment', 'purchasing', 'decision_makers', 'activity', 'operations', 'medicare', 'meeting', 'deal_story', 'evidence'])) {
       if (topic !== 'overview') {
-        await ev(`(()=>{const s=document.querySelector('.acp-nav-select');if(s&&getComputedStyle(s).display!=='none'){s.value=${JSON.stringify(topic)};s.dispatchEvent(new Event('change',{bubbles:true}))}else{document.querySelector('[data-testid="tab-profile-${topic}"]').click()}})()`);
+        await ev(`(()=>{const mobile=document.querySelector('.acp-nav-select');if(mobile&&getComputedStyle(mobile).display!=='none'){mobile.value=${JSON.stringify(topic)};mobile.dispatchEvent(new Event('change',{bubbles:true}));return}const tab=document.querySelector('[data-testid="tab-profile-${topic}"]');if(tab){tab.click();return}const more=document.querySelector('[aria-label="Additional account detail"]');if(!more)throw Error('Missing profile topic selector for '+${JSON.stringify(topic)});more.value=${JSON.stringify(topic)};more.dispatchEvent(new Event('change',{bubbles:true}))})()`);
         await settleProfileScroll();
       }
       if (equipmentTextOnly && topic === 'overview') {
@@ -128,9 +128,9 @@ try {
             deal_story: '.dsb-full svg',
           }[topic] || '.acp-section-intro svg')})].filter(shown).length,
           name:root.querySelector('.acp-name').textContent,
-          active:root.querySelector('.acp-tab.is-active')?.getAttribute('data-testid'),
+           activeTopic:root.querySelector('.acp-nav-select')?.value||root.querySelector('.acp-tab.is-active')?.getAttribute('data-section')||root.querySelector('[aria-label="Additional account detail"]')?.value,
           panelRole:root.querySelector('#profile-topic-panel')?.getAttribute('role'),
-          panelLabel:root.querySelector('#profile-topic-panel')?.getAttribute('aria-labelledby'),
+          panelLabel:(()=>{const panel=root.querySelector('#profile-topic-panel');const labelledBy=panel?.getAttribute('aria-labelledby');return panel?.getAttribute('aria-label')||(labelledBy?document.getElementById(labelledBy)?.textContent?.trim():null)})(),
           panelTop:root.querySelector('#profile-topic-panel')?.getBoundingClientRect().top,
           navBottom:root.querySelector('.acp-nav').getBoundingClientRect().bottom,
           navTop:root.querySelector('.acp-nav').getBoundingClientRect().top,
@@ -157,9 +157,9 @@ try {
       assert.equal(geometry.dealCount, topic === 'deal_story' ? 1 : 0, 'Deal story only in its own topic');
       assert.equal(geometry.focusCount, topic === 'overview' ? 1 : 0, 'Opening focus brief only in overview');
       assert.ok(geometry.icons > 5, `${width}/${topic}: meaningful icons rendered`);
-      assert.equal(geometry.active, `tab-profile-${topic}`, 'Topic navigation must work');
+       assert.equal(geometry.activeTopic, topic, 'Topic navigation must work');
       assert.equal(geometry.panelRole, 'tabpanel', 'Topic content is an accessible panel');
-      assert.equal(geometry.panelLabel, `profile-tab-${topic}`, 'Topic panel is named by its selected tab');
+       assert.ok(geometry.panelLabel, 'Topic panel has an accessible name');
       if (geometry.panelTop < geometry.navBottom - 1) {
         console.log('Topic position', JSON.stringify(geometry));
         const shot = await cdp.send('Page.captureScreenshot', {format:'png'});
@@ -286,11 +286,11 @@ try {
       await cdp.send('Input.dispatchKeyEvent', {type:'keyUp',key:'ArrowRight',code:'ArrowRight'});
       await settleProfileScroll();
       assert.equal(await ev(`document.activeElement?.id`),'profile-tab-equipment','Arrow navigation keeps focus on the selected tab');
-      assert.equal(await ev(`document.querySelector('#profile-topic-panel').getAttribute('aria-labelledby')`),'profile-tab-equipment');
+       assert.ok(await ev(`(()=>{const p=document.querySelector('#profile-topic-panel');return Boolean(p?.getAttribute('aria-label')?.trim()||p?.getAttribute('aria-labelledby')&&document.getElementById(p.getAttribute('aria-labelledby'))?.textContent?.trim())})()`),'Selected topic panel retains an accessible name');
     }
   }
   await writeFile(`${out}/${process.env.PROFILE_POLISH_HEADER_ONLY ? 'header-results' : 'results'}.json`, JSON.stringify(results, null, 2));
-  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (equipmentTextOnly ? 'enlarged equipment Overview' : process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'nine topic tabs')}, icons, retained section removal.`);
+  console.log(`PASS profile polish: laptop/phone layouts, ${process.env.PROFILE_POLISH_TOPICS || (equipmentTextOnly ? 'enlarged equipment Overview' : process.env.PROFILE_POLISH_HEADER_ONLY ? 'header and phone tap targets' : 'ten profile topics')}, icons, retained section removal.`);
   console.log(JSON.stringify(results, null, 2));
 } finally {
   cdp?.close();

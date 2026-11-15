@@ -16,6 +16,7 @@ import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import { ProviderDenialDetails } from './ProviderDenialDetails';
 import { CountyDirectoryCard } from './CountyDirectoryCard';
+import { TerritoryMapFailureFallback } from './HomeMapFallbacks';
 import './countyGeoTokens.css';
 import './CountyProviders.css';
 import {
@@ -73,9 +74,55 @@ import { PulseIqScoreExplainerHub } from './PulseIqScoreExplainerHub';
 import { DataLabel } from './DataLabel';
 import { MobileFilterDisclosure } from './MobileFilterDisclosure';
 import { MISSING_INPUT_COPY } from '../utils/missingInputCopy';
+import { ErrorBoundary } from './ErrorBoundary';
+import { agencySearchScore } from '../utils/agencySearch';
 
 
 const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
+const DIRECTORY_SESSION_KEY = 'ems-territory-directory-state-v1';
+
+type DirectorySessionState = {
+  query: string;
+  stateFilter: string;
+  cityFilter: string;
+  countyFilter: string;
+  region: 'All' | 'Northeast' | 'Midwest' | 'South' | 'West';
+  sort: 'pulseIq' | 'fleetAge' | 'value';
+  mapLayer: 'agency-records' | 'fema-loss';
+};
+
+const defaultDirectorySessionState: DirectorySessionState = {
+  query: '',
+  stateFilter: '',
+  cityFilter: '',
+  countyFilter: '',
+  region: 'All',
+  sort: 'pulseIq',
+  mapLayer: 'agency-records',
+};
+
+function readDirectorySessionState(): DirectorySessionState {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(DIRECTORY_SESSION_KEY) || '{}') as Partial<DirectorySessionState>;
+    return {
+      query: typeof stored.query === 'string' ? stored.query : defaultDirectorySessionState.query,
+      stateFilter: typeof stored.stateFilter === 'string' ? stored.stateFilter : defaultDirectorySessionState.stateFilter,
+      cityFilter: typeof stored.cityFilter === 'string' ? stored.cityFilter : defaultDirectorySessionState.cityFilter,
+      countyFilter: typeof stored.countyFilter === 'string' ? stored.countyFilter : defaultDirectorySessionState.countyFilter,
+      region: ['All', 'Northeast', 'Midwest', 'South', 'West'].includes(stored.region || '')
+        ? stored.region as DirectorySessionState['region']
+        : 'All',
+      sort: ['pulseIq', 'fleetAge', 'value'].includes(stored.sort || '')
+        ? stored.sort as DirectorySessionState['sort']
+        : 'pulseIq',
+      mapLayer: ['agency-records', 'fema-loss'].includes(stored.mapLayer || '')
+        ? stored.mapLayer as DirectorySessionState['mapLayer']
+        : 'agency-records',
+    };
+  } catch {
+    return defaultDirectorySessionState;
+  }
+}
 
 const hasVerifiedModelInputs = (agency: Agency) =>
   hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
@@ -109,6 +156,10 @@ const safeAgencyWebsiteUrl = (value?: string) => {
 
 interface NationalGeographicExplorerProps {
   agencies: Agency[];
+  directoryStatus?: {
+    stateCode: string;
+    status: 'loading' | 'ready' | 'unavailable';
+  };
   initialMode?: 'states' | 'counties' | 'cities' | 'pulseiq_chart';
   onModeChange?: (mode: 'states' | 'counties' | 'cities' | 'pulseiq_chart') => void;
   onSelectAgency: (agency: Agency) => void;
@@ -131,6 +182,7 @@ interface NationalGeographicExplorerProps {
 
 export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProps> = ({
   agencies,
+  directoryStatus = { stateCode: 'all', status: 'ready' },
   initialMode,
   onModeChange,
   onSelectAgency,
@@ -150,23 +202,46 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   onToggleAgencyComparison,
   weights = DEFAULT_WEIGHTS
 }) => {
+  const [savedDirectoryState] = useState(readDirectorySessionState);
   // Navigation / Drill-down state
   const [selectedStateCode, setSelectedStateCode] = useState<string>(globalState || 'all');
   const [selectedCountyName, setSelectedCountyName] = useState<string>(globalCounty || 'all');
   const [selectedCityName, setSelectedCityName] = useState<string>(globalCity || 'all');
   const [agencyCategoryFilter, setAgencyCategoryFilter] = useState<'all' | 'ems' | 'fire'>(globalCategory || 'all');
   const [middleTab, setMiddleTabState] = useState<'states' | 'counties' | 'cities' | 'pulseiq_chart'>(initialMode || 'states');
-  const [zipSearchQuery, setZipSearchQuery] = useState<string>('');
+  const [zipSearchQuery, setZipSearchQuery] = useState<string>(savedDirectoryState.query);
   const [debouncedZipQuery, setDebouncedZipQuery] = useState<string>('');
-  const [stateFilterInput, setStateFilterInput] = useState<string>('');
-  const [cityFilterInput, setCityFilterInput] = useState<string>('');
+  const [stateFilterInput, setStateFilterInput] = useState<string>(savedDirectoryState.stateFilter);
+  const [cityFilterInput, setCityFilterInput] = useState<string>(savedDirectoryState.cityFilter);
   const [debouncedCityFilter, setDebouncedCityFilter] = useState<string>('');
-  const [countyFilterInput, setCountyFilterInput] = useState<string>('');
+  const [countyFilterInput, setCountyFilterInput] = useState<string>(savedDirectoryState.countyFilter);
   const [debouncedCountyFilter, setDebouncedCountyFilter] = useState<string>('');
-  const [regionFilter, setRegionFilter] = useState<'All' | 'Northeast' | 'Midwest' | 'South' | 'West'>('All');
+  const [regionFilter, setRegionFilter] = useState<DirectorySessionState['region']>(savedDirectoryState.region);
   const [showCityPillsDrawer, setShowCityPillsDrawer] = useState<boolean>(false);
-  const [providerSortBy, setProviderSortBy] = useState<'pulseIq' | 'fleetAge' | 'value'>('pulseIq');
-  const [stateMapLayer, setStateMapLayer] = useState<'agency-records' | 'fema-loss'>('agency-records');
+  const [providerSortBy, setProviderSortBy] = useState<DirectorySessionState['sort']>(savedDirectoryState.sort);
+  const [stateMapLayer, setStateMapLayer] = useState<DirectorySessionState['mapLayer']>(savedDirectoryState.mapLayer);
+
+  React.useEffect(() => {
+    try {
+      sessionStorage.setItem(DIRECTORY_SESSION_KEY, JSON.stringify({
+        query: zipSearchQuery,
+        stateFilter: stateFilterInput,
+        cityFilter: cityFilterInput,
+        countyFilter: countyFilterInput,
+        region: regionFilter,
+        sort: providerSortBy,
+        mapLayer: stateMapLayer,
+      } satisfies DirectorySessionState));
+    } catch {
+      // Session storage is optional; the current view remains usable without it.
+    }
+  }, [zipSearchQuery, stateFilterInput, cityFilterInput, countyFilterInput, regionFilter, providerSortBy, stateMapLayer]);
+
+  const effectiveDirectoryStatus = selectedStateCode === 'all'
+    ? 'ready'
+    : directoryStatus.stateCode === selectedStateCode.toUpperCase()
+      ? directoryStatus.status
+      : 'loading';
 
   const [providerViewMode, setProviderViewModeState] = useState<'cards' | 'table'>(() => {
     try {
@@ -564,7 +639,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
   // Base agency pool for the active geographic jurisdiction (before EMS/Fire category filter)
   const jurisdictionBaseAgencies = useMemo(() => {
-    const q = debouncedZipQuery.toLowerCase().trim();
+    const q = debouncedZipQuery.trim();
     let list: Agency[] = [];
 
     if (selectedStateCode !== 'all') {
@@ -608,23 +683,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
 
     if (q) {
-      const filtered: Agency[] = [];
-      for (let i = 0; i < list.length; i++) {
-        const a = list[i];
-        if (
-          a.name.toLowerCase().includes(q) ||
-          a.county.toLowerCase().includes(q) ||
-          a.city.toLowerCase().includes(q) ||
-          a.stateCode.toLowerCase() === q ||
-          a.state.toLowerCase().includes(q) ||
-          a.zipCode.includes(q) ||
-          a.agencyType.toLowerCase().includes(q)
-        ) {
-          filtered.push(a);
-          if (filtered.length >= 300) break;
-        }
-      }
-      list = filtered;
+      list = list
+        .map((agency) => ({ agency, score: agencySearchScore(agency, q) }))
+        .filter((result) => result.score > 0)
+        .sort((a, b) => b.score - a.score || a.agency.name.localeCompare(b.agency.name))
+        .slice(0, 300)
+        .map(({ agency }) => agency);
     }
 
     return list;
@@ -646,12 +710,55 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const matchingAgencies = useMemo(() => {
     const filtered = territoryEngine.filterByCategory(jurisdictionBaseAgencies, agencyCategoryFilter);
     return [...filtered].sort((a, b) => {
+      if (debouncedZipQuery.trim()) {
+        const relevance = agencySearchScore(b, debouncedZipQuery) - agencySearchScore(a, debouncedZipQuery);
+        if (relevance) return relevance;
+      }
       if (providerSortBy === 'pulseIq') return (b.zollOpportunity.pulseIqScore || 0) - (a.zollOpportunity.pulseIqScore || 0);
       if (providerSortBy === 'fleetAge') return b.installedFleet.defibAgeYears - a.installedFleet.defibAgeYears;
       if (providerSortBy === 'value') return b.zollOpportunity.projectedPipelineValue - a.zollOpportunity.projectedPipelineValue;
       return 0;
     });
-  }, [jurisdictionBaseAgencies, agencyCategoryFilter, providerSortBy]);
+  }, [jurisdictionBaseAgencies, agencyCategoryFilter, providerSortBy, debouncedZipQuery]);
+
+  const selectedAreaLabel = selectedCityName !== 'all'
+    ? `${selectedCityName}${selectedCountyName !== 'all' ? `, ${selectedCountyName}` : ''}`
+    : selectedCountyName !== 'all'
+      ? selectedCountyName
+      : selectedStateCode !== 'all'
+        ? ALL_50_STATES_SUMMARIES[selectedStateCode]?.state || selectedStateCode
+        : 'all states';
+  const activeAgencyFilters = [
+    selectedStateCode !== 'all' && (ALL_50_STATES_SUMMARIES[selectedStateCode]?.state || selectedStateCode),
+    selectedCountyName !== 'all' && selectedCountyName,
+    selectedCityName !== 'all' && selectedCityName,
+    agencyCategoryFilter !== 'all' && agencyCategoryFilter.toUpperCase(),
+    debouncedZipQuery.trim() && `Search: ${debouncedZipQuery.trim()}`,
+  ].filter(Boolean) as string[];
+
+  const searchAllAgencies = () => {
+    setSelectedStateCode('all');
+    setSelectedCountyName('all');
+    setSelectedCityName('all');
+    setAgencyCategoryFilter('all');
+    setRegionFilter('All');
+    setStateFilterInput('');
+    setCountyFilterInput('');
+    setCityFilterInput('');
+    setAgencyPage(1);
+    onSyncGlobalGeography?.('all', 'all', 'all', 'all');
+  };
+
+  const clearAgencyFilters = () => {
+    setZipSearchQuery('');
+    setAgencyCategoryFilter('all');
+    setStateFilterInput('');
+    setCountyFilterInput('');
+    setCityFilterInput('');
+    setRegionFilter('All');
+    setAgencyPage(1);
+    onSyncGlobalGeography?.('all', 'all', 'all', 'all');
+  };
 
   // Aggregated metrics for 'County Summary' mode across the active state or county
   const aggregatedMetrics = useMemo(() => {
@@ -1720,33 +1827,38 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           </div>
 
           {selectedStateCode !== 'all' && (
-            <RealWorldCountyBoundaryMap
-              stateCode={selectedStateCode}
-              selectedCountyName="all"
-              selectedCityName="all"
-              agencies={agencies}
-              showExplorerHeader={false}
-              onSelectCounty={(countyName, stCode) => {
-                setSelectedStateCode(stCode);
-                setSelectedCountyName(countyName);
-                setSelectedCityName('all');
-                setMiddleTab('cities');
-                setAgencyPage(1);
-                if (onSyncGlobalGeography) {
-                  onSyncGlobalGeography(stCode, countyName, 'all', agencyCategoryFilter);
-                }
-              }}
-              onSelectCity={(cityName, countyName, stCode) => {
-                setSelectedStateCode(stCode);
-                setSelectedCountyName(countyName);
-                setSelectedCityName(cityName);
-                setMiddleTab('cities');
-                setAgencyPage(1);
-                if (onSyncGlobalGeography) {
-                  onSyncGlobalGeography(stCode, countyName, cityName, agencyCategoryFilter);
-                }
-              }}
-            />
+            <ErrorBoundary
+              key={`state-map:${selectedStateCode}`}
+              fallback={<TerritoryMapFailureFallback title="State county map unavailable" />}
+            >
+              <RealWorldCountyBoundaryMap
+                stateCode={selectedStateCode}
+                selectedCountyName="all"
+                selectedCityName="all"
+                agencies={agencies}
+                showExplorerHeader={false}
+                onSelectCounty={(countyName, stCode) => {
+                  setSelectedStateCode(stCode);
+                  setSelectedCountyName(countyName);
+                  setSelectedCityName('all');
+                  setMiddleTab('cities');
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) {
+                    onSyncGlobalGeography(stCode, countyName, 'all', agencyCategoryFilter);
+                  }
+                }}
+                onSelectCity={(cityName, countyName, stCode) => {
+                  setSelectedStateCode(stCode);
+                  setSelectedCountyName(countyName);
+                  setSelectedCityName(cityName);
+                  setMiddleTab('cities');
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) {
+                    onSyncGlobalGeography(stCode, countyName, cityName, agencyCategoryFilter);
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           <div className="cv-dir-head county-directory-heading" id="county-directory">
@@ -2002,22 +2114,27 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
           {/* Real-World County Boundary Polygon & Plotted City Jurisdiction Inspector */}
           {selectedStateCode !== 'all' && selectedCountyName !== 'all' && (
-            <RealWorldCountyBoundaryMap
-              stateCode={selectedStateCode}
-              selectedCountyName={selectedCountyName}
-              selectedCityName={selectedCityName}
-              agencies={agencies}
-              onSelectCounty={(countyName, stCode) => handleSelectCounty(countyName, stCode)}
-              onSelectCity={(cityName, countyName, stCode) => handleSelectCity(cityName, countyName, stCode)}
-              showExplorerHeader={false}
-              onShowAllPlaces={() => {
-                setSelectedCityName('all');
-                setAgencyPage(1);
-                if (onSyncGlobalGeography) {
-                  onSyncGlobalGeography(selectedStateCode, selectedCountyName, 'all', agencyCategoryFilter);
-                }
-              }}
-            />
+            <ErrorBoundary
+              key={`county-map:${selectedStateCode}:${selectedCountyName}`}
+              fallback={<TerritoryMapFailureFallback title="County boundary map unavailable" />}
+            >
+              <RealWorldCountyBoundaryMap
+                stateCode={selectedStateCode}
+                selectedCountyName={selectedCountyName}
+                selectedCityName={selectedCityName}
+                agencies={agencies}
+                onSelectCounty={(countyName, stCode) => handleSelectCounty(countyName, stCode)}
+                onSelectCity={(cityName, countyName, stCode) => handleSelectCity(cityName, countyName, stCode)}
+                showExplorerHeader={false}
+                onShowAllPlaces={() => {
+                  setSelectedCityName('all');
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) {
+                    onSyncGlobalGeography(selectedStateCode, selectedCountyName, 'all', agencyCategoryFilter);
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Collapsible Connected City Filter Drawer */}
@@ -2089,9 +2206,76 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           )}
 
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
+          <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">
+            <div>
+              <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong>
+              <span> in {selectedAreaLabel}</span>
+            </div>
+            <div className="territory-active-filters" aria-label="Active filters">
+              {activeAgencyFilters.length
+                ? activeAgencyFilters.map((filter) => <span key={filter}>{filter}</span>)
+                : <span>No active search or provider-type filters</span>}
+            </div>
+            {activeAgencyFilters.length > 0 && (
+              <button type="button" className="workspace-text-button" onClick={clearAgencyFilters}>Clear filters</button>
+            )}
+          </div>
+
+          {effectiveDirectoryStatus === 'loading' && selectedStateCode !== 'all' && (
+            <p className="territory-data-status" role="status">
+              Loading saved agency records for {ALL_50_STATES_SUMMARIES[selectedStateCode]?.state || selectedStateCode}. Cached records, if available, remain visible.
+            </p>
+          )}
+          {effectiveDirectoryStatus === 'unavailable' && selectedStateCode !== 'all' && (
+            <p className="territory-data-status territory-data-status--unavailable" role="status">
+              Live agency records for this state are unavailable. Any results shown are from the saved directory; an empty result is not a confirmed absence.
+            </p>
+          )}
+
           {paginatedAgencies.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-xs">
-              No providers matched the current filter. Click Reset or return to Counties.
+            <div className="territory-empty-state" role={effectiveDirectoryStatus === 'loading' ? 'status' : 'region'}>
+              {effectiveDirectoryStatus === 'loading' && selectedStateCode !== 'all' ? (
+                <>
+                  <strong>Agency records are still loading.</strong>
+                  <span>This view will update when the saved records for the selected state are available.</span>
+                </>
+              ) : effectiveDirectoryStatus === 'unavailable' && selectedStateCode !== 'all' ? (
+                <>
+                  <strong>Agency data could not be refreshed.</strong>
+                  <span>No matching saved records are available for this selection. This is not a verified empty provider list.</span>
+                </>
+              ) : agencies.length === 0 ? (
+                <>
+                  <strong>No agency records are saved in this directory.</strong>
+                  <span>This means there are no saved records to display; it does not establish that no agencies operate here.</span>
+                </>
+              ) : debouncedZipQuery.trim() ? (
+                <>
+                  <strong>No saved provider records match “{debouncedZipQuery.trim()}” in {selectedAreaLabel}.</strong>
+                  <span>Check spelling or abbreviations, clear the search, or widen the area.</span>
+                </>
+              ) : selectedAreaLabel !== 'all states' ? (
+                <>
+                  <strong>No saved provider records match the selected area and filters.</strong>
+                  <span>Choose a broader area or remove the provider-type filter.</span>
+                </>
+              ) : (
+                <>
+                  <strong>No saved provider records match the current filters.</strong>
+                  <span>Clear filters or search all agencies to broaden the results.</span>
+                </>
+              )}
+              <div className="territory-empty-actions">
+                {debouncedZipQuery.trim() && (
+                  <button type="button" className="workspace-button" onClick={() => { setZipSearchQuery(''); setAgencyPage(1); }}>Clear search</button>
+                )}
+                {selectedAreaLabel !== 'all states' && (
+                  <button type="button" className="workspace-button" onClick={searchAllAgencies}>Search all agencies</button>
+                )}
+                {activeAgencyFilters.length > 0 && (
+                  <button type="button" className="workspace-text-button" onClick={clearAgencyFilters}>Clear filters</button>
+                )}
+              </div>
             </div>
           ) : providerViewMode === 'cards' ? (
             <div className="workspace-cards-grid">

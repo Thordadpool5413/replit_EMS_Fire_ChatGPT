@@ -355,3 +355,10 @@
 @media (min-width: 768px) and (max-height: 500px) {
   .territory-explorer-screen { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important; }
 }
+
+@media (max-width: 767px) {
+  .territory-explorer-screen .territory-results-summary { align-items: flex-start; }
+  .territory-explorer-screen .territory-results-summary > button,
+  .territory-explorer-screen .territory-empty-actions > button { min-height: 44px; }
+  .territory-explorer-screen .territory-empty-state { padding: 1rem .7rem; }
+}

@@ -1,6 +1,12 @@
 import type { Agency, SyncOutboxItem } from '../types';
 
 const validDate = (value: unknown) => typeof value === 'string' && (value === '' || (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value));
+const normalizeFollowUpText = (value: string) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
+  .trim()
+  .replace(/\s+/g, ' ');
 
 /** Apply only the user's changed fields. Never replace a newer complete cloud record. */
 export function applyAgencyMutation(current: Agency | undefined, item: SyncOutboxItem, checkConflicts = false): Agency {
@@ -28,7 +34,18 @@ export function applyAgencyMutation(current: Agency | undefined, item: SyncOutbo
   if (item.actionType === 'CREATE_FOLLOW_UP') {
     const task = item.payload.task;
     if (!task?.id || typeof task.nextAction !== 'string' || !task.nextAction.trim() || !task.taskOnly || !validDate(task.dueDate) || !['low','normal','high'].includes(task.priority) || typeof task.owner !== 'string') throw new Error('A task needs an agency and action.');
-    if (!(result.followUpTasks ?? []).some(t => t.id === task.id)) result.followUpTasks = [...(result.followUpTasks ?? []), { ...task, history: [{ id: item.id, at: item.timestamp, before: {}, after: { nextAction: task.nextAction, dueDate: task.dueDate, owner: task.owner, priority: task.priority, followUpStatus: 'open' } }] }];
+    if ((result.followUpTasks ?? []).some(existing => existing.id === task.id)) return result;
+    const normalizedAction = normalizeFollowUpText(task.nextAction);
+    const duplicate = [...(result.fieldNotes ?? []), ...(result.followUpTasks ?? [])].find((existing) => {
+      const existingAction = existing.nextAction ? normalizeFollowUpText(existing.nextAction) : '';
+      return existingAction === normalizedAction &&
+        (existing.followUpStatus ?? 'open') === 'open' &&
+        (!task.dueDate || !existing.dueDate || task.dueDate === existing.dueDate);
+    });
+    if (duplicate) {
+      throw new Error('An open next action already exists for this agency. Edit the existing action instead of creating a duplicate.');
+    }
+    result.followUpTasks = [...(result.followUpTasks ?? []), { ...task, history: [{ id: item.id, at: item.timestamp, before: {}, after: { nextAction: task.nextAction, dueDate: task.dueDate, owner: task.owner, priority: task.priority, followUpStatus: 'open' } }] }];
   }
   if (item.actionType === 'UPDATE_FOLLOW_UP') {
     const { noteId, changes, expected } = item.payload;

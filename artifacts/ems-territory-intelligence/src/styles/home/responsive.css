@@ -254,8 +254,7 @@
 
 @media (max-width: 767px) {
 
-  .home-territory-map-screen-v2 .home-map-legend-title,
-.home-territory-map-screen-v2 .home-map-legend-missing-note {
+  .home-territory-map-screen-v2 .home-map-legend-missing-note {
     display: none !important;
   }
 }
@@ -829,17 +828,24 @@
 
 @media (max-width: 767px) {
   .home-territory-map-screen-v2 .home-map-legend-v2 {
+    background: #101f30 !important;
+    border-color: #294158 !important;
     align-items: center;
     column-gap: 0.5rem !important;
     row-gap: 0.35rem !important;
   }
+  .home-map-legend-v2 { background: #101f30 !important; border-color: #294158 !important; }
 }
 
 @media (max-width: 767px) {
 
   .home-territory-map-screen-v2 .home-map-legend-v2 .home-map-legend-title {
-    display: none !important;
+    display: block !important;
   }
+}
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-legend-v2 .home-map-legend-title { display: block !important; }
 }
 
 @media (max-width: 767px) {

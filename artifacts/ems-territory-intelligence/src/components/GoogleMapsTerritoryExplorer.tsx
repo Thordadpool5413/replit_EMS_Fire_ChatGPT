@@ -46,6 +46,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { formatCurrency, formatScore, formatDistanceMiles, formatInteger } from '../utils/numberFormatting';
+import { agencySearchScore } from '../utils/agencySearch';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import {
@@ -77,6 +78,38 @@ interface GoogleMapsTerritoryExplorerProps {
   onSwitchToTacticalGis?: () => void;
   comparedAgencyIds?: string[];
   onToggleAgencyComparison?: (agency: Agency) => void;
+}
+
+const GOOGLE_MAP_SESSION_KEY = 'ems-google-territory-filters-v1';
+type GoogleMapFilterSession = {
+  searchQuery?: string;
+  selectedTier?: string;
+  minPulseIqScore?: string;
+  maxPulseIqScore?: string;
+  mapTypeId?: string;
+  nearMeRadiusMiles?: number;
+  mapBuilt?: boolean;
+};
+
+function readGoogleMapFilterSession(): GoogleMapFilterSession {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(GOOGLE_MAP_SESSION_KEY) || '{}') as GoogleMapFilterSession;
+    return {
+      searchQuery: typeof saved.searchQuery === 'string' ? saved.searchQuery : '',
+      selectedTier: typeof saved.selectedTier === 'string' ? saved.selectedTier : 'all',
+      minPulseIqScore: typeof saved.minPulseIqScore === 'string' ? saved.minPulseIqScore : '',
+      maxPulseIqScore: typeof saved.maxPulseIqScore === 'string' ? saved.maxPulseIqScore : '',
+      mapTypeId: ['roadmap', 'satellite', 'hybrid', 'terrain'].includes(saved.mapTypeId || '')
+        ? saved.mapTypeId
+        : 'roadmap',
+      nearMeRadiusMiles: Number.isFinite(saved.nearMeRadiusMiles)
+        ? Math.max(5, Math.min(100, saved.nearMeRadiusMiles!))
+        : 25,
+      mapBuilt: saved.mapBuilt === true,
+    };
+  } catch {
+    return {};
+  }
 }
 
 const TIER_COLORS: Record<PriorityTier, { bg: string; border: string; glyph: string; badge: string }> = {
@@ -259,6 +292,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   const activeApiKey = envKey || storedKey;
   const [keyInputDraft, setKeyInputDraft] = useState<string>('');
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
+  const [savedMapFilters] = useState(readGoogleMapFilterSession);
 
   // Territory Selection Form State for Map Building (Anti-Crash Gateway)
   const [targetState, setTargetState] = useState<string>(globalState !== 'all' ? globalState : 'IL');
@@ -273,12 +307,12 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   });
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isNearMeActive, setIsNearMeActive] = useState<boolean>(false);
-  const [nearMeRadiusMiles, setNearMeRadiusMiles] = useState<number>(25);
+  const [nearMeRadiusMiles, setNearMeRadiusMiles] = useState<number>(savedMapFilters.nearMeRadiusMiles ?? 25);
 
   // Manual Map Building Trigger (Crash Prevention: Do NOT load national view by default)
   const [hasUserBuiltMap, setHasUserBuiltMap] = useState<boolean>(() => {
     // If a specific state & county is already selected or an account is active, allow building immediately
-    return Boolean(activeAccount) || (globalState !== 'all' && globalCounty !== 'all');
+    return Boolean(activeAccount) || savedMapFilters.mapBuilt === true || (globalState !== 'all' && globalCounty !== 'all');
   });
 
   // Query browser geolocation permission status
@@ -296,13 +330,31 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   }, []);
 
   // Filters & Map Display Settings
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedTier, setSelectedTier] = useState<string>('all');
-  const [minPulseIqScore, setMinPulseIqScore] = useState<string>('');
-  const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(savedMapFilters.searchQuery ?? '');
+  const [selectedTier, setSelectedTier] = useState<string>(savedMapFilters.selectedTier ?? 'all');
+  const [minPulseIqScore, setMinPulseIqScore] = useState<string>(savedMapFilters.minPulseIqScore ?? '');
+  const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>(savedMapFilters.maxPulseIqScore ?? '');
   const [selectedAgencyForInfo, setSelectedAgencyForInfo] = useState<Agency | null>(null);
-  const [mapTypeId, setMapTypeId] = useState<string>('roadmap');
+  const [mapTypeId, setMapTypeId] = useState<string>(savedMapFilters.mapTypeId ?? 'roadmap');
   const [showNearbyDrawer, setShowNearbyDrawer] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(GOOGLE_MAP_SESSION_KEY, JSON.stringify({
+        searchQuery,
+        selectedTier,
+        minPulseIqScore,
+        maxPulseIqScore,
+        mapTypeId,
+        nearMeRadiusMiles,
+        // Never restore a nearby search as a nationwide search; the user's
+        // precise location intentionally remains in memory only.
+        mapBuilt: hasUserBuiltMap && !isNearMeActive,
+      } satisfies GoogleMapFilterSession));
+    } catch {
+      // Session storage is optional; map filters remain usable without it.
+    }
+  }, [searchQuery, selectedTier, minPulseIqScore, maxPulseIqScore, mapTypeId, nearMeRadiusMiles, hasUserBuiltMap, isNearMeActive]);
 
   // Available counties for currently targeted state
   const countiesInTargetState = useMemo(() => {
@@ -435,14 +487,12 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
     // 5. Search Query
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      pool = pool.filter(a =>
-        a.name.toLowerCase().includes(q) ||
-        a.city.toLowerCase().includes(q) ||
-        a.county.toLowerCase().includes(q) ||
-        a.fdid.toLowerCase().includes(q) ||
-        (a.zipCode && a.zipCode.includes(q))
-      );
+      const query = searchQuery.trim();
+      pool = pool
+        .map((agency) => ({ agency, score: agencySearchScore(agency, query) }))
+        .filter((result) => result.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(({ agency }) => agency);
     }
 
     // 6. PulseIQ range; missing or invalid estimates are excluded only while a bound is active.

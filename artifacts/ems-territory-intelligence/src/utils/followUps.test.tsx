@@ -47,10 +47,12 @@ test('workspace renders account action, date controls and useful empty state',()
   assert.match(empty,/No follow-ups yet/);
 });
 test('standalone tasks preserve contact dates and visit history; edits retain before and after values',()=>{
- const task={...note,id:'task-a',taskOnly:true,owner:'',priority:'normal' as const};
- const created=applyAgencyMutation(agency,{...mutation({}),actionType:'CREATE_FOLLOW_UP',payload:{task}});
+ const task={...note,id:'task-a',nextAction:'Review equipment inventory',taskOnly:true,owner:'',priority:'normal' as const};
+  const create={...mutation({}),actionType:'CREATE_FOLLOW_UP' as const,payload:{task}};
+  const created=applyAgencyMutation(agency,create);
  assert.equal(created.fieldNotes.length,1);assert.equal(created.lastContactDate,agency.lastContactDate);
  assert.equal(created.followUpTasks?.length,1);assert.equal(collectFollowUps([created]).length,2);
+  assert.deepEqual(applyAgencyMutation(created,create,true),created);
  const edit={...mutation({}),id:'task-edit',payload:{taskOnly:true,noteId:task.id,expected:{nextAction:task.nextAction},changes:{nextAction:'Send equipment summary',owner:'Nick',priority:'high',dueDate:'2026-11-20',followUpStatus:'open'}}};
  const updated=applyAgencyMutation(created,edit,true);
  assert.equal(updated.followUpTasks?.[0].owner,'Nick');
@@ -58,4 +60,13 @@ test('standalone tasks preserve contact dates and visit history; edits retain be
  assert.equal(updated.followUpTasks?.[0].history?.[1].after.nextAction,'Send equipment summary');
  assert.deepEqual(applyAgencyMutation(updated,edit,true),updated);
  assert.throws(()=>applyAgencyMutation(updated,{...edit,id:'other',payload:{...edit.payload,changes:{...edit.payload.changes,nextAction:'Conflicting action'}}},true),/Another device/);
+});
+test('standalone task creation refuses to duplicate an open visit next action',()=>{
+  const task={...note,id:'duplicate-task',nextAction:'Schedule evaluation!',taskOnly:true,owner:'',priority:'normal' as const};
+ assert.throws(
+  ()=>applyAgencyMutation(agency,{...mutation({}),actionType:'CREATE_FOLLOW_UP',payload:{task}}),
+  /open next action already exists/,
+ );
+ assert.equal(agency.fieldNotes[0].nextAction,'Schedule evaluation');
+ assert.equal(agency.followUpTasks,undefined);
 });

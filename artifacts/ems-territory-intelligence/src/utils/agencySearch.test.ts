@@ -14,3 +14,9 @@ test('EMS abbreviations expand to whole words',()=>{
  assert.ok(agencySearchScore(ems,'EMS Brevard')>0);
  assert.equal(agencySearchScore(ems,'fire Brevard'),0);
 });
+test('provider categories are searchable without making short fragments broad matches',()=>{
+ const ems={...agency,name:'Brevard County Rescue',agencyType:'EMS Provider',providerCategory:'EMS',alternateNames:[]};
+ assert.ok(agencySearchScore(ems,'EMS')>0);
+ assert.equal(agencySearchScore(ems,'em'),0);
+ assert.equal(agencySearchScore(ems,'TX'),0);
+});

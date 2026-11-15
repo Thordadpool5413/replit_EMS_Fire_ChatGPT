@@ -41,6 +41,7 @@ import { TopBar } from './components/TopBar';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { WorkspaceLoadingState } from './components/WorkspaceLoadingState';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { HomeMapFailureFallback } from './components/HomeMapFallbacks';
 import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
 import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
@@ -112,6 +113,7 @@ type TerritoryNavigationEntry = {
   agencyId?: string;
   comparisonOpen: boolean;
   returnToComparison: boolean;
+  scrollY?: number;
   index: number;
 };
 
@@ -153,6 +155,7 @@ export default function App() {
   // Real-time synchronization hook connected to Firebase Firestore cloud backend
   const {
     agencies,
+    directoryStatus,
     isCloudConnected,
     cloudSyncCount,
     isSyncing: isCloudSyncing,
@@ -251,11 +254,12 @@ export default function App() {
     agencyId: (selectedAgency || activeAccount)?.id,
     comparisonOpen: isAgencyComparisonOpen,
     returnToComparison: returnToComparisonAfterProfile,
+    scrollY: window.scrollY,
     index: navigationIndexRef.current,
   };
 
   const pushNavigationEntry = useCallback((next: Omit<TerritoryNavigationEntry, 'index'>) => {
-    const current = navigationSnapshotRef.current;
+    let current = navigationSnapshotRef.current;
     if (current &&
       current.workspace === next.workspace &&
       current.state === next.state &&
@@ -268,8 +272,24 @@ export default function App() {
       return current;
     }
 
+    if (current) {
+      current = { ...current, scrollY: Math.max(0, window.scrollY) };
+      try {
+        window.history.replaceState(
+          { ...(window.history.state || {}), territoryNavigation: current },
+          '',
+          withTerritoryUrl(window.location.href, current, territoryUrlValidators),
+        );
+        navigationEntriesRef.current.set(current.index, current);
+        navigationSnapshotRef.current = current;
+      } catch {
+        // The next history entry still works if scroll preservation is unavailable.
+      }
+    }
+
     const entry: TerritoryNavigationEntry = {
       ...next,
+      scrollY: next.scrollY ?? Math.max(0, window.scrollY),
       index: navigationIndexRef.current + 1,
     };
     try {
@@ -329,6 +349,7 @@ export default function App() {
         ? countyRecord?.countyName || 'all'
         : 'all',
       category: restoredCategory,
+      scrollY: Math.max(0, Number.isFinite(entry.scrollY) ? entry.scrollY! : 0),
     };
     const agency = restoredEntry.agencyId
       ? agenciesRef.current.find((candidate) => candidate.id === restoredEntry.agencyId) ?? null
@@ -355,6 +376,18 @@ export default function App() {
     setActiveAccount(agency);
     setReturnToComparisonAfterProfile(restoredEntry.returnToComparison);
     setIsAgencyComparisonOpen(restoredEntry.comparisonOpen);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.scrollTo({ top: restoredEntry.scrollY, behavior: 'auto' }));
+    });
+  }, []);
+
+  useEffect(() => {
+    const rememberScroll = () => {
+      const current = navigationSnapshotRef.current;
+      if (current) navigationSnapshotRef.current = { ...current, scrollY: Math.max(0, window.scrollY) };
+    };
+    window.addEventListener('scroll', rememberScroll, { passive: true });
+    return () => window.removeEventListener('scroll', rememberScroll);
   }, []);
 
   useEffect(() => {
@@ -738,6 +771,7 @@ export default function App() {
           agencyId: current.agencyId,
           comparisonOpen: current.comparisonOpen,
           returnToComparison: current.returnToComparison,
+          scrollY: window.scrollY,
         });
         pushNavigationEntry({
           workspace: current.workspace,
@@ -748,6 +782,7 @@ export default function App() {
           agencyId: profileAgency.id,
           comparisonOpen: false,
           returnToComparison,
+          scrollY: 0,
         });
       }
     }
@@ -829,6 +864,7 @@ export default function App() {
         agencyId: undefined,
         comparisonOpen: false,
         returnToComparison: false,
+        scrollY: 0,
       });
     }
     setSelectedAgency(null);
@@ -861,6 +897,7 @@ export default function App() {
         agencyId: undefined,
         comparisonOpen: false,
         returnToComparison: false,
+        scrollY: 0,
       });
     }
     setSelectedAgency(null);
@@ -965,6 +1002,7 @@ export default function App() {
         agencyId: undefined,
         comparisonOpen: false,
         returnToComparison: false,
+        scrollY: 0,
       });
     }
     setGlobalState(state || 'all');
@@ -1256,17 +1294,20 @@ export default function App() {
         {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} />}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
-            <HomeHubView
-              agencies={agencies}
-              onNavigateTab={handleNavigateTab}
-              globalCategory={globalCategory}
-              globalState={globalState}
-              globalCounty={globalCounty}
-              globalCity={globalCity}
-              onSelectState={(st) => {
-                handleNavigateGeography(st, 'all', 'all');
-              }}
-            />
+            <ErrorBoundary fallback={<HomeMapFailureFallback onBrowseDirectory={() => handleNavigateTab('states_directory')} />}>
+              <HomeHubView
+                agencies={agencies}
+                onNavigateTab={handleNavigateTab}
+                onClearGeography={handleClearGeography}
+                globalCategory={globalCategory}
+                globalState={globalState}
+                globalCounty={globalCounty}
+                globalCity={globalCity}
+                onSelectState={(st) => {
+                  handleNavigateGeography(st, 'all', 'all');
+                }}
+              />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -1291,6 +1332,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <PredictiveLeadQueue
               agencies={agencies}
+              directoryStatus={directoryStatus}
               onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onToggleRoute={handleToggleRoute}
@@ -1443,6 +1485,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <NationalGeographicExplorer
               agencies={agencies}
+              directoryStatus={directoryStatus}
               weights={weights}
               initialMode={
                 globalCounty !== 'all' || globalCity !== 'all'
@@ -1475,6 +1518,7 @@ export default function App() {
                     agencyId: undefined,
                     comparisonOpen: false,
                     returnToComparison: false,
+                    scrollY: 0,
                   });
                 }
                 setSelectedAgency(null);
@@ -1552,6 +1596,7 @@ export default function App() {
                     agencyId: undefined,
                     comparisonOpen: false,
                     returnToComparison: false,
+                    scrollY: 0,
                   });
                 }
                 setGlobalState(stateCode);

@@ -17,6 +17,7 @@ import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStates
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
 import { DataLabel, inferDataLabelKind } from './DataLabel';
+import { HomeMapUnavailableFallback } from './HomeMapFallbacks';
 
 const HOME_MAP_TRANSLATE_X = 48;
 // Tight frame around the drawn content (states, AK/HI insets, east-coast callouts)
@@ -168,6 +169,7 @@ const readableTextForFill = (hexColor: string) => {
 interface HomeHubViewProps {
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
+  onClearGeography?: () => void;
   globalCategory: 'all' | 'ems' | 'fire';
   globalState?: string;
   globalCounty?: string;
@@ -178,6 +180,7 @@ interface HomeHubViewProps {
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
   agencies,
   onNavigateTab,
+  onClearGeography,
   globalCategory,
   globalState,
   globalCounty,
@@ -186,12 +189,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 }) => {
   const [selectedStateCode, setSelectedStateCode] = useState<string>(() => {
     const code = globalState?.trim().toUpperCase();
-    const saved = readMapPreference('state', 'FL').toUpperCase();
     return code && code !== 'ALL' && ALL_50_STATES_SUMMARIES[code]
       ? code
-      : ALL_50_STATES_SUMMARIES[saved]
-        ? saved
-        : 'FL';
+      : 'all';
   });
   const [hoveredStateCode, setHoveredStateCode] = useState<string | null>(null);
   const [focusedStateCode, setFocusedStateCode] = useState<string | null>(null);
@@ -232,8 +232,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     const code = globalState?.trim().toUpperCase();
     if (code && code !== 'ALL' && ALL_50_STATES_SUMMARIES[code]) {
       setSelectedStateCode(code);
+    } else {
+      setSelectedStateCode('all');
     }
   }, [globalState]);
+
+  const hasNationwideMapGeometry = Object.keys(US_STATES_SVG_PATHS).length >= 50;
 
 
   const stateStatsByCode = useMemo(() => {
@@ -468,7 +472,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </p>
           </div>
 
-          <button type="button" className="workspace-text-button" onClick={()=>{setRegionFilter('All');saveMapPreference('region','All');resetMapZoom();}}>National view</button>
+          <button type="button" className="workspace-text-button" onClick={()=>{
+            setSelectedStateCode('all');
+            setRegionFilter('All');
+            saveMapPreference('region','All');
+            resetMapZoom();
+            onClearGeography?.();
+          }}>National view</button>
           <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
           {/* Region Filter Segmented Control */}
           <div className="home-map-region-filter max-w-full overflow-x-auto">
@@ -494,6 +504,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </div>
           </div>
         </div>
+
+        {agencies.length === 0 && (
+          <div className="home-map-data-status" role="status">
+            <strong>No agency records are available in the saved directory.</strong>
+            <span>Map coverage and agency records are separate. Check data status or open the directory to review what is available.</span>
+            <button type="button" className="workspace-text-button" onClick={() => onNavigateTab('states_directory')}>Open agency directory</button>
+          </div>
+        )}
 
         {/* The Home screen keeps the interactive map as its only main content. */}
         <div className="grid grid-cols-1 gap-4 items-start">
@@ -559,7 +577,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </details>
               </div>
 
-              <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+              {hasNationwideMapGeometry && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
@@ -584,10 +602,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]" data-testid="text-map-legend-coverage">
                   {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero
                 </span>
-              </div>
+              </div>}
 
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
               <div className="home-map-visual-stack home-map-visual-v2">
+              {hasNationwideMapGeometry ? (
               <div
                 ref={mapViewportRef}
                 data-map-zoom={mapZoom}
@@ -767,6 +786,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </g>
               </svg>
               </div>
+              ) : (
+                <HomeMapUnavailableFallback onBrowseDirectory={() => onNavigateTab('states_directory')} />
+              )}
 
               {(() => {
                 const previewStateCode = hoveredStateCode ?? focusedStateCode;

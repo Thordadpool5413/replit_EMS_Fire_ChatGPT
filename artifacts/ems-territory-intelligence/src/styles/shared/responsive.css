@@ -217,6 +217,19 @@ button { -webkit-tap-highlight-color: transparent; }
   }
 }
 
+@media (max-width: 767px) {
+  .workspace-grid-shell :is(
+    button,
+    [role="button"],
+    select,
+    summary,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"])
+  ) {
+    min-height: 44px !important;
+  }
+  .workspace-grid-shell :is(button, [role="button"]) { min-width: 44px !important; }
+}
+
 @media (min-width: 768px) {
 
   .workspace-grid-shell > nav[data-testid="territory-context-breadcrumb"] {

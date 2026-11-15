@@ -19,6 +19,7 @@ import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { MobileProviderSelectorPulseIqScore } from './PulseIqSurfaceDisplays';
 import { findNearbyAgencies, type Coordinates } from '../utils/nearbyAgencySearch';
+import { agencySearchScore } from '../utils/agencySearch';
 
 interface MobileProviderSelectorDrawerProps {
   isOpen: boolean;
@@ -39,6 +40,36 @@ interface MobileProviderSelectorDrawerProps {
   nearbyError?: string | null;
   onRetryNearby?: () => void;
   onBrowseAll?: () => void;
+}
+
+const MOBILE_PROVIDER_SEARCH_SESSION_KEY = 'ems-mobile-provider-search-v1';
+type MobileProviderSearchSession = {
+  parentState?: string;
+  parentCounty?: string;
+  parentCategory?: 'all' | 'ems' | 'fire';
+  searchTerm?: string;
+  sortBy?: 'pulseIq' | 'fleetAge' | 'calls' | 'name';
+  localCategory?: 'all' | 'ems' | 'fire';
+  localState?: string;
+  localCounty?: string;
+  radius?: number;
+};
+
+function readMobileProviderSearchSession(): MobileProviderSearchSession {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(MOBILE_PROVIDER_SEARCH_SESSION_KEY) || '{}') as MobileProviderSearchSession;
+    return {
+      ...value,
+      searchTerm: typeof value.searchTerm === 'string' ? value.searchTerm : '',
+      sortBy: ['pulseIq', 'fleetAge', 'calls', 'name'].includes(value.sortBy || '') ? value.sortBy : 'pulseIq',
+      localCategory: ['all', 'ems', 'fire'].includes(value.localCategory || '') ? value.localCategory : undefined,
+      localState: typeof value.localState === 'string' ? value.localState : undefined,
+      localCounty: typeof value.localCounty === 'string' ? value.localCounty : undefined,
+      radius: Number.isFinite(value.radius) ? Math.max(5, Math.min(100, value.radius!)) : 25,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawerProps> = ({
@@ -63,12 +94,23 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'name'>('pulseIq');
-  const [localCategory, setLocalCategory] = useState<'all' | 'ems' | 'fire'>(activeCategory);
-  const [localState, setLocalState] = useState<string>(selectedState);
-  const [localCounty, setLocalCounty] = useState<string>(selectedCounty);
-  const [nearbyRadiusMiles, setNearbyRadiusMiles] = useState(25);
+  const [savedSearchState] = useState(readMobileProviderSearchSession);
+  const canRestoreLocalScope = savedSearchState.parentState === selectedState &&
+    savedSearchState.parentCounty === selectedCounty &&
+    savedSearchState.parentCategory === activeCategory;
+  const [searchTerm, setSearchTerm] = useState(savedSearchState.searchTerm ?? '');
+  const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'name'>(savedSearchState.sortBy ?? 'pulseIq');
+  const [localCategory, setLocalCategory] = useState<'all' | 'ems' | 'fire'>(
+    canRestoreLocalScope ? savedSearchState.localCategory ?? activeCategory : activeCategory,
+  );
+  const [localState, setLocalState] = useState<string>(
+    canRestoreLocalScope ? savedSearchState.localState ?? selectedState : selectedState,
+  );
+  const [localCounty, setLocalCounty] = useState<string>(
+    canRestoreLocalScope ? savedSearchState.localCounty ?? selectedCounty : selectedCounty,
+  );
+  const [nearbyRadiusMiles, setNearbyRadiusMiles] = useState(savedSearchState.radius ?? 25);
+  const previousParentFiltersRef = useRef({ activeCategory, selectedState, selectedCounty });
 
   const nearbyMatches = useMemo(
     () => findNearbyAgencies(agencies, nearbyLocation, nearbyRadiusMiles),
@@ -79,14 +121,35 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
     [nearbyMatches],
   );
 
-  // Sync props when opening
   React.useEffect(() => {
-    if (isOpen) {
-      setLocalCategory(activeCategory);
+    const previous = previousParentFiltersRef.current;
+    if (previous.activeCategory !== activeCategory) setLocalCategory(activeCategory);
+    if (previous.selectedState !== selectedState) {
       setLocalState(selectedState);
       setLocalCounty(selectedCounty);
+    } else if (previous.selectedCounty !== selectedCounty) {
+      setLocalCounty(selectedCounty);
     }
-  }, [isOpen, activeCategory, selectedState, selectedCounty]);
+    previousParentFiltersRef.current = { activeCategory, selectedState, selectedCounty };
+  }, [activeCategory, selectedState, selectedCounty]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(MOBILE_PROVIDER_SEARCH_SESSION_KEY, JSON.stringify({
+        parentState: selectedState,
+        parentCounty: selectedCounty,
+        parentCategory: activeCategory,
+        searchTerm,
+        sortBy,
+        localCategory,
+        localState,
+        localCounty,
+        radius: nearbyRadiusMiles,
+      } satisfies MobileProviderSearchSession));
+    } catch {
+      // Current-device session persistence is optional.
+    }
+  }, [activeCategory, selectedState, selectedCounty, searchTerm, sortBy, localCategory, localState, localCounty, nearbyRadiusMiles]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -147,21 +210,22 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
     }
 
     // Search query
-    const q = searchTerm.trim().toLowerCase();
+    const q = searchTerm.trim();
     if (q) {
-      pool = pool.filter(a =>
-        a.name.toLowerCase().includes(q) ||
-        a.city.toLowerCase().includes(q) ||
-        a.county.toLowerCase().includes(q) ||
-        (a.zipCode && a.zipCode.includes(q)) ||
-        (a.fdid && a.fdid.toLowerCase().includes(q)) ||
-        (a.npiNumber && a.npiNumber.includes(q))
-      );
+      pool = pool.filter((agency) => agencySearchScore(agency, q) > 0);
     }
 
     // Sort
-    if (nearbyMode) return pool;
+    if (nearbyMode) {
+      return q
+        ? [...pool].sort((a, b) => agencySearchScore(b, q) - agencySearchScore(a, q))
+        : pool;
+    }
     const sorted = [...pool].sort((a, b) => {
+      if (q) {
+        const relevance = agencySearchScore(b, q) - agencySearchScore(a, q);
+        if (relevance) return relevance;
+      }
       if (sortBy === 'pulseIq') {
         return (b.zollOpportunity?.pulseIqScore || 0) - (a.zollOpportunity?.pulseIqScore || 0);
       }

@@ -156,7 +156,8 @@
 .profile-workspace .profile-more-actions-menu {
   position: absolute;
   top: calc(100% + .45rem);
-  left: 0;
+  right: 0;
+  left: auto;
   z-index: 60;
   display: flex;
   width: min(36rem, calc(100vw - 2rem));

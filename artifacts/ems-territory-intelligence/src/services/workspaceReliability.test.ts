@@ -52,19 +52,37 @@ test('reviews merge by stable identity on retry', () => {
   assert.equal(applyAgencyMutation(once,item)._factReviews?.length,1);
 });
 test('workspace backup restores reviews, research, new agencies, and a local-only journal', () => {
+  const task = {
+    id: 'task-1',
+    date: '2026-11-14',
+    repName: '',
+    meetingType: 'Standalone task',
+    notes: '',
+    nextAction: 'Review recorded monitor inventory',
+    dueDate: '2026-11-20',
+    owner: '',
+    priority: 'high',
+    taskOnly: true,
+    followUpStatus: 'open',
+    history: [{ id: 'task-create-1', at: '2026-11-14T12:00:00Z', before: {}, after: { nextAction: 'Review recorded monitor inventory', dueDate: '2026-11-20', owner: '', priority: 'high', followUpStatus: 'open' } }],
+  } as unknown as NonNullable<Agency['followUpTasks']>[number];
+  const agencyWithTask = { ...agency, followUpTasks: [task] } as Agency;
   const store=memoryStorage();
   store.setItem('ems_agency_fact_reviews_v1',JSON.stringify([review]));
   store.setItem('ems_equipment_research_v1:agency-1',JSON.stringify({signals:[],offers:[],devices:{}}));
   store.setItem('zoll_pulseiq_outbox_v1',JSON.stringify([mutation('ADD_FIELD_NOTE',{note:{id:'visit-1'}})]));
   store.setItem('unrelated-token','do-not-export');
-  const backup=parseWorkspaceBackup(JSON.stringify(createWorkspaceBackup([agency],store)));
+  const backup=parseWorkspaceBackup(JSON.stringify(createWorkspaceBackup([agencyWithTask],store)));
   assert.equal(backup.storage['unrelated-token'],undefined);
   const target=memoryStorage();
   restoreWorkspaceBackup(backup,target);
   assert.deepEqual(JSON.parse(target.getItem('ems_agency_fact_reviews_v1')!),[review]);
   assert.ok(target.getItem('ems_equipment_research_v1:agency-1'));
   assert.equal(JSON.parse(target.getItem('zoll_pulseiq_outbox_v1')!)[0].status,'LOCAL_ONLY');
-  assert.equal(JSON.parse(target.getItem('zoll_pulseiq_custom_agencies_v8')!)[0][1].record.name,agency.name);
+  const restoredAgency = JSON.parse(target.getItem('zoll_pulseiq_custom_agencies_v8')!)[0][1].record as Agency;
+  assert.equal(restoredAgency.name,agency.name);
+  assert.equal(restoredAgency.followUpTasks?.[0].nextAction,task.nextAction);
+  assert.equal(restoredAgency.followUpTasks?.[0].history?.[0].at,task.history[0].at);
 });
 test('malformed backup is rejected before touching existing work', () => {
   const store=memoryStorage();store.setItem('ems_agency_fact_reviews_v1','[]');

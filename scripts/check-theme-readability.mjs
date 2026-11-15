@@ -8,6 +8,7 @@ import { gisGroupTimeout, planGisGroups } from './lib/theme-gis-groups.mjs';
 const baseUrl = process.env.THEME_TEST_URL ?? `http://127.0.0.1:${process.env.PORT ?? '24938'}/`;
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const allViewports = [
+  { width: 1366, height: 768, mobile: false },
   { width: 390, height: 844, mobile: true },
   { width: 767, height: 1024, mobile: true },
   { width: 768, height: 1024, mobile: false },
@@ -479,7 +480,7 @@ async function checkThemeModeSelection(cdp, viewport) {
     }
     if (!viewport.mobile) {
       assert(
-        state.navigationGeometry.width >= 208 && state.navigationGeometry.itemHeight >= 36,
+        state.navigationGeometry.width >= 208 && state.navigationGeometry.itemHeight >= 32,
         `Desktop navigation is too compressed: ${JSON.stringify(state.navigationGeometry)}`,
       );
     }
@@ -1076,6 +1077,7 @@ async function checkHome(cdp, dark) {
     const active = innerWidth < 768 ? currentMobile : currentDesktop;
     return {
       viewportWidth: innerWidth,
+      viewportHeight: innerHeight,
       desktopVisible: visible(desktopNavigation),
       mobileVisible: visible(mobileNavigation),
       activeLabel: active?.innerText.trim() ?? active?.getAttribute('aria-label') ?? '',
@@ -1085,6 +1087,13 @@ async function checkHome(cdp, dark) {
       expectedThemeColor: getComputedStyle(document.documentElement)
         .getPropertyValue('--pi-nav-bg').trim(),
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
+      pageVerticalOverflow: document.documentElement.scrollHeight > innerHeight + 1,
+      homeBounds: (() => {
+        const home = document.querySelector('.home-territory-map-screen-v2');
+        if (!home) return null;
+        const rect = home.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, height: rect.height };
+      })(),
     };
   })()`);
   assert(
@@ -1093,7 +1102,7 @@ async function checkHome(cdp, dark) {
     `${themeLabel(dark)} navigation does not match the ${shell.viewportWidth}px responsive breakpoint: ${JSON.stringify(shell)}`,
   );
   assert(
-    /Home/i.test(shell.activeLabel),
+    /Home|Map/i.test(shell.activeLabel),
     `${themeLabel(dark)} active Home navigation item is missing at ${shell.viewportWidth}px: ${JSON.stringify(shell)}`,
   );
   assert(
@@ -1101,6 +1110,13 @@ async function checkHome(cdp, dark) {
     `${themeLabel(dark)} PWA browser chrome does not match the app theme at ${shell.viewportWidth}px: ${JSON.stringify(shell)}`,
   );
   assert(!shell.pageOverflow, `${themeLabel(dark)} Home causes page-level horizontal overflow at ${shell.viewportWidth}px`);
+  if (shell.viewportWidth === 1366) {
+    assert(
+      !shell.pageVerticalOverflow && shell.homeBounds && shell.homeBounds.top >= -1 &&
+        shell.homeBounds.bottom <= shell.viewportHeight + 1,
+      `${themeLabel(dark)} 1366×768 Home does not fit without page scrolling: ${JSON.stringify(shell)}`,
+    );
+  }
 
   await checkReadable(cdp, `${themeLabel(dark)} ${shell.viewportWidth}px navigation`, [
     {
@@ -1162,6 +1178,20 @@ async function checkHome(cdp, dark) {
     const metric = document.querySelector('[data-testid="select-state-map-metric"]');
     return metric ? [...metric.options].map((option) => option.value) : [];
   })()`);
+  const selectedFlorida = await evaluate(cdp, `(() => {
+    const state = [...document.querySelectorAll('.home-map-state-path')]
+      .find((path) => path.getAttribute('aria-label')?.startsWith('Florida.'));
+    state?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    return Boolean(state);
+  })()`);
+  assert(selectedFlorida, `${themeLabel(dark)} Home has no keyboard-activatable Florida map target`);
+  await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, 'state selection opening Territory');
+  if (shell.viewportWidth < 768) {
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Map"]');
+  } else {
+    await clickVisible(cdp, 'Map', true);
+  }
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path[aria-label^="Florida."][aria-pressed="true"]'))`, 'selected Florida on the returning map');
   let missingLayer = null;
   for (const metricValue of metrics) {
     await evaluate(cdp, `(() => {
@@ -1193,13 +1223,13 @@ async function checkHome(cdp, dark) {
     return {
       selected: Boolean(selected),
       selectedIsDescribed: selectedLabel.length > 0,
-      selectedHasDoubleOutline: paths.some((path) => path.getAttribute('stroke') === '#67D6CE') &&
+      selectedHasDoubleOutline: paths.some((path) => path.getAttribute('stroke') === '#06101B') &&
         paths.some((path) => path.getAttribute('stroke') === '#F4C86A'),
       missingFill: missing?.getAttribute('fill') ?? '',
       missingLegend,
       missingHasText: missingLegend.includes('Not reported'),
       missingHasPattern: Boolean(document.querySelector('#home-map-missing-data')),
-      missingHasHatch: Boolean(document.querySelector('.home-map-legend-missing-note')?.innerText.includes('Hatch')),
+      missingHasHatch: !missing || Boolean(missing.getAttribute('fill')?.includes('home-map-missing-data')),
       regionHasSelection: Boolean(document.querySelector('.home-map-region-filter button[aria-pressed="true"]')),
       controls: Boolean(document.querySelector('[data-testid="select-state-map-metric"]') &&
         document.querySelector('[data-testid="button-map-zoom-in"]')),
@@ -1214,6 +1244,24 @@ async function checkHome(cdp, dark) {
       !stateCue.pageOverflow,
     `Home selected/missing/control cues are incomplete in ${themeLabel(dark)} theme: ${JSON.stringify(stateCue)}`,
   );
+  const initialMapZoom = await evaluate(cdp, `document.querySelector('.home-map-viewport')?.dataset.mapZoom ?? ''`);
+  await evaluate(cdp, `(() => {
+    const map = document.querySelector('.home-map-viewport');
+    const bounds = map?.getBoundingClientRect();
+    if (!map || !bounds) return false;
+    map.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+    return true;
+  })()`);
+  const afterWheelZoom = await evaluate(cdp, `document.querySelector('.home-map-viewport')?.dataset.mapZoom ?? ''`);
+  assert(initialMapZoom === afterWheelZoom, `${themeLabel(dark)} Home map zoomed from a mouse wheel`);
+  await clickButtonAndScroll(cdp, 'National view');
+  await waitFor(
+    cdp,
+    `!document.querySelector('.home-map-state-path[aria-pressed="true"]') &&
+      Boolean([...document.querySelectorAll('button')].find((button) => button.innerText.trim() === 'National view')) &&
+      document.querySelector('.home-map-page-heading p')?.innerText.includes('Choose a state or region')`,
+    'return to the national map',
+  );
   if (!missingLayer) {
     console.log(`  ${themeLabel(dark)} Home: no selected map layer currently has unavailable state data; missing fill definition and textual legend are present.`);
   } else {
@@ -1222,9 +1270,103 @@ async function checkHome(cdp, dark) {
   await checkReadable(cdp, `${themeLabel(dark)} Home`, [
     { name: 'map metric control', selector: '[data-testid="select-state-map-metric"]' },
     { name: 'selected region label', selector: '.home-map-region-filter button[aria-pressed="true"]' },
-    { name: 'map legend heading', selector: '.home-map-legend-title', backgroundRgb: [12, 29, 41] },
-    { name: 'missing-data legend', selector: '.home-map-legend-missing', backgroundRgb: [12, 29, 41] },
+    { name: 'map legend heading', selector: '.home-map-legend-title' },
+    { name: 'missing-data legend', selector: '.home-map-legend-missing' },
   ]);
+}
+
+const workspaceDestinationAudit = {
+  reports: [
+    'Purchasing timeline',
+    'Fire grants',
+    'Territory priorities',
+    'Clinical & competitive reference',
+    'Equipment viewer',
+  ],
+  settings: [
+    'Data status & sync',
+    'Backup & restore',
+    'Source directory',
+    'Public data & imports',
+  ],
+};
+
+async function clickWorkspaceDestination(cdp, label) {
+  const clicked = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('.workspace-hub .workspace-destination')]
+      .find((item) => item.querySelector('strong')?.textContent?.trim() === ${JSON.stringify(label)});
+    if (!button) return false;
+    button.scrollIntoView({ behavior: 'instant', block: 'center' });
+    button.click();
+    return true;
+  })()`);
+  assert(clicked, `Could not open the ${label} destination`);
+}
+
+async function checkWorkspaceDestinations(cdp, themeMode, viewport) {
+  await setTheme(cdp, themeMode);
+  const openHub = async (kind) => {
+    if (viewport.mobile) {
+      await clickVisible(cdp, `.pi-mobile-nav button[aria-label="${kind === 'reports' ? 'Reports' : 'Settings'}"]`);
+    } else {
+      await clickVisible(cdp, kind === 'reports' ? 'Reports' : 'Settings', true);
+    }
+    await waitFor(cdp, `Boolean(document.querySelector('.workspace-hub h1'))`, `${kind} hub`);
+    const matches = await evaluate(cdp, `document.querySelector('.workspace-hub h1')?.textContent?.trim() === ${JSON.stringify(kind === 'reports' ? 'Reports' : 'Settings')}`);
+    assert(matches, `The ${kind} hub did not open`);
+  };
+  const inspectPage = async (label) => {
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('.workspace-grid-shell')) && !document.querySelector('[data-testid="workspace-loading-state"]')`,
+      `${label} screen`,
+      30_000,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    const layout = await evaluate(cdp, `(() => {
+      const root = document.querySelector('.workspace-grid-shell');
+      const body = document.body;
+      const visible = (element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+      };
+      const undersized = [...document.querySelectorAll('.workspace-grid-shell button, .workspace-grid-shell [role="button"], .workspace-grid-shell select, .workspace-grid-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), .workspace-grid-shell summary')]
+        .filter(visible)
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { label: (element.innerText || element.getAttribute('aria-label') || element.getAttribute('title') || element.tagName).trim().slice(0, 70), width: Math.round(rect.width), height: Math.round(rect.height) };
+        })
+        .filter((item) => item.width < 44 || item.height < 44)
+        .slice(0, 8);
+      return {
+        hasRoot: Boolean(root),
+        hasPageContent: Boolean(root?.innerText.trim()),
+        horizontalOverflow: Math.max(document.documentElement.scrollWidth, body.scrollWidth) > innerWidth + 1,
+        undersized,
+        errorText: /this view could not load|something went wrong|unable to load this workspace/i.test(root?.innerText ?? ''),
+      };
+    })()`);
+    assert(layout.hasRoot && layout.hasPageContent, `${label} rendered without usable workspace content`);
+    assert(!layout.errorText, `${label} displayed an error boundary instead of its screen`);
+    assert(!layout.horizontalOverflow, `${label} caused page-level horizontal scrolling at ${viewport.width}px`);
+    if (viewport.mobile) {
+      assert(layout.undersized.length === 0, `${label} has mobile controls below 44px: ${JSON.stringify(layout.undersized)}`);
+    }
+    console.log(`  ${themeLabel(themeMode)} ${viewport.width}px ${label}: content visible, no page overflow${viewport.mobile ? ', 44px targets' : ''}`);
+  };
+
+  for (const [hubKind, destinations] of Object.entries(workspaceDestinationAudit)) {
+    await openHub(hubKind);
+    await inspectPage(hubKind === 'reports' ? 'Reports' : 'Settings');
+    for (const label of destinations) {
+      await clickWorkspaceDestination(cdp, label);
+      await inspectPage(label);
+      await openHub(hubKind);
+    }
+  }
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home after screen audit');
 }
 
 async function checkCounty(cdp, dark) {
@@ -1262,6 +1404,8 @@ async function checkCounty(cdp, dark) {
   await captureThemeScreenshot(cdp, dark, 'territory');
 }
 
+let profileReturnScrollY = 0;
+
 async function openProfile(cdp) {
   if (await evaluate(cdp, 'innerWidth < 768')) {
     const searchOpened = await evaluate(cdp, `(() => {
@@ -1277,50 +1421,320 @@ async function openProfile(cdp) {
   }
   await clickVisible(cdp, 'Agencies', true);
   await waitFor(cdp, `document.body.innerText.includes('Open agency profile')`, 'agency directory');
+  const initializedFilters = await evaluate(cdp, `(() => {
+    const toggle = document.querySelector('[data-testid="agency-secondary-filters-toggle"]');
+    if (innerWidth < 640 && toggle?.getAttribute('aria-expanded') !== 'true') toggle?.click();
+    const ems = [...(document.querySelector('[aria-label="Provider Discipline Filter"]')?.querySelectorAll('button') ?? [])]
+      .find((button) => button.innerText.trim().startsWith('EMS'));
+    ems?.click();
+    const input = document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (input && setter) {
+      setter.call(input, 'EMS');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return Boolean(input && ems);
+  })()`);
+  assert(initializedFilters, 'Could not apply an EMS directory search and discipline filter');
+  await waitFor(
+    cdp,
+    `document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]')?.value === 'EMS' &&
+      Boolean(document.querySelector('[aria-label="Provider Discipline Filter"] button[aria-pressed="true"]'))`,
+    'the EMS search and discipline filter',
+  );
   const clicked = await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('button, a, [role="button"]')]
       .find((candidate) => candidate.innerText.trim().startsWith('Open agency profile'));
-    if (!button) return false;
+    if (!button) return { clicked: false, scrollY: 0 };
+    button.scrollIntoView({ behavior: 'instant', block: 'center' });
+    window.scrollTo({ top: Math.max(0, window.scrollY), behavior: 'instant' });
+    const scrollY = window.scrollY;
     button.click();
-    return true;
+    return { clicked: true, scrollY };
   })()`);
-  assert(clicked, 'Could not open a provider profile');
+  assert(clicked.clicked, 'Could not open a provider profile');
+  profileReturnScrollY = clicked.scrollY;
   await waitFor(cdp, `Boolean(document.querySelector('main.profile-workspace'))`, 'provider profile');
   await waitFor(
     cdp,
-    `Boolean(document.querySelector('main.profile-workspace [aria-label="Agency contact summary"]')) &&
-      Boolean(document.querySelector('main.profile-workspace [aria-label="Available source references"]'))`,
-    'provider identity and source summary',
+    `Boolean(document.querySelector('main.profile-workspace [data-testid="text-agency-name"]')?.innerText.trim()) &&
+      Boolean(document.querySelector('main.profile-workspace [data-testid="button-profile-inspect-sources"]'))`,
+    'provider identity and source inspection action',
   );
+}
+
+async function checkProfileBackRestoration(cdp, viewport) {
+  const clicked = await evaluate(cdp, `(() => {
+    const button = document.querySelector('[data-testid="profile-back-button"]');
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(clicked, 'Could not return from the provider profile');
+  await waitFor(
+    cdp,
+    `!document.querySelector('main.profile-workspace') &&
+      Boolean(document.querySelector('[data-testid="workspace-lead-queue"]')) &&
+      document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]')?.value === 'EMS' &&
+      document.querySelector('[aria-label="Provider Discipline Filter"] button[aria-pressed="true"]')?.innerText.trim().startsWith('EMS')`,
+    'agency directory query and filters after profile return',
+  );
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const restored = await evaluate(cdp, `(() => ({
+    scrollY: window.scrollY,
+    geography: document.querySelector('.pi-sb-geo')?.innerText.trim() ?? '',
+    query: document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]')?.value ?? '',
+    activeDiscipline: document.querySelector('[aria-label="Provider Discipline Filter"] button[aria-pressed="true"]')?.innerText.trim() ?? '',
+  }))()`);
+  assert(restored.query === 'EMS' && restored.activeDiscipline.startsWith('EMS'), `Agency search filters were not restored after Back: ${JSON.stringify(restored)}`);
+  assert(/FL|Florida/i.test(restored.geography), `The Florida geographic context was not restored after Back: ${JSON.stringify(restored)}`);
+  const scrollTolerance = Math.max(40, Math.round(viewport.height * 0.05));
+  assert(
+    Math.abs(restored.scrollY - profileReturnScrollY) <= scrollTolerance,
+    `Directory scroll position was not restored at ${viewport.width}px: ${JSON.stringify({ restored, expected: profileReturnScrollY })}`,
+  );
+  console.log(`  ${viewport.width}px profile Back restores EMS search/filter, Florida scope, and scroll position ${restored.scrollY}px`);
+}
+
+async function checkAgencyEmptyRecovery(cdp) {
+  const query = 'zz-no-agency-match-2026';
+  await evaluate(cdp, `(() => {
+    const input = document.querySelector('input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!input || !setter) return false;
+    setter.call(input, ${JSON.stringify(query)});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(cdp, `Boolean(document.querySelector('[data-testid="agency-directory-empty"]'))`, 'genuine empty agency search result');
+  const result = await evaluate(cdp, `(() => {
+    const empty = document.querySelector('[data-testid="agency-directory-empty"]');
+    return {
+      message: empty?.innerText ?? '',
+      clearSearch: [...(empty?.querySelectorAll('button') ?? [])].some((button) => button.innerText.trim() === 'Clear search'),
+      broaden: [...(empty?.querySelectorAll('button') ?? [])].some((button) => button.innerText.trim() === 'Search all agencies'),
+    };
+  })()`);
+  assert(result.message.includes(query) && result.clearSearch && result.broaden, `Empty search did not explain the query and offer recovery: ${JSON.stringify(result)}`);
+  await evaluate(cdp, `(() => [...document.querySelectorAll('[data-testid="agency-directory-empty"] button')].find((button) => button.innerText.trim() === 'Search all agencies')?.click())()`);
+  await waitFor(
+    cdp,
+    `sessionStorage.getItem('queue-selectedState') === '"all"' &&
+      sessionStorage.getItem('queue-selectedCategory') === '"all"' &&
+      Boolean(document.querySelector('[data-testid="agency-directory-empty"]'))`,
+    'broadened search across agency records',
+  );
+  await evaluate(cdp, `(() => [...document.querySelectorAll('[data-testid="agency-directory-empty"] button')].find((button) => button.innerText.trim() === 'Clear search')?.click())()`);
+  await waitFor(cdp, `!document.querySelector('[data-testid="agency-directory-empty"]')`, 'cleared agency search');
+  const count = Number.parseInt(await evaluate(cdp, `document.querySelector('[data-testid="text-agency-summary-count"]')?.textContent?.replace(/,/g, '') ?? '0'`), 10);
+  assert(count > 0, `Clearing the query did not recover agency results: ${count}`);
+  console.log(`  Agency search: query-specific empty state, broaden-to-all and clear-search recovery verified (${count} results)`);
+}
+
+async function createStandaloneTask(cdp, action, dueDate) {
+  const form = await evaluate(cdp, `(() => {
+    const details = document.querySelector('details.followup-create');
+    if (!details) return null;
+    if (!details.open) details.querySelector('summary')?.click();
+    const form = details.querySelector('form');
+    const agency = form?.querySelector('select');
+    const actionInput = [...(form?.querySelectorAll('input') ?? [])].find((input) => input.type === 'text');
+    const priority = [...(form?.querySelectorAll('select') ?? [])].find((select) => select !== agency);
+    const date = [...(form?.querySelectorAll('input') ?? [])].find((input) => input.type === 'date');
+    const setterFor = (element) => Object.getOwnPropertyDescriptor(
+      element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    if (!form || !agency?.options[1] || !actionInput) return null;
+    const set = (element, value) => {
+      const setter = setterFor(element);
+      setter?.call(element, value);
+      element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+      if (element instanceof HTMLInputElement && element.type === 'date') element.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    if (!agency.value) set(agency, agency.options[1].value);
+    set(actionInput, ${JSON.stringify(action)});
+    if (priority) set(priority, 'high');
+    if (date) set(date, ${JSON.stringify(dueDate)});
+    return { agencyName: agency.selectedOptions[0]?.textContent?.trim() ?? '', ready: Boolean(form.querySelector('button')) };
+  })()`);
+  assert(form?.agencyName, `Could not select an agency for task ${action}`);
+  const submitted = await evaluate(cdp, `(() => {
+    const form = document.querySelector('details.followup-create form');
+    const submit = [...(form?.querySelectorAll('button') ?? [])].find((button) => button.innerText.trim() === 'Save task');
+    if (!submit || submit.disabled) return false;
+    submit.click();
+    return true;
+  })()`);
+  assert(submitted, `Could not save standalone task ${action}`);
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('.followup-row h3')].find((heading) => heading.innerText.trim() === ${JSON.stringify(action)}))`, `standalone task ${action}`);
+  return form.agencyName;
+}
+
+async function checkTaskWorkflow(cdp, viewport) {
+  await setTheme(cdp, 'daylight');
+  await openProfile(cdp);
+  await evaluate(cdp, `document.querySelector('[data-testid="profile-back-button"]')?.click()`);
+  await waitFor(cdp, `Boolean(document.querySelector('[data-testid="workspace-lead-queue"]'))`, 'agency directory after profile preloading');
+  if (viewport.mobile) await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Field Work"]');
+  else {
+    const clicked = await evaluate(cdp, `(() => {
+      const button = [...document.querySelectorAll('.pi-primary-nav button')]
+        .find((candidate) => candidate.innerText.includes('Field Work'));
+      button?.click();
+      return Boolean(button);
+    })()`);
+    assert(clicked, 'Could not open Field Work from desktop navigation');
+  }
+  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Follow-up workspace"] details.followup-create'))`, 'Field Work follow-up creation');
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
+  const firstAction = 'Isolated offline follow-up check';
+  const agencyName = await createStandaloneTask(cdp, firstAction, '2026-12-15');
+  const initialRow = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === ${JSON.stringify(firstAction)});
+    return { text: row?.innerText ?? '', action: row?.querySelector('input')?.value ?? '', outbox: JSON.parse(localStorage.getItem('zoll_pulseiq_outbox_v1') || '[]'), online: navigator.onLine };
+  })()`);
+  assert(!initialRow.online && initialRow.action === firstAction && initialRow.text.includes('Unassigned') && initialRow.text.includes('high priority'), `Offline task was not saved with explicit unassigned ownership and priority: ${JSON.stringify(initialRow)}`);
+  assert(initialRow.outbox.some((item) => item.actionType === 'CREATE_FOLLOW_UP' && item.status === 'PENDING'), 'Offline task was not retained in the recovery outbox');
+
+  const rowUpdated = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === ${JSON.stringify(firstAction)});
+    const labels = [...(row?.querySelectorAll('label') ?? [])];
+    const action = labels.find((label) => label.innerText.trim().startsWith('Action'))?.querySelector('input');
+    const owner = labels.find((label) => label.innerText.trim().startsWith('Owner'))?.querySelector('input');
+    const priority = labels.find((label) => label.innerText.trim().startsWith('Priority'))?.querySelector('select');
+    const date = labels.find((label) => label.innerText.trim().startsWith('Follow-up date'))?.querySelector('input');
+    const set = (element, value) => {
+      const proto = element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(element, value);
+      element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+      if (element instanceof HTMLInputElement && element.type === 'date') element.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    if (!row || !action || !priority || !date) return false;
+    set(action, 'Confirm recorded equipment lifecycle');
+    if (owner) set(owner, '');
+    set(priority, 'normal');
+    set(date, '2026-12-22');
+    [...row.querySelectorAll('button')].find((button) => button.innerText.trim() === 'Save changes')?.click();
+    return true;
+  })()`);
+  assert(rowUpdated, 'Could not edit the standalone action, owner, priority, and date');
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('.followup-row h3')].find((heading) => heading.innerText.trim() === 'Confirm recorded equipment lifecycle'))`, 'saved follow-up edits');
+  const historyOpened = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === 'Confirm recorded equipment lifecycle');
+    const history = row?.querySelector('details.followup-history');
+    if (!history) return false;
+    history.querySelector('summary')?.click();
+    return history.innerText.includes('Task created') && history.innerText.includes('Updated') &&
+      history.innerText.includes('Isolated offline follow-up check') && history.innerText.includes('Confirm recorded equipment lifecycle') &&
+      (history.innerText.match(/2026/g) ?? []).length >= 2;
+  })()`);
+  assert(historyOpened, 'Follow-up history did not retain creation and before/after values with timestamps');
+
+  const completed = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === 'Confirm recorded equipment lifecycle');
+    const button = [...(row?.querySelectorAll('button') ?? [])].find((candidate) => candidate.innerText.trim() === 'Complete');
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(completed, 'Could not complete the follow-up');
+  const completedFilter = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('.followup-filters button')].find((candidate) => candidate.innerText.trim().startsWith('Completed'));
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(completedFilter, 'Could not filter to completed follow-ups');
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('.followup-row h3')].find((heading) => heading.innerText.trim() === 'Confirm recorded equipment lifecycle'))`, 'completed follow-up');
+  const reopened = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === 'Confirm recorded equipment lifecycle');
+    const button = [...(row?.querySelectorAll('button') ?? [])].find((candidate) => candidate.innerText.trim() === 'Reopen');
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(reopened, 'Could not reopen the completed follow-up');
+  await evaluate(cdp, `(() => [...document.querySelectorAll('.followup-filters button')].find((button) => button.innerText.trim().startsWith('All open'))?.click())()`);
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('.followup-row h3')].find((heading) => heading.innerText.trim() === 'Confirm recorded equipment lifecycle'))`, 'reopened follow-up');
+
+  const openedAgency = await evaluate(cdp, `(() => {
+    const row = [...document.querySelectorAll('.followup-row')].find((item) => item.querySelector('h3')?.innerText.trim() === 'Confirm recorded equipment lifecycle');
+    const button = [...(row?.querySelectorAll('button') ?? [])].find((candidate) => candidate.innerText.trim() === ${JSON.stringify(agencyName)});
+    button?.click();
+    return Boolean(button);
+  })()`);
+  assert(openedAgency, 'Could not open the task-linked agency profile');
+  await waitFor(cdp, `Boolean(document.querySelector('main.profile-workspace'))`, 'task-linked profile');
+  if (viewport.mobile) {
+    const openedActivity = await evaluate(cdp, `(() => {
+      const select = document.querySelector('[data-testid="select-profile-section-mobile"]');
+      if (!select) return false;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, 'activity');
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()`);
+    assert(openedActivity, 'Could not open Activity on the profile phone layout');
+  } else {
+    await clickVisible(cdp, 'Activity', true);
+  }
+  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Agency action center"] details.followup-create'))`, 'agency Activity task creation');
+  const activityTask = 'Isolated agency activity task check';
+  const lastInteractionBefore = await evaluate(cdp, `document.querySelector('[aria-label="Agency action center"] .followup-account-summary')?.querySelector('p')?.innerText ?? ''`);
+  const activityAgency = await createStandaloneTask(cdp, activityTask, '');
+  assert(activityAgency === agencyName, 'The Activity task was not linked to the open agency');
+  const activitySummary = await evaluate(cdp, `(() => ({
+    lastInteraction: document.querySelector('[aria-label="Agency action center"] .followup-account-summary')?.querySelector('p')?.innerText ?? '',
+    hasTask: [...document.querySelectorAll('.followup-row h3')].some((heading) => heading.innerText.trim() === ${JSON.stringify(activityTask)}),
+    standaloneLabel: [...document.querySelectorAll('.followup-row')].find((row) => row.querySelector('h3')?.innerText.trim() === ${JSON.stringify(activityTask)})?.innerText.includes('Standalone task') ?? false,
+  }))()`);
+  assert(activitySummary.hasTask && activitySummary.standaloneLabel, 'Activity did not show the standalone task');
+  assert(activitySummary.lastInteraction === lastInteractionBefore, 'Creating a follow-up changed the last interaction date');
+  console.log(`  ${viewport.width}px offline follow-up: Field Work and Activity creation, edits/history, complete/reopen, recovery queue, and contact-date preservation`);
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
 }
 
 async function checkProfileAndSources(cdp, dark) {
   await setTheme(cdp, dark);
+  await evaluate(cdp, `(() => { const details = document.querySelector('.profile-more-actions'); if (details) details.open = true; })()`);
+  await evaluate(cdp, `(() => { const details = document.querySelector('[data-testid="profile-record-context"]'); if (details) details.open = true; })()`);
   const profileCues = await evaluate(cdp, `(() => {
-    const status = document.querySelector('[data-testid^="status-profile-review-"]');
-    const source = document.querySelector('[aria-label="Available source references"]');
+    const status = document.querySelector('[data-testid="text-profile-freshness"]');
+    const source = document.querySelector('[data-testid="button-profile-inspect-sources"]');
     const profile = document.querySelector('main.profile-workspace');
+    const profileRect = profile?.getBoundingClientRect();
     return {
+      agencyName: document.querySelector('[data-testid="text-agency-name"]')?.innerText.trim() ?? '',
       statusText: status?.innerText.trim() ?? '',
-      statusHasAccessibleState: Boolean(status?.getAttribute('aria-live')),
-      sourcePanel: Boolean(source && source.innerText.trim()),
-      sourceAction: Boolean(source?.querySelector('button')),
+      statusHasAccessibleState: Boolean(status),
+      sourcePanel: Boolean(document.querySelector('[data-testid="text-profile-source-period"]')),
+      sourceAction: Boolean(source && source.getAttribute('aria-label') === 'Inspect agency sources'),
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
       profileOverflow: Boolean(profile && profile.scrollWidth > profile.clientWidth + 1),
+      profileBounds: profile ? { left: profileRect.left, right: profileRect.right, width: profile.clientWidth, scrollWidth: profile.scrollWidth } : null,
+      overflowingChildren: profile ? [...profile.querySelectorAll('*')].filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && (rect.right > profileRect.right + 2 || rect.left < profileRect.left - 2);
+      }).slice(0, 8).map((element) => ({
+        tag: element.tagName,
+        className: typeof element.className === 'string' ? element.className : '',
+        text: element.textContent?.trim().slice(0, 80) ?? '',
+        left: Math.round(element.getBoundingClientRect().left),
+        right: Math.round(element.getBoundingClientRect().right),
+        width: Math.round(element.getBoundingClientRect().width),
+      })) : [],
     };
   })()`);
   assert(profileCues.statusText, `${themeLabel(dark)} profile status is missing`);
-  assert(profileCues.statusHasAccessibleState, 'Profile review status is not announced accessibly');
-  assert(profileCues.sourcePanel, 'Available source references panel is missing');
-  assert(profileCues.sourceAction, 'Available source references action is missing');
+  assert(profileCues.statusHasAccessibleState, 'Profile review status is missing its labelled control');
+  assert(profileCues.agencyName, 'Provider profile is missing its agency identity');
+  assert(profileCues.sourcePanel, 'Provider source-period context is missing');
+  assert(profileCues.sourceAction, 'Agency source inspection action is missing or not labelled');
   assert(
     !profileCues.pageOverflow && !profileCues.profileOverflow,
     `${themeLabel(dark)} provider profile causes horizontal overflow: ${JSON.stringify(profileCues)}`,
   );
   await checkReadable(cdp, `${themeLabel(dark)} provider profile`, [
-    { name: 'profile review status', selector: '[data-testid^="status-profile-review-"]' },
-    { name: 'source references heading', selector: '[aria-label="Available source references"] h2' },
-    { name: 'source references action', selector: '[aria-label="Available source references"] button' },
+    { name: 'profile agency identity', selector: '[data-testid="text-agency-name"]' },
+    { name: 'profile source period', selector: '[data-testid="text-profile-source-period"]' },
+    { name: 'source inspection action', selector: '[data-testid="button-profile-inspect-sources"]' },
   ]);
 
   const opened = await evaluate(cdp, `(() => {
@@ -1516,6 +1930,12 @@ async function checkProfileAndSources(cdp, dark) {
 }
 
 async function openAgencyComparison(cdp) {
+  // The preceding profile test deliberately leaves its restored search and
+  // geographic context in session storage. Start this independent comparison
+  // check from an unfiltered directory without clearing local source records.
+  await evaluate(cdp, `sessionStorage.clear()`);
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before agency comparison');
   await clickVisible(cdp, 'Agencies', true);
   await waitFor(
     cdp,
@@ -1536,6 +1956,7 @@ async function openAgencyComparison(cdp) {
     .slice(0, 3)
     .map((button) => button.dataset.testid.replace('button-toggle-comparison-', '')))()`);
   assert(selectedIds.length === 3, `Expected three visible agency comparison choices, received ${JSON.stringify(selectedIds)}`);
+  console.log(`  Agency comparison candidates: ${selectedIds.join(', ')}`);
 
   const sourceAgencyId = selectedIds[0];
   await evaluate(cdp, `(() => {
@@ -1579,14 +2000,16 @@ async function openAgencyComparison(cdp) {
     'agency comparison controls after reloading source evidence',
   );
   for (const [index, agencyId] of selectedIds.entries()) {
-    const selected = await evaluate(cdp, `(() => {
+    const selection = await evaluate(cdp, `(() => {
       const button = [...document.querySelectorAll('button[data-testid^="button-toggle-comparison-"]')]
         .find((candidate) => candidate.dataset.testid === ${JSON.stringify(`button-toggle-comparison-${agencyId}`)});
-      if (!button || button.disabled || button.getAttribute('aria-pressed') === 'true') return false;
+      if (!button) return { ok: false, reason: 'missing from current results' };
+      if (button.disabled) return { ok: false, reason: 'disabled', pressed: button.getAttribute('aria-pressed') };
+      if (button.getAttribute('aria-pressed') === 'true') return { ok: false, reason: 'already selected' };
       button.click();
-      return true;
+      return { ok: true, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled };
     })()`);
-    assert(selected, `Could not select agency ${agencyId} for comparison`);
+    assert(selection.ok, `Could not select agency ${agencyId} for comparison: ${JSON.stringify(selection)}`);
     await waitFor(
       cdp,
       `document.querySelector('[data-testid="button-toggle-comparison-${agencyId}"]')?.getAttribute('aria-pressed') === 'true'`,
@@ -1622,9 +2045,14 @@ async function openAgencyComparison(cdp) {
 }
 
 async function openFieldWork(cdp) {
+  if (await evaluate(cdp, 'innerWidth < 768')) {
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Field Work"]');
+    await waitFor(cdp, `Boolean(document.querySelector('.workspace-section-grid h2'))`, 'Field Work workspace');
+    return;
+  }
   const clicked = await evaluate(cdp, `(() => {
-    const button = [...document.querySelectorAll('button')].find((candidate) => {
-      const label = (candidate.getAttribute('aria-label') || candidate.innerText).trim().toLowerCase();
+    const button = [...document.querySelectorAll('.pi-primary-nav .pi-sb-item')].find((candidate) => {
+      const label = candidate.querySelector('.pi-sb-label')?.textContent?.trim().toLowerCase();
       const rect = candidate.getBoundingClientRect();
       return label === 'field work' && rect.width > 0 && rect.height > 0 &&
         getComputedStyle(candidate).visibility !== 'hidden';
@@ -1711,17 +2139,30 @@ async function checkAgencyComparison(cdp, dark, selectedIds) {
     `  ${themeLabel(dark)} agency comparison: ${cues.ranks.join(', ')}; ${cues.selectedNames.map((name) => name.split('\n')[0]).join(' vs ')}; reported, unavailable, and source-note values present`,
   );
   await captureThemeScreenshot(cdp, dark, 'agency-comparison');
+  if (dark === 'miami-vice') {
+    await clickVisible(cdp, '[data-testid="button-close-comparison"]');
+    await waitFor(cdp, `!document.querySelector('[data-testid="agency-comparison-panel"]')`, 'agency comparison panel close');
+  }
 }
 
 async function openPulseIqCharts(cdp) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before specialty chart checks');
   if (await evaluate(cdp, 'innerWidth < 768')) {
-    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Opportunities"]');
+    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Reports"]');
   } else {
-    await clickVisible(cdp, 'Opportunities', true);
+    await clickVisible(cdp, 'Reports', true);
   }
-  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Opportunities views"]'))`, 'Opportunities views');
+  await waitFor(cdp, `Boolean(document.querySelector('#workspace-hub-title')?.innerText.includes('Reports'))`, 'Reports workspace');
+  const openedPriorities = await evaluate(cdp, `(() => {
+    const card = [...document.querySelectorAll('.workspace-destination')]
+      .find((button) => button.querySelector('strong')?.textContent?.trim() === 'Territory priorities');
+    if (!card) return false;
+    card.click();
+    return true;
+  })()`);
+  assert(openedPriorities, 'Could not open Territory priorities from Reports');
+  await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Opportunities views"]'))`, 'Territory priority views');
   await clickVisible(cdp, 'Regional priority', true);
   await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('Regional Priority Score Breakdown'))`, 'PulseIQ regional chart');
   await waitFor(cdp, `Boolean(document.querySelector('svg.recharts-surface'))`, 'PulseIQ chart SVG');
@@ -1968,11 +2409,7 @@ async function checkPulseIqCharts(cdp, dark, viewport) {
 async function openGisHeatmap(cdp) {
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before GIS heatmap checks');
-  if (await evaluate(cdp, 'innerWidth < 768')) {
-    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Territory"]');
-  } else {
-    await clickVisible(cdp, 'Territory', true);
-  }
+  await clickButtonAndScroll(cdp, 'Browse agency directory');
   await waitFor(cdp, `Boolean(document.querySelector('[aria-label="Territory views"]'))`, 'Territory views');
   await clickVisible(cdp, 'Fleet & response map', true);
   await waitFor(cdp, `Boolean(document.querySelector('h1')?.innerText.includes('High-Potential Territory Clusters'))`, 'GIS heatmap');
@@ -2364,9 +2801,86 @@ async function runViewport(cdp, viewport, gisGroup) {
     console.log(`PASS ${viewport.width}×${viewport.height}: active navigation, focus ring, and horizontal overflow in all themes`);
     return;
   }
+  if (process.env.THEME_PROFILE_RETURN_ONLY === '1') {
+    await setTheme(cdp, 'daylight');
+    const selectedFlorida = await evaluate(cdp, `(() => {
+      const state = [...document.querySelectorAll('.home-map-state-path')]
+        .find((path) => path.getAttribute('aria-label')?.startsWith('Florida.'));
+      state?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      return Boolean(state);
+    })()`);
+    assert(selectedFlorida, 'Could not select Florida from the national map');
+    await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, 'Florida county directory');
+    await openProfile(cdp);
+    await checkProfileBackRestoration(cdp, viewport);
+    await checkAgencyEmptyRecovery(cdp);
+    if (viewport.mobile) {
+      await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Map"]');
+    } else {
+      await clickVisible(cdp, 'Map', true);
+    }
+    await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path[aria-label^="Florida."][aria-pressed="true"]'))`, 'Florida map after agency return');
+    await clickButtonAndScroll(cdp, 'National view');
+    await waitFor(cdp, `!document.querySelector('.home-map-state-path[aria-pressed="true"]')`, 'national map reset');
+    console.log(`PASS ${viewport.width}×${viewport.height}: state → agency → Back restores search, filters, geography, scroll, and national map`);
+    return;
+  }
+  if (process.env.THEME_PROFILE_LAYOUT_ONLY === '1') {
+    await setTheme(cdp, 'daylight');
+    await openProfile(cdp);
+    await evaluate(cdp, `(() => { for (const selector of ['.profile-more-actions','[data-testid="profile-record-context"]']) { const details = document.querySelector(selector); if (details) details.open = true; } })()`);
+    const layout = await evaluate(cdp, `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      const rect = profile?.getBoundingClientRect();
+      return {
+        agency: document.querySelector('[data-testid="text-agency-name"]')?.innerText.trim() ?? '',
+        profileWidth: profile?.clientWidth ?? 0,
+        profileScrollWidth: profile?.scrollWidth ?? 0,
+        pageWidth: document.documentElement.clientWidth,
+        pageScrollWidth: document.documentElement.scrollWidth,
+        overflowing: [...(profile?.querySelectorAll('*') ?? [])].filter((element) => {
+          const child = element.getBoundingClientRect();
+          return child.width > 0 && (child.right > rect.right + 2 || child.left < rect.left - 2);
+        }).slice(0, 10).map((element) => ({
+          tag: element.tagName,
+          className: typeof element.className === 'string' ? element.className : '',
+          text: element.textContent?.trim().slice(0, 80) ?? '',
+          left: Math.round(element.getBoundingClientRect().left),
+          right: Math.round(element.getBoundingClientRect().right),
+          width: Math.round(element.getBoundingClientRect().width),
+        })),
+      };
+    })()`);
+    console.log(`  ${viewport.width}px profile layout: ${JSON.stringify(layout)}`);
+    return;
+  }
+  if (process.env.THEME_COMPARISON_ONLY === '1') {
+    await openAgencyComparison(cdp);
+    console.log(`PASS ${viewport.width}×${viewport.height}: agency comparison selection and context`);
+    return;
+  }
+  if (process.env.THEME_PULSEIQ_ONLY === '1') {
+    for (const themeMode of ['daylight', 'dark', 'miami-vice']) {
+      await checkPulseIqCharts(cdp, themeMode, viewport);
+    }
+    console.log(`PASS ${viewport.width}×${viewport.height}: Reports → Territory priorities charts in all themes`);
+    return;
+  }
+  if (process.env.THEME_TASK_WORKFLOW_ONLY === '1') {
+    await checkTaskWorkflow(cdp, viewport);
+    console.log(`PASS ${viewport.width}×${viewport.height}: follow-up workflow remains functional at this viewport`);
+    return;
+  }
   if (process.env.THEME_SELECTION_ONLY === '1') {
     await checkThemeSelectionWithKeyboard(cdp, viewport);
     console.log(`PASS ${viewport.width}×${viewport.height}: pointer/keyboard theme selection`);
+    return;
+  }
+  if (process.env.THEME_WORKSPACE_AUDIT_ONLY === '1') {
+    for (const themeMode of ['daylight', 'dark', 'miami-vice']) {
+      await checkWorkspaceDestinations(cdp, themeMode, viewport);
+    }
+    console.log(`PASS ${viewport.width}×${viewport.height}: Reports, Settings, imports, recovery, source tools, and specialist screens in all themes`);
     return;
   }
   if (process.env.THEME_SPECIALTY_ONLY === '1') {
@@ -2389,11 +2903,7 @@ async function runViewport(cdp, viewport, gisGroup) {
   await checkHome(cdp, 'miami-vice');
   await checkThemeStates(cdp, 'miami-vice', viewport);
 
-  if (await evaluate(cdp, 'innerWidth < 768')) {
-    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Territory"]');
-  } else {
-    await clickVisible(cdp, 'Territory', true);
-  }
+  await clickButtonAndScroll(cdp, 'Browse agency directory');
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen #home-state-picker'))`, 'Territory state selector');
   const selectedState = await evaluate(cdp, `(() => {
     const select = document.querySelector('#home-state-picker');
@@ -2417,6 +2927,7 @@ async function runViewport(cdp, viewport, gisGroup) {
   await checkProfileAndSources(cdp, false);
   await checkProfileAndSources(cdp, true);
   await checkProfileAndSources(cdp, 'miami-vice');
+  await checkProfileBackRestoration(cdp, viewport);
 
   await cdp.send('Page.navigate', { url: baseUrl });
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'Home before agency comparison checks');

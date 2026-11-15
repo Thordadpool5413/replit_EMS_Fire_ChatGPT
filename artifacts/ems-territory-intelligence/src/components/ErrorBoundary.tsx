@@ -10,6 +10,7 @@ interface Props {
   children: ReactNode;
   fallbackTab?: string;
   onReset?: () => void;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -40,6 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
       return (
         <div className="w-full min-h-[400px] flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl p-6 text-center shadow-lg">

@@ -5,7 +5,7 @@ import { useSessionState } from '../hooks/useSessionState';
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Agency, LeadStage, ZollProductLine, PredictiveWeights } from '../types';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { 
@@ -64,6 +64,7 @@ const hasVerifiedModelInputs = (agency: Agency) =>
 
 interface PredictiveLeadQueueProps {
   agencies: Agency[];
+  directoryStatus?: { stateCode: string; status: 'loading' | 'ready' | 'unavailable' };
   onSelectAgency: (agency: Agency) => void;
   onPreviewAgency?: (agency: Agency) => void;
   onToggleRoute: (agencyId: string) => void;
@@ -98,6 +99,7 @@ import { MISSING_INPUT_COPY } from '../utils/missingInputCopy';
 
 export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   agencies,
+  directoryStatus,
   onSelectAgency,
   onPreviewAgency,
   onToggleRoute,
@@ -126,15 +128,15 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const [selectedState, setSelectedState] = useState<string>(globalState || 'all');
-  const [selectedCounty, setSelectedCounty] = useState<string>(globalCounty || 'all');
-  const [selectedCity, setSelectedCity] = useState<string>(globalCity || 'all');
+  const [selectedState, setSelectedState] = useSessionState<string>('queue-selectedState', globalState || 'all');
+  const [selectedCounty, setSelectedCounty] = useSessionState<string>('queue-selectedCounty', globalCounty || 'all');
+  const [selectedCity, setSelectedCity] = useSessionState<string>('queue-selectedCity', globalCity || 'all');
   const [zipFilter, setZipFilter] = useSessionState<string>('queue-zipFilter','');
   const [selectedJurisdiction, setSelectedJurisdiction] = useSessionState<string>('queue-selectedJurisdiction','all');
   const [selectedProduct, setSelectedProduct] = useSessionState<string>('queue-selectedProduct','all');
   const [selectedStage, setSelectedStage] = useSessionState<string>('queue-selectedStage','all');
   const [selectedType, setSelectedType] = useSessionState<string>('queue-selectedType','all');
-  const [quickSegment, setQuickSegment] = useState<'all' | 'high_priority' | 'afg' | 'bookmarked'>('all');
+  const [quickSegment, setQuickSegment] = useSessionState<'all' | 'high_priority' | 'afg' | 'bookmarked'>('queue-quickSegment', 'all');
 
   const [viewMode, setViewModeState] = useState<'cards' | 'table' | 'kanban'>(() => {
     try {
@@ -155,22 +157,31 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     }
   };
 
-  const [sortBy, setSortBy] = useState<'pulseIq' | 'fleetAge' | 'calls' | 'value' | 'claimEvidence'>('pulseIq');
+  const [sortBy, setSortBy] = useSessionState<'pulseIq' | 'fleetAge' | 'calls' | 'value' | 'claimEvidence'>('queue-sortBy', 'pulseIq');
 
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'ems' | 'fire'>(globalCategory || 'all');
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(50);
+  const [selectedCategory, setSelectedCategory] = useSessionState<'all' | 'ems' | 'fire'>('queue-selectedCategory', globalCategory || 'all');
+  const [currentPage, setCurrentPage] = useSessionState<number>('queue-currentPage', 1);
+  const [pageSize, setPageSize] = useSessionState<number>('queue-pageSize', 50);
   const [expandedAgencyIds, setExpandedAgencyIds] = useState<Record<string, boolean>>({});
   const [activeClarityDrawer, setActiveClarityDrawer] = useState<Record<string, 'deal_story' | 'battlecard' | 'score_explainer' | null>>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [mobileControlsOpen, setMobileControlsOpen] = useState<boolean>(false);
   const [showUnderstandingModal, setShowUnderstandingModal] = useState<boolean>(false);
+  const directoryStatusApplies = Boolean(directoryStatus && (
+    directoryStatus.stateCode === 'all' || directoryStatus.stateCode === selectedState
+  ));
+  const visibleDirectoryStatus = directoryStatusApplies ? directoryStatus?.status : undefined;
 
   const activeFilterCount =
     (selectedCategory !== 'all' ? 1 : 0) +
     (selectedProduct !== 'all' ? 1 : 0) +
     (selectedStage !== 'all' ? 1 : 0) +
     (selectedState !== 'all' ? 1 : 0) +
+    (selectedCounty !== 'all' ? 1 : 0) +
+    (selectedCity !== 'all' ? 1 : 0) +
+    (zipFilter.trim() ? 1 : 0) +
+    (selectedJurisdiction !== 'all' ? 1 : 0) +
+    (selectedType !== 'all' ? 1 : 0) +
     (quickSegment !== 'all' ? 1 : 0);
 
   const toggleAgencyExpand = (agencyId: string, e: React.MouseEvent) => {
@@ -178,34 +189,29 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     setExpandedAgencyIds(prev => ({ ...prev, [agencyId]: !prev[agencyId] }));
   };
 
-  // Sync with Global Persistent Selector Bar
+  // Sync only when the app-level scope changes. A same-scope profile remount
+  // must not erase local directory filters restored from this browser session.
+  const previousGlobalScopeRef = useRef({ globalState, globalCounty, globalCity, globalCategory });
   useEffect(() => {
-    if (globalState !== undefined && globalState !== selectedState) {
+    const previous = previousGlobalScopeRef.current;
+    if (globalState !== undefined && globalState !== previous.globalState) {
       setSelectedState(globalState);
       setCurrentPage(1);
     }
-  }, [globalState]);
-
-  useEffect(() => {
-    if (globalCounty !== undefined && globalCounty !== selectedCounty) {
+    if (globalCounty !== undefined && globalCounty !== previous.globalCounty) {
       setSelectedCounty(globalCounty);
       setCurrentPage(1);
     }
-  }, [globalCounty]);
-
-  useEffect(() => {
-    if (globalCity !== undefined && globalCity !== selectedCity) {
+    if (globalCity !== undefined && globalCity !== previous.globalCity) {
       setSelectedCity(globalCity);
       setCurrentPage(1);
     }
-  }, [globalCity]);
-
-  useEffect(() => {
-    if (globalCategory !== undefined && globalCategory !== selectedCategory) {
+    if (globalCategory !== undefined && globalCategory !== previous.globalCategory) {
       setSelectedCategory(globalCategory);
       setCurrentPage(1);
     }
-  }, [globalCategory]);
+    previousGlobalScopeRef.current = { globalState, globalCounty, globalCity, globalCategory };
+  }, [globalState, globalCounty, globalCity, globalCategory]);
 
   // Sync filter passed from National Explorer
   useEffect(() => {
@@ -393,6 +399,19 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         </div>
       </div>
 
+      {visibleDirectoryStatus === 'loading' && filteredAgencies.length > 0 && (
+        <div className="workspace-data-status pi-status-info" role="status" data-testid="agency-directory-loading">
+          <strong>Loading agency records</strong>
+          <span>The cached directory remains available while current records are checked.</span>
+        </div>
+      )}
+      {visibleDirectoryStatus === 'unavailable' && filteredAgencies.length > 0 && (
+        <div className="workspace-data-status pi-status-warning" role="alert" data-testid="agency-directory-unavailable">
+          <strong>Current agency records are unavailable</strong>
+          <span>Showing locally available directory records. Check your connection or retry before treating missing results as empty.</span>
+        </div>
+      )}
+
       {/* Streamlined Single-Row Filter Bar + Progressive "More Filters" Drawer */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-3 min-w-0">
         
@@ -441,6 +460,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                 { label: selectedCounty, active: selectedCounty !== 'all' },
                 { label: selectedCity, active: selectedCity !== 'all' },
                 { label: `ZIP ${zipFilter}`, active: zipFilter.trim() !== '' },
+                { label: selectedJurisdiction, active: selectedJurisdiction !== 'all' },
+                { label: selectedType, active: selectedType !== 'all' },
                 { label: quickSegment === 'high_priority' ? 'Priority' : quickSegment === 'afg' ? 'AFG grant' : 'Saved', active: quickSegment !== 'all' },
                 { label: selectedProduct, active: selectedProduct !== 'all' },
                 { label: selectedStage, active: selectedStage !== 'all' },
@@ -454,6 +475,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
             >
               <button
                 type="button"
+                aria-pressed={selectedCategory === 'all'}
                 onClick={() => { setSelectedCategory('all'); setCurrentPage(1); }}
                 className={`flex-1 sm:flex-initial h-8 px-2.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${
                   selectedCategory === 'all'
@@ -466,6 +488,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               </button>
               <button
                 type="button"
+                aria-pressed={selectedCategory === 'ems'}
                 onClick={() => { setSelectedCategory('ems'); setCurrentPage(1); }}
                 className={`flex-1 sm:flex-initial h-8 px-2.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${
                   selectedCategory === 'ems'
@@ -479,6 +502,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               </button>
               <button
                 type="button"
+                aria-pressed={selectedCategory === 'fire'}
                 onClick={() => { setSelectedCategory('fire'); setCurrentPage(1); }}
                 className={`flex-1 sm:flex-initial h-8 px-2.5 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${
                   selectedCategory === 'fire'
@@ -1609,24 +1633,82 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         </div>
       )}
 
-      {filteredAgencies.length === 0 && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center">
-          <Layers className="w-7 h-7 text-slate-400 mx-auto mb-2" />
-          <h3 className="text-slate-900 dark:text-white font-bold text-sm">No agencies match current filters</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Results reflect your search and active geography, category, and account filters. Clear them below to search the available agency records again.</p>
+      {filteredAgencies.length === 0 && visibleDirectoryStatus === 'loading' && (
+        <div className="workspace-data-status pi-status-info" role="status" data-testid="agency-directory-results-loading">
+          <strong>Checking the requested agency records</strong>
+          <span>Wait for the data check to finish before treating this as an empty result.</span>
+        </div>
+      )}
+
+      {filteredAgencies.length === 0 && visibleDirectoryStatus === 'unavailable' && (
+        <div className="workspace-data-status pi-status-warning" role="alert" data-testid="agency-directory-results-unavailable">
+          <strong>Search results are unavailable</strong>
+          <span>The record request failed, so no agencies are being reported as missing. You can broaden this local search or retry the connection.</span>
           <button
+            type="button"
+            className="workspace-button"
             onClick={() => {
-              setSearchTerm('');
-              setSelectedState('all'); setSelectedCounty('all'); setSelectedCity('all'); setZipFilter(''); setSelectedJurisdiction('all'); setSelectedCategory('all'); setQuickSegment('all');
-              setSelectedProduct('all');
-              setSelectedStage('all');
-              setSelectedType('all');
-              setCurrentPage(1);
+              setSelectedState('all'); setSelectedCounty('all'); setSelectedCity('all'); setZipFilter('');
+              setSelectedJurisdiction('all'); setSelectedCategory('all'); setQuickSegment('all');
+              setSelectedProduct('all'); setSelectedStage('all'); setSelectedType('all'); setCurrentPage(1);
             }}
-            className="mt-4 px-3.5 py-2 text-xs font-semibold bg-[#1E3A8A] text-white hover:bg-[#172554] rounded-lg transition-colors"
           >
-            Reset Queue Filters
+            Search all local agencies
           </button>
+        </div>
+      )}
+
+      {filteredAgencies.length === 0 && (!visibleDirectoryStatus || visibleDirectoryStatus === 'ready') && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center" data-testid="agency-directory-empty">
+          <Layers className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+          <h3 className="text-slate-900 dark:text-white font-bold text-sm">
+            {searchTerm.trim()
+              ? `No agencies match “${searchTerm.trim()}”`
+              : selectedState !== 'all' || selectedCounty !== 'all' || selectedCity !== 'all'
+                ? 'No local agency records match this geography'
+                : 'No agencies match the active filters'}
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+            {searchTerm.trim()
+              ? 'The query returned no matches within the selected geography and filters. Clear the query or broaden the search.'
+              : selectedState !== 'all' || selectedCounty !== 'all' || selectedCity !== 'all'
+                ? 'The selected geography has no matching local records. Search all agencies or clear the geographic filters.'
+                : 'Results reflect your active category and account filters. Clear filters to search the available agency records again.'}
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {searchTerm.trim() && (
+              <button
+                type="button"
+                onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
+                className="workspace-button"
+              >
+                Clear search
+              </button>
+            )}
+            <button
+              type="button"
+              className="workspace-button"
+              onClick={() => {
+                setSelectedState('all'); setSelectedCounty('all'); setSelectedCity('all'); setZipFilter('');
+                setSelectedJurisdiction('all'); setSelectedCategory('all'); setQuickSegment('all');
+                setSelectedProduct('all'); setSelectedStage('all'); setSelectedType('all'); setCurrentPage(1);
+              }}
+            >
+              Search all agencies
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedState('all'); setSelectedCounty('all'); setSelectedCity('all'); setZipFilter('');
+                setSelectedJurisdiction('all'); setSelectedCategory('all'); setQuickSegment('all');
+                setSelectedProduct('all'); setSelectedStage('all'); setSelectedType('all'); setCurrentPage(1);
+              }}
+              className="workspace-button"
+            >
+              Reset all filters
+            </button>
+          </div>
         </div>
       )}
 

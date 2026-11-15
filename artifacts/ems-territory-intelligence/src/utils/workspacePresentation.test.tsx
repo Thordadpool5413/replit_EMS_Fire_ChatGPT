@@ -6,11 +6,12 @@ import {MobileBottomNav} from '../components/MobileBottomNav';
 import {WorkspaceHub} from '../components/WorkspaceHub';
 import {buildWorkspaceCsv} from './workspacePresentation';
 import type {Agency} from '../types';
-const agency={id:'a-1',name:'=UNTRUSTED()',stateCode:'FL',county:'Brevard',city:'Satellite Beach',verificationSource:'Geographic prospect generator',installedFleet:{defibBrand:'User corrected model',defibUnitsCount:0},zollOpportunity:{salesStage:'Target Lead'},fieldNotes:[{id:'n-1',date:'2026-11-14',nextAction:'Call purchasing',dueDate:'2026-11-20'}],_reviewOriginalValues:{'monitor.model':'Prior model'}} as unknown as Agency;
+const task={id:'task-1',taskOnly:true,nextAction:'Review equipment list',dueDate:'2026-11-22',owner:'Unassigned',priority:'high',history:[{id:'create-1',at:'2026-11-15T12:00:00Z',before:{},after:{nextAction:'Review equipment list',dueDate:'2026-11-22',owner:'',priority:'high',followUpStatus:'open'}},{id:'edit-1',at:'2026-11-16T12:00:00Z',before:{nextAction:'Review equipment list'},after:{nextAction:'Review equipment list with agency'}}]};
+const agency={id:'a-1',name:'=UNTRUSTED()',stateCode:'FL',county:'Brevard',city:'Satellite Beach',verificationSource:'Geographic prospect generator',installedFleet:{defibBrand:'User corrected model',defibUnitsCount:0},zollOpportunity:{salesStage:'Target Lead'},fieldNotes:[{id:'n-1',date:'2026-11-14',nextAction:'Call purchasing',dueDate:'2026-11-20'}],followUpTasks:[task],_reviewOriginalValues:{'monitor.model':'Prior model'}} as unknown as Agency;
 test('report export preserves zero, corrections, source origin, latest action, and spreadsheet safety',()=>{
  const csv=buildWorkspaceCsv([agency],'2026-11-15T12:00:00Z');
  assert.ok(csv.includes('"\'=UNTRUSTED()"'));
- for(const value of ['Generated prospect','End-user validation required','User corrected model','"0"','Call purchasing','monitor.model','2026-11-15T12:00:00Z']) assert.ok(csv.includes(value),value);
+  for(const value of ['Generated prospect','End-user validation required','User corrected model','"0"','Call purchasing','Review equipment list','Review equipment list with agency','2026-11-16T12:00:00Z','monitor.model','2026-11-15T12:00:00Z']) assert.ok(csv.includes(value),value);
 });
 test('five mobile destinations have readable labels and the correct selected group',()=>{
  const html=renderToStaticMarkup(<MobileBottomNav activeTab="grants" setActiveTab={()=>{}} dayRouteCount={2}/>);

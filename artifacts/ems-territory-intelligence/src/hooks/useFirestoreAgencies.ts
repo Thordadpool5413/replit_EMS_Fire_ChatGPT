@@ -34,6 +34,10 @@ interface UseFirestoreAgenciesOptions {
 
 export interface UseFirestoreAgenciesResult {
   agencies: Agency[];
+  directoryStatus: {
+    stateCode: string;
+    status: 'loading' | 'ready' | 'unavailable';
+  };
   syncPendingChanges: () => Promise<void>;
   isCloudConnected: boolean;
   isSyncing: boolean;
@@ -71,6 +75,10 @@ export function useFirestoreAgencies({
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [cloudSyncCount, setCloudSyncCount] = useState<number>(0);
+  const [directoryStatus, setDirectoryStatus] = useState<UseFirestoreAgenciesResult['directoryStatus']>({
+    stateCode: 'all',
+    status: 'ready',
+  });
 
   const initialHydratedRef = useRef<boolean>(false);
 
@@ -105,12 +113,18 @@ export function useFirestoreAgencies({
   // download every agency document on each fresh browser session and can exhaust
   // Firestore's daily read quota. National browsing uses the existing local cache.
   useEffect(() => {
-    if (globalState === 'all') return;
+    const stateCode = globalState.trim().toUpperCase() || 'ALL';
+    if (stateCode === 'ALL') {
+      setDirectoryStatus({ stateCode: 'all', status: 'ready' });
+      return;
+    }
 
+    setDirectoryStatus({ stateCode, status: 'loading' });
     let unsubscribe: (() => void) | undefined;
 
     try {
       unsubscribe = subscribeToFirestoreAgencies((rawCloudAgencies) => {
+        setDirectoryStatus({ stateCode, status: 'ready' });
         if (rawCloudAgencies.length > 0) {
           const localSourceData = loadAgencySourceRecordData();
           // Strip any mock or test-generated records coming from Firestore
@@ -163,9 +177,13 @@ export function useFirestoreAgencies({
             return merged;
           });
         }
-      }, globalState, () => setIsCloudConnected(false));
+      }, stateCode, () => {
+        setIsCloudConnected(false);
+        setDirectoryStatus({ stateCode, status: 'unavailable' });
+      });
     } catch (err) {
       console.warn('Real-time Firestore listener offline fallback:', err);
+      setDirectoryStatus({ stateCode, status: 'unavailable' });
     }
 
     return () => {
@@ -450,6 +468,7 @@ export function useFirestoreAgencies({
 
   return {
     agencies: visibleAgencies,
+    directoryStatus,
     syncPendingChanges,
     isCloudConnected,
     isSyncing,

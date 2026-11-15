@@ -4,6 +4,42 @@ import React, { useState } from 'react';
 import type { Agency, FieldNote } from '../types';
 import { collectFollowUps, followUpBucket, type FollowUpUpdater } from '../utils/followUps';
 const buckets = ['All open','Overdue','Today','Upcoming','No date','Completed'] as const;
+
+const historyFieldLabels: Record<string, string> = {
+  nextAction: 'Action',
+  dueDate: 'Due date',
+  followUpStatus: 'Status',
+  owner: 'Owner',
+  priority: 'Priority',
+};
+
+function formatHistoryValue(field: string, value: unknown): string {
+  if (field === 'owner' && !value) return 'Unassigned';
+  if (field === 'followUpStatus') return value === 'completed' ? 'Completed' : 'Open';
+  if (field === 'priority' && typeof value === 'string') return `${value[0]?.toUpperCase()}${value.slice(1)}`;
+  if (field === 'dueDate' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+  return typeof value === 'string' && value ? value : 'Not set';
+}
+
+function formatHistoryTimestamp(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+}
+
 function FollowUpRow({agency,note,onUpdate,onOpen}: {agency:Agency;note:FieldNote;onUpdate:FollowUpUpdater;onOpen?:(agency:Agency)=>void}) {
   const draft=useLocalDraft(`task-edit:${agency.id}:${note.id}`, {date:note.dueDate,action:note.nextAction,owner:note.owner ?? '',priority:note.priority ?? 'normal'});
   const {date,action,owner,priority}=draft.value;
@@ -23,7 +59,34 @@ function FollowUpRow({agency,note,onUpdate,onOpen}: {agency:Agency;note:FieldNot
     <div><span className="followup-status">{followUpBucket(note)}</span><h3>{note.nextAction}</h3>
       {onOpen?<button className="workspace-text-button" onClick={()=>onOpen(agency)}>{agency.name}</button>:<p>{agency.name}</p>}
       <p className="followup-context">{note.taskOnly ? 'Standalone task' : `${note.meetingType} · ${note.date} · ${note.repName}`} · {note.owner || 'Unassigned'} · {note.priority || 'normal'} priority</p>
-      {!note.taskOnly&&<details><summary>Interaction notes</summary><p>{note.notes}</p></details>}<details><summary>Change history ({note.history?.length ?? 0})</summary>{note.history?.length ? <ol>{note.history.map(h=><li key={h.id}><time>{h.at}</time>{Object.keys(h.after).filter(key=>h.before[key]!==h.after[key]).map(key=><p key={key}>{key}: {String(h.before[key] ?? 'Not set')} → {String(h.after[key] || 'Not set')}</p>)}</li>)}</ol>:<p>No edits recorded yet. Earlier history is unavailable.</p>}</details>
+      {!note.taskOnly&&<details><summary>Interaction notes</summary><p>{note.notes}</p></details>}
+      <details className="followup-history">
+        <summary>Change history ({note.history?.length ?? 0})</summary>
+        {note.history?.length ? (
+          <ol>
+            {note.history.map((entry) => {
+              const changedFields = Object.keys(entry.after).filter((field) => entry.before[field] !== entry.after[field]);
+              const isCreation = Object.keys(entry.before).length === 0;
+              return (
+                <li key={entry.id} className="followup-history-entry">
+                  <div className="followup-history-heading">
+                    <strong>{isCreation ? 'Task created' : 'Updated'}</strong>
+                    <time dateTime={entry.at}>{formatHistoryTimestamp(entry.at)}</time>
+                  </div>
+                  {changedFields.length > 0 && changedFields.map((field) => (
+                    <p key={field}>
+                      <strong>{historyFieldLabels[field] || field}:</strong>{' '}
+                      {isCreation
+                        ? formatHistoryValue(field, entry.after[field])
+                        : `${formatHistoryValue(field, entry.before[field])} → ${formatHistoryValue(field, entry.after[field])}`}
+                    </p>
+                  ))}
+                </li>
+              );
+            })}
+          </ol>
+        ) : <p>No edits recorded yet. Earlier history is unavailable.</p>}
+      </details>
     </div>
     <div className="followup-actions"><label>Action<input value={action} disabled={busy} onChange={e=>draft.setField('action',e.target.value)}/></label><label>Owner<input value={owner} placeholder="Unassigned" disabled={busy} onChange={e=>draft.setField('owner',e.target.value)}/></label><label>Priority<select value={priority} disabled={busy} onChange={e=>draft.setField('priority',e.target.value)}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label><label>Follow-up date<input type="date" value={date} disabled={busy} onChange={e=>setDate(e.target.value)}/></label>
       <button className="workspace-button" disabled={busy||!action.trim()} onClick={()=>save(completed?'completed':'open',date)}>Save changes</button>

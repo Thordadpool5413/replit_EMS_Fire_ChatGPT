@@ -1,3 +1,4 @@
+import { useLocalDraft } from '../hooks/useLocalDraft';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -70,8 +71,10 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
   const [noteSaveError, setNoteSaveError] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [quickNoteAgencyId, setQuickNoteAgencyId] = useState<string | null>(null);
-  const [quickNoteText, setQuickNoteText] = useState('');
-  const [quickAction, setQuickAction] = useState('Follow up with Chief next week');
+  const draft=useLocalDraft(`route-note:${quickNoteAgencyId ?? 'none'}`,{quickNoteText:'',quickAction:''});
+  const {quickNoteText,quickAction}=draft.value;
+  const setQuickNoteText=(v:string)=>draft.setField('quickNoteText',v);
+  const setQuickAction=(v:string)=>draft.setField('quickAction',v);
   const [activeBattlecard, setActiveBattlecard] = useState<string>('x-series-advanced');
 
   const dayRouteAgencies = agencies.filter(a => a.inDayRoute);
@@ -151,7 +154,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       dueDate: ''
     });
 
-    setQuickNoteText('');
+    draft.clear();
     setQuickNoteAgencyId(null);
     } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
     finally { setNoteSaving(false); }
@@ -211,7 +214,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
         <strong>Saved on this device · sync needs attention</strong>
         {outbox.filter(item => item.status === 'FAILED').map(item => <p key={item.id}>{item.agencyName}: {item.error || 'Cloud save failed. Retry when connected.'}{item.error?.includes('Another device changed') && <button type="button" disabled={isSyncing || !isOnline} className="ml-2 underline" onClick={() => window.dispatchEvent(new CustomEvent('ems-resolve-conflict', {detail: item.id}))}>Apply my change to this field</button>}</p>)}
       </section>}
-      {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
+      {(noteSaveError || draft.error) && <p role="alert" className="text-red-600">{noteSaveError || draft.error}</p>}
       {/* Today's Route Stops */}
       <div
         id="field-route-sheet"

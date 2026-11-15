@@ -1,3 +1,4 @@
+import { useLocalDraft } from '../../hooks/useLocalDraft';
 /** Field notes: chronological log plus a logger with a real due-date input. Uses the app's onAddFieldNote callback. */
 import React, { useState } from 'react';
 import { CalendarClock, NotebookPen, Send } from 'lucide-react';
@@ -10,10 +11,13 @@ export const FieldNotesPanel: React.FC<{
   agency: Agency;
   onAdd: (agencyId: string, note: Omit<FieldNote, 'id'>) => void | Promise<void>;
 }> = ({ agency, onAdd }) => {
-  const [meetingType, setMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
-  const [noteText, setNoteText] = useState('');
-  const [nextAction, setNextAction] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const draft=useLocalDraft(`visit:${agency.id}`,{meetingType:'On-Site Station Visit',noteText:'',nextAction:'',dueDate:''});
+  const {noteText,nextAction,dueDate}=draft.value;
+  const meetingType=draft.value.meetingType as FieldNote['meetingType'];
+  const setMeetingType=(v:string)=>draft.setField('meetingType',v);
+  const setNoteText=(v:string)=>draft.setField('noteText',v);
+  const setNextAction=(v:string)=>draft.setField('nextAction',v);
+  const setDueDate=(v:string)=>draft.setField('dueDate',v);
   const [saved, setSaved] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,7 +37,7 @@ export const FieldNotesPanel: React.FC<{
       nextAction: nextAction.trim(),
       dueDate,
     });
-    setNoteText(''); setNextAction(''); setDueDate('');
+    draft.clear();
     setSaved('Saved on this device. Cloud status is shown in the sync indicator.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
     finally { setSaving(false); }
@@ -79,6 +83,8 @@ export const FieldNotesPanel: React.FC<{
         </div>
         {dueInvalid && <p className="afn-error" role="alert">Due date cannot be in the past.</p>}
         <button type="submit" disabled={saving || !noteText.trim() || dueInvalid} data-testid="button-save-field-note"><Send aria-hidden="true" className="h-3.5 w-3.5" />Save note</button>
+        {draft.error && <p role="alert" className="afn-error">{draft.error}</p>}
+        {noteText && !draft.error && <p className="afn-saved">Draft saved on this device. Submit to add it to the account.</p>}
         {error && <p role="alert" className="afn-error">{error}</p>}
         {saved && <p className="afn-saved" role="status">{saved}</p>}
       </form>

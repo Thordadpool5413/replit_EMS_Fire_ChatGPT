@@ -8,7 +8,7 @@
     height: 4.1rem !important;
     padding-inline: 0.15rem !important;
     /* Agencies needs more room than the short labels, especially at large text. */
-    grid-template-columns: minmax(44px, 1fr) minmax(44px, 1.5fr) repeat(4, minmax(44px, 1fr));
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
   }
 }
 

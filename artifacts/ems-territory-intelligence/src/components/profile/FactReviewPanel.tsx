@@ -31,7 +31,7 @@ export function reviewableAgencyFacts(a: Agency): Fact[] {
   ].map(f => ({...f, value: a._reviewOriginalValues?.[f.id] ?? f.value})) as Fact[];
 }
 const labels: Record<FactReviewAction,string> = {review:'Review information',confirm:'Confirm this fact',correct:'Correct this value',flag:'Flag a discrepancy',note:'Add verification note'};
-export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
+export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}> = ({agency,requestedFieldId}) => {
   const facts = useMemo(()=>reviewableAgencyFacts(agency),[agency]);
   const [entries,setEntries]=useState<FactReviewEntry[]>([]);
   const [loadError,setLoadError]=useState('');
@@ -47,7 +47,7 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
   useEffect(()=>{
-    setEntries([]); setLoadError(''); setDirty(false); setFieldId(facts[0].id);
+    setEntries([]); setLoadError(''); setDirty(false); setFieldId(facts.some(f=>f.id===requestedFieldId)?requestedFieldId!:facts[0].id);
     setReviewer(''); setMethod('');setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
     try {setEntries([...new Map([...(agency._factReviews ?? []), ...loadFactReviews(agency.id)].map(e => [e.id,e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt))); } catch(e){setLoadError(e instanceof Error?e.message:'Review history is unavailable.');}
   },[agency.id]);

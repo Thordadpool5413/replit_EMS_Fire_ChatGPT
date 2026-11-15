@@ -455,7 +455,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           <div>
             <h2 className="pi-section-heading flex items-center gap-2">
               <Compass className="w-5 h-5 text-[#285EE8] dark:text-blue-400 shrink-0" />
-              <span>Interactive U.S. Territory Map</span>
+              <span>Territory map</span>
             </h2>
             <p className="pi-supporting mt-0.5">
               {globalCity && globalCity !== 'all'
@@ -468,6 +468,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </p>
           </div>
 
+          <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
           {/* Region Filter Segmented Control */}
           <div className="home-map-region-filter max-w-full overflow-x-auto">
             <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">

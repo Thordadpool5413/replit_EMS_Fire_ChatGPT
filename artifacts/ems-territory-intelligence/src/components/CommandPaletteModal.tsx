@@ -97,19 +97,16 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   if (!isOpen) return null;
 
   const quickNavTabs = [
-    { id: 'home', title: '1. Territory & Home Explorer (50 States & Live Maps)', subtitle: 'Browse all 50 states, 3,144 counties, or switch to live Google Maps', icon: Globe },
-    { id: 'queue', title: '2. Priority Accounts Queue (Ranked Opportunities)', subtitle: 'Ranked EMS & Fire replacement targets by PulseIQ™ score and pipeline stage', icon: Layers },
-    { id: 'knowledge', title: '3. ROI, Grants & TCO Hub (Calculator, AFG & Recalls)', subtitle: '5-year TCO calculator, OpenFEMA AFG awards, FDA recalls & Sourcewell contracts', icon: FileText },
-    { id: 'field', title: '4. Field & 3D Demo Ops (Driving Routes & 3D Fleet)', subtitle: 'Multi-stop station itineraries, offline field notes & 3D apparatus staging', icon: MapPin },
-    { id: 'google_maps', title: 'Google Maps Live Territory Explorer', subtitle: 'Satellite, terrain & street views with station pins', icon: MapPin },
-    { id: 'pulseiq', title: 'PulseIQ™ Analytics & Regional Benchmarks', subtitle: 'Compare opportunity scores across regions and counties', icon: BarChart3 },
-    { id: 'data_health', title: 'Data Health & Cloud Sync Verification', subtitle: 'Real-time Firestore sync status & federal registry lineage', icon: Cloud }
-  ].filter(t => !query || t.title.toLowerCase().includes(query.toLowerCase()) || t.subtitle.toLowerCase().includes(query.toLowerCase()));
-
-  const allItems = [
-    ...filteredAgencies.map(a => ({ type: 'agency' as const, item: a })),
-    ...quickNavTabs.map(t => ({ type: 'nav' as const, item: t }))
-  ];
+    { id:'home',title:'Map',subtitle:'Explore states, counties, and agency locations',icon:Globe },
+    { id:'queue',title:'Agencies',subtitle:'Find accounts and review opportunity signals',icon:Building2 },
+    { id:'field',title:'Field Work',subtitle:'Routes, visits, and follow-up notes',icon:MapPin },
+    { id:'reports',title:'Reports',subtitle:'Account activity exports and territory priorities',icon:BarChart3 },
+    { id:'settings',title:'Settings',subtitle:'Data status, source imports, and backups',icon:Cloud },
+    { id:'states_directory',title:'State and county directory',subtitle:'Browse agencies by geography',icon:Globe },
+    { id:'knowledge',title:'Clinical & competitive reference',subtitle:'Prepare for an account conversation',icon:FileText },
+    { id:'google_maps',title:'Agency locations',subtitle:'Open street and satellite maps',icon:MapPin }
+  ].filter(t=>!query||`${t.title} ${t.subtitle}`.toLowerCase().includes(query.toLowerCase()));
+  const allItems=[...filteredAgencies.map(a=>({type:'agency' as const,item:a})),...quickNavTabs.map(t=>({type:'nav' as const,item:t}))];
 
   const handleSelectNavTab = (tabId: string) => {
     onNavigateTab(tabId);

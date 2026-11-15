@@ -31,6 +31,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import {
+  PRIMARY_WORKSPACES, primaryWorkspaceFor,
   isFieldWorkTab,
   isOpportunitiesTab as isOpportunitiesWorkspaceTab,
   isSpecialistTab as isSpecialistWorkspaceTab,
@@ -160,14 +161,17 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isSystem = isSystemWorkspaceTab(activeTab);
   const isSystemActive = isSystem && !activeAccountName;
 
+  const currentPrimary = activeAccountName ? 'queue' : primaryWorkspaceFor(activeTab);
   const getWorkspaceTitle = () => {
     if (activeAccountName) return `Agencies / ${activeAccountName}`;
-    if (activeTab === 'home') return 'Home';
+    if (activeTab === 'home') return 'Map';
+    if (activeTab === 'reports') return 'Reports';
+    if (activeTab === 'settings') return 'Settings';
     if (activeTab === 'queue') return 'Agencies';
     if (isOpportunities) return 'Opportunities';
     if (isTerritory) return 'Territory Explorer';
     if (isMyWorkTab) return 'Field Work';
-    if (isSystemActive) return 'Data & system';
+    if (isSystemActive) return 'Settings';
     if (isSpecialistActive) return 'Specialist tools';
     return 'Workspace';
   };
@@ -225,42 +229,19 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         <nav className="pi-primary-nav" aria-label="Workspaces and tools">
-          <div className="pi-sb-group">
-            <p className="pi-sb-heading">Workspaces</p>
-            <div className="pi-sb-list">
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab('home')} aria-current={isHomeActive ? 'page' : undefined}>
-                <Home aria-hidden="true" /><span className="pi-sb-label">Home</span>
-              </button>
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab('queue')} aria-current={isAccountsActive ? 'page' : undefined}>
-                <Building2 aria-hidden="true" /><span className="pi-sb-label">Agencies</span>
-              </button>
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isOpportunities ? activeTab : 'contracts')} aria-current={isOpportunitiesActive ? 'page' : undefined}>
-                <TrendingUp aria-hidden="true" /><span className="pi-sb-label">Opportunities</span>
-              </button>
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isTerritory ? activeTab : 'states_directory')} aria-current={isTerritoryActive ? 'page' : undefined}>
-                <Globe aria-hidden="true" /><span className="pi-sb-label">Territory</span>
-                {globalState !== 'all' && <span className="pi-sb-badge" aria-label={`State ${globalState}`}>{globalState}</span>}
-              </button>
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isMyWorkTab ? activeTab : 'field')} aria-current={isMyWorkActive ? 'page' : undefined}>
-                <Briefcase aria-hidden="true" /><span className="pi-sb-label">Field Work</span>
-                {dayRouteCount > 0 && (
-                  <span className="pi-sb-badge" aria-label={`${dayRouteCount} agencies in today's route`} title={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="pi-sb-group">
-            <p className="pi-sb-heading">Tools</p>
-            <div className="pi-sb-list">
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isSpecialist ? activeTab : 'knowledge')} aria-current={isSpecialistActive ? 'page' : undefined}>
-                <Database aria-hidden="true" /><span className="pi-sb-label">Specialist tools</span>
-              </button>
-              <button type="button" className="pi-sb-item" onClick={() => setActiveTab(isSystem ? activeTab : 'data_health')} aria-current={isSystemActive ? 'page' : undefined}>
-                <ShieldCheck aria-hidden="true" /><span className="pi-sb-label">Data &amp; system</span>
-              </button>
-            </div>
-          </div>
+          <div className="pi-sb-group"><p className="pi-sb-heading">Your workspace</p><div className="pi-sb-list">
+            {PRIMARY_WORKSPACES.map(item => {
+              const Icon = item.id === 'home' ? Globe : item.id === 'queue' ? Building2 : item.id === 'field' ? Briefcase : TrendingUp;
+              const active = currentPrimary === item.id;
+              return <button key={item.id} type="button" className="pi-sb-item" onClick={() => item.id === 'home' ? onGoHome() : setActiveTab(item.id)} aria-current={active ? 'page' : undefined} title={item.description}>
+                <Icon aria-hidden="true"/><span className="pi-sb-label">{item.label}</span>
+                {item.id === 'field' && dayRouteCount > 0 && <span className="pi-sb-badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>}
+              </button>;
+            })}
+          </div></div>
+          <div className="pi-sb-group"><p className="pi-sb-heading">Manage</p><div className="pi-sb-list">
+            <button type="button" className="pi-sb-item" onClick={() => setActiveTab('settings')} aria-current={currentPrimary === 'settings' ? 'page' : undefined}><SlidersHorizontal aria-hidden="true"/><span className="pi-sb-label">Settings</span></button>
+          </div></div>
         </nav>
 
         <div className="pi-sidebar-quick-actions">
@@ -309,11 +290,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               type="button"
               onClick={openChatbot}
               className="pi-sb-tool pi-sb-tool--accent"
-              title="Open Territory Strategy AI"
-              aria-label="Open Strategy AI"
+              title="Open Research assistant"
+              aria-label="Open research assistant"
             >
               <Sparkles aria-hidden="true" />
-              <span>Strategy AI</span>
+              <span>Research assistant</span>
             </button>
           )}
 

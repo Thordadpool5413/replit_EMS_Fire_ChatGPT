@@ -190,6 +190,7 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
 type ProfileSection =
+  | 'activity'
   | 'overview'
   | 'equipment'
   | 'purchasing'
@@ -200,7 +201,9 @@ type ProfileSection =
   | 'deal_story'
   | 'evidence';
 
+const PRIMARY_PROFILE_IDS = ['overview','equipment','decision_makers','purchasing','activity','evidence'];
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
+  { id: 'activity', label: 'Activity & follow-up', short: 'Activity', purpose: 'Visit history, next actions, and notes. Unfinished notes are saved on this device.', icon: FileText },
   { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Curated account briefing.', icon: Layers },
   { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison. Current use needs confirmation.', icon: Cpu },
   { id: 'purchasing', label: 'Purchasing & Funding', short: 'Purchasing', purpose: 'Contract and supplier records, procurement timing, cooperative vehicles and grant history. Past dates are history, not deadlines.', icon: Scale },
@@ -209,7 +212,7 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string
   { id: 'medicare', label: 'Financial Intelligence', short: 'Financial', purpose: 'Reported claims data separated from planning estimates. Assumptions are adjustable; projections are not agency outcomes.', icon: DollarSign },
   { id: 'meeting', label: 'Account findings & meeting preparation', short: 'Meeting prep', purpose: 'Evidence, confidence, cited signals and a practical meeting brief. Records are working references, not proof of buying intent.', icon: FileText },
   { id: 'deal_story', label: 'Deal story & discovery playbook', short: 'Deal story', purpose: 'Prepare an agency-specific conversation, discovery questions and a clearly labeled planning comparison.', icon: Sparkles },
-  { id: 'evidence', label: 'Evidence & Verification', short: 'Evidence', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and keep field notes.', icon: FileCheck2 },
+  { id: 'evidence', label: 'Evidence & Verification', short: 'Evidence', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and inspect review history.', icon: FileCheck2 },
 ];
 
 type NppesSourceCandidate = {
@@ -455,6 +458,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const protocolModel = useMemo(() => getAgencyClinicalProtocolAlignment(agency), [agency]);
 
   // Default to Overview; every topic shares one accessible content region.
+  const [requestedReviewField, setRequestedReviewField] = useState<string | undefined>();
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.
@@ -793,7 +797,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     if (activeSection === 'decision_makers') return sec === 'leadership';
     if (activeSection === 'operations') return sec === 'apparatus' || (sec === 'clinical' && profileServiceMode !== 'fire');
     if (activeSection === 'medicare') return sec === 'billing' && profileServiceMode !== 'fire';
-    if (activeSection === 'evidence') return sec === 'evidence_ledger' || sec === 'notes';
+    if (activeSection === 'activity') return sec === 'notes';
+    if (activeSection === 'evidence') return sec === 'evidence_ledger';
     return false;
   };
 
@@ -1631,7 +1636,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 className="acp-nav-select"
                 data-testid="select-profile-section-mobile"
               >
-                {PROFILE_SECTIONS.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+                {[...PRIMARY_PROFILE_IDS.map(id=>PROFILE_SECTIONS.find(tab=>tab.id===id)!),...PROFILE_SECTIONS.filter(tab=>!PRIMARY_PROFILE_IDS.includes(tab.id))].map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
               </select>
             </div>
             <div className="acp-nav-tabs hidden md:flex" role="tablist" aria-label="Profile sections" onKeyDown={(event) => {
@@ -1641,9 +1646,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               if (index < 0) return;
               event.preventDefault();
               const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
-              if (navigateProfileSection(PROFILE_SECTIONS[next].id)) buttons[next].focus({ preventScroll: true });
+              if (navigateProfileSection(buttons[next].dataset.section as ProfileSection)) buttons[next].focus({ preventScroll: true });
             }}>
-              {PROFILE_SECTIONS.map((tab) => {
+              {PRIMARY_PROFILE_IDS.map(id=>PROFILE_SECTIONS.find(tab=>tab.id===id)!).map((tab) => {
                 const isActive = activeSection === tab.id;
                 const Icon = tab.icon;
                 return (
@@ -1651,21 +1656,23 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     key={tab.id}
                     type="button"
                     role="tab"
+                    data-section={tab.id}
                     id={`profile-tab-${tab.id}`}
                     aria-controls="profile-topic-panel"
                     aria-selected={isActive}
-                    tabIndex={isActive ? 0 : -1}
+                    tabIndex={isActive || (!PRIMARY_PROFILE_IDS.includes(activeSection) && tab.id==='overview') ? 0 : -1}
                     data-testid={`tab-profile-${tab.id}`}
                     onClick={() => navigateProfileSection(tab.id)}
                     className={`acp-tab${isActive ? ' is-active' : ''}`}
                   >
                     <Icon aria-hidden="true" className="h-3.5 w-3.5" />
                     {tab.short}
-                    {tab.id === 'evidence' && agency.fieldNotes.length > 0 && <span className="acp-tab-count">{agency.fieldNotes.length}</span>}
+                    {tab.id === 'activity' && agency.fieldNotes.length > 0 && <span className="acp-tab-count">{agency.fieldNotes.length}</span>}
                   </button>
                 );
               })}
             </div>
+            <label className="hidden md:block acp-more-label">More detail<select value={PRIMARY_PROFILE_IDS.includes(activeSection)?'':activeSection} onChange={event=>event.target.value&&navigateProfileSection(event.target.value as ProfileSection)} aria-label="Additional account detail"><option value="">Choose a topic</option>{PROFILE_SECTIONS.filter(tab=>!PRIMARY_PROFILE_IDS.includes(tab.id)).map(tab=><option key={tab.id} value={tab.id}>{tab.label}</option>)}</select></label>
           </nav>
 
           <div
@@ -1674,11 +1681,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             id="profile-topic-panel"
             className="acp-topic-content"
             role="tabpanel"
-            aria-labelledby={`profile-tab-${activeSection}`}
+            aria-label={PROFILE_SECTIONS.find(tab=>tab.id===activeSection)?.label}
             tabIndex={0}
           >
           {activeSection === 'overview' && (
-            <ProfileCommandOverview agency={agency} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
+            <ProfileCommandOverview agency={agency} onReviewFact={fieldId=>{setRequestedReviewField(fieldId);navigateProfileSection('evidence');}} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
               <ProfileAttentionSummary key={agency.id} agency={agency} onNavigate={navigateProfileSection} />
             </ProfileCommandOverview>
           )}
@@ -2883,7 +2890,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 {activeSection === 'evidence' && (
           <section className="acp-fact-review" aria-label="Fact review" data-testid="section-fact-review">
-            <FactReviewPanel key={agency.id} agency={agency} />
+            <FactReviewPanel key={agency.id} agency={agency} requestedFieldId={requestedReviewField} />
           </section>
         )}
 

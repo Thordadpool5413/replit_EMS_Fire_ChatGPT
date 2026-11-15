@@ -1,3 +1,4 @@
+import { useLocalDraft } from '../hooks/useLocalDraft';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -76,11 +77,9 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 }) => {
   const [noteSaveError, setNoteSaveError] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
-  const [quickNote, setQuickNote] = useState('');
-
-  useEffect(() => {
-    setQuickNote('');
-  }, [agency?.id]);
+  const draft=useLocalDraft(`preview-note:${agency?.id ?? 'none'}`,{quickNote:''});
+  const quickNote=draft.value.quickNote;
+  const setQuickNote=(v:string)=>draft.setField('quickNote',v);
 
   useEffect(() => {
     if (!agency) return;
@@ -132,7 +131,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
       nextAction: `Follow up with ${primaryContact?.name || 'Command Staff'}`,
       dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
     });
-    setQuickNote('');
+    draft.clear();
     } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
     finally { setNoteSaving(false); }
   };
@@ -445,7 +444,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 <DataLabel kind="notes">Field Activity &amp; Cloud Notes ({agency.fieldNotes?.length || 0})</DataLabel>
               </div>
 
-              {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
+              {(noteSaveError || draft.error) && <p role="alert" className="text-red-600">{noteSaveError || draft.error}</p>}
         <form onSubmit={handleSaveNote} className="flex items-center gap-2">
                 <input
                   type="text"

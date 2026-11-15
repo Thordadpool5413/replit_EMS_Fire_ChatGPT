@@ -1,3 +1,4 @@
+import { useLocalDraft } from '../hooks/useLocalDraft';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -27,10 +28,13 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
   const [noteSaving, setNoteSaving] = useState(false);
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
   const [searchFilter, setSearchFilter] = useState('');
-  const [meetingType, setMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
-  const [notes, setNotes] = useState('');
-  const [nextAction, setNextAction] = useState('Deliver trial evaluation units');
-  const [dueDate, setDueDate] = useState('2026-10-29');
+  const draft=useLocalDraft(`quick-visit:${selectedAgencyId}`,{meetingType:'On-Site Station Visit',notes:'',nextAction:'',dueDate:''});
+  const {notes,nextAction,dueDate}=draft.value;
+  const meetingType=draft.value.meetingType as FieldNote['meetingType'];
+  const setMeetingType=(v:string)=>draft.setField('meetingType',v);
+  const setNotes=(v:string)=>draft.setField('notes',v);
+  const setNextAction=(v:string)=>draft.setField('nextAction',v);
+  const setDueDate=(v:string)=>draft.setField('dueDate',v);
 
   // Sync initial agency selection when modal opens
   useEffect(() => {
@@ -92,7 +96,7 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
       dueDate
     });
 
-    setNotes('');
+    draft.clear();
     onClose();
     } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
     finally { setNoteSaving(false); }
@@ -132,7 +136,7 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
           </div>
         )}
 
-        {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
+        {(noteSaveError || draft.error) && <p role="alert" className="text-red-600">{noteSaveError || draft.error}</p>}
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           
           {/* Target Account Selector with Search */}

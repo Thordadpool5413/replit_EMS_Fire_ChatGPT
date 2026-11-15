@@ -59,8 +59,8 @@ const sharedNavigationMobileViewports = [
   { width: 390, height: 844, mobile: true },
 ];
 const sharedNavigationWorkspaces = [
-  { label: 'Home', navLabel: null },
-  { label: 'Territory', navLabel: 'Territory views' },
+  { label: 'Map', navLabel: null },
+  { label: 'Reports', navLabel: null },
   { label: 'Agencies', navLabel: null },
   { label: 'Field Work', navLabel: 'Field Work views' },
 ];

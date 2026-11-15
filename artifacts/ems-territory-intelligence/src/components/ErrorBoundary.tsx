@@ -47,15 +47,16 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Workspace View Recovered
+              This view could not load
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-              A temporary display glitch occurred in this section. Your account data and sync outbox are completely safe.
+              Try opening the workspace again. This action does not clear saved records, queued changes, or visit drafts.
             </p>
             {this.state.error?.message && (
-              <div className="mt-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate text-left">
+              <details className="mt-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate text-left">
+                <summary>Technical details</summary>
                 {this.state.error.message}
-              </div>
+              </details>
             )}
             <div className="flex items-center justify-center gap-2 mt-4">
               <button
@@ -63,7 +64,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reload This View</span>
+                <span>{this.props.onReset ? 'Return to map' : 'Try again'}</span>
               </button>
             </div>
           </div>

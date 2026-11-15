@@ -65,7 +65,6 @@ const BLOCKED_NOTE_NARRATIVE_PATTERNS = [
 ];
 
 const BLOCKED_NOTE_ID_PATTERNS = [
-  /^fn-\d+$/i,
   /^mock-/i,
   /^test-/i,
   /^sample-/i,
@@ -83,7 +82,7 @@ const BLOCKED_EMAIL_DOMAINS = [
 export type DataProvenanceTier =
   | 'firestore_cloud_synced'
   | 'live_federal_registry'
-  | 'public_federal_baseline';
+  | 'public_federal_baseline' | 'generated_prospect';
 
 export interface SanitizationAuditEvent {
   id: string;
@@ -565,10 +564,10 @@ class DataSanitizationService {
       calculatedScore >= 88
         ? 'Critical Opportunity'
         : calculatedScore >= 78
-          ? 'High Opportunity'
+          ? 'High Value'
           : calculatedScore >= 65
-            ? 'Moderate Opportunity'
-            : 'Standard Watchlist';
+            ? 'Mid-Term Pipeline'
+            : 'Maintained Account';
 
     return {
       ...agency.zollOpportunity,
@@ -589,6 +588,7 @@ class DataSanitizationService {
    * Determines the exact data provenance tier of an agency record.
    */
   public classifyProvenanceTier(agency: Agency): DataProvenanceTier {
+    if (agency.verificationSource?.includes('Geographic prospect generator')) return 'generated_prospect';
     if (
       agency.isCloudPersisted ||
       Boolean(agency._syncedAt) ||
@@ -600,7 +600,6 @@ class DataSanitizationService {
 
     if (
       agency.isVerifiedRecord ||
-      Boolean(agency.npiNumber) ||
       agency.verificationSource === 'Federal CMS NPI Registry' ||
       agency.verificationSource === 'Google Maps Verified'
     ) {
@@ -725,9 +724,11 @@ class DataSanitizationService {
       zollOpportunity: verifiedOpportunity,
       isCloudPersisted: isCloud,
       isVerifiedRecord: Boolean(agency.isVerifiedRecord),
-      dataProvenanceTier: isCloud
+      dataProvenanceTier: agency.verificationSource?.includes('Geographic prospect generator')
+        ? 'generated_prospect'
+        : isCloud
         ? 'firestore_cloud_synced'
-        : agency.isVerifiedRecord || Boolean(agency.npiNumber)
+        : agency.isVerifiedRecord
           ? 'live_federal_registry'
           : 'public_federal_baseline'
     };
@@ -847,7 +848,7 @@ class DataSanitizationService {
       // Also count live NPI enrichment even if already synced to Firestore
       if (
         tier === 'firestore_cloud_synced' &&
-        (agency.isVerifiedRecord || Boolean(agency.npiNumber))
+        (agency.isVerifiedRecord)
       ) {
         liveFederalNpiCount++;
       }

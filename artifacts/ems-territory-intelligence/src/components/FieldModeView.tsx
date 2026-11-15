@@ -67,6 +67,8 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
   comparedAgencyIds = [],
   onToggleAgencyComparison
 }) => {
+  const [noteSaveError, setNoteSaveError] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   const [quickNoteAgencyId, setQuickNoteAgencyId] = useState<string | null>(null);
   const [quickNoteText, setQuickNoteText] = useState('');
   const [quickAction, setQuickAction] = useState('Follow up with Chief next week');
@@ -134,20 +136,25 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleQuickLog = (agencyId: string) => {
+  const handleQuickLog = async (agencyId: string) => {
     if (!quickNoteText.trim()) return;
 
-    onAddFieldNote(agencyId, {
+    if (noteSaving) return;
+    setNoteSaveError(''); setNoteSaving(true);
+    try {
+    await onAddFieldNote(agencyId, {
       date: new Date().toISOString().split('T')[0],
       repName: 'Territory Account Manager',
       meetingType: 'On-Site Station Visit',
       notes: quickNoteText.trim(),
       nextAction: quickAction,
-      dueDate: '2026-10-28'
+      dueDate: ''
     });
 
     setQuickNoteText('');
     setQuickNoteAgencyId(null);
+    } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
+    finally { setNoteSaving(false); }
   };
 
   return (
@@ -200,6 +207,11 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
         </div>
       </div>
 
+      {outbox.some(item => item.status === 'FAILED') && <section role="status" className="rounded-lg border border-amber-300 p-3 mb-3 text-sm">
+        <strong>Saved on this device · sync needs attention</strong>
+        {outbox.filter(item => item.status === 'FAILED').map(item => <p key={item.id}>{item.agencyName}: {item.error || 'Cloud save failed. Retry when connected.'}{item.error?.includes('Another device changed') && <button type="button" disabled={isSyncing || !isOnline} className="ml-2 underline" onClick={() => window.dispatchEvent(new CustomEvent('ems-resolve-conflict', {detail: item.id}))}>Apply my change to this field</button>}</p>)}
+      </section>}
+      {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
       {/* Today's Route Stops */}
       <div
         id="field-route-sheet"

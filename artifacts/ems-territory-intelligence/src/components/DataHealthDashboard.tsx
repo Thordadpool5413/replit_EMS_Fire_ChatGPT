@@ -185,7 +185,9 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
       case 'live_federal_registry':
         return 'Live Federal NPI Registry';
       case 'public_federal_baseline':
-        return 'Public USFA / Census Baseline';
+        return 'Imported · needs user review';
+      case 'generated_prospect':
+        return 'Generated prospect · needs user review';
     }
   };
 
@@ -206,7 +208,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>
               <span aria-hidden="true">·</span>
               <span>
-                {isCloudConnected ? 'Live Cloud Connected' : 'Local Verified Cache'}
+                {isCloudConnected ? 'Live Cloud Connected' : 'Local Research Cache'}
               </span>
             </div>
 
@@ -249,7 +251,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               <span className="text-slate-600 dark:text-slate-400">
                 {strictCloudOnlyMode
                   ? 'Strict Firestore Cloud-Only (Exclusively displaying records persisted in Google Cloud Firestore)'
-                  : 'Verified Cloud + Public Federal Registry (Displaying Firestore records alongside verified USFA/Census municipal baselines)'}
+                  : 'Cloud, imported records, and generated prospects (all require user validation)'}
               </span>
             </div>
           </div>
@@ -264,7 +266,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              All Verified Real Data ({agencies.length})
+              All Research Records ({agencies.length})
             </button>
             <button
               type="button"
@@ -316,7 +318,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Live Federal NPI &amp; Maps Verified</span>
+              <span>Registry and directory imports</span>
               <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -337,7 +339,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Public USFA / Census Baseline</span>
+              <span>Imported and generated baseline</span>
               <Server className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -350,7 +352,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            Authentic USFA FDID &amp; U.S. Census county demographics
+            Source references do not independently verify agency facts
           </div>
         </div>
 
@@ -819,10 +821,11 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs">
               {(
                 [
-                  { id: 'all', label: 'All Verified' },
+                  { id: 'all', label: 'All records' },
                   { id: 'firestore_cloud_synced', label: 'Firestore Synced' },
                   { id: 'live_federal_registry', label: 'Federal NPI' },
-                  { id: 'public_federal_baseline', label: 'Public Baseline' }
+                  { id: 'public_federal_baseline', label: 'Imported' },
+                  { id: 'generated_prospect', label: 'Generated prospects' }
                 ] as const
               ).map((tab) => (
                 <button

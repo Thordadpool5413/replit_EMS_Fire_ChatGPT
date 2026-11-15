@@ -234,6 +234,9 @@ export interface DocumentedTradeInOffer {
 }
 
 export interface Agency {
+  /** Derived UI overlay metadata; imported data remains unchanged. */
+  _factReviews?: import('../services/factReviewStore').FactReviewEntry[];
+  _reviewOriginalValues?: Record<string, string>;
   documentedTradeInOffers?: DocumentedTradeInOffer[];
   id: string;
   name: string;
@@ -430,8 +433,9 @@ export interface Agency {
   budgetCycleEndMonth?: string;
   _syncedAt?: string;
   _updatedAt?: string;
+  _revision?: number;
   isCloudPersisted?: boolean;
-  dataProvenanceTier?: 'firestore_cloud_synced' | 'live_federal_registry' | 'public_federal_baseline';
+  dataProvenanceTier?: 'firestore_cloud_synced' | 'live_federal_registry' | 'public_federal_baseline' | 'generated_prospect';
   operatingRelationship?: 'DIRECT_OPERATING_AGENCY' | 'PARENT_MUNICIPALITY' | 'CONTRACTED_PROVIDER' | 'UNRELATED_ENTITY' | 'UNRESOLVED' | string;
   operatingRelationshipSummary?: string;
   registryEntityConfirmed?: boolean;
@@ -629,9 +633,11 @@ export interface SyncOutboxItem {
   timestamp: string;
   agencyId: string;
   agencyName: string;
-  actionType: 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT';
+  actionType: 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT' | 'AGENCY_PATCH' | 'CREATE_AGENCY' | 'FACT_REVIEW';
+  error?: string;
+  syncedRevision?: number;
   payload: any;
-  status: 'PENDING' | 'SYNCED' | 'FAILED';
+  status: 'PENDING' | 'SYNCED' | 'FAILED' | 'LOCAL_ONLY';
 }
 
 export type UserRole = 'EMS' | 'Fire' | 'Territory';

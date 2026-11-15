@@ -1,3 +1,5 @@
+import { stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
+import { applyAgencyMutation } from '../services/agencyMutation';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -15,20 +17,6 @@ import {
 export { explainAgencyScore, type PulseIqFactorBreakdown, type PulseIqScoreExplanation } from './pulseIqExplanation';
 
 const STORAGE_KEY_CUSTOM_AGENCIES = 'zoll_pulseiq_custom_agencies_v8';
-const LEGACY_AGENCY_KEYS = [
-  'zoll_pulseiq_agencies_v1',
-  'zoll_pulseiq_agencies_v2',
-  'zoll_pulseiq_agencies_v3',
-  'zoll_pulseiq_agencies_v4',
-  'zoll_pulseiq_agencies_v5',
-  'zoll_pulseiq_custom_agencies_v1',
-  'zoll_pulseiq_custom_agencies_v2',
-  'zoll_pulseiq_custom_agencies_v3',
-  'zoll_pulseiq_custom_agencies_v4',
-  'zoll_pulseiq_custom_agencies_v5',
-  'zoll_pulseiq_custom_agencies_v6',
-  'zoll_pulseiq_custom_agencies_v7'
-];
 const STORAGE_KEY_OUTBOX = 'zoll_pulseiq_outbox_v1';
 const STORAGE_KEY_WEIGHTS = 'zoll_pulseiq_weights_v1';
 
@@ -38,151 +26,69 @@ interface CompactAgencyDelta {
   lastContactDate?: string;
   salesStage?: LeadStage;
   fieldNotes?: Agency['fieldNotes'];
-}
-
-let baselineSignatureMap: Map<string, {
-  isBookmarked: boolean;
-  inDayRoute: boolean;
-  notesCount: number;
-  salesStage: LeadStage;
-}> | null = null;
-
-function purgeLegacyStorageKeys(): void {
-  try {
-    for (const key of LEGACY_AGENCY_KEYS) {
-      localStorage.removeItem(key);
-    }
-  } catch {
-    // Ignore storage access errors in restricted contexts
-  }
-}
-
-function getBaselineSignatures(baseline: Agency[]) {
-  if (!baselineSignatureMap) {
-    baselineSignatureMap = new Map();
-    for (const a of baseline) {
-      baselineSignatureMap.set(a.id, {
-        isBookmarked: Boolean(a.isBookmarked),
-        inDayRoute: Boolean(a.inDayRoute),
-        notesCount: a.fieldNotes ? a.fieldNotes.length : 0,
-        salesStage: a.zollOpportunity.salesStage
-      });
-    }
-  }
-  return baselineSignatureMap;
+  record?: Agency;
 }
 
 export function loadStoredAgencies(): Agency[] {
-  purgeLegacyStorageKeys();
   const baseline = nationalProviderDb.getInitialBaselineAgencies();
   const sourceData = loadAgencySourceRecordData();
-  const restoreBaselineWithLocalSources = () =>
-    applyAgencySourceRecordDataMap(baseline, sourceData);
-
-  try {
-    getBaselineSignatures(baseline);
-
-    const rawCustom = localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES);
-    if (!rawCustom) {
-      return restoreBaselineWithLocalSources();
-    }
-
-    const customEntries: [string, CompactAgencyDelta][] = JSON.parse(rawCustom);
-    if (!Array.isArray(customEntries) || customEntries.length === 0) {
-      return restoreBaselineWithLocalSources();
-    }
-
-    const customMap = new Map<string, CompactAgencyDelta>(customEntries);
-    return baseline.map(agency => {
-      const custom = customMap.get(agency.id);
-      const restored = !custom ? agency : {
-        ...agency,
-        isBookmarked: custom.isBookmarked ?? agency.isBookmarked,
-        inDayRoute: custom.inDayRoute ?? agency.inDayRoute,
-        lastContactDate: custom.lastContactDate ?? agency.lastContactDate,
-        fieldNotes: (custom.fieldNotes ?? agency.fieldNotes ?? []).filter(
-          n => n.repName !== 'Sarah Jenkins (TM)' && !n.notes.includes('Kowalski') && !n.notes.includes('Chief Adams')
-        ),
-        zollOpportunity: {
-          ...agency.zollOpportunity,
-          salesStage: custom.salesStage ?? agency.zollOpportunity.salesStage
-        }
-      };
-      return applyAgencySourceRecordData(restored, sourceData[agency.id]);
+  const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES);
+  const entries: [string, CompactAgencyDelta][] = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(entries)) throw new Error('Saved agencies could not be read. Existing data has not been overwritten.');
+  const records = new Map(baseline.map(a => [a.id, a]));
+  for (const [id, custom] of entries) {
+    const agency = custom.record ?? records.get(id);
+    if (!agency) continue; // Older v8 deltas did not contain new-agency identities.
+    records.set(id, {
+      ...agency,
+      isBookmarked: custom.isBookmarked ?? agency.isBookmarked,
+      inDayRoute: custom.inDayRoute ?? agency.inDayRoute,
+      lastContactDate: custom.lastContactDate ?? agency.lastContactDate,
+      fieldNotes: custom.fieldNotes ?? agency.fieldNotes ?? [],
+      zollOpportunity: { ...agency.zollOpportunity, salesStage: custom.salesStage ?? agency.zollOpportunity.salesStage }
     });
-  } catch {
-    return restoreBaselineWithLocalSources();
   }
+  for (const item of loadStoredOutbox()) {
+    if (item.status === 'SYNCED' && item.syncedRevision && (records.get(item.agencyId)?._revision ?? 0) >= item.syncedRevision) continue;
+    try { records.set(item.agencyId, applyAgencyMutation(records.get(item.agencyId), item)); }
+    catch { /* Unsupported legacy actions remain in the queue for review. */ }
+  }
+  return applyAgencySourceRecordDataMap([...records.values()], sourceData);
 }
 
+/** Atomic storage write: never truncate history or silently report a failed save. */
 export function saveAgencies(agencies: Agency[]): void {
-  purgeLegacyStorageKeys();
-  try {
-    const baseline = nationalProviderDb.getInitialBaselineAgencies();
-    const signatures = getBaselineSignatures(baseline);
-    const customEntries: [string, CompactAgencyDelta][] = [];
-
-    for (const a of agencies) {
-      const baseSig = signatures.get(a.id);
-      const notesCount = a.fieldNotes ? a.fieldNotes.length : 0;
-
-      const isModified = baseSig
-        ? (
-            Boolean(a.isBookmarked) !== baseSig.isBookmarked ||
-            Boolean(a.inDayRoute) !== baseSig.inDayRoute ||
-            notesCount !== baseSig.notesCount ||
-            a.zollOpportunity.salesStage !== baseSig.salesStage
-          )
-        : (Boolean(a.isBookmarked) || Boolean(a.inDayRoute) || notesCount > 1);
-
-      if (isModified) {
-        const delta: CompactAgencyDelta = {
-          isBookmarked: a.isBookmarked,
-          inDayRoute: a.inDayRoute,
-          lastContactDate: a.lastContactDate,
-          salesStage: a.zollOpportunity.salesStage
-        };
-        if (!baseSig || notesCount !== baseSig.notesCount) {
-          delta.fieldNotes = (a.fieldNotes || []).slice(0, 8);
-        }
-        customEntries.push([a.id, delta]);
-        if (customEntries.length >= 150) break;
-      }
-    }
-
-    const serialized = JSON.stringify(customEntries);
-    try {
-      localStorage.setItem(STORAGE_KEY_CUSTOM_AGENCIES, serialized);
-    } catch {
-      // If quota is still tight due to other keys, prune to top 40 deltas and retry safely
-      purgeLegacyStorageKeys();
-      const trimmed = JSON.stringify(customEntries.slice(0, 40));
-      try {
-        localStorage.setItem(STORAGE_KEY_CUSTOM_AGENCIES, trimmed);
-      } catch {
-        // Silently skip localStorage cache if browser storage is completely full
-      }
-    }
-  } catch {
-    // Prevent storage quota issues from disrupting application state
+  const baseline = new Map(nationalProviderDb.getInitialBaselineAgencies().map(a => [a.id, a]));
+  const entries: [string, CompactAgencyDelta][] = [];
+  for (const displayed of agencies) {
+    const a = stripAgencyReviewOverlay(displayed);
+    const base = baseline.get(a.id);
+    const delta: CompactAgencyDelta = {
+      isBookmarked: a.isBookmarked, inDayRoute: a.inDayRoute,
+      lastContactDate: a.lastContactDate, salesStage: a.zollOpportunity.salesStage,
+      fieldNotes: a.fieldNotes ?? []
+    };
+    if (!base || a.isCloudPersisted) delta.record = a;
+    if (delta.record || Boolean(a.isBookmarked) !== Boolean(base?.isBookmarked) ||
+        Boolean(a.inDayRoute) !== Boolean(base?.inDayRoute) ||
+        a.lastContactDate !== base?.lastContactDate ||
+        a.zollOpportunity.salesStage !== base?.zollOpportunity.salesStage ||
+        JSON.stringify(a.fieldNotes ?? []) !== JSON.stringify(base?.fieldNotes ?? [])) entries.push([a.id, delta]);
   }
+  try { localStorage.setItem(STORAGE_KEY_CUSTOM_AGENCIES, JSON.stringify(entries)); }
+  catch { throw new Error('Device storage is full or unavailable. Nothing was discarded. Export a backup or free space, then retry.'); }
 }
 
 export function loadStoredOutbox(): SyncOutboxItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_OUTBOX);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  const raw = localStorage.getItem(STORAGE_KEY_OUTBOX);
+  const items = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(items)) throw new Error('Saved changes could not be read. The queue has not been overwritten.');
+  return items;
 }
 
 export function saveOutbox(items: SyncOutboxItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_OUTBOX, JSON.stringify(items.slice(0, 50)));
-  } catch {
-    // Ignore quota errors on offline outbox cache
-  }
+  localStorage.setItem(STORAGE_KEY_OUTBOX, JSON.stringify(items));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('ems-outbox-changed'));
 }
 
 export function loadStoredWeights(): PredictiveWeights {

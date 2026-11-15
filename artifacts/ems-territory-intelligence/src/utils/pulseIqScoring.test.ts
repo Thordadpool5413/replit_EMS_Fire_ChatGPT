@@ -652,7 +652,7 @@ test('custom PulseIQ weights stay aligned in profile, tooltip, regional, and met
   assert.ok(methodologyMarkup.includes('Medicare claim records'));
 });
 
-test('missing score inputs are shown as model fallbacks instead of implied source facts', () => {
+test('missing score inputs earn zero points and are not invented', () => {
   const record = {
     ...agency(35, 500000),
     annualCardiacArrestCalls: undefined,
@@ -669,13 +669,17 @@ test('missing score inputs are shown as model fallbacks instead of implied sourc
   const clinical = factors.find((factor) => factor.key === 'clinical')!;
   const software = factors.find((factor) => factor.key === 'software')!;
 
-  assert.equal(fleet.inputs[0].valueUsed, '7 years');
+  assert.equal(fleet.inputs[0].valueUsed, 'Not reported');
+  assert.equal(fleet.baseScore, 0);
+  assert.equal(clinical.baseScore, 0);
+  assert.equal(software.baseScore, 0);
+  assert.equal(calculateScore({} as Agency), 0);
   assert.equal(fleet.inputs[0].usedDefault, true);
-  assert.equal(clinical.inputs[0].valueUsed, '600 calls/year');
+  assert.equal(clinical.inputs[0].valueUsed, 'Not reported');
   assert.equal(clinical.inputs[0].usedDefault, true);
   assert.equal(software.inputs[0].valueUsed, 'Not listed');
   assert.equal(software.inputs[0].usedDefault, true);
-  assert.match(software.method, /missing software names currently count as no ZOLL match/i);
+  assert.match(software.method, /missing software names earn no points/i);
 });
 
 const rankedAgency = (

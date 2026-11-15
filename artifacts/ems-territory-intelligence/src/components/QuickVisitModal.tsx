@@ -23,6 +23,8 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
   onAddFieldNote,
   isOnline
 }) => {
+  const [noteSaveError, setNoteSaveError] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
   const [searchFilter, setSearchFilter] = useState('');
   const [meetingType, setMeetingType] = useState<FieldNote['meetingType']>('On-Site Station Visit');
@@ -73,12 +75,15 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetId = selectedAgencyId || activeAgency?.id;
     if (!targetId || !notes.trim()) return;
 
-    onAddFieldNote(targetId, {
+    if (noteSaving) return;
+    setNoteSaveError(''); setNoteSaving(true);
+    try {
+    await onAddFieldNote(targetId, {
       date: new Date().toISOString().split('T')[0],
       repName: 'Territory Account Manager',
       meetingType,
@@ -89,6 +94,8 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
 
     setNotes('');
     onClose();
+    } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
+    finally { setNoteSaving(false); }
   };
 
   return (
@@ -125,6 +132,7 @@ export const QuickVisitModal: React.FC<QuickVisitModalProps> = ({
           </div>
         )}
 
+        {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           
           {/* Target Account Selector with Search */}

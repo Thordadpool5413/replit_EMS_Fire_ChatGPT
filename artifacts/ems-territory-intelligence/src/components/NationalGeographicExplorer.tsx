@@ -2158,6 +2158,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         <div className="min-w-0">
                           <h3 className="agency-card-title text-[17px] font-bold leading-snug tracking-[-0.02em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300">
                             {agency.name}
+                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
                           </h3>
                           <div className="agency-card-geography mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                             {agency.state} ({agency.stateCode}) <span className="text-slate-400">›</span> {agency.county} <span className="text-slate-400">›</span>{' '}
@@ -2349,6 +2350,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </div>
                           <h3 className="break-words text-sm font-bold leading-snug text-slate-950 dark:text-white">
                             {agency.name}
+                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
                           </h3>
                           <p className="mt-1 text-xs leading-snug text-slate-600 dark:text-slate-300">
                             {agency.city}, {agency.stateCode} · {agency.county}
@@ -2449,6 +2451,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <td className="py-2.5 px-4">
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
                               {agency.name}
+                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
                               <span className={`provider-discipline ${isFire ? 'provider-discipline--fire' : 'provider-discipline--ems'}`}>{isFire ? 'Fire' : 'EMS'}</span> <span className="provider-fdid">FDID {agency.fdid || 'Not reported'}</span> · {agency.city}, {agency.stateCode} · {agency.county}

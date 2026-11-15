@@ -1,3 +1,4 @@
+import { validateCorrection } from '../../services/agencyReviewOverlay';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCheck, ExternalLink, FileCheck2, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert, UserCheck } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
@@ -27,7 +28,7 @@ export function reviewableAgencyFacts(a: Agency): Fact[] {
     {id:'operations.calls',label:'Annual calls received',value:text(a.annualCallVolume),sourceKey:'annualCallsReceived'},
     {id:'operations.transports',label:'Annual 911 transports',value:text(a.annual911Transports),sourceKey:'annualEmergencyVolume'},
     {id:'operations.stations',label:'Stations',value:text(a.stationsCount),sourceKey:'stationCount'},
-  ];
+  ].map(f => ({...f, value: a._reviewOriginalValues?.[f.id] ?? f.value})) as Fact[];
 }
 const labels: Record<FactReviewAction,string> = {review:'Review information',confirm:'Confirm this fact',correct:'Correct this value',flag:'Flag a discrepancy',note:'Add verification note'};
 export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
@@ -48,8 +49,11 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
   useEffect(()=>{
     setEntries([]); setLoadError(''); setDirty(false); setFieldId(facts[0].id);
     setReviewer(''); setMethod('');setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
-    try {setEntries(loadFactReviews(agency.id));} catch(e){setLoadError(e instanceof Error?e.message:'Review history is unavailable.');}
+    try {setEntries([...new Map([...(agency._factReviews ?? []), ...loadFactReviews(agency.id)].map(e => [e.id,e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt))); } catch(e){setLoadError(e instanceof Error?e.message:'Review history is unavailable.');}
   },[agency.id]);
+  useEffect(() => {
+    setEntries(previous => [...new Map([...(agency._factReviews ?? []), ...previous].map(e => [e.id,e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt)));
+  }, [agency._factReviews]);
   useEffect(()=>{
     window.dispatchEvent(new CustomEvent('agency-profile-review-dirty',{detail:dirty}));
     return ()=>{window.dispatchEvent(new CustomEvent('agency-profile-review-dirty',{detail:false}));};
@@ -74,6 +78,7 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
     if((action==='flag'||action==='note')&&!note.trim()){setError('Add a note explaining this review.');return;}
     if(supportingUrl&&!safeSourceUrl(supportingUrl)){setError('Use a valid http or https supporting link.');return;}
     try {
+      if(action==='correct') validateCorrection(fact.id, correction.trim());
       const next=appendFactReview({
         id:crypto.randomUUID(),agencyId:agency.id,fieldId:fact.id,action,
         originalValue:fact.value,previousValue:current,
@@ -83,12 +88,12 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
         sourceName:source?.sourceName,sourceUrl,sourceKind:source?.sourceKind,sourcePeriod:source?.reportingPeriod,
         reviewedAt:new Date().toISOString(),
       });
-      setEntries(next);setDirty(false);setNote('');setCorrection('');setSupportingUrl('');
-      setMessage('Saved in this browser for this fact only. The imported record is unchanged.');
+      setEntries([...new Map([...(agency._factReviews ?? []), ...next].map(e => [e.id,e])).values()]);setDirty(false);setNote('');setCorrection('');setSupportingUrl('');
+      setMessage('Saved on this device. Corrections now update the profile and calculations; imported values remain in history.');
     } catch(e){setError(e instanceof Error?e.message:'Review could not be saved.');}
   };
   return <section className="fact-review" data-testid="fact-review-panel" aria-labelledby="fact-review-title">
-    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Fact-level review</span><h2 id="fact-review-title">Evidence, not assumptions</h2><p>Review one value at a time. Source type and your review status are separate.</p></div><span className="fr-local">Browser-local history</span></header>
+    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Fact-level review</span><h2 id="fact-review-title">Evidence, not assumptions</h2><p>Review one value at a time. Source type and your review status are separate.</p></div><span className="fr-local">Fact review history</span></header>
     {loadError&&<p role="alert" className="fr-error">{loadError} Saving is blocked to protect existing history.</p>}
     <div className="fr-workspace">
       <div className="fr-list">
@@ -106,8 +111,8 @@ export const FactReviewPanel: React.FC<{agency:Agency}> = ({agency}) => {
         <form onSubmit={save} onChange={()=>{setDirty(true);setMessage('');}}>
           <label>Review action<select value={action} onChange={e=>setAction(e.target.value as FactReviewAction)} data-testid="fact-review-action">{Object.entries(labels).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
           <div className="fr-form-grid"><label>Reviewer name<input required maxLength={120} value={reviewer} onChange={e=>setReviewer(e.target.value)} autoComplete="name" data-testid="fact-review-reviewer"/></label><label>Review method<input required maxLength={240} placeholder="e.g. agency phone call, document review" value={method} onChange={e=>setMethod(e.target.value)} data-testid="fact-review-method"/></label></div>
-          <p className="fr-hint">Name is self-entered, not an authenticated identity. Reviews stay on this browser and device.</p>
-          {action==='correct'&&<label>Corrected value<input required maxLength={2000} value={correction} onChange={e=>setCorrection(e.target.value)} data-testid="fact-review-correction"/><span className="fr-hint">Original values and previous corrections remain in history. This does not change equipment totals or financial calculations.</span></label>}
+          <p className="fr-hint">Name is self-entered, not an authenticated identity. Reviews save on this device and queue for cloud synchronization.</p>
+          {action==='correct'&&<label>Corrected value<input required maxLength={2000} value={correction} onChange={e=>setCorrection(e.target.value)} data-testid="fact-review-correction"/><span className="fr-hint">Original values and previous corrections remain in history. Valid corrections update the profile, equipment totals, scoring, and exports.</span></label>}
           <label>Review notes<textarea rows={3} maxLength={4000} required={action==='flag'||action==='note'} value={note} onChange={e=>setNote(e.target.value)} data-testid="fact-review-note"/></label>
           <label>Supporting link <span className="fr-hint">(optional)</span><input type="url" maxLength={2000} placeholder="https://" value={supportingUrl} onChange={e=>setSupportingUrl(e.target.value)}/></label>
           {error&&<p role="alert" className="fr-error">{error}</p>}{message&&<p role="status" className="fr-success">{message}</p>}

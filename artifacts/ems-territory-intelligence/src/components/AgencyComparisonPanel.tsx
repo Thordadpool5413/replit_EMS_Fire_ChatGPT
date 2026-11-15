@@ -286,7 +286,8 @@ export function buildAgencyComparisonCsv(
       ['', '', '', 'PulseIQ calibration', 'Score formula', 'Not available', '', ''],
     ];
 
-  return [columns, ...calibrationRows, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const provenanceRows = agencies.map(agency => [agency.name, agency.id, agency.agencyType, 'Record origin', 'Validation status', agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect; user validation required' : 'Imported record; user validation required', '', '']);
+  return [columns, ...calibrationRows, ...provenanceRows, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
 }
 
 function downloadComparisonCsv(agencies: Agency[], filter: ComparisonFilter, weights?: PredictiveWeights | null) {

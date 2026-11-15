@@ -1,3 +1,4 @@
+import { scoreEvidenceCompleteness } from '../utils/pulseIqScoring';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -1238,6 +1239,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </div>
           <p className="acp-notice" role="note" data-testid="text-profile-verification-notice">
             <ShieldAlert aria-hidden="true" className="h-3.5 w-3.5" />
+            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}</strong>{' '}
             Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.
           </p>
         </section>

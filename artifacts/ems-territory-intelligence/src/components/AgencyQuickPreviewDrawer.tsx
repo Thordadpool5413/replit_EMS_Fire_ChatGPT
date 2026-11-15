@@ -74,6 +74,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
   onSaveAgencySourceData,
   onDecideAgencySourceRecord
 }) => {
+  const [noteSaveError, setNoteSaveError] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   const [quickNote, setQuickNote] = useState('');
 
   useEffect(() => {
@@ -116,10 +118,13 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
   const denialMetric = getAgencyMedicareDenialMetricForDisplay(agency);
 
-  const handleSaveNote = (e: React.FormEvent) => {
+  const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickNote.trim() || !onAddFieldNote) return;
-    onAddFieldNote(agency.id, {
+    if (noteSaving) return;
+    setNoteSaveError(''); setNoteSaving(true);
+    try {
+    await onAddFieldNote(agency.id, {
       date: new Date().toISOString().split('T')[0],
       repName: 'Territory Manager',
       meetingType: 'Phone Call',
@@ -128,6 +133,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
       dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
     });
     setQuickNote('');
+    } catch (e) { setNoteSaveError(e instanceof Error ? e.message : 'Could not save. Your note is still in the form.'); }
+    finally { setNoteSaving(false); }
   };
 
   return (
@@ -165,6 +172,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 className="text-lg font-semibold text-slate-900 dark:text-white tracking-[-0.015em] leading-snug mt-1"
               >
                 {agency.name}
+                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
               </h2>
 
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
@@ -437,7 +445,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 <DataLabel kind="notes">Field Activity &amp; Cloud Notes ({agency.fieldNotes?.length || 0})</DataLabel>
               </div>
 
-              <form onSubmit={handleSaveNote} className="flex items-center gap-2">
+              {noteSaveError && <p role="alert" className="text-red-600">{noteSaveError}</p>}
+        <form onSubmit={handleSaveNote} className="flex items-center gap-2">
                 <input
                   type="text"
                   value={quickNote}

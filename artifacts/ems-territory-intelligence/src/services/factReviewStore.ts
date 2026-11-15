@@ -61,6 +61,7 @@ export function appendFactReview(entry: FactReviewEntry, store: StorageLike = st
   if (all.some(e => e.id === entry.id)) throw new Error('This review has already been saved.');
   try { store.setItem(FACT_REVIEW_STORAGE_KEY, JSON.stringify([...all, entry])); }
   catch { throw new Error('This browser could not save the review. Your changes are still in the form.'); }
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ems-reviews-changed', {detail: entry}));
   return [...all,entry].filter(e => e.agencyId === entry.agencyId);
 }
 export function effectiveFactValue(original: string, entries: FactReviewEntry[]): string {

@@ -10,6 +10,7 @@ import {
   getImportedStateDenialMetric,
   getLocalMedicareDenialImport,
   MEDICARE_DENIAL_CSV_HEADERS,
+  MEDICARE_DENIAL_IMPORT_EVENT,
   parseMedicareDenialCsv,
   saveLocalMedicareDenialImport,
   type MedicareDenialImportDataset,
@@ -38,8 +39,8 @@ function setBrowserStorage(storage: MemoryStorage) {
     configurable: true,
     value: {
       localStorage: storage,
-      dispatchEvent: () => {
-        dispatchedEvents += 1;
+      dispatchEvent: (event: Event) => {
+        if(event.type===MEDICARE_DENIAL_IMPORT_EVENT) dispatchedEvents += 1;
         return true;
       },
     },

@@ -6,11 +6,13 @@ const csvCell=(value:unknown)=>{
   if (/^[\s]*[=+@-]/.test(text)) text="'"+text;
   return '"'+text.replaceAll('"','""')+'"';
 };
-export function buildWorkspaceCsv(agencies:Agency[],exportedAt=new Date().toISOString()):string {
-  const columns=['Agency','Agency ID','State','County','City','Record origin','Review requirement','Monitor model','Monitor quantity','Sales stage','Latest interaction','Next action','Follow-up date','Follow-up status','User corrections applied','Exported at','Tasks and change history'];
+export function buildWorkspaceCsv(agencies:Agency[],exportedAt=new Date().toISOString(),includePlanningEstimates=false):string {
+  const columns=['Agency','Agency ID','State','County','City','Record origin','Review requirement','Monitor model','Monitor quantity','Sales stage','Latest interaction','Next action','Follow-up date','Follow-up status','User corrections applied','Exported at','Tasks and change history','Planning estimates (not agency facts)'];
   const rows=agencies.map(a=>{
     const last=[...(a.fieldNotes??[])].sort((x,y)=>y.date.localeCompare(x.date))[0];
-    return [a.name,a.id,a.stateCode,a.county,a.city,getRecordOrigin(a),'End-user validation required',a.installedFleet?.defibBrand,a.installedFleet?.defibUnitsCount,a.zollOpportunity?.salesStage,last?.date,last?.nextAction,last?.dueDate,last?.nextAction ? last.followUpStatus ?? 'open' : '',Object.keys(a._reviewOriginalValues??{}).join('; '),exportedAt,JSON.stringify([...(a.fieldNotes??[]).filter(n=>n.nextAction),...(a.followUpTasks??[])])];
+    const generated=getRecordOrigin(a)==='Generated prospect';
+    const corrected=(field:string)=>Object.prototype.hasOwnProperty.call(a._reviewOriginalValues??{},field);
+    return [a.name,a.id,a.stateCode,a.county,a.city,getRecordOrigin(a),'End-user validation required',(!generated||corrected('monitor.model'))?a.installedFleet?.defibBrand:null,(!generated||corrected('monitor.quantity'))?a.installedFleet?.defibUnitsCount:null,a.zollOpportunity?.salesStage,last?.date,last?.nextAction,last?.dueDate,last?.nextAction ? last.followUpStatus ?? 'open' : '',Object.keys(a._reviewOriginalValues??{}).join('; '),exportedAt,JSON.stringify([...(a.fieldNotes??[]).filter(n=>n.nextAction),...(a.followUpTasks??[])]),generated&&includePlanningEstimates?JSON.stringify({warning:'Planning estimates, not observed agency facts',equipment:a.installedFleet}):''];
   });
   return [columns,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }

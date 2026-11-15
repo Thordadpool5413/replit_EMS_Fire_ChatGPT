@@ -1,3 +1,4 @@
+import { recordImportRun } from './services/importRunStore';
 import { FollowUpWorkspace } from './components/FollowUpWorkspace';
 import { WorkspaceHub } from './components/WorkspaceHub';
 /**
@@ -583,12 +584,12 @@ export default function App() {
     serializedBackup: string
   ): AgencySourceRecordRestoreResult => {
     const parsed = parseAgencySourceRecordBackup(serializedBackup);
-    if (!parsed.ok) return parsed;
+    if (!parsed.ok) {recordImportRun({source:'Source-record backup',status:'failed',accepted:0,duplicates:null,conflicts:null,unmatchedAgencies:null,message:parsed.reason});return parsed;}
 
     const existing = loadAgencySourceRecordData();
     const merged = mergeAgencySourceRecordDataMaps(existing, parsed.data);
     const saved = saveAgencySourceRecordDataMap(merged.data);
-    if (!saved.ok) return saved;
+    if (!saved.ok) {recordImportRun({source:'Source-record backup',status:'failed',accepted:0,duplicates:null,conflicts:null,unmatchedAgencies:null,message:saved.reason});return saved;}
 
     const knownAgencyIds = new Set(agencies.map((agency) => agency.id));
     const unmatchedAgencyCount = Object.keys(parsed.data).filter(
@@ -598,6 +599,7 @@ export default function App() {
       applyAgencySourceRecordDataMap(agencies, merged.data),
     );
 
+    if(!recordImportRun({source:'Source-record backup',status:'completed',accepted:merged.associationsAdded+merged.factsAdded,duplicates:merged.duplicatesSkipped,conflicts:merged.conflictsSkipped,unmatchedAgencies:unmatchedAgencyCount,message:'Existing agency fields and conflicting source records were preserved.'})) showToast('Import saved, but its history receipt could not be stored.','warn');
     return {
       ok: true,
       associationsAdded: merged.associationsAdded,

@@ -1,3 +1,4 @@
+import { recordImportRun } from './importRunStore';
 import { validateNpiCheckDigit } from './npiVerificationService';
 
 export const MEDICARE_DENIAL_IMPORT_EVENT = 'medicare-denial-import-updated';
@@ -536,6 +537,14 @@ export function getLocalMedicareDenialImport(): MedicareDenialImportDataset | nu
 }
 
 export function saveLocalMedicareDenialImport(dataset: MedicareDenialImportDataset): void {
+  try { saveValidatedLocalMedicareDenialImport(dataset); }
+  catch(error) {
+    if(typeof window!=='undefined') recordImportRun({source:'Aggregate claims import',status:'failed',accepted:0,duplicates:null,conflicts:null,unmatchedAgencies:null,message:error instanceof Error?error.message:'Import failed.'});
+    throw error;
+  }
+}
+
+function saveValidatedLocalMedicareDenialImport(dataset: MedicareDenialImportDataset): void {
   if (typeof window === 'undefined') throw new Error('Local browser storage is unavailable.');
   if (!isStoredMedicareDenialImport(dataset)) {
     throw new Error('The claim summary is not valid for local storage.');
@@ -548,6 +557,7 @@ export function saveLocalMedicareDenialImport(dataset: MedicareDenialImportDatas
   try {
     window.localStorage.setItem(STORAGE_KEY, serialized);
     window.dispatchEvent(new Event(MEDICARE_DENIAL_IMPORT_EVENT));
+    recordImportRun({source:'Aggregate claims import',status:'completed',accepted:dataset.rows.length,duplicates:null,conflicts:null,unmatchedAgencies:null,message:`Replaced local aggregate dataset. Reporting period: ${dataset.reportingPeriod}. Source: ${dataset.sourceName}.`});
   } catch {
     throw new Error('The browser could not save this import. Free local browser storage and try again.');
   }

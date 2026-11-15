@@ -22,3 +22,9 @@ test('generated equipment is not promoted to fact data by mere presence',()=>{
  const agency={verificationSource:'Geographic prospect generator',installedFleet:{defibBrand:'Illustrative',defibUnitsCount:7},factEvidence:{}} as Agency;
  assert.equal(hasAgencyFactData(agency,'defibrillatorBiomedicalFleet'),false);
 });
+
+test('unreferenced generated numbers cannot create a high-priority score',async()=>{
+ const {calculateScore,evaluatePulseIqFactors}=await import('../utils/pulseIqScoring');
+ const agency={verificationSource:'Geographic prospect generator',installedFleet:{defibBrand:'Competitor',defibAgeYears:15,epcrCadSoftware:'Competitor',billingSoftware:'Competitor'},annualCardiacArrestCalls:5000,grantStatus:{afgAwarded:true,saferGrantActive:true},factEvidence:{}} as unknown as Agency;
+ assert.equal(calculateScore(agency),0);assert.ok(evaluatePulseIqFactors(agency).every(f=>f.inputs.every(i=>i.usedDefault)));
+});

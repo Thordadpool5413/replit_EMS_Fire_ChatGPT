@@ -1,9 +1,10 @@
+import { IMPORT_RUN_KEY, isImportRun } from './importRunStore';
 import type { Agency } from '../types';
 import { FACT_REVIEW_STORAGE_KEY, loadFactReviews } from './factReviewStore';
 import { validateResearch } from '../components/profile/decisionSupport';
 
 export interface WorkspaceBackup { format: 'ems-workspace'; version: 1; createdAt: string; agencies: Agency[]; storage: Record<string,string> }
-const allowed = (key: string) => [FACT_REVIEW_STORAGE_KEY, 'ems_territory_agency_source_records_v1',
+const allowed = (key: string) => [IMPORT_RUN_KEY, FACT_REVIEW_STORAGE_KEY, 'ems_territory_agency_source_records_v1',
   'zoll_pulseiq_custom_agencies_v8', 'zoll_pulseiq_outbox_v1', 'zoll_pulseiq_weights_v1'].includes(key) || key.startsWith('ems_equipment_research_v1:') || key.startsWith('ems_draft_v1:');
 export function createWorkspaceBackup(agencies: Agency[], store: Storage = localStorage): WorkspaceBackup {
   const storage: Record<string,string> = {};
@@ -22,6 +23,7 @@ export function parseWorkspaceBackup(serialized: string): WorkspaceBackup {
   for (const [key, value] of Object.entries(b.storage)) {
     if (!allowed(key) || typeof value !== 'string') throw new Error('Backup contains an unsupported storage entry.');
     const parsed = JSON.parse(value);
+    if(key===IMPORT_RUN_KEY && (!Array.isArray(parsed)||!parsed.every(isImportRun)))throw new Error('Invalid import history.');
     if (key.startsWith('ems_draft_v1:') && (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !Object.values(parsed).every(v=>typeof v==='string'))) throw new Error('Invalid draft.');
     if (key === FACT_REVIEW_STORAGE_KEY) loadFactReviews('', {getItem:()=>value,setItem:()=>{}});
     if (key.startsWith('ems_equipment_research_v1:')) validateResearch(parsed);

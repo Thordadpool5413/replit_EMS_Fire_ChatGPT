@@ -101,6 +101,7 @@ import {
 } from '../utils/formatters';
 
 interface FocusedProviderProfileProps {
+  onCreateFollowUp: (id:string,task:FieldNote)=>Promise<void>;
   onUpdateFollowUp: FollowUpUpdater;
   agency: Agency;
   weights?: PredictiveWeights;
@@ -412,6 +413,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   onToggleBookmark,
   onAddFieldNote,
   onUpdateFollowUp,
+  onCreateFollowUp,
   onOpenRfpGenerator,
   onOpenDataLineage,
   onSaveAgencySourceData,
@@ -2899,7 +2901,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: FIELD NOTES */}
-        {showSection('notes') && <><FollowUpWorkspace compact agencies={[agency]} onUpdate={onUpdateFollowUp} /><FieldNotesPanel key={agency.id} agency={agency} onAdd={onAddFieldNote} /></>}
+        {showSection('notes') && <><FollowUpWorkspace compact agencies={[agency]} onUpdate={onUpdateFollowUp} onCreate={onCreateFollowUp} /><FieldNotesPanel key={agency.id} agency={agency} onAdd={onAddFieldNote} /></>}
 
         {/* TOPIC 7: EVIDENCE & SOURCES PROVENANCE LEDGER */}
         {showSection('evidence_ledger') && (

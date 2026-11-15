@@ -1,3 +1,4 @@
+import { agencySearchScore } from '../utils/agencySearch';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -75,7 +76,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     for (let i = 0; i < agencies.length; i++) {
       const a = agencies[i];
       if (
-        a.name.toLowerCase().includes(q) ||
+        agencySearchScore(a,q)>0 ||
         a.city.toLowerCase().includes(q) ||
         (a.county && a.county.toLowerCase().includes(q)) ||
         (a.zipCode && a.zipCode.includes(q)) ||
@@ -88,10 +89,10 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         (hasAgencyFactEvidence(a, 'agencyLeadership') && a.keyContacts.some(c => c.name.toLowerCase().includes(q)))
       ) {
         matches.push(a);
-        if (matches.length >= 12) break;
+
       }
     }
-    return matches;
+    return matches.sort((a,b)=>agencySearchScore(b,q)-agencySearchScore(a,q)).slice(0,12);
   }, [isOpen, agencies, query]);
 
   if (!isOpen) return null;

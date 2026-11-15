@@ -16,6 +16,7 @@ const routeSmokeUrls = [
 ];
 const chromiumPath = process.env.CHROMIUM_PATH ?? 'chromium';
 const testViewports = [
+  { width: 1366, height: 768, mobile: false },
   { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
   { width: 430, height: 932, mobile: true },

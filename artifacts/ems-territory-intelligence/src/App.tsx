@@ -164,6 +164,7 @@ export default function App() {
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
     updateFollowUp,
+    createFollowUp,
     addAgencyToCloud,
     updateAgencyInCloud,
     setAgenciesState,
@@ -1625,7 +1626,7 @@ export default function App() {
         {/* Field Mode & Day Route Planner (My Work Workspace) */}
         {activeTab === 'field' && (
           <div className="workspace-view-container min-w-0 w-full">
-            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onOpen={handleOpenAgencyProfile} />
+            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onCreate={createFollowUp} onOpen={handleOpenAgencyProfile} />
             <FieldModeView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1730,6 +1731,7 @@ export default function App() {
       {currentActive && (
         <FocusedProviderProfile
           key={currentActive.id}
+          onCreateFollowUp={createFollowUp}
           onUpdateFollowUp={updateFollowUp}
           agency={currentActive}
           weights={weights}

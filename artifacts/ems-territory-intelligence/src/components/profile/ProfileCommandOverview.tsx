@@ -117,7 +117,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const latestGrant = [...grants].filter((g) => isNum(g.fiscalYear)).sort((a, b) => b.fiscalYear - a.fiscalYear)[0];
   const notes = [...(agency.fieldNotes ?? [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const latestNote = notes[0];
-  const nextFollowUp = notes.filter(note=>note.nextAction?.trim() && note.followUpStatus !== 'completed').sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0];
+  const nextFollowUp = [...notes,...(agency.followUpTasks ?? [])].filter(note=>note.nextAction?.trim() && note.followUpStatus !== 'completed').sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0];
 
   const purchasingValue = contract?.contractEndDate
     ? displayDate(contract.contractEndDate)

@@ -468,6 +468,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </p>
           </div>
 
+          <button type="button" className="workspace-text-button" onClick={()=>{setRegionFilter('All');saveMapPreference('region','All');resetMapZoom();}}>National view</button>
           <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
           {/* Region Filter Segmented Control */}
           <div className="home-map-region-filter max-w-full overflow-x-auto">

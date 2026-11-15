@@ -1,3 +1,4 @@
+import type { FollowUpChange } from '../utils/followUps';
 import { withWorkspaceLock } from '../services/workspaceLock';
 import { applyAgencyReviews, stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
 import { FACT_REVIEW_STORAGE_KEY, type FactReviewEntry } from '../services/factReviewStore';
@@ -45,7 +46,8 @@ export interface UseFirestoreAgenciesResult {
   toggleRouteInCloud: (agencyId: string) => Promise<void>;
   toggleBookmarkInCloud: (agencyId: string) => Promise<void>;
   addFieldNoteInCloud: (agencyId: string, note: FieldNote) => Promise<void>;
-  updateFollowUp: (agencyId: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => Promise<void>;
+  createFollowUp: (agencyId: string, task: FieldNote) => Promise<void>;
+  updateFollowUp: (agencyId: string, note: FieldNote, changes: FollowUpChange) => Promise<void>;
   addAgencyToCloud: (newAgency: Agency) => Promise<void>;
   setAgenciesState: React.Dispatch<React.SetStateAction<Agency[]>>;
 }
@@ -377,8 +379,9 @@ export function useFirestoreAgencies({
     if (dataSanitizationService.isMockOrTestFieldNote(note)) throw new Error('This note matches test data. Change its content before saving.');
     await recordChange(id, 'ADD_FIELD_NOTE', { note });
   }, [recordChange]);
-  const updateFollowUp = useCallback(async (id: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => {
-    await recordChange(id, 'UPDATE_FOLLOW_UP', { noteId: note.id, changes, expected: { dueDate: note.dueDate, followUpStatus: note.followUpStatus ?? 'open' } });
+  const createFollowUp = useCallback(async (id: string, task: FieldNote) => { await recordChange(id, 'CREATE_FOLLOW_UP', {task}); }, [recordChange]);
+  const updateFollowUp = useCallback(async (id: string, note: FieldNote, changes: FollowUpChange) => {
+    await recordChange(id, 'UPDATE_FOLLOW_UP', { noteId: note.id, taskOnly: Boolean(note.taskOnly), changes, expected: { nextAction: note.nextAction, owner: note.owner ?? '', priority: note.priority ?? 'normal', dueDate: note.dueDate, followUpStatus: note.followUpStatus ?? 'open' } });
   }, [recordChange]);
   const addAgencyToCloud = useCallback(async (agency: Agency) => {
     const clean = dataSanitizationService.sanitizeAgency(agency);
@@ -460,6 +463,7 @@ export function useFirestoreAgencies({
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
     updateFollowUp,
+    createFollowUp,
     addAgencyToCloud,
     setAgenciesState: setRawAgenciesState
   };

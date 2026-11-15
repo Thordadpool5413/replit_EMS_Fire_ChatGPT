@@ -56,12 +56,17 @@ export interface FieldNote {
   id: string;
   date: string;
   repName: string;
-  meetingType: 'On-Site Station Visit' | 'Virtual Demo' | 'Phone Call' | 'RFP Review' | 'Ride-Along';
+  meetingType: 'Standalone task' | 'On-Site Station Visit' | 'Virtual Demo' | 'Phone Call' | 'RFP Review' | 'Ride-Along';
   notes: string;
   nextAction: string;
   dueDate: string;
   followUpStatus?: 'open' | 'completed';
   followUpUpdatedAt?: string;
+  taskOnly?: boolean;
+  owner?: string;
+  priority?: 'low' | 'normal' | 'high';
+  history?: Array<{ id: string; at: string; before: Record<string, unknown>; after: Record<string, unknown> }>;
+
 }
 
 
@@ -393,6 +398,8 @@ export interface Agency {
 
   keyContacts: KeyContact[];
   fieldNotes: FieldNote[];
+  followUpTasks?: FieldNote[];
+  alternateNames?: string[];
   lastContactDate: string;
   isBookmarked: boolean;
   inDayRoute: boolean;
@@ -636,7 +643,7 @@ export interface SyncOutboxItem {
   timestamp: string;
   agencyId: string;
   agencyName: string;
-  actionType: 'UPDATE_FOLLOW_UP' | 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT' | 'AGENCY_PATCH' | 'CREATE_AGENCY' | 'FACT_REVIEW';
+  actionType: 'CREATE_FOLLOW_UP' | 'UPDATE_FOLLOW_UP' | 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT' | 'AGENCY_PATCH' | 'CREATE_AGENCY' | 'FACT_REVIEW';
   error?: string;
   syncedRevision?: number;
   payload: any;

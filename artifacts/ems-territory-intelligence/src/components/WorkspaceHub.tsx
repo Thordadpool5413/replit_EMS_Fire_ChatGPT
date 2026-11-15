@@ -16,7 +16,7 @@ const settings = [
   ['claims','Public data & imports','Review Medicare and public-health reference data.'],
 ];
 export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean}> = ({kind,agencies,navigate,pending,online}) => {
-  const work = useMemo(()=>agencies.filter(a=>a.isBookmarked||a.inDayRoute||a.fieldNotes?.length||Object.keys(a._reviewOriginalValues??{}).length),[agencies]);
+  const work = useMemo(()=>agencies.filter(a=>a.isBookmarked||a.inDayRoute||(a.fieldNotes?.length || a.followUpTasks?.length)||Object.keys(a._reviewOriginalValues??{}).length),[agencies]);
   const exportWork=()=>{
     const url=URL.createObjectURL(new Blob(['\uFEFF',buildWorkspaceCsv(work)],{type:'text/csv;charset=utf-8'}));
     const link=document.createElement('a');link.href=url;link.download=`agency-work-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

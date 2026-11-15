@@ -286,3 +286,21 @@
 .followup-row > p { flex-basis:100%; font-size:.8rem; }
 .followup-empty { padding:1rem 0; font-size:.85rem; }
 @media(max-width:767px) { .followup-workspace input { min-height:44px; } .followup-actions { width:100%; } }
+
+/* Shared task/editor and secondary workspace controls. */
+.followup-actions { align-items:end; }
+.followup-actions label { flex:1 1 140px; min-width:0; }
+.followup-actions :is(input,select) { width:100%; min-height:36px; border:1px solid var(--pi-border); border-radius:6px; background:var(--pi-surface-bg); color:var(--pi-text-primary); padding:.4rem; }
+.followup-row .followup-actions { flex:1 1 100%; }
+.followup-create { margin:.75rem 0; padding:.75rem; background:var(--pi-surface-subtle); border-radius:8px; }
+.followup-create summary { cursor:pointer; font-weight:600; padding:.35rem 0; }
+.followup-row details ol { list-style:decimal; padding-left:1.25rem; font-size:.8rem; }
+.followup-workspace :is(input,select,summary):focus-visible { outline:2px solid var(--pi-focus-ring); outline-offset:2px; }
+.operations-workspace { min-width:0; overflow-wrap:anywhere; }
+.operations-workspace :is(input,select,textarea) { max-width:100%; }
+.operations-workspace :is(h1,h2,h3) { text-wrap:balance; }
+@media(max-width:767px) {
+ .followup-actions :is(input,select), .followup-create summary { min-height:44px; }
+ .operations-workspace :is(button,input,select) { min-height:44px; }
+ .operations-workspace :is(input,select,textarea) { font-size:16px; }
+}

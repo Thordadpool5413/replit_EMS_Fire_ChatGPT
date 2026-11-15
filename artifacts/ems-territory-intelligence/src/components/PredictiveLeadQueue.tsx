@@ -1,3 +1,5 @@
+import { agencySearchScore } from '../utils/agencySearch';
+import { useSessionState } from '../hooks/useSessionState';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -116,7 +118,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   comparedAgencyIds = [],
   onToggleAgencyComparison
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useSessionState<string>('agency-search','');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   useEffect(() => {
@@ -127,11 +129,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   const [selectedState, setSelectedState] = useState<string>(globalState || 'all');
   const [selectedCounty, setSelectedCounty] = useState<string>(globalCounty || 'all');
   const [selectedCity, setSelectedCity] = useState<string>(globalCity || 'all');
-  const [zipFilter, setZipFilter] = useState<string>('');
-  const [selectedJurisdiction, setSelectedJurisdiction] = useState<string>('all');
-  const [selectedProduct, setSelectedProduct] = useState<string>('all');
-  const [selectedStage, setSelectedStage] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [zipFilter, setZipFilter] = useSessionState<string>('queue-zipFilter','');
+  const [selectedJurisdiction, setSelectedJurisdiction] = useSessionState<string>('queue-selectedJurisdiction','all');
+  const [selectedProduct, setSelectedProduct] = useSessionState<string>('queue-selectedProduct','all');
+  const [selectedStage, setSelectedStage] = useSessionState<string>('queue-selectedStage','all');
+  const [selectedType, setSelectedType] = useSessionState<string>('queue-selectedType','all');
   const [quickSegment, setQuickSegment] = useState<'all' | 'high_priority' | 'afg' | 'bookmarked'>('all');
 
   const [viewMode, setViewModeState] = useState<'cards' | 'table' | 'kanban'>(() => {
@@ -271,15 +273,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
     return basePool.filter(agency => {
       if (search) {
-        const matchSearch = 
-          agency.name.toLowerCase().includes(search) ||
-          agency.city.toLowerCase().includes(search) ||
-          agency.county.toLowerCase().includes(search) ||
-          agency.state.toLowerCase().includes(search) ||
-          agency.stateCode.toLowerCase().includes(search) ||
-          agency.zipCode.includes(search) ||
-          agency.fdid.toLowerCase().includes(search) ||
-          agency.keyContacts.some(c => c.name.toLowerCase().includes(search));
+        const matchSearch = agencySearchScore(agency,search)>0;
         if (!matchSearch) return false;
       }
 
@@ -327,24 +321,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       return true;
     });
 
-    // If territory manager selected a specific county or city but filter narrowed to 0,
-    // seamlessly resolve both EMS Providers and Fire Departments from the territory engine
-    if (selectedState !== 'all' && (selectedCounty !== 'all' || selectedCity !== 'all') && result.length === 0 && quickSegment === 'all') {
-      const countyToResolve = selectedCounty !== 'all' 
-        ? selectedCounty 
-        : (availableCounties[0] || `${selectedState} County`);
-      const cityToResolve = selectedCity !== 'all' ? selectedCity : undefined;
-      const synthAgencies = territoryEngine.getAgenciesForJurisdiction(
-        selectedState,
-        countyToResolve,
-        cityToResolve,
-        agencies,
-        selectedCategory
-      );
-      if (synthAgencies.length > 0) {
-        result = synthAgencies;
-      }
-    }
+    if (debouncedSearchTerm.trim()) return [...result].sort((a,b)=>agencySearchScore(b,debouncedSearchTerm)-agencySearchScore(a,debouncedSearchTerm));
 
     if (sortBy === 'pulseIq') {
       return rankAgenciesByPulseIqScore(result, weights);
@@ -361,7 +338,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
       }
       return 0;
     });
-  }, [geographicScopePool, selectedCategory, quickSegment, selectedState, selectedCounty, selectedCity, availableCounties, agencies, sortBy, weights]);
+  }, [debouncedSearchTerm, geographicScopePool, selectedCategory, quickSegment, selectedState, selectedCounty, selectedCity, availableCounties, agencies, sortBy, weights]);
 
   const [liveVerifiedVersion, setLiveVerifiedVersion] = useState<number>(0);
 
@@ -1636,10 +1613,11 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center">
           <Layers className="w-7 h-7 text-slate-400 mx-auto mb-2" />
           <h3 className="text-slate-900 dark:text-white font-bold text-sm">No agencies match current filters</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Reset search or stage filters to expand your territory view.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Results reflect your search and active geography, category, and account filters. Clear them below to search the available agency records again.</p>
           <button
             onClick={() => {
               setSearchTerm('');
+              setSelectedState('all'); setSelectedCounty('all'); setSelectedCity('all'); setZipFilter(''); setSelectedJurisdiction('all'); setSelectedCategory('all'); setQuickSegment('all');
               setSelectedProduct('all');
               setSelectedStage('all');
               setSelectedType('all');

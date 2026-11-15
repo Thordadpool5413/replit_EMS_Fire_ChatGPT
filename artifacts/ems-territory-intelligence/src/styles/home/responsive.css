@@ -969,7 +969,7 @@
     align-items: start !important;
     gap: 0.5rem 0.75rem !important;
     padding: 0.6rem !important;
-    height: clamp(20rem, calc(100dvh - 110px), 62rem) !important;
+    height: 100% !important;
     min-height: 0 !important;
     overflow: hidden;
   }
@@ -1108,4 +1108,13 @@
   .home-territory-map-screen-v2 .home-map-zoom-control button:focus-visible {
     outline-color: var(--pi-focus-ring) !important;
   }
+}
+
+/* Desktop map uses the remaining viewport, rather than adding a full-height
+   map below its heading. Phone content keeps its existing natural flow. */
+@media (min-width:1024px) and (min-height:600px) {
+  .home-territory-map-screen-v2 { height:calc(100dvh - 48px) !important; min-height:0 !important; display:flex !important; flex-direction:column !important; gap:.65rem !important; padding:.75rem !important; }
+  .home-territory-map-screen-v2 > .home-map-page-heading { flex:0 0 auto; margin:0 !important; padding-bottom:.5rem; gap:.5rem; }
+  .home-territory-map-screen-v2 > .grid { flex:1 1 0; min-height:0; margin:0 !important; }
+  .home-territory-map-screen-v2 > .grid > .min-w-0 { height:100%; min-height:0; }
 }

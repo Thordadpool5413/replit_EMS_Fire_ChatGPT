@@ -8,7 +8,8 @@ import { applyAgencyMutation } from '../services/agencyMutation';
 import type { Agency, FieldNote, SyncOutboxItem } from '../types';
 const note:FieldNote={id:'visit-a',date:'2026-11-12',repName:'Nick',meetingType:'Phone Call',notes:'Discussed evaluation',nextAction:'Schedule evaluation',dueDate:'2026-11-15'};
 const agency={id:'a',name:'County EMS',fieldNotes:[note],lastContactDate:'2026-11-12'} as Agency;
-const mutation=(changes:object,expected={dueDate:note.dueDate,followUpStatus:'open'}):SyncOutboxItem=>({id:'change-a',agencyId:'a',agencyName:'County EMS',timestamp:'2026-11-15T01:00:00Z',actionType:'UPDATE_FOLLOW_UP',status:'PENDING',payload:{noteId:note.id,changes,expected}});
+let mutationSequence=0;
+const mutation=(changes:object,expected={dueDate:note.dueDate,followUpStatus:'open'}):SyncOutboxItem=>({id:`change-${++mutationSequence}`,agencyId:'a',agencyName:'County EMS',timestamp:'2026-11-15T01:00:00Z',actionType:'UPDATE_FOLLOW_UP',status:'PENDING',payload:{noteId:note.id,changes,expected}});
 test('follow-ups classify dates, unscheduled work and completed actions',()=>{
   assert.equal(followUpBucket(note,'2026-11-15'),'Today');
   assert.equal(followUpBucket(note,'2026-11-16'),'Overdue');
@@ -41,7 +42,20 @@ test('rescheduling conflicts are retained; reopen and missing note are handled',
 });
 test('workspace renders account action, date controls and useful empty state',()=>{
   const html=renderToStaticMarkup(<FollowUpWorkspace agencies={[agency]} onUpdate={async()=>{}}/>);
-  assert.match(html,/Schedule evaluation/);assert.match(html,/Complete/);assert.match(html,/Save date/);assert.match(html,/County EMS/);
+  assert.match(html,/Schedule evaluation/);assert.match(html,/Complete/);assert.match(html,/Save changes/);assert.match(html,/County EMS/);
   const empty=renderToStaticMarkup(<FollowUpWorkspace agencies={[]} onUpdate={async()=>{}}/>);
   assert.match(empty,/No follow-ups yet/);
+});
+test('standalone tasks preserve contact dates and visit history; edits retain before and after values',()=>{
+ const task={...note,id:'task-a',taskOnly:true,owner:'',priority:'normal' as const};
+ const created=applyAgencyMutation(agency,{...mutation({}),actionType:'CREATE_FOLLOW_UP',payload:{task}});
+ assert.equal(created.fieldNotes.length,1);assert.equal(created.lastContactDate,agency.lastContactDate);
+ assert.equal(created.followUpTasks?.length,1);assert.equal(collectFollowUps([created]).length,2);
+ const edit={...mutation({}),id:'task-edit',payload:{taskOnly:true,noteId:task.id,expected:{nextAction:task.nextAction},changes:{nextAction:'Send equipment summary',owner:'Nick',priority:'high',dueDate:'2026-11-20',followUpStatus:'open'}}};
+ const updated=applyAgencyMutation(created,edit,true);
+ assert.equal(updated.followUpTasks?.[0].owner,'Nick');
+ assert.equal(updated.followUpTasks?.[0].history?.[1].before.nextAction,task.nextAction);
+ assert.equal(updated.followUpTasks?.[0].history?.[1].after.nextAction,'Send equipment summary');
+ assert.deepEqual(applyAgencyMutation(updated,edit,true),updated);
+ assert.throws(()=>applyAgencyMutation(updated,{...edit,id:'other',payload:{...edit.payload,changes:{...edit.payload.changes,nextAction:'Conflicting action'}}},true),/Another device/);
 });

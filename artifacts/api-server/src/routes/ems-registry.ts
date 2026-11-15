@@ -1,3 +1,4 @@
+import { collectNppesPages } from '../lib/nppesPagination';
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   GetEmsRegistryMatchesQueryParams,
@@ -48,6 +49,8 @@ type NppesSearchPayload = {
 type SearchResult = {
   records: NppesOrganization[];
   totalResults: number;
+  resultsTruncated: boolean;
+  warning: string | null;
 };
 
 function optionalText(value: string | undefined): string | null {
@@ -75,30 +78,12 @@ async function searchNppes(input: {
   city?: string;
   stateCode: string;
 }): Promise<SearchResult> {
-  const response = await fetch(nppesSearchUrl(input), {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(15000),
+  return collectNppesPages<NppesOrganization>(async(skip,limit)=>{
+    const url=nppesSearchUrl(input);url.searchParams.set('skip',String(skip));url.searchParams.set('limit',String(limit));
+    const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(5000)});
+    if(!response.ok)throw new Error(`CMS NPPES returned HTTP ${response.status}.`);
+    return await response.json() as NppesSearchPayload;
   });
-  if (!response.ok) {
-    throw new Error(`CMS NPPES returned HTTP ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as NppesSearchPayload;
-  if (payload.Errors || payload.errors || (!Array.isArray(payload.results) && payload.result_count !== 0)) throw new Error('NPPES returned an error or invalid result payload.');
-  const records = Array.isArray(payload.results)
-    ? payload.results.filter(
-        (record) =>
-          record.enumeration_type === "NPI-2" &&
-          /^\d{10}$/.test(record.number ?? ""),
-      )
-    : [];
-  const totalResults =
-    typeof payload.result_count === "number" &&
-    Number.isFinite(payload.result_count)
-      ? payload.result_count
-      : records.length;
-
-  return { records, totalResults };
 }
 
 function mapNppesRecord(record: NppesOrganization) {
@@ -158,7 +143,7 @@ router.get(
       // NPI mailing/practice locations can differ from an agency's operational
       // address, so broaden by name and state only if the city-scoped search is
       // empty. This still returns candidates, never an automatic agency match.
-      if (result.records.length === 0 && city) {
+      if (result.records.length === 0 && !result.resultsTruncated && city) {
         searchScope = "name_state";
         result = await searchNppes({ agencyName, stateCode });
       }
@@ -170,8 +155,8 @@ router.get(
         searchScope,
         recordCount: result.records.length,
         totalResults: result.totalResults,
-        resultsTruncated: result.totalResults > result.records.length || result.records.length >= NPPES_RESULT_LIMIT,
-        errorMessage: null,
+        resultsTruncated: result.resultsTruncated,
+        errorMessage: result.warning,
         records: result.records.map(mapNppesRecord),
       });
       res.json(response);

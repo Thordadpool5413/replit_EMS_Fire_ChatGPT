@@ -1,3 +1,4 @@
+import { DataCoverageSummary } from './DataCoverageSummary';
 import React, { useMemo } from 'react';
 import { ArrowUpRight, Download, MapPin, SlidersHorizontal, BarChart3 } from 'lucide-react';
 import type { Agency } from '../types';
@@ -25,6 +26,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
     <header className="workspace-hub-heading"><div><p className="workspace-eyebrow">Territory intelligence</p><h1 id="workspace-hub-title">{kind==='reports'?'Reports':'Settings'}</h1><p>{kind==='reports'?'Turn your account work into a useful next step.':'Keep your research, saved work, and connected data organized.'}</p></div>{kind==='reports'?<BarChart3 aria-hidden="true"/>:<SlidersHorizontal aria-hidden="true"/>}</header>
     <div className="workspace-hub-summary" role="status"><span>{online?'Online':'Offline · saved work stays on this device'}</span><span>{pending?`${pending} changes waiting for cloud acknowledgment`:'No queued changes'}</span><span>{work.length.toLocaleString()} accounts with saved work</span></div>
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation.</small></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
+    {kind==='settings'&&<DataCoverageSummary agencies={agencies}/>}
     <div className="workspace-hub-grid">{(kind==='reports'?reports:settings).map(([id,title,description])=><button key={id} type="button" className="workspace-destination" onClick={()=>navigate(id)}><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} aria-hidden="true"/></button>)}</div>
     <footer className="workspace-hub-footer"><MapPin size={16} aria-hidden="true"/><span>Need an account? Start with the map or agency directory.</span><button className="workspace-text-button" onClick={()=>navigate('states_directory')}>Open directory</button></footer>
   </section>;

@@ -242,7 +242,7 @@ export function EmsRegistryLookup({
               role="status"
               data-testid="status-ems-registry-no-matches"
             >
-              No NPI organization candidates were returned for this search.
+              {data?.resultsTruncated ? 'Retrieval was incomplete; no usable organization candidates are available from the retrieved pages.' : 'No NPI organization candidates were returned for this search.'}
               That does not show whether an agency is licensed or operating.
               Check the state roster and source links below.
             </p>
@@ -252,7 +252,7 @@ export function EmsRegistryLookup({
                 {records.length} NPI organization{" "}
                 {records.length === 1 ? "candidate" : "candidates"}
                 {data?.resultsTruncated
-                  ? ` shown of ${data.totalResults.toLocaleString()} results`
+                  ? " · incomplete source retrieval"
                   : ""}
               </p>
 
@@ -433,8 +433,7 @@ export function EmsRegistryLookup({
 
               {data?.resultsTruncated && (
                 <p className="text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">
-                  The NPI response limit was reached. Use the registry search
-                  directly to review additional results.
+                  {data.errorMessage || 'The results may be incomplete. Narrow the agency name or city and try again.'}
                 </p>
               )}
             </div>

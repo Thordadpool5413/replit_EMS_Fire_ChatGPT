@@ -572,6 +572,7 @@ export const MobileProviderSelectorDrawer: React.FC<MobileProviderSelectorDrawer
                   >
                     <div className={`text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#285EE8] transition-colors ${nearbyMode ? 'line-clamp-2' : 'line-clamp-1'}`}>
                       {agency.name}
+                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
                       <MapPin className="w-3 h-3 shrink-0 text-slate-400" />

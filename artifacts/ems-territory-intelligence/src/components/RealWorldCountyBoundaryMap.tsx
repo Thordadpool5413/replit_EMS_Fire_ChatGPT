@@ -47,6 +47,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 }) => {
   const [isLoadingBoundaries, setIsLoadingBoundaries] = useState<boolean>(false);
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
+  const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
   const [hoveredCityName, setHoveredCityName] = useState<string | null>(null);
   const [countyMapViewBox, setCountyMapViewBox] = useState('0 0 720 400');
@@ -93,6 +94,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   }, [nriQuery.data?.records, stateNode]);
 
   useEffect(() => {
+    setPreviewCountyFips(null);
+    setHoveredCountyFips(null);
     setCountyZoom(1);
     setCountyPan({ x: 0, y: 0 });
   }, [stateCode]);
@@ -256,8 +259,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   }, [singleViewBox, activeCountyNode?.countyFips]);
 
   const inspectedCounty: SvgProjectedCounty | null = useMemo(() => {
-    if (hoveredCountyFips) {
-      const found = projectedState.projectedCounties.find((c) => c.countyFips === hoveredCountyFips);
+    if (previewCountyFips) {
+      const found = projectedState.projectedCounties.find((c) => c.countyFips === previewCountyFips);
       if (found) return found;
     }
     if (activeCountyNode) {
@@ -265,7 +268,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       if (found) return found;
     }
     return projectedState.projectedCounties[0] || null;
-  }, [hoveredCountyFips, activeCountyNode, projectedState]);
+  }, [previewCountyFips, activeCountyNode, projectedState]);
   const inspectedNri = inspectedCounty
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
     : null;
@@ -448,9 +451,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             aria-label={`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
                             className={`cv-county-path cursor-pointer${isSelected ? ' is-selected' : ''}`}
                             aria-pressed={isSelected}
-                            onMouseEnter={() => setHoveredCountyFips(pc.countyFips)}
+                            onMouseEnter={() => { setHoveredCountyFips(pc.countyFips); setPreviewCountyFips(pc.countyFips); }}
                             onMouseLeave={() => setHoveredCountyFips(null)}
-                            onFocus={() => setHoveredCountyFips(pc.countyFips)}
+                            onFocus={() => { setHoveredCountyFips(pc.countyFips); setPreviewCountyFips(pc.countyFips); }}
                             onBlur={() => setHoveredCountyFips(null)}
                             onClick={() => {
                               if (suppressClickRef.current) return;

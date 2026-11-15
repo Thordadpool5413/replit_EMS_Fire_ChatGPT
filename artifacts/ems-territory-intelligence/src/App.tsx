@@ -1,3 +1,5 @@
+import { FollowUpWorkspace } from './components/FollowUpWorkspace';
+import { WorkspaceHub } from './components/WorkspaceHub';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -55,6 +57,7 @@ import {
   type TransientNoticeType,
 } from './utils/transientNoticePolicy';
 import {
+  primaryWorkspaceFor,
   FIELD_WORKSPACE_TABS,
   isFieldWorkTab,
   isOpportunitiesTab,
@@ -160,21 +163,29 @@ export default function App() {
     toggleRouteInCloud,
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
+    updateFollowUp,
     addAgencyToCloud,
     updateAgencyInCloud,
-    setAgenciesState
+    setAgenciesState,
+    syncPendingChanges
   } = useFirestoreAgencies({
     globalState,
     globalCounty,
     onToast: showToast
   });
 
-  const [outbox, setOutbox] = useState<SyncOutboxItem[]>(loadStoredOutbox);
+  const [outbox, setOutbox] = useState<SyncOutboxItem[]>(() => loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED')));
   const [weights, setWeights] = useState<PredictiveWeights>(loadStoredWeights);
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   );
-  const isSyncing = false;
+  const isSyncing = isCloudSyncing;
+  useEffect(() => {
+    const refresh = () => setOutbox(loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED')));
+    window.addEventListener('ems-outbox-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => { window.removeEventListener('ems-outbox-changed', refresh); window.removeEventListener('storage', refresh); };
+  }, []);
   const [showWorkflowGuide, setShowWorkflowGuide] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem('nicks_quick_start_visible');
@@ -491,8 +502,8 @@ export default function App() {
 
   // Sync state modifications to storage
   const updateAgenciesState = useCallback((newAgencies: Agency[]) => {
-    setAgenciesState(newAgencies);
     saveAgencies(newAgencies);
+    setAgenciesState(newAgencies);
     if (selectedAgency) {
       const refreshed = newAgencies.find(a => a.id === selectedAgency.id);
       if (refreshed) setSelectedAgency(refreshed);
@@ -616,12 +627,12 @@ export default function App() {
     showToast('PulseIQ scoring weights calibrated. All territory accounts re-ranked.', 'success');
   }, [agencies, updateAgenciesState, showToast]);
 
-  const handleAddAgency = useCallback((newAgency: Agency) => {
-    addAgencyToCloud(newAgency);
+  const handleAddAgency = useCallback(async (newAgency: Agency) => {
+    try { await addAgencyToCloud(newAgency); } catch (e) { showToast(e instanceof Error ? e.message : 'Agency could not be saved.', 'error'); throw e; }
   }, [addAgencyToCloud]);
 
-  const handleToggleRoute = useCallback((agencyId: string) => {
-    toggleRouteInCloud(agencyId);
+  const handleToggleRoute = useCallback(async (agencyId: string) => {
+    try { await toggleRouteInCloud(agencyId); } catch (e) { showToast(e instanceof Error ? e.message : 'Save failed. Please retry.', 'error'); return; }
     if (selectedAgency?.id === agencyId) {
       setSelectedAgency(prev => prev ? { ...prev, inDayRoute: !prev.inDayRoute } : null);
     }
@@ -633,8 +644,8 @@ export default function App() {
     }
   }, [toggleRouteInCloud, selectedAgency, activeAccount, previewAgency]);
 
-  const handleToggleBookmark = useCallback((agencyId: string) => {
-    toggleBookmarkInCloud(agencyId);
+  const handleToggleBookmark = useCallback(async (agencyId: string) => {
+    try { await toggleBookmarkInCloud(agencyId); } catch (e) { showToast(e instanceof Error ? e.message : 'Save failed. Please retry.', 'error'); return; }
     if (selectedAgency?.id === agencyId) {
       setSelectedAgency(prev => prev ? { ...prev, isBookmarked: !prev.isBookmarked } : null);
     }
@@ -646,8 +657,8 @@ export default function App() {
     }
   }, [toggleBookmarkInCloud, selectedAgency, activeAccount, previewAgency]);
 
-  const handleUpdateStage = useCallback((agencyId: string, newStage: LeadStage) => {
-    updateStageInCloud(agencyId, newStage);
+  const handleUpdateStage = useCallback(async (agencyId: string, newStage: LeadStage) => {
+    try { await updateStageInCloud(agencyId, newStage); } catch (e) { showToast(e instanceof Error ? e.message : 'Save failed. Please retry.', 'error'); return; }
     if (selectedAgency?.id === agencyId) {
       setSelectedAgency(prev => prev ? {
         ...prev,
@@ -676,24 +687,15 @@ export default function App() {
       } : null);
     }
 
-    if (!isOnline) {
-      const targetAgency = agencies.find(a => a.id === agencyId);
-      const outboxItem = createOutboxItem(agencyId, targetAgency?.name || 'Unknown Agency', 'UPDATE_STAGE', { stage: newStage });
-      setOutbox(prev => {
-        const next = [outboxItem, ...prev];
-        saveOutbox(next);
-        return next;
-      });
-      showToast(`Offline: Stage change queued for auto-sync.`, 'warn');
-    }
+
   }, [updateStageInCloud, selectedAgency, activeAccount, previewAgency, isOnline, agencies, showToast]);
 
-  const handleAddFieldNote = useCallback((agencyId: string, noteData: Omit<FieldNote, 'id'>) => {
+  const handleAddFieldNote = useCallback(async (agencyId: string, noteData: Omit<FieldNote, 'id'>) => {
     const newNote: FieldNote = {
       ...noteData,
-      id: `fn-${Date.now()}`
+      id: `visit-${crypto.randomUUID()}`
     };
-    addFieldNoteInCloud(agencyId, newNote);
+    await addFieldNoteInCloud(agencyId, newNote);
 
     if (selectedAgency?.id === agencyId) {
       setSelectedAgency(prev => prev ? {
@@ -717,16 +719,7 @@ export default function App() {
       } : null);
     }
 
-    if (!isOnline) {
-      const targetAgency = agencies.find(a => a.id === agencyId);
-      const outboxItem = createOutboxItem(agencyId, targetAgency?.name || 'Unknown Agency', 'ADD_FIELD_NOTE', newNote);
-      setOutbox(prev => {
-        const next = [outboxItem, ...prev];
-        saveOutbox(next);
-        return next;
-      });
-      showToast(`Offline: Field log entry saved locally. Will sync when online.`, 'warn');
-    }
+
   }, [addFieldNoteInCloud, selectedAgency, activeAccount, previewAgency, isOnline, agencies, showToast]);
 
 
@@ -794,19 +787,17 @@ export default function App() {
     setIsOnline(online);
   }, []);
 
-  const handleManualSync = useCallback(() => {
-    if (!isOnline) {
-      showToast('The local queue is retained while offline.', 'warn');
-      return;
-    }
-    setOutbox([]);
-    saveOutbox([]);
-    showToast('Local change queue cleared. No cloud write was performed; use Data Health to opt in to Firestore writes.', 'boundary');
-  }, [isOnline, showToast]);
+  const handleManualSync = useCallback(async () => {
+    if (!isOnline) { showToast('Saved on this device. Waiting for a connection.', 'warn'); return; }
+    await syncPendingChanges();
+    const remaining = loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED'));
+    showToast(remaining.length ? `${remaining.length} changes need attention. They remain saved on this device.` : 'All queued changes acknowledged by the cloud.', remaining.length ? 'warn' : 'success');
+  }, [isOnline, showToast, syncPendingChanges]);
 
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
-  const currentActive = activeAccount || selectedAgency;
+  const storedActive = activeAccount || selectedAgency;
+  const currentActive = storedActive ? agencies.find(a => a.id === storedActive.id) ?? storedActive : null;
   const selectedProfileCity = globalCity.trim().toLowerCase() === 'all' ? '' : globalCity.trim();
   const selectedProfileCounty = globalCounty.trim().toLowerCase() === 'all' ? '' : globalCounty.trim();
   const profileBackLabel = activeTab === 'home'
@@ -1055,9 +1046,10 @@ export default function App() {
       />
 
       {/* Main Workspace Body with a synchronized desktop sidebar offset */}
-      <div className="pi-workspace-body md:pl-56 flex-1 flex flex-col min-w-0">
+      <div className="pi-workspace-body md:pl-[216px] flex-1 flex flex-col min-w-0">
       <main data-laptop-density={activeTab === 'home' ? undefined : 'compact'} className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-4 pb-24 md:pb-6 min-w-0">
 
+        {!currentActive && !['home','reports','settings'].includes(activeTab) && ['reports','settings'].includes(primaryWorkspaceFor(activeTab)) && <button className="workspace-text-button" onClick={()=>handleNavigateTab(primaryWorkspaceFor(activeTab))}>← Back to {primaryWorkspaceFor(activeTab)==='settings'?'Settings':'Reports'}</button>}
         {!currentActive && activeTab !== 'home' && (
           <TerritoryContextBreadcrumb
             state={globalState === 'all' ? null : globalState}
@@ -1260,6 +1252,7 @@ export default function App() {
         <React.Suspense fallback={<WorkspaceLoadingState />}>
         <ErrorBoundary onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
+        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} />}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
             <HomeHubView
@@ -1632,6 +1625,7 @@ export default function App() {
         {/* Field Mode & Day Route Planner (My Work Workspace) */}
         {activeTab === 'field' && (
           <div className="workspace-view-container min-w-0 w-full">
+            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onOpen={handleOpenAgencyProfile} />
             <FieldModeView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1736,6 +1730,7 @@ export default function App() {
       {currentActive && (
         <FocusedProviderProfile
           key={currentActive.id}
+          onUpdateFollowUp={updateFollowUp}
           agency={currentActive}
           weights={weights}
           backLabel={profileBackLabel}

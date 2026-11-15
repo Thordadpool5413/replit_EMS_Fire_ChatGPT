@@ -61,7 +61,7 @@ test('surfaces no longer render bare Not calculated', () => {
 
 test('county card reads identity, figures, access, community, risk, geography, sources', () => {
   const src = readFileSync(new URL('./CountyDirectoryCard.tsx', import.meta.url), 'utf8');
-  const order = ['className="cb-name"', 'Population and response', 'Care access', 'Community context', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));
+  const order = ['className="cb-name"', 'className="cfs-lead"', 'className="cfs-ledger"', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));
   order.forEach(i => assert.ok(i >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.doesNotMatch(src, /<details/);

@@ -9,7 +9,9 @@
     "smoke-test:published-routes": "ROUTES_ONLY=1 node scripts/check-profile-overflow.mjs",
     "test:ems-source-coverage": "node --experimental-strip-types scripts/check-ems-source-coverage.mjs",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "test:ems:unit": "node scripts/test-ems-unit.mjs",
+    "test:ems:persistence": "node scripts/check-workspace-persistence.mjs"
   },
   "private": true,
   "dependencies": {

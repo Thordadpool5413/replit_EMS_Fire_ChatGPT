@@ -1,7 +1,7 @@
 /* Owner: shell. Cascade phase: contracts. See ../README.md. */
 @media (min-width: 768px) {
   .pi-primary-sidebar {
-    width: 14rem !important;
+    width: 216px !important;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -9,11 +9,11 @@
 }
 
 @media (min-width: 768px) {
-  .pi-command-header { padding-left: 14rem !important; }
+  .pi-command-header { padding-left: 216px !important; }
 }
 
 @media (min-width: 768px) {
-  .provider-profile-overlay { left: 14rem !important; }
+  .provider-profile-overlay { left: 216px !important; }
 }
 
 .pi-primary-sidebar .pi-sb-brand {
@@ -143,7 +143,7 @@
 
 .pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"]:focus-visible { outline-color: var(--pi-text-primary) !important; }
 
-/* Keep the desktop shell aligned to its 14rem navigation rail and readable on
+/* Keep the desktop shell aligned to its 216px navigation rail and readable on
    short laptop viewports without introducing a second scrollbar. */
 @media (min-width: 768px) {
   .pi-primary-sidebar .pi-primary-nav {

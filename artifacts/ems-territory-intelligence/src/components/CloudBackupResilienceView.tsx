@@ -1,3 +1,5 @@
+import { createWorkspaceBackup, parseWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from '../services/workspaceBackup';
+import { loadStoredAgencies } from '../utils/syncStore';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -38,6 +40,7 @@ export interface CloudSnapshot {
   sha256Checksum: string;
   isRestored?: boolean;
   agencyData?: Agency[];
+  workspace?: WorkspaceBackup;
 }
 
 interface CloudBackupResilienceViewProps {
@@ -77,19 +80,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     } catch {
       // Fall through to initial state
     }
-    return [
-      {
-        snapshotId: 'SNAP-AUTO-BASELINE',
-        version: 'v2.5.0',
-        createdAt: new Date().toISOString(),
-        authorEmail: 'nicholas.lynch@spartan-coaching-schools.org',
-        authorRole: 'Territory Operations Executive',
-        recordCount: agencies.length,
-        payloadSizeBytes: JSON.stringify(agencies).length,
-        sha256Checksum: 'not-computed-legacy-baseline',
-        agencyData: agencies
-      }
-    ];
+    return [];
   });
 
   const [isWriting, setIsWriting] = useState(false);
@@ -98,6 +89,8 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
   const [sourceRecordImportNotice, setSourceRecordImportNotice] = useState('');
   const [activeTab, setActiveTab] = useState<'snapshots' | 'console'>('snapshots');
   const [copiedChecksum, setCopiedChecksum] = useState<string | null>(null);
+  const workspaceInputRef = useRef<HTMLInputElement>(null);
+  const [restorePreview, setRestorePreview] = useState<WorkspaceBackup | null>(null);
   const sourceBackupInputRef = useRef<HTMLInputElement>(null);
 
   const [auditLogs, setAuditLogs] = useState<{ id: string; timestamp: string; step: string; status: 'info' | 'pass'; detail: string }[]>([
@@ -109,18 +102,6 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       detail: `Local workspace initialized with ${agencies.length} agency records. No Firestore write was performed.`
     }
   ]);
-
-  // Persist snapshots to storage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_SNAPSHOTS, JSON.stringify(snapshots));
-    } catch {
-      showToast(
-        'Snapshots could not be saved in this browser. Check available storage; they may be lost when this page closes.',
-        'error',
-      );
-    }
-  }, [snapshots, showToast]);
 
   const addLog = (step: string, status: 'info' | 'pass', detail: string) => {
     setAuditLogs(prev => [
@@ -136,14 +117,14 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
   };
 
   // Compute live SHA-256 checksum of agencies dataset
-  const computeChecksum = async (data: Agency[]): Promise<string> => {
+  const computeChecksum = async (data: unknown): Promise<string> => {
     try {
       const msgBuffer = new TextEncoder().encode(JSON.stringify(data));
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     } catch {
-      return 'sha256-' + Date.now().toString(16);
+      throw new Error('Integrity checksum could not be computed.');
     }
   };
 
@@ -152,9 +133,11 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     setIsWriting(true);
     addLog('LOCAL_SNAPSHOT_START', 'info', `Serializing ${agencies.length} territory records and computing a local integrity digest...`);
 
-    const checksum = await computeChecksum(agencies);
+    try {
+    const workspace = createWorkspaceBackup(loadStoredAgencies().filter(a => !a.verificationSource?.includes('Geographic prospect generator') || a.isCloudPersisted));
+    const checksum = await computeChecksum(workspace);
     const newVersion = `v2.5.${snapshots.length + 1}`;
-    const payloadSize = JSON.stringify(agencies).length;
+    const payloadSize = JSON.stringify(workspace).length;
 
     const newSnapshot: CloudSnapshot = {
       snapshotId: `SNAP-${Date.now().toString().slice(-8)}`,
@@ -165,19 +148,24 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       recordCount: agencies.length,
       payloadSizeBytes: payloadSize,
       sha256Checksum: checksum,
-      agencyData: agencies
+      agencyData: workspace.agencies,
+      workspace
     };
 
-    setSnapshots([newSnapshot, ...snapshots]);
+    const next = [newSnapshot, ...snapshots];
+    localStorage.setItem(STORAGE_KEY_SNAPSHOTS, JSON.stringify(next));
+    setSnapshots(next);
     setIsWriting(false);
     addLog('LOCAL_SNAPSHOT_SAVED', 'pass', `Snapshot ${newVersion} saved in this browser (${payloadSize.toLocaleString()} bytes, ${agencies.length} agencies). SHA-256: ${checksum.slice(0, 24)}...`);
+    } catch (e) { showToast(e instanceof Error ? e.message : 'Snapshot could not be saved. Export a file instead.', 'error'); }
+    finally { setIsWriting(false); }
   };
 
   // Export real JSON backup file
   const handleExportJson = () => {
     setIsExporting(true);
     try {
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(agencies, null, 2));
+      const dataStr = URL.createObjectURL(new Blob([JSON.stringify(createWorkspaceBackup(loadStoredAgencies()))], {type: 'application/json'}));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute('href', dataStr);
       downloadAnchor.setAttribute('download', `zoll-territory-backup-${new Date().toISOString().slice(0, 10)}.json`);
@@ -185,6 +173,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       downloadAnchor.click();
       downloadAnchor.remove();
 
+      window.setTimeout(() => URL.revokeObjectURL(dataStr), 1000);
       addLog('LOCAL_BACKUP_EXPORT', 'pass', `Exported ${agencies.length} local territory records to a JSON file.`);
     } catch (err) {
       showToast('Failed to export backup JSON.', 'error');
@@ -300,7 +289,12 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       showToast('This older snapshot contains metadata only and has no local agency payload to restore.', 'error');
       return;
     }
-    onRestoreAgencies(snap.agencyData);
+    try {
+      if (snap.workspace) {
+        restoreWorkspaceBackup(snap.workspace);
+        onRestoreAgencies(loadStoredAgencies());
+      } else onRestoreAgencies(snap.agencyData);
+    } catch (e) { showToast(e instanceof Error ? e.message : 'Restore failed.', 'error'); return; }
     setSnapshots(prev => prev.map(s => ({
       ...s,
       isRestored: s.snapshotId === snap.snapshotId
@@ -317,6 +311,25 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
 
   return (
     <div className="workspace-view-container min-w-0 w-full">
+      <section className="rounded-xl border border-slate-200 p-4 mb-4">
+        <strong>Complete workspace recovery</strong>
+        <p>Exports include agency records, notes, fact reviews, source corrections, equipment research, and the change journal. Restore replaces this device’s saved work. Restored changes stay local until you make a new edit.</p>
+        <input ref={workspaceInputRef} type="file" accept="application/json,.json" hidden onChange={async e => {
+          const file = e.target.files?.[0]; if (!file) return;
+          try { setRestorePreview(parseWorkspaceBackup(await file.text())); }
+          catch (error) { showToast(error instanceof Error ? error.message : 'Invalid backup.', 'error'); }
+          e.target.value = '';
+        }} />
+        <button type="button" className="mt-2 px-3 py-2 border rounded-lg" onClick={() => workspaceInputRef.current?.click()}>Choose workspace backup</button>
+        {restorePreview && <div role="status" className="mt-3">
+          <p>Backup from {new Date(restorePreview.createdAt).toLocaleString()}: {restorePreview.agencies.length.toLocaleString()} agency records and {Object.keys(restorePreview.storage).length} saved work collections. Export your current workspace first if you want to keep it.</p>
+          <button type="button" className="px-3 py-2 border rounded-lg" onClick={() => {
+            try { restoreWorkspaceBackup(restorePreview); onRestoreAgencies(loadStoredAgencies()); setRestorePreview(null); }
+            catch (e) { showToast(e instanceof Error ? e.message : 'Restore failed.', 'error'); }
+          }}>Restore this workspace</button>
+          <button type="button" className="px-3 py-2" onClick={() => setRestorePreview(null)}>Cancel</button>
+        </div>}
+      </section>
       
       {/* Top Banner & Cloud Database Connectivity */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
@@ -328,7 +341,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
                 LOCAL SNAPSHOT ARCHIVE & STATE RECOVERY
               </span>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                AES-256 / SHA-256 DATA INTEGRITY
+                SHA-256 SNAPSHOT CHECKSUM
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">

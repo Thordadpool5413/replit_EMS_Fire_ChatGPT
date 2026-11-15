@@ -1,3 +1,4 @@
+import { stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -129,8 +130,8 @@ export async function testFirestoreConnection(): Promise<boolean> {
       console.warn('Firestore is operating in offline-cached mode.');
       return false;
     }
-    // Document not found is expected and verifies connection reached the backend
-    return true;
+    // Permission errors are not evidence of a usable connection.
+    return false;
   }
 }
 
@@ -174,44 +175,40 @@ function stripUndefinedDeep<T>(obj: T): T {
  * Save or update a single agency record in Firestore
  */
 export async function saveAgencyToFirestore(agency: Agency): Promise<void> {
-  if (!agency || !agency.id) return;
-  try {
-    const agencyRef = doc(db, 'agencies', agency.id);
-    const payload = stripUndefinedDeep({
-      ...stripBrowserLocalAgencySourceData(agency),
-      _updatedAt: new Date().toISOString()
-    });
-    await setDoc(agencyRef, payload, { merge: true });
-  } catch (err) {
-    console.error('Failed to sync agency to Firestore:', agency.id, err);
-    throw err;
-  }
+  if (!agency?.id) throw new Error('An agency identity is required.');
+  const { runTransaction } = await import('firebase/firestore');
+  const ref = doc(db, 'agencies', agency.id);
+  await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(ref);
+    const revision = Number(snapshot.data()?._revision ?? 0);
+    if (snapshot.exists() && revision !== (agency._revision ?? 0))
+      throw new Error('This cloud record changed on another device. Refresh it before uploading a complete record.');
+    transaction.set(ref, stripUndefinedDeep({
+      ...stripBrowserLocalAgencySourceData(stripAgencyReviewOverlay(agency)),
+      _revision: revision + 1, _updatedAt: new Date().toISOString()
+    }), { merge: true });
+  });
 }
 
-/**
- * Batch write initial agencies to Firestore for cloud hydration
- */
-export async function batchSyncAgenciesToFirestore(agenciesList: Agency[], maxBatch: number = 25): Promise<number> {
-  if (!agenciesList || agenciesList.length === 0) return 0;
-  let count = 0;
-  
-  const targetSlice = agenciesList.slice(0, maxBatch);
-  const batch = writeBatch(db);
-  const nowIso = new Date().toISOString();
-
-  for (const agency of targetSlice) {
-    if (!agency.id) continue;
-    const ref = doc(db, 'agencies', agency.id);
-    const payload = stripUndefinedDeep({
-      ...stripBrowserLocalAgencySourceData(agency),
-      _syncedAt: agency._syncedAt || nowIso
+/** Explicit hydration creates missing records only; never overwrites live work. */
+export async function batchSyncAgenciesToFirestore(agenciesList: Agency[], maxBatch = 25): Promise<string[]> {
+  const { runTransaction } = await import('firebase/firestore');
+  const targets = agenciesList.filter(a => a.id).slice(0, maxBatch);
+  if (!targets.length) return [];
+  return runTransaction(db, async transaction => {
+    const refs = targets.map(a => doc(db, 'agencies', a.id));
+    const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+    const created: string[] = [];
+    targets.forEach((agency, index) => {
+      if (snapshots[index].exists()) return;
+      transaction.set(refs[index], stripUndefinedDeep({
+        ...stripBrowserLocalAgencySourceData(stripAgencyReviewOverlay(agency)),
+        _revision: 1, _syncedAt: new Date().toISOString()
+      }));
+      created.push(agency.id);
     });
-    batch.set(ref, payload, { merge: true });
-    count++;
-  }
-
-  await batch.commit();
-  return count;
+    return created;
+  });
 }
 
 /**
@@ -277,5 +274,23 @@ export async function saveFieldNoteToFirestore(agencyId: string, note: FieldNote
     id: noteId,
     agencyId,
     createdAt: new Date().toISOString()
+  });
+}
+
+/** Acknowledged, idempotent transaction with field-level optimistic concurrency. */
+export async function commitAgencyMutation(item: import('../types').SyncOutboxItem): Promise<number> {
+  const { runTransaction } = await import('firebase/firestore');
+  const { applyAgencyMutation } = await import('../services/agencyMutation');
+  const ref = doc(db, 'agencies', item.agencyId);
+  return runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(ref);
+    const receipts = snapshot.data()?._mutationReceipts ?? {};
+    if (Object.prototype.hasOwnProperty.call(receipts, item.id)) return Number(receipts[item.id]);
+    const next = applyAgencyMutation(snapshot.exists() ? snapshot.data() as Agency : undefined, item, true);
+    const payload = stripUndefinedDeep({ ...stripBrowserLocalAgencySourceData(next),
+      _revision: (snapshot.data()?._revision ?? 0) + 1,
+      _mutationReceipts: { ...receipts, [item.id]: (snapshot.data()?._revision ?? 0) + 1 }, _updatedAt: new Date().toISOString() });
+    transaction.set(ref, payload, { merge: true });
+    return payload._revision;
   });
 }

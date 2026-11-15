@@ -46,3 +46,18 @@ export const isSpecialistTab = (tab: string) =>
 
 export const isSystemTab = (tab: string) =>
   SYSTEM_WORKSPACE_TABS.some((item) => item.id === tab);
+
+/** Stable route IDs retain existing deep links while presenting four daily workspaces. */
+export const PRIMARY_WORKSPACES = [
+  { id: 'home', label: 'Map', description: 'Explore states, counties, and agencies.' },
+  { id: 'queue', label: 'Agencies', description: 'Research and manage your accounts.' },
+  { id: 'field', label: 'Field Work', description: 'Plan visits, record notes, and follow up.' },
+  { id: 'reports', label: 'Reports', description: 'Review opportunities and export your work.' },
+] as const;
+export function primaryWorkspaceFor(tab: string): string {
+  if (tab === 'home' || isTerritoryTab(tab)) return 'home';
+  if (tab === 'queue') return 'queue';
+  if (isFieldWorkTab(tab)) return 'field';
+  if (tab === 'settings' || isSystemTab(tab) || ['gateway', 'claims'].includes(tab)) return 'settings';
+  return 'reports';
+}

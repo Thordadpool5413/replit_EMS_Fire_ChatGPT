@@ -30,6 +30,7 @@ import { NOT_REPORTED, buildEquipmentLines } from './equipmentInsights';
 import { getAgencyServiceMode } from './AgencyIntelligenceBrief';
 
 export type CommandSection =
+  | 'activity'
   | 'overview'
   | 'equipment'
   | 'purchasing'
@@ -95,11 +96,12 @@ export interface ProfileCommandOverviewProps {
   agency: Agency;
   onNavigate: (section: CommandSection) => void;
   onOpenSources: () => void;
+  onReviewFact?: (fieldId:string)=>void;
   /** Concise agency focus summary; detailed preparation lives in its own topic. */
   children: React.ReactNode;
 }
 
-export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, children }) => {
+export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, onReviewFact, children }) => {
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
@@ -115,6 +117,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const latestGrant = [...grants].filter((g) => isNum(g.fiscalYear)).sort((a, b) => b.fiscalYear - a.fiscalYear)[0];
   const notes = [...(agency.fieldNotes ?? [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const latestNote = notes[0];
+  const nextFollowUp = notes.filter(note=>note.nextAction?.trim() && note.followUpStatus !== 'completed').sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0];
 
   const purchasingValue = contract?.contractEndDate
     ? displayDate(contract.contractEndDate)
@@ -153,12 +156,14 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
         <span className={`acp-ledger-qty${!line.quantity || line.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
           {line.quantity && line.quantity !== NOT_REPORTED ? line.quantity : line.category !== 'software' ? 'Units not reported' : ''}
         </span>
+        {onReviewFact&&<button type="button" className="acp-inline-fact-review" aria-label={`Review ${line.label}`} onClick={()=>onReviewFact(({monitor:'monitor.model',cpr:'cpr.model',vent:'ventilator.model',epcrcad:'software.epcr',dispatch:'software.cad',billing:'software.billing'} as Record<string,string>)[line.key])}>Review</button>}
       </li>
     );
   };
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
+      <section className="acp-next-step" aria-label="Latest activity and next action"><div><span>Next action</span><strong>{nextFollowUp?.nextAction || 'No open follow-ups. Log your next interaction.'}</strong><small>{latestNote ? `Last interaction: ${displayDate(latestNote.date)}${nextFollowUp?.dueDate ? ` · Follow-up: ${displayDate(nextFollowUp.dueDate)}` : ''}` : 'No interactions recorded yet'}</small></div><button className="workspace-button" onClick={()=>onNavigate('activity')}>Open activity<ArrowRight size={16} aria-hidden="true"/></button></section>
       <div className="acp-hero">
         <div className="acp-overview-primary">
         <section className="acp-ledger" data-testid="summary-equipment" aria-labelledby="acp-ledger-title">

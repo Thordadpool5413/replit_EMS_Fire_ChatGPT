@@ -45,7 +45,7 @@ export const PULSE_IQ_FACTOR_RULES: Record<PulseIqFactorEvaluation['key'], strin
   fleet: 'Competitor monitor: 100 at 9+ years, 85 at 7–8, 65 at 5–6, otherwise 40. ZOLL monitor: 75 at 7+ years, otherwise 30.',
   clinical: 'Annual cardiac arrests: 100 at 1,800+, 85 at 1,000–1,799, 70 at 500–999, otherwise 50.',
   grant: 'AFG award: 100. Otherwise active SAFER grant: 60. Neither recorded: 25.',
-  software: 'Any listed ZOLL billing or ePCR software: 35. Otherwise: 95. Missing software names currently count as no ZOLL match.'
+  software: 'Any listed ZOLL billing or ePCR software: 35. Otherwise: 95. Missing software names earn no points.'
 };
 
 const getActiveWeights = (weights: PredictiveWeights = DEFAULT_WEIGHTS) => [
@@ -87,14 +87,14 @@ export function evaluatePulseIqFactors(
   const weightByKey = Object.fromEntries(weightDetails.map((factor) => [factor.key, factor.weight])) as Record<PulseIqFactorEvaluation['key'], number>;
   const labelByKey = Object.fromEntries(weightDetails.map((factor) => [factor.key, factor.label])) as Record<PulseIqFactorEvaluation['key'], string>;
 
-  const age = agency.installedFleet?.defibAgeYears ?? 7;
-  const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
+  const age = agency.installedFleet?.defibAgeYears ?? 0;
+  const brand = agency.installedFleet?.defibBrand || '';
   const isCompetitor = !brand.includes('ZOLL');
   const fleetScore = isCompetitor
     ? age >= 9 ? 100 : age >= 7 ? 85 : age >= 5 ? 65 : 40
     : age >= 7 ? 75 : 30;
 
-  const cardiac = agency.annualCardiacArrestCalls ?? 600;
+  const cardiac = agency.annualCardiacArrestCalls ?? 0;
   const cardiacScore = cardiac >= 1800 ? 100 : cardiac >= 1000 ? 85 : cardiac >= 500 ? 70 : 50;
   const grantScore = agency.grantStatus?.afgAwarded
     ? 100
@@ -125,13 +125,13 @@ export function evaluatePulseIqFactors(
       inputs: [
         {
           label: 'Defibrillator age',
-          valueUsed: `${age} years`,
+          valueUsed: agency.installedFleet?.defibAgeYears == null ? 'Not reported' : `${age} years`,
           sourceKey: 'defibrillatorBiomedicalFleet',
           usedDefault: agency.installedFleet?.defibAgeYears == null
         },
         {
           label: 'Monitor vendor',
-          valueUsed: brand,
+          valueUsed: brand || 'Not reported',
           sourceKey: 'monitorModelTransition',
           usedDefault: !agency.installedFleet?.defibBrand
         }
@@ -146,7 +146,7 @@ export function evaluatePulseIqFactors(
       method: PULSE_IQ_FACTOR_RULES.clinical,
       inputs: [{
         label: 'Annual cardiac arrests',
-        valueUsed: `${cardiac.toLocaleString()} calls/year`,
+        valueUsed: agency.annualCardiacArrestCalls == null ? 'Not reported' : `${cardiac.toLocaleString()} calls/year`,
         sourceKey: 'clinicalOutcomes',
         usedDefault: agency.annualCardiacArrestCalls == null
       }]
@@ -189,6 +189,10 @@ export function evaluatePulseIqFactors(
     }
   ];
 
+  // An incomplete factor contributes zero, never an invented default or score floor.
+  for (const factor of factors) {
+    if (factor.inputs.some(input => input.usedDefault)) factor.baseScore = 0;
+  }
   return factors.map((factor) => ({
     key: factor.key,
     label: factor.label,
@@ -232,7 +236,7 @@ export function calculateScore(
   agency: Agency,
   weights: PredictiveWeights = DEFAULT_WEIGHTS
 ): number {
-  if (!agency) return 75;
+  if (!agency) return 0;
 
   const contributions = calculatePulseIqContributions(agency, weights);
   const raw = (
@@ -242,5 +246,11 @@ export function calculateScore(
     contributions.softwareWhitespacePts
   );
 
-  return Math.min(99, Math.max(30, Math.round(raw)));
+  return Math.min(99, Math.max(0, Math.round(raw)));
+}
+
+export function scoreEvidenceCompleteness(agency: Agency): number {
+  const inputs = evaluatePulseIqFactors(agency).flatMap(f => f.inputs);
+  if (!inputs.length) return 0;
+  return Math.round(100 * inputs.filter(i => !i.usedDefault && !!agency.factEvidence?.[i.sourceKey]).length / inputs.length);
 }

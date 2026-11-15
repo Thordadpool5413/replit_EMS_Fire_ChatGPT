@@ -1,9 +1,15 @@
+import { withWorkspaceLock } from '../services/workspaceLock';
+import { applyAgencyReviews, stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
+import { FACT_REVIEW_STORAGE_KEY, type FactReviewEntry } from '../services/factReviewStore';
+import { applyAgencyMutation } from '../services/agencyMutation';
+import { commitAgencyMutation } from '../utils/firebase';
+import { loadStoredOutbox, saveOutbox, createOutboxItem } from '../utils/syncStore';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Agency, LeadStage, FieldNote } from '../types';
 import { 
   saveAgencyToFirestore, 
@@ -27,6 +33,7 @@ interface UseFirestoreAgenciesOptions {
 
 export interface UseFirestoreAgenciesResult {
   agencies: Agency[];
+  syncPendingChanges: () => Promise<void>;
   isCloudConnected: boolean;
   isSyncing: boolean;
   cloudSyncCount: number;
@@ -38,6 +45,7 @@ export interface UseFirestoreAgenciesResult {
   toggleRouteInCloud: (agencyId: string) => Promise<void>;
   toggleBookmarkInCloud: (agencyId: string) => Promise<void>;
   addFieldNoteInCloud: (agencyId: string, note: FieldNote) => Promise<void>;
+  updateFollowUp: (agencyId: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => Promise<void>;
   addAgencyToCloud: (newAgency: Agency) => Promise<void>;
   setAgenciesState: React.Dispatch<React.SetStateAction<Agency[]>>;
 }
@@ -145,8 +153,11 @@ export function useFirestoreAgencies({
                 );
               }
             }
+            for (const item of loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED'))) {
+              try { agencyMap.set(item.agencyId, applyAgencyMutation(agencyMap.get(item.agencyId), item)); } catch { /* Retain unsupported queued actions. */ }
+            }
             const merged = Array.from(agencyMap.values());
-            saveAgencies(merged);
+            try { saveAgencies(merged); } catch (e) { onToast?.(e instanceof Error ? e.message : 'Cloud cache could not be saved.', 'error'); }
             return merged;
           });
         }
@@ -229,8 +240,8 @@ export function useFirestoreAgencies({
         dataProvenanceTier: 'firestore_cloud_synced' as const
       }));
 
-      const count = await batchSyncAgenciesToFirestore(stampedBatch, maxRecords);
-      const ids = stampedBatch.slice(0, count).map(a => a.id);
+      const ids = await batchSyncAgenciesToFirestore(stampedBatch, maxRecords);
+      const count = ids.length;
       dataSanitizationService.registerCloudSyncedIds(ids);
       setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
 
@@ -301,114 +312,142 @@ export function useFirestoreAgencies({
     }
   }, [onToast]);
 
-  // 5. Update sales stage in cloud
-  const updateStageInCloud = useCallback(async (agencyId: string, newStage: LeadStage) => {
-    setAllSanitizedAgencies(prev => {
-      const next = prev.map(a => {
-        if (a.id === agencyId) {
-          return {
-            ...a,
-            zollOpportunity: {
-              ...a.zollOpportunity,
-              salesStage: newStage
-            }
-          };
+  const recordsRef = useRef(allSanitizedAgencies);
+  recordsRef.current = allSanitizedAgencies;
+  const syncingRef = useRef(false);
+  const syncPendingChanges = useCallback(async () => {
+    if (syncingRef.current || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    syncingRef.current = true; setIsSyncing(true);
+    try {
+      const pending = loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED'));
+      const blocked = new Set<string>();
+      for (const item of pending) {
+        if (blocked.has(item.agencyId)) continue;
+        try {
+          const syncedRevision = await commitAgencyMutation(item);
+          await withWorkspaceLock(() => saveOutbox(loadStoredOutbox().map(i => i.id === item.id ? { ...i, status: 'SYNCED', error: undefined, syncedRevision } : i)));
+          setIsCloudConnected(true);
+        } catch (error) {
+          blocked.add(item.agencyId);
+          const message = error instanceof Error ? error.message : 'Cloud save failed. Retry when connected.';
+          await withWorkspaceLock(() => saveOutbox(loadStoredOutbox().map(i => i.id === item.id ? { ...i, status: 'FAILED', error: message } : i)));
+          onToast?.('Saved on this device. Cloud sync needs attention: ' + message, 'warn');
         }
-        return a;
+      }
+    } catch (error) { onToast?.('Sync status could not be saved. The journal is retained: ' + String(error), 'error'); }
+    finally { syncingRef.current = false; setIsSyncing(false); }
+  }, [onToast]);
+
+  useEffect(() => {
+    const retry = () => { void syncPendingChanges(); };
+    retry();
+    window.addEventListener('online', retry);
+    const timer = window.setInterval(retry, 60000);
+    return () => { window.removeEventListener('online', retry); window.clearInterval(timer); };
+  }, [syncPendingChanges]);
+
+  // The durable journal is written before updating React or reporting success.
+  // Acknowledged entries remain available for offline recovery and complete backups.
+  const recordChange = useCallback(async (agencyId: string, action: import('../types').SyncOutboxItem['actionType'], payload: any) => {
+    const current = recordsRef.current.find(a => a.id === agencyId);
+    const item = createOutboxItem(agencyId, current?.name ?? payload.agency?.name ?? agencyId, action, { ...payload, base: current });
+    applyAgencyMutation(current, item); // Validate before the durable write.
+    await withWorkspaceLock(() => saveOutbox([...loadStoredOutbox(), item]));
+    const updated = applyAgencyMutation(recordsRef.current.find(a => a.id === agencyId), item);
+    const next = current ? recordsRef.current.map(a => a.id === agencyId ? updated : a) : [updated, ...recordsRef.current];
+    recordsRef.current = next;
+    setAllSanitizedAgencies(next);
+    onToast?.('Saved on this device. Waiting for cloud acknowledgment.', 'info');
+    void syncPendingChanges();
+  }, [onToast, syncPendingChanges]);
+
+  const updateStageInCloud = useCallback(async (id: string, stage: LeadStage) => {
+    const current = recordsRef.current.find(a => a.id === id);
+    await recordChange(id, 'AGENCY_PATCH', { changes: { 'zollOpportunity.salesStage': stage }, expected: { 'zollOpportunity.salesStage': current?.zollOpportunity.salesStage } });
+  }, [recordChange]);
+  const toggleRouteInCloud = useCallback(async (id: string) => {
+    const current = recordsRef.current.find(a => a.id === id);
+    await recordChange(id, 'AGENCY_PATCH', { changes: { inDayRoute: !current?.inDayRoute }, expected: { inDayRoute: Boolean(current?.inDayRoute) } });
+  }, [recordChange]);
+  const toggleBookmarkInCloud = useCallback(async (id: string) => {
+    const current = recordsRef.current.find(a => a.id === id);
+    await recordChange(id, 'AGENCY_PATCH', { changes: { isBookmarked: !current?.isBookmarked }, expected: { isBookmarked: Boolean(current?.isBookmarked) } });
+  }, [recordChange]);
+  const addFieldNoteInCloud = useCallback(async (id: string, note: FieldNote) => {
+    if (dataSanitizationService.isMockOrTestFieldNote(note)) throw new Error('This note matches test data. Change its content before saving.');
+    await recordChange(id, 'ADD_FIELD_NOTE', { note });
+  }, [recordChange]);
+  const updateFollowUp = useCallback(async (id: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => {
+    await recordChange(id, 'UPDATE_FOLLOW_UP', { noteId: note.id, changes, expected: { dueDate: note.dueDate, followUpStatus: note.followUpStatus ?? 'open' } });
+  }, [recordChange]);
+  const addAgencyToCloud = useCallback(async (agency: Agency) => {
+    const clean = dataSanitizationService.sanitizeAgency(agency);
+    if (!clean) throw new Error('Agency identity is invalid. Your changes have not been saved.');
+    await recordChange(agency.id, 'CREATE_AGENCY', { agency: clean });
+  }, [recordChange]);
+
+  useEffect(() => {
+    const enqueueReview = (event: Event) => {
+      const entry = (event as CustomEvent<FactReviewEntry>).detail;
+      if (!entry) return;
+      void recordChange(entry.agencyId, 'FACT_REVIEW', { review: entry }).catch(e => onToast?.('Review saved locally; cloud queue failed: ' + String(e), 'error'));
+    };
+    window.addEventListener('ems-reviews-changed', enqueueReview);
+    return () => window.removeEventListener('ems-reviews-changed', enqueueReview);
+  }, [recordChange, onToast]);
+
+  useEffect(() => {
+    const resolveConflict = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      void withWorkspaceLock(() => {
+        saveOutbox(loadStoredOutbox().map(item => item.id === id && item.status === 'FAILED' && item.error?.includes('Another device changed')
+          ? { ...item, status: 'PENDING', error: undefined, payload: { ...item.payload, expected: {} } } : item));
+      }).then(() => syncPendingChanges()).catch(e => onToast?.(String(e), 'error'));
+    };
+    window.addEventListener('ems-resolve-conflict', resolveConflict);
+    return () => window.removeEventListener('ems-resolve-conflict', resolveConflict);
+  }, [syncPendingChanges, onToast]);
+
+  const [reviewVersion, setReviewVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => setReviewVersion(v => v + 1);
+    const refreshStorage = (e: StorageEvent) => {
+      refresh();
+      if (e.key === 'zoll_pulseiq_outbox_v1') {
+        try { setAllSanitizedAgencies(dataSanitizationService.sanitizeAgenciesList(loadStoredAgencies(), undefined, false)); }
+        catch (error) { onToast?.(String(error), 'error'); }
+      }
+    };
+    window.addEventListener('ems-reviews-changed', refresh);
+    window.addEventListener('storage', refreshStorage);
+    return () => { window.removeEventListener('ems-reviews-changed', refresh); window.removeEventListener('storage', refreshStorage); };
+  }, []);
+  const effectiveAgencies = useMemo(() => {
+    try {
+      const entries: FactReviewEntry[] = JSON.parse(localStorage.getItem(FACT_REVIEW_STORAGE_KEY) ?? '[]');
+      const byAgency = new Map<string, FactReviewEntry[]>();
+      for (const entry of entries) byAgency.set(entry.agencyId, [...(byAgency.get(entry.agencyId) ?? []), entry]);
+      return allSanitizedAgencies.map(a => {
+        const reviews = [...new Map([...(a._factReviews ?? []), ...(byAgency.get(a.id) ?? [])].map(e => [e.id, e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt));
+        return reviews.length ? applyAgencyReviews(a, reviews) : a;
       });
-      saveAgencies(next);
-      return next;
-    });
-    if (onToast) onToast('Stage updated in this device’s local workspace. Cloud writes are available only from Data Health.', 'info');
-  }, [onToast]);
+    } catch { return allSanitizedAgencies; }
+  }, [allSanitizedAgencies, reviewVersion]);
 
-  // 6. Toggle day route status in cloud
-  const toggleRouteInCloud = useCallback(async (agencyId: string) => {
-    setAllSanitizedAgencies(prev => {
-      const next = prev.map(a => {
-        if (a.id === agencyId) {
-          return { ...a, inDayRoute: !a.inDayRoute };
-        }
-        return a;
-      });
-      saveAgencies(next);
-      return next;
-    });
-    if (onToast) onToast('Route updated locally. Cloud writes are opt-in from Data Health.', 'info');
-  }, [onToast]);
-
-  // 7. Toggle bookmark in cloud
-  const toggleBookmarkInCloud = useCallback(async (agencyId: string) => {
-    setAllSanitizedAgencies(prev => {
-      const next = prev.map(a => {
-        if (a.id === agencyId) {
-          return { ...a, isBookmarked: !a.isBookmarked };
-        }
-        return a;
-      });
-      saveAgencies(next);
-      return next;
-    });
-    if (onToast) onToast('Saved-account status updated locally. Cloud writes are opt-in from Data Health.', 'info');
-  }, [onToast]);
-
-  // 8. Add field note in cloud (automatically checked against mock/persona filter)
-  const addFieldNoteInCloud = useCallback(async (agencyId: string, note: FieldNote) => {
-    if (dataSanitizationService.isMockOrTestFieldNote(note)) {
-      if (onToast) onToast('Blocked mock or synthetic test note from being saved.', 'warn');
-      return;
-    }
-
-    setAllSanitizedAgencies(prev => {
-      const next = prev.map(a => {
-        if (a.id === agencyId) {
-          const updatedNotes = [note, ...(a.fieldNotes || [])];
-          return {
-            ...a,
-            fieldNotes: updatedNotes,
-            lastContactDate: note.date
-          };
-        }
-        return a;
-      });
-      saveAgencies(next);
-      return next;
-    });
-
-    if (onToast) onToast('Field note saved locally. Cloud writes are opt-in from Data Health.', 'info');
-  }, [onToast]);
-
-  // 9. Add newly created agency to cloud
-  const addAgencyToCloud = useCallback(async (newAgency: Agency) => {
-    const cleanNew = dataSanitizationService.sanitizeAgency({
-      ...newAgency
-    });
-
-    if (!cleanNew) {
-      if (onToast) onToast('Rejected mock or invalid agency record.', 'error');
-      return;
-    }
-
-    setAllSanitizedAgencies(prev => {
-      const exists = prev.some(a => a.id === cleanNew.id);
-      if (exists) return prev;
-      const next = [cleanNew, ...prev];
-      saveAgencies(next);
-      return next;
-    });
-
-    if (onToast) onToast(`Added "${cleanNew.name}" to the local territory pipeline. Cloud writes require a separate opt-in action.`, 'info');
-  }, [onToast]);
+  const setRawAgenciesState = useCallback<React.Dispatch<React.SetStateAction<Agency[]>>>((next) => {
+    setAllSanitizedAgencies(previous => (typeof next === 'function' ? next(previous) : next).map(stripAgencyReviewOverlay));
+  }, []);
 
   // Filter displayed agencies if strictCloudOnlyMode is active
   const visibleAgencies = strictCloudOnlyMode
-    ? allSanitizedAgencies.filter(
+    ? effectiveAgencies.filter(
         a => a.isCloudPersisted || dataSanitizationService.isAgencyCloudSynced(a.id)
       )
-    : allSanitizedAgencies;
+    : effectiveAgencies;
 
   return {
-    agencies: visibleAgencies.length > 0 ? visibleAgencies : allSanitizedAgencies,
+    agencies: visibleAgencies,
+    syncPendingChanges,
     isCloudConnected,
     isSyncing,
     cloudSyncCount,
@@ -420,8 +459,9 @@ export function useFirestoreAgencies({
     toggleRouteInCloud,
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
+    updateFollowUp,
     addAgencyToCloud,
-    setAgenciesState: setAllSanitizedAgencies
+    setAgenciesState: setRawAgenciesState
   };
 }
 

@@ -23,17 +23,17 @@ export function explainAgencyScore(
   agency: Agency,
   weights: PredictiveWeights = DEFAULT_WEIGHTS
 ): PulseIqScoreExplanation {
-  const age = agency.installedFleet?.defibAgeYears ?? 7;
-  const brand = agency.installedFleet?.defibBrand || 'Stryker LIFEPAK 15';
-  const cardiac = agency.annualCardiacArrestCalls ?? 600;
+  const age = agency.installedFleet?.defibAgeYears ?? 0;
+  const brand = agency.installedFleet?.defibBrand || 'Not reported';
+  const cardiac = agency.annualCardiacArrestCalls ?? 0;
   const billingSw = agency.installedFleet?.billingSoftware || '';
   const epcrSw = agency.installedFleet?.epcrCadSoftware || '';
   const hasZollSoftware = billingSw.includes('ZOLL') || epcrSw.includes('ZOLL');
 
   const finalScore = calculateScore(agency, weights);
-  const warrantyStatus = agency.installedFleet?.defibWarrantyStatus || 'Expired';
+  const warrantyStatus = agency.installedFleet?.defibWarrantyStatus || 'Not reported';
   const afgAmount = agency.grantStatus?.afgAwardAmount ? Math.round(agency.grantStatus.afgAwardAmount / 1000) : 0;
-  const afgYear = agency.grantStatus?.afgFiscalYear || 2025;
+  const afgYear = agency.grantStatus?.afgFiscalYear || 'not reported';
   const epcrName = agency.installedFleet?.epcrCadSoftware || 'Legacy ePCR';
   const billingName = agency.installedFleet?.billingSoftware || 'In-House Billing';
   const factors: PulseIqFactorBreakdown[] = evaluatePulseIqFactors(agency, weights).map((factor) => {
@@ -43,7 +43,7 @@ export function explainAgencyScore(
 
     switch (factor.key) {
       case 'fleet':
-        agencyMetricValue = `${brand} · ${agency.installedFleet?.defibUnitsCount ?? 12} units (${age} yrs old)`;
+        agencyMetricValue = `${brand} · ${agency.installedFleet?.defibUnitsCount ?? 'Not reported'} units (${age} yrs old)`;
         clinicalImpactSummary = age >= 7
           ? `Aging ${brand} monitors are ${age} years old with ${warrantyStatus.toLowerCase()} warranty, driving urgent tech refresh.`
           : `Fleet monitors are ${age} years old (${warrantyStatus}).`;
@@ -52,7 +52,7 @@ export function explainAgencyScore(
       case 'clinical':
         agencyMetricValue = `${cardiac.toLocaleString()} OHCA cardiac calls/year`;
         clinicalImpactSummary = cardiac >= 1000
-          ? `High-volume resuscitation system with ${cardiac.toLocaleString()} annual cardiac arrest calls and ${agency.utsteinSurvivalRate || 14}% Utstein survival.`
+          ? `High-volume resuscitation system with ${cardiac.toLocaleString()} annual cardiac arrest calls and ${agency.utsteinSurvivalRate ?? 'not reported'}% Utstein survival.`
           : `Moderate cardiac arrest volume (${cardiac.toLocaleString()} calls/year) with opportunity for AutoPulse mechanical CPR.`;
         urgencyLevel = cardiac >= 1200 ? 'Critical' : cardiac >= 700 ? 'Elevated' : 'Moderate';
         break;
@@ -78,6 +78,11 @@ export function explainAgencyScore(
         break;
     }
 
+    if (factor.inputs.some(input => input.usedDefault)) {
+      agencyMetricValue = factor.inputs.map(input => `${input.label}: ${input.valueUsed}`).join(' · ');
+      clinicalImpactSummary = 'Missing inputs. No opportunity points are awarded until these facts are supplied.';
+      urgencyLevel = 'Nominal';
+    }
     return {
       id: factor.key,
       name: factor.label,

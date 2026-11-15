@@ -1,0 +1,46 @@
+import { createRequire } from 'node:module';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const require=createRequire(resolve(root,'artifacts/ems-territory-intelligence/package.json'));
+const { build }=createRequire(require.resolve('vite'))('esbuild');
+const temporary=mkdtempSync(join(tmpdir(),'ems-persistence-'));
+try {
+ await build({stdin:{resolveDir:root,sourcefile:'persistence-check.ts',loader:'ts',contents:`
+import assert from 'node:assert/strict';
+import { nationalProviderDb } from './artifacts/ems-territory-intelligence/src/services/nationalProviderDatabase';
+import { dataSanitizationService } from './artifacts/ems-territory-intelligence/src/services/dataSanitizationService';
+import { saveAgencies, loadStoredAgencies, saveOutbox, loadStoredOutbox } from './artifacts/ems-territory-intelligence/src/utils/syncStore';
+const memory=new Map();
+const storage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)};
+globalThis.localStorage=storage; globalThis.sessionStorage=storage;globalThis.window={localStorage:storage,dispatchEvent:()=>{}};
+const baseline=nationalProviderDb.getInitialBaselineAgencies(); const sample=baseline[0];
+const note={id:'fn-1794713000000',date:'2026-11-14',repName:'Territory Director',meetingType:'Phone Call',notes:'Discussed fleet inventory',nextAction:'Follow up'};
+assert.equal(dataSanitizationService.isMockOrTestFieldNote(note),false);
+const notes=Array.from({length:12},(_,i)=>({...note,id:'visit-'+i}));
+saveAgencies([{...sample,fieldNotes:notes}]);
+assert.equal(loadStoredAgencies().find(a=>a.id===sample.id).fieldNotes.length,12);
+notes[0]={...notes[0],notes:'Edited without changing count'};
+saveAgencies([{...sample,fieldNotes:notes,lastContactDate:'2026-11-15'}]);
+assert.equal(loadStoredAgencies().find(a=>a.id===sample.id).fieldNotes[0].notes,notes[0].notes);
+assert.equal(loadStoredAgencies().find(a=>a.id===sample.id).lastContactDate,'2026-11-15');
+memory.clear();
+const custom={...sample,id:'user-agency',name:'User agency',fieldNotes:[]};
+saveAgencies([custom,...baseline]);assert.equal(loadStoredAgencies().find(a=>a.id===custom.id).name,custom.name);
+memory.clear();saveAgencies(baseline.slice(0,175).map(a=>({...a,isBookmarked:!a.isBookmarked})));
+assert.equal(JSON.parse(storage.getItem('zoll_pulseiq_custom_agencies_v8')).length,175);
+const old=storage.getItem('zoll_pulseiq_custom_agencies_v8'); const write=storage.setItem;
+storage.setItem=()=>{throw new Error('Quota');}; assert.throws(()=>saveAgencies([custom]),/Nothing was discarded/);
+assert.equal(storage.getItem('zoll_pulseiq_custom_agencies_v8'),old);storage.setItem=write;
+memory.clear();
+const journal=Array.from({length:75},(_,i)=>({id:'sync-'+i,timestamp:new Date(i).toISOString(),agencyId:sample.id,agencyName:sample.name,actionType:'ADD_FIELD_NOTE',payload:{base:sample,note:{...note,id:'logged-'+i}},status:i<30?'SYNCED':'PENDING'}));
+saveOutbox(journal);assert.equal(loadStoredOutbox().length,75);
+assert.equal(loadStoredAgencies().find(a=>a.id===sample.id).fieldNotes.length,75);
+const generated=baseline.find(a=>a.verificationSource?.includes('Geographic prospect generator'));
+assert.equal(dataSanitizationService.sanitizeAgency({...generated,isCloudPersisted:true}).dataProvenanceTier,'generated_prospect');
+console.log('PASS: notes, same-count edits, contact dates, new agencies, 175 modified records, quota preservation, 75 journal entries, reload, generated provenance');
+`},outfile:join(temporary,'check.mjs'),bundle:true,platform:'node',format:'esm',target:'node22',logLevel:'error',plugins:[{name:'county-data',setup(b){b.onResolve({filter:/all-counties-database\.json\.gz\?url$/},()=>({path:'county-data',namespace:'county-inline'}));b.onLoad({filter:/.*/,namespace:'county-inline'},()=>({contents:'export default '+JSON.stringify('data:application/octet-stream;base64,'+readFileSync(resolve(root,'artifacts/ems-territory-intelligence/src/data/all-counties-database.json.gz')).toString('base64')),loader:'js'}));}}]});
+ await import(pathToFileURL(join(temporary,'check.mjs')).href);
+} finally { rmSync(temporary,{recursive:true,force:true}); }

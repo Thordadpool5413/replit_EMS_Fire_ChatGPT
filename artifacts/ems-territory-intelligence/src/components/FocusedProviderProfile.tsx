@@ -132,7 +132,7 @@ const FactVerificationTag: React.FC<{
 }> = ({ agency, field, unverifiedLabel }) => {
   const status = getAgencyFactEvidenceStatus(agency, field);
   const evidence = agency.factEvidence?.[field];
-  const label = status === 'source-reviewed'
+  const label = agency.verificationSource?.includes('Geographic prospect generator') && status === 'source-required' ? 'Generated estimate · not an agency fact' : status === 'source-reviewed'
     ? 'Review marker recorded'
     : status === 'source-mapped'
       ? 'Source available'

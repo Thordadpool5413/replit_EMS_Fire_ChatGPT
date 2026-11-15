@@ -39,6 +39,8 @@ type NppesOrganization = {
 };
 
 type NppesSearchPayload = {
+  Errors?: unknown;
+  errors?: unknown;
   result_count?: number;
   results?: NppesOrganization[];
 };
@@ -82,6 +84,7 @@ async function searchNppes(input: {
   }
 
   const payload = (await response.json()) as NppesSearchPayload;
+  if (payload.Errors || payload.errors || (!Array.isArray(payload.results) && payload.result_count !== 0)) throw new Error('NPPES returned an error or invalid result payload.');
   const records = Array.isArray(payload.results)
     ? payload.results.filter(
         (record) =>
@@ -167,7 +170,7 @@ router.get(
         searchScope,
         recordCount: result.records.length,
         totalResults: result.totalResults,
-        resultsTruncated: result.totalResults > result.records.length,
+        resultsTruncated: result.totalResults > result.records.length || result.records.length >= NPPES_RESULT_LIMIT,
         errorMessage: null,
         records: result.records.map(mapNppesRecord),
       });
@@ -190,4 +193,17 @@ router.get(
   },
 );
 
+// Same-origin transport for individual NPI lookups; upstream errors are never empty matches.
+router.get('/ems-registry/npi/:npi', async (req: Request, res: Response) => {
+  const npi = String(req.params.npi);
+  if (!/^\d{10}$/.test(npi)) { res.status(400).json({error:'Invalid NPI format.'}); return; }
+  try {
+    const url = new URL(NPPES_API_URL); url.searchParams.set('version','2.1'); url.searchParams.set('number',npi);
+    const upstream = await fetch(url, {headers:{Accept:'application/json'},signal:AbortSignal.timeout(15000)});
+    if (!upstream.ok) throw new Error(`NPPES HTTP ${upstream.status}`);
+    const payload = await upstream.json() as NppesSearchPayload;
+    if (payload.Errors || payload.errors || (!Array.isArray(payload.results) && payload.result_count !== 0)) throw new Error('Unexpected NPPES payload');
+    res.setHeader('Cache-Control','private, max-age=300'); res.json(payload);
+  } catch(error) { req.log.warn({err:error},'NPI lookup unavailable'); res.status(502).json({error:'NPPES is unavailable. Retry later.'}); }
+});
 export default router;

@@ -99,35 +99,41 @@ const sourceFailures = new Map<
   { message: string; retryAfter: number }
 >();
 
-async function loadCached<T>(
+export async function loadCached<T>(
   key: string,
   load: () => Promise<T>,
   failureMessage: string,
 ): Promise<{ data: T; fetchedAt: string }> {
   const current = cache.get(key) as CacheEntry<T> | undefined;
+  if (current?.data !== undefined && (sourceFailures.get(key)?.retryAfter ?? 0) > Date.now()) return {data:current.data,fetchedAt:current.fetchedAt};
   if (current && current.expiresAt > Date.now()) {
     return { data: await current.promise, fetchedAt: current.fetchedAt };
   }
 
   const entry: CacheEntry<T> = {
     expiresAt: Date.now() + CACHE_TTL_MS,
-    fetchedAt: new Date().toISOString(),
+    fetchedAt: current?.fetchedAt ?? new Date().toISOString(),
     state: "loading",
     promise: Promise.resolve(undefined as T),
   };
   entry.promise = load()
     .then((data) => {
+      entry.fetchedAt = new Date().toISOString();
       entry.state = "ready";
       entry.data = data;
       sourceFailures.delete(key);
       return data;
     })
     .catch((error: unknown) => {
-      if (cache.get(key) === entry) cache.delete(key);
+      if (cache.get(key) === entry) {
+        if (current?.data !== undefined) cache.set(key, current as CacheEntry<unknown>);
+        else cache.delete(key);
+      }
       sourceFailures.set(key, {
-        message: failureMessage,
+        message: current?.data !== undefined ? `Using cached records retrieved ${current.fetchedAt}; refresh failed. ${failureMessage}` : failureMessage,
         retryAfter: Date.now() + 30000,
       });
+      if (current?.data !== undefined) return current.data;
       throw error;
     });
   cache.set(key, entry as CacheEntry<unknown>);
@@ -146,7 +152,6 @@ function getCachedValue<T>(
   if (
     !entry ||
     entry.state !== "ready" ||
-    entry.expiresAt <= Date.now() ||
     entry.data === undefined
   ) {
     return null;
@@ -992,14 +997,14 @@ export async function searchFireRegistryMatches(
     : usfaDepartmentFailure
       ? "unavailable"
       : "loading";
-  const usfaError = usfaDepartments
+  const usfaError = (usfaDepartmentFailure && usfaDepartments) ? `Using previously retrieved USFA records (${usfaDepartments.fetchedAt}). ${usfaDepartmentFailure}` : usfaDepartments
     ? usfaStations
       ? null
       : usfaStationFailure ??
         "USFA department records loaded; station address rows are still loading."
     : usfaDepartmentFailure ??
       "USFA national department data is loading; NERIS results are shown first.";
-  const nerisError =
+  const nerisError = getSourceFailure(`neris:departments:${stateCode}`) || getSourceFailure(`neris:stations:${stateCode}`) ||
     !nerisDepartments
       ? "NERIS department records could not be loaded."
       : !nerisStations

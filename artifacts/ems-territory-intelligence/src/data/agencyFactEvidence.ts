@@ -151,6 +151,7 @@ export function hasAgencyFactData(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): boolean {
+  if (agency.verificationSource?.includes('Geographic prospect generator') && !hasMappedFactSource(agency.factEvidence?.[key])) return false;
   return getAgencyFactValues(agency, key).length > 0;
 }
 

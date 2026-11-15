@@ -380,7 +380,7 @@ class NationalProviderDatabaseService {
       annualCardiacArrestCalls: cardiacCalls,
       bystanderCPRRate: +(29.0 + (posHash % 22)).toFixed(1),
       utsteinSurvivalRate,
-      lastContactDate: '2026-09-16',
+      lastContactDate: '',
       isBookmarked: false,
       inDayRoute: false,
       gisData: {
@@ -580,7 +580,7 @@ class NationalProviderDatabaseService {
         gisData: {
           ...rawAgency.gisData,
           primaryReceivingHospital: rawAgency.gisData.primaryReceivingHospital || 'Not source-verified',
-          annualHospitalDestinationTransports: rawAgency.gisData.annualHospitalDestinationTransports ?? Math.round(rawAgency.annual911Transports * 0.88)
+          annualHospitalDestinationTransports: rawAgency.gisData.annualHospitalDestinationTransports
         },
         cmsData: {
           ...rawAgency.cmsData,

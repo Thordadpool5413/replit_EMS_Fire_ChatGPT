@@ -211,8 +211,8 @@ export function evaluateOperatingRelationship(
   // 3. Direct Operating Agency Match
   if (candNameLower.includes(tgtNameLower) || tgtNameLower.includes(candNameLower)) {
     return {
-      relationship: 'OPERATING_RELATIONSHIP_CONFIRMED',
-      summary: `Direct operating agency match: Registry legal entity "${entity.legalEntityName}" matches operating agency "${targetAgencyName}".`
+      relationship: 'POSSIBLE_RELATED_ENTITY',
+      summary: `Name similarity only; operating relationship requires end-user confirmation: Registry legal entity "${entity.legalEntityName}" matches operating agency "${targetAgencyName}".`
     };
   }
 
@@ -266,13 +266,12 @@ export async function queryOfficialNppesByNpi(
     };
   }
 
-  const endpoint = `https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${formatCheck.npi}`;
+  const endpoint = `/api/ems-registry/npi/${formatCheck.npi}`;
 
   try {
     const res = await fetch(endpoint, {
       headers: {
-        Accept: 'application/json',
-        'User-Agent': 'Nick-EMS-Fire-Territory-Intelligence/1.0'
+        Accept: 'application/json'
       },
       signal: AbortSignal.timeout(timeoutMs)
     });
@@ -322,6 +321,7 @@ export async function queryOfficialNppesByNpi(
       }>;
     };
 
+    if (!Array.isArray(data.results) && data.result_count !== 0) throw new Error('Unexpected registry response.');
     if (!data.results || data.results.length === 0) {
       return {
         status: 'NOT_FOUND',

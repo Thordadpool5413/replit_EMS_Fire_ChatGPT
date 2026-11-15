@@ -163,6 +163,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
+      {agency.verificationSource?.includes('Geographic prospect generator') && <p role="note" className="pi-surface p-3">Generated prospect: identity and operational details are not source-confirmed. Unreferenced equipment, volumes, clinical measures, contracts and financial figures are planning estimates, not observed agency facts. Confirm individual fields before use.</p>}
       <section className="acp-next-step" aria-label="Latest activity and next action"><div><span>Next action</span><strong>{nextFollowUp?.nextAction || 'No open follow-ups. Log your next interaction.'}</strong><small>{latestNote ? `Last interaction: ${displayDate(latestNote.date)}${nextFollowUp?.dueDate ? ` · Follow-up: ${displayDate(nextFollowUp.dueDate)}` : ''}` : 'No interactions recorded yet'}</small></div><button className="workspace-button" onClick={()=>onNavigate('activity')}>Open activity<ArrowRight size={16} aria-hidden="true"/></button></section>
       <div className="acp-hero">
         <div className="acp-overview-primary">

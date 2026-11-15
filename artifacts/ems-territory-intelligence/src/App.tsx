@@ -1,3 +1,4 @@
+import { FollowUpWorkspace } from './components/FollowUpWorkspace';
 import { WorkspaceHub } from './components/WorkspaceHub';
 /**
  * @license
@@ -162,6 +163,7 @@ export default function App() {
     toggleRouteInCloud,
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
+    updateFollowUp,
     addAgencyToCloud,
     updateAgencyInCloud,
     setAgenciesState,
@@ -1623,6 +1625,7 @@ export default function App() {
         {/* Field Mode & Day Route Planner (My Work Workspace) */}
         {activeTab === 'field' && (
           <div className="workspace-view-container min-w-0 w-full">
+            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onOpen={handleOpenAgencyProfile} />
             <FieldModeView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1727,6 +1730,7 @@ export default function App() {
       {currentActive && (
         <FocusedProviderProfile
           key={currentActive.id}
+          onUpdateFollowUp={updateFollowUp}
           agency={currentActive}
           weights={weights}
           backLabel={profileBackLabel}

@@ -60,7 +60,10 @@ export interface FieldNote {
   notes: string;
   nextAction: string;
   dueDate: string;
+  followUpStatus?: 'open' | 'completed';
+  followUpUpdatedAt?: string;
 }
+
 
 export interface ScoreBreakdown {
   clinicalAcuityPts: number; // Weighted score contribution
@@ -633,7 +636,7 @@ export interface SyncOutboxItem {
   timestamp: string;
   agencyId: string;
   agencyName: string;
-  actionType: 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT' | 'AGENCY_PATCH' | 'CREATE_AGENCY' | 'FACT_REVIEW';
+  actionType: 'UPDATE_FOLLOW_UP' | 'UPDATE_STAGE' | 'ADD_FIELD_NOTE' | 'TOGGLE_ROUTE' | 'UPDATE_CONTACT' | 'AGENCY_PATCH' | 'CREATE_AGENCY' | 'FACT_REVIEW';
   error?: string;
   syncedRevision?: number;
   payload: any;

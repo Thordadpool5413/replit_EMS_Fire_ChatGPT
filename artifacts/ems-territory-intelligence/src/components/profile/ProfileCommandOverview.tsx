@@ -117,6 +117,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   const latestGrant = [...grants].filter((g) => isNum(g.fiscalYear)).sort((a, b) => b.fiscalYear - a.fiscalYear)[0];
   const notes = [...(agency.fieldNotes ?? [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const latestNote = notes[0];
+  const nextFollowUp = notes.filter(note=>note.nextAction?.trim() && note.followUpStatus !== 'completed').sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0];
 
   const purchasingValue = contract?.contractEndDate
     ? displayDate(contract.contractEndDate)
@@ -162,7 +163,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
-      <section className="acp-next-step" aria-label="Latest activity and next action"><div><span>Next action</span><strong>{latestNote?.nextAction || 'Log a visit and record your next step'}</strong><small>{latestNote ? `Last interaction: ${displayDate(latestNote.date)}${latestNote.dueDate ? ` · Follow-up: ${displayDate(latestNote.dueDate)}` : ''}` : 'No interactions recorded yet'}</small></div><button className="workspace-button" onClick={()=>onNavigate('activity')}>Log interaction<ArrowRight size={16} aria-hidden="true"/></button></section>
+      <section className="acp-next-step" aria-label="Latest activity and next action"><div><span>Next action</span><strong>{nextFollowUp?.nextAction || 'No open follow-ups. Log your next interaction.'}</strong><small>{latestNote ? `Last interaction: ${displayDate(latestNote.date)}${nextFollowUp?.dueDate ? ` · Follow-up: ${displayDate(nextFollowUp.dueDate)}` : ''}` : 'No interactions recorded yet'}</small></div><button className="workspace-button" onClick={()=>onNavigate('activity')}>Open activity<ArrowRight size={16} aria-hidden="true"/></button></section>
       <div className="acp-hero">
         <div className="acp-overview-primary">
         <section className="acp-ledger" data-testid="summary-equipment" aria-labelledby="acp-ledger-title">

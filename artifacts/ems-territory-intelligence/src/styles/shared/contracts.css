@@ -267,3 +267,22 @@
   .workspace-hub-heading { padding-top:.25rem; }
 }
 @media(prefers-reduced-motion:reduce) { .workspace-destination { transition:none; } }
+
+/* Field-work actions share the workspace controls and semantic palette. */
+.followup-workspace { margin: 0 0 1rem; padding: 1rem; border: 1px solid var(--pi-border); border-radius: 12px; background: var(--pi-surface-bg); color: var(--pi-text-primary); }
+.followup-workspace h2 { font-size: 1.15rem; font-weight: 700; }
+.followup-workspace header p, .followup-context { font-size: .8rem; margin: .35rem 0 .7rem; }
+.followup-filters, .followup-actions { display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; }
+.followup-filters [aria-pressed="true"] { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; }
+.followup-workspace input { display:block; min-height:36px; padding:.4rem; border:1px solid var(--pi-border); border-radius:6px; background:var(--pi-surface-bg); color:inherit; max-width:100%; }
+.followup-search { display:block; margin-top:.8rem; font-size:.8rem; }
+.followup-search input { width:100%; }
+.followup-workspace ul { list-style:none; padding:0; }
+.followup-row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; padding:1rem 0; border-bottom:1px solid var(--pi-border); }
+.followup-row > div:first-child { flex:1 1 240px; min-width:0; overflow-wrap:anywhere; }
+.followup-row h3 { font-weight:650; margin:.25rem 0; }
+.followup-row label, .followup-row summary, .followup-status { font-size:.8rem; }
+.followup-row summary { cursor:pointer; }
+.followup-row > p { flex-basis:100%; font-size:.8rem; }
+.followup-empty { padding:1rem 0; font-size:.85rem; }
+@media(max-width:767px) { .followup-workspace input { min-height:44px; } .followup-actions { width:100%; } }

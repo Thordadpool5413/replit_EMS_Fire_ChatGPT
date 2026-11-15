@@ -1,3 +1,5 @@
+import { FollowUpWorkspace } from './FollowUpWorkspace';
+import type { FollowUpUpdater } from '../utils/followUps';
 import { scoreEvidenceCompleteness } from '../utils/pulseIqScoring';
 /**
  * @license
@@ -99,6 +101,7 @@ import {
 } from '../utils/formatters';
 
 interface FocusedProviderProfileProps {
+  onUpdateFollowUp: FollowUpUpdater;
   agency: Agency;
   weights?: PredictiveWeights;
   backLabel: string;
@@ -408,6 +411,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   onToggleRoute,
   onToggleBookmark,
   onAddFieldNote,
+  onUpdateFollowUp,
   onOpenRfpGenerator,
   onOpenDataLineage,
   onSaveAgencySourceData,
@@ -2895,7 +2899,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
 
         {/* SECTION: FIELD NOTES */}
-        {showSection('notes') && <FieldNotesPanel key={agency.id} agency={agency} onAdd={onAddFieldNote} />}
+        {showSection('notes') && <><FollowUpWorkspace compact agencies={[agency]} onUpdate={onUpdateFollowUp} /><FieldNotesPanel key={agency.id} agency={agency} onAdd={onAddFieldNote} /></>}
 
         {/* TOPIC 7: EVIDENCE & SOURCES PROVENANCE LEDGER */}
         {showSection('evidence_ledger') && (

@@ -23,10 +23,19 @@ export function applyAgencyMutation(current: Agency | undefined, item: SyncOutbo
     result.fieldNotes = [note, ...(result.fieldNotes ?? []).filter(n => n.id !== note.id)];
     result.lastContactDate = [result.lastContactDate ?? '', note.date].sort().at(-1);
   }
+  if (item.actionType === 'UPDATE_FOLLOW_UP') {
+    const { noteId, changes, expected } = item.payload;
+    const note = result.fieldNotes.find(n => n.id === noteId);
+    if (!note) throw new Error('This interaction is no longer available. Refresh the agency before retrying.');
+    if (!changes || !['open', 'completed'].includes(changes.followUpStatus) || typeof changes.dueDate !== 'string' || (changes.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(changes.dueDate))) throw new Error('Invalid follow-up update.');
+    if (checkConflicts && expected && ((note.followUpStatus ?? 'open') !== expected.followUpStatus || note.dueDate !== expected.dueDate) && ((note.followUpStatus ?? 'open') !== changes.followUpStatus || note.dueDate !== changes.dueDate))
+      throw new Error('Another device changed this follow-up. Your change is retained for review.');
+    result.fieldNotes = result.fieldNotes.map(n => n.id === noteId ? { ...n, dueDate: changes.dueDate, followUpStatus: changes.followUpStatus, followUpUpdatedAt: item.timestamp } : n);
+  }
   if (item.actionType === 'FACT_REVIEW') {
     result._factReviews = [...(result._factReviews ?? []).filter(e => e.id !== item.payload.review.id), item.payload.review];
   }
-  if (!['FACT_REVIEW','CREATE_AGENCY','AGENCY_PATCH','ADD_FIELD_NOTE','UPDATE_STAGE'].includes(item.actionType))
+  if (!['UPDATE_FOLLOW_UP','FACT_REVIEW','CREATE_AGENCY','AGENCY_PATCH','ADD_FIELD_NOTE','UPDATE_STAGE'].includes(item.actionType))
     throw new Error('This older queued change requires review. It has not been discarded.');
   return result;
 }

@@ -45,6 +45,7 @@ export interface UseFirestoreAgenciesResult {
   toggleRouteInCloud: (agencyId: string) => Promise<void>;
   toggleBookmarkInCloud: (agencyId: string) => Promise<void>;
   addFieldNoteInCloud: (agencyId: string, note: FieldNote) => Promise<void>;
+  updateFollowUp: (agencyId: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => Promise<void>;
   addAgencyToCloud: (newAgency: Agency) => Promise<void>;
   setAgenciesState: React.Dispatch<React.SetStateAction<Agency[]>>;
 }
@@ -376,6 +377,9 @@ export function useFirestoreAgencies({
     if (dataSanitizationService.isMockOrTestFieldNote(note)) throw new Error('This note matches test data. Change its content before saving.');
     await recordChange(id, 'ADD_FIELD_NOTE', { note });
   }, [recordChange]);
+  const updateFollowUp = useCallback(async (id: string, note: FieldNote, changes: { dueDate: string; followUpStatus: 'open' | 'completed' }) => {
+    await recordChange(id, 'UPDATE_FOLLOW_UP', { noteId: note.id, changes, expected: { dueDate: note.dueDate, followUpStatus: note.followUpStatus ?? 'open' } });
+  }, [recordChange]);
   const addAgencyToCloud = useCallback(async (agency: Agency) => {
     const clean = dataSanitizationService.sanitizeAgency(agency);
     if (!clean) throw new Error('Agency identity is invalid. Your changes have not been saved.');
@@ -455,6 +459,7 @@ export function useFirestoreAgencies({
     toggleRouteInCloud,
     toggleBookmarkInCloud,
     addFieldNoteInCloud,
+    updateFollowUp,
     addAgencyToCloud,
     setAgenciesState: setRawAgenciesState
   };

@@ -1,3 +1,4 @@
+import {PwaControls, PwaStatusBanner} from './pwa/PwaControls';
 import { recordImportRun } from './services/importRunStore';
 import { FollowUpWorkspace } from './components/FollowUpWorkspace';
 import { WorkspaceHub } from './components/WorkspaceHub';
@@ -1088,8 +1089,10 @@ export default function App() {
 
       {/* Main Workspace Body with a synchronized desktop sidebar offset */}
       <div className="pi-workspace-body md:pl-[216px] flex-1 flex flex-col min-w-0">
+      <PwaStatusBanner />
       <main data-laptop-density={activeTab === 'home' ? undefined : 'compact'} className="workspace-grid-shell flex-1 w-full max-w-[1640px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-4 pb-24 md:pb-6 min-w-0">
 
+        {!currentActive && activeTab === 'settings' && <div className="pwa-settings-panel"><PwaControls /></div>}
         {!currentActive && !['home','reports','settings'].includes(activeTab) && ['reports','settings'].includes(primaryWorkspaceFor(activeTab)) && <button className="workspace-text-button" onClick={()=>handleNavigateTab(primaryWorkspaceFor(activeTab))}>← Back to {primaryWorkspaceFor(activeTab)==='settings'?'Settings':'Reports'}</button>}
         {!currentActive && activeTab !== 'home' && (
           <TerritoryContextBreadcrumb

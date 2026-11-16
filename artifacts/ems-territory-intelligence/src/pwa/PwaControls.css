@@ -7,3 +7,10 @@
 .pwa-controls button:focus-visible {outline:2px solid var(--pi-focus-ring,#2454c6);outline-offset:2px;}
 .pwa-controls-help {padding:.25rem .75rem;border-left:2px solid var(--pi-border,#dce4ef);}
 .pwa-controls .pwa-controls-error {color:var(--pi-danger-ink,#a32b3c);}
+
+.pwa-settings-panel { padding:1rem; margin-bottom:1rem; border:1px solid var(--pi-border); border-radius:10px; background:var(--pi-surface-bg); }
+.pwa-status-banner { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem 1rem; padding:.5rem max(.75rem, env(safe-area-inset-right)) .5rem max(.75rem, env(safe-area-inset-left)); background:var(--pi-surface-subtle,#edf4ff); color:var(--pi-text-primary,#142238); border-bottom:1px solid var(--pi-border,#dce4ef); font-size:.8rem; }
+.pwa-status-banner p { display:flex; align-items:center; gap:.5rem; flex:1 1 220px; margin:0; }
+.pwa-status-banner svg { flex-shrink:0; }
+.pwa-status-banner button { min-height:44px; padding:.5rem .75rem; border:1px solid currentColor; border-radius:8px; font-weight:600; }
+.pwa-status-banner button:focus-visible { outline:2px solid var(--pi-focus-ring,#2454c6); outline-offset:2px; }

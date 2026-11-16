@@ -18,16 +18,29 @@ export function startPwaLifecycle(production: boolean, baseUrl: string) {
   if(started) return;
   started = true;
   const viewport = window.visualViewport;
+  let restingHeight = window.innerHeight;
+  let restingWidth = window.innerWidth;
   if(viewport) {
     const syncViewport = () => {
       // Respect intentional pinch zoom; keyboard/layout changes happen at scale 1.
       if(viewport.scale !== 1) return;
       document.documentElement.style.setProperty('--app-visible-height', `${Math.round(viewport.height)}px`);
-      document.documentElement.dataset.mobileKeyboard = window.innerHeight - viewport.height > 150 ? 'open' : 'closed';
+      const active = document.activeElement;
+      const editing = Boolean(active?.matches('textarea, input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), [contenteditable="true"]'));
+      if (window.innerWidth !== restingWidth) {
+        restingWidth = window.innerWidth;
+        restingHeight = window.innerHeight;
+      }
+      if (!editing) restingHeight = Math.max(restingHeight, window.innerHeight);
+      // Android can resize both viewports; Safari generally resizes only the visual viewport.
+      const obscured = Math.max(window.innerHeight - viewport.height, restingHeight - viewport.height);
+      document.documentElement.dataset.mobileKeyboard = editing && obscured > 150 ? 'open' : 'closed';
     };
     syncViewport();
     viewport.addEventListener('resize', syncViewport);
     window.addEventListener('resize', syncViewport);
+    document.addEventListener('focusin', syncViewport);
+    document.addEventListener('focusout', () => window.setTimeout(syncViewport, 0));
   }
   const display = window.matchMedia('(display-mode: standalone)');
   const isInstalled = () => display.matches || Boolean((navigator as Navigator & {standalone?: boolean}).standalone);

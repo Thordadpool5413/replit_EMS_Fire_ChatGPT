@@ -12,6 +12,8 @@ const dataset:Record<string,string>={};
 doc.documentElement={style:{setProperty:(name:string,value:string)=>properties.set(name,value)},dataset};
 browser.visualViewport=viewport;
 browser.innerHeight=844;
+browser.innerWidth=390;
+doc.activeElement={matches:()=>true};
 display.matches=false;
 let posted=0, prompted=0, confirmations=0;
 const registration = Object.assign(new EventTarget(), {
@@ -73,4 +75,13 @@ test('unfinished reviews block updates; cancel leaves the worker and page untouc
   applyPwaUpdate();
   assert.equal(confirmations,1);
   assert.equal(posted,0);
+});
+
+test('Android resized layout hides navigation while editing and restores it after blur',()=>{
+  viewport.height=844; browser.innerHeight=844; viewport.dispatchEvent(new Event('resize'));
+  browser.innerHeight=500; viewport.height=500; viewport.dispatchEvent(new Event('resize'));
+  assert.equal(dataset.mobileKeyboard,'open');
+  doc.activeElement={matches:()=>false}; doc.dispatchEvent(new Event('focusin'));
+  assert.equal(dataset.mobileKeyboard,'closed');
+  browser.innerHeight=844; viewport.height=844; viewport.dispatchEvent(new Event('resize'));
 });

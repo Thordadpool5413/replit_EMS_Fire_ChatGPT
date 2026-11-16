@@ -213,3 +213,21 @@
   .profile-mobile-dock { padding-block: 0.3rem !important; }
   .profile-mobile-dock :is(button, select) { height: 2.5rem !important; }
 }
+
+/* Field briefing on narrow devices: controls keep their target and text can reflow. */
+@media (max-width: 767px) {
+  .agency-key-people, .agency-address > div, .deal-plan-grid > label { min-width:0; }
+  .agency-key-people header { flex-wrap:wrap; }
+  .agency-person-actions { flex-wrap:wrap; justify-content:flex-end; max-width:96px; }
+  .agency-person-actions a { display:inline-flex; align-items:center; justify-content:center; }
+  .deal-discovery-workspace { padding:12px; }
+  .deal-commitment label { flex-basis:100%; min-width:0; }
+  .deal-commitment > button { width:100%; min-height:44px; justify-content:center; }
+  .agency-command-profile :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select) { font-size:16px; max-width:100%; }
+  .agency-command-profile :is(input,textarea,select) { scroll-margin-block:80px; }
+  .agency-command-profile .acp-name { overflow-wrap:anywhere; }
+}
+@media (max-width: 374px) {
+  .agency-key-people li { flex-wrap:wrap; }
+  .agency-person-actions { margin-left:39px; max-width:none; }
+}

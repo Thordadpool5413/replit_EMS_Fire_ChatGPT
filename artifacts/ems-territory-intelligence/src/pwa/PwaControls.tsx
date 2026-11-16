@@ -26,3 +26,15 @@ export function PwaControls() {
     {state.error && <p role="alert" className="pwa-controls-error">{state.error}</p>}
   </section>;
 }
+
+/** Connection and update notices stay in document flow, clear of phone navigation. */
+export function PwaStatusBanner() {
+  const state = useSyncExternalStore(subscribePwa, getPwaState, getPwaState);
+  if (state.online && !state.updateAvailable) return null;
+  return <aside className="pwa-status-banner" aria-label="App status">
+    <p role="status">{state.online ? <RefreshCw size={16} aria-hidden="true"/> : <WifiOff size={16} aria-hidden="true"/>}
+      {state.online ? 'An app update is ready. Save your work before updating.' : 'You’re offline. Cached records may be available; live maps and lookups need a connection.'}</p>
+    {state.online && state.updateAvailable && <button type="button" onClick={applyPwaUpdate}>Update app</button>}
+    {state.error && <p role="alert">{state.error}</p>}
+  </aside>;
+}

@@ -603,7 +603,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
-      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter}/>
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies} onOpen={onSelectAgency}/>
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP

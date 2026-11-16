@@ -533,7 +533,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter}/>
+                <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies}/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select

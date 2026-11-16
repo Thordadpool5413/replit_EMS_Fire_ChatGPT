@@ -24,3 +24,12 @@ test('bad saved filter values recover to safe defaults',()=>{
  assert.deepEqual(parseEquipmentFilter(null),{presence:'all',family:'all'});
  assert.deepEqual(parseEquipmentFilter({presence:'zoll',family:'wrong'}),{presence:'zoll',family:'all'});
 });
+test('named competitor filters recognize product aliases and remain category-specific',()=>{
+ const agency=make({defibBrand:'LIFEPAK 15',mechanicalCPR:'LUCAS 3',transportVentilator:'Hamilton T1',epcrCadSoftware:'ESO Solutions'});
+ assert(matchesEquipmentFilter(agency,{presence:'competitor',family:'monitors',vendor:'stryker'}));
+ assert(matchesEquipmentFilter(agency,{presence:'competitor',family:'ventilators',vendor:'hamilton'}));
+ assert(!matchesEquipmentFilter(agency,{presence:'competitor',family:'monitors',vendor:'hamilton'}));
+ assert(matchesEquipmentFilter(agency,{presence:'competitor',family:'software',vendor:'eso'}));
+ assert.deepEqual(parseEquipmentFilter({presence:'competitor',family:'all',vendor:'bad'}),{presence:'competitor',family:'all'});
+ assert.deepEqual(parseEquipmentFilter({presence:'all',family:'all',vendor:'stryker'}),{presence:'all',family:'all'});
+});

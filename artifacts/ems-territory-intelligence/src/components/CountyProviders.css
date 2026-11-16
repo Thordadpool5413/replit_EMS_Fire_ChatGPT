@@ -17,7 +17,8 @@
 .county-providers-tools { padding: .6rem var(--geo-pad); border-bottom: 1px solid var(--geo-hair); background: var(--geo-wash); }
 .county-providers-tools :is(input, select) { border-color: var(--geo-hair) !important; background: var(--pi-surface-bg) !important; color: var(--pi-text-primary) !important; font-size: 13px !important; }
 .county-providers-tools :is(input, select):focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; border-color: var(--geo-id) !important; }
-.county-providers-tools button[aria-pressed="true"], .county-providers-tools .provider-view-toggle button[aria-pressed="true"] { color: var(--geo-id-deep) !important; }
+.county-providers-tools button[aria-pressed="true"] { color: var(--geo-id-deep) !important; }
+.county-providers-tools .provider-view-toggle button[aria-pressed="true"] { background:var(--geo-id) !important; color:var(--geo-id-ink) !important; }
 .county-providers-tools button { font-size: 12.5px !important; }
 .county-providers-tools button:focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 1px; }
 
@@ -46,3 +47,10 @@
   .county-providers-head * { color: CanvasText !important; }
   .county-providers-shell .provider-metric { border-left-color: CanvasText !important; }
 }
+
+/* The provider identity band owns its ink, independent of light-panel heading rules. */
+.county-providers-shell .county-providers-head > .cv-geo-head { background:var(--geo-id); min-height:46px; padding:8px var(--geo-pad); }
+.county-providers-shell .county-providers-head .cv-geo-title { color:var(--geo-id-ink) !important; font-size:18px; line-height:1.3; flex-wrap:wrap; overflow-wrap:anywhere; }
+.county-providers-shell .county-providers-head .cv-geo-title > svg { color:var(--geo-id-ink) !important; flex-shrink:0; }
+.county-providers-shell .county-providers-head .cv-geo-kicker { color:var(--geo-id-sub) !important; font-size:11px; }
+@media(forced-colors:active) { .county-providers-shell .county-providers-head :is(.cv-geo-title,.cv-geo-title > svg,.cv-geo-kicker) { color:CanvasText !important; } }

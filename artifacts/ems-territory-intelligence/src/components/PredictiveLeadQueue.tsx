@@ -919,7 +919,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           )}
                         </div>
 
-                       <h3 className="min-w-0 text-sm sm:text-base font-semibold text-[var(--pi-text-primary)] group-hover:text-[var(--pi-action)] transition-colors leading-snug tracking-[-0.015em] line-clamp-2 break-words">
+                       <h3 className="min-w-0 text-sm sm:text-base font-semibold text-[var(--pi-text-primary)] group-hover:text-[var(--pi-action)] transition-colors leading-snug tracking-[-0.015em] whitespace-normal break-words">
                           {agency.name}
                         </h3>
 
@@ -967,14 +967,14 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                       <div className="text-xs font-medium text-[var(--pi-text-muted)]">
                         Frontline fleet
                       </div>
-                      <div className="font-semibold text-sm text-[var(--pi-text-primary)] tabular-nums line-clamp-2 break-words">
+                      <div className="font-semibold text-sm text-[var(--pi-text-primary)] tabular-nums whitespace-normal break-words">
                         {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                           ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
                           : hasAgencyFactEvidence(agency, 'monitorModelTransition')
                             ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
                             : 'Not source-verified'}
                       </div>
-                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums line-clamp-2 break-words">
+                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums whitespace-normal break-words">
                         {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
                           ? `Reported age: ${agency.installedFleet.defibAgeYears} yrs`
                           : 'Fleet age not source-verified'}
@@ -994,7 +994,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                           ? formatCurrency(agency.cmsData.estimatedRecoverableRevenue, { perYear: true, showSign: true })
                           : <span className="text-xs font-medium text-[var(--pi-text-muted)]">{MISSING_INPUT_COPY.claimsRecovery}</span>}
                       </div>
-                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums line-clamp-2 break-words">
+                      <div className="text-xs text-[var(--pi-text-muted)] tabular-nums whitespace-normal break-words">
                         {hasVerifiedModel ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} pipeline estimate` : 'Opportunity model not validated'}
                       </div>
                     </div>
@@ -1265,7 +1265,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                 {agency.city}, {agency.stateCode} · {isFire ? 'Fire' : 'EMS'}
                               </div>
-                              <div className="text-xs font-semibold text-slate-900 dark:text-white leading-snug tracking-[-0.01em] line-clamp-2 mt-0.5">
+                              <div className="text-xs font-semibold text-slate-900 dark:text-white leading-snug tracking-[-0.01em] whitespace-normal mt-0.5">
                                 {agency.name}
                               </div>
                             </div>
@@ -1475,7 +1475,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             ? `${agency.totalFireEngines > 0 ? `${agency.totalFireEngines} Eng · ` : ''}${agency.totalAmbulances} ALS/BLS Units`
                             : 'Exact apparatus breakdown not verified'}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[210px]">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-normal break-words max-w-[210px]">
                           {hasAgencyFactEvidence(agency, 'agencyLeadership')
                             ? `${fireChiefContact?.name || ''}${fireChiefContact && emsDirectorContact ? ' · ' : ''}${emsDirectorContact?.name || ''}`
                             : 'Leadership not source-verified'}
@@ -1491,7 +1491,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
                               : 'Not source-verified'}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[210px]">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-normal break-words max-w-[210px]">
                           ePCR: {hasAgencyFactEvidence(agency, 'epcrSystem') ? agency.installedFleet.epcrCadSoftware : 'Not source-verified'}
                         </div>
                       </td>

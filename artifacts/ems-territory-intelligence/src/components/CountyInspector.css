@@ -13,7 +13,7 @@
   display: flex; flex-direction: column; gap: 0; padding: 0;
   border: 1px solid var(--geo-hair); border-radius: var(--geo-radius); background: var(--pi-surface-bg); box-shadow: none;
 }
-.cv-panel.county-geo:not(.cv-map-panel) > *, .ci > * { min-width: 0; padding: .7rem var(--geo-pad); }
+.cv-panel.county-geo:not(.cv-map-panel) > *, .ci > * { min-width: 0; padding: .45rem var(--geo-pad); }
 .cv-panel.county-geo:not(.cv-map-panel) > * + *, .ci > * + * { border-top: 1px solid var(--geo-hair); }
 :is(.county-geo, .ci) :is(p, dl, dd, dt, h4, h5) { margin: 0; }
 :is(.county-geo, .ci) .ci-ico,
@@ -22,9 +22,9 @@
 .county-geo [data-tone="ops"] > dt > svg { color: var(--geo-ops); }
 
 /* Light identity header: small context kicker, county name in blue display type */
-.ci .ci-head, .county-geo .cv-geo-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .4rem 1rem; padding-block: .75rem .6rem; }
+.ci .ci-head, .county-geo .cv-geo-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .4rem 1rem; padding-block: .5rem .4rem; }
 .county-geo .cv-geo-kicker, .ci .ci-kicker { display: flex; align-items: center; gap: .35rem; font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--pi-text-muted); font-variant-numeric: tabular-nums; }
-.county-geo .cv-geo-title, .ci .ci-name { display: flex; align-items: center; gap: .4rem; margin-top: .1rem; font-family: var(--geo-display); font-size: 21px; font-weight: 780; letter-spacing: -.02em; line-height: 1.15; color: var(--geo-name); overflow-wrap: anywhere; }
+.county-geo .cv-geo-title, .ci .ci-name { display: flex; align-items: center; gap: .4rem; margin-top: .1rem; font-family: var(--geo-display); font-size: 18px; font-weight: 780; letter-spacing: -.02em; line-height: 1.15; color: var(--geo-name); overflow-wrap: anywhere; }
 .county-geo .cv-geo-title > svg { width: 18px; height: 18px; color: var(--geo-name); }
 .county-geo .cv-geo-note { max-width: 26rem; font-size: var(--geo-meta); color: var(--pi-text-secondary); }
 .county-geo .cv-geo-head :focus-visible { outline: 2px solid var(--pi-focus-ring); outline-offset: 2px; }
@@ -129,7 +129,7 @@
 .county-city-directory-panel .cv-geo-figs dt { display: inline-flex; align-items: center; gap: .35rem; align-self: center; font-size: var(--geo-label); font-weight: 600; color: var(--pi-text-secondary); order: 2; }
 .county-city-directory-panel .cv-geo-figs dd { font-family: var(--geo-display); font-size: 19px; font-weight: 760; letter-spacing: -.02em; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; order: 1; }
 .county-city-directory-panel .cv-geo-figs dd small { margin-left: .2rem; font-family: var(--geo-font); font-size: var(--geo-meta); font-weight: 520; letter-spacing: 0; color: var(--pi-text-secondary); }
-.county-city-directory-panel .cv-place-list { display: grid; gap: 0; padding: 0 !important; border: 0; border-radius: 0; max-height: 19rem; overflow-y: auto; }
+.county-city-directory-panel .cv-place-list { display: grid; gap: 0; padding: 0 !important; border: 0; border-radius: 0; max-height: none; overflow: visible; }
 .county-city-directory-panel .cv-place-list > [role="listitem"] + [role="listitem"] { border-top: 1px solid var(--geo-hair); }
 .county-city-directory-panel .cv-place-row { display: flex; align-items: center; gap: .6rem; width: 100%; min-height: 44px; padding: .4rem var(--geo-pad); border: 0; border-radius: 0; background: transparent; text-align: left; transition: background-color 120ms ease; }
 .county-city-directory-panel .cv-place-row:hover, .county-city-directory-panel .cv-place-row[data-hover="true"] { background: var(--geo-wash); }
@@ -205,3 +205,9 @@
   :is(.ci, .county-geo) :is(button, a):focus-visible { outline: 2px solid Highlight; }
   .cv-county-label { fill: CanvasText; stroke: Canvas; }
 }
+
+/* Location rows grow naturally when names, ZIPs or source references wrap. */
+.county-city-directory-panel .cv-place-row { align-items:flex-start; }
+.county-city-directory-panel .cv-place-row > div { min-width:0; }
+.county-city-directory-panel :is(.cv-place-name,.cv-place-sub) { overflow-wrap:anywhere; }
+.county-city-directory-panel .cv-place-count { flex-wrap:wrap; flex-shrink:1; justify-content:flex-end; text-align:right; }

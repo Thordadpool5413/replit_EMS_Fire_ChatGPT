@@ -81,3 +81,9 @@
   .field-work-workspace :is(button, select)[class*="text-[9px]"] { font-size: 0.75rem !important; }
   .field-work-workspace :is(button, a):focus-visible { outline: 2px solid var(--pi-action); outline-offset: 2px; }
 }
+/* Compact account cards retain complete labels rather than hiding important names/products. */
+.agency-lead-cards-grid :is(h3,.break-words) { overflow-wrap:anywhere; }
+@media(min-width:1024px) {
+ [data-laptop-density="compact"] .agency-lead-cards-grid > div { padding:10px !important; }
+ [data-laptop-density="compact"] .agency-lead-cards-grid { gap:10px !important; }
+}

@@ -20,7 +20,7 @@ export function pwaRevision(): Plugin {
         if(chunk?.type==='chunk')chunk.imports.forEach(include);
       };
       for(const item of Object.values(bundle)){
-        if(item.type==='chunk'&&(item.isEntry||item.facadeModuleId?.endsWith('/HomeHubView.tsx')))include(item.fileName);
+        if(item.type==='chunk'&&(item.isEntry||['/HomeHubView.tsx','/NationalGeographicExplorer.tsx','/PredictiveLeadQueue.tsx'].some(name=>item.facadeModuleId?.endsWith(name))))include(item.fileName);
         if(item.type==='asset'&&/\.(css|woff2)$/.test(item.fileName))boot.add(item.fileName);
       }
       const hash=createHash('sha256').update(worker).update(Object.keys(bundle).sort().join('\n'));

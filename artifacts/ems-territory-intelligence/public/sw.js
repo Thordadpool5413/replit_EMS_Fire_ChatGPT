@@ -1,6 +1,6 @@
 const CACHE_NAME = "ems-territory-shell-v4";
 const APP_ROOT = new URL("./", self.location).href;
-// Filled deterministically by the production build: entry graph + Home for a cold offline launch.
+// Filled deterministically by the production build: entry graph + core map/directory views for a cold offline launch.
 const BOOT_ASSETS = /* BUILD_BOOT_ASSETS */ [];
 const SHELL_ASSETS = [
   APP_ROOT,
@@ -17,7 +17,19 @@ const BUILT_ASSETS_ROOT = new URL("assets/", APP_ROOT).href;
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL_ASSETS)),
+      .then(async (cache) => {
+        const bootUrls=BOOT_ASSETS.map(asset=>new URL(asset,APP_ROOT).href);
+        await cache.addAll(SHELL_ASSETS.filter(asset=>!bootUrls.includes(asset)));
+        // Fail installation if a host serves an HTML fallback for a boot module.
+        // The existing worker remains active rather than accepting a broken shell.
+        await Promise.all(bootUrls.map(async asset=>{
+          const response=await fetch(asset,{cache:'reload'});
+          const type=response.headers.get('content-type') || '';
+          const pathname=new URL(asset).pathname;
+          if(!response.ok || (/\.m?js$/.test(pathname)&&!/(javascript|ecmascript)/i.test(type)) || (/\.css$/.test(pathname)&&!/text\/css/i.test(type)))throw new Error('Invalid boot asset: '+asset);
+          await cache.put(asset,response);
+        }));
+      }),
   );
 });
 
@@ -76,6 +88,15 @@ self.addEventListener("fetch", (event) => {
       const cached = await cache.match(request) ||
         (isBuiltAsset ? await caches.match(request) : undefined);
       const network = fetch(request).then(async (response) => {
+        const contentType=response.headers.get('content-type') || '';
+        const expectedScript=/\.m?js$/.test(url.pathname);
+        const expectedStyle=/\.css$/.test(url.pathname);
+        if ((expectedScript && !/(javascript|ecmascript)/i.test(contentType)) || (expectedStyle && !/text\/css/i.test(contentType))) {
+          // Some SPA hosts return index.html for an obsolete asset URL. Never
+          // cache that response as script or replace a valid cached module.
+          return cached || Response.error();
+        }
+        if (!response.ok && cached) return cached;
         if (response.ok && response.type === "basic") {
           await cache.put(request, response.clone()).catch(error => console.warn("Shell cache write failed", error));
         }

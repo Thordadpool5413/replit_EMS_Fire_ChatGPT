@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const source=await readFile('artifacts/ems-territory-intelligence/public/sw.js','utf8');
-function harness() {
-  const handlers={};const buckets=new Map();let skipped=0;let networkFails=false;
+function harness(bootAssets=[]) {
+  const handlers={};const buckets=new Map();let skipped=0;let networkFails=false;let contentType='text/javascript';let body='built asset';
   const cacheFor=name=>{
     if(!buckets.has(name)) buckets.set(name,new Map());
     const data=buckets.get(name);
@@ -16,9 +16,9 @@ function harness() {
     match:async request=>{for(const key of buckets.keys()){const found=await cacheFor(key).match(request);if(found)return found;}}};
   const self={location:new URL('https://example.test/app/sw.js'),addEventListener:(name,fn)=>{handlers[name]=fn;},
     skipWaiting:()=>{skipped++;},clients:{claim:async()=>{}}};
-  vm.runInNewContext(source,{self,caches,URL,Response,console,fetch:async()=>{
+  vm.runInNewContext(source.replace('/* BUILD_BOOT_ASSETS */ []',JSON.stringify(bootAssets)),{self,caches,URL,Response,console,fetch:async()=>{
     if(networkFails) throw Error('offline');
-    const response=new Response('built asset',{headers:{'content-type':'text/javascript'}});
+    const response=new Response(body,{headers:{'content-type':contentType}});
     Object.defineProperty(response,'type',{value:'basic'});return response;
   }});
   const run=async(name,extra={})=>{
@@ -27,7 +27,7 @@ function harness() {
     const result=response?await response:undefined;
     await Promise.all(pending);return result;
   };
-  return {run,buckets,cacheFor,offline:()=>{networkFails=true;},skipped:()=>skipped};
+  return {run,buckets,cacheFor,html:()=>{contentType='text/html';body='<html>shell fallback</html>';},offline:()=>{networkFails=true;},skipped:()=>skipped};
 }
 test('shell install is scoped, includes the Apple icon and does not force-update active clients',async()=>{
   const h=harness();await h.run('install');
@@ -61,4 +61,20 @@ test('fingerprinted assets are cached and remain available offline',async()=>{
   assert.equal(await(await h.run('fetch',{request})).text(),'built asset');
   h.offline();
   assert.equal(await(await h.run('fetch',{request})).text(),'built asset');
+});
+
+test('SPA HTML fallback is never cached as a JavaScript module',async()=>{
+ const h=harness();await h.run('install');h.html();
+ const request={method:'GET',url:'https://example.test/app/assets/missing-hash.js',mode:'cors'};
+ const response=await h.run('fetch',{request});assert.equal(response.type,'error');
+ assert.equal(await h.cacheFor('ems-territory-shell-v4').match(request),undefined);
+});
+test('a cached module survives a host returning HTML after deployment',async()=>{
+ const h=harness();await h.run('install');const request={method:'GET',url:'https://example.test/app/assets/old-hash.js',mode:'cors'};
+ await h.run('fetch',{request});h.html();assert.equal(await(await h.run('fetch',{request})).text(),'built asset');
+ assert.equal(await(await h.cacheFor('ems-territory-shell-v4').match(request)).text(),'built asset');
+});
+
+test('worker installation rejects HTML returned for a boot module',async()=>{
+ const h=harness(['assets/core.js']);h.html();await assert.rejects(h.run('install'),/Invalid boot asset/);assert.equal(h.skipped(),0);
 });

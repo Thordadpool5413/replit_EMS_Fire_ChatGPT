@@ -82,7 +82,8 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   const defibAgeQuestionPhrase = hasReportedValue(reportedDefibAge) && defibBrand !== 'Not reported'
     ? `the reported ${reportedDefibAge}-year-old ${defibBrand} fleet`
     : 'your current monitor fleet';
-  const hasTcoInputs = hasReportedDefibCount && agency.installedFleet.defibUnitsCount > 0;
+  const generated=agency.verificationSource?.includes('Geographic prospect generator');
+  const hasTcoInputs = !generated && hasReportedDefibCount && agency.installedFleet.defibUnitsCount > 0;
   const fiveYrSavings = hasTcoInputs ? `$${Math.round(tco.fiveYearOperatingSavings / 1000)}K` : 'Not calculated';
   const tradeIn = hasTcoInputs ? `$${Math.round(tco.totalTradeInCredit / 1000)}K` : 'Not calculated';
   const tcoMethod = hasTcoInputs
@@ -95,11 +96,11 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
 
   // A spoken opening, not the entire financial methodology or a presumed buying signal.
   const elevatorPitch = useMemo(() => {
-    const inventory = defibBrand !== 'Not reported'
+    const inventory = !generated && defibBrand !== 'Not reported'
       ? `Our working record for ${agency.name} lists ${defibBrand}${hasReportedDefibCount ? ` (${defibCount} units)` : ''}. Can you confirm what is deployed today?`
       : `For ${agency.name}, we would like to establish which monitors and software are currently deployed.`;
     return `${inventory} We would like to understand your service coverage, equipment plans and purchasing process. Any financial comparison or buy-back discussion would require confirmed quantities, eligibility and written terms—not assumptions from equipment age.`;
-  }, [agency.name, defibBrand, hasReportedDefibCount, defibCount]);
+  }, [agency.name, defibBrand, hasReportedDefibCount, defibCount, generated]);
 
   // Tailored Discovery Questions (3+ for different command roles)
   const discoveryQuestions = useMemo(() => [

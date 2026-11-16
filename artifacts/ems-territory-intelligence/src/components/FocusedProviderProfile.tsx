@@ -1,3 +1,5 @@
+import { AgencyIdentityStrip } from './profile/AgencyIdentityStrip';
+import { DealDiscoveryWorkspace } from './profile/DealDiscoveryWorkspace';
 import { FollowUpWorkspace } from './FollowUpWorkspace';
 import type { FollowUpUpdater } from '../utils/followUps';
 import { scoreEvidenceCompleteness } from '../utils/pulseIqScoring';
@@ -205,7 +207,7 @@ type ProfileSection =
   | 'deal_story'
   | 'evidence';
 
-const PRIMARY_PROFILE_IDS = ['overview','equipment','decision_makers','purchasing','activity','evidence'];
+const PRIMARY_PROFILE_IDS = ['overview','deal_story','equipment','decision_makers','purchasing','activity','evidence'];
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
   { id: 'activity', label: 'Activity & follow-up', short: 'Activity', purpose: 'Visit history, next actions, and notes. Unfinished notes are saved on this device.', icon: FileText },
   { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Curated account briefing.', icon: Layers },
@@ -1098,7 +1100,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
             <p className="acp-loc">
               <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
-              <span>{[agency.city, agency.county, agency.stateCode].filter(Boolean).join(', ')}</span>
+              <span>{[agency.address,agency.city,agency.stateCode,agency.zipCode].filter(Boolean).join(', ')}</span>
               <FactVerificationTag agency={agency} field="providerAddress" />
             </p>
             <div className="acp-contact-row" aria-label="Agency contact actions">
@@ -1144,7 +1146,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           <button
             type="button"
             onClick={() => {
-              navigateProfileSection('meeting');
+              navigateProfileSection('deal_story');
             }}
             className="profile-meeting-primary inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors"
             aria-label="Prepare for meeting"
@@ -1152,7 +1154,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             title="Open executive meeting strategy & discovery questions"
           >
             <Sparkles className="h-4 w-4 shrink-0" />
-            <span>Prepare for meeting</span>
+            <span>Prepare the conversation</span>
           </button>
 
           <details className="profile-more-actions min-w-0">
@@ -1627,6 +1629,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           {/* ================================================================
               ACCOUNT 360 TOPIC NAVIGATION
              ================================================================ */}
+          <AgencyIdentityStrip agency={agency} onPeople={()=>navigateProfileSection('decision_makers')}/>
           <nav
             data-testid="profile-topic-navigation"
             aria-label="Account 360 Topic Navigation"
@@ -1722,6 +1725,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
           {activeSection === 'deal_story' && (
             <div className="profile-deal-workspace" data-testid="profile-deal-story">
+              <DealDiscoveryWorkspace agency={agency} onCreateTask={onCreateFollowUp}/>
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>
           )}
@@ -3321,7 +3325,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <button
               type="button"
               onClick={() => {
-                navigateProfileSection('meeting');
+                navigateProfileSection('deal_story');
               }}
               className="inline-flex h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#EEF3FE] px-1.5 text-[10px] font-semibold text-[#285EE8] transition-colors hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 sm:w-auto sm:gap-2 sm:px-3.5 sm:text-xs"
               aria-label="Prepare for meeting"

@@ -253,3 +253,8 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
 @media (prefers-reduced-motion: reduce) {
   .pi-primary-sidebar * { transition: none !important; }
 }
+
+@media(min-width:768px) {
+ .pi-primary-sidebar .pi-sidebar-logo { width:76px !important; height:76px !important; }
+ .pi-primary-sidebar .pi-sb-brand { padding:12px !important; }
+}

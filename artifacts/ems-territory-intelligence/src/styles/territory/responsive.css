@@ -362,3 +362,15 @@
   .territory-explorer-screen .territory-empty-actions > button { min-height: 44px; }
   .territory-explorer-screen .territory-empty-state { padding: 1rem .7rem; }
 }
+
+/* County collections use compact editorial rows; map sizing is independent. */
+@media(min-width:1024px) {
+ .cb-card { border-radius:9px; }
+ .cb-head { padding:10px 12px !important; min-height:46px !important; }
+ .cb-name { font-size:16px !important; }
+ .cb-body { padding:10px 12px !important; }
+ .cb-body .cfs-lead dd { font-size:22px !important; }
+ .cb-body .cfs-ledger { gap:4px 12px !important; }
+ .cb-body .cb-risk { margin:8px 0 !important; padding:8px 0 !important; }
+ .cb-body .cb-places,.cb-body .cb-zips { font-size:12px !important; }
+}

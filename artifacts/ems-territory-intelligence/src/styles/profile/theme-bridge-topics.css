@@ -961,3 +961,15 @@
 .agency-command-profile .acp-inline-fact-review { grid-area:r; justify-self:end; align-self:center; min-height:36px; padding:.25rem .45rem; font-size:12px; font-weight:600; color:var(--pi-action-ink); border:1px solid var(--pi-border); border-radius:6px; }
 .agency-command-profile .acp-inline-fact-review:focus-visible { outline:2px solid var(--pi-focus-ring); outline-offset:2px; }
 @media(max-width:767px) { .agency-command-profile .acp-inline-fact-review { min-height:44px; } }
+
+@media(min-width:1024px) {
+ .agency-command-profile .acp-monitor-feature { padding:12px !important; gap:12px !important; grid-template-columns:76px minmax(0,1fr) !important; }
+ .agency-command-profile .acp-monitor-art { min-height:70px !important; }
+ .agency-command-profile .acp-monitor-art svg { width:72px !important; }
+ .agency-command-profile .acp-monitor-model { font-size:20px !important; margin-bottom:8px; }
+ .agency-command-profile .acp-monitor-facts > div:first-child strong:not(.is-missing) { font-size:20px; }
+ .agency-command-profile .adm-row { padding:10px 12px !important; min-height:64px; }
+ .agency-command-profile .adm-group { margin-bottom:10px; }
+ .agency-command-profile .adm-name { font-size:14px; }
+ .agency-command-profile .acp-detail-body { height:auto !important; max-height:none !important; overflow:visible !important; }
+}

@@ -1100,12 +1100,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
             <p className="acp-loc">
               <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
-              <span>{[agency.address,agency.city,agency.stateCode,agency.zipCode].filter(Boolean).join(', ')}</span>
+              <span>{[agency.city,agency.stateCode].filter(Boolean).join(', ')}</span>
               <FactVerificationTag agency={agency} field="providerAddress" />
             </p>
             <div className="acp-contact-row" aria-label="Agency contact actions">
-              {(primaryContact?.phone || agency.headquartersPhone) && (
-                <a href={`tel:${primaryContact?.phone || agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Call</a>
+              {agency.headquartersPhone && (
+                <a href={`tel:${agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Main phone</a>
               )}
               <a href={agency.googleMapsUri} target="_blank" rel="noopener noreferrer" data-testid="link-header-directions"><Navigation aria-hidden="true" className="h-3.5 w-3.5" />Directions</a>
               {safeExternalUrl(agency.officialWebsite) && (
@@ -1256,6 +1256,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.
           </p>
         </section>
+
+          <AgencyIdentityStrip agency={agency} onPeople={()=>navigateProfileSection('decision_makers')}/>
 
         {/* Main Account 360 Workspace Content */}
         <div className="profile-brief-layout mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -1629,7 +1631,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           {/* ================================================================
               ACCOUNT 360 TOPIC NAVIGATION
              ================================================================ */}
-          <AgencyIdentityStrip agency={agency} onPeople={()=>navigateProfileSection('decision_makers')}/>
+
           <nav
             data-testid="profile-topic-navigation"
             aria-label="Account 360 Topic Navigation"

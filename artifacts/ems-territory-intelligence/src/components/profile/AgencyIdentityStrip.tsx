@@ -1,13 +1,41 @@
-import React,{useState}from'react';
-import{MapPin,Phone,Globe,Users,Building2,Mail,Copy,ArrowUpRight}from'lucide-react';
-import type{Agency}from'../../types';
-export function AgencyIdentityStrip({agency,onPeople}:{agency:Agency;onPeople:()=>void}){
- const[notice,setNotice]=useState('');
- const address=agency.address?.trim();const usable=address&&!/not (reported|source.verified)|unknown/i.test(address);
- const copy=async()=>{try{await navigator.clipboard.writeText([address,agency.city,agency.stateCode,agency.zipCode].filter(Boolean).join(', '));setNotice('Address copied.');}catch{setNotice('Copy unavailable. Select and copy the recorded address.');}};
- const website=(()=>{try{const url=new URL(agency.officialWebsite??'');return /^https?:$/.test(url.protocol)?url.href:null;}catch{return null;}})();
- return <section className="agency-identity-strip" aria-label="Agency location and key people">
- <div className="agency-address"><span className="agency-section-icon"><Building2 aria-hidden="true"/></span><div><h2>Recorded address</h2><address>{usable?address:'Street address not recorded'}<br/>{[agency.city,agency.stateCode,agency.zipCode].filter(Boolean).join(', ')}</address><small>Location and address type require confirmation.</small><div className="agency-identity-links">{usable&&<><button onClick={()=>void copy()}><Copy aria-hidden="true"/>Copy address</button><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([address,agency.city,agency.stateCode].join(', '))}`}><MapPin aria-hidden="true"/>Directions</a></>}{agency.headquartersPhone?<a href={`tel:${agency.headquartersPhone}`}><Phone aria-hidden="true"/>{agency.headquartersPhone}</a>:<span>Main phone not recorded</span>}{website&&<a href={website} target="_blank" rel="noreferrer"><Globe aria-hidden="true"/>Website</a>}</div>{notice&&<p role="status">{notice}</p>}</div></div>
- <div className="agency-key-people"><header><h2><Users aria-hidden="true"/>Key people & decision makers</h2><button onClick={onPeople}>View all <ArrowUpRight aria-hidden="true"/></button></header>{agency.keyContacts?.length?<ul>{agency.keyContacts.slice(0,3).map((contact,index)=><li key={contact.id||index}><span className="agency-person-avatar" aria-hidden="true">{contact.name.split(/\s+/).map(s=>s[0]).slice(0,2).join('')}</span><div><strong>{contact.name}</strong><span>{contact.title||contact.role||'Role not recorded'}</span><small>{contact.verificationSource?'Source recorded · confirm purchasing authority':'Source not recorded · purchasing authority unconfirmed'}</small></div><div className="agency-person-actions">{contact.email&&<a href={`mailto:${contact.email}`} aria-label={`Email ${contact.name}`}><Mail aria-hidden="true"/></a>}{contact.phone&&<a href={`tel:${contact.phone}`} aria-label={`Call ${contact.name}`}><Phone aria-hidden="true"/></a>}</div></li>)}</ul>:<p>No people recorded. Open People to review leadership and purchasing contacts.</p>}</div>
- </section>;
+import React, {useState} from 'react';
+import {MapPin, Phone, Globe, Users, Mail, Copy, ArrowUpRight, FileText, CircleHelp, ChevronDown} from 'lucide-react';
+import type {Agency, AgencyFactEvidence} from '../../types';
+
+function SourceContext({evidence, fallback}: {evidence?: AgencyFactEvidence; fallback?: string}) {
+  const source = evidence?.sourceName || fallback;
+  const url = (() => { try { const u = new URL(evidence?.sourceUrl || ''); return /^https?:$/.test(u.protocol) ? u.href : null; } catch { return null; } })();
+  return <details className="brief-source"><summary><FileText aria-hidden="true"/>{source ? 'Source details' : 'Source needed'}<ChevronDown aria-hidden="true"/></summary><div><p>{source || 'No source recorded for these details.'}</p><p>{evidence?.reportingPeriod ? `Source period: ${evidence.reportingPeriod}` : 'Source period not recorded'}</p><p>{evidence?.reviewedAt ? `Local review: ${evidence.reviewedAt.slice(0,10)}` : 'Review date not recorded'}</p>{url && <a href={url} target="_blank" rel="noreferrer">Open source <ArrowUpRight aria-hidden="true"/></a>}</div></details>;
+}
+
+export function AgencyIdentityStrip({agency, onPeople}: {agency: Agency; onPeople: () => void}) {
+  const [notice, setNotice] = useState('');
+  const address = agency.address?.trim();
+  const usable = address && !/not (reported|source.verified)|unknown/i.test(address);
+  const locality = [agency.city, agency.stateCode, agency.zipCode].filter(Boolean).join(', ');
+  const fullAddress = [usable ? address : '', locality].filter(Boolean).join(', ');
+  const copy = async () => { try { await navigator.clipboard.writeText(fullAddress); setNotice('Address copied.'); } catch { setNotice('Select the recorded address to copy it.'); } };
+  const website = (() => { try { const u = new URL(agency.officialWebsite || ''); return /^https?:$/.test(u.protocol) ? u : null; } catch { return null; } })();
+  const contacts = agency.keyContacts || [];
+  return <section className="agency-identity-strip agency-briefing" aria-label="Agency location and key people">
+    <div className="brief-location">
+      <div className="brief-section-heading"><span className="brief-icon"><MapPin aria-hidden="true"/></span><h2>Location & contact</h2></div>
+      <address><strong>{usable ? address : 'Street address not recorded'}</strong><span>{locality}</span></address>
+      <p className="brief-caption">Recorded location · address type unconfirmed</p>
+      <div className="brief-location-actions">{usable && <><button type="button" onClick={() => void copy()}><Copy aria-hidden="true"/>Copy address</button><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}><MapPin aria-hidden="true"/>Directions</a></>}</div>
+      <div className="brief-communication">{agency.headquartersPhone ? <a href={`tel:${agency.headquartersPhone}`}><Phone aria-hidden="true"/><span><small>Main phone</small>{agency.headquartersPhone}</span></a> : <p><Phone aria-hidden="true"/><span>Main phone not recorded</span></p>}{website ? <a href={website.href} target="_blank" rel="noreferrer"><Globe aria-hidden="true"/><span><small>Website</small>{website.hostname.replace(/^www\./,'')}</span><ArrowUpRight aria-hidden="true"/></a> : <p><Globe aria-hidden="true"/><span>Website not recorded</span></p>}</div>
+      <SourceContext evidence={agency.factEvidence?.providerAddress}/>
+      {notice && <p role="status">{notice}</p>}
+    </div>
+    <div className="brief-people">
+      <header className="brief-section-heading"><span className="brief-icon"><Users aria-hidden="true"/></span><div><h2>People behind the decision</h2><p>Recorded contacts · confirm each person’s authority</p></div><button type="button" onClick={onPeople}>View all people <ArrowUpRight aria-hidden="true"/></button></header>
+      {contacts.length ? <ul className="brief-contact-grid">{contacts.slice(0,3).map((contact,index) => <li key={contact.id || index} className="brief-contact">
+        <div className="brief-contact-top"><span className="brief-avatar" aria-hidden="true">{contact.name.split(/\s+/).filter(Boolean).map(s=>s[0]).slice(0,2).join('')}</span><span className="brief-contact-index">{String(index+1).padStart(2,'0')}</span></div>
+        <strong>{contact.name}</strong><span className="brief-contact-title">{contact.title || contact.role || 'Title not recorded'}</span>
+        <p className="brief-authority"><CircleHelp aria-hidden="true"/>Purchasing authority unconfirmed</p>
+        <div className="brief-contact-actions">{contact.email ? <a href={`mailto:${contact.email}`} title={contact.email} aria-label={`Email ${contact.name}`}><Mail aria-hidden="true"/>Email<span className="sr-only"> {contact.name}</span></a> : <span>Email not recorded</span>}{contact.phone ? <a href={`tel:${contact.phone}`} title={contact.phone} aria-label={`Call ${contact.name}`}><Phone aria-hidden="true"/>Call<span className="sr-only"> {contact.name}</span></a> : <span>Phone not recorded</span>}</div>
+        <SourceContext evidence={agency.factEvidence?.decisionMakers} fallback={contact.verificationSource}/>
+      </li>)}</ul> : <div className="brief-people-empty"><Users aria-hidden="true"/><div><strong>Start with the right person</strong><p>No contacts are recorded. Add leadership, clinical and purchasing contacts in People.</p><button type="button" onClick={onPeople}>Open People <ArrowUpRight aria-hidden="true"/></button></div></div>}
+    </div>
+  </section>;
 }

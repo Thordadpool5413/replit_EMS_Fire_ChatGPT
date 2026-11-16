@@ -393,3 +393,13 @@
 .equipment-match-details li button { text-decoration:underline; min-height:36px; text-align:left; }
 .equipment-match-details small { display:block; font-size:10px; }
 @media(max-width:767px) { .equipment-match-details :is(summary,button) { min-height:44px; } }
+.equipment-map-legend { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 12px; background:var(--pi-surface-bg); border:1px solid var(--pi-border); border-radius:9px; font-size:12px; }
+.equipment-map-legend label { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-weight:600; }
+.equipment-map-legend select { padding:6px 8px; min-height:36px; background:var(--pi-surface-bg); color:var(--pi-text-primary); border:1px solid var(--pi-border-strong); border-radius:6px; }
+.equipment-map-legend > div { display:flex; flex-wrap:wrap; gap:10px; }
+.equipment-map-legend span { display:inline-flex; align-items:center; gap:5px; }
+.equipment-map-legend b { display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; color:white; font-size:11px; }
+.equipment-map-legend p { flex-basis:100%; color:var(--pi-text-secondary); font-size:11px; }
+@media(max-width:767px) { .equipment-map-legend select { min-height:44px; font-size:16px; max-width:100%; } }
+/* Interface outline symbols share a stroke; cartographic SVG/data shapes are unaffected. */
+.pi-app-shell .lucide, [role="dialog"] .lucide { stroke-width:1.8; }

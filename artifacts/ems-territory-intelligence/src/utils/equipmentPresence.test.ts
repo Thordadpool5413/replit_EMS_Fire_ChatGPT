@@ -33,3 +33,18 @@ test('named competitor filters recognize product aliases and remain category-spe
  assert.deepEqual(parseEquipmentFilter({presence:'competitor',family:'all',vendor:'bad'}),{presence:'competitor',family:'all'});
  assert.deepEqual(parseEquipmentFilter({presence:'all',family:'all',vendor:'stryker'}),{presence:'all',family:'all'});
 });
+test('vendor marker styles use distinct labels and letters for all ownership states',async()=>{
+ const {equipmentMapStyle,EQUIPMENT_MAP_STYLES}=await import('./equipmentPresence');
+ assert.equal(equipmentMapStyle(make({defibBrand:'ZOLL X Series'})).glyph,'Z');
+ assert.equal(equipmentMapStyle(make({defibBrand:'LIFEPAK 15'})).glyph,'C');
+ assert.equal(equipmentMapStyle(make({defibBrand:'LIFEPAK 15',mechanicalCPR:'AutoPulse'})).glyph,'M');
+ assert.equal(equipmentMapStyle(make({})).glyph,'?');
+ assert.equal(new Set(Object.values(EQUIPMENT_MAP_STYLES).map(s=>s.glyph)).size,4);
+});
+test('vendor breakdown geography excludes other states and normalizes county suffixes',async()=>{
+ const {equipmentGeographyScope}=await import('./equipmentPresence');
+ const agencies=[make({defibBrand:'ZOLL'}, {stateCode:'FL',county:'Bay County',city:'Town',agencyType:'EMS',id:'1'}),make({defibBrand:'Philips'}, {stateCode:'TX',county:'Bay',city:'Town',agencyType:'EMS',id:'2'}),make({defibBrand:'LIFEPAK'}, {stateCode:'FL',county:'Bay',city:'Town',agencyType:'Fire Department',id:'3'})];
+ assert.deepEqual(equipmentGeographyScope(agencies,{state:'FL',county:'Bay',category:'ems'}).map(a=>a.id),['1']);
+ assert.deepEqual(equipmentGeographyScope(agencies,{state:'FL',county:'Bay County',category:'fire'}).map(a=>a.id),['3']);
+ assert.equal(equipmentGeographyScope(agencies,{state:'all'}).length,3);
+});

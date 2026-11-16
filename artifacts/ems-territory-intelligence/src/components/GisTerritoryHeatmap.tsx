@@ -1,5 +1,5 @@
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
-import {matchesEquipmentFilter} from '../utils/equipmentPresence';
+import {matchesEquipmentFilter,equipmentGeographyScope} from '../utils/equipmentPresence';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -1492,9 +1492,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     };
   };
 
+  const vendorScope=useMemo(()=>equipmentGeographyScope(agencies,{state:selectedState,county:selectedCounty,city:selectedCity,category:selectedCategory}),[agencies,selectedState,selectedCounty,selectedCity,selectedCategory]);
+
   return (
     <div className="workspace-section-grid fleet-map-workspace" data-testid="workspace-fleet-map">
-      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies} onOpen={onSelectAgency}/>
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before layer, cluster and equipment filtering" onOpen={onSelectAgency}/>
       
       {/* Top GIS Header */}
       <div className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-4 sm:p-6 shadow-2xs min-w-0">

@@ -27,3 +27,7 @@ Public catalog references checked for product aliases:
 - ZOLL technical-support product list: https://www.zoll.com/en-us/service-and-support/technical-support
 
 These manufacturer references support product-name recognition only. They do not establish an agency's ownership, current deployment, purchasing timing, or product condition. Generic Propaq records remain unknown without an explicit recognized vendor, since historical manufacturer context can differ.
+
+## Completion audit follow-up
+
+The agency-location map now offers priority or vendor marker colors, with Z/C/M/? letter markers and an explicit legend. Vendor classification is not evidence quality. Numbered overlap groups remain neutral and open to individual records. Vendor breakdowns now follow state/county/city and provider scope on the three map views. Other search/score/layer/radius filters are excluded from those counts and labeled as such.

@@ -1,5 +1,5 @@
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
-import {matchesEquipmentFilter} from '../utils/equipmentPresence';
+import {equipmentGeographyScope,matchesEquipmentFilter,equipmentMapStyle,EQUIPMENT_MAP_STYLES} from '../utils/equipmentPresence';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -334,6 +334,8 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   // Filters & Map Display Settings
   const [searchQuery, setSearchQuery] = useState<string>(savedMapFilters.searchQuery ?? '');
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
+  const [colorByEquipment,setColorByEquipment]=useState(false);
+  useEffect(()=>{if(equipmentFilter.presence!=='all')setColorByEquipment(true);},[equipmentFilter]);
   const [selectedTier, setSelectedTier] = useState<string>(savedMapFilters.selectedTier ?? 'all');
   const [minPulseIqScore, setMinPulseIqScore] = useState<string>(savedMapFilters.minPulseIqScore ?? '');
   const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>(savedMapFilters.maxPulseIqScore ?? '');
@@ -601,9 +603,12 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     }
   };
 
+  const vendorScope=useMemo(()=>equipmentGeographyScope(agencies,isNearMeActive?{category:globalCategory}:{state:globalState,county:globalCounty,city:globalCity,category:globalCategory}),[agencies,globalState,globalCounty,globalCity,globalCategory,isNearMeActive]);
+
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
-      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies} onOpen={onSelectAgency}/>
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
+      <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">Recorded vendor presence</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background}}>{style.glyph}</b>{style.label}</span>)}</div><p>Letters and colors show recorded equipment, not verified ownership. Numbered groups contain overlapping agencies; open a group to inspect its members.</p></>}</section>
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP
@@ -1201,6 +1206,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                     const agency = group[0];
                     const tier = agency.zollOpportunity?.priorityTier || 'Maintained Account';
                     const tierStyle = TIER_COLORS[tier] || TIER_COLORS['Maintained Account'];
+                    const vendorStyle=equipmentMapStyle(agency,equipmentFilter.family);
                     const isSelected = selectedAgencyForInfo?.id === agency.id;
                     const pulseIqScore = agency.zollOpportunity?.pulseIqScore;
                     const pulseIqScoreLabel =
@@ -1212,7 +1218,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                       <AdvancedMarker
                         key={agency.id}
                         position={{ lat: agency.latitude, lng: agency.longitude }}
-                        title={`${agency.name} (FDID: ${agency.fdid}) · PulseIQ estimate: ${pulseIqScoreLabel}`}
+                        title={colorByEquipment?`${agency.name}: ${vendorStyle.label}`:`${agency.name} (FDID: ${agency.fdid}) · PulseIQ estimate: ${pulseIqScoreLabel}`}
                         onClick={() => {
                           setSelectedAgencyForInfo(agency);
                           onSelectAgency(agency);
@@ -1222,9 +1228,10 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                         <div className="flex flex-col items-center">
                           <PulseIqMarkerEstimate agencyId={agency.id} score={pulseIqScore} />
                           <Pin
-                            background={tierStyle.bg}
-                            borderColor={tierStyle.border}
-                            glyphColor={tierStyle.glyph}
+                            background={colorByEquipment?vendorStyle.background:tierStyle.bg}
+                            borderColor={colorByEquipment?'#ffffff':tierStyle.border}
+                            glyphColor={colorByEquipment?'#ffffff':tierStyle.glyph}
+                            glyph={colorByEquipment?vendorStyle.glyph:undefined}
                             scale={isSelected ? 1.3 : 1.0}
                           />
                         </div>

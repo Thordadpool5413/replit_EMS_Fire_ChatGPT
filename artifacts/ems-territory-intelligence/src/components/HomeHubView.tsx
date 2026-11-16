@@ -1,5 +1,5 @@
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
-import {matchesEquipmentFilter} from '../utils/equipmentPresence';
+import {matchesEquipmentFilter,equipmentGeographyScope} from '../utils/equipmentPresence';
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
@@ -452,6 +452,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
   };
 
+  const vendorScope=useMemo(()=>equipmentGeographyScope(agencies,{state:globalState,county:globalCounty,city:globalCity,category:globalCategory}),[agencies,globalState,globalCounty,globalCity,globalCategory]);
+
   return (
     <div>
       {/* ====================================================================
@@ -533,7 +535,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies}/>
+                <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before equipment filtering"/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select

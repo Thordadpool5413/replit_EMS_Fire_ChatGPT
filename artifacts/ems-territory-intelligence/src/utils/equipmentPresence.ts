@@ -65,3 +65,25 @@ export function parseEquipmentFilter(value:unknown):EquipmentMapFilter {
  const vendor=(v?.presence==='competitor'||v?.presence==='mixed')&&EQUIPMENT_VENDORS.some(item=>item.id===v?.vendor&&item.id!=='zoll')?v!.vendor:undefined;
  return {...(vendor?{vendor}:{}),presence:['all','zoll','competitor','mixed','unknown'].includes(v?.presence||'')?v!.presence!:'all',family:['all','monitors','cpr','ventilators','software'].includes(v?.family||'')?v!.family!:'all'};
 }
+
+/** Colors encode recorded equipment presence, never clinical performance or evidence quality. */
+export const EQUIPMENT_MAP_STYLES = {
+ zoll:{label:'ZOLL recorded',background:'#087f8c',glyph:'Z'},
+ competitor:{label:'Competitor recorded',background:'#b45309',glyph:'C'},
+ mixed:{label:'ZOLL + competitor',background:'#7252ad',glyph:'M'},
+ unknown:{label:'Unknown equipment',background:'#526277',glyph:'?'},
+} as const;
+export function equipmentMapStyle(agency:Agency,family:EquipmentFamily='all') {
+ return EQUIPMENT_MAP_STYLES[equipmentPresence(agency,family)];
+}
+
+export function equipmentGeographyScope(agencies:Agency[],scope:{state?:string;county?:string;city?:string;category?:string}) {
+ const normalized=(value:string='')=>value.toLowerCase().replace(/\s+(county|parish|borough|census area|municipality)$/i,'').trim();
+ return agencies.filter(a=>{
+  if(scope.state&&scope.state!=='all'&&(a.stateCode||'').toLowerCase()!==scope.state.toLowerCase())return false;
+  if(scope.county&&scope.county!=='all'&&normalized(a.county)!==normalized(scope.county))return false;
+  if(scope.city&&scope.city!=='all'&&normalized(a.city)!==normalized(scope.city))return false;
+  const fire=a.providerCategory==='FIRE'||/fire/i.test(a.agencyType||'');
+  return scope.category==='fire'?fire:scope.category==='ems'?!fire:true;
+ });
+}

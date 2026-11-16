@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -231,16 +232,15 @@ export const TopBar: React.FC<TopBarProps> = ({
         <nav className="pi-primary-nav" aria-label="Workspaces and tools">
           <div className="pi-sb-group"><p className="pi-sb-heading">Your workspace</p><div className="pi-sb-list">
             {PRIMARY_WORKSPACES.map(item => {
-              const Icon = item.id === 'home' ? Globe : item.id === 'queue' ? Building2 : item.id === 'field' ? Briefcase : TrendingUp;
               const active = currentPrimary === item.id;
               return <button key={item.id} type="button" className="pi-sb-item" onClick={() => item.id === 'home' ? onGoHome() : setActiveTab(item.id)} aria-current={active ? 'page' : undefined} title={item.description}>
-                <Icon aria-hidden="true"/><span className="pi-sb-label">{item.label}</span>
+                <WorkspaceIcon name={item.id}/><span className="pi-sb-label">{item.label}</span>
                 {item.id === 'field' && dayRouteCount > 0 && <span className="pi-sb-badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>}
               </button>;
             })}
           </div></div>
           <div className="pi-sb-group"><p className="pi-sb-heading">Manage</p><div className="pi-sb-list">
-            <button type="button" className="pi-sb-item" onClick={() => setActiveTab('settings')} aria-current={currentPrimary === 'settings' ? 'page' : undefined}><SlidersHorizontal aria-hidden="true"/><span className="pi-sb-label">Settings</span></button>
+            <button type="button" className="pi-sb-item" onClick={() => setActiveTab('settings')} aria-current={currentPrimary === 'settings' ? 'page' : undefined}><WorkspaceIcon name="settings"/><span className="pi-sb-label">Settings</span></button>
           </div></div>
         </nav>
 

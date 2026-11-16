@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -162,7 +163,7 @@ export const AfgGrantsTracker: React.FC<AfgGrantsTrackerProps> = ({
                 Direct federal record
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1.5 tracking-tight">
+            <h1 className="workspace-tool-title text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1.5 tracking-tight"><WorkspaceIcon name="grants" badge/>
               AFG awards &amp; cooperative purchasing context
             </h1>
             <p className="text-[13px] text-slate-600 dark:text-slate-300 mt-1 max-w-3xl leading-relaxed">

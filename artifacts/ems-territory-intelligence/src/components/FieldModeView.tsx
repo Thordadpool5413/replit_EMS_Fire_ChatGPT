@@ -1,3 +1,4 @@
+import {WorkspaceHeading} from './design/WorkspaceIcon';
 import { useLocalDraft } from '../hooks/useLocalDraft';
 /**
  * @license
@@ -163,6 +164,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
   return (
     <div className="workspace-section-grid field-work-workspace field-routes-workspace" data-testid="workspace-field-routes">
       
+      <WorkspaceHeading name="field" title="Field work" description="Your route, your conversations, your next commitment."/>
       {/* Tactical Status & Network State Banner */}
       <div className={`p-4 sm:p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center justify-between gap-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)] min-w-0 ${
         isOnline 

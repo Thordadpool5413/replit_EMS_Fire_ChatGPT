@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './components/design/WorkspaceIcon';
 import {PwaControls, PwaStatusBanner} from './pwa/PwaControls';
 import { recordImportRun } from './services/importRunStore';
 import { FollowUpWorkspace } from './components/FollowUpWorkspace';
@@ -1034,7 +1035,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`pi-app-shell min-h-[100dvh] w-full max-w-full overflow-x-hidden ${themeMode === 'dark' ? 'dark' : ''} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
+    <div data-workspace={activeTab} className={`pi-app-shell min-h-[100dvh] w-full max-w-full overflow-x-hidden ${themeMode === 'dark' ? 'dark' : ''} flex flex-col font-sans pb-16 md:pb-0 transition-colors duration-150`}>
 
       
       {/* Google Maps Quota Defense Sticky Banner */}
@@ -1127,7 +1128,7 @@ export default function App() {
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                 }`}
               >
-                {item.label}
+                <WorkspaceIcon name={item.id}/>{item.label}
               </button>
             ))}
           </nav>
@@ -1150,7 +1151,7 @@ export default function App() {
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                 }`}
               >
-                {item.label}
+                <WorkspaceIcon name={item.id}/>{item.label}
               </button>
             ))}
           </nav>
@@ -1179,7 +1180,7 @@ export default function App() {
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                 }`}
               >
-                {item.label}
+                <WorkspaceIcon name={item.id}/>{item.label}
                 {detail && <span className="text-[10px] font-medium opacity-80">{detail}</span>}
               </button>
               );
@@ -1204,7 +1205,7 @@ export default function App() {
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                 }`}
               >
-                {item.label}
+                <WorkspaceIcon name={item.id}/>{item.label}
               </button>
             ))}
           </nav>
@@ -1227,7 +1228,7 @@ export default function App() {
                     : 'text-[#53657B] dark:text-slate-300 hover:text-[#14283F] dark:hover:text-white hover:bg-[#F5F7FA] dark:hover:bg-slate-800'
                 }`}
               >
-                {item.label}
+                <WorkspaceIcon name={item.id}/>{item.label}
               </button>
             ))}
           </nav>

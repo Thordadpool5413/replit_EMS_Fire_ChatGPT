@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -162,7 +163,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <Database className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               <span>Strategic consultant &amp; business analyst intelligence</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1 tracking-tight">
+            <h1 className="workspace-tool-title text-xl sm:text-2xl font-[650] text-slate-900 dark:text-white mt-1 tracking-tight"><WorkspaceIcon name="claims" badge/>
               Public healthcare, CMS claims &amp; EMS outcomes engine
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-3xl leading-relaxed">

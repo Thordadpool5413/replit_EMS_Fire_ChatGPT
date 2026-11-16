@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -186,11 +187,11 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 CMS NPPES v2.1 · OPENFEMA AFG v2 · USFA · NEMSIS v3.5.0 · CMS GADCS
               </span>
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">
+            <h2 className="workspace-tool-title text-xl font-bold text-slate-900 dark:text-white mt-1.5"><WorkspaceIcon name="gateway" badge/>
               Nationwide Federal Registry &amp; Actuarial Telemetry Gateway
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-              Zero static sample tables or unbacked scraper claims. Every state summary, capital replacement window, and TCO forecast below is computed directly from your live synchronized Firestore database (<code className="font-mono text-[11px]">ai-studio-nicksemsfireterr-...</code>) and live federal OpenFEMA / CMS NPPES endpoints.
+              Explore connected registries and loaded territory records. Source coverage, reporting periods, and agency associations require your review.
             </p>
           </div>
 

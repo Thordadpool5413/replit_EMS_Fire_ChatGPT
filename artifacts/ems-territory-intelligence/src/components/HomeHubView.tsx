@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -458,7 +459,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="home-map-page-heading flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
           <div>
             <h2 className="pi-section-heading flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[#285EE8] dark:text-blue-400 shrink-0" />
+              <WorkspaceIcon name="home"/>
               <span>Territory map</span>
             </h2>
             <p className="pi-supporting mt-0.5">

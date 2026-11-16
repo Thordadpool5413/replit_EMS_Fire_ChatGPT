@@ -282,3 +282,9 @@ th .pi-data-label { white-space: nowrap; }
   [data-laptop-density="compact"] .cv-panel:not(.county-geo):not(.ci) { padding: .6rem .7rem !important; gap: .25rem; }
   [data-laptop-density="compact"] .cv-map-panel:not(.county-geo) { padding: .55rem .65rem; }
 }
+/* County records read as compact reference rows, with hierarchy instead of oversized panels. */
+.cv-county { box-shadow:var(--shadow-card); border-left:3px solid color-mix(in srgb,var(--pi-action) 45%,var(--pi-border)); }
+.cv-county .cv-title { font-size:1rem; letter-spacing:-.02em; }
+.cv-county .cv-facts dd { font-size:1rem; }
+.cv-panel { box-shadow:var(--shadow-card); }
+.cv-map-panel { background:radial-gradient(ellipse at top left,#1a465b60,transparent 65%),#0c1d30; border-color:#305063; }

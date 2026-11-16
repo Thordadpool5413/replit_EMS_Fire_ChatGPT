@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -132,7 +133,7 @@ export const ContractExpirationCalendar: React.FC<ContractExpirationCalendarProp
               <Calendar className="w-3.5 h-3.5 text-[#1E3A8A] dark:text-blue-400" />
               <span>Competitor Maintenance Agreement Expiration Tracker</span>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] dark:text-white mt-1 tracking-tight">
+            <h1 className="workspace-tool-title text-lg sm:text-xl font-bold text-[#0F172A] dark:text-white mt-1 tracking-tight"><WorkspaceIcon name="contracts" badge/>
               Stryker ProCare &amp; Philips Service Renewal Intervention Calendar
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">

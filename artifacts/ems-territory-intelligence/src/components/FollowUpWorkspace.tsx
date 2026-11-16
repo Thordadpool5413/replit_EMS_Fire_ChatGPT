@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 import { useLocalDraft } from '../hooks/useLocalDraft';
 import { localDay } from '../utils/followUps';
 import React, { useState } from 'react';
@@ -101,7 +102,7 @@ export function FollowUpWorkspace({agencies,onUpdate,onOpen,onCreate,compact=fal
   const rows=collectFollowUps(agencies);
   const filtered=rows.filter(({agency,note})=>(filter==='All open'?note.followUpStatus!=='completed':followUpBucket(note)===filter)&&`${agency.name} ${note.nextAction}`.toLowerCase().includes(query.toLowerCase()));
   return <section className="followup-workspace" aria-label={compact?'Agency action center':'Follow-up workspace'}>
-    <header><h2>{compact?'Agency action center':'Follow-ups'}</h2><p>Manage standalone tasks and next actions from saved interactions. Original visit notes remain intact.</p></header>
+    <header><h2><WorkspaceIcon name="followups"/>{compact?'Agency action center':'Follow-ups'}</h2><p>Manage standalone tasks and next actions from saved interactions. Original visit notes remain intact.</p></header>
     {compact && agencies[0] && <div className="followup-account-summary">
       <p><strong>Last interaction:</strong> {agencies[0].lastContactDate || 'Not recorded'}</p>
       <p><strong>Account stage:</strong> {agencies[0].zollOpportunity?.salesStage || 'Not recorded'}</p>

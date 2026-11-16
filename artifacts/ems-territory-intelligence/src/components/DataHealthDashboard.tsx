@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -212,7 +213,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">
+            <h1 className="workspace-tool-title text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight"><WorkspaceIcon name="data_health" badge/>
               Data Health, Cloud Synchronization &amp; Source Transparency
             </h1>
 

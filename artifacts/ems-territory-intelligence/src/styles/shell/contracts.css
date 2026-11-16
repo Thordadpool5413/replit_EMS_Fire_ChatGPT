@@ -258,3 +258,15 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
  .pi-primary-sidebar .pi-sidebar-logo { width:76px !important; height:76px !important; }
  .pi-primary-sidebar .pi-sb-brand { padding:12px !important; }
 }
+
+/* Persistent navigation gives every workspace the same visual anchor. */
+.pi-primary-sidebar .pi-sb-brand { background:linear-gradient(145deg,#10243d,#1b3c4f); border-bottom:1px solid #284657; padding:14px !important; }
+.pi-primary-sidebar .pi-sb-brand-button { box-shadow:0 6px 20px -12px #000; }
+.pi-primary-sidebar .pi-sb-heading { font-size:10px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+.pi-primary-sidebar .pi-primary-nav .pi-sb-item { border-radius:9px; min-height:38px; gap:10px; font-size:13px; }
+.pi-primary-sidebar .pi-primary-nav .pi-sb-item > .workspace-icon { width:18px; height:18px; stroke-width:1.8; }
+.pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"] { background:linear-gradient(115deg,#173550,#205463) !important; color:#fff !important; box-shadow:0 4px 12px -9px #10243d; }
+.pi-primary-sidebar .pi-primary-nav .pi-sb-item[aria-current="page"] > .workspace-icon { color:#9fe6db; }
+.pi-mobile-nav .workspace-icon { width:20px; height:20px; }
+.pi-mobile-nav .is-active .workspace-icon { color:var(--pi-action-ink); }
+.pi-mobile-nav .is-active::before { content:''; position:absolute; top:3px; width:22px; height:3px; border-radius:3px; background:var(--pi-action); }

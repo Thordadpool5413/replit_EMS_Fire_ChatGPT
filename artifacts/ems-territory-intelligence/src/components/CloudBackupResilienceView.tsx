@@ -1,3 +1,4 @@
+import {WorkspaceIcon} from './design/WorkspaceIcon';
 import { createWorkspaceBackup, parseWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from '../services/workspaceBackup';
 import { loadStoredAgencies } from '../utils/syncStore';
 /**
@@ -344,7 +345,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
                 SHA-256 SNAPSHOT CHECKSUM
               </span>
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+            <h2 className="workspace-tool-title text-xl font-bold text-slate-900 dark:text-white mt-1"><WorkspaceIcon name="resilience" badge/>
               Local Backup & State Archive Center
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">

@@ -1,3 +1,4 @@
+import {WorkspaceHeading} from './design/WorkspaceIcon';
 import { agencySearchScore } from '../utils/agencySearch';
 import { useSessionState } from '../hooks/useSessionState';
 /**
@@ -384,6 +385,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   return (
     <div className="workspace-section-grid lead-queue-workspace" data-testid="workspace-lead-queue">
       
+      <WorkspaceHeading name="queue" title="Agency directory" description="Find the right agency. Understand the account. Plan your next move."/>
       {/* Summary first: what is in scope, before any control */}
       <div className="mobile-opening-summary sm:hidden flex items-baseline justify-between gap-3 px-1" data-testid="agency-mobile-summary">
         <div className="min-w-0">

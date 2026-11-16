@@ -1,0 +1,11 @@
+# Equipment map geography and layout repair
+
+The national map now has a dedicated, independently scrolling control rail. Filter, legend, hover/selected-state preview, and small-state shortcuts are siblings in that rail instead of competing for separately calculated grid rows. The map retains its own viewport; the preview uses normal flow, not an overlapping position.
+
+Equipment filters now use explicit equipment colors on national state polygons and statewide county polygons. Teal means selected ZOLL matches; amber competitor matches; purple mixed matches; slate unknown-only/unknown-match coverage; pale means no selected match recorded among loaded records; dark means no loaded records. The ordinary count-scale legend is replaced while equipment filtering is active. FEMA risk colors and legend resume when the equipment filter is cleared.
+
+A nationwide index initializes every bundled state and county, including areas with no loaded records. State names and codes are normalized. County links use a valid FIPS within the correct state, or a unique normalized county name within that state. Invalid/wrong-state FIPS are counted as conflicts and never replaced by a guessed county. Unresolved geography is reported, not silently assigned to a first county. County previews and national previews expose equipment matches/unknowns.
+
+Coverage is computed from loaded agency records. Generated or missing equipment is not converted into observed ownership. A complete geographic index does not establish complete national equipment data. The small number of recognized vendor records in the supplied screenshots indicates limited recorded product information; assigning vendor tags to the remaining agencies without sources would invent facts. Linked addresses and county tags represent recorded location, not service-area boundaries.
+
+Validation includes a test that indexes every county in the bundled national county database with synthetic FIPS fixtures (explicitly test fixtures, not production equipment), classification/geography conflict tests, full unit suite, type checks, style checks and production build. Browser/physical-device rendering remains unverified because local Chromium cannot start under the environment's socket restriction.

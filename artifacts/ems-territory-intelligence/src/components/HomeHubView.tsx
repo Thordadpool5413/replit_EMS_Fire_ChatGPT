@@ -1,3 +1,5 @@
+import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
+import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {matchesEquipmentFilter,equipmentGeographyScope} from '../utils/equipmentPresence';
 import {WorkspaceIcon} from './design/WorkspaceIcon';
@@ -246,6 +248,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const hasNationwideMapGeometry = Object.keys(US_STATES_SVG_PATHS).length >= 50;
 
 
+  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(equipmentGeographyScope(agencies,{category:globalCategory}),Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[agencies,equipmentFilter,globalCategory]);
   const stateStatsByCode = useMemo(() => {
     const agenciesByState = new Map<string, Agency[]>();
     for (const agency of scopedAgencies) {
@@ -534,6 +537,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 }
               }}
             >
+              <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before equipment filtering"/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
@@ -588,7 +592,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </details>
               </div>
 
-              {hasNationwideMapGeometry && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+              {equipmentFilter.presence!=='all'&&<div className="home-equipment-coverage-legend" role="status"><strong>Recorded equipment coverage</strong><p>{EQUIPMENT_COVERAGE_LEGEND}</p><p>{equipmentCoverage.unassignedState} records without resolved state · {equipmentCoverage.unassignedCounty} without resolved county. Unknown is not absence.</p></div>}
+              {hasNationwideMapGeometry && equipmentFilter.presence==='all' && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
@@ -615,6 +620,71 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </span>
               </div>}
 
+              {(() => {
+                const previewStateCode = hoveredStateCode ?? focusedStateCode;
+                const code = previewStateCode ?? selectedStateCode;
+                const st = ALL_50_STATES_SUMMARIES[code];
+                if (!st) return null;
+                const datum = stateMapMetricsByCode[code][mapMetric];
+                const count = stateStatsByCode[code]?.count ?? 0;
+                const swatch = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[code],equipmentFilter):hasReportedValue(datum.value)
+                  ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                  : undefined;
+                return (
+                  <div className="home-map-state-preview" aria-live="polite" data-testid="panel-state-preview" data-preview-mode={previewStateCode ? 'preview' : 'selected'}>
+                    <span className={`home-map-state-preview-swatch${swatch ? '' : ' is-missing'}`} style={swatch ? { backgroundColor: swatch } : undefined} aria-hidden="true" />
+                    <div className="home-map-state-preview-id">
+                      <span className="home-map-state-preview-kicker">{previewStateCode && previewStateCode !== selectedStateCode ? 'Preview' : 'Selected'}</span>
+                      <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
+                    </div>
+                    {equipmentFilter.presence!=='all'&&<p className="home-equipment-state-counts">ZOLL {equipmentCoverage.byState[code]?.zoll||0} · Competitor {equipmentCoverage.byState[code]?.competitor||0} · Mixed {equipmentCoverage.byState[code]?.mixed||0} · Unknown {equipmentCoverage.byState[code]?.unknown||0}</p>}
+                    <dl className="home-map-state-preview-facts">
+                      <div><dt>{mapMetric === 'agency-records' ? 'Agency records' : activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
+                      {mapMetric === 'agency-records'
+                        ? <div><dt>Counties in directory</dt><dd>{formatInteger(territoryEngine.getCountiesForState(code).length)}</dd></div>
+                        : <div><dt>Agency records</dt><dd data-testid="text-preview-agencies">{formatInteger(count)}</dd></div>}
+                    </dl>
+                    <button type="button" className="home-map-state-preview-action" data-testid="button-preview-explore" onClick={() => handleStateClick(code)}>
+                      Explore {code}
+                    </button>
+                  </div>
+                );
+              })()}
+              {/* East Coast Compact Callout Buttons */}
+              <div className="home-map-shortcuts pt-2 border-t border-[#294158] text-xs">
+                <div className="home-map-shortcuts-heading">
+                  <span>Small-state shortcuts</span>
+                  <span className="home-map-shortcuts-swipe">Swipe to see all {EAST_COAST_CALLOUT_STATES.length}</span>
+                </div>
+                <div className="home-map-shortcut-row" role="group" aria-label="Small-state shortcuts">
+                {EAST_COAST_CALLOUT_STATES.map((c) => {
+                  const isSelected = selectedStateCode === c.code;
+                  const datum = stateMapMetricsByCode[c.code][mapMetric];
+                  return (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => handleStateClick(c.code)}
+                      onMouseEnter={() => setHoveredStateCode(c.code)}
+                      onFocus={() => setFocusedStateCode(c.code)}
+                      aria-pressed={isSelected}
+                      aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${activeMapMetric.label}, ${formatStateMapValue(mapMetric, datum.value)}`}
+                      style={{
+                        backgroundColor: isSelected ? '#F4C86A' : undefined,
+                        color: isSelected ? '#14283F' : undefined,
+                        borderColor: isSelected ? '#FFE8AC' : undefined,
+                        outline: isSelected ? '2px solid #F4C86A' : undefined,
+                        outlineOffset: isSelected ? '1px' : undefined,
+                      }}
+                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#3B5668] bg-[#112333] text-[12px] font-bold font-mono text-[#D3E1E7] transition-[background-color,color,outline] hover:bg-[#1D3B50] focus:outline focus:outline-2 focus:outline-[#67D6CE]"
+                    >
+                      {c.code}
+                    </button>
+                  );
+                })}
+                </div>
+              </div>
+              </aside>
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
               <div className="home-map-visual-stack home-map-visual-v2">
               {hasNationwideMapGeometry ? (
@@ -667,10 +737,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isHovered = hoveredStateCode === st.code;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
-                    const fillColor = hasReportedValue(datum.value)
+                    const fillColor = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(datum.value)
                       ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                       : 'url(#home-map-missing-data)';
-                    const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
+                    const stateAriaLabel = equipmentFilter.presence!=='all'?`${st.state}. ${equipmentCoverage.byState[st.code]?.matched||0} selected equipment matches; ${equipmentCoverage.byState[st.code]?.unknown||0} records with unknown equipment. Totals describe loaded records.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
                     return (
                       <g
@@ -725,7 +795,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
                       const cDatum = stateMapMetricsByCode[st.code][mapMetric];
-                      const cFill = hasReportedValue(cDatum.value)
+                      const cFill = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(cDatum.value)
                         ? interpolateStateFill(mapMetric, cDatum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                         : '#172A3D';
                       return (
@@ -801,70 +871,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <HomeMapUnavailableFallback onBrowseDirectory={() => onNavigateTab('states_directory')} />
               )}
 
-              {(() => {
-                const previewStateCode = hoveredStateCode ?? focusedStateCode;
-                const code = previewStateCode ?? selectedStateCode;
-                const st = ALL_50_STATES_SUMMARIES[code];
-                if (!st) return null;
-                const datum = stateMapMetricsByCode[code][mapMetric];
-                const count = stateStatsByCode[code]?.count ?? 0;
-                const swatch = hasReportedValue(datum.value)
-                  ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
-                  : undefined;
-                return (
-                  <div className="home-map-state-preview" aria-live="polite" data-testid="panel-state-preview" data-preview-mode={previewStateCode ? 'preview' : 'selected'}>
-                    <span className={`home-map-state-preview-swatch${swatch ? '' : ' is-missing'}`} style={swatch ? { backgroundColor: swatch } : undefined} aria-hidden="true" />
-                    <div className="home-map-state-preview-id">
-                      <span className="home-map-state-preview-kicker">{previewStateCode && previewStateCode !== selectedStateCode ? 'Preview' : 'Selected'}</span>
-                      <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
-                    </div>
-                    <dl className="home-map-state-preview-facts">
-                      <div><dt>{mapMetric === 'agency-records' ? 'Agency records' : activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
-                      {mapMetric === 'agency-records'
-                        ? <div><dt>Counties in directory</dt><dd>{formatInteger(territoryEngine.getCountiesForState(code).length)}</dd></div>
-                        : <div><dt>Agency records</dt><dd data-testid="text-preview-agencies">{formatInteger(count)}</dd></div>}
-                    </dl>
-                    <button type="button" className="home-map-state-preview-action" data-testid="button-preview-explore" onClick={() => handleStateClick(code)}>
-                      Explore {code}
-                    </button>
-                  </div>
-                );
-              })()}
 
-              {/* East Coast Compact Callout Buttons */}
-              <div className="home-map-shortcuts pt-2 border-t border-[#294158] text-xs">
-                <div className="home-map-shortcuts-heading">
-                  <span>Small-state shortcuts</span>
-                  <span className="home-map-shortcuts-swipe">Swipe to see all {EAST_COAST_CALLOUT_STATES.length}</span>
-                </div>
-                <div className="home-map-shortcut-row" role="group" aria-label="Small-state shortcuts">
-                {EAST_COAST_CALLOUT_STATES.map((c) => {
-                  const isSelected = selectedStateCode === c.code;
-                  const datum = stateMapMetricsByCode[c.code][mapMetric];
-                  return (
-                    <button
-                      key={c.code}
-                      type="button"
-                      onClick={() => handleStateClick(c.code)}
-                      onMouseEnter={() => setHoveredStateCode(c.code)}
-                      onFocus={() => setFocusedStateCode(c.code)}
-                      aria-pressed={isSelected}
-                      aria-label={`${ALL_50_STATES_SUMMARIES[c.code].state}: ${activeMapMetric.label}, ${formatStateMapValue(mapMetric, datum.value)}`}
-                      style={{
-                        backgroundColor: isSelected ? '#F4C86A' : undefined,
-                        color: isSelected ? '#14283F' : undefined,
-                        borderColor: isSelected ? '#FFE8AC' : undefined,
-                        outline: isSelected ? '2px solid #F4C86A' : undefined,
-                        outlineOffset: isSelected ? '1px' : undefined,
-                      }}
-                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#3B5668] bg-[#112333] text-[12px] font-bold font-mono text-[#D3E1E7] transition-[background-color,color,outline] hover:bg-[#1D3B50] focus:outline focus:outline-2 focus:outline-[#67D6CE]"
-                    >
-                      {c.code}
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
+
+
               </div>
               </div>
             </div>

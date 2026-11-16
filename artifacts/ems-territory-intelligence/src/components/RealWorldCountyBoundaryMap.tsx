@@ -1,3 +1,7 @@
+import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
+import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
+import {ALL_50_STATES_SUMMARIES} from '../data/nationalGeographicData';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -45,6 +49,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   onSelectCity,
   onShowAllPlaces,
 }) => {
+  const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
+  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(agencies,Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[agencies,equipmentFilter]);
   const [isLoadingBoundaries, setIsLoadingBoundaries] = useState<boolean>(false);
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
@@ -273,6 +279,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
     : null;
   const nriColorFor = (fips: string) => {
+    if(equipmentFilter.presence!=='all')return equipmentCoverageColor(equipmentCoverage.byCounty[fips],equipmentFilter);
     const rating = nriByCountyFips.get(fips)?.riskRating;
     return rating ? FEMA_NRI_RATING_COLORS[rating] ?? 'url(#cv-missing-hatch)' : 'url(#cv-missing-hatch)';
   };
@@ -369,13 +376,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         </header>
       )}
 
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies.filter(a=>a.stateCode===stateCode)} scopeLabel="loaded records for this state, before county selection"/>
+      {equipmentFilter.presence!=='all'&&<p className="cv-note" role="status">{EQUIPMENT_COVERAGE_LEGEND}. County tags use FIPS or an unambiguous county name within its state. {equipmentCoverage.unassignedCounty} loaded records have unresolved county geography.</p>}
+      {equipmentFilter.presence!=='all'&&inspectedCounty&&<p className="cv-note" role="status">{inspectedCounty.countyName}: {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.matched||0} selected matches · {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unknown||0} unknown equipment records. These counts describe loaded agencies, not complete ownership.</p>}
       {/* Mode A: statewide county boundaries + inspector */}
       {!activeCountyNode && (
         <>
           <div className="cv-state-grid county-state-map-grid">
             <div className="cv-map-panel county-geo county-state-map-panel">
               <div className="cv-map-head">
-                <strong className="cv-head-ico"><ShieldAlert aria-hidden="true" />{stateNode.stateName} · FEMA NRI risk by county</strong>
+                <strong className="cv-head-ico"><ShieldAlert aria-hidden="true" />{stateNode.stateName} · {equipmentFilter.presence==='all'?'FEMA NRI risk by county':'Recorded equipment by county'}</strong>
                 <span className="tabular-nums">
                   {projectedState.projectedCounties.length} of {stateNode.countiesList.length} boundaries drawn
                 </span>
@@ -448,7 +458,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             vectorEffect="non-scaling-stroke"
                             tabIndex={0}
                             role="button"
-                            aria-label={`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
+                            aria-label={equipmentFilter.presence!=='all'?`Open ${pc.countyName}, ${stateNode.stateName}. ${equipmentCoverage.byCounty[pc.countyFips]?.matched||0} selected equipment matches; ${equipmentCoverage.byCounty[pc.countyFips]?.unknown||0} unknown records.`:`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
                             className={`cv-county-path cursor-pointer${isSelected ? ' is-selected' : ''}`}
                             aria-pressed={isSelected}
                             onMouseEnter={() => { setHoveredCountyFips(pc.countyFips); setPreviewCountyFips(pc.countyFips); }}
@@ -529,7 +539,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <p className="cv-zoom-hint" aria-live="polite">
                 {countyZoom >= 2.25 ? 'County names appear where space allows. Drag to pan.' : 'Hover or focus a county for its name. Zoom in for more labels.'}
               </p>
-              {legend}
+              {equipmentFilter.presence==='all'?legend:<div className="cv-legend">{EQUIPMENT_COVERAGE_LEGEND}</div>}
             </div>
 
             <div className="cv-panel county-inspector-panel ci" aria-live="polite">

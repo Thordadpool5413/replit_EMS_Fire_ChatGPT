@@ -375,3 +375,10 @@
 .workspace-data-tools details { padding:10px 0; border-top:1px solid var(--pi-border); margin-top:10px; }
 .workspace-data-tools summary { cursor:pointer; color:var(--pi-action-ink); font-size:13px; min-height:36px; }
 @media(max-width:767px) { .workspace-data-tools summary { min-height:44px; } }
+/* Recorded vendor filters are shared across all territory map views. */
+.equipment-map-filter { display:flex; flex-wrap:wrap; align-items:end; gap:8px 12px; padding:10px 12px; border:1px solid var(--pi-border); border-radius:9px; background:var(--pi-surface-bg); color:var(--pi-text-primary); min-width:0; }
+.equipment-map-filter label { display:grid; gap:5px; flex:1 1 180px; min-width:0; font-size:11px; font-weight:650; }
+.equipment-map-filter label > span { display:flex; align-items:center; gap:5px; }
+.equipment-map-filter select { width:100%; min-height:36px; border:1px solid var(--pi-border-strong); border-radius:6px; background:var(--pi-surface-bg); color:var(--pi-text-primary); padding:5px 8px; font-size:12px; }
+.equipment-map-filter p { flex-basis:100%; font-size:10px; line-height:1.5; color:var(--pi-text-secondary); }
+@media(max-width:767px) { .equipment-map-filter select { min-height:44px; font-size:16px; } }

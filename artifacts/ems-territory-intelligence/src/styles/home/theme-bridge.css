@@ -6,3 +6,8 @@
 .home-territory-map-screen-v2 .home-map-page-heading .workspace-icon { color:var(--pi-action-ink); width:22px; height:22px; }
 .home-territory-map-screen-v2 .home-map-stage-v2 { border-color:#305063 !important; background:radial-gradient(ellipse at 20% 0%,#1a465b80,transparent 60%),#0c1d30 !important; }
 .home-territory-map-screen-v2 .home-map-shortcuts > button { border-radius:8px; }
+.home-territory-map-screen-v2 .home-map-toolbar-v2 { flex-wrap:wrap; }
+.home-territory-map-screen-v2 .equipment-map-filter { background:#142b3d; color:#e1edf8; border-color:#38536c; flex:1 1 340px; padding:7px 10px; gap:5px 10px; }
+.home-territory-map-screen-v2 .equipment-map-filter select { background:#102236; color:#e1edf8; border-color:#38536c; }
+.home-territory-map-screen-v2 .equipment-map-filter p { color:#bacddd; }
+.home-territory-map-screen-v2 .equipment-map-filter .workspace-text-button { color:#9fe6db; }

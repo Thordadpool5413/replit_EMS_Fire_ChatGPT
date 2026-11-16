@@ -1,3 +1,5 @@
+import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {matchesEquipmentFilter} from '../utils/equipmentPresence';
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
  * @license
@@ -215,14 +217,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const hasInitializedMapRef = useRef(false);
 
+  const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
+  useEffect(()=>{if(equipmentFilter.presence!=='all')setMapMetric('agency-records');},[equipmentFilter]);
+
   // Filter agencies by global category (All / EMS / Fire)
   const scopedAgencies = useMemo(() => {
-    if (globalCategory === 'all') return agencies;
+    if (globalCategory === 'all') return agencies.filter(a=>matchesEquipmentFilter(a,equipmentFilter));
     return agencies.filter((a) => {
       const isFire = a.providerCategory === 'FIRE' || a.agencyType.toLowerCase().includes('fire');
-      return globalCategory === 'fire' ? isFire : !isFire;
+      return matchesEquipmentFilter(a,equipmentFilter) && (globalCategory === 'fire' ? isFire : !isFire);
     });
-  }, [agencies, globalCategory]);
+  }, [agencies, globalCategory,equipmentFilter]);
   const providerScopeLabel = globalCategory === 'all'
     ? 'all-provider'
     : globalCategory === 'ems'
@@ -528,10 +533,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter}/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
                     id="home-state-map-metric"
+                    disabled={equipmentFilter.presence!=='all'}
+                    title={equipmentFilter.presence!=='all'?'Clear the equipment filter to select other shading layers.':undefined}
                     data-testid="select-state-map-metric"
                     value={mapMetric}
                     onChange={(event) => {

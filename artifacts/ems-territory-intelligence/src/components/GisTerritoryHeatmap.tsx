@@ -1,3 +1,5 @@
+import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {matchesEquipmentFilter} from '../utils/equipmentPresence';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -10,7 +12,6 @@ import { TERRITORY_CLUSTERS } from '../data/healthcareData';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
-import { nationalProviderDb } from '../services/nationalProviderDatabase';
 import {
   classifyOhcaRate,
   FLEET_AGE_BANDS,
@@ -158,6 +159,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   const [nemsisAcuityFilter, setNemsisAcuityFilter] = useState<'all' | 'high' | 'critical'>('all');
   const [layerThresholdFilter, setLayerThresholdFilter] = useState<'all' | 'high' | 'critical'>('all');
   const [selectedClusterId, setSelectedClusterId] = useState<string>('all');
+  const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const [selectedTargetProduct, setSelectedTargetProduct] = useState<string>('all');
 
   // Helper to resolve state code reliably from any format (2-letter code or state name)
@@ -242,11 +244,8 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
     if (globalCategory !== undefined) setSelectedCategory(globalCategory);
   }, [globalCategory]);
 
-  // Full dataset guarantee: ensure 100% full nationwide coverage across all 50 states + DC
-  const effectiveAgencies = useMemo<Agency[]>(() => {
-    if (agencies && agencies.length > 500) return agencies;
-    return nationalProviderDb.getInitialBaselineAgencies();
-  }, [agencies]);
+  // Vendor views must reflect loaded records, including an empty or small workspace.
+  const effectiveAgencies = agencies;
 
   const nationalOhcaRateThresholds = useMemo(() => {
     const rates = effectiveAgencies
@@ -281,6 +280,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   const filteredAgencies = useMemo<Agency[]>(() => {
     const base: Agency[] = effectiveAgencies.filter((a: Agency) => {
+      if (!matchesEquipmentFilter(a,equipmentFilter)) return false;
       if (selectedState !== 'all' && a.stateCode !== selectedState) return false;
       if (selectedCounty !== 'all') {
         const cleanTarget = selectedCounty.replace(/\s+(County|Parish|Borough|Census Area|Municipality)$/i, '').toLowerCase().trim();
@@ -322,11 +322,11 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
       return true;
     });
-    if (activeAccount) {
+    if (activeAccount && matchesEquipmentFilter(activeAccount,equipmentFilter)) {
       return [activeAccount, ...base.filter(a => a.id !== activeAccount.id)];
     }
     return base;
-  }, [agencies, selectedState, selectedCounty, selectedCity, selectedCategory, selectedClusterId, selectedTargetProduct, activeAccount, selectedLayer, nemsisAcuityFilter, layerThresholdFilter, nationalOhcaRateThresholds]);
+  }, [equipmentFilter,effectiveAgencies,agencies, selectedState, selectedCounty, selectedCity, selectedCategory, selectedClusterId, selectedTargetProduct, activeAccount, selectedLayer, nemsisAcuityFilter, layerThresholdFilter, nationalOhcaRateThresholds]);
 
   // Layer-specific metric evaluation function for accurate hotspot ranking
   const getLayerMetric = (a: Agency, layer: typeof selectedLayer): number => {
@@ -1494,6 +1494,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   return (
     <div className="workspace-section-grid fleet-map-workspace" data-testid="workspace-fleet-map">
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter}/>
       
       {/* Top GIS Header */}
       <div className="bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] rounded-xl p-4 sm:p-6 shadow-2xs min-w-0">

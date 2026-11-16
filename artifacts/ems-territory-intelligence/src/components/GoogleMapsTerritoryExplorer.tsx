@@ -1,3 +1,5 @@
+import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {matchesEquipmentFilter} from '../utils/equipmentPresence';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -331,6 +333,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   // Filters & Map Display Settings
   const [searchQuery, setSearchQuery] = useState<string>(savedMapFilters.searchQuery ?? '');
+  const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const [selectedTier, setSelectedTier] = useState<string>(savedMapFilters.selectedTier ?? 'all');
   const [minPulseIqScore, setMinPulseIqScore] = useState<string>(savedMapFilters.minPulseIqScore ?? '');
   const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>(savedMapFilters.maxPulseIqScore ?? '');
@@ -445,6 +448,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     const minScore = minPulseIqScore === '' ? null : Number(minPulseIqScore);
     const maxScore = maxPulseIqScore === '' ? null : Number(maxPulseIqScore);
     let pool = agencies.filter((agency) => {
+      if (!matchesEquipmentFilter(agency,equipmentFilter)) return false;
       // Must have valid coordinates
       return Number.isFinite(agency.latitude) && Math.abs(agency.latitude)<=90 &&
              Number.isFinite(agency.longitude) && Math.abs(agency.longitude)<=180 &&
@@ -515,6 +519,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     globalCounty,
     globalCity,
     selectedTier,
+    equipmentFilter,
     searchQuery,
     minPulseIqScore,
     maxPulseIqScore,
@@ -598,6 +603,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter}/>
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP

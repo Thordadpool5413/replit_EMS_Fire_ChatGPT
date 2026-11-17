@@ -23,20 +23,32 @@ try {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width < 768 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send('Page.navigate', { url: new URL('/?state=FL&county=Alachua%20County', process.env.COUNTY_TEST_URL || 'http://127.0.0.1:80/').href });
     await waitFor(cdp, `Boolean(document.querySelector('.county-city-directory-panel .cv-place-row'))`, 'county places', 60000);
+    await waitFor(cdp, `Boolean(document.querySelector('[data-testid="county-equipment-panel"]'))`, 'county equipment records', 15000);
     await evaluate(cdp, 'document.fonts.ready.then(()=>true)');
     const info = await evaluate(cdp, `(()=>{
       const panel=document.querySelector('.county-city-directory-panel');
+      const equipment=document.querySelector('[data-testid="county-equipment-panel"]');
       return {overflow:document.documentElement.scrollWidth>innerWidth+1,
         places:panel.querySelectorAll('.cv-place-row').length,
         icons:panel.querySelectorAll('svg').length,
         map:document.querySelectorAll('.county-single-map-panel svg [role="button"]').length,
+        equipmentOverflow:equipment.scrollWidth>equipment.clientWidth+1,
+        equipmentAgencies:equipment.querySelectorAll('[data-testid="county-equipment-agency"]').length,
         stale:/No source mapped|No source details attached/i.test(document.querySelector('main').innerText)};
     })()`);
     assert(!info.overflow, `${width}: no page overflow`);
+    assert(!info.equipmentOverflow, `${width}: county equipment panel has no horizontal overflow`);
     assert(info.places > 0 && info.map > 0, 'Place list and interactive map retained');
     assert(info.icons >= info.places, 'Meaningful place icons');
     assert(!info.stale, 'Absent-source notices removed');
-    for (const [name, selector] of [['county', '.county-single-map-panel'], ['reference', '.county-reference-panel'], ['providers', '.agency-directory-card']]) {
+    if (info.equipmentAgencies > 0) {
+      await evaluate(cdp, `document.querySelector('[data-testid="county-equipment-agency"] summary').click()`);
+      await waitFor(cdp, `Boolean(document.querySelector('[data-testid="county-equipment-agency"][open]'))`, 'agency equipment details', 10000);
+      const agencyDetails = await evaluate(cdp, `document.querySelector('[data-testid="county-equipment-agency"][open]').innerText`);
+      assert(/verified|unverified/i.test(agencyDetails), 'Agency identity status remains explicit');
+      assert(/county assignment/i.test(agencyDetails), 'County assignment basis is visible');
+    }
+    for (const [name, selector] of [['county', '.county-single-map-panel'], ['reference', '.county-reference-panel'], ['equipment', '.county-equipment-panel'], ['providers', '.agency-directory-card']]) {
       if (name === 'providers') {
         await evaluate(cdp, `document.querySelector('[data-testid="button-provider-view-cards"]')?.click()`);
         await waitFor(cdp, `Boolean(document.querySelector('.agency-directory-card'))`, 'provider cards', 15000);

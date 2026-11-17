@@ -225,7 +225,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const hasInitializedMapRef = useRef(false);
 
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
-  useEffect(()=>{if(equipmentFilter.presence!=='all')setMapMetric('agency-records');},[equipmentFilter]);
+  const isEquipmentMapActive = equipmentFilter.presence !== 'all'
+    || equipmentFilter.family !== 'all'
+    || Boolean(equipmentFilter.vendor);
+  useEffect(()=>{if(isEquipmentMapActive)setMapMetric('agency-records');},[isEquipmentMapActive]);
 
   // Filter agencies by global category (All / EMS / Fire)
   const scopedAgencies = useMemo(() => {
@@ -555,8 +558,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
                     id="home-state-map-metric"
-                    disabled={equipmentFilter.presence!=='all'}
-                    title={equipmentFilter.presence!=='all'?'Clear the equipment filter to select other shading layers.':undefined}
+                    disabled={isEquipmentMapActive}
+                    title={isEquipmentMapActive?'Clear the equipment filter to select other shading layers.':undefined}
                     data-testid="select-state-map-metric"
                     value={mapMetric}
                     onChange={(event) => {
@@ -603,11 +606,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </details>
               </div>
 
-              {equipmentFilter.presence!=='all'&&<EquipmentCoverageLegend
+              {isEquipmentMapActive&&<EquipmentCoverageLegend
                 className="home-equipment-coverage-legend"
                 note={`State colors roll up loaded directory records across ${formatInteger(ALL_NATIONWIDE_COUNTIES.length)} county-equivalent boundaries; “both found” may be different agencies. Records can include unverified candidates; confirm agency identity and current use. ${formatInteger(equipmentCoverage.unassignedState)} records have no resolved state; ${formatInteger(equipmentCoverage.unassignedCounty)} have no safe county match. Unassigned records remain in state totals when the state is known.`}
               />}
-              {hasNationwideMapGeometry && equipmentFilter.presence==='all' && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
+              {hasNationwideMapGeometry && !isEquipmentMapActive && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
@@ -642,7 +645,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 const datum = stateMapMetricsByCode[code][mapMetric];
                 const count = stateStatsByCode[code]?.count ?? 0;
                 const equipment=equipmentCoverage.byState[code];
-                const swatch = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[code],equipmentFilter):hasReportedValue(datum.value)
+                const swatch = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[code],equipmentFilter):hasReportedValue(datum.value)
                   ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                   : undefined;
                 return (
@@ -652,10 +655,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       <span className="home-map-state-preview-kicker">{previewStateCode && previewStateCode !== selectedStateCode ? 'Preview' : 'Selected'}</span>
                       <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
                     </div>
-                    {equipmentFilter.presence!=='all'&&<div className="home-equipment-state-counts" data-testid={`equipment-state-rollup-${code}`}>
-                      <p>Loaded records · <b>ZOLL {formatInteger(equipment?.zoll||0)}</b> · <b>other makers {formatInteger(equipment?.competitor||0)}</b> · <b>mixed {formatInteger(equipment?.mixed||0)}</b></p>
-                      <p>No recognized maker {formatInteger(equipment?.unknown||0)} · with equipment details {formatInteger(equipment?.reported||0)} · no substantive entry {formatInteger(equipment?.unreported||0)}</p>
-                      <p>County coverage · records in {formatInteger(equipment?.countiesWithAgencyRecords||0)} of {formatInteger(equipment?.countyCount||0)} counties · recognized maker in {formatInteger(equipment?.countiesWithRecognizedEquipment||0)}</p>
+                    {isEquipmentMapActive&&<div className="home-equipment-state-counts" data-testid={`equipment-state-rollup-${code}`}>
+                      <p>County-assigned agency records · <b>ZOLL {formatInteger(equipment?.zoll||0)}</b> · <b>other makers {formatInteger(equipment?.competitor||0)}</b> · <b>mixed {formatInteger(equipment?.mixed||0)}</b> · manufacturer not recognized {formatInteger(equipment?.unknown||0)} · no equipment entry {formatInteger(equipment?.notReported||0)}</p>
+                      <p>Installed-field entries {formatInteger(equipment?.equipmentRecordCount||0)} · source mapped {formatInteger(equipment?.documentedEquipmentRecordCount||0)} · unverified {formatInteger(equipment?.unverifiedEquipmentRecordCount||0)}</p>
+                      <p>Separate source facts {formatInteger(equipment?.sourceFactRecordCount||0)} in {formatInteger(equipment?.countiesWithSourceFacts||0)} counties · not assumed to mean current installed use</p>
+                      <p>County coverage · agency records in {formatInteger(equipment?.countiesWithAgencyRecords||0)} of {formatInteger(equipment?.countyCount||0)} · equipment details in {formatInteger(equipment?.countiesWithEquipmentDetails||0)} · no agency record in {formatInteger(Math.max(0,(equipment?.countyCount||0)-(equipment?.countiesWithAgencyRecords||0)))}</p>
+                      <p>Among assigned agencies, no entry reported · monitors {formatInteger(equipment?.notReportedByFamily.monitors||0)} · mechanical CPR {formatInteger(equipment?.notReportedByFamily.cpr||0)} · ventilators {formatInteger(equipment?.notReportedByFamily.ventilators||0)} · software {formatInteger(equipment?.notReportedByFamily.software||0)}</p>
+                      <p>Agency identity verified {formatInteger(equipment?.verifiedAgencyCount||0)} · unverified {formatInteger(equipment?.unverifiedAgencyCount||0)} · county-unassigned {formatInteger(equipment?.unassignedAgencyCount||0)} (conflicts {formatInteger(equipment?.conflictingAgencyCount||0)})</p>
                     </div>}
                     <dl className="home-map-state-preview-facts">
                       <div><dt>{mapMetric === 'agency-records' ? 'Agency records' : activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
@@ -756,11 +762,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isHovered = hoveredStateCode === st.code;
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
-                    const fillColor = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(datum.value)
+                    const fillColor = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(datum.value)
                       ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                       : 'url(#home-map-missing-data)';
                     const equipmentState=equipmentCoverage.byState[st.code];
-                    const stateAriaLabel = equipmentFilter.presence!=='all'?`${st.state}. ${equipmentState?.matched||0} selected equipment matches; ZOLL records ${equipmentState?.zoll||0}; other manufacturer records ${equipmentState?.competitor||0}; mixed records ${equipmentState?.mixed||0}; no recognized maker ${equipmentState?.unknown||0}; loaded agency records in ${equipmentState?.countiesWithAgencyRecords||0} of ${equipmentState?.countyCount||0} counties. Totals describe loaded records.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
+                    const stateAriaLabel = isEquipmentMapActive?`${st.state}. ${equipmentState?.matched||0} selected equipment matches. County-assigned unique agency records ${equipmentState?.total||0}; ZOLL ${equipmentState?.zoll||0}; other manufacturers ${equipmentState?.competitor||0}; mixed ${equipmentState?.mixed||0}; manufacturer not recognized ${equipmentState?.unknown||0}; no equipment entry reported ${equipmentState?.notReported||0}; unique installed-field entries ${equipmentState?.equipmentRecordCount||0}, source mapped ${equipmentState?.documentedEquipmentRecordCount||0}, unverified ${equipmentState?.unverifiedEquipmentRecordCount||0}; agency records in ${equipmentState?.countiesWithAgencyRecords||0} of ${equipmentState?.countyCount||0} counties; county-unassigned agencies ${equipmentState?.unassignedAgencyCount||0}. Missing entries do not mean no equipment.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
                     return (
                       <g
@@ -815,7 +821,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
                       const cDatum = stateMapMetricsByCode[st.code][mapMetric];
-                      const cFill = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(cDatum.value)
+                      const cFill = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(cDatum.value)
                         ? interpolateStateFill(mapMetric, cDatum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                         : '#172A3D';
                       return (

@@ -12,5 +12,5 @@ test('unknown-vendor records expose their original equipment value instead of hi
 });
 test('equipment legend names every state and county coverage category',()=>{
  const html=renderToStaticMarkup(<EquipmentCoverageLegend/>);
- for(const text of ['ZOLL recorded','Competitor recorded','Both found in area','No recognized maker','No match for filter','No loaded agency records','not a complete equipment census'])assert(html.includes(text),text);
+ for(const text of ['ZOLL recorded','Competitor recorded','Both found in area','No recognized maker','No equipment entry reported','No match for filter','No loaded agency records','not a complete equipment census'])assert(html.includes(text),text);
 });

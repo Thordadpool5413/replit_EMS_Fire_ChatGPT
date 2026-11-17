@@ -17,6 +17,8 @@ import {
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
+import { CountyEquipmentRecordsPanel } from './CountyEquipmentRecordsPanel';
+import './CountyEquipmentRecordsPanel.css';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import {
   getGetNriCountyContextQueryKey,
@@ -39,6 +41,7 @@ interface RealWorldCountyBoundaryMapProps {
   onSelectCity: (cityName: string, countyName: string, stateCode: string) => void;
   /** Clears the city filter while keeping the current county. */
   onShowAllPlaces?: () => void;
+  onSelectAgency?: (agency: Agency) => void;
 }
 
 export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProps> = ({
@@ -51,10 +54,17 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   onSelectCounty,
   onSelectCity,
   onShowAllPlaces,
+  onSelectAgency,
 }) => {
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const equipmentAgencies = useMemo(() => equipmentGeographyScope(agencies, { state: stateCode, category: providerScope }), [agencies, stateCode, providerScope]);
-  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(equipmentAgencies,Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[equipmentAgencies,equipmentFilter]);
+  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(
+    equipmentAgencies,
+    Object.values(ALL_50_STATES_SUMMARIES),
+    ALL_NATIONWIDE_COUNTIES,
+    equipmentFilter,
+    { includeAgencyRecords: selectedCountyName !== 'all' },
+  ),[equipmentAgencies,equipmentFilter,selectedCountyName]);
   const [isLoadingBoundaries, setIsLoadingBoundaries] = useState<boolean>(false);
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
@@ -870,6 +880,12 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </section>
             );
           })()}
+          <CountyEquipmentRecordsPanel
+            countyName={activeCountyNode.countyName}
+            stateName={stateNode.stateName}
+            coverage={equipmentCoverage.byCounty[activeCountyNode.countyFips]}
+            onSelectAgency={onSelectAgency}
+          />
           {unmatchedSection}
         </>
       )}

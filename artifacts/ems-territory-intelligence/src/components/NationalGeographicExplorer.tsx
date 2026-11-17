@@ -1840,6 +1840,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 selectedCountyName="all"
                 selectedCityName="all"
                 agencies={agencies}
+                onSelectAgency={onSelectAgency}
                 showExplorerHeader={false}
                 onSelectCounty={(countyName, stCode) => {
                   setSelectedStateCode(stCode);
@@ -2128,6 +2129,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 selectedCountyName={selectedCountyName}
                 selectedCityName={selectedCityName}
                 agencies={agencies}
+                onSelectAgency={onSelectAgency}
                 onSelectCounty={(countyName, stCode) => handleSelectCounty(countyName, stCode)}
                 onSelectCity={(cityName, countyName, stCode) => handleSelectCity(cityName, countyName, stCode)}
                 showExplorerHeader={false}

@@ -1,0 +1,683 @@
+.county-equipment-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.county-equipment-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.county-equipment-panel-head .cv-geo-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.county-equipment-panel-head .cv-geo-kicker svg {
+  width: 15px;
+  height: 15px;
+}
+
+.county-equipment-assignment-count {
+  flex: 0 0 auto;
+  border: 1px solid #cbd7e5;
+  border-radius: 999px;
+  background: #f5f8fc;
+  color: #34465c;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.county-equipment-panel-note,
+.county-equipment-missing-summary {
+  margin: 0;
+  color: #52657b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.county-equipment-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border: 1px solid #dce4ee;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f7f9fc;
+}
+
+.county-equipment-summary > div {
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.county-equipment-summary > div + div {
+  border-left: 1px solid #dce4ee;
+}
+
+.county-equipment-summary dt {
+  color: #617287;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.county-equipment-summary dd {
+  margin: 3px 0 0;
+  color: #172b42;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.county-equipment-missing-summary {
+  padding: 8px 10px;
+  border-left: 3px solid #93a3b6;
+  border-radius: 4px;
+  background: #f5f7fa;
+}
+
+.county-equipment-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid #d8e2ed;
+  border-radius: 10px;
+  background: #f7f9fc;
+  color: #43566d;
+}
+
+.county-equipment-empty > svg {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  color: #627b99;
+}
+
+.county-equipment-empty strong {
+  color: #20364f;
+  font-size: 13px;
+}
+
+.county-equipment-empty p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.county-equipment-agency-list {
+  display: grid;
+  gap: 8px;
+}
+
+.county-equipment-agency {
+  min-width: 0;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  background: #fff;
+  overflow: clip;
+}
+
+.county-equipment-agency > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 11px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.county-equipment-agency > summary::-webkit-details-marker {
+  display: none;
+}
+
+.county-equipment-agency > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  margin-left: 2px;
+  border-right: 2px solid #687a8e;
+  border-bottom: 2px solid #687a8e;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 140ms ease;
+}
+
+.county-equipment-agency[open] > summary::after {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.county-equipment-agency > summary > svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: #3262a8;
+}
+
+.county-equipment-agency-name {
+  flex: 1 1 auto;
+  min-width: 80px;
+  overflow-wrap: anywhere;
+  color: #1d3149;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.county-equipment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid #d8e0e8;
+  border-radius: 999px;
+  color: #526176;
+  background: #f5f7fa;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.county-equipment-status svg {
+  width: 13px;
+  height: 13px;
+}
+
+.county-equipment-status.is-documented {
+  border-color: #b8dfd2;
+  color: #176651;
+  background: #edf8f4;
+}
+
+.county-equipment-status.is-unverified {
+  border-color: #ecd7a5;
+  color: #77520c;
+  background: #fff8e8;
+}
+
+.county-equipment-status.is-not-reported {
+  border-color: #d8e0e8;
+  color: #586b80;
+}
+
+.county-equipment-agency-body {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border-top: 1px solid #e2e8ef;
+  background: #fbfcfe;
+}
+
+.county-equipment-agency-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: #5a6e84;
+  font-size: 11px;
+}
+
+.county-equipment-agency-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.county-equipment-agency-meta svg {
+  width: 14px;
+  height: 14px;
+}
+
+.county-equipment-agency-meta .is-verified {
+  color: #176651;
+}
+
+.county-equipment-agency-meta .is-unverified {
+  color: #77520c;
+}
+
+.county-equipment-profile-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 5px 10px;
+  border: 1px solid #b9cbe2;
+  border-radius: 7px;
+  background: #fff;
+  color: #2456a4;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.county-equipment-profile-link:hover {
+  background: #f0f5fd;
+}
+
+.county-equipment-profile-link:focus-visible,
+.county-equipment-agency > summary:focus-visible,
+.county-equipment-source-name a:focus-visible,
+.county-equipment-service-areas a:focus-visible {
+  outline: 3px solid #3d77d1;
+  outline-offset: 2px;
+}
+
+.county-equipment-record-list {
+  display: grid;
+  gap: 8px;
+}
+
+.county-equipment-record {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #e0e7ef;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.county-equipment-record-icon {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+  background: #edf3fb;
+  color: #3565a6;
+}
+
+.county-equipment-record-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.county-equipment-record-main {
+  min-width: 0;
+}
+
+.county-equipment-record-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.county-equipment-record-category {
+  margin: 0 0 2px;
+  color: #65778b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.county-equipment-record-kind {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 2px 5px;
+  border: 1px solid #d6e1ee;
+  border-radius: 999px;
+  background: #f4f7fb;
+  color: #526983;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  vertical-align: 1px;
+}
+
+.county-equipment-record-heading h6 {
+  margin: 0;
+  color: #1d3149;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.county-equipment-manufacturer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 6px 0;
+  color: #4d6077;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.county-equipment-manufacturer strong {
+  color: #6a7a8e;
+  font-weight: 600;
+}
+
+.county-equipment-review-note,
+.county-equipment-evidence-missing,
+.county-equipment-not-reported,
+.county-equipment-not-reported-categories {
+  margin: 5px 0 0;
+  color: #77520c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.county-equipment-review-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.county-equipment-review-note svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.county-equipment-review-note.is-reviewed {
+  color: #176651;
+}
+
+.county-equipment-evidence-list {
+  display: grid;
+  gap: 6px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.county-equipment-evidence-list li {
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: #f5f7fa;
+}
+
+.county-equipment-source-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: #43566d;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.county-equipment-source-name > svg {
+  width: 14px;
+  height: 14px;
+  color: #687d95;
+}
+
+.county-equipment-source-name a,
+.county-equipment-service-areas a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #2456a4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.county-equipment-source-name a svg,
+.county-equipment-service-areas a svg {
+  width: 12px;
+  height: 12px;
+}
+
+.county-equipment-source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  margin: 4px 0 0 19px;
+  color: #66788d;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.county-equipment-evidence-missing,
+.county-equipment-not-reported,
+.county-equipment-not-reported-categories {
+  color: #66788d;
+}
+
+.county-equipment-service-areas {
+  display: grid;
+  gap: 5px;
+  color: #53677e;
+  font-size: 11px;
+}
+
+.county-equipment-service-areas > strong {
+  color: #334a63;
+  font-size: 11px;
+}
+
+.county-equipment-service-areas ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.county-equipment-service-areas li {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  padding: 4px 7px;
+  border: 1px solid #dbe4ed;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.county-equipment-service-areas li > span:nth-child(2) {
+  color: #176651;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .county-equipment-panel {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .county-equipment-panel-head {
+    display: grid;
+    gap: 7px;
+  }
+
+  .county-equipment-assignment-count {
+    justify-self: start;
+  }
+
+  .county-equipment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .county-equipment-summary > div:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .county-equipment-summary > div:nth-child(n + 3) {
+    border-top: 1px solid #dce4ee;
+  }
+
+  .county-equipment-agency > summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .county-equipment-agency-name {
+    flex: 1 1 calc(100% - 60px);
+  }
+
+  .county-equipment-agency > summary::after {
+    margin-top: 4px;
+  }
+
+  .county-equipment-agency > summary .county-equipment-status {
+    margin-left: 27px;
+    order: 3;
+  }
+
+  .county-equipment-record-heading {
+    display: grid;
+  }
+
+  .county-equipment-record-heading .county-equipment-status {
+    justify-self: start;
+  }
+
+  .county-equipment-profile-link {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .county-equipment-agency > summary::after {
+    transition: none;
+  }
+}
+
+.dark .county-equipment-panel {
+  border-color: #334b63;
+  background: #112235;
+  color: #dce8f5;
+}
+
+.dark .county-equipment-assignment-count,
+.dark .county-equipment-summary,
+.dark .county-equipment-empty,
+.dark .county-equipment-missing-summary {
+  border-color: #354d65;
+  background: #172b40;
+  color: #c4d3e3;
+}
+
+.dark .county-equipment-assignment-count,
+.dark .county-equipment-empty strong,
+.dark .county-equipment-summary dd,
+.dark .county-equipment-record-heading h6,
+.dark .county-equipment-agency-name,
+.dark .county-equipment-service-areas > strong {
+  color: #e4eef9;
+}
+
+.dark .county-equipment-panel-note,
+.dark .county-equipment-missing-summary,
+.dark .county-equipment-summary dt,
+.dark .county-equipment-empty p,
+.dark .county-equipment-agency-meta,
+.dark .county-equipment-manufacturer,
+.dark .county-equipment-source-meta,
+.dark .county-equipment-evidence-missing,
+.dark .county-equipment-not-reported,
+.dark .county-equipment-not-reported-categories,
+.dark .county-equipment-service-areas {
+  color: #a8bbcf;
+}
+
+.dark .county-equipment-summary > div + div,
+.dark .county-equipment-summary > div:nth-child(n + 3) {
+  border-color: #354d65;
+}
+
+.dark .county-equipment-agency {
+  border-color: #354d65;
+  background: #15293d;
+}
+
+.dark .county-equipment-agency > summary > svg,
+.dark .county-equipment-record-icon {
+  color: #9fc2f6;
+}
+
+.dark .county-equipment-agency-body,
+.dark .county-equipment-record {
+  border-color: #354d65;
+  background: #102237;
+}
+
+.dark .county-equipment-record-icon,
+.dark .county-equipment-record-kind {
+  border-color: #3a5470;
+  background: #203852;
+  color: #c4d9f3;
+}
+
+.dark .county-equipment-source-name {
+  color: #d3e0ed;
+}
+
+.dark .county-equipment-source-name a,
+.dark .county-equipment-service-areas a,
+.dark .county-equipment-profile-link {
+  color: #9fc2ff;
+}
+
+.dark .county-equipment-evidence-list li,
+.dark .county-equipment-service-areas li,
+.dark .county-equipment-profile-link {
+  border-color: #354d65;
+  background: #172b40;
+}
+
+.dark .county-equipment-status.is-documented {
+  border-color: #276b59;
+  background: #123c35;
+  color: #8fe0c4;
+}
+
+.dark .county-equipment-status.is-unverified {
+  border-color: #80652a;
+  background: #3b311b;
+  color: #f0cf79;
+}
+
+.dark .county-equipment-status.is-not-reported {
+  border-color: #43576b;
+  background: #1b2d40;
+  color: #b8c7d6;
+}
+
+.dark .county-equipment-agency > summary::after {
+  border-color: #9cb1c7;
+}
+
+.dark .county-equipment-profile-link:hover {
+  background: #203852;
+}
+
+.dark .county-equipment-agency-meta .is-verified,
+.dark .county-equipment-review-note.is-reviewed,
+.dark .county-equipment-service-areas li > span:nth-child(2) {
+  color: #8fe0c4;
+}
+
+.dark .county-equipment-agency-meta .is-unverified,
+.dark .county-equipment-review-note {
+  color: #f0cf79;
+}
+
+.dark .county-equipment-profile-link:focus-visible,
+.dark .county-equipment-agency > summary:focus-visible,
+.dark .county-equipment-source-name a:focus-visible,
+.dark .county-equipment-service-areas a:focus-visible {
+  outline-color: #a9cbff;
+}

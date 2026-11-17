@@ -48,7 +48,15 @@ function equipmentFields(agency:Agency):EquipmentField[] {
 }
 const NON_EQUIPMENT_ENTRIES=/^(?:not (?:reported|recorded|confirmed|deployed|available|specified)|unknown|n\/?a|none reported|no data)$/i;
 const NON_INSTALLED_ENTRIES=/not (?:reported|recorded|confirmed|deployed)|unknown|\bno zoll\b|consider|proposed|recommended|planning|target/i;
-export type RecordedEquipmentEntry={family:Exclude<EquipmentFamily,'all'>;label:string;value:string;sourceStatus:string};
+export type RecordedEquipmentEntry={
+ family:Exclude<EquipmentFamily,'all'>;
+ label:string;
+ value:string;
+ sourceStatus:string;
+ evidenceKeys:AgencyFactEvidenceKey[];
+ manufacturerIds:string[];
+ manufacturerNames:string[];
+};
 const FAMILY_LABELS:Record<Exclude<EquipmentFamily,'all'>,string>={
  monitors:'Monitor / defibrillator',
  cpr:'Mechanical CPR',
@@ -57,16 +65,36 @@ const FAMILY_LABELS:Record<Exclude<EquipmentFamily,'all'>,string>={
 };
 /** Returns the substantive values even when manufacturer recognition is unavailable. */
 export function getRecordedEquipmentEntries(agency:Agency,family:EquipmentFamily='all'):RecordedEquipmentEntry[] {
- const seen=new Set<string>();
- return equipmentFields(agency).flatMap(({family:category,key,value})=>{
-  if(!value||!hasAgencyFactData(agency,key)||(family!=='all'&&category!==family))return [];
+ const entries=new Map<string,RecordedEquipmentEntry>();
+ const statusRank:Record<string,number>={'source-required':0,'source-mapped':1,'source-reviewed':2};
+ for(const {family:category,key,value} of equipmentFields(agency)){
+  if(!value||!hasAgencyFactData(agency,key)||(family!=='all'&&category!==family))continue;
   const text=value.trim();
-  if(NON_EQUIPMENT_ENTRIES.test(text)||NON_INSTALLED_ENTRIES.test(text))return [];
+  if(NON_EQUIPMENT_ENTRIES.test(text)||NON_INSTALLED_ENTRIES.test(text))continue;
   const identity=category+':'+text.toLowerCase();
-  if(seen.has(identity))return [];
-  seen.add(identity);
-  return [{family:category,label:FAMILY_LABELS[category],value:text,sourceStatus:getAgencyFactEvidenceStatus(agency,key)}];
- });
+  const matchedManufacturers=EQUIPMENT_VENDORS.filter((vendor)=>vendor.pattern.test(text));
+  const sourceStatus=getAgencyFactEvidenceStatus(agency,key);
+  const existing=entries.get(identity);
+  if(existing){
+   if(!existing.evidenceKeys.includes(key))existing.evidenceKeys.push(key);
+   for(const vendor of matchedManufacturers){
+    if(!existing.manufacturerIds.includes(vendor.id))existing.manufacturerIds.push(vendor.id);
+    if(!existing.manufacturerNames.includes(vendor.name))existing.manufacturerNames.push(vendor.name);
+   }
+   if((statusRank[sourceStatus]||0)>(statusRank[existing.sourceStatus]||0))existing.sourceStatus=sourceStatus;
+  }else{
+   entries.set(identity,{
+    family:category,
+    label:FAMILY_LABELS[category],
+    value:text,
+    sourceStatus,
+    evidenceKeys:[key],
+    manufacturerIds:matchedManufacturers.map((vendor)=>vendor.id),
+    manufacturerNames:matchedManufacturers.map((vendor)=>vendor.name),
+   });
+  }
+ }
+ return [...entries.values()];
 }
 /** True when a current equipment field contains a substantive entry, whether or not its maker is recognized. */
 export function hasRecordedEquipmentValue(agency:Agency,family:EquipmentFamily='all'):boolean {

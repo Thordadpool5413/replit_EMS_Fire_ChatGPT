@@ -1199,19 +1199,40 @@ async function checkHome(cdp, dark) {
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path[aria-label^="Florida."][aria-pressed="true"]'))`, 'selected Florida on the returning map');
   let missingLayer = null;
   for (const metricValue of metrics) {
-    await evaluate(cdp, `(() => {
+    const selectorState = await evaluate(cdp, `(() => {
       const metric = document.querySelector('[data-testid="select-state-map-metric"]');
-      if (!metric) return false;
-      metric.value = ${JSON.stringify(metricValue)};
-      metric.dispatchEvent(new Event('change', { bubbles: true }));
-      return true;
+      if (!metric || metric.disabled) return null;
+      const rect = metric.getBoundingClientRect();
+      return {
+        value: metric.value,
+        x: rect.x + rect.width / 2,
+        y: rect.y + rect.height / 2,
+        options: [...metric.options].map((option) => ({ value: option.value, label: option.textContent.trim() })),
+      };
     })()`);
+    assert(selectorState, `${themeLabel(dark)} Home map metric selector is not available for input`);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: selectorState.x, y: selectorState.y });
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
+    });
+    await cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
+    });
+    const previousIndex = metrics.indexOf(selectorState.value);
+    const nextIndex = metrics.indexOf(metricValue);
+    for (let step = 0; step < Math.abs(nextIndex - previousIndex); step += 1) {
+      const key = nextIndex > previousIndex ? 'ArrowDown' : 'ArrowUp';
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key });
+    }
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
     await waitFor(
       cdp,
       `document.querySelector('[data-testid="select-state-map-metric"]')?.value === ${JSON.stringify(metricValue)}`,
       `${metricValue} map layer in ${themeLabel(dark)} theme`,
     );
-    const metricLabel = await evaluate(cdp, `document.querySelector('[data-testid="select-state-map-metric"]')?.selectedOptions[0]?.textContent.trim() ?? ''`);
+    const metricLabel = selectorState.options.find((option) => option.value === metricValue)?.label ?? '';
     await waitFor(
       cdp,
       `document.querySelector('.home-map-legend-title')?.innerText.includes(${JSON.stringify(metricLabel)})`,

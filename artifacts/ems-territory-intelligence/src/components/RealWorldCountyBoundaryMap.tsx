@@ -1,3 +1,4 @@
+import {NationalSourceDirectory} from './NationalSourceDirectory';
 import { equipmentGeographyScope } from '../utils/equipmentPresence';
 import {EquipmentCoverageLegend,EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {buildEquipmentGeography,equipmentCoverageColor} from '../utils/equipmentGeography';
@@ -880,6 +881,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           </section>
             );
           })()}
+          <NationalSourceDirectory stateCode={stateCode} countyFips={activeCountyNode.countyFips} providerScope={providerScope}/>
           <CountyEquipmentRecordsPanel
             countyName={activeCountyNode.countyName}
             stateName={stateNode.stateName}

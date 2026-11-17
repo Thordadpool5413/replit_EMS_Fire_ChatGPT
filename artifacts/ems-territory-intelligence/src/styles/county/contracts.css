@@ -288,3 +288,5 @@ th .pi-data-label { white-space: nowrap; }
 .cv-county .cv-facts dd { font-size:1rem; }
 .cv-panel { box-shadow:var(--shadow-card); }
 .cv-map-panel { background:radial-gradient(ellipse at top left,#1a465b60,transparent 65%),#0c1d30; border-color:#305063; }
+
+.cv-legend-equipment { margin-top:6px; }

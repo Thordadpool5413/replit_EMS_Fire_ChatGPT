@@ -390,7 +390,6 @@
 .equipment-coverage-legend > p { color:var(--pi-text-secondary); font-size:10px; }
 .home-equipment-coverage-legend { align-content:start; }
 .home-equipment-coverage-legend .equipment-coverage-legend-items { gap:6px 10px; }
-.cv-legend-equipment { margin-top:6px; }
 @media(forced-colors:active) { .equipment-coverage-legend-items i { border:1px solid CanvasText; forced-color-adjust:none; } }
 .equipment-match-details { flex-basis:100%; min-width:0; font-size:11px; }
 .equipment-match-details summary { cursor:pointer; min-height:32px; display:flex; align-items:center; color:inherit; }

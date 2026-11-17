@@ -1178,6 +1178,11 @@ async function checkHome(cdp, dark) {
     const metric = document.querySelector('[data-testid="select-state-map-metric"]');
     return metric ? [...metric.options].map((option) => option.value) : [];
   })()`);
+  const metricControlEnabled = await evaluate(cdp, `(() => {
+    const metric = document.querySelector('[data-testid="select-state-map-metric"]');
+    return Boolean(metric && !metric.disabled);
+  })()`);
+  assert(metricControlEnabled, `${themeLabel(dark)} Home map metric selector is missing or disabled`);
   const selectedFlorida = await evaluate(cdp, `(() => {
     const state = [...document.querySelectorAll('.home-map-state-path')]
       .find((path) => path.getAttribute('aria-label')?.startsWith('Florida.'));
@@ -1206,6 +1211,28 @@ async function checkHome(cdp, dark) {
       `document.querySelector('[data-testid="select-state-map-metric"]')?.value === ${JSON.stringify(metricValue)}`,
       `${metricValue} map layer in ${themeLabel(dark)} theme`,
     );
+    const metricLabel = await evaluate(cdp, `document.querySelector('[data-testid="select-state-map-metric"]')?.selectedOptions[0]?.textContent.trim() ?? ''`);
+    await waitFor(
+      cdp,
+      `document.querySelector('.home-map-legend-title')?.innerText.includes(${JSON.stringify(metricLabel)})`,
+      `${metricValue} selection updating the map legend in ${themeLabel(dark)} theme`,
+    );
+    const paletteControl = await evaluate(cdp, `Boolean(document.querySelector('[data-testid="select-map-color-palette"]'))`);
+    if (paletteControl) {
+      const paletteValue = await evaluate(cdp, `(() => {
+        const palette = document.querySelector('[data-testid="select-map-color-palette"]');
+        if (!palette) return '';
+        const next = palette.value === 'standard' ? 'colorblind-safe' : 'standard';
+        palette.value = next;
+        palette.dispatchEvent(new Event('change', { bubbles: true }));
+        return next;
+      })()`);
+      await waitFor(
+        cdp,
+        `document.querySelector('.home-map-viewport svg')?.dataset.mapPalette === ${JSON.stringify(paletteValue)}`,
+        `${paletteValue} palette selection updating the map in ${themeLabel(dark)} theme`,
+      );
+    }
     const missingCount = await evaluate(cdp, `(() => [...document.querySelectorAll('.home-map-state-path')]
       .filter((path) => path.getAttribute('fill')?.includes('home-map-missing-data')).length)()`);
     if (missingCount > 0) {
@@ -1243,6 +1270,23 @@ async function checkHome(cdp, dark) {
       stateCue.controls &&
       !stateCue.pageOverflow,
     `Home selected/missing/control cues are incomplete in ${themeLabel(dark)} theme: ${JSON.stringify(stateCue)}`,
+  );
+  const mapSurfaceColors = await evaluate(cdp, `(() => {
+    const selectors = {
+      mapCard: '.home-map-stage-v2',
+      mapCanvas: '.home-map-viewport',
+      legendCard: '.home-map-legend',
+      stateCard: '.home-map-state-preview',
+      metricSelect: '[data-testid="select-state-map-metric"]',
+    };
+    return Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
+      const element = document.querySelector(selector);
+      return [name, element ? getComputedStyle(element).backgroundColor : 'missing'];
+    }));
+  })()`);
+  assert(
+    Object.values(mapSurfaceColors).every((color) => color === 'rgb(255, 255, 255)'),
+    `Home map cards and selector should have white backgrounds in ${themeLabel(dark)} theme: ${JSON.stringify(mapSurfaceColors)}`,
   );
   const initialMapZoom = await evaluate(cdp, `document.querySelector('.home-map-viewport')?.dataset.mapZoom ?? ''`);
   await evaluate(cdp, `(() => {

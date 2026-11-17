@@ -1,9 +1,100 @@
-/* Owner: home. Warm, bright map presentation in every application theme. */
-.home-territory-map-screen-v2 { --pi-surface-bg:#fffdfa; --pi-surface-subtle:#fff1de; --pi-border:#e7c9a5; --pi-text-primary:#49372c; --pi-text-secondary:#705540; }
-.home-territory-map-screen-v2 .home-map-stage-v2 { background:linear-gradient(135deg,#fffdf8,#fff0d7) !important; border-color:#e7c9a5 !important; box-shadow:0 12px 35px -25px #bd8d57 !important; }
-.home-territory-map-screen-v2 .home-map-viewport { background:radial-gradient(ellipse at center,#fffef9,#fff1de) !important; border-color:#e3bd8f !important; box-shadow:inset 0 0 0 1px #fffaf2 !important; }
-.home-territory-map-screen-v2 .home-map-control-row,.home-territory-map-screen-v2 .home-map-inspector-v2,.home-territory-map-screen-v2 .home-map-legend { background:#fffdfa !important; color:#49372c !important; border-color:#e7c9a5 !important; }
-.home-territory-map-screen-v2 .home-map-control-rail label,.home-territory-map-screen-v2 .home-map-legend span,.home-territory-map-screen-v2 .home-map-page-heading svg { color:#705540 !important; }
-.home-territory-map-screen-v2 .home-map-control-rail select { background:#fff5e8 !important; color:#49372c !important; border-color:#d7ac7d !important; }
-.home-territory-map-screen-v2 .home-map-control-rail button { color:#ad351f; }
-.home-territory-map-screen-v2 .home-map-state-preview-title,.home-territory-map-screen-v2 .home-map-state-preview-facts { color:#49372c !important; }
+/* Owner: home. Keep the U.S. map and its summary cards on clear white surfaces. */
+.home-territory-map-screen-v2 {
+  --pi-surface-bg: #fff;
+  --pi-surface-subtle: #f7f9fc;
+  --pi-border: #d7e0ea;
+  --pi-text-primary: #14283f;
+  --pi-text-secondary: #53657a;
+}
+.home-territory-map-screen-v2 .home-map-stage-v2 {
+  background: #fff !important;
+  border-color: #d7e0ea !important;
+  color: #14283f !important;
+  box-shadow: 0 12px 30px -24px rgba(20, 40, 63, .24) !important;
+}
+.home-territory-map-screen-v2 .home-map-viewport {
+  background: #fff !important;
+  border-color: #d7e0ea !important;
+  box-shadow: inset 0 0 0 1px #edf1f6 !important;
+}
+.home-territory-map-screen-v2 .home-map-control-row,
+.home-territory-map-screen-v2 .home-map-inspector-v2,
+.home-territory-map-screen-v2 .home-map-legend,
+.home-territory-map-screen-v2 .home-map-state-preview {
+  background: #fff !important;
+  color: #14283f !important;
+  border-color: #d7e0ea !important;
+}
+.home-territory-map-screen-v2 .home-map-control-rail label,
+.home-territory-map-screen-v2 .home-map-page-heading svg {
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .home-map-layer-select {
+  background: #fff !important;
+  color: #14283f !important;
+  border-color: #b9c7d7 !important;
+  color-scheme: light !important;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .home-map-layer-select option {
+  background: #fff;
+  color: #14283f;
+}
+.home-territory-map-screen-v2 .home-map-legend-v2 > span:first-child,
+.home-territory-map-screen-v2 .home-map-legend-v2 > span:nth-child(2),
+.home-territory-map-screen-v2 .home-map-legend-v2 > span:nth-child(n + 3) {
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-legend-v2 {
+  border-color: #d7e0ea !important;
+  border-top-color: #d7e0ea !important;
+}
+.home-territory-map-screen-v2 .home-map-legend-gradient {
+  border-color: #8291a3 !important;
+}
+.home-territory-map-screen-v2 .home-map-state-preview {
+  border-radius: .6rem;
+  box-shadow: 0 2px 8px rgba(20, 40, 63, .06);
+}
+.home-territory-map-screen-v2 .home-map-state-preview-kicker,
+.home-territory-map-screen-v2 .home-map-state-preview-id strong span,
+.home-territory-map-screen-v2 .home-map-state-preview-facts dt {
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-state-preview-id strong,
+.home-territory-map-screen-v2 .home-map-state-preview-facts dd {
+  color: #14283f !important;
+}
+.home-territory-map-screen-v2 .home-map-state-preview-swatch.is-missing {
+  background: repeating-linear-gradient(135deg, #f4f6f9 0 3px, #8795a7 3px 4px);
+}
+.home-territory-map-screen-v2 .home-map-source-context {
+  background: #f7f9fc !important;
+  border-color: #d7e0ea !important;
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-source-context a {
+  color: #1e56a8 !important;
+}
+.home-territory-map-screen-v2 .home-map-shortcuts {
+  border-color: #d7e0ea !important;
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-shortcuts-heading,
+.home-territory-map-screen-v2 .home-map-shortcuts-swipe {
+  color: #53657a !important;
+}
+.home-territory-map-screen-v2 .home-map-shortcut-row > button:not([aria-pressed="true"]) {
+  background: #fff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e56a8 !important;
+}
+.home-territory-map-screen-v2 .home-map-zoom-control {
+  background: #fff !important;
+  border-color: #cbd5e1 !important;
+  color: #14283f !important;
+}
+.home-territory-map-screen-v2 .home-map-zoom-control button {
+  background: #fff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e56a8 !important;
+}

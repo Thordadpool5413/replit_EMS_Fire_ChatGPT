@@ -655,7 +655,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="grid grid-cols-1 gap-4 items-start">
           <div className="min-w-0 space-y-3">
             <div
-              className="home-territory-map-panel home-map-stage-v2 relative bg-[#07111D] rounded-xl border border-[#294158] overflow-hidden p-3 sm:p-4 shadow-[0_16px_48px_rgba(2,8,18,0.28)]"
+              className="home-territory-map-panel home-map-stage-v2 relative rounded-xl border border-[#D7E0EA] bg-white overflow-hidden p-3 sm:p-4 shadow-sm"
               onMouseLeave={() => setHoveredStateCode(null)}
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -666,7 +666,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             >
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
+                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#53657A]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
                     id="home-state-map-metric"
@@ -677,7 +677,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       setMapMetric(metric);
                       saveMapPreference('metric', metric);
                     }}
-                    className="home-map-layer-select home-map-select--metric min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                    className="home-map-layer-select home-map-select--metric min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#B9C7D7] bg-white px-3 text-sm font-semibold text-[#14283F] focus:outline-none focus:ring-2 focus:ring-[#2E64C5]"
                   >
                     {STATE_MAP_METRICS.map((metric) => (
                       <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -685,7 +685,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   </select>
                 </label>
                 {isQualityMapMetric(mapMetric) && (
-                  <label htmlFor="home-map-color-palette" className="home-map-palette-control flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
+                  <label htmlFor="home-map-color-palette" className="home-map-palette-control flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#53657A]">
                     <DataLabel kind="coverage">Map palette</DataLabel>
                     <select
                       id="home-map-color-palette"
@@ -696,7 +696,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         setMapColorScheme(scheme);
                         saveMapPreference('palette', scheme);
                       }}
-                      className="home-map-layer-select home-map-palette-select home-map-select--palette min-h-11 min-w-0 rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                      className="home-map-layer-select home-map-palette-select home-map-select--palette min-h-11 min-w-0 rounded-lg border border-[#B9C7D7] bg-white px-3 text-sm font-semibold text-[#14283F] focus:outline-none focus:ring-2 focus:ring-[#2E64C5]"
                     >
                       <option value="standard">Standard</option>
                       <option value="colorblind-safe">Color-blind safe</option>
@@ -716,14 +716,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </details>
               </div>
 
-              {hasNationwideMapGeometry && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
-                <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
+              {hasNationwideMapGeometry && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white border border-[#D7E0EA] px-3.5 py-2.5">
+                <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#40546A]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
                     <span className="home-map-legend-palette-note"> · Color-blind safe</span>
                   )}
                 </span>
-                <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#53657A]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
                   <span className="home-map-legend-gradient h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
                   <span className="home-map-legend-endpoint home-map-legend-endpoint-high">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
@@ -734,11 +734,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     Reported 0
                   </span>
                 )}
-                <span className="home-map-legend-missing flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
+                  <span className="home-map-legend-missing flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#53657A]">
                   <span className="inline-block h-4 w-4 rounded-sm border border-[#7890A8] bg-[repeating-linear-gradient(135deg,#F4E8D8_0px,#F4E8D8_3px,#7890A8_3px,#7890A8_4px)]" aria-hidden="true" />
                   Not reported
                 </span>
-                <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]" data-testid="text-map-legend-coverage">
+                  <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#66788D]" data-testid="text-map-legend-coverage">
                   {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero{mapMetric.startsWith('acs-') ? ' · colors = state quintiles' : ''}
                 </span>
               </div>}
@@ -787,7 +787,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 );
               })()}
               {/* East Coast Compact Callout Buttons */}
-              <div className="home-map-shortcuts pt-2 border-t border-[#294158] text-xs">
+              <div className="home-map-shortcuts pt-2 border-t border-[#D7E0EA] text-xs">
                 <div className="home-map-shortcuts-heading">
                   <span>Small-state shortcuts</span>
                   <span className="home-map-shortcuts-swipe">Swipe to see all {EAST_COAST_CALLOUT_STATES.length}</span>
@@ -812,7 +812,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         outline: isSelected ? '2px solid #F4C86A' : undefined,
                         outlineOffset: isSelected ? '1px' : undefined,
                       }}
-                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#3B5668] bg-[#112333] text-[12px] font-bold font-mono text-[#D3E1E7] transition-[background-color,color,outline] hover:bg-[#1D3B50] focus:outline focus:outline-2 focus:outline-[#67D6CE]"
+                      className="min-h-10 min-w-10 px-2 rounded-md border border-[#CBD5E1] bg-white text-[12px] font-bold font-mono text-[#1E56A8] transition-[background-color,color,outline] hover:bg-[#F1F5F9] focus:outline focus:outline-2 focus:outline-[#2E64C5]"
                     >
                       {c.code}
                     </button>
@@ -827,7 +827,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <div
                 ref={mapViewportRef}
                 data-map-zoom={mapZoom}
-                className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#34536D] bg-[#081521] shadow-[inset_0_0_0_1px_rgba(106,150,183,0.08)]"
+                className="home-map-viewport overflow-auto overscroll-contain rounded-lg border border-[#D7E0EA] bg-white shadow-[inset_0_0_0_1px_rgba(20,40,63,0.05)]"
               >
               <svg
                 viewBox={`${HOME_MAP_VIEWBOX.x} ${HOME_MAP_VIEWBOX.y} ${HOME_MAP_VIEWBOX.width} ${HOME_MAP_VIEWBOX.height}`}

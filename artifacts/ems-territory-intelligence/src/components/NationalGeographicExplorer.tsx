@@ -1,3 +1,4 @@
+import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -609,26 +610,28 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
 
     if (selectedCountyName !== 'all' && activeCountyRecord && activeCountyRecord.primaryZipCodes) {
-      return activeCountyRecord.primaryZipCodes.map(z => {
+      const county = activeCountyRecord;
+      if (!hasCountyPlanningInputs(county)) return [];
+      return county.primaryZipCodes.map(z => {
         const found = lookupZipCode(z);
         if (found) return found;
         return {
           zipCode: z,
-          city: activeCountyRecord.countySeat,
-          county: activeCountyRecord.countyName,
-          stateCode: activeCountyRecord.stateCode,
-          stateName: activeCountyRecord.stateName,
-          fipsCounty: activeCountyRecord.countyFips,
-          population: Math.round(activeCountyRecord.population * 0.45),
-          seniorPopPct: activeCountyRecord.seniorPopPct,
-          medianIncome: activeCountyRecord.medianIncome,
+          city: county.countySeat,
+          county: county.countyName,
+          stateCode: county.stateCode,
+          stateName: county.stateName,
+          fipsCounty: county.countyFips,
+          population: Math.round(county.population * 0.45),
+          seniorPopPct: county.seniorPopPct,
+          medianIncome: county.medianIncome,
           latitude: 38.0,
           longitude: -95.0,
-          primaryAgencyName: `${activeCountyRecord.countySeat} Fire & EMS`,
-          annualEmergencyTransports: Math.round(activeCountyRecord.annualEmergencyTransports * 0.4),
-          annualCardiacCalls: Math.round(activeCountyRecord.annualCardiacArrestIncidents * 0.4),
-          cathLabDistanceMiles: activeCountyRecord.primaryCathLabDistanceMiles,
-          avgTransportMinutes: activeCountyRecord.averageTransportMinutes,
+          primaryAgencyName: `${county.countySeat} Fire & EMS`,
+          annualEmergencyTransports: Math.round(county.annualEmergencyTransports * 0.4),
+          annualCardiacCalls: Math.round(county.annualCardiacArrestIncidents * 0.4),
+          cathLabDistanceMiles: county.primaryCathLabDistanceMiles,
+          avgTransportMinutes: county.averageTransportMinutes,
           medicareDenialRate: null
         } as ZipCityRecord;
       });

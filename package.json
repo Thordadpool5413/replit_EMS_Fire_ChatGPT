@@ -11,7 +11,9 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "test:ems:unit": "node scripts/test-ems-unit.mjs",
-    "test:ems:persistence": "node scripts/check-workspace-persistence.mjs"
+    "test:ems:persistence": "node scripts/check-workspace-persistence.mjs",
+    "test:county-identities": "node scripts/check-county-identities.mjs",
+    "test:county-routing": "node scripts/check-county-routing.mjs"
   },
   "private": true,
   "dependencies": {

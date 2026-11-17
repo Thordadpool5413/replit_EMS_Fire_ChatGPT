@@ -110,6 +110,8 @@ export interface CountyHealthRecord {
   stateFips?: string;
   countyName: string;
   rawName?: string;
+  aliases?: string[];
+  geographyVintage?: string;
   stateCode: string;
   stateName: string;
   countySeat: string;
@@ -117,17 +119,17 @@ export interface CountyHealthRecord {
   centroidLng?: number;
   bbox?: [number, number, number, number];
   landAreaSqMiles?: number;
-  population: number;
-  seniorPopPct: number;
-  medianIncome: number;
-  povertyRatePct: number;
-  annualEmergencyTransports: number;
-  annualCardiacArrestIncidents: number;
-  averageTransportMinutes: number;
+  population: number | null;
+  seniorPopPct: number | null;
+  medianIncome: number | null;
+  povertyRatePct: number | null;
+  annualEmergencyTransports: number | null;
+  annualCardiacArrestIncidents: number | null;
+  averageTransportMinutes: number | null;
   /** Per-figure provenance; absent metadata must be shown as unavailable, not inferred. */
   figureSources?: Partial<Record<CountyFigureSourceKey, CountyFigureSourceMetadata>>;
-  primaryCathLabDistanceMiles: number;
-  activeEmsAgencies: number;
+  primaryCathLabDistanceMiles: number | null;
+  activeEmsAgencies: number | null;
   primaryZipCodes: string[];
   cities?: string[];
   cityRecords?: CountyCityRecord[];
@@ -242,6 +244,9 @@ export interface DocumentedTradeInOffer {
 }
 
 export interface Agency {
+  sourceCountyName?: string;
+  sourceCountyFips?: string;
+  countyLocationBasis?: 'canonical-name' | 'town-crosswalk';
   /** Derived UI overlay metadata; imported data remains unchanged. */
   _factReviews?: import('../services/factReviewStore').FactReviewEntry[];
   _reviewOriginalValues?: Record<string, string>;

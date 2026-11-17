@@ -1,3 +1,5 @@
+import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
+import { canonicalizeAgencyCounty } from '../utils/countyIdentity';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -273,6 +275,10 @@ export const NATIONAL_ZIP_CITY_REGISTRY: ZipCityRecord[] = LEGACY_ZIP_CITY_REGIS
 
   return {
     ...record,
+    ...(() => {
+      const location = canonicalizeAgencyCounty({...record, countyFips:record.fipsCounty});
+      return {county:location.county, fipsCounty:location.countyFips ?? record.fipsCounty};
+    })(),
     medicareDenialRate: hasTraceableDenialRate ? record.medicareDenialRate : null,
   };
 });
@@ -305,7 +311,7 @@ export function lookupZipCode(zip: string): ZipCityRecord | undefined {
     c.primaryZipCodes && c.primaryZipCodes.includes(clean)
   );
 
-  if (matchedCounty) {
+  if (hasCountyPlanningInputs(matchedCounty)) {
     const city = matchedCounty.countySeat || (matchedCounty.cities && matchedCounty.cities[0]) || matchedCounty.rawName;
     const rec: ZipCityRecord = {
       zipCode: clean,
@@ -330,40 +336,7 @@ export function lookupZipCode(zip: string): ZipCityRecord | undefined {
     return rec;
   }
 
-  // 3. Match by 3-digit prefix against state summaries
-  if (clean.length === 5) {
-    const prefix = clean.slice(0, 3);
-    for (const [st, summary] of Object.entries(ALL_50_STATES_SUMMARIES)) {
-      if (summary.primaryZipPrefixes && summary.primaryZipPrefixes.includes(prefix)) {
-        const counties = ALL_NATIONWIDE_COUNTIES.filter(c => c.stateCode === st);
-        const county = counties[0];
-        if (county) {
-          const city = county.countySeat || (county.cities && county.cities[0]) || county.rawName;
-          const rec: ZipCityRecord = {
-            zipCode: clean,
-            city: city,
-            county: county.countyName,
-            stateCode: county.stateCode,
-            stateName: county.stateName,
-            fipsCounty: county.countyFips,
-            population: 32000,
-            seniorPopPct: county.seniorPopPct,
-            medianIncome: county.medianIncome,
-            latitude: 38.0,
-            longitude: -95.0,
-            primaryAgencyName: `${county.countyName} Emergency Medical Services`,
-            annualEmergencyTransports: 4200,
-            annualCardiacCalls: 85,
-            cathLabDistanceMiles: county.primaryCathLabDistanceMiles,
-            avgTransportMinutes: county.averageTransportMinutes,
-            medicareDenialRate: null
-          };
-          dynamicZipCache.set(clean, rec);
-          return rec;
-        }
-      }
-    }
-  }
+  // A ZIP prefix identifies no exact county. Leave unmatched ZIPs unresolved.
 
   return undefined;
 }
@@ -394,6 +367,7 @@ export function searchLocations(query: string): ZipCityRecord[] {
   // 2. If user searched city or county name, expand with all matching nationwide counties
   if (results.length < 15) {
     for (const c of ALL_NATIONWIDE_COUNTIES) {
+      if (!hasCountyPlanningInputs(c)) continue;
       const countyMatch = 
         c.countyName.toLowerCase().includes(q) ||
         c.rawName.toLowerCase().includes(q) ||

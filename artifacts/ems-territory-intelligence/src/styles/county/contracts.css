@@ -290,3 +290,9 @@ th .pi-data-label { white-space: nowrap; }
 .cv-map-panel { background:radial-gradient(ellipse at top left,#1a465b60,transparent 65%),#0c1d30; border-color:#305063; }
 
 .cv-legend-equipment { margin-top:6px; }
+
+.equipment-county-warm { --pi-surface-bg:#fffdfa; --pi-surface-subtle:#fff1de; --pi-border:#e7c9a5; --pi-text-primary:#49372c; --pi-text-secondary:#705540; }
+.equipment-county-warm .cv-map-panel,.equipment-county-warm .cv-panel { background:#fffdfa !important; border-color:#e7c9a5 !important; color:#49372c !important; }
+.equipment-county-warm .cv-map-panel svg { background:#fff4e3; }
+
+.equipment-county-warm .cv-map-head,.equipment-county-warm .cv-map-head strong { color:#49372c; }

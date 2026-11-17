@@ -5,6 +5,7 @@ export type EquipmentPresence = 'all'|'zoll'|'competitor'|'mixed'|'unknown';
 export type EquipmentFamily = 'all'|'monitors'|'cpr'|'ventilators'|'software';
 export type EquipmentMapFilter = {presence:EquipmentPresence;family:EquipmentFamily;vendor?:string};
 export const DEFAULT_EQUIPMENT_FILTER:EquipmentMapFilter={presence:'all',family:'all'};
+export function isEquipmentFilterActive(filter:EquipmentMapFilter):boolean { return filter.presence!=='all'||filter.family!=='all'||Boolean(filter.vendor&&filter.vendor!=='all'); }
 // Names describe recorded brands, not a claim about current corporate ownership.
 export const EQUIPMENT_VENDORS = [
  {id:'zoll',name:'ZOLL',pattern:/\b(zoll|autopulse|rescuenet|emscharts)\b|\bz[ -]?vent\b|\b[rx] series\b/i},

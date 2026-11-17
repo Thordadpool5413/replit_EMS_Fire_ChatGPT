@@ -72,4 +72,7 @@ test('county card keeps primary figures visible and labels optional Census sourc
   assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.ok(src.includes('data-testid={`panel-acs-county-context-'));
   assert.ok(src.includes('Official Census context'));
+  // Core county figures stay visible; the optional ACS source context may collapse.
+  const withoutAcsDisclosure = src.replace(/<details[^>]*data-testid=\{`panel-acs-county-context-[\s\S]*?<\/details>/, '');
+  assert.doesNotMatch(withoutAcsDisclosure, /<details/);
 });

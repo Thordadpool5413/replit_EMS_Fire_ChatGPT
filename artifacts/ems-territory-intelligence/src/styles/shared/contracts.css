@@ -418,3 +418,10 @@
 @media(max-width:767px) { .equipment-map-legend select { min-height:44px; font-size:16px; max-width:100%; } }
 /* Interface outline symbols share a stroke; cartographic SVG/data shapes are unaffected. */
 .pi-app-shell .lucide, [role="dialog"] .lucide { stroke-width:1.8; }
+
+.equipment-record-composition { display:grid; gap:7px; padding:10px; border:1px solid var(--pi-border); border-radius:8px; background:var(--pi-surface-bg); color:var(--pi-text-primary); font-size:11px; line-height:1.45; }
+.equipment-record-composition dl { display:grid; gap:5px; }
+.equipment-record-composition dl > div { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.equipment-record-composition dt { display:flex; gap:6px; align-items:center; }
+.equipment-record-composition dt i { width:12px; height:12px; border:1px solid #183047; border-radius:2px; }
+.equipment-record-composition dd { font-variant-numeric:tabular-nums; }

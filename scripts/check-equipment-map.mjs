@@ -1,0 +1,18 @@
+// Render the production national view against its real county/ACS assets.
+// Only Vite asset loading is adapted for Node; map and composition logic are unchanged.
+import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';import {gunzipSync} from 'node:zlib';import {spawnSync} from 'node:child_process';
+const root=fileURLToPath(new URL('../',import.meta.url)),app=path.join(root,'artifacts/ems-territory-intelligence');const req=createRequire(path.join(app,'package.json'));const {build}=createRequire(req.resolve('vite'))('esbuild');
+const counties=gunzipSync(fs.readFileSync(path.join(app,'src/data/all-counties-database.json.gz'))).toString();const acs=JSON.parse(gunzipSync(fs.readFileSync(path.join(app,'src/data/acs-county-metrics-2024.json.gz'))));const temp=fs.mkdtempSync(path.join(os.tmpdir(),'equipment-map-'));
+try{
+ const code=`import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import assert from 'node:assert/strict';
+const store=new Map([['ems-map-equipment-filter-v1',JSON.stringify({presence:'competitor',family:'monitors'})]]);globalThis.sessionStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)};globalThis.localStorage=globalThis.sessionStorage;globalThis.window={sessionStorage:globalThis.sessionStorage};
+const {HomeHubView}=await import(${JSON.stringify(path.join(app,'src/components/HomeHubView.tsx'))});
+const records=[{id:'z',stateCode:'FL',county:'Bay County',countyFips:'12005',installedFleet:{defibBrand:'ZOLL X Series'}},{id:'c',stateCode:'FL',county:'Bay County',countyFips:'12005',installedFleet:{defibBrand:'LIFEPAK 15'}},{id:'u',stateCode:'FL',county:'Bay County',countyFips:'12005'}];
+const html=renderToStaticMarkup(React.createElement(HomeHubView,{agencies:records,globalCategory:'all',globalState:'FL',onNavigateTab:()=>{}}));
+const polygons=html.match(/<path[^>]*class="home-map-state-path[^>]*>/g)??[];assert.equal(polygons.length,51);for(const p of polygons)assert(p.includes('fill="#FFFEFA"'),'A state is still painted as vendor territory');
+assert.equal((html.match(/data-testid="equipment-record-bar"/g)??[]).length,52,'Every state and the selected-state inspector need a proportional bar');
+for(const text of ['State shapes are neutral geography','Recorded agency mix','3 profiles','33.3% of profiles','Statewide market share is not established'])assert(html.includes(text),text);
+console.log(JSON.stringify({status:'PASS',neutralStates:51,stateBars:51,inspectorBars:1,denominator:3,competitorProfileShare:'33.3%',marketShare:'not established'}));`;
+ await build({stdin:{contents:code,resolveDir:app,loader:'tsx'},bundle:true,platform:'node',format:'esm',banner:{js:"import {createRequire as createNativeRequire} from 'node:module';const require=createNativeRequire(import.meta.url);"},outfile:path.join(temp,'check.mjs'),define:{'import.meta.env.BASE_URL':JSON.stringify('/')},plugins:[{name:'bundled-assets',setup(b){b.onLoad({filter:/allCountiesDatabase\.ts$/},()=>({contents:'export const ALL_NATIONWIDE_COUNTIES='+counties+';',loader:'ts'}));b.onLoad({filter:/acsCountyData\.ts$/},()=>({contents:'export const ACS_COUNTY_SOURCE='+JSON.stringify(acs.source)+';export const ACS_COUNTY_METRICS='+JSON.stringify(acs.counties)+';export const ACS_COUNTY_METRICS_BY_FIPS=new Map(ACS_COUNTY_METRICS.map(r=>[r.countyFips,r]));',loader:'ts'}));}}]});
+ const result=spawnSync(process.execPath,[path.join(temp,'check.mjs')],{stdio:'inherit'});process.exitCode=result.status??1;
+}finally{fs.rmSync(temp,{recursive:true,force:true});}

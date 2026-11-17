@@ -14,14 +14,15 @@ export function useEquipmentMapFilter():[Filter,(value:Filter)=>void] {
  const update=(next:Filter)=>{setValue(next);try{sessionStorage.setItem(KEY,JSON.stringify(next));}catch{/* Filter remains usable without session storage. */}window.dispatchEvent(new CustomEvent('ems-equipment-filter-changed',{detail:next}));};
  return [value,update];
 }
-export function EquipmentCoverageLegend({note,className=''}:{note?:string;className?:string}) {
- const items=Object.values(EQUIPMENT_COVERAGE_STYLES);
+export function EquipmentCoverageLegend({note,className='',mode='area'}:{note?:string;className?:string;mode?:'area'|'composition'}) {
+ const items=mode==='composition'?(['zoll','competitor','mixed','unknown','notReported'] as const).map(key=>({...EQUIPMENT_COVERAGE_STYLES[key],label:key==='zoll'?'ZOLL only':key==='competitor'?'Competitor only':key==='mixed'?'Both at same agency':EQUIPMENT_COVERAGE_STYLES[key].label})):Object.values(EQUIPMENT_COVERAGE_STYLES);
  return <section className={`equipment-coverage-legend ${className}`.trim()} aria-label="Recorded equipment map legend" data-testid="equipment-coverage-legend">
-  <strong>Recorded equipment by county/state</strong>
+  <strong>{mode==='composition'?'Recorded agency mix · state bars':'Recorded equipment by county/state'}</strong>
+  {mode==='composition'&&<p>State shapes are neutral geography. Bars show proportions of loaded agency profiles, not statewide market share or vendor territory. Dark crossed bars mean no eligible profiles. Color meanings remain the same across filters.</p>}
   <div className="equipment-coverage-legend-items">
    {items.map((item)=><span key={item.label}><i style={{backgroundColor:item.color}} aria-hidden="true"/>{item.label}</span>)}
   </div>
-  <p>{note||'Colors summarize loaded directory records, not a complete equipment census. “Both found in area” can mean different agencies. Records may include unverified candidates; confirm the agency and current use. Missing or unrecognized entries do not mean no equipment.'}</p>
+  <p>{note||(mode==='composition'?'Each bar counts one loaded agency profile once. Mixed agencies are a separate category. Unresearched agencies and registry-only listings are outside this denominator. Confirm identity and current equipment.':'Colors summarize loaded directory records, not a complete equipment census. “Both found in area” can mean different agencies. Records may include unverified candidates; confirm the agency and current use. Missing or unrecognized entries do not mean no equipment.')}</p>
  </section>;
 }
 export function EquipmentMapFilter({value,onChange,agencies=[],onOpen,scopeLabel='loaded records before geographic, search, location, and score filters'}:{value:Filter;onChange:(value:Filter)=>void;agencies?:Agency[];scopeLabel?:string;onOpen?:(agency:Agency)=>void}) {

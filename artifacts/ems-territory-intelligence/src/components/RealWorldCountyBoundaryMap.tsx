@@ -1,6 +1,6 @@
 import { equipmentGeographyScope } from '../utils/equipmentPresence';
-import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
-import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
+import {EquipmentCoverageLegend,EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {buildEquipmentGeography,equipmentCoverageColor} from '../utils/equipmentGeography';
 import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
 import {ALL_50_STATES_SUMMARIES} from '../data/nationalGeographicData';
 /**
@@ -381,8 +381,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       )}
 
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={equipmentAgencies} scopeLabel="loaded records for this state and provider scope, before county selection"/>
-      {equipmentFilter.presence!=='all'&&<p className="cv-note" role="status">{EQUIPMENT_COVERAGE_LEGEND}. County tags use FIPS or an unambiguous county name within its state. {equipmentCoverage.unassignedCounty} loaded records have unresolved county geography.</p>}
-      {equipmentFilter.presence!=='all'&&inspectedCounty&&<p className="cv-note" role="status">{inspectedCounty.countyName}: {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.matched||0} selected matches · {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unknown||0} unknown equipment records. These counts describe loaded agencies, not complete ownership.</p>}
+      {equipmentFilter.presence!=='all'&&<EquipmentCoverageLegend
+        note={`County records are matched by FIPS or an unambiguous county name within ${stateNode.stateName}. “Both found in area” may be different agencies; candidate records still need confirmation. ${equipmentCoverage.unassignedCounty} loaded records have unresolved county geography and are not assigned to a county.`}
+      />}
+      {equipmentFilter.presence!=='all'&&inspectedCounty&&<p className="cv-note" role="status" data-testid={`equipment-county-rollup-${inspectedCounty.countyFips}`}>
+        {inspectedCounty.countyName} · {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.total||0} loaded records ·
+        {' '}ZOLL {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.zoll||0} · other makers {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.competitor||0} ·
+        {' '}mixed {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.mixed||0} · no recognized maker {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unknown||0} ·
+        {' '}equipment details recorded {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.reported||0} · no substantive equipment entry {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unreported||0}.
+        {' '}Loaded-record counts, not a complete equipment census.
+      </p>}
       {/* Mode A: statewide county boundaries + inspector */}
       {!activeCountyNode && (
         <>
@@ -462,7 +470,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             vectorEffect="non-scaling-stroke"
                             tabIndex={0}
                             role="button"
-                            aria-label={equipmentFilter.presence!=='all'?`Open ${pc.countyName}, ${stateNode.stateName}. ${equipmentCoverage.byCounty[pc.countyFips]?.matched||0} selected equipment matches; ${equipmentCoverage.byCounty[pc.countyFips]?.unknown||0} unknown records.`:`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
+                            aria-label={equipmentFilter.presence!=='all'?`Open ${pc.countyName}, ${stateNode.stateName}. ${equipmentCoverage.byCounty[pc.countyFips]?.total||0} loaded agency records; ZOLL ${equipmentCoverage.byCounty[pc.countyFips]?.zoll||0}; other manufacturers ${equipmentCoverage.byCounty[pc.countyFips]?.competitor||0}; mixed ${equipmentCoverage.byCounty[pc.countyFips]?.mixed||0}; no recognized maker ${equipmentCoverage.byCounty[pc.countyFips]?.unknown||0}.`:`Open ${pc.countyName}, ${stateNode.stateName}. FEMA NRI ${nri?.riskRating ?? 'no record'}`}
                             className={`cv-county-path cursor-pointer${isSelected ? ' is-selected' : ''}`}
                             aria-pressed={isSelected}
                             onMouseEnter={() => { setHoveredCountyFips(pc.countyFips); setPreviewCountyFips(pc.countyFips); }}
@@ -481,7 +489,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             }}
                           >
                             <title>
-                              {`${pc.countyName}, ${stateNode.stateCode} · FIPS ${pc.countyFips} · Seat ${pc.countySeat} · ${pc.landAreaSqMiles.toLocaleString()} sq mi · FEMA NRI ${nri?.riskRating ?? 'no county-equivalent record'} · score ${nri?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${formatLoss(nri?.expectedAnnualLoss)} · vintage ${nri?.sourceVersion ?? 'not stated'}`}
+                              {equipmentFilter.presence!=='all'
+                                ? `${pc.countyName}, ${stateNode.stateCode} · FIPS ${pc.countyFips} · loaded records ${equipmentCoverage.byCounty[pc.countyFips]?.total||0} · ZOLL ${equipmentCoverage.byCounty[pc.countyFips]?.zoll||0} · other makers ${equipmentCoverage.byCounty[pc.countyFips]?.competitor||0} · mixed ${equipmentCoverage.byCounty[pc.countyFips]?.mixed||0} · no recognized maker ${equipmentCoverage.byCounty[pc.countyFips]?.unknown||0}`
+                                : `${pc.countyName}, ${stateNode.stateCode} · FIPS ${pc.countyFips} · Seat ${pc.countySeat} · ${pc.landAreaSqMiles.toLocaleString()} sq mi · FEMA NRI ${nri?.riskRating ?? 'no county-equivalent record'} · score ${nri?.riskScore?.toFixed(2) ?? 'not stated'} · expected annual loss ${formatLoss(nri?.expectedAnnualLoss)} · vintage ${nri?.sourceVersion ?? 'not stated'}`}
                             </title>
                           </path>
                         );
@@ -543,7 +553,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               <p className="cv-zoom-hint" aria-live="polite">
                 {countyZoom >= 2.25 ? 'County names appear where space allows. Drag to pan.' : 'Hover or focus a county for its name. Zoom in for more labels.'}
               </p>
-              {equipmentFilter.presence==='all'?legend:<div className="cv-legend">{EQUIPMENT_COVERAGE_LEGEND}</div>}
+              {equipmentFilter.presence==='all'?legend:<EquipmentCoverageLegend className="cv-legend-equipment"/>}
             </div>
 
             <div className="cv-panel county-inspector-panel ci" aria-live="polite">

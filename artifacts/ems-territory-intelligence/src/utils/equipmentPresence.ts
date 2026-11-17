@@ -27,30 +27,59 @@ export const EQUIPMENT_VENDORS = [
  {id:'traumasoft',name:'Traumasoft',pattern:/\btraumasoft\b/i},
 ] as const;
 export type RecordedVendorMatch={vendor:string;name:string;family:EquipmentFamily;product:string;sourceStatus:string};
-/** Only installed-product fields participate; sales targets and bundles never do. */
-export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='all'):RecordedVendorMatch[] {
+type EquipmentField={family:Exclude<EquipmentFamily,'all'>;key:AgencyFactEvidenceKey;value:string|undefined};
+function equipmentFields(agency:Agency):EquipmentField[] {
  const f=agency.installedFleet;
  const legacy=agency.fleet;
- const fields:Array<[EquipmentFamily,AgencyFactEvidenceKey,string|undefined]>=[
-  ['monitors','defibrillatorBiomedicalFleet',f?.defibBrand],
-  ['cpr','equipmentSuppliers',f?.mechanicalCPR],
-  ['ventilators','equipmentSuppliers',f?.transportVentilator],
-  ['software','epcrSystem',f?.epcrCadSoftware],
-  ['software','communicationsSystems',f?.dispatchCadVendor],
-  ['software','billingSoftware',f?.billingSoftware],
-  ['monitors','defibrillatorBiomedicalFleet',legacy?.currentDefibVendor],
-  ['cpr','equipmentSuppliers',legacy?.currentCprDevice],
-  ['ventilators','equipmentSuppliers',legacy?.currentVentilator],
-  ['software','epcrSystem',legacy?.currentEpcrVendor],
-  ['software','communicationsSystems',legacy?.currentCadVendor],
+ return [
+  {family:'monitors',key:'defibrillatorBiomedicalFleet',value:f?.defibBrand},
+  {family:'cpr',key:'equipmentSuppliers',value:f?.mechanicalCPR},
+  {family:'ventilators',key:'equipmentSuppliers',value:f?.transportVentilator},
+  {family:'software',key:'epcrSystem',value:f?.epcrCadSoftware},
+  {family:'software',key:'communicationsSystems',value:f?.dispatchCadVendor},
+  {family:'software',key:'billingSoftware',value:f?.billingSoftware},
+  {family:'monitors',key:'defibrillatorBiomedicalFleet',value:legacy?.currentDefibVendor},
+  {family:'cpr',key:'equipmentSuppliers',value:legacy?.currentCprDevice},
+  {family:'ventilators',key:'equipmentSuppliers',value:legacy?.currentVentilator},
+  {family:'software',key:'epcrSystem',value:legacy?.currentEpcrVendor},
+  {family:'software',key:'communicationsSystems',value:legacy?.currentCadVendor},
  ];
+}
+const NON_EQUIPMENT_ENTRIES=/^(?:not (?:reported|recorded|confirmed|deployed|available|specified)|unknown|n\/?a|none reported|no data)$/i;
+const NON_INSTALLED_ENTRIES=/not (?:reported|recorded|confirmed|deployed)|unknown|\bno zoll\b|consider|proposed|recommended|planning|target/i;
+export type RecordedEquipmentEntry={family:Exclude<EquipmentFamily,'all'>;label:string;value:string;sourceStatus:string};
+const FAMILY_LABELS:Record<Exclude<EquipmentFamily,'all'>,string>={
+ monitors:'Monitor / defibrillator',
+ cpr:'Mechanical CPR',
+ ventilators:'Transport ventilator',
+ software:'ePCR / CAD / billing',
+};
+/** Returns the substantive values even when manufacturer recognition is unavailable. */
+export function getRecordedEquipmentEntries(agency:Agency,family:EquipmentFamily='all'):RecordedEquipmentEntry[] {
+ const seen=new Set<string>();
+ return equipmentFields(agency).flatMap(({family:category,key,value})=>{
+  if(!value||!hasAgencyFactData(agency,key)||(family!=='all'&&category!==family))return [];
+  const text=value.trim();
+  if(NON_EQUIPMENT_ENTRIES.test(text)||NON_INSTALLED_ENTRIES.test(text))return [];
+  const identity=category+':'+text.toLowerCase();
+  if(seen.has(identity))return [];
+  seen.add(identity);
+  return [{family:category,label:FAMILY_LABELS[category],value:text,sourceStatus:getAgencyFactEvidenceStatus(agency,key)}];
+ });
+}
+/** True when a current equipment field contains a substantive entry, whether or not its maker is recognized. */
+export function hasRecordedEquipmentValue(agency:Agency,family:EquipmentFamily='all'):boolean {
+ return getRecordedEquipmentEntries(agency,family).length>0;
+}
+/** Only installed-product fields participate; sales targets and bundles never do. */
+export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='all'):RecordedVendorMatch[] {
  const matches:RecordedVendorMatch[]=[];
  const seen=new Set<string>();
- for(const [category,key,raw] of fields) {
+ for(const {family:category,key,value:raw} of equipmentFields(agency)) {
   if(family!=='all'&&category!==family)continue;
   if(!raw||!hasAgencyFactData(agency,key))continue;
   const text=raw.trim();
-  if (/not (reported|recorded|confirmed|deployed)|unknown|\bno zoll\b|consider|proposed|recommended|planning|target/i.test(text)) continue;
+  if (NON_INSTALLED_ENTRIES.test(text)) continue;
   for(const vendor of EQUIPMENT_VENDORS) if(vendor.pattern.test(text)) {
    const matchKey=category+':'+vendor.id+':'+text.toLowerCase();
    if(seen.has(matchKey))continue;
@@ -80,10 +109,10 @@ export function parseEquipmentFilter(value:unknown):EquipmentMapFilter {
 
 /** Colors encode recorded equipment presence, never clinical performance or evidence quality. */
 export const EQUIPMENT_MAP_STYLES = {
- zoll:{label:'ZOLL recorded',background:'#087f8c',glyph:'Z'},
- competitor:{label:'Competitor recorded',background:'#b45309',glyph:'C'},
- mixed:{label:'ZOLL + competitor',background:'#7252ad',glyph:'M'},
- unknown:{label:'Unknown equipment',background:'#526277',glyph:'?'},
+ zoll:{label:'ZOLL recorded',background:'#12B8A6',glyphColor:'#072C2A',glyph:'Z'},
+ competitor:{label:'Competitor recorded',background:'#F59E0B',glyphColor:'#362000',glyph:'C'},
+ mixed:{label:'ZOLL + competitor',background:'#A78BFA',glyphColor:'#251541',glyph:'M'},
+ unknown:{label:'No recognized maker',background:'#718096',glyphColor:'#FFFFFF',glyph:'?'},
 } as const;
 export function equipmentMapStyle(agency:Agency,family:EquipmentFamily='all') {
  return EQUIPMENT_MAP_STYLES[equipmentPresence(agency,family)];

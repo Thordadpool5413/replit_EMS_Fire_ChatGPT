@@ -608,7 +608,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
-      <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">Recorded vendor presence</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background}}>{style.glyph}</b>{style.label}</span>)}</div><p>Letters and colors show recorded equipment, not verified ownership. Numbered groups contain overlapping agencies; open a group to inspect its members.</p></>}</section>
+      <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">Recorded vendor presence</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background,color:style.glyphColor}}>{style.glyph}</b>{style.label}</span>)}</div><p>Letters and colors show recorded equipment, not verified ownership. Numbered groups contain overlapping agencies; open a group to inspect its members.</p></>}</section>
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP
@@ -1230,7 +1230,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                           <Pin
                             background={colorByEquipment?vendorStyle.background:tierStyle.bg}
                             borderColor={colorByEquipment?'#ffffff':tierStyle.border}
-                            glyphColor={colorByEquipment?'#ffffff':tierStyle.glyph}
+                            glyphColor={colorByEquipment?vendorStyle.glyphColor:tierStyle.glyph}
                             glyph={colorByEquipment?vendorStyle.glyph:undefined}
                             scale={isSelected ? 1.3 : 1.0}
                           />

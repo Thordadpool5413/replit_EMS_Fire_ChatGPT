@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import type{Agency}from'../types';import{buildEquipmentGeography,equipmentCoverageColor}from'./equipmentGeography';
+import test from 'node:test';import assert from 'node:assert/strict';import type{Agency}from'../types';import{buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_STYLES,emptyCoverage}from'./equipmentGeography';
 const states=[{code:'FL',state:'Florida'},{code:'TX',state:'Texas'},{code:'AK',state:'Alaska'}];
 const counties=[{stateCode:'FL',countyFips:'12005',countyName:'Bay County'},{stateCode:'TX',countyFips:'48001',countyName:'Anderson County'},{stateCode:'AK',countyFips:'02013',countyName:'Aleutians East Borough'}];
 const agency=(id:string,stateCode:string,county:string,defibBrand:string,countyFips?:string)=>({id,stateCode,county,countyFips,installedFleet:{defibBrand}} as Agency);
@@ -42,4 +42,36 @@ test('bundled agency records reconcile county-to-state totals with unresolved re
   assert(stateMatched>=countyMatched);
   assert(stateMatched-countyMatched<=result.unassignedCounty);
  }
+});
+test('state rollups sum county records and expose county-level equipment coverage separately',()=>{
+ const records=[
+  agency('1','FL','Bay','ZOLL X Series','12005'),
+  agency('2','FL','Bay','LIFEPAK 15','12005'),
+  agency('3','FL','Missing County','Acme monitor'),
+ ];
+ const result=buildEquipmentGeography(records,states,counties,{presence:'zoll',family:'monitors'});
+ const state=result.byState.FL;
+ assert.equal(state.total,3);
+ assert.equal(state.countyCount,1);
+ assert.equal(state.countiesWithAgencyRecords,1);
+ assert.equal(state.countiesWithRecognizedEquipment,1);
+ assert.equal(state.zoll,1);
+ assert.equal(state.competitor,1);
+ assert.equal(state.unrecognized,1);
+ assert.equal(result.unassignedCounty,1);
+ assert.equal(state.total,state.zoll+state.competitor+state.mixed+state.unknown);
+});
+test('equipment map categories use distinct colors and distinguish unmatched from unreported areas',()=>{
+ const filter={presence:'zoll' as const,family:'all' as const};
+ const zoll={...emptyCoverage(),total:1,zoll:1,matched:1};
+ const competitor={...emptyCoverage(),total:1,competitor:1};
+ const mixed={...emptyCoverage(),total:2,zoll:1,competitor:1};
+ const unknown={...emptyCoverage(),total:1,unknown:1,unreported:1};
+ assert.equal(equipmentCoverageColor(zoll,filter),EQUIPMENT_COVERAGE_STYLES.zoll.color);
+ assert.equal(equipmentCoverageColor(competitor,filter),EQUIPMENT_COVERAGE_STYLES.noMatch.color);
+ assert.equal(equipmentCoverageColor(mixed,filter),EQUIPMENT_COVERAGE_STYLES.mixed.color);
+ assert.equal(equipmentCoverageColor(unknown,filter),EQUIPMENT_COVERAGE_STYLES.unknown.color);
+ assert.equal(equipmentCoverageColor(undefined,filter),EQUIPMENT_COVERAGE_STYLES.noRecords.color);
+ assert.equal(equipmentCoverageColor(mixed,{presence:'mixed',family:'all'}),EQUIPMENT_COVERAGE_STYLES.noMatch.color,'separate ZOLL and competitor agencies are not an agency-level mixed match');
+ assert.equal(new Set(Object.values(EQUIPMENT_COVERAGE_STYLES).map(style=>style.color)).size,Object.keys(EQUIPMENT_COVERAGE_STYLES).length);
 });

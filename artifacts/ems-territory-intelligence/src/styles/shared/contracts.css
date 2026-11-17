@@ -382,6 +382,16 @@
 .equipment-map-filter select { width:100%; min-height:36px; border:1px solid var(--pi-border-strong); border-radius:6px; background:var(--pi-surface-bg); color:var(--pi-text-primary); padding:5px 8px; font-size:12px; }
 .equipment-map-filter p { flex-basis:100%; font-size:10px; line-height:1.5; color:var(--pi-text-secondary); }
 @media(max-width:767px) { .equipment-map-filter select { min-height:44px; font-size:16px; } }
+.equipment-coverage-legend { display:grid; gap:7px; min-width:0; padding:9px 10px; border:1px solid var(--pi-border); border-radius:8px; background:var(--pi-surface-bg); color:var(--pi-text-primary); font-size:11px; line-height:1.4; }
+.equipment-coverage-legend > strong { font-size:12px; }
+.equipment-coverage-legend-items { display:flex; flex-wrap:wrap; gap:6px 12px; }
+.equipment-coverage-legend-items > span { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+.equipment-coverage-legend-items i { display:inline-block; flex:0 0 14px; width:14px; height:14px; border:1px solid rgba(25,40,57,.55); border-radius:3px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+.equipment-coverage-legend > p { color:var(--pi-text-secondary); font-size:10px; }
+.home-equipment-coverage-legend { align-content:start; }
+.home-equipment-coverage-legend .equipment-coverage-legend-items { gap:6px 10px; }
+.cv-legend-equipment { margin-top:6px; }
+@media(forced-colors:active) { .equipment-coverage-legend-items i { border:1px solid CanvasText; forced-color-adjust:none; } }
 .equipment-match-details { flex-basis:100%; min-width:0; font-size:11px; }
 .equipment-match-details summary { cursor:pointer; min-height:32px; display:flex; align-items:center; color:inherit; }
 .equipment-vendor-breakdown { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }

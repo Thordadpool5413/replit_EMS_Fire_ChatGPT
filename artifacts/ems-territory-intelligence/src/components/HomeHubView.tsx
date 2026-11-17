@@ -1,7 +1,7 @@
 import type { DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
-import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
+import {buildEquipmentGeography,equipmentCoverageColor} from '../utils/equipmentGeography';
 import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
-import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
+import {EquipmentCoverageLegend,EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {matchesEquipmentFilter,equipmentGeographyScope} from '../utils/equipmentPresence';
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 /**
@@ -603,7 +603,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </details>
               </div>
 
-              {equipmentFilter.presence!=='all'&&<div className="home-equipment-coverage-legend" role="status"><strong>Recorded equipment coverage</strong><p>{EQUIPMENT_COVERAGE_LEGEND}</p><p>{equipmentCoverage.unassignedState} records without resolved state · {equipmentCoverage.unassignedCounty} without resolved county. Unknown is not absence.</p></div>}
+              {equipmentFilter.presence!=='all'&&<EquipmentCoverageLegend
+                className="home-equipment-coverage-legend"
+                note={`State colors roll up loaded directory records across ${formatInteger(ALL_NATIONWIDE_COUNTIES.length)} county-equivalent boundaries; “both found” may be different agencies. Records can include unverified candidates; confirm agency identity and current use. ${formatInteger(equipmentCoverage.unassignedState)} records have no resolved state; ${formatInteger(equipmentCoverage.unassignedCounty)} have no safe county match. Unassigned records remain in state totals when the state is known.`}
+              />}
               {hasNationwideMapGeometry && equipmentFilter.presence==='all' && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-[#101F30] border border-[#294158] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#E4EEF8]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
@@ -638,6 +641,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 if (!st) return null;
                 const datum = stateMapMetricsByCode[code][mapMetric];
                 const count = stateStatsByCode[code]?.count ?? 0;
+                const equipment=equipmentCoverage.byState[code];
                 const swatch = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[code],equipmentFilter):hasReportedValue(datum.value)
                   ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                   : undefined;
@@ -648,7 +652,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       <span className="home-map-state-preview-kicker">{previewStateCode && previewStateCode !== selectedStateCode ? 'Preview' : 'Selected'}</span>
                       <strong data-testid="text-preview-state">{st.state} <span>{code}</span></strong>
                     </div>
-                    {equipmentFilter.presence!=='all'&&<p className="home-equipment-state-counts">ZOLL {equipmentCoverage.byState[code]?.zoll||0} · Competitor {equipmentCoverage.byState[code]?.competitor||0} · Mixed {equipmentCoverage.byState[code]?.mixed||0} · Unknown {equipmentCoverage.byState[code]?.unknown||0}</p>}
+                    {equipmentFilter.presence!=='all'&&<div className="home-equipment-state-counts" data-testid={`equipment-state-rollup-${code}`}>
+                      <p>Loaded records · <b>ZOLL {formatInteger(equipment?.zoll||0)}</b> · <b>other makers {formatInteger(equipment?.competitor||0)}</b> · <b>mixed {formatInteger(equipment?.mixed||0)}</b></p>
+                      <p>No recognized maker {formatInteger(equipment?.unknown||0)} · with equipment details {formatInteger(equipment?.reported||0)} · no substantive entry {formatInteger(equipment?.unreported||0)}</p>
+                      <p>County coverage · records in {formatInteger(equipment?.countiesWithAgencyRecords||0)} of {formatInteger(equipment?.countyCount||0)} counties · recognized maker in {formatInteger(equipment?.countiesWithRecognizedEquipment||0)}</p>
+                    </div>}
                     <dl className="home-map-state-preview-facts">
                       <div><dt>{mapMetric === 'agency-records' ? 'Agency records' : activeMapMetric.label}</dt><dd data-testid="text-preview-metric">{formatStateMapValue(mapMetric, datum.value)}</dd></div>
                       {mapMetric === 'agency-records'
@@ -751,7 +759,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const fillColor = equipmentFilter.presence!=='all'?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(datum.value)
                       ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
                       : 'url(#home-map-missing-data)';
-                    const stateAriaLabel = equipmentFilter.presence!=='all'?`${st.state}. ${equipmentCoverage.byState[st.code]?.matched||0} selected equipment matches; ${equipmentCoverage.byState[st.code]?.unknown||0} records with unknown equipment. Totals describe loaded records.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
+                    const equipmentState=equipmentCoverage.byState[st.code];
+                    const stateAriaLabel = equipmentFilter.presence!=='all'?`${st.state}. ${equipmentState?.matched||0} selected equipment matches; ZOLL records ${equipmentState?.zoll||0}; other manufacturer records ${equipmentState?.competitor||0}; mixed records ${equipmentState?.mixed||0}; no recognized maker ${equipmentState?.unknown||0}; loaded agency records in ${equipmentState?.countiesWithAgencyRecords||0} of ${equipmentState?.countyCount||0} counties. Totals describe loaded records.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
                     return (
                       <g

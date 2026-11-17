@@ -1238,6 +1238,14 @@ async function checkHome(cdp, dark) {
       `document.querySelector('.home-map-legend-title')?.innerText.includes(${JSON.stringify(metricLabel)})`,
       `${metricValue} selection updating the map legend in ${themeLabel(dark)} theme`,
     );
+    const legendExplainsRelativeColors = await evaluate(cdp, `document.querySelector('[data-testid="text-map-legend-coverage"]')?.innerText.includes('relative quintiles') ?? false`);
+    assert(legendExplainsRelativeColors, `${themeLabel(dark)} map legend does not explain relative state colors for ${metricValue}`);
+    if (metricValue === 'cardiac-survival') {
+      const visibleColorBands = await evaluate(cdp, `new Set([...document.querySelectorAll('.home-map-state-path')]
+        .map((path) => path.getAttribute('fill'))
+        .filter((fill) => fill && !fill.includes('home-map-missing-data'))).size`);
+      assert(visibleColorBands >= 4, `${themeLabel(dark)} cardiac survival map has too few distinct state comparison bands: ${visibleColorBands}`);
+    }
     const paletteControl = await evaluate(cdp, `Boolean(document.querySelector('[data-testid="select-map-color-palette"]'))`);
     if (paletteControl) {
       const paletteValue = await evaluate(cdp, `(() => {

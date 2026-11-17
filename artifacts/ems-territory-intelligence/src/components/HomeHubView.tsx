@@ -47,12 +47,12 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
 const STATE_MAP_METRICS = [
+  { key: 'cardiac-survival', label: 'Cardiac survival estimate (%)' },
   { key: 'source-listings', label: 'National registry listings' },
   { key: 'agency-records', label: 'Agency directory records' },
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
   { key: 'pulseiq', label: 'PulseIQ estimate · modeled average' },
-  { key: 'cardiac-survival', label: 'Cardiac survival estimate (%)' },
   { key: 'scene-transit', label: 'EMS transit estimate (minutes)' },
   { key: 'acs-population', label: 'ACS population · county sum' },
   { key: 'acs-age65-share', label: 'ACS residents age 65+ (%)' },
@@ -62,6 +62,9 @@ const STATE_MAP_METRICS = [
 
 type StateMapMetricKey =
   (typeof STATE_MAP_METRICS)[number]['key'];
+
+const DEFAULT_STATE_MAP_METRIC: StateMapMetricKey = 'cardiac-survival';
+const MAP_METRIC_DEFAULT_MIGRATION_KEY = 'metric-default-migrated-v1';
 
 type MapColorScheme = 'standard' | 'colorblind-safe';
 type StateMapPalette = { stops: string[]; lowLabel: string; highLabel: string };
@@ -123,22 +126,21 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
 };
 
 const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
-  'source-listings': { stops: ['#FFF1D6', '#FFD99A', '#FFB45C', '#FF823D', '#F04C32'], lowLabel: 'Fewer', highLabel: 'More' },
-  'agency-records': { stops: ['#FFF1D6', '#FFD99A', '#FFB45C', '#FF823D', '#F04C32'], lowLabel: 'Fewer', highLabel: 'More' },
-  ambulances: { stops: ['#FFF1D6', '#FFD99A', '#FFB45C', '#FF823D', '#F04C32'], lowLabel: 'Fewer', highLabel: 'More' },
-  'fire-engines': { stops: ['#FFF1D6', '#FFD99A', '#FFB45C', '#FF823D', '#F04C32'], lowLabel: 'Fewer', highLabel: 'More' },
-  pulseiq: { stops: ['#F3E8FF', '#D8B4FE', '#B174F0', '#8B43D0', '#612B9B'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
-  'cardiac-survival': { stops: ['#FF1744', '#FF9100', '#FFEA00', '#AEEA00', '#00E676'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
-  'scene-transit': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
-  'acs-population': { stops: ['#E3F3FB', '#B9E3F3', '#7FCBE4', '#3CA9CC', '#176C9B'], lowLabel: 'Lower', highLabel: 'Higher' },
-  'acs-age65-share': { stops: ['#E3F3FB', '#B9E3F3', '#7FCBE4', '#3CA9CC', '#176C9B'], lowLabel: 'Lower share', highLabel: 'Higher share' },
-  'acs-poverty-rate': { stops: ['#F8E9C9', '#F1D49A', '#E4B864', '#C99037', '#895B22'], lowLabel: 'Lower rate', highLabel: 'Higher rate' },
-  'acs-county-income-median': { stops: ['#EEE9F8', '#D5C9EC', '#B3A0D9', '#8A70BE', '#614A94'], lowLabel: 'Lower', highLabel: 'Higher' },
+  'source-listings': { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
+  'agency-records': { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
+  ambulances: { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
+  'fire-engines': { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
+  pulseiq: { stops: ['#F1E5FF', '#D0AEFF', '#A56CF4', '#753ED1', '#462080'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
+  'cardiac-survival': { stops: ['#C62835', '#EC6B3D', '#F1C64B', '#88BC4A', '#198A4C'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
+  'scene-transit': { stops: ['#168958', '#63B85D', '#E0C446', '#F08C35', '#C93535'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+  'acs-population': { stops: ['#D8EEFF', '#9ACFFF', '#58A9ED', '#247BC7', '#0B4C8C'], lowLabel: 'Lower', highLabel: 'Higher' },
+  'acs-age65-share': { stops: ['#D8EEFF', '#9ACFFF', '#58A9ED', '#247BC7', '#0B4C8C'], lowLabel: 'Lower share', highLabel: 'Higher share' },
+  'acs-poverty-rate': { stops: ['#FFF0B8', '#FFD166', '#FFA63B', '#EE702F', '#BD342E'], lowLabel: 'Lower rate', highLabel: 'Higher rate' },
+  'acs-county-income-median': { stops: ['#E9DFFF', '#C5A8FF', '#9670EB', '#6844C3', '#3D2387'], lowLabel: 'Lower', highLabel: 'Higher' },
 };
 
-// A blue-to-gold progression remains ordered without relying on red/green
-// distinctions. Its lightest stops also stay visible on the dark map canvas.
-const COLORBLIND_SAFE_STOPS = ['#63779D', '#688EAA', '#83A99E', '#BFC37D', '#F0DF65'];
+// A colorblind-safe blue ramp stays legible on the white map surface.
+const COLORBLIND_SAFE_STOPS = ['#DCEEFF', '#A5CFF2', '#6EAADE', '#397BB6', '#164D7E'];
 
 const isQualityMapMetric = (metric: StateMapMetricKey) =>
   metric === 'cardiac-survival' ||
@@ -150,35 +152,17 @@ const getMapPalette = (metric: StateMapMetricKey, scheme: MapColorScheme): State
   if (scheme !== 'colorblind-safe' || !isQualityMapMetric(metric)) return standard;
   return {
     ...standard,
-    stops: metric === 'scene-transit' || metric === 'acs-poverty-rate'
-      ? [...COLORBLIND_SAFE_STOPS].reverse()
-      : COLORBLIND_SAFE_STOPS,
+    stops: COLORBLIND_SAFE_STOPS,
   };
 };
 
-const hexToRgb = (hex: string) =>
-  hex.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [0, 0, 0];
-
-const interpolateStateFill = (
-  metric: StateMapMetricKey,
-  value: number,
-  min: number,
-  max: number,
-  palette = MAP_PALETTES[metric],
-) => {
-  const t = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const stops = palette.stops;
-  const scaled = t * (stops.length - 1);
-  const stopIndex = Math.min(stops.length - 2, Math.floor(scaled));
-  const localT = scaled - stopIndex;
-  const start = hexToRgb(stops[stopIndex]);
-  const end = hexToRgb(stops[stopIndex + 1]);
-  const channels = start.map((channel, index) => Math.round(channel + (end[index] - channel) * localT));
-  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+const getMapGradient = (palette: StateMapPalette) => {
+  const step = 100 / palette.stops.length;
+  const segments = palette.stops.map((color, index) =>
+    `${color} ${(index * step).toFixed(2)}%, ${color} ${((index + 1) * step).toFixed(2)}%`,
+  );
+  return `linear-gradient(to right, ${segments.join(', ')})`;
 };
-
-const getMapGradient = (palette: StateMapPalette) =>
-  `linear-gradient(to right, ${palette.stops.join(', ')})`;
 
 const readableTextForFill = (hexColor: string) => {
   const channels = hexColor.match(/[0-9a-f]{2}/gi)?.map((channel) => parseInt(channel, 16)) ?? [219, 234, 254];
@@ -229,8 +213,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     return ['All', 'Northeast', 'Midwest', 'South', 'West'].includes(saved) ? saved as StateMapRegion : 'All';
   });
   const [mapMetric, setMapMetric] = useState<StateMapMetricKey>(() => {
-    const saved = readMapPreference('metric', 'source-listings');
-    return STATE_MAP_METRICS.some((metric) => metric.key === saved) ? saved as StateMapMetricKey : 'source-listings';
+    const saved = readMapPreference('metric', DEFAULT_STATE_MAP_METRIC);
+    const defaultMigrationComplete = readMapPreference(MAP_METRIC_DEFAULT_MIGRATION_KEY, 'false') === 'true';
+    if (!defaultMigrationComplete && saved === 'source-listings') return DEFAULT_STATE_MAP_METRIC;
+    return STATE_MAP_METRICS.some((metric) => metric.key === saved)
+      ? saved as StateMapMetricKey
+      : DEFAULT_STATE_MAP_METRIC;
   });
   const [mapColorScheme, setMapColorScheme] = useState<MapColorScheme>(() => {
     const saved = readMapPreference('palette', 'standard');
@@ -242,6 +230,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   });
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const hasInitializedMapRef = useRef(false);
+
+  useEffect(() => {
+    if (readMapPreference(MAP_METRIC_DEFAULT_MIGRATION_KEY, 'false') === 'true') return;
+    const savedMetric = readMapPreference('metric', '');
+    if (!savedMetric || savedMetric === 'source-listings') {
+      saveMapPreference('metric', mapMetric);
+    }
+    saveMapPreference(MAP_METRIC_DEFAULT_MIGRATION_KEY, 'true');
+  }, [mapMetric]);
 
   // Filter agency figures by the existing provider scope (All / EMS / Fire).
   // Equipment-vendor filters remain available in the county map, not the U.S. map.
@@ -456,7 +453,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
   const activeMapPalette = getMapPalette(mapMetric, mapColorScheme);
   const mapMetricQuantileColors = useMemo(() => {
-    if (!mapMetric.startsWith('acs-')) return new Map<string, string>();
     const values = Object.entries(stateMapMetricsByCode)
       .map(([code, metrics]) => ({ code, value: metrics[mapMetric].value }))
       .filter((entry): entry is { code: string; value: number } => hasReportedValue(entry.value))
@@ -472,10 +468,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return [code, activeMapPalette.stops[band]];
     }));
   }, [activeMapPalette, mapMetric, stateMapMetricsByCode]);
-  const getStateMapFill = (code: string, value: number) =>
-    mapMetric.startsWith('acs-')
-      ? mapMetricQuantileColors.get(code) ?? activeMapPalette.stops[0]
-      : interpolateStateFill(mapMetric, value, mapMetricMin, mapMetricMax, activeMapPalette);
+  const getStateMapFill = (code: string) =>
+    mapMetricQuantileColors.get(code) ?? activeMapPalette.stops[0];
 
   useEffect(() => {
     const viewport = mapViewportRef.current;
@@ -725,12 +719,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </span>
                 <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#53657A]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
-                  <span className="home-map-legend-gradient h-3 w-24 rounded-full border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
+                  <span className="home-map-legend-gradient h-3 w-24 rounded-sm border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
                   <span className="home-map-legend-endpoint home-map-legend-endpoint-high">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMax) : '—'} · {activeMapPalette.highLabel}</span>
                 </span>
                 {mapMetricValues.some((value) => value === 0) && (
                   <span className="home-map-legend-zero flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#B2C2D2]">
-                    <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: interpolateStateFill(mapMetric, 0, mapMetricMin, mapMetricMax, activeMapPalette) }} aria-hidden="true" />
+                    <span className="inline-block h-4 w-4 rounded-sm border border-[#7790A7]" style={{ backgroundColor: activeMapPalette.stops[0] }} aria-hidden="true" />
                     Reported 0
                   </span>
                 )}
@@ -739,7 +733,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   Not reported
                 </span>
                   <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#66788D]" data-testid="text-map-legend-coverage">
-                  {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero{mapMetric.startsWith('acs-') ? ' · colors = state quintiles' : ''}
+                  {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero · colors = relative quintiles
                 </span>
               </div>}
 
@@ -751,7 +745,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 const datum = stateMapMetricsByCode[code][mapMetric];
                 const count = stateStatsByCode[code]?.count ?? 0;
                 const swatch = hasReportedValue(datum.value)
-                  ? getStateMapFill(code, datum.value)
+                  ? getStateMapFill(code)
                   : undefined;
                 return (
                   <div className="home-map-state-preview" aria-live="polite" data-testid="panel-state-preview" data-preview-mode={previewStateCode ? 'preview' : 'selected'}>
@@ -874,7 +868,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const fillColor = hasReportedValue(datum.value)
-                      ? getStateMapFill(st.code, datum.value)
+                      ? getStateMapFill(st.code)
                       : 'url(#home-map-missing-data)';
                     const stateAriaLabel = `${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
 
@@ -932,7 +926,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cHov = hoveredStateCode === st.code;
                       const cDatum = stateMapMetricsByCode[st.code][mapMetric];
                       const cFill = hasReportedValue(cDatum.value)
-                        ? getStateMapFill(st.code, cDatum.value)
+                        ? getStateMapFill(st.code)
                         : '#F4E8D8';
                       return (
                         <g

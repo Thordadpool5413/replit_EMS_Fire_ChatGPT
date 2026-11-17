@@ -98,3 +98,8 @@
   border-color: #cbd5e1 !important;
   color: #1e56a8 !important;
 }
+.dark .home-territory-map-screen-v2 .home-map-region-filter button[aria-pressed="true"] {
+  background: #eaf2ff !important;
+  border-color: #7899bf !important;
+  color: #173f67 !important;
+}

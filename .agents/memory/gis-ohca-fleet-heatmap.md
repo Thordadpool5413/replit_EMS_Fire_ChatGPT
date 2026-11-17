@@ -17,7 +17,7 @@ On the home map, keep the full U.S. overview visible at the initial mobile zoom.
 
 **How to apply:** Start at 100% with the whole map in view; scale the SVG dimensions for zoom and keep the selected-state focus independent of the metric color.
 
-For the home map's Shade states by layers, use the selected dark command-center style: a deep navy canvas, legible state labels and boundaries, and vivid green–lime–yellow–orange–red shading. Direction remains metric-specific: red for higher inventory/priority values or unfavorable values, and green for favorable values such as stronger cardiac-survival estimates or shorter transit. Raw inventory counts are magnitudes, not quality scores; keep the legend explicit. Preserve missing-data hatching and the independent selected-state outline. Avoid full-spectrum rainbow ramps.
+For the Home national map, keep the map, cards, and controls on white surfaces in every theme. The user's preferred default layer is Cardiac survival estimate. Use bright, discrete relative comparison bands for every map metric, and label the legend as relative quintiles. Direction remains metric-specific: counts show magnitude, while stronger cardiac-survival estimates or shorter transit are favorable. Preserve missing-data hatching and the independent selected-state outline. Avoid full-spectrum rainbow ramps.
 
 Keep geographic backgrounds restrained; decorative grids, halos, and brightness/saturation filters must not compete with boundaries or alter the legend's data colors. Align the state map and preview at the top but bound the map viewport independently of the preview's source/place content.
 
@@ -25,6 +25,6 @@ Keep geographic backgrounds restrained; decorative grids, halos, and brightness/
 
 **How to apply:** Check actual loaded laptop screenshots as well as geometric fit; preserve readable preview widths and avoid forcing equal panel heights when content length differs.
 
-**Why:** The user chose a dark command-center map with vibrant red-for-high and green-for-good shading, and rejected both a full-spectrum rainbow and a muted red-only map.
+**Why:** The user asked for a white U.S. map, cardiac survival as the main display, and brighter colors that clearly show how states compare.
 
-**How to apply:** Recheck palette direction against the metric meaning whenever a map layer is added or its values are redefined.
+**How to apply:** Start on cardiac survival, preserve other explicit saved selections, and use a distinct high-contrast five-band scale for each layer. Keep metric direction clear and do not treat missing records as zero.

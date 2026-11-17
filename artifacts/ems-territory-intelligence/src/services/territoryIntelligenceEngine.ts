@@ -1,3 +1,5 @@
+import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
+import { normalizeCountyName, matchesAgencyCounty } from '../utils/countyIdentity';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -64,12 +66,9 @@ class TerritoryIntelligenceService {
    */
   public getCountyRecord(stateCode: string, countyName: string): ComprehensiveCountyRecord | undefined {
     const counties = this.getCountiesForState(stateCode);
-    const clean = countyName.toLowerCase().trim();
-    return counties.find(c => 
-      c.countyName.toLowerCase() === clean || 
-      c.rawName.toLowerCase() === clean ||
-      c.countyName.toLowerCase().replace(/ county| parish| borough/gi, '').trim() === clean.replace(/ county| parish| borough/gi, '').trim()
-    );
+    const clean = normalizeCountyName(countyName);
+    const matches = counties.filter(c => [c.countyName, c.rawName, ...(c.aliases ?? [])].some(name => normalizeCountyName(name) === clean));
+    return matches.length === 1 ? matches[0] : undefined;
   }
 
   private static majorMetroCitiesCache: string[] | null = null;
@@ -323,7 +322,7 @@ class TerritoryIntelligenceService {
 
     for (const a of existingAgencies) {
       if (a.stateCode !== sc) continue;
-      if (cleanCounty && a.county.toLowerCase().replace(/ county| parish| borough/gi, '').trim() !== cleanCounty.toLowerCase().replace(/ county| parish| borough/gi, '').trim()) continue;
+      if (cleanCounty && !matchesAgencyCounty(a, cleanCounty)) continue;
       if (cleanCity && a.city.toLowerCase().trim() !== cleanCity.toLowerCase().trim()) continue;
       resultsMap.set(a.id, a);
     }
@@ -336,7 +335,7 @@ class TerritoryIntelligenceService {
       const hasEms = results.some(a => !a.agencyType.toLowerCase().includes('fire') && (!cleanCity || a.city.toLowerCase() === cleanCity.toLowerCase()));
       if (!hasEms) {
         const emsAgency = this.resolveOrSynthesizeAgency(sc, countyToTarget, cityToTarget, existingAgencies, 'ems');
-        results.push(emsAgency);
+        if (emsAgency) results.push(emsAgency);
       }
     }
 
@@ -344,7 +343,7 @@ class TerritoryIntelligenceService {
       const hasFire = results.some(a => a.agencyType.toLowerCase().includes('fire') && (!cleanCity || a.city.toLowerCase() === cleanCity.toLowerCase()));
       if (!hasFire) {
         const fireAgency = this.resolveOrSynthesizeAgency(sc, countyToTarget, cityToTarget, existingAgencies, 'fire');
-        results.push(fireAgency);
+        if (fireAgency) results.push(fireAgency);
       }
     }
 
@@ -428,12 +427,10 @@ class TerritoryIntelligenceService {
     cityName?: string,
     existingAgencies: Agency[] = [],
     forcedCategory?: 'ems' | 'fire'
-  ): Agency {
+  ): Agency | undefined {
     const sc = stateCode.toUpperCase().trim();
     const city = cityName || this.getCitiesForState(sc, countyName)[0] || 'Central';
-    const cleanCounty = countyName.endsWith('County') || countyName.endsWith('Parish') || countyName.endsWith('Borough')
-      ? countyName
-      : `${countyName} County`;
+    const cleanCounty = this.getCountyRecord(sc, countyName)?.countyName ?? countyName;
 
     // 1. Check nationalProviderDb first
     const fromDb = nationalProviderDb.getProviders({
@@ -464,7 +461,8 @@ class TerritoryIntelligenceService {
       return this.synthesizedAgenciesCache.get(cacheKey)!;
     }
 
-    const countyRecord = this.getCountyRecord(sc, cleanCounty) || this.getCountiesForState(sc)[0] || ALL_NATIONWIDE_COUNTIES[0];
+    const countyRecord = this.getCountyRecord(sc, cleanCounty);
+    if (!hasCountyPlanningInputs(countyRecord)) return undefined;
 
     const stSummary = ALL_50_STATES_SUMMARIES[sc] || {
       state: countyRecord.stateName,
@@ -764,7 +762,7 @@ class TerritoryIntelligenceService {
         results.push({
           type: 'county',
           label: `${county.countyName}, ${county.stateCode}`,
-          sublabel: `Pop: ${county.population.toLocaleString()} • Seat: ${county.countySeat} • Cities: ${county.cities.length}`,
+          sublabel: `Pop: ${(county.population == null ? 'not available' : county.population.toLocaleString())} • Seat: ${county.countySeat} • Cities: ${county.cities.length}`,
           stateCode: county.stateCode,
           countyName: county.countyName,
           cityName: county.countySeat

@@ -146,7 +146,8 @@ function addRecord(
   if (profile.agencyIdentityStatus === 'verified') summary.verifiedAgencyCount++;
   else summary.unverifiedAgencyCount++;
 
-  const installedEntries = entries.filter((entry) => entry.recordType === 'installed-field');
+  const allInstalledEntries = entries.filter((entry) => entry.recordType === 'installed-field');
+  const installedEntries = allInstalledEntries.filter((entry) => filter.family === 'all' || entry.family === filter.family);
   summary.equipmentRecordCount += installedEntries.length;
   summary.sourceFactRecordCount += profile.sourceFactRecordCount;
   for (const entry of installedEntries) {
@@ -154,7 +155,7 @@ function addRecord(
     else summary.unverifiedEquipmentRecordCount++;
   }
   for (const family of EQUIPMENT_FAMILIES) {
-    if (!installedEntries.some((entry) => entry.family === family)) summary.notReportedByFamily[family]++;
+    if (!allInstalledEntries.some((entry) => entry.family === family)) summary.notReportedByFamily[family]++;
   }
   if (includeAgencyRecords) summary.agencyRecords?.push(profile);
 }
@@ -341,13 +342,13 @@ export function buildEquipmentGeography(
 }
 
 export const EQUIPMENT_COVERAGE_STYLES = {
-  zoll: { label: 'ZOLL recorded', color: '#12B8A6' },
-  competitor: { label: 'Competitor recorded', color: '#F59E0B' },
-  mixed: { label: 'Both found in area', color: '#A78BFA' },
-  unknown: { label: 'No recognized maker', color: '#718096' },
-  notReported: { label: 'No equipment entry reported', color: '#B9C7D6' },
-  noMatch: { label: 'No match for filter', color: '#D3DEE8' },
-  noRecords: { label: 'No loaded agency records', color: '#183047' },
+  zoll: { label: 'ZOLL recorded', color: '#FF4B36' },
+  competitor: { label: 'Competitor recorded', color: '#FFC400' },
+  mixed: { label: 'Both found in area', color: '#ED3975' },
+  unknown: { label: 'No recognized maker', color: '#B69B86' },
+  notReported: { label: 'No equipment entry reported', color: '#E7DDD0' },
+  noMatch: { label: 'No match for filter', color: '#FFF1DE' },
+  noRecords: { label: 'No loaded agency records', color: '#D6B99B' },
 } as const;
 
 function hasZoll(c: Coverage) {

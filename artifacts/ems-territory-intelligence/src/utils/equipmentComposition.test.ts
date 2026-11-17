@@ -39,3 +39,25 @@ test('verified planning-origin identities remain eligible without fabricating eq
  const result=buildEquipmentGeography([record],[{code:'FL',state:'Florida'}],[{stateCode:'FL',countyFips:'12005',countyName:'Bay County'}],{presence:'all',family:'all'});
  assert.equal(result.excludedPlanningRecords,0);assert.equal(result.byState.FL.total,1);assert.equal(result.byState.FL.notReported,1);
 });
+
+test('vendor penetration uses each state denominator, retains overlap and never claims complete market share',async()=>{
+ const {recordedVendorPenetration}=await import('./equipmentComposition');
+ const c={...emptyCoverage(),total:10,reported:6,vendorCounts:{zoll:4,stryker:3,philips:3}};
+ const result=recordedVendorPenetration(c,'monitors');
+ assert.equal(result.zollPercent,40);assert.equal(result.competitorPercent,30);assert.equal(result.topCompetitor?.id,'philips');assert.deepEqual(result.topCompetitor?.tied,['philips','stryker']);
+ assert.equal(result.statewideMarketShareEstablished,false);assert.equal(recordedVendorPenetration(c,'all').zollPercent,null);
+ assert.equal(recordedVendorPenetration(undefined,'monitors').zollPercent,null);assert.equal(recordedVendorPenetration(undefined,'monitors').evidenceStatus,'no-equipment-evidence');
+});
+
+test('product-specific state evidence totals exclude installed entries from other categories',()=>{
+ const a={id:'multi',stateCode:'FL',county:'Bay',countyFips:'12005',installedFleet:{defibBrand:'LIFEPAK 15',mechanicalCPR:'LUCAS 3'}} as Agency;
+ const c=buildEquipmentGeography([a],[{code:'FL',state:'Florida'}],[{stateCode:'FL',countyFips:'12005',countyName:'Bay County'}],{presence:'all',family:'monitors'}).byState.FL;
+ assert.equal(c.equipmentRecordCount,1);assert.equal(c.unverifiedEquipmentRecordCount,1);assert.equal(c.notReportedByFamily.cpr,0);
+});
+
+test('county and national equipment layers activate for product-only selections',async()=>{
+ const {isEquipmentFilterActive}=await import('./equipmentPresence');
+ assert.equal(isEquipmentFilterActive({presence:'all',family:'all'}),false);
+ assert.equal(isEquipmentFilterActive({presence:'all',family:'monitors'}),true);
+ assert.equal(isEquipmentFilterActive({presence:'all',family:'all',vendor:'stryker'}),true);
+});

@@ -12,4 +12,17 @@ export function equipmentComposition(coverage?:Coverage){
  return {total,segments,reported:coverage?.reported??0,recognized:(coverage?.zoll??0)+(coverage?.competitor??0)+(coverage?.mixed??0)};
 }
 /** Geography is neutral; recorded equipment is carried by a separate proportional bar. */
-export const EQUIPMENT_STATE_BASE_COLOR='#D3DEE8';
+export const EQUIPMENT_STATE_BASE_COLOR='#FFFEFA';
+
+/** Shares of loaded profiles for one product family; overlapping vendors are intentional. */
+export function recordedVendorPenetration(coverage:Coverage|undefined,family:string){
+ const denominator=coverage?.total??0;
+ const ranked=Object.entries(coverage?.vendorCounts??{}).filter(([id,count])=>id!=='zoll'&&count>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+ const leader=ranked[0];const zoll=coverage?.vendorCounts.zoll??0;
+ return {denominator,zoll,topCompetitor:leader?{id:leader[0],count:leader[1],tied:ranked.filter(([,n])=>n===leader[1]).map(([id])=>id)}:null,
+  zollPercent:family!=='all'&&denominator>0?zoll/denominator*100:null,
+  competitorPercent:family!=='all'&&denominator>0&&leader?leader[1]/denominator*100:null,
+  evidenceStatus:!coverage?.reported?'no-equipment-evidence':'partial-recorded-evidence',
+  statewideMarketShareEstablished:false as const,
+ };
+}

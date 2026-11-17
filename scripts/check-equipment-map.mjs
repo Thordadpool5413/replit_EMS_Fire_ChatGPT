@@ -9,7 +9,7 @@ const store=new Map([['ems-map-equipment-filter-v1',JSON.stringify({presence:'co
 const {HomeHubView}=await import(${JSON.stringify(path.join(app,'src/components/HomeHubView.tsx'))});
 const records=[{id:'z',stateCode:'FL',county:'Bay County',countyFips:'12005',installedFleet:{defibBrand:'ZOLL X Series'}},{id:'c',stateCode:'FL',county:'Bay County',countyFips:'12005',installedFleet:{defibBrand:'LIFEPAK 15'}},{id:'u',stateCode:'FL',county:'Bay County',countyFips:'12005'}];
 const html=renderToStaticMarkup(React.createElement(HomeHubView,{agencies:records,globalCategory:'all',globalState:'FL',onNavigateTab:()=>{}}));
-const polygons=html.match(/<path[^>]*class="home-map-state-path[^>]*>/g)??[];assert.equal(polygons.length,51);for(const p of polygons)assert(p.includes('fill="#D3DEE8"'),'A state is still painted as vendor territory');
+const polygons=html.match(/<path[^>]*class="home-map-state-path[^>]*>/g)??[];assert.equal(polygons.length,51);for(const p of polygons)assert(p.includes('fill="#FFFEFA"'),'A state is still painted as vendor territory');
 assert.equal((html.match(/data-testid="equipment-record-bar"/g)??[]).length,52,'Every state and the selected-state inspector need a proportional bar');
 for(const text of ['State shapes are neutral geography','Recorded agency mix','3 profiles','33.3% of profiles','Statewide market share is not established'])assert(html.includes(text),text);
 console.log(JSON.stringify({status:'PASS',neutralStates:51,stateBars:51,inspectorBars:1,denominator:3,competitorProfileShare:'33.3%',marketShare:'not established'}));`;

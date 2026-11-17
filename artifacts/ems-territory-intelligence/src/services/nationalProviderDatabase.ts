@@ -1,3 +1,5 @@
+import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
+import { canonicalizeAgencyCounty, normalizeCountyName } from '../utils/countyIdentity';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -129,7 +131,7 @@ class NationalProviderDatabaseService {
       if (sIdx !== -1) stList[sIdx] = updated;
     }
 
-    const countyKey = `${st}:${updated.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim()}`;
+    const countyKey = `${st}:${normalizeCountyName(updated.county)}`;
     const cList = this.providersByCounty.get(countyKey);
     if (cList) {
       const cIdx = cList.findIndex((p) => p.id === agencyId);
@@ -234,6 +236,7 @@ class NationalProviderDatabaseService {
     category: 'ems' | 'fire',
     stSummary: any
   ): Agency {
+    if (!hasCountyPlanningInputs(c)) throw new Error('Regional planning inputs are unavailable.');
     const rawCounty = c.rawName || c.countyName.replace(/ County| Parish| Borough/gi, '').trim();
     const cleanCityDisplay = cityName;
 
@@ -516,7 +519,7 @@ class NationalProviderDatabaseService {
     }
     this.providersByState.get(st)!.push(agency);
 
-    const countyKey = `${st}:${agency.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim()}`;
+    const countyKey = `${st}:${normalizeCountyName(agency.county)}`;
     if (!this.providersByCounty.has(countyKey)) {
       this.providersByCounty.set(countyKey, []);
     }
@@ -601,15 +604,17 @@ class NationalProviderDatabaseService {
       enriched.headquartersPhone = '';
       enriched.keyContacts = enriched.keyContacts.map((c) => ({ ...c, phone: '' }));
 
+      Object.assign(enriched, canonicalizeAgencyCounty(enriched));
       this.registerAgency(enriched);
       const isFire = enriched.agencyType.toLowerCase().includes('fire');
-      const rawCountyClean = enriched.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
+      const rawCountyClean = normalizeCountyName(enriched.county);
       seenCityCategory.add(`${enriched.stateCode.toUpperCase()}:${rawCountyClean}:${enriched.city.toLowerCase().trim()}:${isFire ? 'fire' : 'ems'}`);
     }
 
     // 2. Connect all 3,144 Counties and all Official US Census Cities & Unincorporated Districts across all 50 States + DC
     for (let i = 0; i < ALL_NATIONWIDE_COUNTIES.length; i++) {
       const c = ALL_NATIONWIDE_COUNTIES[i];
+      if (!hasCountyPlanningInputs(c)) continue;
       const sc = c.stateCode.toUpperCase();
       const stSummary = ALL_50_STATES_SUMMARIES[sc] || {
         state: c.stateName,
@@ -686,21 +691,21 @@ class NationalProviderDatabaseService {
         if (match) sc = match[0];
       }
       if (county && county.toLowerCase() !== 'all') {
-        const cClean = county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
+        const cClean = normalizeCountyName(county);
         result = this.providersByCounty.get(`${sc}:${cClean}`) || [];
         if (result.length === 0) {
           const stList = this.providersByState.get(sc) || [];
           result = stList.filter(p => {
-            const pClean = p.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
-            return pClean === cClean || pClean.includes(cClean) || cClean.includes(pClean);
+            const pClean = normalizeCountyName(p.county);
+            return pClean === cClean;
           });
         }
       } else {
         result = this.providersByState.get(sc) || [];
       }
     } else if (county && county.toLowerCase() !== 'all') {
-      const cClean = county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim();
-      result = result.filter(p => p.county.toLowerCase().replace(/\s*(county|parish|borough|census area|municipality)$/i, '').trim() === cClean);
+      const cClean = normalizeCountyName(county);
+      result = result.filter(p => normalizeCountyName(p.county) === cClean);
     }
 
     if (city && city !== 'all') {
@@ -759,7 +764,7 @@ class NationalProviderDatabaseService {
       if (ems || fire) return { emsProvider: ems, fireDepartment: fire };
     }
 
-    const countyKey = `${sc}:${countyName.toLowerCase().replace(/ county| parish| borough/gi, '').trim()}`;
+    const countyKey = `${sc}:${normalizeCountyName(countyName)}`;
     const countyProviders = this.providersByCounty.get(countyKey) || [];
 
     const ems = countyProviders.find(p => !p.agencyType.toLowerCase().includes('fire')) || null;

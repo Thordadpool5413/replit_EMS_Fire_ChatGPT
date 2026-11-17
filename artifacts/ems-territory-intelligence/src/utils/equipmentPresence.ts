@@ -1,3 +1,4 @@
+import { matchesAgencyCounty } from './countyIdentity';
 import type {Agency, AgencyFactEvidenceKey} from '../types';
 import {hasAgencyFactData,getAgencyFactEvidenceStatus} from '../data/agencyFactEvidence';
 export type EquipmentPresence = 'all'|'zoll'|'competitor'|'mixed'|'unknown';
@@ -122,7 +123,7 @@ export function equipmentGeographyScope(agencies:Agency[],scope:{state?:string;c
  const normalized=(value:string='')=>value.toLowerCase().replace(/\s+(county|parish|borough|census area|municipality)$/i,'').trim();
  return agencies.filter(a=>{
   if(scope.state&&scope.state!=='all'&&(a.stateCode||'').toLowerCase()!==scope.state.toLowerCase())return false;
-  if(scope.county&&scope.county!=='all'&&normalized(a.county)!==normalized(scope.county))return false;
+  if(scope.county&&scope.county!=='all'&&!matchesAgencyCounty(a,scope.county))return false;
   if(scope.city&&scope.city!=='all'&&normalized(a.city)!==normalized(scope.city))return false;
   const fire=a.providerCategory==='FIRE'||/fire/i.test(a.agencyType||'');
   return scope.category==='fire'?fire:scope.category==='ems'?!fire:true;

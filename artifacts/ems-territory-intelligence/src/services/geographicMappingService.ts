@@ -49,7 +49,7 @@ export function getAgencyGeographicLinks(agency: Agency): AgencyGeographicLink[]
       level: 'county',
       label: agency.county || agency.countyFips || 'County',
       sourceGeographyId: hasValidCountyFips ? agency.countyFips : undefined,
-      matchBasis: hasValidCountyFips ? 'source-id' : 'name-state-candidate',
+      matchBasis: agency.countyLocationBasis ? 'name-state-candidate' : hasValidCountyFips ? 'source-id' : 'name-state-candidate',
       sourceName: isLegacyCtCounty
         ? 'U.S. Census legacy county FIPS'
         : hasValidCountyFips
@@ -63,6 +63,16 @@ export function getAgencyGeographicLinks(agency: Agency): AgencyGeographicLink[]
       geographyVintage: isLegacyCtCounty
         ? 'Legacy county geography; not a current county-equivalent FIPS'
         : undefined,
+    });
+  }
+
+  if (agency.sourceCountyName && agency.sourceCountyName !== agency.county) {
+    links.push({
+      relationship: 'located-at', level: 'county', label: agency.sourceCountyName,
+      sourceGeographyId: agency.sourceCountyFips,
+      matchBasis: agency.sourceCountyFips ? 'source-id' : 'name-state-candidate',
+      sourceName: agency.countyLocationBasis === 'town-crosswalk' ? 'Original legacy county location' : 'Original county display alias',
+      geographyVintage: agency.countyLocationBasis === 'town-crosswalk' ? 'Legacy Connecticut county geography; current region matched by recorded town, pending user review' : 'Original recorded county label retained',
     });
   }
 

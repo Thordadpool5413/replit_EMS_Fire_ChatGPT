@@ -1,3 +1,4 @@
+import { canonicalizeAgencyCounty, normalizeCountyName } from '../utils/countyIdentity';
 import { gunzipSync, strFromU8 } from 'fflate';
 /**
  * @license
@@ -104,7 +105,7 @@ export interface SvgProjectedCounty {
   stateCode: string;
   landAreaSqMiles: number;
   citiesCount: number;
-  population: number;
+  population: number | null;
   medicareDenialRatePct: number | null;
   medicareDeniedClaimCount?: number;
   medicareAdjudicatedClaimCount?: number;
@@ -112,7 +113,7 @@ export interface SvgProjectedCounty {
   medicareDenialSource?: string;
   medicareDenialReportingPeriod?: string;
   medicareDenialSourceUrl?: string;
-  averageTransportMinutes: number;
+  averageTransportMinutes: number | null;
   svgPath: string;
   labelX: number;
   labelY: number;
@@ -243,6 +244,8 @@ class CountyBoundaryHierarchyService {
       stNode.countiesByFips[c.countyFips] = countyNode;
       stNode.countiesByName[c.countyName.toLowerCase()] = countyNode;
       stNode.countiesByName[c.rawName.toLowerCase()] = countyNode;
+      stNode.countiesByName[normalizeCountyName(c.countyName)] = countyNode;
+      for (const alias of c.aliases ?? []) stNode.countiesByName[normalizeCountyName(alias)] = countyNode;
       stNode.countiesList.push(countyNode);
       stNode.totalLandAreaSqMiles = +(stNode.totalLandAreaSqMiles + countyNode.landAreaSqMiles).toFixed(1);
       stNode.totalCitiesCount += citiesList.length;
@@ -287,12 +290,13 @@ class CountyBoundaryHierarchyService {
       }
     }
 
-    for (const ag of agencies) {
+    for (const raw of agencies) {
+      const ag = canonicalizeAgencyCounty(raw);
       const stNode = h.statesByCode[ag.stateCode.toUpperCase()];
       if (!stNode) continue;
       const cClean = ag.county.toLowerCase().trim();
       const cRaw = cClean.replace(/ county| parish| borough/gi, '').trim();
-      const coNode = stNode.countiesByName[cClean] || stNode.countiesByName[cRaw];
+      const coNode = (ag.countyFips ? stNode.countiesByFips[ag.countyFips] : undefined) || stNode.countiesByName[normalizeCountyName(ag.county)] || stNode.countiesByName[cClean] || stNode.countiesByName[cRaw];
       if (!coNode) continue;
       const cityKey = normalizePlaceName(ag.city);
       const ctNode = coNode.citiesByName[cityKey];

@@ -1,3 +1,4 @@
+import { canonicalizeAgencyCounty } from '../utils/countyIdentity';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -658,6 +659,8 @@ class DataSanitizationService {
       this.mockAgenciesStrippedCount++;
       return null;
     }
+
+    agency = canonicalizeAgencyCounty(agency);
 
     // 1. Filter out any mock or test field notes
     const rawNotes = Array.isArray(agency.fieldNotes) ? agency.fieldNotes : [];

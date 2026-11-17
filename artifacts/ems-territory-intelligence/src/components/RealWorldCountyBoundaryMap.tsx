@@ -576,7 +576,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     return (
                       <div className="ci-figs cfs-brief">
                         <dl className="cfs-lead" aria-label="Primary county figures">
-                          <div className="cfs-fig" data-tone="community"><dt><Users className="cfs-ico" aria-hidden="true" />Population</dt><dd>{inspectedCounty.population.toLocaleString()}</dd></div>
+                          <div className="cfs-fig" data-tone="community"><dt><Users className="cfs-ico" aria-hidden="true" />Population</dt><dd>{(inspectedCounty.population == null ? 'Not available' : inspectedCounty.population.toLocaleString())}</dd></div>
                           <div className="cfs-fig" data-tone="ops"><dt><Timer className="cfs-ico" aria-hidden="true" />Avg transport time</dt><dd>{n(inspectedCounty.averageTransportMinutes) ? <>{inspectedCounty.averageTransportMinutes}<small>min</small></> : na}</dd></div>
                           <div className="cfs-fig" data-tone="cardiac"><dt title="Out-of-hospital cardiac arrest (OHCA) incidents per year"><HeartPulse className="cfs-ico" aria-hidden="true" />Cardiac arrests</dt><dd>{n(rec?.annualCardiacArrestIncidents) ? <>{rec!.annualCardiacArrestIncidents.toLocaleString()}<small>/yr</small></> : na}</dd></div>
                         </dl>

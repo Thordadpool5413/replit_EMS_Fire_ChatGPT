@@ -1,9 +1,11 @@
 import { execFile, spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { gunzipSync } from 'node:zlib';
 
 const execFileAsync = promisify(execFile);
 
@@ -2808,7 +2810,7 @@ async function checkMapPaletteAtViewport(cdp, viewport) {
       fill: selected?.getAttribute('fill') ?? null,
       selectedStroke: selected?.getAttribute('stroke') ?? null,
       selectedOuterOutline: [...(selected?.parentElement?.querySelectorAll('path') ?? [])]
-        .some((path) => path.getAttribute('stroke') === '#67D6CE'),
+        .some((path) => path.getAttribute('stroke') === '#F4C86A'),
       stateFillCount: fills.length,
       minimumContrast: contrast.length ? Math.min(...contrast) : 0,
       lowEndpointLuminance: lowFill ? luminance(lowFill) : null,
@@ -2926,6 +2928,220 @@ async function checkMapPaletteAtViewport(cdp, viewport) {
       !document.querySelector('[data-testid="select-map-color-palette"]')`,
     `restoring the standard agency map at ${viewport.width}px`,
   );
+}
+
+async function selectHomeMapStateAndReturn(cdp, viewport, stateName) {
+  const selected = await evaluate(cdp, `(() => {
+    const state = [...document.querySelectorAll('.home-map-state-path')]
+      .find((path) => path.getAttribute('aria-label')?.startsWith(${JSON.stringify(`${stateName}.`)}));
+    state?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    return Boolean(state);
+  })()`);
+  assert(selected, `Could not select ${stateName} from the Home map at ${viewport.width}px`);
+  await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, `${stateName} county directory`);
+  await openPrimaryWorkspace(cdp, 'Map', viewport.mobile ? '.pi-mobile-nav' : '.pi-primary-sidebar');
+  await waitFor(
+    cdp,
+    `Boolean(document.querySelector('.home-map-state-path[aria-label^="${stateName}."][aria-pressed="true"]'))`,
+    `${stateName} selected on the returning Home map`,
+  );
+}
+
+function readGzippedJson(relativePath) {
+  const filePath = path.resolve(process.cwd(), relativePath);
+  return JSON.parse(gunzipSync(readFileSync(filePath)).toString('utf8'));
+}
+
+function buildExpectedAcsStateSummaries() {
+  const countyFixture = JSON.parse(
+    readFileSync(path.resolve(process.cwd(), 'scripts/fixtures/census-2026-county-identities.json'), 'utf8'),
+  );
+  const appCounties = readGzippedJson('artifacts/ems-territory-intelligence/src/data/all-counties-database.json.gz');
+  const acsDataset = readGzippedJson('artifacts/ems-territory-intelligence/src/data/acs-county-metrics-2024.json.gz');
+  const countyCounts = new Map();
+  for (const county of countyFixture.counties) {
+    countyCounts.set(county.USPS, (countyCounts.get(county.USPS) ?? 0) + 1);
+  }
+  const acsByFips = new Map(acsDataset.counties.map((row) => [row.countyFips, row]));
+  const countiesByState = new Map();
+  for (const county of appCounties) {
+    const stateRows = countiesByState.get(county.stateCode) ?? [];
+    stateRows.push(acsByFips.get(String(county.countyFips).padStart(5, '0')));
+    countiesByState.set(county.stateCode, stateRows);
+  }
+
+  const median = (values) => {
+    const sorted = [...values].sort((left, right) => left - right);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+  };
+  const summaries = new Map();
+  for (const [stateCode, rows] of countiesByState) {
+    const valid = rows.filter(Boolean);
+    const population = valid.reduce((total, row) => total + (row.population ?? 0), 0);
+    const ageCount = valid.reduce((total, row) => total + (row.population65Plus ?? 0), 0);
+    const povertyUniverse = valid.reduce((total, row) => total + (row.povertyUniverse ?? 0), 0);
+    const belowPoverty = valid.reduce((total, row) => total + (row.populationBelowPoverty ?? 0), 0);
+    const incomes = valid
+      .map((row) => row.medianHouseholdIncome)
+      .filter((value) => Number.isFinite(value) && value >= 0);
+    summaries.set(stateCode, {
+      countyCount: countyCounts.get(stateCode) ?? 0,
+      population: { value: population, available: valid.filter((row) => Number.isFinite(row.population)).length },
+      age: { value: population ? (ageCount / population) * 100 : null, available: valid.filter((row) => Number.isFinite(row.population65Plus) && row.population > 0).length },
+      poverty: { value: povertyUniverse ? (belowPoverty / povertyUniverse) * 100 : null, available: valid.filter((row) => Number.isFinite(row.povertyUniverse) && row.povertyUniverse > 0 && Number.isFinite(row.populationBelowPoverty)).length },
+      income: { value: incomes.length ? median(incomes) : null, available: incomes.length },
+    });
+  }
+  return { summaries, reportingPeriod: acsDataset.source.reportingPeriod };
+}
+
+async function checkEveryStateMapAtViewport(cdp, viewport, expectedAcs, checkClicks) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, `Home map at ${viewport.width}px`);
+  await evaluate(cdp, `(() => {
+    const florida = [...document.querySelectorAll('.home-map-state-path')]
+      .find((path) => path.getAttribute('aria-label')?.startsWith('Florida.'));
+    florida?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    return Boolean(florida);
+  })()`);
+  await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen .county-selection-title'))`, `Florida county view at ${viewport.width}px`);
+  await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('.county-selection-context-row button')]
+      .find((candidate) => candidate.innerText.trim() === 'All states');
+    button?.click();
+    return Boolean(button);
+  })()`);
+  await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen .us-state-path'))`, `national Territory map at ${viewport.width}px`);
+  await evaluate(cdp, `(() => {
+    const select = document.querySelector('[data-testid="select-state-map-layer"]');
+    if (!select) return false;
+    select.value = 'agency-records';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(
+    cdp,
+    `document.querySelector('[data-testid="select-state-map-layer"]')?.value === 'agency-records'`,
+    `agency-records layer at ${viewport.width}px`,
+  );
+
+  const statePaths = await evaluate(cdp, `(() => [...document.querySelectorAll('.territory-explorer-screen .us-state-path')].map((path) => ({
+    name: path.getAttribute('aria-label')?.replace(/^Inspect (.*) counties$/, '$1') ?? '',
+    title: path.querySelector('title')?.textContent ?? '',
+    fill: path.getAttribute('fill') ?? '',
+    role: path.getAttribute('role') ?? '',
+    tabIndex: path.getAttribute('tabindex'),
+  })))()`);
+  const codes = statePaths.map((state) => state.title.match(/^.+? \(([A-Z]{2})\)/)?.[1] ?? '');
+  const expectedCodes = [...expectedAcs.summaries.keys()].sort();
+  assert(statePaths.length === 51, `Territory map drew ${statePaths.length} states/DC instead of 51`);
+  assert(new Set(codes).size === 51 && codes.every(Boolean), `Territory map state codes are missing or duplicated: ${JSON.stringify(codes)}`);
+  assert(
+    JSON.stringify([...codes].sort()) === JSON.stringify(expectedCodes),
+    `Territory map code set differs from county geography: ${JSON.stringify({ codes: [...codes].sort(), expectedCodes })}`,
+  );
+  for (const state of statePaths) {
+    const match = state.title.match(/^(.+?) \(([A-Z]{2})\)/);
+    assert(match, `State map path has no state name/code title: ${JSON.stringify(state)}`);
+    const [, stateName, stateCode] = match;
+    const expected = expectedAcs.summaries.get(stateCode);
+    assert(expected, `${stateCode} has no county-backed expected state summary`);
+    assert(state.name === stateName, `${stateCode} map accessible label and title disagree: ${JSON.stringify(state)}`);
+    assert(state.role === 'button' && state.tabIndex === '0', `${stateCode} map boundary is not keyboard accessible`);
+    assert(state.fill && state.fill !== 'url(#us-map-missing-hatch)', `${stateCode} default map fill is missing`);
+    const countMatch = state.title.match(/Click to inspect (\d+) (?:legacy county polygons|counties)/);
+    assert(Number(countMatch?.[1]) === expected.countyCount, `${stateCode} map county count does not match the Census county identity fixture`);
+  }
+
+  const layers = [
+    { key: 'acs-population', measure: 'population', format: (value) => Math.round(value).toLocaleString() },
+    { key: 'acs-age65-share', measure: 'age', format: (value) => `${value.toFixed(1)}%` },
+    { key: 'acs-poverty-rate', measure: 'poverty', format: (value) => `${value.toFixed(1)}%` },
+    { key: 'acs-county-income-median', measure: 'income', format: (value) => `$${Math.round(value).toLocaleString()}` },
+  ];
+  for (const layer of layers) {
+    await evaluate(cdp, `(() => {
+      const select = document.querySelector('[data-testid="select-state-map-layer"]');
+      if (!select) return false;
+      select.value = ${JSON.stringify(layer.key)};
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()`);
+    await waitFor(cdp, `document.querySelector('[data-testid="select-state-map-layer"]')?.value === ${JSON.stringify(layer.key)}`, `${layer.key} layer`);
+    const titles = await evaluate(cdp, `(() => [...document.querySelectorAll('.territory-explorer-screen .us-state-path')].map((path) => ({
+      title: path.querySelector('title')?.textContent ?? '',
+      ariaLabel: path.getAttribute('aria-label') ?? '',
+    })))()`);
+    assert(titles.length === 51, `${layer.key} rendered ${titles.length} state/DC titles`);
+    for (const item of titles) {
+      const match = item.title.match(/^.+? \(([A-Z]{2})\)/);
+      const code = match?.[1];
+      const expected = code ? expectedAcs.summaries.get(code) : null;
+      const metric = expected?.[layer.measure];
+      assert(expected && metric, `${layer.key} has no expected value for ${code ?? item.title}`);
+      const expectedCoverage = `${metric.available}/${expected.countyCount} county-equivalents`;
+      assert(item.title.includes(expectedCoverage), `${layer.key} coverage text is wrong for ${code}: ${item.title}`);
+      if (metric.value == null || metric.available !== expected.countyCount) {
+        assert(item.title.includes('State value not mapped'), `${layer.key} incomplete state ${code} is not identified as unmapped: ${item.title}`);
+      } else {
+        assert(item.title.includes(`${expectedAcs.reportingPeriod} ACS`), `${layer.key} reporting period is missing for ${code}: ${item.title}`);
+        assert(item.title.includes(layer.format(metric.value)), `${layer.key} state value does not match its county rollup for ${code}: ${item.title}`);
+      }
+    }
+  }
+
+  if (!checkClicks) {
+    console.log(`PASS ${viewport.width}×${viewport.height}: 51 state/DC polygons, county counts, accessibility, and four rendered ACS layers`);
+    return;
+  }
+  const countiesByCode = new Map(expectedAcs.summaries);
+  for (const state of statePaths) {
+    const { stateCode, stateName } = (() => {
+      const match = state.title.match(/^(.+?) \(([A-Z]{2})\)/);
+      return { stateName: match?.[1], stateCode: match?.[2] };
+    })();
+    await evaluate(cdp, `(() => {
+      const path = [...document.querySelectorAll('.territory-explorer-screen .us-state-path')]
+        .find((candidate) => candidate.querySelector('title')?.textContent.startsWith(${JSON.stringify(`${stateName} (${stateCode})`)}));
+      path?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      return Boolean(path);
+    })()`);
+    await waitFor(
+      cdp,
+      `document.querySelector('.county-selection-title')?.innerText.trim() === ${JSON.stringify(stateName)}`,
+      `${stateName} county drill-down`,
+    );
+    const selected = await evaluate(cdp, `(() => ({
+      name: document.querySelector('.county-selection-title')?.innerText.trim() ?? '',
+      count: document.querySelector('.county-selection-meta strong')?.innerText.trim() ?? '',
+      heading: document.querySelector('.county-selection-meta')?.innerText ?? '',
+    }))()`);
+    assert(
+      selected.name === stateName &&
+        Number(selected.count.replaceAll(',', '')) === countiesByCode.get(stateCode)?.countyCount &&
+        selected.heading.includes('counties'),
+      `${stateCode} state drill-down does not match its county records: ${JSON.stringify(selected)}`,
+    );
+    await evaluate(cdp, `(() => {
+      const button = [...document.querySelectorAll('.county-selection-context-row button')]
+        .find((candidate) => candidate.innerText.trim() === 'All states');
+      button?.click();
+      return Boolean(button);
+    })()`);
+    await waitFor(
+      cdp,
+      `document.querySelectorAll('.territory-explorer-screen .us-state-path').length === 51`,
+      `${stateName} return to national state map`,
+    );
+  }
+  console.log(`PASS ${viewport.width}×${viewport.height}: selected and returned from all 51 state/DC county views`);
 }
 
 async function checkHomeMapAtViewport(cdp, viewport) {
@@ -3212,6 +3428,7 @@ async function checkHomeMapAtViewport(cdp, viewport) {
   const [, red, , blue] = texasFill.match(/^#(..)(..)(..)$/).map((channel) => parseInt(channel, 16));
   assert(blue > red, `Agency-count shading should use the blue sequential palette, received ${texasFill}`);
 
+  await selectHomeMapStateAndReturn(cdp, viewport, 'Florida');
   await checkMapPaletteAtViewport(cdp, viewport);
 
   console.log(
@@ -5528,6 +5745,23 @@ async function main() {
         );
       }
       console.log('Independent EMS and Fire compact profile layout checks passed.');
+      return;
+    }
+
+    if (process.env.STATE_MAP_AUDIT_ONLY === '1') {
+      const expectedAcs = buildExpectedAcsStateSummaries();
+      await checkEveryStateMapAtViewport(
+        cdp,
+        { width: 1366, height: 768, mobile: false },
+        expectedAcs,
+        true,
+      );
+      await checkEveryStateMapAtViewport(
+        cdp,
+        { width: 390, height: 844, mobile: true },
+        expectedAcs,
+        true,
+      );
       return;
     }
 

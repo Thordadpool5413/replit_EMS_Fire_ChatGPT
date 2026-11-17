@@ -159,6 +159,8 @@ export default function App() {
   const {
     agencies,
     directoryStatus,
+    nationalDirectoryStatus,
+    retryNationalDirectory,
     isCloudConnected,
     cloudSyncCount,
     isSyncing: isCloudSyncing,
@@ -1303,6 +1305,8 @@ export default function App() {
             <ErrorBoundary fallback={<HomeMapFailureFallback onBrowseDirectory={() => handleNavigateTab('states_directory')} />}>
               <HomeHubView
                 agencies={agencies}
+                directoryLoad={nationalDirectoryStatus}
+                onRetryDirectory={retryNationalDirectory}
                 onNavigateTab={handleNavigateTab}
                 onClearGeography={handleClearGeography}
                 globalCategory={globalCategory}

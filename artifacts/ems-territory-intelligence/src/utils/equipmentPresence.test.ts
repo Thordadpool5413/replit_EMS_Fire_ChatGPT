@@ -48,3 +48,14 @@ test('vendor breakdown geography excludes other states and normalizes county suf
  assert.deepEqual(equipmentGeographyScope(agencies,{state:'FL',county:'Bay County',category:'fire'}).map(a=>a.id),['3']);
  assert.equal(equipmentGeographyScope(agencies,{state:'all'}).length,3);
 });
+test('alternate fleet fields participate in every product category without duplicate match rows',async()=>{
+ const {getRecordedVendorMatches}=await import('./equipmentPresence');
+ const agency=make({defibBrand:'ZOLL X Series'},{fleet:{currentDefibVendor:'ZOLL X Series',currentCprDevice:'LUCAS 3',currentVentilator:'Hamilton T1',currentEpcrVendor:'ImageTrend Elite',currentCadVendor:'Motorola'}});
+ assert.equal(equipmentPresence(agency,'monitors'),'zoll');
+ assert.equal(equipmentPresence(agency,'cpr'),'competitor');
+ assert.equal(equipmentPresence(agency,'ventilators'),'competitor');
+ assert(matchesEquipmentFilter(agency,{presence:'competitor',family:'software',vendor:'imagetrend'}));
+ assert(matchesEquipmentFilter(agency,{presence:'competitor',family:'software',vendor:'motorola'}));
+ assert.equal(getRecordedVendorMatches(agency,'monitors').length,1);
+ assert.equal(equipmentPresence(make({}, {fleet:{currentDefibVendor:'ZOLL'},verificationSource:'Geographic prospect generator'})),'unknown');
+});

@@ -1,3 +1,4 @@
+import { createAgencyDirectoryLoader, mergeDirectoryAgency, type DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
 import type { FollowUpChange } from '../utils/followUps';
 import { withWorkspaceLock } from '../services/workspaceLock';
 import { applyAgencyReviews, stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
@@ -16,7 +17,7 @@ import {
   saveAgencyToFirestore, 
   subscribeToFirestoreAgencies, 
   batchSyncAgenciesToFirestore,
-  testFirestoreConnection 
+  fetchAgencyDirectoryPage,
 } from '../utils/firebase';
 import { saveAgencies, loadStoredAgencies } from '../utils/syncStore';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
@@ -25,6 +26,8 @@ import {
   applyAgencySourceRecordData,
   loadAgencySourceRecordData,
 } from '../services/agencySourceRecordStore';
+
+const nationalDirectory = createAgencyDirectoryLoader(fetchAgencyDirectoryPage);
 
 interface UseFirestoreAgenciesOptions {
   globalState?: string;
@@ -38,6 +41,8 @@ export interface UseFirestoreAgenciesResult {
     stateCode: string;
     status: 'loading' | 'ready' | 'unavailable';
   };
+  nationalDirectoryStatus: DirectoryLoadStatus;
+  retryNationalDirectory: () => Promise<void>;
   syncPendingChanges: () => Promise<void>;
   isCloudConnected: boolean;
   isSyncing: boolean;
@@ -75,47 +80,84 @@ export function useFirestoreAgencies({
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [cloudSyncCount, setCloudSyncCount] = useState<number>(0);
-  const [directoryStatus, setDirectoryStatus] = useState<UseFirestoreAgenciesResult['directoryStatus']>({
+  const [nationalDirectoryStatus, setNationalDirectoryStatus] = useState<DirectoryLoadStatus>({ status: 'loading', loaded: 0 });
+  const [stateDirectoryStatus, setDirectoryStatus] = useState<UseFirestoreAgenciesResult['directoryStatus']>({
     stateCode: 'all',
     status: 'ready',
   });
 
-  const initialHydratedRef = useRef<boolean>(false);
+  const toastRef = useRef(onToast);
+  toastRef.current = onToast;
+  const mergeCloudAgencies = useCallback((rawCloudAgencies: Agency[]) => {
+    if (rawCloudAgencies.length > 0) {
+      const localSourceData = loadAgencySourceRecordData();
+      // Strip any mock or test-generated records coming from Firestore
+      const validCloudAgencies = dataSanitizationService.sanitizeAgenciesList(
+        rawCloudAgencies.map(ca => ({
+          ...ca,
+          isCloudPersisted: true,
+          dataProvenanceTier: 'firestore_cloud_synced' as const
+        })),
+        undefined,
+        false
+      );
 
-  // 1. Check connectivity and inspect the cloud count without modifying remote data.
-  useEffect(() => {
-    let isMounted = true;
+      const validCloudIds = validCloudAgencies.map(ca => ca.id);
+      dataSanitizationService.registerCloudSyncedIds(validCloudIds);
+      setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
 
-    async function initializeCloudAndSanitize() {
-      const connected = await testFirestoreConnection();
-      if (!isMounted) return;
-      setIsCloudConnected(connected);
-
-      if (connected && !initialHydratedRef.current) {
-        initialHydratedRef.current = true;
-        try {
-          // P0 Safety Safeguard: Never execute automatic wildcard deletion or purges against production Firestore on mount.
-          // Cloud records are inspected in read-only mode during startup.
-          setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
-        } catch (err) {
-          console.warn('Initial cloud connectivity check deferred:', err);
+      setAllSanitizedAgencies((currentLocal) => {
+        const agencyMap = new Map<string, Agency>();
+        for (const a of currentLocal) {
+          const cleanLocal = dataSanitizationService.sanitizeAgency(a);
+          if (cleanLocal) {
+            agencyMap.set(cleanLocal.id, cleanLocal);
+          }
         }
-      }
+        for (const ca of validCloudAgencies) {
+          const existing = agencyMap.get(ca.id);
+          const mergedRecord = dataSanitizationService.sanitizeAgency(mergeDirectoryAgency(existing, ca));
+          if (mergedRecord) {
+            agencyMap.set(
+              ca.id,
+              applyAgencySourceRecordData(
+                mergedRecord,
+                localSourceData[ca.id],
+              ),
+            );
+          }
+        }
+        for (const item of loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED'))) {
+          try { agencyMap.set(item.agencyId, applyAgencyMutation(agencyMap.get(item.agencyId), item)); } catch { /* Retain unsupported queued actions. */ }
+        }
+        const merged = Array.from(agencyMap.values());
+        try { saveAgencies(merged); } catch (e) { toastRef.current?.(e instanceof Error ? e.message : 'Cloud cache could not be saved.', 'error'); }
+        return merged;
+      });
     }
-
-    initializeCloudAndSanitize();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  // 2. Subscribe only after a state is selected. A national subscription would
-  // download every agency document on each fresh browser session and can exhaust
-  // Firestore's daily read quota. National browsing uses the existing local cache.
+  // Read all existing cloud records once, independently of the selected territory.
+  useEffect(() => {
+    const unsubscribe = nationalDirectory.subscribe((page, progress) => {
+      mergeCloudAgencies(page);
+      setNationalDirectoryStatus(progress);
+      if (page.length || progress.status === 'ready') setIsCloudConnected(true);
+      else if (progress.status === 'unavailable') setIsCloudConnected(false);
+    });
+    const retry = () => { void nationalDirectory.retry(); };
+    window.addEventListener('online', retry);
+    return () => { unsubscribe(); window.removeEventListener('online', retry); };
+  }, [mergeCloudAgencies]);
+
+  const directoryStatus = globalState.toLowerCase() === 'all'
+    ? { stateCode: 'all', status: nationalDirectoryStatus.status }
+    : stateDirectoryStatus;
+
+  // Keep only the selected state live; national pages above are not re-read on navigation.
   useEffect(() => {
     const stateCode = globalState.trim().toUpperCase() || 'ALL';
     if (stateCode === 'ALL') {
-      setDirectoryStatus({ stateCode: 'all', status: 'ready' });
       return;
     }
 
@@ -125,58 +167,8 @@ export function useFirestoreAgencies({
     try {
       unsubscribe = subscribeToFirestoreAgencies((rawCloudAgencies) => {
         setDirectoryStatus({ stateCode, status: 'ready' });
-        if (rawCloudAgencies.length > 0) {
-          const localSourceData = loadAgencySourceRecordData();
-          // Strip any mock or test-generated records coming from Firestore
-          const validCloudAgencies = dataSanitizationService.sanitizeAgenciesList(
-            rawCloudAgencies.map(ca => ({
-              ...ca,
-              isCloudPersisted: true,
-              dataProvenanceTier: 'firestore_cloud_synced' as const
-            })),
-            undefined,
-            false
-          );
-
-          const validCloudIds = validCloudAgencies.map(ca => ca.id);
-          dataSanitizationService.registerCloudSyncedIds(validCloudIds);
-          setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
-
-          setAllSanitizedAgencies((currentLocal) => {
-            const agencyMap = new Map<string, Agency>();
-            for (const a of currentLocal) {
-              const cleanLocal = dataSanitizationService.sanitizeAgency(a);
-              if (cleanLocal) {
-                agencyMap.set(cleanLocal.id, cleanLocal);
-              }
-            }
-            for (const ca of validCloudAgencies) {
-              const existing = agencyMap.get(ca.id);
-              const mergedRecord = dataSanitizationService.sanitizeAgency({
-                ...(existing || {}),
-                ...ca,
-                isCloudPersisted: true,
-                _syncedAt: ca._syncedAt || existing?._syncedAt || new Date().toISOString(),
-                dataProvenanceTier: 'firestore_cloud_synced'
-              } as Agency);
-              if (mergedRecord) {
-                agencyMap.set(
-                  ca.id,
-                  applyAgencySourceRecordData(
-                    mergedRecord,
-                    localSourceData[ca.id],
-                  ),
-                );
-              }
-            }
-            for (const item of loadStoredOutbox().filter(i => (i.status === 'PENDING' || i.status === 'FAILED'))) {
-              try { agencyMap.set(item.agencyId, applyAgencyMutation(agencyMap.get(item.agencyId), item)); } catch { /* Retain unsupported queued actions. */ }
-            }
-            const merged = Array.from(agencyMap.values());
-            try { saveAgencies(merged); } catch (e) { onToast?.(e instanceof Error ? e.message : 'Cloud cache could not be saved.', 'error'); }
-            return merged;
-          });
-        }
+        setIsCloudConnected(true);
+        mergeCloudAgencies(rawCloudAgencies);
       }, stateCode, () => {
         setIsCloudConnected(false);
         setDirectoryStatus({ stateCode, status: 'unavailable' });
@@ -189,7 +181,7 @@ export function useFirestoreAgencies({
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [globalState]);
+  }, [globalState, mergeCloudAgencies]);
 
   // 3. Add available jurisdiction records to the local cache only. Selecting a county
   // must never cause a cloud write or batch synchronization.
@@ -469,6 +461,8 @@ export function useFirestoreAgencies({
   return {
     agencies: visibleAgencies,
     directoryStatus,
+    nationalDirectoryStatus,
+    retryNationalDirectory: nationalDirectory.retry,
     syncPendingChanges,
     isCloudConnected,
     isSyncing,

@@ -238,7 +238,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   }, [zipSearchQuery, stateFilterInput, cityFilterInput, countyFilterInput, regionFilter, providerSortBy, stateMapLayer]);
 
   const effectiveDirectoryStatus = selectedStateCode === 'all'
-    ? 'ready'
+    ? (directoryStatus.stateCode === 'all' ? directoryStatus.status : 'loading')
     : directoryStatus.stateCode === selectedStateCode.toUpperCase()
       ? directoryStatus.status
       : 'loading';
@@ -1832,6 +1832,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               fallback={<TerritoryMapFailureFallback title="State county map unavailable" />}
             >
               <RealWorldCountyBoundaryMap
+                providerScope={agencyCategoryFilter}
                 stateCode={selectedStateCode}
                 selectedCountyName="all"
                 selectedCityName="all"
@@ -2119,6 +2120,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               fallback={<TerritoryMapFailureFallback title="County boundary map unavailable" />}
             >
               <RealWorldCountyBoundaryMap
+                providerScope={agencyCategoryFilter}
                 stateCode={selectedStateCode}
                 selectedCountyName={selectedCountyName}
                 selectedCityName={selectedCityName}

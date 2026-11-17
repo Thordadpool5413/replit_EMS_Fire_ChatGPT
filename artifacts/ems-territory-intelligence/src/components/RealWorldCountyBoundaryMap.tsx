@@ -1,3 +1,4 @@
+import { equipmentGeographyScope } from '../utils/equipmentPresence';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
 import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
@@ -29,6 +30,7 @@ import './CountyInspector.css';
 
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
+  providerScope?: 'all' | 'ems' | 'fire';
   selectedCountyName: string;
   selectedCityName: string;
   agencies: Agency[];
@@ -41,6 +43,7 @@ interface RealWorldCountyBoundaryMapProps {
 
 export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProps> = ({
   stateCode,
+  providerScope = 'all',
   selectedCountyName,
   selectedCityName,
   agencies,
@@ -50,7 +53,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   onShowAllPlaces,
 }) => {
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
-  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(agencies,Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[agencies,equipmentFilter]);
+  const equipmentAgencies = useMemo(() => equipmentGeographyScope(agencies, { state: stateCode, category: providerScope }), [agencies, stateCode, providerScope]);
+  const equipmentCoverage=useMemo(()=>buildEquipmentGeography(equipmentAgencies,Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[equipmentAgencies,equipmentFilter]);
   const [isLoadingBoundaries, setIsLoadingBoundaries] = useState<boolean>(false);
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
@@ -376,7 +380,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         </header>
       )}
 
-      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={agencies.filter(a=>a.stateCode===stateCode)} scopeLabel="loaded records for this state, before county selection"/>
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={equipmentAgencies} scopeLabel="loaded records for this state and provider scope, before county selection"/>
       {equipmentFilter.presence!=='all'&&<p className="cv-note" role="status">{EQUIPMENT_COVERAGE_LEGEND}. County tags use FIPS or an unambiguous county name within its state. {equipmentCoverage.unassignedCounty} loaded records have unresolved county geography.</p>}
       {equipmentFilter.presence!=='all'&&inspectedCounty&&<p className="cv-note" role="status">{inspectedCounty.countyName}: {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.matched||0} selected matches · {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unknown||0} unknown equipment records. These counts describe loaded agencies, not complete ownership.</p>}
       {/* Mode A: statewide county boundaries + inspector */}

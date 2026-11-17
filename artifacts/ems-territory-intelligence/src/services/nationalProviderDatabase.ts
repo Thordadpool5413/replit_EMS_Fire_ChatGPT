@@ -593,7 +593,7 @@ class NationalProviderDatabaseService {
         },
         installedFleet: {
           ...rawAgency.installedFleet,
-          dispatchCadVendor: rawAgency.installedFleet.dispatchCadVendor || 'CentralSquare Enterprise CAD'
+          dispatchCadVendor: rawAgency.installedFleet.dispatchCadVendor
         },
         keyContacts: verifiedContacts,
         ...savedPatch,

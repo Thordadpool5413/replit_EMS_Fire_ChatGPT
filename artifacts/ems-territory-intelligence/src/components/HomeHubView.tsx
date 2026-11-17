@@ -1,3 +1,4 @@
+import type { DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
 import {buildEquipmentGeography,equipmentCoverageColor,EQUIPMENT_COVERAGE_LEGEND} from '../utils/equipmentGeography';
 import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
@@ -172,6 +173,8 @@ const readableTextForFill = (hexColor: string) => {
 };
 
 interface HomeHubViewProps {
+  directoryLoad?: DirectoryLoadStatus;
+  onRetryDirectory?: () => void;
   agencies: Agency[];
   onNavigateTab: (tab: string) => void;
   onClearGeography?: () => void;
@@ -184,6 +187,8 @@ interface HomeHubViewProps {
 
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
   agencies,
+  directoryLoad,
+  onRetryDirectory,
   onNavigateTab,
   onClearGeography,
   globalCategory,
@@ -538,6 +543,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
+              {directoryLoad && <div className="home-equipment-coverage-legend" role="status" aria-live="polite">
+                {directoryLoad.status === 'loading' ? `Loading cloud agency records… ${formatInteger(directoryLoad.loaded)} received. Counts are updating.`
+                  : directoryLoad.status === 'unavailable' ? 'Cloud directory load incomplete. Showing available records; totals may be partial.'
+                  : `Cloud directory loaded · ${formatInteger(directoryLoad.loaded)} records received.`}
+                {directoryLoad.status === 'unavailable' && <button type="button" onClick={onRetryDirectory} className="ml-2 underline">Retry loading</button>}
+              </div>}
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before equipment filtering"/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">

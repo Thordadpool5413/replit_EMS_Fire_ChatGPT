@@ -14,7 +14,12 @@ import {
   collection, 
   setDoc, 
   getDoc, 
-  getDocs, 
+  getDocs,
+  getDocsFromServer,
+  documentId,
+  orderBy,
+  limit,
+  startAfter,
   query, 
   where, 
   onSnapshot, 
@@ -238,6 +243,17 @@ export async function fetchAgenciesFromFirestore(stateCode?: string, county?: st
   }
 }
 
+/** Read the existing cloud directory in stable, bounded pages, without writes. */
+export async function fetchAgencyDirectoryPage(cursor?: string): Promise<import('../services/agencyDirectoryLoader').AgencyDirectoryPage> {
+  const constraints: import('firebase/firestore').QueryConstraint[] = [orderBy(documentId()), limit(500)];
+  if (cursor) constraints.push(startAfter(cursor));
+  const snapshot = await getDocsFromServer(query(collections.agencies, ...constraints));
+  return {
+    agencies: snapshot.docs.map(record => stripBrowserLocalAgencySourceData({ ...record.data(), id: record.id } as Agency)),
+    cursor: snapshot.size === 500 ? snapshot.docs[snapshot.size - 1].id : undefined,
+  };
+}
+
 /**
  * Real-time subscription to agencies collection with optional state filter
  */
@@ -254,7 +270,7 @@ export function subscribeToFirestoreAgencies(
   return onSnapshot(q, (snapshot) => {
     const list: Agency[] = [];
     snapshot.forEach((d) => {
-      list.push(stripBrowserLocalAgencySourceData(d.data() as Agency));
+      list.push(stripBrowserLocalAgencySourceData({ ...d.data(), id: d.id } as Agency));
     });
     onAgenciesUpdate(list);
   }, (error) => {

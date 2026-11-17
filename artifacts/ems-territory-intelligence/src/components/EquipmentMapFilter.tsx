@@ -1,11 +1,16 @@
 import type {Agency} from '../types';
-import React,{useId,useState,useMemo} from 'react';
+import React,{useId,useState,useMemo,useEffect} from 'react';
 import {HeartPulse} from 'lucide-react';
 import {DEFAULT_EQUIPMENT_FILTER,parseEquipmentFilter,EQUIPMENT_VENDORS,getRecordedVendorMatches,matchesEquipmentFilter,type EquipmentMapFilter as Filter} from '../utils/equipmentPresence';
 const KEY='ems-map-equipment-filter-v1';
 export function useEquipmentMapFilter():[Filter,(value:Filter)=>void] {
  const [value,setValue]=useState<Filter>(()=>{try{return parseEquipmentFilter(JSON.parse(sessionStorage.getItem(KEY)||'null'));}catch{return DEFAULT_EQUIPMENT_FILTER;}});
- const update=(next:Filter)=>{setValue(next);try{sessionStorage.setItem(KEY,JSON.stringify(next));}catch{/* Filter remains usable without session storage. */}};
+ useEffect(()=>{
+  const receive=(event:Event)=>setValue(parseEquipmentFilter((event as CustomEvent).detail));
+  window.addEventListener('ems-equipment-filter-changed',receive);
+  return ()=>window.removeEventListener('ems-equipment-filter-changed',receive);
+ },[]);
+ const update=(next:Filter)=>{setValue(next);try{sessionStorage.setItem(KEY,JSON.stringify(next));}catch{/* Filter remains usable without session storage. */}window.dispatchEvent(new CustomEvent('ems-equipment-filter-changed',{detail:next}));};
  return [value,update];
 }
 export function EquipmentMapFilter({value,onChange,agencies=[],onOpen,scopeLabel='loaded records before geographic, search, location, and score filters'}:{value:Filter;onChange:(value:Filter)=>void;agencies?:Agency[];scopeLabel?:string;onOpen?:(agency:Agency)=>void}) {

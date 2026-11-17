@@ -1,3 +1,4 @@
+import {EquipmentRecordSummary} from './EquipmentRecordComposition';
 import React from 'react';
 import {
   BadgeCheck,
@@ -210,6 +211,7 @@ export function CountyEquipmentRecordsPanel({
         Each directory ID is assigned to one county by recorded location. Service-area references remain visible but do not duplicate agency or equipment totals. Source facts are kept separate from installed fields and are not assumed current. Missing entries mean not reported, not that equipment is absent.
       </p>
 
+      <EquipmentRecordSummary coverage={coverage}/>
       <dl className="county-equipment-summary">
         <div><dt>Installed entries</dt><dd>{coverage?.equipmentRecordCount ?? 0}</dd></div>
         <div><dt>Source facts only</dt><dd>{coverage?.sourceFactRecordCount ?? 0}</dd></div>

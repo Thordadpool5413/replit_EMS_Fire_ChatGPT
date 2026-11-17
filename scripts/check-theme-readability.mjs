@@ -1259,7 +1259,7 @@ async function checkHome(cdp, dark) {
     cdp,
     `!document.querySelector('.home-map-state-path[aria-pressed="true"]') &&
       Boolean([...document.querySelectorAll('button')].find((button) => button.innerText.trim() === 'National view')) &&
-      document.querySelector('.home-map-page-heading p')?.innerText.includes('Choose a state or region')`,
+      document.querySelector('.home-map-page-heading p')?.innerText.includes('Choose a state to review')`,
     'return to the national map',
   );
   if (!missingLayer) {

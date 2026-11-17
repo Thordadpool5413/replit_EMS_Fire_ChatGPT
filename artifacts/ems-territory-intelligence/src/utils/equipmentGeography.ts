@@ -231,8 +231,10 @@ export function buildEquipmentGeography(
     countiesByState.set(county.stateCode, [...(countiesByState.get(county.stateCode) || []), county]);
   }
 
+  let excludedPlanningRecords = 0;
   const agencyGroups = new Map<string, Agency[]>();
   agencies.forEach((agency, index) => {
+    if (agency.verificationSource?.includes('Geographic prospect generator') && !agency.isVerifiedRecord && !getRecordedEquipmentEntries(agency).length) { excludedPlanningRecords++; return; }
     const id = agency.id?.trim();
     const key = id ? `id:${id}` : `unidentified-row:${index}`;
     agencyGroups.set(key, [...(agencyGroups.get(key) || []), agency]);
@@ -335,7 +337,7 @@ export function buildEquipmentGeography(
     }
   }
 
-  return { byState, byCounty, unassignedState, unassignedCounty, conflictingCounty };
+  return { byState, byCounty, unassignedState, unassignedCounty, conflictingCounty, excludedPlanningRecords };
 }
 
 export const EQUIPMENT_COVERAGE_STYLES = {

@@ -64,5 +64,7 @@ test('county card reads identity, figures, access, community, risk, geography, s
   const order = ['className="cb-name"', 'className="cfs-lead"', 'className="cfs-ledger"', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));
   order.forEach(i => assert.ok(i >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
-  assert.doesNotMatch(src, /<details/);
+  // Core county figures stay visible; the optional ACS source context may collapse.
+  const withoutAcsDisclosure = src.replace(/<details[^>]*data-testid=\{`panel-acs-county-context-[\s\S]*?<\/details>/, '');
+  assert.doesNotMatch(withoutAcsDisclosure, /<details/);
 });

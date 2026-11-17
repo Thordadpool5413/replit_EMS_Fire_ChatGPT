@@ -1,3 +1,4 @@
+import { canonicalizeAgencyCounty, normalizeCountyName } from './countyIdentity';
 import type { Agency } from '../types';
 import {
   equipmentPresence,
@@ -43,10 +44,7 @@ export const emptyCoverage = (): Coverage => ({
   vendorCounts: {},
 });
 
-const clean = (value: string = '') =>
-  value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b(county|parish|borough|census area|municipality)\b/g, '')
-    .replace(/[^a-z0-9]/g, '');
+const clean = normalizeCountyName;
 
 function addRecord(summary: Coverage, agency: Agency, filter: EquipmentMapFilter) {
   summary.total++;
@@ -125,7 +123,8 @@ export function buildEquipmentGeography(
   let unassignedCounty = 0;
   let conflictingCounty = 0;
 
-  for (const agency of agencies) {
+  for (const rawAgency of agencies) {
+    const agency = canonicalizeAgencyCounty(rawAgency);
     const stateCode =
       stateNames.get(clean(agency.stateCode)) ||
       stateNames.get(clean((agency as Agency & { state?: string }).state));

@@ -59,10 +59,14 @@ test('surfaces no longer render bare Not calculated', () => {
   }
 });
 
-test('home map omits profile and registry count panels but keeps directory access', () => {
+test('home map keeps its original controls without equipment filter panels', () => {
   const src = readFileSync(new URL('./HomeHubView.tsx', import.meta.url), 'utf8');
+  const countyMap = readFileSync(new URL('./RealWorldCountyBoundaryMap.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /status-national-registry-directory|status-agency-directory-load/);
   assert.match(src, /data-testid="button-browse-national-records"/);
+  assert.match(src, /data-testid="select-state-map-metric"/);
+  assert.doesNotMatch(src, /EquipmentMapFilter|EquipmentCoverageLegend|EquipmentRecordBar|home-equipment-state-counts/);
+  assert.match(countyMap, /EquipmentMapFilter/, 'County equipment controls stay available in the county map');
 });
 
 test('county card keeps primary figures visible and labels optional Census source context', () => {

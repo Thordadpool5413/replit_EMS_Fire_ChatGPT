@@ -1435,28 +1435,6 @@
   outline: 2px solid #c4a9ff !important;
   outline-offset: 2px;
 }
-.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--presence {
-  border-color: #53b6a3 !important;
-  background-color: #14332f !important;
-  color: #f1f7fc !important;
-  color-scheme: dark;
-}
-.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--family {
-  border-color: #7694d2 !important;
-  background-color: #202c46 !important;
-  color: #f1f7fc !important;
-  color-scheme: dark;
-}
-.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--vendor {
-  border-color: #c69a54 !important;
-  background-color: #382d1c !important;
-  color: #f1f7fc !important;
-  color-scheme: dark;
-}
-.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select option {
-  background: #102332;
-  color: #f1f7fc;
-}
 @media (max-width: 767px) {
   .home-territory-map-screen-v2 .home-map-heading-actions > button { min-height: 44px; }
 }

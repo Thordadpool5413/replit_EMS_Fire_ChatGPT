@@ -2,9 +2,8 @@
 .home-territory-map-screen-v2 { --pi-surface-bg:#fffdfa; --pi-surface-subtle:#fff1de; --pi-border:#e7c9a5; --pi-text-primary:#49372c; --pi-text-secondary:#705540; }
 .home-territory-map-screen-v2 .home-map-stage-v2 { background:linear-gradient(135deg,#fffdf8,#fff0d7) !important; border-color:#e7c9a5 !important; box-shadow:0 12px 35px -25px #bd8d57 !important; }
 .home-territory-map-screen-v2 .home-map-viewport { background:radial-gradient(ellipse at center,#fffef9,#fff1de) !important; border-color:#e3bd8f !important; box-shadow:inset 0 0 0 1px #fffaf2 !important; }
-.home-territory-map-screen-v2 .home-map-control-row,.home-territory-map-screen-v2 .home-map-inspector-v2,.home-territory-map-screen-v2 .home-equipment-coverage-legend,.home-territory-map-screen-v2 .equipment-map-filter,.home-territory-map-screen-v2 .home-map-legend { background:#fffdfa !important; color:#49372c !important; border-color:#e7c9a5 !important; }
+.home-territory-map-screen-v2 .home-map-control-row,.home-territory-map-screen-v2 .home-map-inspector-v2,.home-territory-map-screen-v2 .home-map-legend { background:#fffdfa !important; color:#49372c !important; border-color:#e7c9a5 !important; }
 .home-territory-map-screen-v2 .home-map-control-rail label,.home-territory-map-screen-v2 .home-map-legend span,.home-territory-map-screen-v2 .home-map-page-heading svg { color:#705540 !important; }
 .home-territory-map-screen-v2 .home-map-control-rail select { background:#fff5e8 !important; color:#49372c !important; border-color:#d7ac7d !important; }
 .home-territory-map-screen-v2 .home-map-control-rail button { color:#ad351f; }
-.home-territory-map-screen-v2 .equipment-record-composition { background:#fffdfa; color:#49372c; }
 .home-territory-map-screen-v2 .home-map-state-preview-title,.home-territory-map-screen-v2 .home-map-state-preview-facts { color:#49372c !important; }

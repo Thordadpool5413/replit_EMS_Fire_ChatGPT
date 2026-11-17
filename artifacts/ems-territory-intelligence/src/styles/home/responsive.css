@@ -1127,11 +1127,6 @@
 /* One scrollable rail owns controls, legend and preview; hover never overlays another panel. */
 .home-territory-map-screen-v2 .home-map-control-rail { min-width:0; display:flex; flex-direction:column; gap:10px; }
 .home-territory-map-screen-v2 .home-map-control-rail .home-map-state-preview { position:static !important; inset:auto !important; transform:none !important; width:auto !important; max-width:100% !important; }
-.home-equipment-coverage-legend { padding:10px; border:1px solid var(--pi-border); border-radius:8px; background:var(--pi-surface-bg); color:var(--pi-text-primary); font-size:12px; line-height:1.5; }
-.home-equipment-coverage-legend p { margin-top:5px; font-size:11px; }
-.home-equipment-state-counts { display:grid; flex:1 1 100%; gap:3px; width:100%; margin:0; padding:6px 8px; border-left:3px solid #12B8A6; border-radius:4px; background:rgba(18,184,166,.08); font-size:11px; line-height:1.45; overflow-wrap:anywhere; }
-.home-equipment-state-counts p { margin:0; color:var(--pi-text-secondary); }
-.home-equipment-state-counts b { color:var(--pi-text-primary); font-weight:700; font-variant-numeric:tabular-nums; }
 @media(min-width:1024px) {
  .home-territory-map-screen-v2 .home-map-stage-v2 { grid-template-columns:minmax(0,1fr) clamp(250px,23vw,320px) !important; grid-template-rows:minmax(0,1fr) !important; align-items:stretch !important; }
  .home-territory-map-screen-v2 .home-map-control-rail { grid-column:2; grid-row:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding-right:4px; }
@@ -1139,9 +1134,6 @@
  .home-territory-map-screen-v2 .home-map-control-rail .home-map-toolbar-v2 { display:flex !important; flex-direction:column !important; align-items:stretch !important; }
  .home-territory-map-screen-v2 .home-map-control-rail .home-map-shortcuts { overflow:visible; }
  .home-territory-map-screen-v2 .home-map-viewport { grid-column:1 !important; grid-row:1 !important; }
- .home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter { flex:none; width:100%; background:var(--pi-surface-bg); color:var(--pi-text-primary); border-color:var(--pi-border); }
- .home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter p { color:var(--pi-text-secondary); }
- .home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select { background:var(--pi-surface-bg); color:var(--pi-text-primary); border-color:var(--pi-border-strong); font-size:12px; letter-spacing:normal; }
 }
 @media(max-width:1023px) {
  .home-territory-map-screen-v2 .home-map-stage-v2 { display:flex !important; flex-direction:column !important; height:auto !important; overflow:visible; }

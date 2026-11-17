@@ -1,3 +1,5 @@
+import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
+import {NationalSourceDirectory} from './NationalSourceDirectory';
 import type { DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
 import {buildEquipmentGeography,equipmentCoverageColor} from '../utils/equipmentGeography';
 import {ALL_NATIONWIDE_COUNTIES} from '../data/allCountiesDatabase';
@@ -46,6 +48,7 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
 const STATE_MAP_METRICS = [
+  { key: 'source-listings', label: 'National registry listings' },
   { key: 'agency-records', label: 'Agency directory records' },
   { key: 'ambulances', label: 'Agency-profile ambulance total' },
   { key: 'fire-engines', label: 'Agency-profile fire-engine total' },
@@ -113,6 +116,7 @@ const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) =>
 };
 
 const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
+  'source-listings': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
   'agency-records': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
   ambulances: { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
   'fire-engines': { stops: ['#DDF5FF', '#A8E4F5', '#62C9E7', '#249FCB', '#126B98'], lowLabel: 'Fewer', highLabel: 'More' },
@@ -197,6 +201,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   globalCity,
   onSelectState
 }) => {
+  const {manifest:sourceDirectory,error:sourceDirectoryError,retry:retrySourceDirectory}=useNationalSourceDirectory();
+  const registryDialog=useRef<HTMLDialogElement>(null);
+  const [registryOpen,setRegistryOpen]=useState(false);
+  useEffect(()=>{if(registryOpen)registryDialog.current?.showModal();else registryDialog.current?.close();},[registryOpen]);
   const [selectedStateCode, setSelectedStateCode] = useState<string>(() => {
     const code = globalState?.trim().toUpperCase();
     return code && code !== 'ALL' && ALL_50_STATES_SUMMARIES[code]
@@ -210,8 +218,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     return ['All', 'Northeast', 'Midwest', 'South', 'West'].includes(saved) ? saved as StateMapRegion : 'All';
   });
   const [mapMetric, setMapMetric] = useState<StateMapMetricKey>(() => {
-    const saved = readMapPreference('metric', 'agency-records');
-    return STATE_MAP_METRICS.some((metric) => metric.key === saved) ? saved as StateMapMetricKey : 'agency-records';
+    const saved = readMapPreference('metric', 'source-listings');
+    return STATE_MAP_METRICS.some((metric) => metric.key === saved) ? saved as StateMapMetricKey : 'source-listings';
   });
   const [mapColorScheme, setMapColorScheme] = useState<MapColorScheme>(() => {
     const saved = readMapPreference('palette', 'standard');
@@ -312,7 +320,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     return Object.fromEntries(
       Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
         const stats = stateStatsByCode[state.code];
+        const sourceCounts=sourceDirectory?.byState[state.code];
+        const sourceCount=sourceCounts?(globalCategory==='ems'?sourceCounts.nppes:globalCategory==='fire'?sourceCounts.usfa:sourceCounts.usfa+sourceCounts.nppes):null;
         const metricData: Record<StateMapMetricKey, StateMapMetricDatum> = {
+          'source-listings': {
+            value: sourceCount,
+            coverage: sourceCounts?`${sourceCounts.usfa.toLocaleString()} USFA fire listings and ${sourceCounts.nppes.toLocaleString()} NPPES ambulance organization listings. ${sourceCounts.countiesWithRecords} of ${sourceCounts.countyCount} counties have assigned listings; ${sourceCounts.unassigned.toLocaleString()} records await county assignment. Sources may overlap; equipment is not reported.`:'National registry index not loaded.',
+            period:'USFA retrieved November 16, 2026; retired registry. NPPES November 9, 2026 release.',
+            sourceAction:'agency-records',
+          },
           'agency-records': {
             value: stats.count,
             coverage: `${formatInteger(stats.count)} ${providerScopeLabel} agency records in the current directory.`,
@@ -353,7 +369,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         return [state.code, metricData];
       }),
     ) as Record<string, Record<StateMapMetricKey, StateMapMetricDatum>>;
-  }, [providerScopeLabel, stateStatsByCode]);
+  }, [providerScopeLabel, stateStatsByCode, sourceDirectory, globalCategory]);
 
   const mapMetricValues = Object.values(stateMapMetricsByCode)
     .map((metrics) => metrics[mapMetric].value)
@@ -467,6 +483,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   return (
     <div>
+      <dialog ref={registryDialog} onClose={()=>setRegistryOpen(false)} onCancel={()=>setRegistryOpen(false)} aria-label="Browse national registry listings" style={{width:'min(960px,94vw)',maxHeight:'90dvh',overflow:'auto',padding:16,borderRadius:12,background:'var(--pi-surface, white)',color:'var(--pi-text-primary, #14283f)'}}>
+        <button autoFocus type="button" className="workspace-button mb-3" onClick={()=>setRegistryOpen(false)}>Close registry</button>
+        {registryOpen&&<NationalSourceDirectory stateCode={selectedStateCode==='all'?'':selectedStateCode} providerScope={globalCategory}/>}
+      </dialog>
       {/* ====================================================================
           1. INTERACTIVE U.S. TERRITORY MAP
          ==================================================================== */}
@@ -487,7 +507,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   ? `Current area: ${globalCounty}, ${globalState && globalState !== 'all' ? globalState : ''}`
                   : globalState && globalState !== 'all'
                     ? `Current area: ${ALL_50_STATES_SUMMARIES[globalState]?.state || globalState}`
-                    : 'Choose a state or region to review county coverage and available EMS and fire agency records.'}
+                    : 'Choose a state to review national registry listings, county coverage and available equipment evidence.'}
             </p>
           </div>
 
@@ -546,10 +566,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
+              <div className="home-equipment-coverage-legend" role="status">
+                {sourceDirectory?`${formatInteger(sourceDirectory.statesAndDcRecords)} national source listings · 50 states + D.C. · ${formatInteger(sourceDirectory.countiesWithRecords)} of 3,144 counties with assigned listings.`:sourceDirectoryError||'Loading national source directory…'}
+                <button type="button" className="ml-2 underline" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
+                {sourceDirectoryError&&<button type="button" className="ml-2 underline" onClick={retrySourceDirectory}>Retry registry</button>}
+                <span className="block">Registry listings can overlap. Equipment evidence is a separate layer.</span>
+              </div>
               {directoryLoad && <div className="home-equipment-coverage-legend" role="status" aria-live="polite">
-                {directoryLoad.status === 'loading' ? `Loading cloud agency records… ${formatInteger(directoryLoad.loaded)} received. Counts are updating.`
-                  : directoryLoad.status === 'unavailable' ? 'Cloud directory load incomplete. Showing available records; totals may be partial.'
-                  : `Cloud directory loaded · ${formatInteger(directoryLoad.loaded)} records received.`}
+                {directoryLoad.status === 'loading' ? `Loading cloud workspace profiles… ${formatInteger(directoryLoad.loaded)} received. Counts are updating.`
+                  : directoryLoad.status === 'unavailable' ? 'Cloud workspace load incomplete. Profile and equipment totals may be partial.'
+                  : `Cloud workspace · ${formatInteger(directoryLoad.loaded)} agency profiles. This is separate from national registry coverage.`}
                 {directoryLoad.status === 'unavailable' && <button type="button" onClick={onRetryDirectory} className="ml-2 underline">Retry loading</button>}
               </div>}
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">

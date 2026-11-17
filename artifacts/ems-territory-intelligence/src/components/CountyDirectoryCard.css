@@ -81,6 +81,8 @@
 
 @container (max-width: 380px) {
   .county-brief .cb-geo-row { grid-template-columns: minmax(0, 1fr); gap: .15rem; }
+  .county-brief .cfs-lead .cfs-fig { flex-wrap: wrap; gap: .3rem; }
+  .county-brief .cfs-lead dd { margin-left: auto; }
 }
 @media (max-width: 767px) {
   .county-brief { --geo-pad: .75rem; --geo-fig: 20px; }
@@ -121,4 +123,102 @@
   .county-brief .cb-place { color: ButtonText; }
   .county-brief .cb-link { color: LinkText; }
   .county-brief :is(button, a):focus-visible { outline: 2px solid Highlight; }
+}
+
+/* Dense county directory cards: retain the complete record while reducing
+   excess vertical padding and keeping paired desktop cards visually aligned. */
+.county-signal-list:has(> .county-brief) {
+  gap: .45rem;
+  align-items: stretch;
+}
+@media (min-width: 900px) {
+  .county-signal-list:has(> .county-brief) {
+    grid-auto-rows: auto;
+  }
+}
+.county-brief .cb-head {
+  gap: .45rem;
+  padding: .4rem .5rem .4rem var(--geo-pad);
+}
+.county-brief .cb-name { font-size: 14px; }
+.county-brief .cb-seat { font-size: 11.5px; gap: 0 .6rem; }
+.county-brief .cb-inspect {
+  min-height: 1.9rem;
+  padding-inline: .65rem;
+  font-size: 12.5px;
+}
+.county-brief .cb-body {
+  gap: .25rem;
+  padding: .4rem calc(var(--geo-pad) - .05rem);
+}
+.county-brief .cfs-lead { gap: .35rem .55rem; }
+.county-brief .cfs-lead .cfs-fig { gap: .12rem; padding-top: .22rem; }
+.county-brief .cfs-lead dd { font-size: 17px; }
+.county-brief .cfs-ledger { column-gap: .65rem; }
+.county-brief .cfs-ledger .cfs-fig {
+  min-height: 1.35rem;
+  padding-block: .08rem;
+}
+.county-brief .cfs-ledger dd { font-size: 13px; }
+.county-brief .cb-risk { gap: .18rem .55rem; }
+.county-brief .cb-risk-chip { font-size: 12px; }
+.county-brief .cb-geo {
+  gap: .16rem;
+  padding-top: .28rem;
+  font-size: 12.5px;
+}
+.county-brief .cb-geo-facts { gap: .15rem .8rem; }
+.county-brief .cb-zip-run { font-size: 12px; line-height: 1.35; }
+.county-brief .cb-place-list { gap: 0 .42rem; }
+.county-brief .cb-place { min-height: 24px; font-size: 12.5px; }
+.county-brief .cb-sources { padding-top: .25rem; }
+@container (min-width: 300px) {
+  .county-brief .cfs-lead { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem .4rem; }
+  .county-brief .cfs-lead .cfs-fig {
+    display: grid;
+    align-content: start;
+    gap: .1rem;
+    padding: .2rem 0 0;
+    border-top: 2px solid color-mix(in srgb, var(--tone) 55%, transparent);
+    border-bottom: 0;
+    box-shadow: none;
+  }
+  .county-brief .cfs-lead dt { gap: .25rem; font-size: 12px; line-height: 1.15; }
+  .county-brief .cfs-lead .cfs-ico { width: 14px; height: 14px; }
+  .county-brief .cfs-lead dd { font-size: 17px; }
+  .county-brief .cfs-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .county-brief .cfs-ledger .cfs-fig {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: .06rem;
+    min-height: 0;
+    padding-block: .12rem;
+  }
+  .county-brief .cfs-ledger dt { gap: .25rem; font-size: 11px; line-height: 1.15; }
+  .county-brief .cfs-ledger .cfs-ico { width: 14px; height: 14px; }
+  .county-brief .cfs-ledger dd {
+    max-width: none;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.15;
+  }
+  .county-brief .cb-geo-row {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: .35rem;
+    align-items: start;
+  }
+  .county-brief .cb-geo-row:has(.cb-place-list) { grid-template-columns: minmax(0, 1fr); }
+  .county-brief .cb-geo-label { font-size: 11px; }
+  .county-brief details[aria-label^="Official Census context"] summary { flex-wrap: nowrap; }
+}
+@container (min-width: 340px) {
+  .county-brief .cfs-ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 .45rem; }
+  .county-brief .cfs-ledger .cfs-fig { min-height: 0; }
+}
+@media (max-width: 767px) {
+  .county-brief .cb-head { padding: .45rem .5rem .45rem var(--geo-pad); }
+  .county-brief .cb-inspect { min-height: 44px; }
+  .county-brief .cb-place { min-height: 28px; }
+  .county-brief .cb-name { overflow-wrap: normal; word-break: normal; }
 }

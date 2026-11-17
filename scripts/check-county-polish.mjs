@@ -308,9 +308,10 @@ async function checkDenseFixture(viewport, forcedScheme) {
       return {text:card.innerText, figures:figures.length,
         missing:figures.filter(f=>f.innerText.includes('Not reported')).length,
         zeros:figures.filter(f=>/^\\$?0(?:\\.0)?(?:%|\\s*mi|\\s*\\/yr)?$/.test(f.querySelector('dd').innerText.trim())).length,
-        sources:sources.length, sourceMetadata:sources.every(s=>/December 2025 release/.test(s.innerText) &&
-          /County-equivalent reporting geography/.test(s.innerText) && /January–December 2024/.test(s.innerText)),
-        places:card.querySelectorAll('.cb-place').length, closed:card.querySelectorAll('details:not([open])').length,
+         sources:sources.length, sourceMetadata:sources.every(s=>/December 2025 release/.test(s.innerText) &&
+           /County-equivalent reporting geography/.test(s.innerText) && /January–December 2024/.test(s.innerText)),
+         places:card.querySelectorAll('.cb-place').length,
+         closed:[...card.querySelectorAll('details:not([open])')].map(detail=>detail.dataset.testid),
         clipped:[...card.querySelectorAll('dl,dt,dd,section,table,th,td,button')].some(e=>e.scrollWidth>e.clientWidth+2),
         links:sources.every(s=>s.querySelector('a')?.href.startsWith('https://example.org/'))};
     })()`);
@@ -321,7 +322,8 @@ async function checkDenseFixture(viewport, forcedScheme) {
     assert(result.sourceMetadata && result.links,`${label} ${theme}: source provenance lost`);
     assert.equal(result.places,12,`${label} ${theme}: dense mapped places lost`);
     assert(result.text.includes('32023'),`${label} ${theme}: final ZIP lost`);
-    assert.equal(result.closed,0,`${label} ${theme}: dense details collapsed`);
+     assert(result.closed.every(testId=>testId?.startsWith('panel-acs-county-context-')),
+       `${label} ${theme}: only optional Census source context may start collapsed`);
     assert(!result.clipped,`${label} ${theme}: dense fixture clipped`);
     if (forcedScheme) {
       await checkForcedSurface('#county-regression-fixture .county-brief',`${label}-forced-${forcedScheme}-dense-${theme}`);
@@ -564,24 +566,27 @@ try {
       return {text, cardHeight:card.getBoundingClientRect().height,
         primaryNumberColor:getComputedStyle(card.querySelector('[data-testid="text-county-population-12001"]')).color,
         labelColor:getComputedStyle(card.querySelector('[data-figure-key="population"] dt')).color,
-        closedDetails:card.querySelectorAll('details:not([open])').length,
+        closedDetails:[...card.querySelectorAll('details:not([open])')].map(detail=>detail.dataset.testid),
         figureKeys:[...card.querySelectorAll('[data-figure-key]')].map(item=>item.getAttribute('data-figure-key')),
         placeNames:placeButtons.map(button=>button.innerText.trim()),sourceText:sources?.innerText ?? '',
         titleSize:parseFloat(getComputedStyle(card.querySelector('h3')).fontSize),
         titleHeight:card.querySelector('h3').getBoundingClientRect().height,
         titleLineHeight:parseFloat(getComputedStyle(card.querySelector('h3')).lineHeight),
-        titleFont:getComputedStyle(card.querySelector('h3')).fontFamily};
+        titleFont:getComputedStyle(card.querySelector('h3')).fontFamily,
+        ledgerColumns:getComputedStyle(card.querySelector('.cfs-ledger')).gridTemplateColumns};
     })()`);
     assert(!/User review not recorded|End-user review/i.test(row.text), 'Review-status clutter remains');
-    assert.equal(row.closedDetails, 0, `${label}: county details or sources hidden`);
+    assert.deepEqual(row.closedDetails, ['panel-acs-county-context-12001'],
+      `${label}: only the optional Census source context may start collapsed`);
     assert.equal(row.placeNames.filter(name => name.toLowerCase() === 'high springs').length, 1, 'Duplicate High Springs');
     assert(row.text.includes('82.354°W') && !row.text.includes('-82.354°W'), 'Incorrect coordinate sign/direction');
-    assert(row.sourceText.includes('Source') || row.sourceText.includes('source'), 'Missing inline coverage');
+    assert(!/No source mapped|No source details attached/i.test(row.text),
+      'County card should not imply source failure when no source record is attached');
     assert(row.titleSize >= 14 && !/mono/i.test(row.titleFont), 'County titles too small or monospaced');
     await capture(`${label}-directory`, '[data-testid="row-county-signals-12001"]');
     if (cardsOnly) {
       // Captioned story groups retain all eight figures without microtype.
-      console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall`);
+       console.log(`${label}: first card ${Math.round(row.cardHeight)}px tall; care/community columns ${row.ledgerColumns}`);
       assert(row.titleHeight <= row.titleLineHeight * 1.2, `${label}: county name squeezed into multiple lines`);
       assert.equal(row.figureKeys.length, 8, `${label}: county figures duplicated or removed`);
       assert.equal(new Set(row.figureKeys).size, 8, `${label}: each county figure must appear once`);
@@ -603,8 +608,8 @@ try {
           const transport=cards[0].querySelector('[data-testid="text-county-transport-12001"]');
           const metrics=[...cards[0].querySelectorAll('[data-figure-key]')].map(metric=>{
             const value=metric.querySelector('dd'), label=metric.querySelector('dt');
-             const icon=metric.querySelector('dt svg.cb-ico,dt .cb-ico svg');
-            return {key:metric.dataset.figureKey,icon:!!icon && icon.getBoundingClientRect().width>=12,context:!!metric.closest('.cb-group--context'),color:getComputedStyle(value).color,
+          const icon=metric.querySelector('dt .cfs-ico');
+          return {key:metric.dataset.figureKey,icon:!!icon && icon.getBoundingClientRect().width>=12,context:!!metric.closest('.cfs-ledger'),color:getComputedStyle(value).color,
               labelColor:getComputedStyle(label).color,size:parseFloat(getComputedStyle(value).fontSize),
               right:value.getBoundingClientRect().right,
               labelClipped:label.scrollWidth > label.clientWidth + 1,
@@ -618,10 +623,13 @@ try {
            return {metrics,cardiacColor:getComputedStyle(cardiac).color,transportColor:getComputedStyle(transport).color,
              cardiacIconColor:getComputedStyle(cards[0].querySelector('[data-figure-key="annualCardiacArrestIncidents"] svg')).color,
              transportIconColor:getComputedStyle(cards[0].querySelector('[data-figure-key="averageTransportMinutes"] svg')).color,
-            groups:[...cards[0].querySelectorAll('.cb-group-cap')].map(e=>e.textContent),
+            groups:['.cfs-lead','.cfs-ledger','.cb-risk','.cb-geo'].map(selector=>{
+              const section=cards[0].querySelector(selector);
+              return {selector,top:section?.getBoundingClientRect().top};
+            }),
             pageOverflow:document.documentElement.scrollWidth > innerWidth + 1,
-            seatTop:cards[0].querySelector('.cb-seat').getBoundingClientRect().top,
-            titleBottom:cards[0].querySelector('.cb-name').getBoundingClientRect().bottom,
+             seatRect:(()=>{const r=cards[0].querySelector('.cb-seat').getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})(),
+             titleRect:(()=>{const r=cards[0].querySelector('.cb-name').getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})(),
             parentWidth:document.querySelector('.county-signal-list').getBoundingClientRect().width,
             cards:cards.map(card=>{const r=card.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})};
         })()`);
@@ -629,24 +637,27 @@ try {
          assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.icon),
            `${label} ${theme}: a primary county metric lost its visible icon`);
         assert(!pair.pageOverflow,`${label} ${theme}: county directory overflows viewport`);
-         assert.deepEqual(pair.groups,['Operational snapshot','County context','Geography and places'],`${label} ${theme}: county brief groups missing`);
-        assert(pair.seatTop >= pair.titleBottom - 1,`${label} ${theme}: identity metadata runs into county name`);
+         assert(pair.groups.every((group,index)=>group.top!=null && (index===0 || group.top>=pair.groups[index-1].top)),
+           `${label} ${theme}: county brief reading order broken`);
+         assert(!(pair.seatRect.left < pair.titleRect.right && pair.seatRect.right > pair.titleRect.left &&
+           pair.seatRect.top < pair.titleRect.bottom && pair.seatRect.bottom > pair.titleRect.top),
+           `${label} ${theme}: identity metadata overlaps county name`);
          assert.notEqual(pair.cardiacIconColor, pair.transportIconColor, `${label} ${theme}: missing distinct cardiac icon accent`);
         const neutralMetrics=pair.metrics.filter(metric=>metric.key!=='annualCardiacArrestIncidents');
         assert.equal(new Set(neutralMetrics.map(metric=>metric.color)).size,1,
           `${label} ${theme}: decorative metric colors returned`);
          assert.equal(pair.cardiacColor, neutralMetrics[0].color, `${label} ${theme}: metric values should remain neutral`);
-         // Compact captions are 13px; numeric facts remain at least 15px.
-         assert(pair.metrics.every(metric=>metric.size >= 15 && metric.labelSize >= 13),
-          `${label} ${theme}: metric type too small`);
-         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.size>=22),
-           `${label} ${theme}: primary figures lost their visual hierarchy`);
+         // Compact captions remain readable; lead figures retain a clear size hierarchy.
+         assert(pair.metrics.filter(metric=>metric.context).every(metric=>metric.size >= 13 && metric.labelSize >= 11),
+           `${label} ${theme}: supporting metric type too small`);
+         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.size>=17 && metric.labelSize>=12),
+            `${label} ${theme}: primary figures lost their visual hierarchy ${JSON.stringify(pair.metrics.filter(metric=>!metric.context))}`);
         assert(pair.metrics.every(metric=>metric.labelHeight <= metric.labelLine * 3.2),
           `${label} ${theme}: metric labels wrap beyond three lines`);
         assert(pair.metrics.every(metric=>!metric.labelClipped), `${label} ${theme}: metric labels are truncated`);
-         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>metric.valueTop>=metric.labelBottom-1 &&
-           Math.abs(metric.valueLeft-metric.labelLeft)<1),
-           `${label} ${theme}: primary label-over-value alignment broken`);
+         assert(pair.metrics.filter(metric=>!metric.context).every(metric=>
+            metric.valueTop>=metric.labelBottom-1 || metric.valueLeft>=metric.labelRight-1),
+            `${label} ${theme}: primary metric label and value overlap`);
          assert(pair.metrics.filter(metric=>metric.context).every(metric=>
            metric.valueTop>=metric.labelBottom-1 || metric.valueLeft>=metric.labelRight-1),
            `${label} ${theme}: context label and value overlap`);

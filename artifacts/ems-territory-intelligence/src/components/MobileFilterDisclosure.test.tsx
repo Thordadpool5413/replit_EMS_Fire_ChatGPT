@@ -59,10 +59,17 @@ test('surfaces no longer render bare Not calculated', () => {
   }
 });
 
-test('county card reads identity, figures, access, community, risk, geography, sources', () => {
+test('home map omits profile and registry count panels but keeps directory access', () => {
+  const src = readFileSync(new URL('./HomeHubView.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /status-national-registry-directory|status-agency-directory-load/);
+  assert.match(src, /data-testid="button-browse-national-records"/);
+});
+
+test('county card keeps primary figures visible and labels optional Census source context', () => {
   const src = readFileSync(new URL('./CountyDirectoryCard.tsx', import.meta.url), 'utf8');
   const order = ['className="cb-name"', 'className="cfs-lead"', 'className="cfs-ledger"', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));
   order.forEach(i => assert.ok(i >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
-  assert.doesNotMatch(src, /<details/);
+  assert.ok(src.includes('data-testid={`panel-acs-county-context-'));
+  assert.ok(src.includes('Official Census context'));
 });

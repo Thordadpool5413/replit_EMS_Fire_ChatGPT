@@ -20,6 +20,18 @@
 .home-territory-map-screen-v2 .home-map-page-heading svg {
   color: #176b68 !important;
 }
+.home-territory-map-screen-v2 .home-map-heading-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .2rem .75rem;
+}
+.home-territory-map-screen-v2 .home-map-heading-actions > button {
+  width: auto;
+  min-height: 2.25rem;
+  white-space: nowrap;
+}
 
 .dark .home-territory-map-screen-v2 .home-map-page-heading svg {
   color: #76bbb2 !important;
@@ -1395,4 +1407,56 @@
   .home-map-data-status > button,
   .home-map-failure-fallback > button,
   .home-map-unavailable > button { min-height: 44px; }
+}
+
+/* Distinguish map settings by purpose without tinting the actual data colors. */
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--metric {
+  border-color: #4b86b6 !important;
+  background-color: #132b43 !important;
+  color: #f1f7fc !important;
+  color-scheme: dark;
+}
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--palette {
+  border-color: #8975b3 !important;
+  background-color: #2a243d !important;
+  color: #f1f7fc !important;
+  color-scheme: dark;
+}
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--metric:disabled,
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--palette:disabled {
+  color: #d6e1eb !important;
+  opacity: .82;
+}
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--metric:focus-visible {
+  outline: 2px solid #76b8ed !important;
+  outline-offset: 2px;
+}
+.home-territory-map-screen-v2 .home-map-layer-select.home-map-select--palette:focus-visible {
+  outline: 2px solid #c4a9ff !important;
+  outline-offset: 2px;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--presence {
+  border-color: #53b6a3 !important;
+  background-color: #14332f !important;
+  color: #f1f7fc !important;
+  color-scheme: dark;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--family {
+  border-color: #7694d2 !important;
+  background-color: #202c46 !important;
+  color: #f1f7fc !important;
+  color-scheme: dark;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select.equipment-filter-select--vendor {
+  border-color: #c69a54 !important;
+  background-color: #382d1c !important;
+  color: #f1f7fc !important;
+  color-scheme: dark;
+}
+.home-territory-map-screen-v2 .home-map-control-rail .equipment-map-filter select option {
+  background: #102332;
+  color: #f1f7fc;
+}
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-heading-actions > button { min-height: 44px; }
 }

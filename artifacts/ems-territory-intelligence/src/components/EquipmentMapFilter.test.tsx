@@ -3,7 +3,7 @@ import {EquipmentCoverageLegend,EquipmentMapFilter} from './EquipmentMapFilter';
 test('named vendor controls explain matches, counts and missing source context',()=>{
  const agencies=[{id:'1',name:'Example EMS',city:'Town',stateCode:'FL',installedFleet:{defibBrand:'LIFEPAK 15'}}] as Agency[];
  const html=renderToStaticMarkup(<EquipmentMapFilter value={{presence:'competitor',family:'monitors',vendor:'stryker'}} onChange={()=>{}} agencies={agencies}/>);
- for(const text of ['Competitor name','Stryker / Physio-Control (1)','Philips (0)','Example EMS','LIFEPAK 15','No supporting source attached','counts are not market share'])assert(html.includes(text),text);
+  for(const text of ['Competitor name','Stryker / Physio-Control (1)','Philips (0)','Example EMS','LIFEPAK 15','No supporting source attached','counts are not market share','equipment-filter-select--presence','equipment-filter-select--family','equipment-filter-select--vendor'])assert(html.includes(text),text);
 });
 test('unknown-vendor records expose their original equipment value instead of hiding it',()=>{
  const agencies=[{id:'2',name:'County EMS',city:'Town',stateCode:'TX',installedFleet:{defibBrand:'Acme Monitor 5000'}}] as Agency[];

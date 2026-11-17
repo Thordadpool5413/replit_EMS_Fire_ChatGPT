@@ -101,13 +101,13 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
       <div className="cb-body cfs-brief" data-testid={`details-county-context-${c.countyFips}`}>
         <dl className="cfs-lead" aria-label={`Primary figures for ${c.countyName}`}>
           {fig('population', Users, 'community', 'Population', 'Resident population', v => v.toLocaleString(), `text-county-population-${c.countyFips}`)}
-          {fig('averageTransportMinutes', Timer, 'ops', 'Avg transport time', 'Average EMS transport time', v => <>{v.toLocaleString()}<small>min</small></>, `text-county-transport-${c.countyFips}`)}
+          {fig('averageTransportMinutes', Timer, 'ops', 'Avg transport', 'Average EMS transport time', v => <>{v.toLocaleString()}<small>min</small></>, `text-county-transport-${c.countyFips}`)}
           {fig('annualCardiacArrestIncidents', HeartPulse, 'cardiac', 'Cardiac arrests', 'Out-of-hospital cardiac arrest (OHCA) incidents per year', v => <>{v.toLocaleString()}<small>/yr</small></>, `text-county-ohca-${c.countyFips}`)}
         </dl>
 
         <dl className="cfs-ledger" aria-label={`Care access and community context for ${c.countyName}`}>
           {fig('annualEmergencyTransports', Ambulance, 'ops', 'EMS transports', 'Emergency EMS transports per year', v => <>{v.toLocaleString()}<small>/yr</small></>, `text-county-transports-${c.countyFips}`)}
-          {fig('primaryCathLabDistanceMiles', Hospital, 'access', 'Nearest cath lab', 'Distance to primary cath lab', v => <>{v.toFixed(1)}<small>mi</small></>, `text-county-cathlab-${c.countyFips}`)}
+          {fig('primaryCathLabDistanceMiles', Hospital, 'access', 'Cath lab distance', 'Distance to primary cath lab', v => <>{v.toFixed(1)}<small>mi</small></>, `text-county-cathlab-${c.countyFips}`)}
           {fig('seniorPopPct', UserRound, 'community', 'Age 65+', 'Residents age 65 and older', v => <>{v.toFixed(1)}<small>%</small></>)}
           {fig('povertyRatePct', HandCoins, 'community', 'Poverty rate', 'Poverty rate', v => <>{v.toFixed(1)}<small>%</small></>)}
           {fig('medianIncome', Wallet, 'community', 'Median income', 'Median household income', v => `$${v.toLocaleString()}`)}
@@ -115,7 +115,7 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
 
         <p className="cb-risk" style={{ '--cb-risk': riskColor ?? '#b6c1cf' } as React.CSSProperties}>
           <span className="cb-risk-label" title="FEMA National Risk Index: natural hazard category, not agency performance">
-            <Shield className="cfs-ico" aria-hidden="true" />FEMA natural hazard
+            <Shield className="cfs-ico" aria-hidden="true" />FEMA NRI
           </span>
           {nriLoading ? (
             <span className="cb-risk-status" role="status">Loading FEMA record</span>
@@ -144,14 +144,15 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-700 marker:hidden dark:text-slate-200">
               <Database className="h-3.5 w-3.5 shrink-0 text-teal-800 dark:text-teal-200" aria-hidden="true" />
               <strong className="font-bold text-teal-900 dark:text-teal-100">Census ACS · {ACS_COUNTY_SOURCE.reportingPeriod}</strong>
-              <span>
+              <span>Details</span>
+            </summary>
+            <div className="mt-2 border-t border-teal-200/80 pt-2 dark:border-teal-900/80">
+              <p className="mb-2 text-[10px] text-slate-700 dark:text-slate-200">
                 Pop {isNum(acs.population) ? acs.population.toLocaleString() : '—'}
                 {' · '}65+ {acsOlderAdultShare == null ? '—' : `${acsOlderAdultShare.toFixed(1)}%`}
                 {' · '}Poverty {acsPovertyRate == null ? '—' : `${acsPovertyRate.toFixed(1)}%`}
                 {' · '}Median income {isNum(acs.medianHouseholdIncome) ? `$${acs.medianHouseholdIncome.toLocaleString()}` : 'not reported'}
-              </span>
-            </summary>
-            <div className="mt-2 border-t border-teal-200/80 pt-2 dark:border-teal-900/80">
+              </p>
               <nav className="flex flex-wrap gap-x-3 text-[10px] font-semibold" aria-label="Census source tables">
                 <a className="text-blue-800 underline underline-offset-2 dark:text-blue-300" href={countyTableUrl(ACS_COUNTY_SOURCE.tables.populationAndAge)} target="_blank" rel="noopener noreferrer" data-testid={`link-acs-population-age-${c.countyFips}`}>Population & age table</a>
                 <a className="text-blue-800 underline underline-offset-2 dark:text-blue-300" href={countyTableUrl(ACS_COUNTY_SOURCE.tables.poverty)} target="_blank" rel="noopener noreferrer" data-testid={`link-acs-poverty-${c.countyFips}`}>Poverty table</a>

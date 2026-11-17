@@ -207,8 +207,6 @@ interface HomeHubViewProps {
 
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
   agencies,
-  directoryLoad,
-  onRetryDirectory,
   onNavigateTab,
   onClearGeography,
   globalCategory,
@@ -217,7 +215,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   globalCity,
   onSelectState
 }) => {
-  const {manifest:sourceDirectory,error:sourceDirectoryError,retry:retrySourceDirectory}=useNationalSourceDirectory();
+  const {manifest:sourceDirectory}=useNationalSourceDirectory();
   const registryDialog=useRef<HTMLDialogElement>(null);
   const [registryOpen,setRegistryOpen]=useState(false);
   useEffect(()=>{if(registryOpen)registryDialog.current?.showModal();else registryDialog.current?.close();},[registryOpen]);
@@ -620,14 +618,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </p>
           </div>
 
-          <button type="button" className="workspace-text-button" onClick={()=>{
-            setSelectedStateCode('all');
-            setRegionFilter('All');
-            saveMapPreference('region','All');
-            resetMapZoom();
-            onClearGeography?.();
-          }}>National view</button>
-          <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
+          <div className="home-map-heading-actions">
+            <button type="button" className="workspace-text-button" onClick={()=>{
+              setSelectedStateCode('all');
+              setRegionFilter('All');
+              saveMapPreference('region','All');
+              resetMapZoom();
+              onClearGeography?.();
+            }}>National view</button>
+            <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
+            <button type="button" className="workspace-text-button" data-testid="button-browse-national-records" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
+          </div>
           {/* Region Filter Segmented Control */}
           <div className="home-map-region-filter max-w-full overflow-x-auto">
             <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -675,19 +676,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
-              <div className="home-equipment-coverage-legend" role="status" data-testid="status-national-registry-directory">
-                {sourceDirectory?`${formatInteger(sourceDirectory.statesAndDcRecords)} national source listings · 50 states + D.C. · ${formatInteger(sourceDirectory.countiesWithRecords)} of 3,144 counties with assigned listings.`:sourceDirectoryError||'Loading national source directory…'}
-                <button type="button" className="ml-2 underline" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
-                {sourceDirectoryError&&<button type="button" className="ml-2 underline" onClick={retrySourceDirectory}>Retry registry</button>}
-                <span className="block">Registry listings can overlap. Equipment evidence is a separate layer.</span>
-              </div>
-              {directoryLoad && <div className="home-equipment-coverage-legend" role="status" aria-live="polite" data-testid="status-agency-directory-load">
-                {directoryLoad.status === 'loading' ? `Loading cloud agency profiles… ${formatInteger(directoryLoad.loaded)} profile records received.`
-                  : directoryLoad.status === 'unavailable' ? `Cloud agency-profile load incomplete · ${formatInteger(directoryLoad.loaded)} profiles available.`
-                  : `Cloud agency profiles · ${formatInteger(directoryLoad.loaded)} profile records.`}
-                <span className="block">Separate from national registry listings, county geography, and equipment evidence.</span>
-                {directoryLoad.status === 'unavailable' && <button type="button" onClick={onRetryDirectory} className="ml-2 underline">Retry loading</button>}
-              </div>}
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before equipment filtering"/>
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CB1C7]">
@@ -703,7 +691,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       setMapMetric(metric);
                       saveMapPreference('metric', metric);
                     }}
-                    className="home-map-layer-select min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                    className="home-map-layer-select home-map-select--metric min-h-11 min-w-0 sm:min-w-[245px] rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                   >
                     {STATE_MAP_METRICS.map((metric) => (
                       <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -722,7 +710,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         setMapColorScheme(scheme);
                         saveMapPreference('palette', scheme);
                       }}
-                      className="home-map-layer-select home-map-palette-select min-h-11 min-w-0 rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
+                      className="home-map-layer-select home-map-palette-select home-map-select--palette min-h-11 min-w-0 rounded-lg border border-[#38536C] bg-[#101F30] px-3 text-sm font-semibold text-[#E6F0FA] focus:outline-none focus:ring-2 focus:ring-[#65D7D0]"
                     >
                       <option value="standard">Standard</option>
                       <option value="colorblind-safe">Color-blind safe</option>

@@ -380,6 +380,12 @@
 .equipment-map-filter label { display:grid; gap:5px; flex:1 1 180px; min-width:0; font-size:11px; font-weight:650; }
 .equipment-map-filter label > span { display:flex; align-items:center; gap:5px; }
 .equipment-map-filter select { width:100%; min-height:36px; border:1px solid var(--pi-border-strong); border-radius:6px; background:var(--pi-surface-bg); color:var(--pi-text-primary); padding:5px 8px; font-size:12px; }
+.equipment-map-filter select.equipment-filter-select--presence { border-color:#258c7d; background-color:color-mix(in srgb, #258c7d 9%, var(--pi-surface-bg)); }
+.equipment-map-filter select.equipment-filter-select--family { border-color:#5876b8; background-color:color-mix(in srgb, #5876b8 9%, var(--pi-surface-bg)); }
+.equipment-map-filter select.equipment-filter-select--vendor { border-color:#a77835; background-color:color-mix(in srgb, #a77835 10%, var(--pi-surface-bg)); }
+.equipment-map-filter select.equipment-filter-select--presence:focus-visible { outline:2px solid #258c7d; outline-offset:2px; }
+.equipment-map-filter select.equipment-filter-select--family:focus-visible { outline:2px solid #5876b8; outline-offset:2px; }
+.equipment-map-filter select.equipment-filter-select--vendor:focus-visible { outline:2px solid #a77835; outline-offset:2px; }
 .equipment-map-filter p { flex-basis:100%; font-size:10px; line-height:1.5; color:var(--pi-text-secondary); }
 @media(max-width:767px) { .equipment-map-filter select { min-height:44px; font-size:16px; } }
 .equipment-coverage-legend { display:grid; gap:7px; min-width:0; padding:9px 10px; border:1px solid var(--pi-border); border-radius:8px; background:var(--pi-surface-bg); color:var(--pi-text-primary); font-size:11px; line-height:1.4; }

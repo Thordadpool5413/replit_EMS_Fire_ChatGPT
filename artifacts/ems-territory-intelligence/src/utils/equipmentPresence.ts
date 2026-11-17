@@ -30,6 +30,7 @@ export type RecordedVendorMatch={vendor:string;name:string;family:EquipmentFamil
 /** Only installed-product fields participate; sales targets and bundles never do. */
 export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='all'):RecordedVendorMatch[] {
  const f=agency.installedFleet;
+ const legacy=agency.fleet;
  const fields:Array<[EquipmentFamily,AgencyFactEvidenceKey,string|undefined]>=[
   ['monitors','defibrillatorBiomedicalFleet',f?.defibBrand],
   ['cpr','equipmentSuppliers',f?.mechanicalCPR],
@@ -37,14 +38,25 @@ export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='a
   ['software','epcrSystem',f?.epcrCadSoftware],
   ['software','communicationsSystems',f?.dispatchCadVendor],
   ['software','billingSoftware',f?.billingSoftware],
+  ['monitors','defibrillatorBiomedicalFleet',legacy?.currentDefibVendor],
+  ['cpr','equipmentSuppliers',legacy?.currentCprDevice],
+  ['ventilators','equipmentSuppliers',legacy?.currentVentilator],
+  ['software','epcrSystem',legacy?.currentEpcrVendor],
+  ['software','communicationsSystems',legacy?.currentCadVendor],
  ];
  const matches:RecordedVendorMatch[]=[];
+ const seen=new Set<string>();
  for(const [category,key,raw] of fields) {
   if(family!=='all'&&category!==family)continue;
   if(!raw||!hasAgencyFactData(agency,key))continue;
   const text=raw.trim();
   if (/not (reported|recorded|confirmed|deployed)|unknown|\bno zoll\b|consider|proposed|recommended|planning|target/i.test(text)) continue;
-  for(const vendor of EQUIPMENT_VENDORS) if(vendor.pattern.test(text)) matches.push({vendor:vendor.id,name:vendor.name,family:category,product:text,sourceStatus:getAgencyFactEvidenceStatus(agency,key)});
+  for(const vendor of EQUIPMENT_VENDORS) if(vendor.pattern.test(text)) {
+   const matchKey=category+':'+vendor.id+':'+text.toLowerCase();
+   if(seen.has(matchKey))continue;
+   seen.add(matchKey);
+   matches.push({vendor:vendor.id,name:vendor.name,family:category,product:text,sourceStatus:getAgencyFactEvidenceStatus(agency,key)});
+  }
  }
  return matches;
 }

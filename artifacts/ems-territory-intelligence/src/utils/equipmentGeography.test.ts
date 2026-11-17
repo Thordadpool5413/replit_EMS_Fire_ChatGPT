@@ -23,3 +23,23 @@ test('every bundled state and county can be indexed and matched by its exact FIP
  assert.equal(result.unassignedState,0);assert.equal(result.unassignedCounty,0);assert.equal(result.conflictingCounty,0);
  for(const c of all)assert(result.byCounty[c.countyFips].matched>=1,c.countyFips);
 });
+test('bundled agency records reconcile county-to-state totals with unresolved records explicitly accounted for',async()=>{
+ const {COMPREHENSIVE_NATIONWIDE_AGENCIES}=await import('../data/nationalAgenciesData');
+ const {ALL_50_STATES_ADDITIONAL_AGENCIES}=await import('../data/allStatesAgenciesData');
+ const INITIAL_AGENCIES=[...COMPREHENSIVE_NATIONWIDE_AGENCIES,...ALL_50_STATES_ADDITIONAL_AGENCIES];
+ const {readFileSync}=await import('node:fs');const {gunzipSync}=await import('node:zlib');
+ const all=JSON.parse(gunzipSync(readFileSync(new URL('../data/all-counties-database.json.gz',import.meta.url))).toString()) as Array<{stateCode:string;stateName:string;countyFips:string;countyName:string}>;
+ const allStates=[...new Map(all.map(c=>[c.stateCode,{code:c.stateCode,state:c.stateName}])).values()];
+ for(const family of ['all','monitors','cpr','ventilators','software'] as const){
+  const result=buildEquipmentGeography(INITIAL_AGENCIES,allStates,all,{presence:'zoll',family});
+  const stateTotal=Object.values(result.byState).reduce((sum,c)=>sum+c.total,0);
+  const countyTotal=Object.values(result.byCounty).reduce((sum,c)=>sum+c.total,0);
+  assert.equal(stateTotal+result.unassignedState,INITIAL_AGENCIES.length);
+  assert.equal(countyTotal+result.unassignedCounty,stateTotal);
+  for(const summary of Object.values(result.byState))assert.equal(summary.zoll+summary.competitor+summary.mixed+summary.unknown,summary.total);
+  const countyMatched=Object.values(result.byCounty).reduce((sum,c)=>sum+c.matched,0);
+  const stateMatched=Object.values(result.byState).reduce((sum,c)=>sum+c.matched,0);
+  assert(stateMatched>=countyMatched);
+  assert(stateMatched-countyMatched<=result.unassignedCounty);
+ }
+});

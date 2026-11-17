@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
+import { ACS_COUNTY_METRICS, ACS_COUNTY_SOURCE } from '../data/acsCountyData';
+import { buildAcsStateRollups } from '../data/acsCountyRollups';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { formatInteger, formatScore } from '../utils/numberFormatting';
 import { DataLabel, inferDataLabelKind } from './DataLabel';
@@ -55,6 +57,10 @@ const STATE_MAP_METRICS = [
   { key: 'pulseiq', label: 'PulseIQ estimate · modeled average' },
   { key: 'cardiac-survival', label: 'Cardiac survival estimate (%)' },
   { key: 'scene-transit', label: 'EMS transit estimate (minutes)' },
+  { key: 'acs-population', label: 'ACS population · county sum' },
+  { key: 'acs-age65-share', label: 'ACS residents age 65+ (%)' },
+  { key: 'acs-poverty-rate', label: 'ACS poverty rate (%)' },
+  { key: 'acs-county-income-median', label: 'Median of county incomes (not state median)' },
 ] as const;
 
 type StateMapMetricKey =
@@ -97,7 +103,7 @@ interface StateMapMetricDatum {
   value: number | null;
   coverage: string;
   period: string;
-  sourceAction: 'agency-records' | 'zip-profiles' | 'claims-import' | 'reference-estimate';
+  sourceAction: 'agency-records' | 'zip-profiles' | 'claims-import' | 'reference-estimate' | 'census-acs';
   deniedClaims?: number;
   adjudicatedClaims?: number;
   claimScope?: string;
@@ -105,13 +111,17 @@ interface StateMapMetricDatum {
   source?: string;
   sourceUrl?: string;
   sourceReference?: string;
+  coverageCount?: number;
+  expectedCount?: number;
+  partialValue?: number | null;
 }
 
 const formatStateMapValue = (metric: StateMapMetricKey, value: number | null) => {
   if (value === null) return 'Not reported';
-  if (metric === 'cardiac-survival') return `${value.toFixed(1)}%`;
+  if (metric === 'cardiac-survival' || metric === 'acs-age65-share' || metric === 'acs-poverty-rate') return `${value.toFixed(1)}%`;
   if (metric === 'scene-transit') return `${value.toFixed(1)} min`;
   if (metric === 'pulseiq') return formatScore(value);
+  if (metric === 'acs-county-income-median') return `$${Math.round(value).toLocaleString()}`;
   return formatInteger(value);
 };
 
@@ -123,6 +133,10 @@ const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
   pulseiq: { stops: ['#F3E8FF', '#D8B4FE', '#B174F0', '#8B43D0', '#612B9B'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
   'cardiac-survival': { stops: ['#FF1744', '#FF9100', '#FFEA00', '#AEEA00', '#00E676'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
   'scene-transit': { stops: ['#00E676', '#AEEA00', '#FFEA00', '#FF9100', '#FF1744'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+  'acs-population': { stops: ['#E3F3FB', '#B9E3F3', '#7FCBE4', '#3CA9CC', '#176C9B'], lowLabel: 'Lower', highLabel: 'Higher' },
+  'acs-age65-share': { stops: ['#E3F3FB', '#B9E3F3', '#7FCBE4', '#3CA9CC', '#176C9B'], lowLabel: 'Lower share', highLabel: 'Higher share' },
+  'acs-poverty-rate': { stops: ['#F8E9C9', '#F1D49A', '#E4B864', '#C99037', '#895B22'], lowLabel: 'Lower rate', highLabel: 'Higher rate' },
+  'acs-county-income-median': { stops: ['#EEE9F8', '#D5C9EC', '#B3A0D9', '#8A70BE', '#614A94'], lowLabel: 'Lower', highLabel: 'Higher' },
 };
 
 // A blue-to-gold progression remains ordered without relying on red/green
@@ -130,16 +144,18 @@ const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
 const COLORBLIND_SAFE_STOPS = ['#63779D', '#688EAA', '#83A99E', '#BFC37D', '#F0DF65'];
 
 const isQualityMapMetric = (metric: StateMapMetricKey) =>
-  metric === 'cardiac-survival' || metric === 'scene-transit';
+  metric === 'cardiac-survival' ||
+  metric === 'scene-transit' ||
+  metric.startsWith('acs-');
 
 const getMapPalette = (metric: StateMapMetricKey, scheme: MapColorScheme): StateMapPalette => {
   const standard = MAP_PALETTES[metric];
   if (scheme !== 'colorblind-safe' || !isQualityMapMetric(metric)) return standard;
   return {
     ...standard,
-    stops: metric === 'cardiac-survival'
-      ? COLORBLIND_SAFE_STOPS
-      : [...COLORBLIND_SAFE_STOPS].reverse(),
+    stops: metric === 'scene-transit' || metric === 'acs-poverty-rate'
+      ? [...COLORBLIND_SAFE_STOPS].reverse()
+      : COLORBLIND_SAFE_STOPS,
   };
 };
 
@@ -265,6 +281,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
 
   const equipmentCoverage=useMemo(()=>buildEquipmentGeography(equipmentGeographyScope(agencies,{category:globalCategory}),Object.values(ALL_50_STATES_SUMMARIES),ALL_NATIONWIDE_COUNTIES,equipmentFilter),[agencies,equipmentFilter,globalCategory]);
+  const acsStateRollupsByCode = useMemo(
+    () =>
+      buildAcsStateRollups(
+        ALL_NATIONWIDE_COUNTIES.map(({ countyFips, stateCode }) => ({ countyFips, stateCode })),
+        ACS_COUNTY_METRICS,
+        Object.keys(ALL_50_STATES_SUMMARIES),
+      ),
+    [],
+  );
   const stateStatsByCode = useMemo(() => {
     const agenciesByState = new Map<string, Agency[]>();
     for (const agency of scopedAgencies) {
@@ -317,11 +342,50 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   }, [scopedAgencies]);
 
   const stateMapMetricsByCode = useMemo(() => {
+    const acsMapDatum = (
+      metric: StateMapMetricKey,
+      coverage: {
+        value: number | null;
+        partialValue: number | null;
+        availableCount: number;
+        expectedCount: number;
+        complete: boolean;
+      },
+      tableId: string,
+      tableUrl: string,
+    ): StateMapMetricDatum => {
+      const method = metric === 'acs-population'
+        ? 'Sum of county population estimates.'
+        : metric === 'acs-age65-share'
+          ? 'Sum of county residents age 65+ divided by summed population.'
+          : metric === 'acs-poverty-rate'
+            ? 'Summed below-poverty population divided by the summed poverty-status universe.'
+            : 'Median of county median household incomes; not a state household-income median.';
+      const coverageSummary = coverage.complete
+        ? `${method} ${formatInteger(coverage.availableCount)} of ${formatInteger(coverage.expectedCount)} county-equivalent records; complete coverage.`
+        : `${method} ${formatInteger(coverage.availableCount)} of ${formatInteger(coverage.expectedCount)} county-equivalent records; partial ${
+            coverage.partialValue == null ? 'summary unavailable' : `summary ${formatStateMapValue(metric, coverage.partialValue)}`
+          } is not shaded as a statewide total.`;
+      return {
+        value: coverage.value,
+        coverage: coverageSummary,
+        period: `${ACS_COUNTY_SOURCE.reportingPeriod} · ${ACS_COUNTY_SOURCE.vintage}`,
+        sourceAction: 'census-acs',
+        source: ACS_COUNTY_SOURCE.name,
+        sourceUrl: tableUrl,
+        sourceReference: tableId,
+        coverageCount: coverage.availableCount,
+        expectedCount: coverage.expectedCount,
+        partialValue: coverage.partialValue,
+      };
+    };
+
     return Object.fromEntries(
       Object.values(ALL_50_STATES_SUMMARIES).map((state) => {
         const stats = stateStatsByCode[state.code];
         const sourceCounts=sourceDirectory?.byState[state.code];
         const sourceCount=sourceCounts?(globalCategory==='ems'?sourceCounts.nppes:globalCategory==='fire'?sourceCounts.usfa:sourceCounts.usfa+sourceCounts.nppes):null;
+        const acs = acsStateRollupsByCode[state.code];
         const metricData: Record<StateMapMetricKey, StateMapMetricDatum> = {
           'source-listings': {
             value: sourceCount,
@@ -365,11 +429,35 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             period: 'Reporting period is not stated.',
             sourceAction: 'reference-estimate',
           },
+          'acs-population': acsMapDatum(
+            'acs-population',
+            acs.population,
+            'B01001',
+            ACS_COUNTY_SOURCE.tables.populationAndAge,
+          ),
+          'acs-age65-share': acsMapDatum(
+            'acs-age65-share',
+            acs.population65PlusShare,
+            'B01001',
+            ACS_COUNTY_SOURCE.tables.populationAndAge,
+          ),
+          'acs-poverty-rate': acsMapDatum(
+            'acs-poverty-rate',
+            acs.povertyRate,
+            'B17001',
+            ACS_COUNTY_SOURCE.tables.poverty,
+          ),
+          'acs-county-income-median': acsMapDatum(
+            'acs-county-income-median',
+            acs.medianCountyHouseholdIncome,
+            'B19013',
+            ACS_COUNTY_SOURCE.tables.householdIncome,
+          ),
         };
         return [state.code, metricData];
       }),
     ) as Record<string, Record<StateMapMetricKey, StateMapMetricDatum>>;
-  }, [providerScopeLabel, stateStatsByCode, sourceDirectory, globalCategory]);
+  }, [providerScopeLabel, stateStatsByCode, sourceDirectory, globalCategory, acsStateRollupsByCode]);
 
   const mapMetricValues = Object.values(stateMapMetricsByCode)
     .map((metrics) => metrics[mapMetric].value)
@@ -378,6 +466,27 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
   const activeMapPalette = getMapPalette(mapMetric, mapColorScheme);
+  const mapMetricQuantileColors = useMemo(() => {
+    if (!mapMetric.startsWith('acs-')) return new Map<string, string>();
+    const values = Object.entries(stateMapMetricsByCode)
+      .map(([code, metrics]) => ({ code, value: metrics[mapMetric].value }))
+      .filter((entry): entry is { code: string; value: number } => hasReportedValue(entry.value))
+      .sort((left, right) => left.value - right.value);
+    if (!values.length) return new Map<string, string>();
+    const thresholds = activeMapPalette.stops.map((_, index) => {
+      const position = Math.min(values.length - 1, Math.ceil(((index + 1) / activeMapPalette.stops.length) * values.length) - 1);
+      return values[position].value;
+    });
+    return new Map(values.map(({ code, value }) => {
+      const match = thresholds.findIndex((threshold) => value <= threshold);
+      const band = match < 0 ? activeMapPalette.stops.length - 1 : match;
+      return [code, activeMapPalette.stops[band]];
+    }));
+  }, [activeMapPalette, mapMetric, stateMapMetricsByCode]);
+  const getStateMapFill = (code: string, value: number) =>
+    mapMetric.startsWith('acs-')
+      ? mapMetricQuantileColors.get(code) ?? activeMapPalette.stops[0]
+      : interpolateStateFill(mapMetric, value, mapMetricMin, mapMetricMax, activeMapPalette);
 
   useEffect(() => {
     const viewport = mapViewportRef.current;
@@ -566,16 +675,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               }}
             >
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
-              <div className="home-equipment-coverage-legend" role="status">
+              <div className="home-equipment-coverage-legend" role="status" data-testid="status-national-registry-directory">
                 {sourceDirectory?`${formatInteger(sourceDirectory.statesAndDcRecords)} national source listings · 50 states + D.C. · ${formatInteger(sourceDirectory.countiesWithRecords)} of 3,144 counties with assigned listings.`:sourceDirectoryError||'Loading national source directory…'}
                 <button type="button" className="ml-2 underline" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
                 {sourceDirectoryError&&<button type="button" className="ml-2 underline" onClick={retrySourceDirectory}>Retry registry</button>}
                 <span className="block">Registry listings can overlap. Equipment evidence is a separate layer.</span>
               </div>
-              {directoryLoad && <div className="home-equipment-coverage-legend" role="status" aria-live="polite">
-                {directoryLoad.status === 'loading' ? `Loading cloud workspace profiles… ${formatInteger(directoryLoad.loaded)} received. Counts are updating.`
-                  : directoryLoad.status === 'unavailable' ? 'Cloud workspace load incomplete. Profile and equipment totals may be partial.'
-                  : `Cloud workspace · ${formatInteger(directoryLoad.loaded)} agency profiles. This is separate from national registry coverage.`}
+              {directoryLoad && <div className="home-equipment-coverage-legend" role="status" aria-live="polite" data-testid="status-agency-directory-load">
+                {directoryLoad.status === 'loading' ? `Loading cloud agency profiles… ${formatInteger(directoryLoad.loaded)} profile records received.`
+                  : directoryLoad.status === 'unavailable' ? `Cloud agency-profile load incomplete · ${formatInteger(directoryLoad.loaded)} profiles available.`
+                  : `Cloud agency profiles · ${formatInteger(directoryLoad.loaded)} profile records.`}
+                <span className="block">Separate from national registry listings, county geography, and equipment evidence.</span>
                 {directoryLoad.status === 'unavailable' && <button type="button" onClick={onRetryDirectory} className="ml-2 underline">Retry loading</button>}
               </div>}
               <div className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -659,7 +769,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   Not reported
                 </span>
                 <span className="home-map-legend-missing-note shrink-0 text-[10px] text-[#8298AE]" data-testid="text-map-legend-coverage">
-                  {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero
+                  {formatInteger(mapMetricValues.length)} of {formatInteger(Object.keys(stateMapMetricsByCode).length)} areas reported (states + DC) · hatch = missing, not zero{mapMetric.startsWith('acs-') ? ' · colors = state quintiles' : ''}
                 </span>
               </div>}
 
@@ -672,7 +782,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 const count = stateStatsByCode[code]?.count ?? 0;
                 const equipment=equipmentCoverage.byState[code];
                 const swatch = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[code],equipmentFilter):hasReportedValue(datum.value)
-                  ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                  ? getStateMapFill(code, datum.value)
                   : undefined;
                 return (
                   <div className="home-map-state-preview" aria-live="polite" data-testid="panel-state-preview" data-preview-mode={previewStateCode ? 'preview' : 'selected'}>
@@ -695,6 +805,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         ? <div><dt>Counties in directory</dt><dd>{formatInteger(territoryEngine.getCountiesForState(code).length)}</dd></div>
                         : <div><dt>Agency records</dt><dd data-testid="text-preview-agencies">{formatInteger(count)}</dd></div>}
                     </dl>
+                    {datum.source && (
+                      <div className="home-map-source-context mt-2 space-y-1 rounded-md border border-slate-300 bg-slate-100/80 px-2.5 py-2 text-[10px] leading-4 text-slate-700 dark:border-slate-600 dark:bg-slate-900/70 dark:text-slate-200" data-testid="text-map-source-coverage">
+                        <p className="break-words">{datum.coverage}</p>
+                        <p>{datum.source} · {datum.period}</p>
+                        {datum.sourceReference === 'B19013' && (
+                          <p className="font-medium">Income is the median of county median household incomes, not a separately calculated state median.</p>
+                        )}
+                        {datum.sourceUrl && (
+                          <a className="inline-flex min-h-6 items-center font-semibold text-blue-800 underline underline-offset-2 dark:text-blue-300" href={datum.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-state-acs-source-${code}`}>
+                            Open Census table {datum.sourceReference} <span aria-hidden="true">↗</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
                     <button type="button" className="home-map-state-preview-action" data-testid="button-preview-explore" onClick={() => handleStateClick(code)}>
                       Explore {code}
                     </button>
@@ -789,7 +913,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const countyCount = territoryEngine.getCountiesForState(st.code).length;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const fillColor = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(datum.value)
-                      ? interpolateStateFill(mapMetric, datum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                      ? getStateMapFill(st.code, datum.value)
                       : 'url(#home-map-missing-data)';
                     const equipmentState=equipmentCoverage.byState[st.code];
                     const stateAriaLabel = isEquipmentMapActive?`${st.state}. ${equipmentState?.matched||0} selected equipment matches. County-assigned unique agency records ${equipmentState?.total||0}; ZOLL ${equipmentState?.zoll||0}; other manufacturers ${equipmentState?.competitor||0}; mixed ${equipmentState?.mixed||0}; manufacturer not recognized ${equipmentState?.unknown||0}; no equipment entry reported ${equipmentState?.notReported||0}; unique installed-field entries ${equipmentState?.equipmentRecordCount||0}, source mapped ${equipmentState?.documentedEquipmentRecordCount||0}, unverified ${equipmentState?.unverifiedEquipmentRecordCount||0}; agency records in ${equipmentState?.countiesWithAgencyRecords||0} of ${equipmentState?.countyCount||0} counties; county-unassigned agencies ${equipmentState?.unassignedAgencyCount||0}. Missing entries do not mean no equipment.`:`${st.state}. ${activeMapMetric.label}: ${formatStateMapValue(mapMetric, datum.value)}. ${datum.coverage}. Period: ${datum.period}${datum.claimScope ? `. Scope: ${datum.claimScope}. Definition: ${datum.denialDefinition}` : ''}${datum.source ? `. Source: ${datum.source}` : ''}`;
@@ -848,7 +972,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cHov = hoveredStateCode === st.code;
                       const cDatum = stateMapMetricsByCode[st.code][mapMetric];
                       const cFill = isEquipmentMapActive?equipmentCoverageColor(equipmentCoverage.byState[st.code],equipmentFilter):hasReportedValue(cDatum.value)
-                        ? interpolateStateFill(mapMetric, cDatum.value, mapMetricMin, mapMetricMax, activeMapPalette)
+                        ? getStateMapFill(st.code, cDatum.value)
                         : '#172A3D';
                       return (
                         <g

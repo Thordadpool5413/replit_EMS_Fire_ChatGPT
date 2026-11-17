@@ -2,6 +2,7 @@
 import type { CountyHealthRecord } from '../types';
 import { gunzipSync, strFromU8 } from 'fflate';
 import compressedCountyDataUrl from './all-counties-database.json.gz?url';
+import { ACS_COUNTY_METRICS_BY_FIPS } from './acsCountyData';
 
 export interface CityBoundaryRecord {
   name: string;
@@ -32,6 +33,8 @@ const countyJsonBytes =
   compressedCountyData[0] === 0x1f && compressedCountyData[1] === 0x8b
     ? gunzipSync(compressedCountyData)
     : compressedCountyData;
-export const ALL_NATIONWIDE_COUNTIES: ComprehensiveCountyRecord[] = JSON.parse(
-  strFromU8(countyJsonBytes)
-);
+const packedCounties = JSON.parse(strFromU8(countyJsonBytes)) as ComprehensiveCountyRecord[];
+export const ALL_NATIONWIDE_COUNTIES: ComprehensiveCountyRecord[] = packedCounties.map((county) => ({
+  ...county,
+  acsCountyContext: ACS_COUNTY_METRICS_BY_FIPS.get(county.countyFips) ?? null,
+}));

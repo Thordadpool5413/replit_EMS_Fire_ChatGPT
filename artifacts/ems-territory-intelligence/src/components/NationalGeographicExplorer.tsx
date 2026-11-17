@@ -11,6 +11,8 @@ import { PulseIqEstimateLabel } from './PulseIqEstimateLabel';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { hasAgencyFactEvidence } from '../data/agencyFactEvidence';
 import { ALL_50_STATES_SUMMARIES, NATIONAL_COUNTIES_DIRECTORY, CountyHealthRecord } from '../data/nationalGeographicData';
+import { ACS_COUNTY_METRICS, ACS_COUNTY_SOURCE } from '../data/acsCountyData';
+import { buildAcsStateRollups, type AcsStateRollup } from '../data/acsCountyRollups';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
 import { NATIONAL_ZIP_CITY_REGISTRY, lookupZipCode, searchLocations, getZipCodesForState, ZipCityRecord } from '../data/nationalZipCityRegistry';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
@@ -81,6 +83,41 @@ import { agencySearchScore } from '../utils/agencySearch';
 
 const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
 const DIRECTORY_SESSION_KEY = 'ems-territory-directory-state-v1';
+type AcsMapLayer = 'acs-population' | 'acs-age65-share' | 'acs-poverty-rate' | 'acs-county-income-median';
+type StateMapLayer = 'agency-records' | 'fema-loss' | AcsMapLayer;
+const ACS_LAYER_MEASURE: Record<AcsMapLayer, keyof Pick<AcsStateRollup, 'population' | 'population65PlusShare' | 'povertyRate' | 'medianCountyHouseholdIncome'>> = {
+  'acs-population': 'population',
+  'acs-age65-share': 'population65PlusShare',
+  'acs-poverty-rate': 'povertyRate',
+  'acs-county-income-median': 'medianCountyHouseholdIncome',
+};
+const ACS_LAYER_TABLE: Record<AcsMapLayer, keyof typeof ACS_COUNTY_SOURCE.tables> = {
+  'acs-population': 'populationAndAge',
+  'acs-age65-share': 'populationAndAge',
+  'acs-poverty-rate': 'poverty',
+  'acs-county-income-median': 'householdIncome',
+};
+const ACS_LAYER_LABEL: Record<AcsMapLayer, string> = {
+  'acs-population': 'ACS population county sum',
+  'acs-age65-share': 'ACS residents age 65+ share',
+  'acs-poverty-rate': 'ACS poverty rate',
+  'acs-county-income-median': 'Median of county median household incomes',
+};
+const ACS_LAYER_METHOD: Record<AcsMapLayer, string> = {
+  'acs-population': 'Sum of county population estimates',
+  'acs-age65-share': 'Summed residents age 65+ divided by summed population',
+  'acs-poverty-rate': 'Summed below-poverty population divided by the summed poverty-status universe',
+  'acs-county-income-median': 'Median of county median household incomes, not the state median',
+};
+const isAcsMapLayer = (layer: StateMapLayer): layer is AcsMapLayer => layer.startsWith('acs-');
+const formatAcsMapValue = (layer: AcsMapLayer, value: number | null) => {
+  if (value == null) return 'Not reported';
+  if (layer === 'acs-population') return Math.round(value).toLocaleString();
+  if (layer === 'acs-county-income-median') return `$${Math.round(value).toLocaleString()}`;
+  return `${value.toFixed(1)}%`;
+};
+const getAcsMapCoverage = (rollup: AcsStateRollup | undefined, layer: AcsMapLayer) =>
+  rollup?.[ACS_LAYER_MEASURE[layer]];
 
 type DirectorySessionState = {
   query: string;
@@ -89,7 +126,7 @@ type DirectorySessionState = {
   countyFilter: string;
   region: 'All' | 'Northeast' | 'Midwest' | 'South' | 'West';
   sort: 'pulseIq' | 'fleetAge' | 'value';
-  mapLayer: 'agency-records' | 'fema-loss';
+  mapLayer: StateMapLayer;
 };
 
 const defaultDirectorySessionState: DirectorySessionState = {
@@ -116,7 +153,7 @@ function readDirectorySessionState(): DirectorySessionState {
       sort: ['pulseIq', 'fleetAge', 'value'].includes(stored.sort || '')
         ? stored.sort as DirectorySessionState['sort']
         : 'pulseIq',
-      mapLayer: ['agency-records', 'fema-loss'].includes(stored.mapLayer || '')
+      mapLayer: ['agency-records', 'fema-loss', 'acs-population', 'acs-age65-share', 'acs-poverty-rate', 'acs-county-income-median'].includes(stored.mapLayer || '')
         ? stored.mapLayer as DirectorySessionState['mapLayer']
         : 'agency-records',
     };
@@ -428,6 +465,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     }
     return map;
   }, [agencies]);
+  const stateAcsRollupsByCode = useMemo(
+    () =>
+      buildAcsStateRollups(
+        NATIONAL_COUNTIES_DIRECTORY.map(({ countyFips, stateCode }) => ({ countyFips, stateCode })),
+        ACS_COUNTY_METRICS,
+        Object.keys(ALL_50_STATES_SUMMARIES),
+      ),
+    [],
+  );
   const nriNationalQuery = useGetNriCountyContext(undefined, {
     query: {
       enabled: stateMapLayer === 'fema-loss',
@@ -539,7 +585,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       ? [...stateNriSummaryByCode.entries()]
           .filter(([, value]) => value.coverageComplete && value.totalExpectedAnnualLoss != null)
           .map(([code, value]) => ({ code, value: value.totalExpectedAnnualLoss! }))
-      : Object.keys(ALL_50_STATES_SUMMARIES).map((code) => ({
+      : isAcsMapLayer(stateMapLayer)
+        ? Object.entries(stateAcsRollupsByCode)
+            .flatMap(([code, rollup]) => {
+              const summary = getAcsMapCoverage(rollup, stateMapLayer);
+              return summary?.complete && summary.value != null ? [{ code, value: summary.value }] : [];
+            })
+        : Object.keys(ALL_50_STATES_SUMMARIES).map((code) => ({
           code,
           value: stateAgencyCounts.get(code) ?? 0,
         }));
@@ -550,7 +602,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       colors.set(item.code, STATE_MAP_PALETTE[bucket]);
     });
     return colors;
-  }, [stateMapLayer, stateNriSummaryByCode, stateAgencyCounts]);
+  }, [stateMapLayer, stateNriSummaryByCode, stateAgencyCounts, stateAcsRollupsByCode]);
 
   // Available cities for selected state & county with rich metadata across all 50 states
   const availableCities = useMemo(() => {
@@ -1202,12 +1254,17 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   </label>
                   <select
                     id="us-state-map-layer"
+                      data-testid="select-state-map-layer"
                     value={stateMapLayer}
-                    onChange={(event) => setStateMapLayer(event.target.value as 'agency-records' | 'fema-loss')}
+                      onChange={(event) => setStateMapLayer(event.target.value as StateMapLayer)}
                     className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   >
                     <option value="agency-records">Agency records in this app</option>
-                    <option value="fema-loss">FEMA county expected annual loss</option>
+                      <option value="fema-loss">FEMA county expected annual loss</option>
+                      <option value="acs-population">ACS population · county sum</option>
+                      <option value="acs-age65-share">ACS residents age 65+ (%)</option>
+                      <option value="acs-poverty-rate">ACS poverty rate (%)</option>
+                      <option value="acs-county-income-median">Median of county incomes (not state median)</option>
                   </select>
                 </div>
                 {stateMapLayer === 'fema-loss' && (
@@ -1217,6 +1274,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       : nriNationalQuery.isError
                         ? 'FEMA risk layer unavailable'
                         : `${nriNationalQuery.data?.records.length.toLocaleString() ?? 0} county-equivalent records · native scope: county FIPS · reporting period not stated · FEMA NRI data vintage: ${nriNationalVintageLabel}`}
+                  </span>
+                )}
+                {isAcsMapLayer(stateMapLayer) && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400" role="status">
+                    {ACS_COUNTY_SOURCE.vintage} · county FIPS joins · state fills require complete county coverage
+                    {stateMapLayer === 'acs-county-income-median' ? ' · missing income estimates stay not reported' : ''}
                   </span>
                 )}
               </div>
@@ -1255,9 +1318,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     const countyScopeLabel = st.code === 'CT' ? 'legacy county polygons' : 'counties';
 
                     const nriSummary = stateNriSummaryByCode.get(st.code);
+                    const acsSummary = isAcsMapLayer(stateMapLayer)
+                      ? getAcsMapCoverage(stateAcsRollupsByCode[st.code], stateMapLayer)
+                      : undefined;
                     const hasMapValue = stateMapLayer === 'fema-loss'
                       ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
-                      : true;
+                      : isAcsMapLayer(stateMapLayer)
+                        ? acsSummary?.complete && acsSummary.value != null
+                        : true;
                     const fillColor = !isInRegion
                       ? '#F1F5F9'
                       : hasMapValue
@@ -1305,7 +1373,11 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
                             ? `State context only: sum of county-equivalent NRI expected annual loss ($${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}); native source scope is county FIPS; reporting period not stated; ${nriSummary.availableRecords}/${nriSummary.sourceRecordCount} source records; FEMA NRI data vintage ${nriSummary.sourceVersion}`
                             : `State total not shown; ${nriSummary?.availableRecords ?? 0}/${nriSummary?.sourceRecordCount ?? 0} NRI county-equivalent records with values${nriSummary?.duplicateFips ? ' · duplicate FIPS' : ''}${nriSummary?.invalidFips ? ' · malformed FIPS' : ''}${nriSummary?.mixedSourceVersions ? ' · mixed FEMA NRI vintages' : ''}${nriSummary?.unstatedSourceVersion ? ' · FEMA NRI vintage not stated for every county' : ''}`
-                          : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
+                          : isAcsMapLayer(stateMapLayer)
+                            ? acsSummary?.complete && acsSummary.value != null
+                              ? `${formatAcsMapValue(stateMapLayer, acsSummary.value)} · ${acsSummary.availableCount}/${acsSummary.expectedCount} county-equivalents · ${ACS_COUNTY_SOURCE.reportingPeriod} ACS`
+                              : `State value not mapped; ${acsSummary?.availableCount ?? 0}/${acsSummary?.expectedCount ?? 0} county-equivalents have this measure`
+                            : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
                       </path>
                     );
                   })}
@@ -1436,6 +1508,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     const cCount = territoryEngine.getCountiesForState(hSt.code).length;
                     const denialProfileSummary = getStateZipDenialProfileSummary(hSt.code);
                     const nriSummary = stateNriSummaryByCode.get(hSt.code);
+                    const acsSummary = isAcsMapLayer(stateMapLayer)
+                      ? getAcsMapCoverage(stateAcsRollupsByCode[hSt.code], stateMapLayer)
+                      : undefined;
                     return (
                       <div className="flex flex-wrap items-center gap-2.5 tabular-nums">
                         <span className="px-2 py-0.5 rounded bg-[#1E3A8A] text-white font-semibold">
@@ -1459,11 +1534,38 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               ({nriSummary?.availableRecords ?? 0}/{nriSummary?.sourceRecordCount ?? 0} source records have values; invalid/duplicate FIPS, missing values, mixed/unstated FEMA NRI vintages block the sum; data vintage {nriSummary?.sourceVersion ?? 'not consistent'})
                             </span>
                           </span>
+                        ) : isAcsMapLayer(stateMapLayer) ? (
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {ACS_LAYER_METHOD[stateMapLayer]}:{' '}
+                            <strong className="font-semibold">
+                              {acsSummary?.complete
+                                ? formatAcsMapValue(stateMapLayer, acsSummary.value)
+                                : 'State total not shown'}
+                            </strong>
+                            <span className="ml-1 text-[10px] text-slate-500">
+                              ({acsSummary?.availableCount ?? 0}/{acsSummary?.expectedCount ?? cCount} county-equivalents have data; partial coverage is not treated as a state value)
+                            </span>
+                            {stateMapLayer === 'acs-county-income-median' && (
+                              <span className="ml-1 text-[10px] text-slate-500">(not the state’s household-income median)</span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-slate-700 dark:text-slate-300">
                             App agency records: <strong className="font-semibold">{stateAgencyCounts.get(hSt.code) ?? 0}</strong>
                             <span className="ml-1 text-[10px] text-slate-500">(directory entries; not a count of all operating agencies)</span>
                           </span>
+                        )}
+                        {isAcsMapLayer(stateMapLayer) && (
+                          <a
+                            href={ACS_COUNTY_SOURCE.tables[ACS_LAYER_TABLE[stateMapLayer]]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={event => event.stopPropagation()}
+                            data-testid={`link-state-acs-source-${hSt.code}`}
+                            className="text-[10px] text-blue-700 dark:text-blue-300 underline underline-offset-2"
+                          >
+                            Census table {stateMapLayer === 'acs-population' || stateMapLayer === 'acs-age65-share' ? 'B01001' : stateMapLayer === 'acs-poverty-rate' ? 'B17001' : 'B19013'} · {ACS_COUNTY_SOURCE.reportingPeriod}
+                          </a>
                         )}
                         {stateMapLayer === 'fema-loss' && nriSummary?.coverageComplete && nriNationalQuery.data?.sourceUrl && (
                           <a
@@ -1523,12 +1625,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <span>
                         {stateMapLayer === 'fema-loss'
                           ? 'Lower to higher state sum of county expected annual loss'
-                          : 'Lower to higher app agency-record count'}
+                          : isAcsMapLayer(stateMapLayer)
+                            ? `${ACS_LAYER_LABEL[stateMapLayer]} · quintiles use states with complete county coverage`
+                            : 'Lower to higher app agency-record count'}
                       </span>
-                      {stateMapLayer === 'fema-loss' && (
+                      {(stateMapLayer === 'fema-loss' || isAcsMapLayer(stateMapLayer)) && (
                         <span className="flex items-center gap-1.5">
                           <span className="h-3 w-3 rounded-xs border border-slate-500" style={{ background: 'repeating-linear-gradient(45deg, #E2E8F0 0 2px, #94A3B8 2px 3.5px)' }} />
-                          <span>Missing or incomplete county coverage</span>
+                          <span>Missing or incomplete county coverage; not zero</span>
                         </span>
                       )}
                     </span>

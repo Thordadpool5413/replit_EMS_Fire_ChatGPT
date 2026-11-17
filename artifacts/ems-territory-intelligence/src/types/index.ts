@@ -128,6 +128,14 @@ export interface CountyHealthRecord {
   averageTransportMinutes: number | null;
   /** Per-figure provenance; absent metadata must be shown as unavailable, not inferred. */
   figureSources?: Partial<Record<CountyFigureSourceKey, CountyFigureSourceMetadata>>;
+  /** Separate official ACS estimates; these do not overwrite working-reference county figures. */
+  acsCountyContext?: {
+    population: number | null;
+    population65Plus: number | null;
+    povertyUniverse: number | null;
+    populationBelowPoverty: number | null;
+    medianHouseholdIncome: number | null;
+  } | null;
   primaryCathLabDistanceMiles: number | null;
   activeEmsAgencies: number | null;
   primaryZipCodes: string[];

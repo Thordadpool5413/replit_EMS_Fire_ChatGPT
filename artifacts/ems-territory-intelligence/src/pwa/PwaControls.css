@@ -14,3 +14,8 @@
 .pwa-status-banner svg { flex-shrink:0; }
 .pwa-status-banner button { min-height:44px; padding:.5rem .75rem; border:1px solid currentColor; border-radius:8px; font-weight:600; }
 .pwa-status-banner button:focus-visible { outline:2px solid var(--pi-focus-ring,#2454c6); outline-offset:2px; }
+@media (max-width:767px) {
+  .pwa-status-banner { flex-wrap:nowrap; align-items:flex-start; padding-block:.65rem; gap:.6rem; }
+  .pwa-status-banner p { flex:1 1 0; min-width:0; font-size:.8125rem; line-height:1.4; }
+  .pwa-status-banner button { flex:0 0 auto; font-size:.8125rem; background:var(--pi-surface-bg,#fff); }
+}

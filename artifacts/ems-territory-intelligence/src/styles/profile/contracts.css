@@ -408,6 +408,8 @@
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { white-space: normal; max-width: 100%; height: auto; padding-block: 10px; }
   .agency-command-profile.profile-redesign .profile-workspace > header > div { flex-wrap: wrap; min-width: 0; max-width: 100%; }
   .agency-command-profile.profile-redesign .profile-workspace > header nav { min-width: 0; max-width: 100%; }
+  .agency-command-profile.profile-redesign .profile-workspace > header > div > div { width: 100%; max-width: 100%; min-width: 0; }
+  .agency-command-profile.profile-redesign .profile-mobile-breadcrumb { flex: 1 1 0; min-width: 0; max-width: 100%; }
   .agency-command-profile.profile-redesign .acp-header { padding: 20px 16px 16px !important; grid-template-columns: minmax(0, 1fr); }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock { justify-self: stretch; justify-content: start; }
   .agency-command-profile.profile-redesign .acp-name { font-size: 26px !important; }

@@ -1,4 +1,3 @@
-import {NationalSourceDirectory} from './NationalSourceDirectory';
 import { equipmentGeographyScope,isEquipmentFilterActive } from '../utils/equipmentPresence';
 import {EquipmentCoverageLegend,EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {buildEquipmentGeography,equipmentCoverageColor} from '../utils/equipmentGeography';
@@ -18,8 +17,6 @@ import {
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
-import { CountyEquipmentRecordsPanel } from './CountyEquipmentRecordsPanel';
-import './CountyEquipmentRecordsPanel.css';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import {
   getGetNriCountyContextQueryKey,
@@ -55,7 +52,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   onSelectCounty,
   onSelectCity,
   onShowAllPlaces,
-  onSelectAgency,
 }) => {
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const isEquipmentMapActive=isEquipmentFilterActive(equipmentFilter);
@@ -293,6 +289,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   }, [previewCountyFips, activeCountyNode, projectedState]);
   const inspectedNri = inspectedCounty
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
+    : null;
+  const activeCountyNri = activeCountyNode
+    ? nriByCountyFips.get(activeCountyNode.countyFips) ?? null
     : null;
   const nriColorFor = (fips: string) => {
     if(isEquipmentMapActive)return equipmentCoverageColor(equipmentCoverage.byCounty[fips],equipmentFilter);
@@ -771,12 +770,13 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </div>
             </div>
 
-            <div className="cv-panel county-geo county-city-directory-panel">
+            <section className="cv-panel county-geo county-reference-panel county-city-directory-panel" aria-label={`${activeCountyNode.countyName} county reference and places`} data-testid="county-reference-panel">
               <div className="cv-geo-head">
                 <div className="min-w-0">
-                  <p className="cv-geo-kicker">{stateNode.stateName} · FIPS {activeCountyNode.countyFips}</p>
-                  <h4 className="cv-geo-title"><MapPin aria-hidden="true" />Places in {activeCountyNode.countyName}</h4>
+                  <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference · {stateNode.stateName}</p>
+                  <h4 className="cv-geo-title">{activeCountyNode.countyName}</h4>
                 </div>
+                <p className="cv-geo-note">County-level working references for your confirmation; not values for an individual provider.</p>
                 {selectedCityName !== 'all' && onShowAllPlaces && (
                   <button type="button" onClick={onShowAllPlaces} className="cv-btn cv-btn--ghost shrink-0" data-testid="button-show-all-places">
                     <ArrowLeft aria-hidden="true" /> Show all places
@@ -784,112 +784,95 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 )}
               </div>
 
-              <dl className="cv-geo-figs" data-testid="text-county-place-summary">
-                <div data-tone="ops"><dt><MapPin aria-hidden="true" />Mapped places</dt><dd>{projectedSingleCounty.cityPins.length.toLocaleString()}</dd></div>
-                <div data-tone="community"><dt><Building2 aria-hidden="true" />Provider records</dt><dd>{projectedSingleCounty.providerRecordCount.toLocaleString()}<small>unique</small></dd></div>
-                <div data-tone="reference"><dt><Hash aria-hidden="true" />County ZIPs</dt><dd>{activeCountyNode.primaryZipCodes.length.toLocaleString()}</dd></div>
-              </dl>
-
-              <div className="cv-place-list" role="list">
-                {projectedSingleCounty.cityPins.map((pin) => {
-                  const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                  return (
-                    <div role="listitem" key={pin.cityName}>
-                      <button
-                        type="button"
-                        className="cv-place-row"
-                        aria-pressed={isSelected}
-                        data-hover={hoveredCityName === pin.cityName}
-                        onMouseEnter={() => setHoveredCityName(pin.cityName)}
-                        onMouseLeave={() => setHoveredCityName(null)}
-                        onFocus={() => setHoveredCityName(pin.cityName)}
-                        onBlur={() => setHoveredCityName(null)}
-                        onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                        data-testid={`button-place-${pin.cityName}`}
-                      >
-                        <MapPin className={`cv-place-ico${pin.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-1.5">
-                            <span className="cv-place-name">{pin.cityName}</span>
-                            {pin.isCountySeat && <span className="cv-tag">County seat</span>}
-                          </span>
-                          <span className="cv-place-sub block">
-                            ZIP {pin.zipCodes.join(', ') || 'not listed'} · {formatCoordinates(pin.latitude, pin.longitude, 3)}
-                          </span>
-                        </span>
-                        <span className="cv-place-count">
-                          <Building2 aria-hidden="true" />{pin.providersCount} {pin.providersCount === 1 ? 'record' : 'records'}
-                        </span>
-                      </button>
-                    </div>
-                  );
-                })}
+              <CountyFigureSourceDetails
+                countyFips={activeCountyNode.countyFips}
+                sources={activeCountyNode.countyRecord.figureSources}
+                record={activeCountyNode.countyRecord}
+                variant="brief"
+                className="cv-ref-figures"
+              />
+              <div className="cv-ref-fema" style={riskStyle(activeCountyNri?.riskRating)} aria-label="FEMA National Risk Index natural hazard">
+                <p className="cv-ref-fema-head">
+                  <span className="cv-ref-fema-label"><Shield aria-hidden="true" />FEMA natural hazard</span>
+                  <span className={`cv-ref-fema-rating${activeCountyNri?.riskRating ? '' : ' is-none'}`}>
+                    {activeCountyNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No county-equivalent record')}
+                  </span>
+                  {activeCountyNri?.riskScore != null && <span className="cv-ref-fema-meta">Score <strong>{activeCountyNri.riskScore.toFixed(2)}</strong></span>}
+                  {activeCountyNri && <span className="cv-ref-fema-meta">{activeCountyNri.sourceVersion}</span>}
+                  {activeCountyNri?.sourceUrl && <a href={activeCountyNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">FEMA record <ExternalLink aria-hidden="true" /></a>}
+                </p>
+                {activeCountyNri && (
+                  <dl className="cv-ref-fema-facts">
+                    <div><dt><BadgeDollarSign aria-hidden="true" />Expected annual loss</dt><dd>{formatLoss(activeCountyNri.expectedAnnualLoss)}</dd></div>
+                    <div><dt><Users aria-hidden="true" />Social vulnerability</dt><dd>{activeCountyNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                    <div><dt><HeartHandshake aria-hidden="true" />Community resilience</dt><dd>{activeCountyNri.communityResilienceRating ?? 'not stated'}</dd></div>
+                  </dl>
+                )}
               </div>
+              {sourceStrip}
 
-              <div>
-                <div className="cv-section-label"><span className="cv-geo-sub"><Hash aria-hidden="true" />County ZIP references</span><span>{activeCountyNode.primaryZipCodes.length}</span></div>
-                <p className="cv-zips mt-1">{activeCountyNode.primaryZipCodes.join(', ') || 'None listed'}</p>
-              </div>
-
-              <a
-                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${activeCountyNode.countyName}, ${stateNode.stateName}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="cv-link cv-geo-foot"
-              >
-                Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
-              </a>
-            </div>
-          </div>
-
-          {(() => {
-            const sel = nriByCountyFips.get(activeCountyNode.countyFips);
-            return (
-          <section className="cv-panel county-geo county-reference-panel" aria-label={`${activeCountyNode.countyName} reference figures and sources`}>
-            <div className="cv-geo-head">
-              <div className="min-w-0">
-                <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference · {stateNode.stateName}</p>
-                <h4 className="cv-geo-title">{activeCountyNode.countyName}</h4>
-              </div>
-              <p className="cv-geo-note">County-level working references for your confirmation; not values for an individual provider.</p>
-            </div>
-            <CountyFigureSourceDetails
-              countyFips={activeCountyNode.countyFips}
-              sources={activeCountyNode.countyRecord.figureSources}
-              record={activeCountyNode.countyRecord}
-              variant="brief"
-              className="cv-ref-figures"
-            />
-            <div className="cv-ref-fema" style={riskStyle(sel?.riskRating)} aria-label="FEMA National Risk Index natural hazard">
-              <p className="cv-ref-fema-head">
-                <span className="cv-ref-fema-label"><Shield aria-hidden="true" />FEMA natural hazard</span>
-                <span className={`cv-ref-fema-rating${sel?.riskRating ? '' : ' is-none'}`}>
-                  {sel?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No county-equivalent record')}
-                </span>
-                {sel?.riskScore != null && <span className="cv-ref-fema-meta">Score <strong>{sel.riskScore.toFixed(2)}</strong></span>}
-                {sel && <span className="cv-ref-fema-meta">{sel.sourceVersion}</span>}
-                {sel?.sourceUrl && <a href={sel.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">FEMA record <ExternalLink aria-hidden="true" /></a>}
-              </p>
-              {sel && (
-                <dl className="cv-ref-fema-facts">
-                  <div><dt><BadgeDollarSign aria-hidden="true" />Expected annual loss</dt><dd>{formatLoss(sel.expectedAnnualLoss)}</dd></div>
-                  <div><dt><Users aria-hidden="true" />Social vulnerability</dt><dd>{sel.socialVulnerabilityRating ?? 'not stated'}</dd></div>
-                  <div><dt><HeartHandshake aria-hidden="true" />Community resilience</dt><dd>{sel.communityResilienceRating ?? 'not stated'}</dd></div>
+              <div className="county-place-context">
+                <h5 className="cv-section-label">
+                  <span className="cv-geo-sub"><MapPin aria-hidden="true" />Places in {activeCountyNode.countyName}</span>
+                </h5>
+                <dl className="cv-geo-figs" data-testid="text-county-place-summary">
+                  <div data-tone="ops"><dt><MapPin aria-hidden="true" />Mapped places</dt><dd>{projectedSingleCounty.cityPins.length.toLocaleString()}</dd></div>
+                  <div data-tone="community"><dt><Building2 aria-hidden="true" />Provider records</dt><dd>{projectedSingleCounty.providerRecordCount.toLocaleString()}<small>unique</small></dd></div>
+                  <div data-tone="reference"><dt><Hash aria-hidden="true" />County ZIPs</dt><dd>{activeCountyNode.primaryZipCodes.length.toLocaleString()}</dd></div>
                 </dl>
-              )}
-            </div>
-            {sourceStrip}
-          </section>
-            );
-          })()}
-          <NationalSourceDirectory stateCode={stateCode} countyFips={activeCountyNode.countyFips} providerScope={providerScope}/>
-          <CountyEquipmentRecordsPanel
-            countyName={activeCountyNode.countyName}
-            stateName={stateNode.stateName}
-            family={equipmentFilter.family}
-            coverage={equipmentCoverage.byCounty[activeCountyNode.countyFips]}
-            onSelectAgency={onSelectAgency}
-          />
+
+                <div className="cv-place-list" role="list">
+                  {projectedSingleCounty.cityPins.map((pin) => {
+                    const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
+                    return (
+                      <div role="listitem" key={pin.cityName}>
+                        <button
+                          type="button"
+                          className="cv-place-row"
+                          aria-pressed={isSelected}
+                          data-hover={hoveredCityName === pin.cityName}
+                          onMouseEnter={() => setHoveredCityName(pin.cityName)}
+                          onMouseLeave={() => setHoveredCityName(null)}
+                          onFocus={() => setHoveredCityName(pin.cityName)}
+                          onBlur={() => setHoveredCityName(null)}
+                          onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
+                          data-testid={`button-place-${pin.cityName}`}
+                        >
+                          <MapPin className={`cv-place-ico${pin.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span className="cv-place-name">{pin.cityName}</span>
+                              {pin.isCountySeat && <span className="cv-tag">County seat</span>}
+                            </span>
+                            <span className="cv-place-sub block">
+                              ZIP {pin.zipCodes.join(', ') || 'not listed'} · {formatCoordinates(pin.latitude, pin.longitude, 3)}
+                            </span>
+                          </span>
+                          <span className="cv-place-count">
+                            <Building2 aria-hidden="true" />{pin.providersCount} {pin.providersCount === 1 ? 'record' : 'records'}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div>
+                  <div className="cv-section-label"><span className="cv-geo-sub"><Hash aria-hidden="true" />County ZIP references</span><span>{activeCountyNode.primaryZipCodes.length}</span></div>
+                  <p className="cv-zips mt-1">{activeCountyNode.primaryZipCodes.join(', ') || 'None listed'}</p>
+                </div>
+
+                <a
+                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${activeCountyNode.countyName}, ${stateNode.stateName}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cv-link cv-geo-foot"
+                >
+                  Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
+                </a>
+              </div>
+            </section>
+          </div>
           {unmatchedSection}
         </>
       )}

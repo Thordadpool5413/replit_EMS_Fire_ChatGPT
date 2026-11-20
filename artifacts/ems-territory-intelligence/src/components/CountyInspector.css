@@ -139,6 +139,8 @@
 .county-city-directory-panel .cv-place-sub { margin-top: .05rem; font-size: var(--geo-meta); color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
 .county-city-directory-panel .cv-place-count { display: inline-flex; align-items: center; gap: .3rem; margin-left: auto; flex: none; font-size: 13px; font-weight: 650; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
 .county-city-directory-panel .cv-place-count svg { width: 14px; height: 14px; color: var(--geo-community); }
+.county-reference-panel .county-place-context { display: grid; gap: .45rem; padding: .55rem var(--geo-pad); border-top: 1px solid var(--geo-hair); }
+.county-reference-panel .county-place-context > .cv-section-label { margin: 0; }
 .county-geo .cv-section-label { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .2rem; font-size: var(--geo-label); font-weight: 650; color: var(--pi-text-secondary); }
 .county-geo .cv-geo-sub { display: inline-flex; align-items: center; gap: .35rem; }
 .county-geo .cv-geo-sub > svg { width: 16px; height: 16px; color: var(--geo-ref); }

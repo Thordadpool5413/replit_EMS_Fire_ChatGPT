@@ -69,6 +69,21 @@ test('home map keeps its original controls without equipment filter panels', () 
   assert.match(countyMap, /EquipmentMapFilter/, 'County equipment controls stay available in the county map');
 });
 
+test('selected county leads with its reference card and omits unrelated registry and equipment panels', () => {
+  const src = readFileSync(new URL('./RealWorldCountyBoundaryMap.tsx', import.meta.url), 'utf8');
+  const selectedCountyStart = src.indexOf('<section className="cv-panel county-geo county-reference-panel county-city-directory-panel"');
+  const selectedCountyEnd = src.indexOf('{unmatchedSection}', selectedCountyStart);
+  assert.ok(selectedCountyStart >= 0 && selectedCountyEnd > selectedCountyStart, 'selected county reference panel is present');
+  const selectedCountyView = src.slice(selectedCountyStart, selectedCountyEnd);
+
+  assert.match(selectedCountyView, /County reference · \{stateNode\.stateName\}/);
+  assert.match(selectedCountyView, /<CountyFigureSourceDetails/);
+  assert.match(selectedCountyView, /Places in \{activeCountyNode\.countyName\}/, 'mapped places remain available within the reference card');
+  assert.match(selectedCountyView, /cv-place-list/);
+  assert.doesNotMatch(selectedCountyView, /stateNode\.stateName\} · FIPS/);
+  assert.doesNotMatch(selectedCountyView, /NationalSourceDirectory|CountyEquipmentRecordsPanel/);
+});
+
 test('county card keeps primary figures visible and labels optional Census source context', () => {
   const src = readFileSync(new URL('./CountyDirectoryCard.tsx', import.meta.url), 'utf8');
   const order = ['className="cb-name"', 'className="cfs-lead"', 'className="cfs-ledger"', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));

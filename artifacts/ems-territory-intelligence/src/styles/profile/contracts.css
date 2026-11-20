@@ -88,6 +88,13 @@
     font-weight: 750; margin: 6px 0;
     overflow-wrap: anywhere; text-wrap: balance;
   }
+  .agency-command-profile.profile-redesign .acp-header::before { background: #ff4b36; }
+  .agency-command-profile.profile-redesign .acp-header .acp-type-sub,
+  .agency-command-profile.profile-redesign .acp-header .acp-contact-row > a,
+  .agency-command-profile.profile-redesign .acp-header .acp-record-context > summary { color: #9b391f !important; }
+  .agency-command-profile.profile-redesign .acp-header .acp-type-ico { color: #b12e1c; background: #fff0e8; }
+  .agency-command-profile.profile-redesign .acp-header .profile-more-actions > summary,
+  .agency-command-profile.profile-redesign .acp-header .profile-secondary-action { color: #352c28 !important; background: #fffefa !important; border-color: #cfbdaa !important; }
   .agency-command-profile.profile-redesign .acp-type {
     color: #9b391f !important; font-size: 14px !important;
     letter-spacing: 0; text-transform: none; flex-wrap: wrap;
@@ -413,7 +420,8 @@
     grid-template-areas: "a w" ". s" ". c"; padding: 16px !important;
   }
   .agency-command-profile.profile-redesign .adm-contact { justify-items: start; }
-  .agency-command-profile.profile-redesign :is(.afn-row, .deal-commitment) { grid-template-columns: minmax(0, 1fr); }
+  .agency-command-profile.profile-redesign .afn-row { grid-template-columns: minmax(0, 1fr); }
+  .agency-command-profile.profile-redesign .deal-commitment { display: grid; grid-template-columns: minmax(0, 1fr); }
   .agency-command-profile.profile-redesign .fr-list { border-right: 0; border-bottom: 1px solid #e7ddd0; }
   .agency-command-profile.profile-redesign :is(.dsb-hero button, .dsb-tab, .workspace-button, .fr-save button, .afn-form > button, .pds-btn, button, select, .acp-link, .acp-inline-actions a, .adm-contact a, .brief-location-actions a, .brief-contact-actions a, .acp-contact-row > a, .profile-more-actions > summary) { min-height: 44px !important; }
   .agency-command-profile.profile-redesign :is(.acp-inline-actions a, .adm-contact a, .brief-location-actions a, .brief-contact-actions a) { display: inline-flex; align-items: center; }

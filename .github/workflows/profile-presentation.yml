@@ -38,7 +38,7 @@ jobs:
         env:
           PROFILE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/check-profile-presentation-scope.mjs
-      - run: pnpm run test:ems-unit
+      - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: node scripts/check-style-ownership.mjs
       - run: pnpm --dir artifacts/ems-territory-intelligence run build

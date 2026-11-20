@@ -57,10 +57,10 @@
 .cv-county-path:focus-visible { outline: none; stroke: #ffffff !important; stroke-width: 2.6px !important; }
 .cv-pin-label { font-family: var(--geo-font, system-ui); }
 
-/* Paired layout: two equal columns, bounded map viewport; the preview never inflates the map. */
+/* Paired layouts: near-equal selected-county columns, bounded map viewport. */
 @media (min-width: 1024px) {
-  .territory-explorer-screen .cv-state-grid.county-state-map-grid:has(> .ci),
-  .cv-state-grid.county-selected-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; align-items: start; }
+  .territory-explorer-screen .cv-state-grid.county-state-map-grid:has(> .ci) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; align-items: start; }
+  .cv-state-grid.county-selected-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr) !important; align-items: start; }
   .county-state-map-grid:has(> .ci) > .county-state-map-panel { display: flex !important; flex-direction: column; height: auto !important; min-height: 0 !important; }
   .county-state-map-grid:has(> .ci) > .county-state-map-panel > .county-state-map-viewport { flex: none !important; min-height: 16rem !important; height: clamp(16rem, 46vh, 25rem) !important; max-height: 25rem !important; }
   .county-state-map-grid:has(> .ci) .county-state-map-viewport .county-state-map-svg { width: 100%; height: 100% !important; min-height: 16rem !important; max-height: none !important; }
@@ -131,16 +131,23 @@
 .county-city-directory-panel .cv-geo-figs dd small { margin-left: .2rem; font-family: var(--geo-font); font-size: var(--geo-meta); font-weight: 520; letter-spacing: 0; color: var(--pi-text-secondary); }
 .county-city-directory-panel .cv-place-list { display: grid; gap: 0; padding: 0 !important; border: 0; border-radius: 0; max-height: none; overflow: visible; }
 .county-city-directory-panel .cv-place-list > [role="listitem"] + [role="listitem"] { border-top: 1px solid var(--geo-hair); }
-.county-city-directory-panel .cv-place-row { display: flex; align-items: center; gap: .6rem; width: 100%; min-height: 44px; padding: .4rem var(--geo-pad); border: 0; border-radius: 0; background: transparent; text-align: left; transition: background-color 120ms ease; }
+.county-city-directory-panel .cv-place-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: .55rem; width: 100%; min-height: 48px; padding: .4rem var(--geo-pad); border: 0; border-radius: 0; background: transparent; text-align: left; transition: background-color 120ms ease; }
 .county-city-directory-panel .cv-place-row:hover, .county-city-directory-panel .cv-place-row[data-hover="true"] { background: var(--geo-wash); }
 .county-city-directory-panel .cv-place-row[aria-pressed="true"] { background: var(--pi-action-subtle); box-shadow: inset 3px 0 0 var(--geo-id); }
 .county-city-directory-panel .cv-place-row[aria-pressed="true"] .cv-place-name { color: var(--geo-name); }
 .county-city-directory-panel .cv-place-name { font-size: 14px; font-weight: 650; color: var(--pi-text-primary); }
+.county-city-directory-panel .cv-place-row .cv-tag { white-space: nowrap; border: 1px solid color-mix(in srgb, var(--geo-seat) 35%, transparent); }
 .county-city-directory-panel .cv-place-sub { margin-top: .05rem; font-size: var(--geo-meta); color: var(--pi-text-secondary); font-variant-numeric: tabular-nums; }
 .county-city-directory-panel .cv-place-count { display: inline-flex; align-items: center; gap: .3rem; margin-left: auto; flex: none; font-size: 13px; font-weight: 650; color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
 .county-city-directory-panel .cv-place-count svg { width: 14px; height: 14px; color: var(--geo-community); }
-.county-reference-panel .county-place-context { display: grid; gap: .45rem; padding: .55rem var(--geo-pad); border-top: 1px solid var(--geo-hair); }
+.county-reference-panel > .cv-geo-head { align-items: flex-start; background: var(--geo-wash); border-radius: calc(var(--geo-radius) - 1px) calc(var(--geo-radius) - 1px) 0 0; }
+.county-reference-meta { margin-top: .18rem !important; font-size: 12px; color: var(--pi-text-muted); font-variant-numeric: tabular-nums; }
+.county-reference-panel .county-reference-section { display: grid; gap: .45rem; padding: .6rem var(--geo-pad); border-top: 1px solid var(--geo-hair); }
+.county-ref-section-title { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: 11.5px; font-weight: 720; letter-spacing: .055em; text-transform: uppercase; color: var(--pi-text-secondary); }
+.county-ref-section-title > svg { width: 15px; height: 15px; flex: none; color: var(--geo-ref); stroke-width: 2; }
+.county-reference-panel .county-place-context { gap: .45rem; }
 .county-reference-panel .county-place-context > .cv-section-label { margin: 0; }
+.county-reference-panel .cv-ref-fema { padding: .1rem .55rem .2rem; border-left: 3px solid var(--risk, #b6c1cf); }
 .county-geo .cv-section-label { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .2rem; font-size: var(--geo-label); font-weight: 650; color: var(--pi-text-secondary); }
 .county-geo .cv-geo-sub { display: inline-flex; align-items: center; gap: .35rem; }
 .county-geo .cv-geo-sub > svg { width: 16px; height: 16px; color: var(--geo-ref); }
@@ -150,7 +157,7 @@
 }
 
 /* ---------- Selected county: reference panel ---------- */
-.county-reference-panel .cv-ref-figures { display: grid; gap: .75rem; padding-block: .8rem !important; }
+.county-reference-panel .cv-ref-figures { display: grid; gap: .65rem; padding: 0 !important; }
 .county-reference-panel .cv-ref-figures .cfs-cites { margin-top: .2rem; }
 .county-reference-panel .cv-ref-figures .cv-sources-foot { font-size: var(--geo-meta); color: var(--pi-text-muted); }
 .county-reference-panel .cv-ref-fema { display: grid; gap: .5rem; }
@@ -161,8 +168,8 @@
 .county-reference-panel .cv-ref-fema-rating.is-none { font-weight: 600; color: var(--pi-text-secondary); }
 .county-reference-panel .cv-ref-fema-meta strong { color: var(--pi-text-primary); font-weight: 650; }
 .county-reference-panel > .cv-note:last-child { font-size: var(--geo-meta); color: var(--pi-text-secondary); }
-@media (min-width: 1024px) {
-  /* Wide reference panel: lead figures and context ledger sit side by side */
+@container (min-width: 560px) {
+  /* Only spread the reference ledger when the card itself has enough width. */
   .county-reference-panel .cfs-brief { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 2rem; align-items: start; }
   .county-reference-panel .cfs-brief > :is(.cfs-cites, .cv-sources-foot) { grid-column: 1 / -1; }
 }
@@ -190,6 +197,10 @@
   .ci .ci-place, .ci .ci-link, .county-geo .cv-link { min-height: 32px; }
   .ci .ci-btn { min-height: 44px; width: 100%; justify-content: center; }
 }
+@container (max-width: 420px) {
+  .county-reference-panel .cv-place-row { grid-template-columns: 16px minmax(0, 1fr); align-items: start; }
+  .county-reference-panel .cv-place-count { grid-column: 2; justify-content: flex-start; margin-left: 0; }
+}
 @media (min-width: 768px) { :is(.ci, .county-geo) { --geo-fig: 23px; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -205,11 +216,14 @@
   :is(.ci .ci-link, .county-geo .cv-link) { color: LinkText; }
   .ci .ci-place-name { color: ButtonText; }
   :is(.ci, .county-geo) :is(button, a):focus-visible { outline: 2px solid Highlight; }
+  .cv-pin[data-selected="true"] .cv-pin-ring { stroke: Highlight; stroke-dasharray: none; opacity: 1; }
+  .cv-pin:focus-visible .cv-pin-ring { stroke: Highlight; stroke-dasharray: 3 2; opacity: 1; }
   .cv-county-label { fill: CanvasText; stroke: Canvas; }
 }
 
 /* Location rows grow naturally when names, ZIPs or source references wrap. */
-.county-city-directory-panel .cv-place-row { align-items:flex-start; }
 .county-city-directory-panel .cv-place-row > div { min-width:0; }
 .county-city-directory-panel :is(.cv-place-name,.cv-place-sub) { overflow-wrap:anywhere; }
 .county-city-directory-panel .cv-place-count { flex-wrap:wrap; flex-shrink:1; justify-content:flex-end; text-align:right; }
+.cv-pin[data-selected="true"] .cv-pin-ring { stroke: #f5b94a; stroke-width: 3; opacity: 1; }
+.cv-pin:focus-visible .cv-pin-ring { stroke: #f5b94a; stroke-width: 3; stroke-dasharray: 3 2; opacity: 1; }

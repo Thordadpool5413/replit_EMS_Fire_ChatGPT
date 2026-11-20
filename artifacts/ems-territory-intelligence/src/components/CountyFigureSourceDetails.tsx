@@ -20,6 +20,8 @@ interface CountyFigureSourceDetailsProps {
   omitValuesFor?: readonly CountyFigureSourceKey[];
   /** Show the general FIPS / NEMSIS scope notes. Defaults to true; set false when explained once elsewhere. */
   showGeneralNotes?: boolean;
+  /** Hide citations when a surface renders the same source metadata in its own section. */
+  showCitations?: boolean;
   /** Optional extra class for layout hooks. */
   className?: string;
   /**
@@ -76,6 +78,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
   showValues = true,
   omitValuesFor = [],
   showGeneralNotes = true,
+  showCitations = true,
   className,
   variant = 'table',
 }) => {
@@ -115,7 +118,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
       <div className={`county-figure-source-details cv-sources cfs-brief${className ? ` ${className}` : ''}`} data-testid={`sources-county-${countyFips}`}>
         {withValues && lead.length > 0 && <dl className="cfs-lead" aria-label="Primary county figures">{lead.map(figure)}</dl>}
         {withValues && ctx.length > 0 && <dl className="cfs-ledger" aria-label="Care access and community context">{ctx.map(figure)}</dl>}
-        {attached.length > 0 && (
+        {showCitations && attached.length > 0 && (
           <div className="cfs-cites">
             <p className="cv-section-label"><span>Sources</span></p>
             <ul className="cfs-cite-list">
@@ -159,7 +162,7 @@ export const CountyFigureSourceDetails: React.FC<CountyFigureSourceDetailsProps>
         </dl>
       )}
       {(attached.length > 0 || showGeneralNotes) && <div className="cv-section-label"><span>{showGeneralNotes ? 'Sources & coverage' : 'Sources'}</span></div>}
-      {attached.length > 0 && <table className="cv-sources-table">
+      {showCitations && attached.length > 0 && <table className="cv-sources-table">
         <thead>
           <tr>
             <th scope="col">Figure</th>

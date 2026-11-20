@@ -69,3 +69,16 @@ test('brief variant leads with primary figures and cites only supplied source me
   assert(!html.includes('Not provided'));
   assert(!html.includes('<table'));
 });
+
+test('brief values and citations can be rendered as separate visual sections', () => {
+  const sources = { population: { source: 'Census ACS', vintage: '2023' } };
+  const values = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" variant="brief"
+    record={{ population: 278468 }} sources={sources} showGeneralNotes={false} showCitations={false} />);
+  const citations = renderToStaticMarkup(<CountyFigureSourceDetails countyFips="12001" variant="brief"
+    record={{ population: 278468 }} sources={sources} showValues={false} showGeneralNotes={false} />);
+
+  assert.match(values, /278,468/);
+  assert.doesNotMatch(values, /Census ACS|cfs-cites/);
+  assert.match(citations, /Census ACS/);
+  assert.doesNotMatch(citations, /278,468|data-figure-key=/);
+});

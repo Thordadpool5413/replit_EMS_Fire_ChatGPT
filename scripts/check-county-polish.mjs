@@ -126,7 +126,7 @@ async function framing(label, single = false) {
       x:corners[0].x,y:corners[0].y,r:corners[1].x,b:corners[1].y,
       fit:Math.max((corners[1].x-corners[0].x)/rect.width,(corners[1].y-corners[0].y)/rect.height)};
   })()`);
-  assert(result && result.width > 0 && result.height > 0, `${label}: map absent`);
+  assert(result && result.width > 0 && result.height > 0, `${label}: map absent ${JSON.stringify(result)}`);
   assert(result.fit >= .72, `${label}: map uses too little of its viewport ${JSON.stringify(result)}`);
   assert(result.x >= result.left - 3 && result.r <= result.right + 3 && result.y >= result.top - 3 && result.b <= result.bottom + 3,
     `${label}: geometry cropped ${JSON.stringify(result)}`);
@@ -428,6 +428,86 @@ async function checkInspector(viewport) {
   console.log(`✓ ${label}: county preview facts, three themes, touch targets and keyboard county/place navigation`);
 }
 
+async function checkCountyReference(viewport) {
+  const label = `${viewport.width}x${viewport.height}`;
+  const desktop = viewport.width >= 768;
+  await navigate('/?state=FL&county=Alachua%20County',
+    'Boolean(document.querySelector(".county-reference-panel") && document.querySelector(".county-municipality-map-panel svg path"))');
+  await framing(`${label} county reference`, true);
+
+  for (const theme of ['daylight', 'dark', 'miami-vice']) {
+    await evaluate(`(() => {
+      const select = document.querySelector('[data-testid="theme-select-desktop"]');
+      select.value = ${JSON.stringify(theme)};
+      select.dispatchEvent(new Event('change', {bubbles:true}));
+    })()`);
+    await pause(180);
+    await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    const view = await evaluate(`(() => {
+      const panel = document.querySelector('.county-reference-panel');
+      const map = document.querySelector('.county-municipality-map-panel');
+      const panelRect = panel.getBoundingClientRect(), mapRect = map.getBoundingClientRect();
+      const focusedPin = document.querySelector('.cv-pin');
+      focusedPin?.focus();
+      const rows = [...panel.querySelectorAll('.cv-place-row')];
+      const sections = [...panel.querySelectorAll('.county-reference-section > h5')].map(node => node.textContent.trim());
+      const meta = panel.querySelector('.county-reference-meta');
+      const headings = [...panel.querySelectorAll('.county-ref-section-title')];
+      return {
+        text: panel.innerText,
+        width: innerWidth,
+        pageWidth: document.documentElement.scrollWidth,
+        panel: {x:panelRect.x,y:panelRect.y,width:panelRect.width,height:panelRect.height,scroll:panel.scrollWidth,client:panel.clientWidth},
+        map: {x:mapRect.x,y:mapRect.y,width:mapRect.width,height:mapRect.height},
+        sections,
+        headerMeta: meta?.textContent.trim(),
+        metaColor: meta ? getComputedStyle(meta).color : '',
+        headingColors: headings.map(node => getComputedStyle(node).color),
+        placeRows: rows.map(row => ({height:row.getBoundingClientRect().height,scroll:row.scrollWidth,client:row.clientWidth})),
+        seatMarker: Boolean(panel.querySelector('.cv-place-ico.is-seat')),
+        seatTag: [...panel.querySelectorAll('.cv-tag')].some(node => /county seat/i.test(node.textContent)),
+        zipHeadingHasCount: [...panel.querySelectorAll('.cv-section-label')].some(node =>
+          /County ZIP references\\s*\\d/i.test(node.textContent)),
+        focusedPin: focusedPin ? {
+          focusVisible: focusedPin.matches(':focus-visible'),
+          ringDash: getComputedStyle(focusedPin.querySelector('.cv-pin-ring')).strokeDasharray,
+          ringStroke: getComputedStyle(focusedPin.querySelector('.cv-pin-ring')).stroke,
+        } : null,
+        placeRowsClipped: rows.some(row => row.scrollWidth > row.clientWidth + 1),
+      };
+    })()`);
+    for (const text of ['Alachua County', 'Florida', '12001', 'County figures', 'FEMA hazard context', 'Sources & coverage', 'Places in Alachua County']) {
+      assert(view.text.includes(text), `${label} ${theme}: county reference missing ${text}`);
+    }
+    assert.deepEqual(view.sections, ['County figures', 'FEMA hazard context', 'Sources & coverage', 'Places in Alachua County'],
+      `${label} ${theme}: reference sections out of order`);
+    assert(view.headerMeta?.includes('Florida') && view.headerMeta.includes('12001'),
+      `${label} ${theme}: state/FIPS context missing`);
+    assert(view.panel.scroll <= view.panel.client + 1 && view.pageWidth <= view.width + 1,
+      `${label} ${theme}: panel or page horizontal overflow`);
+    assert(view.placeRows.every(row => row.height >= 44 && row.scroll <= row.client + 1),
+      `${label} ${theme}: place rows are clipped or too small`);
+    assert(view.seatMarker && view.seatTag, `${label} ${theme}: county-seat marker is not distinct`);
+    assert(!view.zipHeadingHasCount, `${label} ${theme}: ZIP count is repeated in the references heading`);
+    assert(view.focusedPin?.focusVisible && view.focusedPin.ringDash !== 'none',
+      `${label} ${theme}: map pin lacks a visible keyboard-focus ring`);
+    assert(view.metaColor && view.headingColors.every(color => color && color !== 'rgba(0, 0, 0, 0)'),
+      `${label} ${theme}: county reference text color is missing`);
+    if (desktop) {
+      assert(Math.abs(view.map.y - view.panel.y) < 3, `${label} ${theme}: map and county reference do not align at top`);
+      assert(view.map.x + view.map.width <= view.panel.x + 1 &&
+        view.panel.width >= view.map.width * .9 && view.panel.width <= view.map.width * 1.2,
+      `${label} ${theme}: map/reference columns are unbalanced`);
+    } else {
+      assert(view.map.y < view.panel.y && view.panel.width <= view.width + 1,
+        `${label} ${theme}: mobile map/reference should stack and fit`);
+    }
+    await capture(`${label}-county-reference-${theme}`, '.county-reference-panel');
+  }
+  console.log(`✓ ${label}: selected-county hierarchy, seat, map focus, responsive layout and three themes`);
+}
+
 try {
   let targets;
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -455,10 +535,12 @@ try {
   const mapOnly = process.env.COUNTY_MAP_ONLY === '1';
   const cardsOnly = process.env.COUNTY_CARDS_ONLY === '1';
   const homeOnly = process.env.COUNTY_HOME_ONLY === '1';
+  const referenceOnly = process.env.COUNTY_REFERENCE_ONLY === '1';
   for (const viewport of viewports) {
     const desktop = viewport.width >= 768;
     const label = `${viewport.width}x${viewport.height}`;
     await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: !desktop });
+    if (referenceOnly) { await checkCountyReference(viewport); continue; }
     if (homeOnly) {
       await navigate('/', 'Boolean(document.querySelector(".home-map-state-path"))');
       await evaluate('document.fonts.ready');

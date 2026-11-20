@@ -76,12 +76,21 @@ test('selected county leads with its reference card and omits unrelated registry
   assert.ok(selectedCountyStart >= 0 && selectedCountyEnd > selectedCountyStart, 'selected county reference panel is present');
   const selectedCountyView = src.slice(selectedCountyStart, selectedCountyEnd);
 
-  assert.match(selectedCountyView, /County reference · \{stateNode\.stateName\}/);
+  assert.match(selectedCountyView, /County reference/);
   assert.match(selectedCountyView, /<CountyFigureSourceDetails/);
   assert.match(selectedCountyView, /Places in \{activeCountyNode\.countyName\}/, 'mapped places remain available within the reference card');
   assert.match(selectedCountyView, /cv-place-list/);
   assert.doesNotMatch(selectedCountyView, /stateNode\.stateName\} · FIPS/);
   assert.doesNotMatch(selectedCountyView, /NationalSourceDirectory|CountyEquipmentRecordsPanel/);
+  const sections = ['county-reference-meta', 'county-reference-figures-title', 'county-reference-risk-title',
+    'county-reference-sources-title', 'county-reference-places-title'].map((id) => selectedCountyView.indexOf(id));
+  assert.ok(sections.every((index) => index >= 0));
+  assert.deepEqual([...sections].sort((a, b) => a - b), sections, 'identity, figures, risk, sources, and places read in order');
+  assert.equal((selectedCountyView.match(/primaryZipCodes\.length/g) ?? []).length, 1, 'ZIP count is shown once');
+  const styles = readFileSync(new URL('./CountyInspector.css', import.meta.url), 'utf8');
+  assert.match(styles, /county-selected-grid[\s\S]*align-items: start/);
+  assert.match(styles, /@container \(max-width: 420px\)/, 'narrow cards adapt place rows for phones');
+  assert.match(styles, /\.cv-pin\[data-selected="true"\][\s\S]*cv-pin-ring/);
 });
 
 test('county card keeps primary figures visible and labels optional Census source context', () => {

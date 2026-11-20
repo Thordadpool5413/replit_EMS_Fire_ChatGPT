@@ -22,7 +22,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, Ambulance, Hospital, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, Hash } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, Ambulance, Hospital, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, Hash, FileText } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './countyGeoTokens.css';
 import './CountyFigures.css';
@@ -715,6 +715,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           tabIndex={0}
                           role="button"
                           aria-pressed={isSelected}
+                          data-selected={isSelected}
                           aria-label={`${pin.cityName}${pin.isCountySeat ? ', county seat' : ''}. Show providers for this place`}
                           onMouseEnter={() => setHoveredCityName(pin.cityName)}
                           onMouseLeave={() => setHoveredCityName(null)}
@@ -732,7 +733,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           <circle
                             cx={pin.svgX}
                             cy={pin.svgY}
-                            r={(isSelected || isHovered ? 6 : pin.isCountySeat ? 5 : 4) / singleMapScale}
+                            r={(isSelected || isHovered ? 6 : pin.isCountySeat ? 6 : 4) / singleMapScale}
                             fill={isSelected ? '#FFFFFF' : pin.isCountySeat ? '#F5B94A' : '#9DBBF7'}
                             stroke={isSelected ? '#2456C8' : '#0C1829'}
                             strokeWidth={isSelected ? 3 : 2}
@@ -773,10 +774,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
             <section className="cv-panel county-geo county-reference-panel county-city-directory-panel" aria-label={`${activeCountyNode.countyName} county reference and places`} data-testid="county-reference-panel">
               <div className="cv-geo-head">
                 <div className="min-w-0">
-                  <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference · {stateNode.stateName}</p>
+                  <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference</p>
                   <h4 className="cv-geo-title">{activeCountyNode.countyName}</h4>
+                  <p className="county-reference-meta">{stateNode.stateName} · County FIPS {activeCountyNode.countyFips}</p>
                 </div>
-                <p className="cv-geo-note">County-level working references for your confirmation; not values for an individual provider.</p>
+                <p className="cv-geo-note">County-level context for confirmation; not agency-level values.</p>
                 {selectedCityName !== 'all' && onShowAllPlaces && (
                   <button type="button" onClick={onShowAllPlaces} className="cv-btn cv-btn--ghost shrink-0" data-testid="button-show-all-places">
                     <ArrowLeft aria-hidden="true" /> Show all places
@@ -784,36 +786,57 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 )}
               </div>
 
-              <CountyFigureSourceDetails
-                countyFips={activeCountyNode.countyFips}
-                sources={activeCountyNode.countyRecord.figureSources}
-                record={activeCountyNode.countyRecord}
-                variant="brief"
-                className="cv-ref-figures"
-              />
-              <div className="cv-ref-fema" style={riskStyle(activeCountyNri?.riskRating)} aria-label="FEMA National Risk Index natural hazard">
-                <p className="cv-ref-fema-head">
-                  <span className="cv-ref-fema-label"><Shield aria-hidden="true" />FEMA natural hazard</span>
-                  <span className={`cv-ref-fema-rating${activeCountyNri?.riskRating ? '' : ' is-none'}`}>
-                    {activeCountyNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No county-equivalent record')}
-                  </span>
-                  {activeCountyNri?.riskScore != null && <span className="cv-ref-fema-meta">Score <strong>{activeCountyNri.riskScore.toFixed(2)}</strong></span>}
-                  {activeCountyNri && <span className="cv-ref-fema-meta">{activeCountyNri.sourceVersion}</span>}
-                  {activeCountyNri?.sourceUrl && <a href={activeCountyNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">FEMA record <ExternalLink aria-hidden="true" /></a>}
-                </p>
-                {activeCountyNri && (
-                  <dl className="cv-ref-fema-facts">
-                    <div><dt><BadgeDollarSign aria-hidden="true" />Expected annual loss</dt><dd>{formatLoss(activeCountyNri.expectedAnnualLoss)}</dd></div>
-                    <div><dt><Users aria-hidden="true" />Social vulnerability</dt><dd>{activeCountyNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
-                    <div><dt><HeartHandshake aria-hidden="true" />Community resilience</dt><dd>{activeCountyNri.communityResilienceRating ?? 'not stated'}</dd></div>
-                  </dl>
-                )}
-              </div>
-              {sourceStrip}
+              <section className="county-reference-section" aria-labelledby="county-reference-figures-title">
+                <h5 className="county-ref-section-title" id="county-reference-figures-title"><Users aria-hidden="true" />County figures</h5>
+                <CountyFigureSourceDetails
+                  countyFips={activeCountyNode.countyFips}
+                  sources={activeCountyNode.countyRecord.figureSources}
+                  record={activeCountyNode.countyRecord}
+                  variant="brief"
+                  showGeneralNotes={false}
+                  showCitations={false}
+                  className="cv-ref-figures"
+                />
+              </section>
 
-              <div className="county-place-context">
+              <section className="county-reference-section" aria-labelledby="county-reference-risk-title">
+                <h5 className="county-ref-section-title" id="county-reference-risk-title"><Shield aria-hidden="true" />FEMA hazard context</h5>
+                <div className="cv-ref-fema" style={riskStyle(activeCountyNri?.riskRating)} aria-label="FEMA National Risk Index natural hazard">
+                  <p className="cv-ref-fema-head">
+                    <span className="cv-ref-fema-label">National Risk Index</span>
+                    <span className={`cv-ref-fema-rating${activeCountyNri?.riskRating ? '' : ' is-none'}`}>
+                      {activeCountyNri?.riskRating ?? (nriQuery.isLoading ? 'Loading FEMA record' : nriQuery.isError ? 'FEMA source unavailable' : 'No county-equivalent record')}
+                    </span>
+                    {activeCountyNri?.riskScore != null && <span className="cv-ref-fema-meta">Score <strong>{activeCountyNri.riskScore.toFixed(2)}</strong></span>}
+                    {activeCountyNri && <span className="cv-ref-fema-meta">{activeCountyNri.sourceVersion}</span>}
+                    {activeCountyNri?.sourceUrl && <a href={activeCountyNri.sourceUrl} target="_blank" rel="noopener noreferrer" className="cv-link">FEMA record <ExternalLink aria-hidden="true" /></a>}
+                  </p>
+                  {activeCountyNri && (
+                    <dl className="cv-ref-fema-facts">
+                      <div><dt><BadgeDollarSign aria-hidden="true" />Expected annual loss</dt><dd>{formatLoss(activeCountyNri.expectedAnnualLoss)}</dd></div>
+                      <div><dt><Users aria-hidden="true" />Social vulnerability</dt><dd>{activeCountyNri.socialVulnerabilityRating ?? 'not stated'}</dd></div>
+                      <div><dt><HeartHandshake aria-hidden="true" />Community resilience</dt><dd>{activeCountyNri.communityResilienceRating ?? 'not stated'}</dd></div>
+                    </dl>
+                  )}
+                </div>
+              </section>
+
+              <section className="county-reference-section county-reference-sources" aria-labelledby="county-reference-sources-title">
+                <h5 className="county-ref-section-title" id="county-reference-sources-title"><FileText aria-hidden="true" />Sources &amp; coverage</h5>
+                <CountyFigureSourceDetails
+                  countyFips={activeCountyNode.countyFips}
+                  sources={activeCountyNode.countyRecord.figureSources}
+                  showValues={false}
+                  showGeneralNotes
+                  variant="brief"
+                  className="cv-ref-figures"
+                />
+                {sourceStrip}
+              </section>
+
+              <section className="county-reference-section county-place-context" aria-labelledby="county-reference-places-title">
                 <h5 className="cv-section-label">
-                  <span className="cv-geo-sub"><MapPin aria-hidden="true" />Places in {activeCountyNode.countyName}</span>
+                  <span className="cv-geo-sub" id="county-reference-places-title"><MapPin aria-hidden="true" />Places in {activeCountyNode.countyName}</span>
                 </h5>
                 <dl className="cv-geo-figs" data-testid="text-county-place-summary">
                   <div data-tone="ops"><dt><MapPin aria-hidden="true" />Mapped places</dt><dd>{projectedSingleCounty.cityPins.length.toLocaleString()}</dd></div>
@@ -858,7 +881,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 </div>
 
                 <div>
-                  <div className="cv-section-label"><span className="cv-geo-sub"><Hash aria-hidden="true" />County ZIP references</span><span>{activeCountyNode.primaryZipCodes.length}</span></div>
+                  <div className="cv-section-label"><span className="cv-geo-sub"><Hash aria-hidden="true" />County ZIP references</span></div>
                   <p className="cv-zips mt-1">{activeCountyNode.primaryZipCodes.join(', ') || 'None listed'}</p>
                 </div>
 
@@ -870,7 +893,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 >
                   Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
                 </a>
-              </div>
+              </section>
             </section>
           </div>
           {unmatchedSection}

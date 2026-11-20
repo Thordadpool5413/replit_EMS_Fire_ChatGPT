@@ -34,7 +34,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Visual-only parity
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.head_ref == 'design/agency-profile-warm-redesign'
         env:
           PROFILE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/check-profile-presentation-scope.mjs

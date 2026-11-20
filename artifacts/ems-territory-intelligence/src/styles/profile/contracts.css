@@ -394,7 +394,13 @@
 @media screen and (max-width: 767px) {
   .agency-command-profile.profile-redesign .profile-brief-layout { padding: 16px 12px 32px; }
   .agency-command-profile.profile-redesign[data-laptop-density="compact"] .acp-next-step .workspace-button { min-height: 46px !important; }
-  .agency-command-profile.profile-redesign .acp-header .profile-action-dock { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+  .agency-command-profile.profile-redesign .acp-header .profile-action-dock {
+    display: flex !important; min-width: 0; width: 100%; max-width: 100%;
+    flex-wrap: wrap !important; gap: 8px;
+  }
+  .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary { flex: 1 1 220px; min-width: 0; flex-shrink: 1; }
+  .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary span { min-width: 0; white-space: normal; }
+  .agency-command-profile.profile-redesign .acp-header .profile-more-actions { flex: 0 1 auto; max-width: 100%; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { white-space: normal; max-width: 100%; height: auto; padding-block: 10px; }
   .agency-command-profile.profile-redesign .profile-workspace > header > div { flex-wrap: wrap; min-width: 0; max-width: 100%; }
   .agency-command-profile.profile-redesign .profile-workspace > header nav { min-width: 0; max-width: 100%; }

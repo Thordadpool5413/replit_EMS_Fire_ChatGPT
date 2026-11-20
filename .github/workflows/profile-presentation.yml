@@ -1,0 +1,70 @@
+name: Profile presentation
+on:
+  pull_request:
+    paths:
+      - 'artifacts/ems-territory-intelligence/**'
+      - 'scripts/check-profile-*.mjs'
+      - '.github/workflows/profile-presentation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/ems-territory-intelligence/**'
+      - 'scripts/check-profile-*.mjs'
+      - '.github/workflows/profile-presentation.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PORT: '5173'
+      BASE_PATH: '/'
+      PROFILE_TEST_URL: 'http://127.0.0.1:5173/'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Visual-only parity
+        if: github.event_name == 'pull_request' && github.head_ref == 'design/agency-profile-warm-redesign'
+        env:
+          PROFILE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/check-profile-presentation-scope.mjs
+      - run: node scripts/test-ems-unit.mjs
+      - run: pnpm run typecheck
+      - run: node scripts/check-style-ownership.mjs
+      - run: pnpm --dir artifacts/ems-territory-intelligence run build
+      - name: Install browser for responsive profile checks
+        run: |
+          npx --yes --package=@playwright/test playwright install --with-deps chromium
+          CHROME_BIN=$(find "$HOME/.cache/ms-playwright" -path '*/chrome-linux*/chrome' -type f | head -n 1)
+          test -n "$CHROME_BIN"
+          mkdir -p "$RUNNER_TEMP/profile-bin"
+          ln -s "$CHROME_BIN" "$RUNNER_TEMP/profile-bin/chromium"
+          echo "$RUNNER_TEMP/profile-bin" >> "$GITHUB_PATH"
+      - name: Start production preview
+        run: |
+          pnpm --dir artifacts/ems-territory-intelligence exec vite preview --host 127.0.0.1 > "$RUNNER_TEMP/profile-preview.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/profile-preview.log"
+          exit 1
+      - name: Responsive read-only profile checks
+        run: node scripts/check-profile-redesign.mjs
+      - name: Keep layout measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: profile-presentation
+          path: generated-artifacts/profile-redesign/results.json
+          if-no-files-found: ignore

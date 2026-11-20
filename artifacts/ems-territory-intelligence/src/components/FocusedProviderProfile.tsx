@@ -1,3 +1,4 @@
+import { ProfileContactDisclosure } from './profile/ProfileContactDisclosure';
 import { AgencyIdentityStrip } from './profile/AgencyIdentityStrip';
 import { DealDiscoveryWorkspace } from './profile/DealDiscoveryWorkspace';
 import { FollowUpWorkspace } from './FollowUpWorkspace';
@@ -210,15 +211,15 @@ type ProfileSection =
 const PRIMARY_PROFILE_IDS = ['overview','deal_story','equipment','decision_makers','purchasing','activity','evidence'];
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
   { id: 'activity', label: 'Activity & follow-up', short: 'Activity', purpose: 'Visit history, next actions, and notes. Unfinished notes are saved on this device.', icon: FileText },
-  { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Curated account briefing.', icon: Layers },
+  { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Start with recorded equipment, operating scale, key contacts and your next action.', icon: Layers },
   { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison. Current use needs confirmation.', icon: Cpu },
   { id: 'purchasing', label: 'Purchasing & Funding', short: 'Purchasing', purpose: 'Contract and supplier records, procurement timing, cooperative vehicles and grant history. Past dates are history, not deadlines.', icon: Scale },
-  { id: 'decision_makers', label: 'Decision Makers', short: 'People', purpose: 'Recorded leadership and purchasing authority with source context. Relationships are never inferred.', icon: UserCheck },
+  { id: 'decision_makers', label: 'People & roles', short: 'People', purpose: 'Recorded leadership and purchasing authority with source context. Relationships are never inferred.', icon: UserCheck },
   { id: 'operations', label: 'Operations & Clinical', short: 'Ops & clinical', purpose: 'Operational scale, apparatus, receiving hospitals and source-supported clinical measures.', icon: Activity },
   { id: 'medicare', label: 'Financial Intelligence', short: 'Financial', purpose: 'Reported claims data separated from planning estimates. Assumptions are adjustable; projections are not agency outcomes.', icon: DollarSign },
   { id: 'meeting', label: 'Account findings & meeting preparation', short: 'Meeting prep', purpose: 'Evidence, confidence, cited signals and a practical meeting brief. Records are working references, not proof of buying intent.', icon: FileText },
-  { id: 'deal_story', label: 'Deal story & discovery playbook', short: 'Deal story', purpose: 'Prepare an agency-specific conversation, discovery questions and a clearly labeled planning comparison.', icon: Sparkles },
-  { id: 'evidence', label: 'Evidence & Verification', short: 'Evidence', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and inspect review history.', icon: FileCheck2 },
+  { id: 'deal_story', label: 'Visit plan', short: 'Visit plan', purpose: 'Prepare an agency-specific conversation, discovery questions and a clearly labeled planning comparison.', icon: Sparkles },
+  { id: 'evidence', label: 'Sources & review', short: 'Sources & review', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and inspect review history.', icon: FileCheck2 },
 ];
 
 type NppesSourceCandidate = {
@@ -1010,7 +1011,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   }, [agency, primaryContact, medicareDenialMetric]);
 
   return (
-    <div ref={profileRootRef} data-laptop-density="compact" data-profile-topic={activeSection} className="agency-command-profile provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
+    <div ref={profileRootRef} data-laptop-density="compact" data-profile-topic={activeSection} className="agency-command-profile profile-redesign provider-profile-overlay fixed inset-0 md:left-64 z-45 overflow-x-clip overflow-y-auto bg-[#F5F7FA] dark:bg-[#0B1320]">
       <main
         aria-label={`${agency.name} Account 360 Workspace`}
         className="profile-workspace flex min-h-screen w-full min-w-0 flex-col bg-[#F5F7FA] pb-32 font-sans text-[#14283F] dark:bg-[#0B1320] dark:text-slate-100 sm:pb-24 lg:pb-8"
@@ -1257,7 +1258,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           </p>
         </section>
 
-          <AgencyIdentityStrip agency={agency} onPeople={()=>navigateProfileSection('decision_makers')}/>
+          <ProfileContactDisclosure>
+            <AgencyIdentityStrip agency={agency} onPeople={()=>navigateProfileSection('decision_makers')}/>
+          </ProfileContactDisclosure>
 
         {/* Main Account 360 Workspace Content */}
         <div className="profile-brief-layout mx-auto w-full min-w-0 max-w-[1640px] space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -1683,7 +1686,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 );
               })}
             </div>
-            <label className="hidden md:block acp-more-label">More detail<select value={PRIMARY_PROFILE_IDS.includes(activeSection)?'':activeSection} onChange={event=>event.target.value&&navigateProfileSection(event.target.value as ProfileSection)} aria-label="Additional account detail"><option value="">Choose a topic</option>{PROFILE_SECTIONS.filter(tab=>!PRIMARY_PROFILE_IDS.includes(tab.id)).map(tab=><option key={tab.id} value={tab.id}>{tab.label}</option>)}</select></label>
+            <label className="hidden md:block acp-more-label">More account details<select value={PRIMARY_PROFILE_IDS.includes(activeSection)?'':activeSection} onChange={event=>event.target.value&&navigateProfileSection(event.target.value as ProfileSection)} aria-label="Additional account detail"><option value="">Choose a topic</option>{PROFILE_SECTIONS.filter(tab=>!PRIMARY_PROFILE_IDS.includes(tab.id)).map(tab=><option key={tab.id} value={tab.id}>{tab.label}</option>)}</select></label>
           </nav>
 
           <div

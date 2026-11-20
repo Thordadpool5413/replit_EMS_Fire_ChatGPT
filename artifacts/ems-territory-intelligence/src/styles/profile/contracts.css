@@ -241,7 +241,11 @@
   /* Overview: inventory first, then a small context column with useful actions. */
   .agency-command-profile.profile-redesign :is(.acp-overview, .acp-overview-primary, .acp-overview-secondary) { gap: 20px !important; }
   .agency-command-profile.profile-redesign .acp-hero { grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 20px; }
-  .agency-command-profile.profile-redesign .acp-ledger { padding: 20px !important; }
+  .agency-command-profile.profile-redesign .acp-ledger {
+    --ledger-ink: #352c28; --ledger-muted: #685b53; --ledger-faint: #73635b;
+    --ledger-teal: #b12e1c; --ledger-rust: #a44816; --ledger-rule: #e7ddd0;
+    padding: 20px !important;
+  }
   .agency-command-profile.profile-redesign .acp-ledger::before { height: 4px; background: linear-gradient(90deg, #ff4b36, #ffd23f); }
   .agency-command-profile.profile-redesign .acp-next-step {
     padding: 16px 20px !important; border: 1px solid #efd5a4 !important;
@@ -438,6 +442,8 @@
   .agency-command-profile.profile-redesign :is(.dsb-hero button, .dsb-tab, .workspace-button, .fr-save button, .afn-form > button, .pds-btn, button, select, .acp-link, .acp-inline-actions a, .adm-contact a, .brief-location-actions a, .brief-contact-actions a, .acp-contact-row > a, .profile-more-actions > summary) { min-height: 44px !important; }
   .agency-command-profile.profile-redesign :is(.acp-inline-actions a, .adm-contact a, .brief-location-actions a, .brief-contact-actions a) { display: inline-flex; align-items: center; }
   .agency-command-profile.profile-redesign .fr-form-grid { grid-template-columns: minmax(0, 1fr); }
+  /* Topic controls must outrank the desktop primary-button variants. */
+  .agency-command-profile.profile-redesign #profile-topic-panel :is(button, select) { min-height: 44px !important; }
 }
 @media screen and (prefers-reduced-motion: reduce) {
   .agency-command-profile.profile-redesign *,

@@ -28,7 +28,7 @@ export function AgencyIdentityStrip({agency, onPeople}: {agency: Agency; onPeopl
       {notice && <p role="status">{notice}</p>}
     </div>
     <div className="brief-people">
-      <header className="brief-section-heading"><span className="brief-icon"><Users aria-hidden="true"/></span><div><h2>People behind the decision</h2><p>Recorded contacts · confirm each person’s authority</p></div><button type="button" onClick={onPeople}>View all people <ArrowUpRight aria-hidden="true"/></button></header>
+      <header className="brief-section-heading"><span className="brief-icon"><Users aria-hidden="true"/></span><div><h2>Recorded contacts</h2><p>Recorded contacts · confirm each person’s authority</p></div><button type="button" onClick={onPeople}>View all people <ArrowUpRight aria-hidden="true"/></button></header>
       {contacts.length ? <ul className="brief-contact-grid">{contacts.slice(0,3).map((contact,index) => <li key={contact.id || index} className="brief-contact">
         <div className="brief-contact-top"><span className="brief-avatar" aria-hidden="true">{contact.name.split(/\s+/).filter(Boolean).map(s=>s[0]).slice(0,2).join('')}</span><span className="brief-contact-index">{String(index+1).padStart(2,'0')}</span></div>
         <strong>{contact.name}</strong><span className="brief-contact-title">{contact.title || contact.role || 'Title not recorded'}</span>

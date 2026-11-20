@@ -273,7 +273,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             tone="people" icon={Users} label="Key people" testId="summary-people"
             value={lead ? `${contacts.length} recorded` : 'None recorded'}
             missing={!lead}
-            detail={lead ? 'Names, roles and contact details below' : 'Identify purchasing authority'}
+            detail={lead ? 'Names, roles and contact details in People' : 'Identify purchasing authority'}
             action="People" onAction={() => onNavigate('decision_makers')}
           />
         </div>

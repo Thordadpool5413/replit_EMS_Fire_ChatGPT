@@ -41,9 +41,9 @@ try {
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);
     if(phone){
       assert.ok(initial.actions.height>44,'Phone actions visible');
-      assert.ok(initial.map.width>=width-64,'Map uses phone width');
+      assert.ok(initial.map.width>=width-64&&initial.map.right<=initial.viewport+1,'Map fits phone width');
       if(height>width)assert.ok(initial.map.y<initial.nav.y,'Map starts above navigation at '+width);
-      await ev('document.querySelector(".home-map-viewport").scrollIntoView({block:"center"})');
+      await ev('document.querySelector(".home-map-viewport").scrollIntoView({block:"center",behavior:"instant"})');
       const scrolled=await measure();
       if(scrolled.map.height<scrolled.nav.y)assert.ok(scrolled.map.bottom<=scrolled.nav.y+1,'Map scrolls clear of navigation');
       assert.ok(initial.padding>=initial.nav.height,'Scroll clearance below navigation');

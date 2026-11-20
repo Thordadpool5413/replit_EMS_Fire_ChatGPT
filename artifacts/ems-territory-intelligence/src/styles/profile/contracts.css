@@ -452,3 +452,12 @@
   .agency-command-profile.profile-redesign *::before,
   .agency-command-profile.profile-redesign *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* Preserve the original identity content in browser printing, even when the
+   screen disclosure is closed. The dossier's existing print styles still own it. */
+@media print {
+  .agency-command-profile.profile-redesign .profile-contact-disclosure { display: block !important; border: 0; margin: 0; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure > summary { display: none !important; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure::details-content { display: block !important; content-visibility: visible !important; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure-content { display: block !important; content-visibility: visible !important; }
+}

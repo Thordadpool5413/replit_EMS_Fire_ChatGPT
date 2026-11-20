@@ -55,6 +55,9 @@ try {
     assert.equal(await ev('document.querySelector(".agency-identity-strip").getBoundingClientRect().height>0'), true, 'Full address and contact panel remains available');
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');
     assert.ok(await ev('JSON.stringify({...localStorage})') === storageBefore, 'Opening or closing contacts must not save data');
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'print' });
+    assert.equal(await ev('document.querySelector(".agency-identity-strip").getBoundingClientRect().height>0'), true, 'Closed screen contacts remain present in print');
+    await cdp.send('Emulation.setEmulatedMedia', { media: 'screen' });
     for (const topic of scenario.topics) {
       await ev('(()=>{const selector=document.querySelector(".acp-nav-select");if(selector.getBoundingClientRect().height>0){selector.value=' + JSON.stringify(topic) + ';selector.dispatchEvent(new Event("change",{bubbles:true}));return}const tab=document.querySelector("[data-section=' + topic + ']");if(tab){tab.click();return}const more=document.querySelector("[aria-label=\\"Additional account detail\\"]");more.value=' + JSON.stringify(topic) + ';more.dispatchEvent(new Event("change",{bubbles:true}))})()');
       await waitFor(cdp, 'document.querySelector(".agency-command-profile").getAttribute("data-profile-topic")===' + JSON.stringify(topic), 'topic ' + topic, 10000);

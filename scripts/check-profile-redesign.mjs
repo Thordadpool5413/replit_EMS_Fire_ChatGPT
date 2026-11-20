@@ -45,6 +45,8 @@ try {
       await ev('new Promise(resolve=>{let last=-1,stable=0;const start=performance.now();function frame(){const top=document.querySelector(".agency-command-profile").scrollTop;stable=Math.abs(top-last)<.5?stable+1:0;last=top;if(stable>=8||performance.now()-start>2000)return resolve(true);requestAnimationFrame(frame)}requestAnimationFrame(frame)})');
       const geometry = await ev('(()=>{const root=document.querySelector(".agency-command-profile"), panel=document.querySelector("#profile-topic-panel"), nav=root.querySelector(".acp-nav"), header=root.querySelector("[data-testid=profile-sticky-header]");const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;return {width:' + width + ',topic:' + JSON.stringify(topic) + ',viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,profile:root.clientWidth,scroll:root.scrollWidth,panelTop:panel.getBoundingClientRect().top,navBottom:nav.getBoundingClientRect().bottom,navTop:nav.getBoundingClientRect().top,backBottom:header.getBoundingClientRect().bottom,nameFont:parseFloat(getComputedStyle(root.querySelector(".acp-name")).fontSize),background:getComputedStyle(root).backgroundColor,panels:root.querySelectorAll("#profile-topic-panel").length,navigations:root.querySelectorAll(".acp-nav").length,smallControls:[...panel.querySelectorAll("button,select")].filter(visible).filter(e=>e.getBoundingClientRect().height<43).map(e=>e.getAttribute("data-testid")||e.innerText.slice(0,60)),overflow:[...panel.querySelectorAll("*")].filter(visible).filter(e=>e.getBoundingClientRect().right>root.getBoundingClientRect().right+2&&!e.closest(".pi-table-region__scroller,[class*=overflow-x-auto]")).slice(0,10).map(e=>({tag:e.tagName,class:e.className}))}})()');
       results.push(geometry);
+      await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));
+      await writeFile(path.join(output, width + '-' + topic + '.png'), Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'));
       assert.ok(geometry.page <= geometry.viewport + 1, 'Page overflow: ' + JSON.stringify(geometry));
       assert.ok(geometry.scroll <= geometry.profile + 1, 'Profile overflow: ' + JSON.stringify(geometry));
       assert.ok(geometry.panelTop >= geometry.navBottom - 1, 'Topic opening obscured: ' + JSON.stringify(geometry));
@@ -65,8 +67,11 @@ try {
   }
   await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));
   console.log('PASS ' + results.length + ' read-only responsive topic checks; contacts preserve stored data');
+} catch (error) {
+  console.error(error);
+  throw error;
 } finally {
   if (cdp) cdp.close();
-  chrome.kill('SIGTERM');
-  await rm(directory, { recursive: true, force: true });
+  if (chrome.exitCode === null) await new Promise(resolve => { chrome.once('exit', resolve); chrome.kill('SIGTERM'); });
+  await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

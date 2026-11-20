@@ -9,8 +9,16 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
-const base = process.env.PROFILE_BASE_SHA || process.argv[2];
+let base = process.env.PROFILE_BASE_SHA || process.argv[2];
 assert.match(base || '', /^[a-f0-9]{40}$/, 'Provide the reviewed base commit SHA');
+if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+  // checkout uses GitHub's merge ref. Its first parent is the actual target
+  // being tested, including main commits pushed after the PR was opened.
+  const parents = execFileSync('git', ['show', '--format=%P', '--no-patch', 'HEAD'], { encoding: 'utf8' }).trim().split(' ');
+  assert.equal(parents.length, 2, 'The CI checkout must be the PR merge commit');
+  execFileSync('git', ['merge-base', '--is-ancestor', base, parents[0]]);
+  base = parents[0];
+}
 const app = 'artifacts/ems-territory-intelligence/src/';
 const modifiedComponents = [
   'components/FocusedProviderProfile.tsx',

@@ -463,7 +463,8 @@
 }
 
 @media (max-width:767px) {
-  .acp-nav .acp-nav-tabs { display:flex !important; flex-wrap:nowrap !important; overflow-x:auto; width:100%; gap:.35rem; padding-block:.4rem; scrollbar-width:thin; }
+  .agency-command-profile.profile-redesign .acp-nav { display:block !important; }
+  .agency-command-profile.profile-redesign .acp-nav .acp-nav-tabs { display:flex !important; flex-wrap:nowrap !important; overflow-x:auto; width:100%; gap:.35rem; padding-block:.4rem; scrollbar-width:thin; }
   .acp-nav .acp-tab { flex:0 0 auto; min-height:44px !important; padding:.5rem .75rem !important; font-size:.875rem !important; }
   .acp-nav .acp-tab.is-active { background:#fff0df; color:#a33f20; border-color:#e7b18c; }
   .acp-nav-select { min-height:44px !important; font-size:16px !important; }

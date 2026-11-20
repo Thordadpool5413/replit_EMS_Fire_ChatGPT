@@ -23,6 +23,9 @@ try {
   await cdp.connect();
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
+  // Use bundled public fixtures only; profile UI checks must never contact cloud records.
+  await cdp.send('Network.enable');
+  await cdp.send('Network.setBlockedURLs', { urls: ['*googleapis.com*', '*firebaseio.com*', '*firebaseapp.com*', '*replit.app*'] });
   const ev = expression => evaluate(cdp, expression);
   for (const width of [1366, 1024, 390, 320]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: width < 768 ? 844 : 768, deviceScaleFactor: 1, mobile: false });
@@ -38,7 +41,7 @@ try {
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');
     assert.equal(await ev('document.querySelector(".agency-identity-strip").getBoundingClientRect().height>0'), true, 'Full address and contact panel remains available');
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');
-    assert.equal(await ev('JSON.stringify({...localStorage})'), storageBefore, 'Opening or closing contacts must not save data');
+    assert.ok(await ev('JSON.stringify({...localStorage})') === storageBefore, 'Opening or closing contacts must not save data');
     for (const topic of topics) {
       await ev('(()=>{const selector=document.querySelector(".acp-nav-select");if(selector.getBoundingClientRect().height>0){selector.value=' + JSON.stringify(topic) + ';selector.dispatchEvent(new Event("change",{bubbles:true}));return}const tab=document.querySelector("[data-section=' + topic + ']");if(tab){tab.click();return}const more=document.querySelector("[aria-label=\\"Additional account detail\\"]");more.value=' + JSON.stringify(topic) + ';more.dispatchEvent(new Event("change",{bubbles:true}))})()');
       await waitFor(cdp, 'document.querySelector(".agency-command-profile").getAttribute("data-profile-topic")===' + JSON.stringify(topic), 'topic ' + topic, 10000);

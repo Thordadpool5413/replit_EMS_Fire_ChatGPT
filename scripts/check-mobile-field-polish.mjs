@@ -37,11 +37,15 @@ try {
     const before=await ev('JSON.stringify({...localStorage})');
     const measure=()=>ev(`(()=>{const r=s=>{const e=document.querySelector(s),b=e.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,map:r(".home-map-viewport"),nav:r(".pi-mobile-nav"),actions:r(".home-map-phone-actions"),padding:parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom)}})()`);
     const initial=await measure();
+    console.log("MAP_GEOMETRY "+JSON.stringify({width,height,...initial}));
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);
     if(phone){
       assert.ok(initial.actions.height>44,'Phone actions visible');
       assert.ok(initial.map.width>=width-64,'Map uses phone width');
-      assert.ok(initial.map.bottom<=initial.nav.y,'Map visible above navigation at '+width);
+      if(height>width)assert.ok(initial.map.y<initial.nav.y,'Map starts above navigation at '+width);
+      await ev('document.querySelector(".home-map-viewport").scrollIntoView({block:"center"})');
+      const scrolled=await measure();
+      if(scrolled.map.height<scrolled.nav.y)assert.ok(scrolled.map.bottom<=scrolled.nav.y+1,'Map scrolls clear of navigation');
       assert.ok(initial.padding>=initial.nav.height,'Scroll clearance below navigation');
       await ev('document.querySelector("[aria-controls=home-map-options]").click()');
       await waitFor(cdp,'document.querySelector("#home-map-options").getBoundingClientRect().height>0','options');

@@ -61,10 +61,10 @@ jobs:
           exit 1
       - name: Responsive read-only profile checks
         run: node scripts/check-profile-redesign.mjs
-      - name: Keep responsive screenshots
+      - name: Keep layout measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: profile-presentation
-          path: generated-artifacts/profile-redesign/
+          path: generated-artifacts/profile-redesign/results.json
           if-no-files-found: ignore

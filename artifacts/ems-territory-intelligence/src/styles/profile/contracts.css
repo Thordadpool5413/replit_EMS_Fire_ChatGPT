@@ -53,6 +53,7 @@
     --atlas-paper: #fffefa;
     --atlas-wash: #fff8ef;
     background: var(--acp-bg) !important;
+    box-sizing: border-box;
     color: var(--acp-text) !important;
     font-family: "Instrument Sans Variable", "Instrument Sans", system-ui, sans-serif;
     font-size: 16px;
@@ -392,6 +393,11 @@
 }
 @media screen and (max-width: 767px) {
   .agency-command-profile.profile-redesign .profile-brief-layout { padding: 16px 12px 32px; }
+  .agency-command-profile.profile-redesign[data-laptop-density="compact"] .acp-next-step .workspace-button { min-height: 46px !important; }
+  .agency-command-profile.profile-redesign .acp-header .profile-action-dock { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+  .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { white-space: normal; max-width: 100%; height: auto; padding-block: 10px; }
+  .agency-command-profile.profile-redesign .profile-workspace > header > div { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .agency-command-profile.profile-redesign .profile-workspace > header nav { min-width: 0; max-width: 100%; }
   .agency-command-profile.profile-redesign .acp-header { padding: 20px 16px 16px !important; grid-template-columns: minmax(0, 1fr); }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock { justify-self: stretch; justify-content: start; }
   .agency-command-profile.profile-redesign .acp-name { font-size: 26px !important; }

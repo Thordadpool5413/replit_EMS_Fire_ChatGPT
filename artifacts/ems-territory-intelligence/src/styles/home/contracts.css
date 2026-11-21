@@ -279,3 +279,36 @@
     height: auto !important;
   }
 }
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-page-heading .home-map-region-filter > div {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    gap: 2px !important;
+    background: #fff9ed !important;
+    border-color: #e7d7bb !important;
+  }
+  .home-territory-map-screen-v2 .home-map-page-heading .home-map-region-filter button {
+    flex: 1 0 auto;
+    width: auto;
+    min-height: 44px !important;
+    padding-inline: .45rem !important;
+    color: #654729 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter button[aria-pressed="true"] {
+    background: #ffcf74 !important;
+    box-shadow: inset 0 -2px #b26516 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:first-child {
+    background: #ffbd80;
+    border-color: #dd975b;
+    color: #4e250d;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:last-of-type {
+    background: #fffaf2;
+    border-color: #dac8b1;
+    color: #614932;
+  }
+}

@@ -41,6 +41,9 @@ try {
     console.log("MAP_ANCESTORS "+JSON.stringify(await ev('(()=>{let e=document.querySelector(".home-map-viewport"),out=[];while(e){let b=e.getBoundingClientRect(),c=getComputedStyle(e);out.push({class:e.className,width:b.width,min:c.minWidth,max:c.maxWidth,display:c.display});e=e.parentElement}return out})()')));
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);
     if(phone){
+      assert.equal(await ev('document.querySelectorAll(".atlas-phone-key").length'),1,'One phone map legend');
+      assert.equal(await ev('document.querySelectorAll(".home-map-legend-v2").length'),0,'Desktop legend is absent on phones');
+      assert.ok(initial.map.bottom<=initial.actions.y+1,'Map appears above phone controls');
       assert.ok(initial.actions.height>=44,'Phone actions meet the minimum touch target');
       assert.ok(initial.map.width>=width-64&&initial.map.right<=initial.viewport+1,'Map fits phone width');
       if(height>width)assert.ok(initial.map.y<initial.nav.y,'Map starts above navigation at '+width);
@@ -54,12 +57,12 @@ try {
       assert.equal(await ev('getComputedStyle(document.querySelector("#home-state-map-metric")).fontSize'),'16px');
       await ev('document.querySelector("[aria-controls=home-map-options]").click()');
       await ev('document.querySelector(".home-map-phone-actions button").click()');
-      await waitFor(cdp,'document.querySelector(".home-state-picker").open','state picker');
+      await waitFor(cdp,'document.querySelector("dialog[aria-labelledby=home-state-picker-title]").open','state picker');
       assert.equal(await ev('document.querySelectorAll(".home-state-picker-results button").length'),51,'All states and DC reachable');
       await ev('(()=>{const input=document.querySelector("#home-state-search");Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(input,"Florida");input.dispatchEvent(new Event("input",{bubbles:true}))})()');
       await waitFor(cdp,'document.querySelectorAll(".home-state-picker-results button").length===1','state search');
       assert.ok(await ev('document.querySelector(".home-state-picker-results button").textContent.includes("Florida")'),'Name search');
-      await ev('document.querySelector(".home-state-picker-heading button").click()');
+      await ev('document.querySelector("dialog[open] .home-state-picker-heading button").click()');
       assert.equal(await ev('JSON.stringify({...localStorage})'),before,'Controls must not write agency data');
       // Visual-only update notice fixture: never call the real update or save actions.
       await ev('(()=>{const banner=document.createElement("aside");banner.className="pwa-status-banner";banner.innerHTML="<p>An app update is ready. Save your work before updating.</p><button type=button>Update app</button>";document.querySelector("main").before(banner)})()');

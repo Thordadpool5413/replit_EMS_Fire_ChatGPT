@@ -350,3 +350,27 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
     box-shadow: 0 14px 36px rgba(15, 23, 42, .2);
   }
 }
+
+@media (max-width: 767px) {
+  .pi-mobile-nav .pi-mobile-nav__item .pi-mobile-nav__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 27px;
+    border-radius: 10px;
+    background: #fff2dd;
+    color: #784823;
+  }
+  .pi-mobile-nav .pi-mobile-nav__item.is-active .pi-mobile-nav__icon {
+    background: #ffc476;
+    color: #542b0e;
+  }
+  .pi-mobile-nav .pi-mobile-nav__item.is-active::before { display: none; }
+  .pi-mobile-nav .pi-mobile-nav__icon .pi-mobile-nav__badge {
+    left: auto;
+    right: -.45rem;
+    top: -.12rem;
+    background: #963c21;
+    color: white;
+  }
+}

@@ -1,6 +1,6 @@
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 import React, {useRef} from 'react';
-import {Ellipsis} from 'lucide-react';
+import { MapPinned, Building2, ClipboardList, ChartNoAxesCombined, LayoutGrid } from 'lucide-react';
 import {
   FIELD_WORKSPACE_TABS,
   OPPORTUNITIES_WORKSPACE_TABS,
@@ -10,6 +10,13 @@ import {
   TERRITORY_WORKSPACE_TABS,
   primaryWorkspaceFor,
 } from '../navigation/workspaceNavigation';
+const mobileIcons = {
+  home: MapPinned,
+  queue: Building2,
+  field: ClipboardList,
+  reports: ChartNoAxesCombined,
+};
+
 interface MobileBottomNavProps { activeTab:string; setActiveTab:(tab:string)=>void; onGoHome?:()=>void; dayRouteCount:number }
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setActiveTab,onGoHome,dayRouteCount}) => {
   const current = primaryWorkspaceFor(activeTab);
@@ -36,13 +43,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setAc
   };
   return <nav className="pi-mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" aria-label="Mobile primary workspaces">
     <div className="pi-mobile-nav__items pi-mobile-nav__grid">
-      {PRIMARY_WORKSPACES.map(item => <button key={item.id} type="button" className={`pi-mobile-nav__item ${current===item.id?'is-active':''}`} aria-label={item.label} aria-current={current===item.id?'page':undefined} onClick={()=>item.id==='home'&&onGoHome?onGoHome():setActiveTab(item.id)}>
-        <span className="pi-mobile-nav__icon"><WorkspaceIcon name={item.id}/>{item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount>99?'99+':dayRouteCount}</span>}</span>
+      {PRIMARY_WORKSPACES.map(item => {
+        const Icon = mobileIcons[item.id];
+        return <button key={item.id} type="button" className={`pi-mobile-nav__item ${current===item.id?'is-active':''}`} aria-label={item.label} aria-current={current===item.id?'page':undefined} onClick={()=>item.id==='home'&&onGoHome?onGoHome():setActiveTab(item.id)}>
+        <span className="pi-mobile-nav__icon"><Icon aria-hidden="true" size={22} strokeWidth={1.9}/>{item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount>99?'99+':dayRouteCount}</span>}</span>
         <span className="pi-mobile-nav__label">{item.id==='field'?'Field':item.label}</span>
-      </button>)}
+      </button>;
+      })}
       <details ref={moreMenuRef} className="pi-mobile-more" onKeyDown={handleMoreKeyDown}>
         <summary ref={moreSummaryRef} className="pi-mobile-nav__item pi-mobile-more__summary" aria-label="More destinations" aria-controls="pi-mobile-more-panel">
-          <Ellipsis aria-hidden="true" size={21}/><span className="pi-mobile-nav__label">More</span>
+          <span className="pi-mobile-nav__icon"><LayoutGrid aria-hidden="true" size={22} strokeWidth={1.9}/></span><span className="pi-mobile-nav__label">More</span>
         </summary>
         <div id="pi-mobile-more-panel" className="pi-mobile-more__panel" role="group" aria-label="More destinations">
           {groups.map(group=><section className="pi-mobile-more__group" key={group.label} aria-label={group.label}>

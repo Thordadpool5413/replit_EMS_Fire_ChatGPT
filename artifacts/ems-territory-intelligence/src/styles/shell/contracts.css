@@ -385,3 +385,17 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
   .pi-command-header .pi-mobile-logo { width: 42px !important; height: 42px !important; }
   .workspace-grid-shell:has(.home-territory-map-screen-v2) { padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
 }
+
+@media (max-width: 767px) {
+  .pi-command-header .pi-header-actions > .nearby-search-trigger {
+    background: #fff0e9 !important; color: #984024 !important;
+    border: 1px solid #efcdbf !important; border-radius: .75rem;
+  }
+  .pi-command-header .nearby-search-trigger .nearby-arrow { width: 19px; height: 19px; }
+  .pi-mobile-nav .pi-mobile-nav__item.is-active { background: transparent !important; color: #a83f20 !important; }
+  .pi-mobile-nav .pi-mobile-nav__item.is-active .pi-mobile-nav__icon {
+    background: #fff0e9; color: #a83f20; border-radius: .65rem; width: 40px; height: 28px;
+  }
+  .pi-mobile-nav .pi-mobile-nav__item .pi-mobile-nav__icon { color: #716963; }
+  .pi-mobile-nav .pi-mobile-nav__item.is-active .pi-mobile-nav__icon { color: #a83f20; }
+}

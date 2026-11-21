@@ -348,3 +348,44 @@
   .home-state-details a { text-decoration: underline; }
   .home-state-details button { min-height: 44px; }
 }
+
+/* Phone atlas owns its sizing and uses one warm accent throughout its controls. */
+@media (max-width: 767px) {
+  .pi-app-shell[data-workspace="home"] { background: #fff !important; }
+  .pi-app-shell[data-workspace="home"] > .workspace-grid-shell {
+    flex: none !important; min-height: 0 !important; height: auto !important;
+    padding: .65rem .65rem calc(64px + env(safe-area-inset-bottom)) !important;
+    background: #fff !important;
+  }
+  .home-territory-map-screen-v2 {
+    display: block !important; height: auto !important; min-height: 0 !important;
+    padding: 0 !important; background: #fff !important;
+  }
+  .home-territory-map-screen-v2 > * + * { margin-top: .65rem !important; }
+  .home-territory-map-screen-v2 .home-map-page-heading { padding-inline: .25rem; }
+  .home-territory-map-screen-v2 .home-map-heading-copy p { font-size: .8rem !important; line-height: 1.4 !important; }
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: #fff !important;
+  }
+  .home-territory-map-screen-v2 .home-map-viewport {
+    border: 0 !important; box-shadow: none !important; border-radius: .8rem !important;
+    background: #fff !important; width: 100% !important;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions {
+    display: grid; grid-template-columns: 1fr 1fr; padding: 0 !important; gap: .5rem;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button {
+    width: 100%; min-height: 46px; border-radius: .75rem; padding: .5rem;
+    font-size: .875rem; font-weight: 600; box-shadow: none;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:first-child {
+    background: #ef704a; color: #fff; border: 1px solid #da5833;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:last-of-type {
+    background: #fff; color: #984024; border: 1px solid #e9c5b9;
+  }
+  .home-territory-map-screen-v2 .home-map-browse-toggle { color: #984024; font-size: .85rem; }
+  .atlas-phone-key { background: #fff; border-color: #e8dcd6; padding: .4rem .65rem; }
+  .atlas-phone-key strong { color: #352e2b; font-size: .8rem; }
+  .atlas-key-label { color: #984024; }
+}

@@ -26,7 +26,7 @@ import {
   CircleHelp,
   Palette,
   MapPin,
-  LocateFixed,
+  Navigation,
   RefreshCw,
   Download,
   WifiOff
@@ -462,7 +462,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 data-testid="button-mobile-nearby-search"
                 title="Find nearby EMS and fire agencies"
               >
-                <LocateFixed className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <Navigation className="nearby-arrow" size={22} strokeWidth={2} fill="currentColor" aria-hidden="true" />
                 <span className="hidden min-[375px]:inline sm:inline">Near me</span>
               </button>
             )}

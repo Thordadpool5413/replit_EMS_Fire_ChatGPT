@@ -10,14 +10,16 @@ import {WorkspaceIcon} from './design/WorkspaceIcon';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { hasRecordedEquipmentValue } from '../utils/equipmentPresence';
+import { useIsMobile } from '../hooks/use-mobile';
 import { Agency } from '../types';
 import {
   Compass,
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  SlidersHorizontal,
-  Search,
+  Layers,
+  MapPin,
+  ChevronDown,
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -201,6 +203,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   globalCity,
   onSelectState
 }) => {
+  const isPhone = useIsMobile();
   const {manifest:sourceDirectory}=useNationalSourceDirectory();
   const registryDialog=useRef<HTMLDialogElement>(null);
   const [registryOpen,setRegistryOpen]=useState(false);
@@ -605,6 +608,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     .filter(([code, state]) => (!compactStatesOnly || EAST_COAST_CALLOUT_STATES.some(s => s.code === code))
       && (state.state + ' ' + code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
     .sort((a, b) => a[1].state.localeCompare(b[1].state));
+  const mapActions = (
+    <div className="home-map-phone-actions">
+          <button type="button" aria-label="Choose a state" onClick={() => { setCompactStatesOnly(false); setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}><MapPin aria-hidden="true" size={19}/> Choose state</button>
+          <button type="button" aria-expanded={mapOptionsOpen} aria-controls="home-map-options" onClick={() => setMapOptionsOpen(open => !open)}><Layers aria-hidden="true" size={19}/> Map options</button>
+          {!isPhone && <p>Showing: <strong>{activeMapMetric.label}</strong></p>}
+        </div>
+  );
+
   const mapHeaderActions = (
     <>
       <button type="button" className="workspace-text-button" onClick={()=>{
@@ -646,6 +657,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           <h2 id="home-state-picker-title">{compactStatesOnly ? 'Small states and DC' : 'Choose a state'}</h2>
           <button type="button" className="workspace-button" onClick={() => statePicker.current?.close()}>Close</button>
         </div>
+        {isPhone && <button className="atlas-picker-scope" type="button" aria-pressed={compactStatesOnly} onClick={() => { setCompactStatesOnly(value => !value); setStateSearch(''); }}>
+          <MapPin size={17} aria-hidden="true"/>{compactStatesOnly ? 'Show all states' : 'Small states and DC'}
+        </button>}
         <label htmlFor="home-state-search">Search by state name or abbreviation</label>
         <input ref={stateSearchInput} id="home-state-search" type="search" autoComplete="off" placeholder="Florida or FL" value={stateSearch} onChange={event => setStateSearch(event.target.value)} />
         <div className="home-state-picker-results" aria-label="States">
@@ -684,13 +698,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
 
           <div className="home-map-browse">
-            <button type="button" className="home-map-browse-toggle" aria-expanded={browseOpen} aria-controls="home-map-browse-links" onClick={() => setBrowseOpen(open => !open)}>Browse</button>
+            <button type="button" className="home-map-browse-toggle" aria-expanded={browseOpen} aria-controls="home-map-browse-links" onClick={() => setBrowseOpen(open => !open)}>Browse <ChevronDown size={15} aria-hidden="true"/></button>
             <div id="home-map-browse-links" className="home-map-heading-actions" data-mobile-open={browseOpen}>
               {mapHeaderActions}
             </div>
           </div>
           {/* Region Filter Segmented Control */}
-          <div className="home-map-region-filter max-w-full overflow-x-auto" role="group" aria-label="Filter map by region">
+          {!isPhone && <div className="home-map-region-filter max-w-full overflow-x-auto" role="group" aria-label="Filter map by region">
             <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">
             {(['All', 'Northeast', 'Midwest', 'South', 'West'] as const).map((reg) => (
               <button
@@ -711,14 +725,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </button>
             ))}
             </div>
-          </div>
+          </div>}
         </div>
 
-        <div className="home-map-phone-actions">
-          <button type="button" aria-label="Choose a state" onClick={() => { setCompactStatesOnly(false); setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}>Choose state <Search aria-hidden="true" size={16}/></button>
-          <button type="button" aria-expanded={mapOptionsOpen} aria-controls="home-map-options" onClick={() => setMapOptionsOpen(open => !open)}>Map options <SlidersHorizontal aria-hidden="true" size={16}/></button>
-          <p>Showing: <strong>{activeMapMetric.label}</strong></p>
-        </div>
+        {!isPhone && mapActions}
         {/* The Home screen keeps the interactive map as its only main content. */}
         <div className="grid grid-cols-1 gap-4 items-start">
           <div className="min-w-0 space-y-3">
@@ -732,8 +742,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 }
               }}
             >
+              {isPhone && mapActions}
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
               <div id="home-map-options" data-mobile-open={mapOptionsOpen} className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                {isPhone && <label htmlFor="atlas-phone-region">Region
+                  <select id="atlas-phone-region" className="home-map-layer-select" value={regionFilter} onChange={event => {
+                    const region = event.target.value as StateMapRegion;
+                    setRegionFilter(region);
+                    saveMapPreference('region', region);
+                  }}>{(['All', 'Northeast', 'Midwest', 'South', 'West'] as const).map(region => <option key={region}>{region}</option>)}</select>
+                </label>}
                 <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#53657A]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
@@ -775,20 +793,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <div className="home-map-phone-zoom">{renderMapZoomControls('mobile-button-map', true)}<p>Zoom to inspect. Drag the zoomed map to pan.</p></div>
               </div>
 
-              {hasNationwideMapGeometry && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white border border-[#D7E0EA] px-3.5 py-2.5">
+              {hasNationwideMapGeometry && isPhone && <details className="atlas-phone-key">
+                <summary><div><strong>{activeMapMetric.label}</strong>
+                  <span className="atlas-key-scale" aria-hidden="true">{legendBands.map(band => <i key={band.color} style={{backgroundColor:band.color}}/>)}</span>
+                </div><span className="atlas-key-label">Legend <ChevronDown size={16} aria-hidden="true"/></span></summary>
+                <ul>{legendBands.map(band => <li key={band.color}><i style={{backgroundColor: band.color}}/>{band.range}</li>)}</ul>
+                <p>{mapMetricValues.length} of {Object.keys(stateMapMetricsByCode).length} areas reported. Colors group values from low to high. Hatching marks missing data.</p>
+              </details>}
+              {hasNationwideMapGeometry && !isPhone && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white border border-[#D7E0EA] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#40546A]">
                   <DataLabel kind={inferDataLabelKind(activeMapMetric.label)}>{activeMapMetric.label}</DataLabel>
                   {mapColorScheme === 'colorblind-safe' && isQualityMapMetric(mapMetric) && (
                     <span className="home-map-legend-palette-note"> · Color-blind safe</span>
                   )}
                 </span>
-                <div className="home-phone-bands">
-                  <ul aria-label="Reported values by map color">{legendBands.map(({color, range}) =>
-                    <li key={color}><i aria-hidden="true" style={{backgroundColor: color}}/>{range}</li>)}</ul>
-                  <details><summary>How to read this map</summary>
-                    <p>Colors group reported values from lowest to highest across the US. Ranges show the lowest and highest displayed values in each group. Equal values share a color. Hatching marks missing values.</p>
-                  </details>
-                </div>
                 <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#53657A]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
                   <span className="home-map-legend-gradient h-3 w-24 rounded-sm border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
@@ -810,6 +828,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </div>}
 
               {(() => {
+                if (isPhone) return null;
                 const previewStateCode = hoveredStateCode ?? focusedStateCode;
                 const code = previewStateCode ?? selectedStateCode;
                 const st = ALL_50_STATES_SUMMARIES[code];
@@ -852,11 +871,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   </div>
                 );
               })()}
-              <button type="button" className="home-small-state-list" onClick={() => {
-                setCompactStatesOnly(true); setStateSearch(''); statePicker.current?.showModal();
-              }}>Browse small states and DC <span aria-hidden="true">→</span></button>
               {/* East Coast Compact Callout Buttons */}
-              <div className="home-map-shortcuts pt-2 border-t border-[#D7E0EA] text-xs">
+              {!isPhone && <div className="home-map-shortcuts pt-2 border-t border-[#D7E0EA] text-xs">
                 <div className="home-map-shortcuts-heading">
                   <span>Small-state shortcuts</span>
                   <span className="home-map-shortcuts-swipe">Swipe to see all {EAST_COAST_CALLOUT_STATES.length}</span>
@@ -888,7 +904,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   );
                 })}
                 </div>
-              </div>
+              </div>}
               </aside>
               <div className="home-map-content-stack home-map-content-v2 flex flex-col gap-3">
               <div className="home-map-visual-stack home-map-visual-v2">

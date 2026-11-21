@@ -358,11 +358,11 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
     width: 36px;
     height: 27px;
     border-radius: 10px;
-    background: #fff2dd;
-    color: #784823;
+    background: transparent;
+    color: var(--pi-text-secondary);
   }
   .pi-mobile-nav .pi-mobile-nav__item.is-active .pi-mobile-nav__icon {
-    background: #ffc476;
+    background: #ffb256;
     color: #542b0e;
   }
   .pi-mobile-nav .pi-mobile-nav__item.is-active::before { display: none; }
@@ -373,4 +373,15 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
     background: #963c21;
     color: white;
   }
+}
+
+@media (max-width: 767px) {
+  .pi-command-header .pi-header-actions > .nearby-search-trigger {
+    display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+    min-height: 44px; padding-inline: .55rem; border-radius: 2rem;
+    color: #6a2808; background: #ffce87; border: 1px solid #edb16a;
+  }
+  .pi-command-header .nearby-search-trigger .nearby-arrow { width: 22px; height: 22px; flex: none; }
+  .pi-command-header .pi-mobile-logo { width: 42px !important; height: 42px !important; }
+  .workspace-grid-shell:has(.home-territory-map-screen-v2) { padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
 }

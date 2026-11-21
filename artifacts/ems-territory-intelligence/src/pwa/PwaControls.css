@@ -19,13 +19,13 @@
     position: sticky;
     top: calc(4.75rem + env(safe-area-inset-top));
     z-index: 40;
-    align-items: flex-start;
+    align-items: center;
     gap: .4rem .65rem;
     padding: .55rem max(.65rem, env(safe-area-inset-right)) .55rem max(.65rem, env(safe-area-inset-left));
     scroll-margin-top: calc(4.75rem + env(safe-area-inset-top));
   }
   .pwa-status-banner p {
-    flex: 1 1 100%;
+    flex: 1 1 8rem;
     min-width: 0;
     align-items: flex-start;
     font-size: .8rem;

@@ -225,6 +225,9 @@
     [class~="text-[#53657B]"], [class~="text-[#5B6B80]"], [class~="dark:text-slate-300"],
     [class~="dark:text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"]
   ) { color: #685b53 !important; }
+  .dark .agency-command-profile.profile-redesign [data-testid^="form-add-agency-source-"] label > span {
+    color: #e2e8f0 !important;
+  }
   .agency-command-profile.profile-redesign :is(
     [class~="text-[#285EE8]"], [class~="dark:text-blue-400"], .acp-link, .aib-link
   ) { color: #b12e1c !important; }

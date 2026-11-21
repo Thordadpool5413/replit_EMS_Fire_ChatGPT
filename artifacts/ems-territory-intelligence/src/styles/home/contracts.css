@@ -123,6 +123,7 @@
 .home-state-picker-results button:hover, .home-state-picker-results button:focus-visible { background: var(--pi-action-subtle, #fff1e6); }
 .home-state-picker-note { margin-top: .75rem; color: var(--pi-text-secondary); }
 @media (max-width: 767px) {
+@media (max-width: 1023px) {
   .home-territory-map-screen-v2 { padding: .75rem !important; border-radius: 1rem !important; }
   .home-territory-map-screen-v2 .home-map-page-heading { display: grid !important; grid-template-columns: minmax(0,1fr) auto; gap: .5rem !important; padding-bottom: .5rem !important; }
   .home-map-page-heading .pi-section-heading { font-size: 1.25rem !important; }
@@ -155,4 +156,196 @@
   .home-territory-map-screen-v2 .home-map-legend-scale { display: flex !important; flex-wrap: wrap !important; gap: .5rem !important; }
   .home-territory-map-screen-v2 .home-map-legend-gradient { flex: 1 0 4rem; }
   .home-state-picker { position: fixed; inset: auto 0 0; margin: 0 auto; width: 100%; max-width: 100%; max-height: min(85dvh, calc(var(--app-visible-height, 100dvh) - 1rem)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); border-radius: 1.25rem 1.25rem 0 0; }
+}
+
+@media (max-width: 1023px) {
+  .home-map-region-filter > div {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    gap: .2rem !important;
+  }
+  .home-map-region-filter button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .25rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .home-map-region-filter > div {
+    display: flex !important;
+    grid-template-columns: none !important;
+    flex-wrap: nowrap;
+    width: 100% !important;
+    min-width: 100% !important;
+    gap: .1rem !important;
+  }
+  .home-map-region-filter button {
+    flex: 1 1 0;
+    white-space: nowrap;
+    padding-inline: .1rem !important;
+    font-size: .68rem !important;
+  }
+}
+
+@media (min-width: 500px) and (max-width: 767px) and (orientation: landscape) {
+  .home-territory-map-screen-v2 > .home-map-page-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: .35rem !important;
+    padding-bottom: .4rem !important;
+  }
+  .home-territory-map-screen-v2 .home-map-heading-copy { grid-column: 1; grid-row: 1; }
+  .home-territory-map-screen-v2 .home-map-browse { grid-column: 2; grid-row: 1; }
+  .home-territory-map-screen-v2 .home-map-region-filter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter > div {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    flex-wrap: nowrap;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px !important;
+    padding-inline: .3rem !important;
+    font-size: .72rem !important;
+  }
+  .home-territory-map-screen-v2 > * + * {
+    margin-block-start: .5rem !important;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions p {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .home-territory-map-screen-v2 > .home-map-page-heading {
+    display: grid !important;
+    grid-template-columns: max-content auto minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: .45rem !important;
+    padding-bottom: .4rem !important;
+  }
+  .home-territory-map-screen-v2 .home-map-heading-copy { grid-column: 1; grid-row: 1; }
+  .home-territory-map-screen-v2 .home-map-browse { grid-column: 2; grid-row: 1; }
+  .home-territory-map-screen-v2 .home-map-region-filter {
+    grid-column: 3;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter > div {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    flex-wrap: nowrap;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px !important;
+    padding-inline: .35rem !important;
+    font-size: .7rem !important;
+  }
+  .home-territory-map-screen-v2 > * + * {
+    margin-block-start: .5rem !important;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions p {
+    display: none;
+  }
+}
+
+@media (min-width: 500px) and (max-width: 1023px) and (orientation: landscape) {
+  .home-territory-map-screen-v2 .home-map-viewport {
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    aspect-ratio: 872 / 494 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-page-heading .home-map-region-filter > div {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    gap: 2px !important;
+    background: #fff9ed !important;
+    border-color: #e7d7bb !important;
+  }
+  .home-territory-map-screen-v2 .home-map-page-heading .home-map-region-filter button {
+    flex: 1 0 auto;
+    width: auto;
+    min-height: 44px !important;
+    padding-inline: .45rem !important;
+    color: #654729 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-region-filter button[aria-pressed="true"] {
+    background: #ffcf74 !important;
+    box-shadow: inset 0 -2px #b26516 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:first-child {
+    background: #ffbd80;
+    border-color: #dd975b;
+    color: #4e250d;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:last-of-type {
+    background: #fffaf2;
+    border-color: #dac8b1;
+    color: #614932;
+  }
+}
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-phone-actions button {
+    justify-content: center; border-radius: 2rem; gap: .45rem;
+  }
+  .home-territory-map-screen-v2 .home-map-phone-actions button:first-child {
+    background: #ffab58; color: #44200b; border-color: #e89645;
+  }
+  .home-map-browse-toggle { align-items: center; gap: .25rem; }
+  .home-territory-map-screen-v2 .home-map-stage-v2 > .home-map-phone-actions { order: 2; padding-inline: .25rem; }
+  .home-territory-map-screen-v2 .home-map-stage-v2 > .home-map-control-rail { order: 3 !important; }
+  .home-territory-map-screen-v2 > .home-map-page-heading { border: 0; padding-bottom: 0 !important; }
+  .home-territory-map-screen-v2 .home-map-browse-toggle { gap: .2rem; }
+
+  .atlas-phone-key {
+    margin: 0; padding: .45rem .8rem; color: #43291a; background: #fffaf3;
+    border: 1px solid #ebd8c2; border-radius: .8rem;
+  }
+  .atlas-phone-key summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; min-height: 44px; cursor: pointer; }
+  .atlas-phone-key summary::-webkit-details-marker { display: none; }
+  .atlas-phone-key strong { font-size: .875rem; }
+  .atlas-key-label, .atlas-picker-scope { display: inline-flex; align-items: center; gap: .35rem; font-weight: 650; }
+  .atlas-key-label { color: #914016; font-size: .8rem; }
+  .atlas-phone-key[open] .atlas-key-label svg { transform: rotate(180deg); }
+  .atlas-key-scale { display: flex; gap: 2px; height: 5px; width: 8rem; margin-block: .3rem; overflow: hidden; border-radius: 1rem; }
+  .atlas-key-scale i { flex: 1; }
+  .atlas-phone-key ul { list-style: none; display: grid; gap: .35rem; margin: .5rem 0; padding: 0; }
+  .atlas-phone-key li { display: flex; align-items: center; gap: .55rem; font-variant-numeric: tabular-nums; }
+  .atlas-phone-key li i { width: 1rem; height: .6rem; border-radius: .35rem; }
+  .atlas-phone-key p { margin-bottom: .5rem; font-size: .8125rem; line-height: 1.4; }
+  .atlas-picker-scope { min-height: 44px; margin-bottom: .7rem; padding-inline: .8rem; background: #fff1df; color: #773613; border-radius: 2rem; }
+  .home-state-details p { margin-block: .6rem; line-height: 1.5; }
+  .home-detail-value { display: block; font-size: 2rem; line-height: 1.15; }
+  .home-state-details a { text-decoration: underline; }
+  .home-state-details button { min-height: 44px; }
 }

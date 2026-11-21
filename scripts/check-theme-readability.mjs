@@ -266,6 +266,9 @@ async function clickButtonAndScroll(cdp, label) {
     const button = [...document.querySelectorAll('button')]
       .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(label)});
     if (!button) return false;
+    const browse = button.closest('.home-map-browse');
+    const browseToggle = browse?.querySelector('.home-map-browse-toggle');
+    if (browseToggle?.getAttribute('aria-expanded') !== 'true') browseToggle?.click();
     const style = getComputedStyle(button);
     if (style.display === 'none' || style.visibility === 'hidden') return false;
     button.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
@@ -1332,7 +1335,7 @@ async function checkHome(cdp, dark) {
     cdp,
     `!document.querySelector('.home-map-state-path[aria-pressed="true"]') &&
       Boolean([...document.querySelectorAll('button')].find((button) => button.innerText.trim() === 'National view')) &&
-      document.querySelector('.home-map-page-heading p')?.innerText.includes('Choose a state to review')`,
+      document.querySelector('.home-map-page-heading p')?.innerText.includes('Select a state to explore its counties and EMS/fire agencies')`,
     'return to the national map',
   );
   if (!missingLayer) {
@@ -1832,8 +1835,8 @@ async function checkProfileAndSources(cdp, dark) {
   assert(sourceCues.statusText, 'Provider source match status is not expressed in text');
   await checkReadable(cdp, `${themeLabel(dark)} source panel`, [
     { name: 'source drawer title', selector: '[aria-label="Evidence and Source Inspection Drawer"] h3' },
-    { name: 'source match status', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-800' },
-    { name: 'source explanation', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-900\\/80' },
+    { name: 'source match status', selector: '[data-testid="profile-nppes-link-status"]' },
+    { name: 'source explanation', selector: '[data-testid="profile-nppes-link-explanation"]' },
   ]);
   console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
   await captureThemeScreenshot(cdp, dark, 'agency-profile');

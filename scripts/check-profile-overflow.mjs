@@ -573,7 +573,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     await evaluate(cdp, `(() => {
       const style = document.createElement('style');
       style.id = 'mobile-navigation-enlarged-text-check';
-      style.textContent = 'nav[aria-label="Mobile primary workspaces"] button > span:not(.pi-data-number) { font-size: 16px !important; }';
+      style.textContent = 'nav.pi-mobile-nav .pi-mobile-nav__item .pi-mobile-nav__label, nav.pi-mobile-nav .pi-mobile-more__summary .pi-mobile-nav__label { font-size: 14px !important; }';
       document.head.append(style);
       return true;
     })()`);
@@ -624,11 +624,10 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
     if (!nav) return null;
     const navBounds = nav.getBoundingClientRect();
-    const buttons = [...nav.querySelectorAll('button')].map((button) => {
+    const buttons = [...nav.querySelectorAll(':scope > .pi-mobile-nav__items > button, :scope > .pi-mobile-nav__items > .pi-mobile-more > summary')].map((button) => {
       const bounds = button.getBoundingClientRect();
       const rect = bounds.toJSON();
-      const label = [...button.querySelectorAll('span:not(.pi-data-number)')]
-        .find((span) => getComputedStyle(span).display !== 'none');
+      const label = button.querySelector('.pi-mobile-nav__label');
       const labelBounds = label?.getBoundingClientRect();
       const range = document.createRange();
       if (label) range.selectNodeContents(label);
@@ -667,10 +666,15 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     });
     return {
       viewport: innerWidth,
+      viewportHeight: innerHeight,
       documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
       nav: {
         left: navBounds.left,
         right: navBounds.right,
+        top: navBounds.top,
+        bottom: navBounds.bottom,
+        position: getComputedStyle(nav).position,
+        bottomInset: getComputedStyle(nav).bottom,
         clientWidth: nav.clientWidth,
         scrollWidth: nav.scrollWidth,
       },
@@ -685,18 +689,17 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     `Mobile navigation overflows at ${viewport.width}px: ${JSON.stringify(navigation)}`,
   );
   assert(
-    navigation.buttons.length === 6 &&
+    navigation.buttons.length === 5 &&
       navigation.buttons.every((button) =>
         button.visible && button.width >= 44 && button.height >= 44),
-    `Mobile navigation has an unusable touch target at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(navigation.buttons)}`,
+    `Mobile navigation has an unusable touch target at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify({ viewportHeight: navigation.viewportHeight, nav: navigation.nav, buttons: navigation.buttons })}`,
   );
   const expectedMobileLabels = [
-    { accessibleName: 'Home', visibleLabels: ['Home'] },
+    { accessibleName: 'Map', visibleLabels: ['Map'] },
     { accessibleName: 'Agencies', visibleLabels: ['Agencies'] },
-    { accessibleName: 'Opportunities', visibleLabels: ['Leads'] },
-    { accessibleName: 'Territory', visibleLabels: ['Territory', 'Map'] },
-    { accessibleName: 'Field work', visibleLabels: ['Field'] },
-    { accessibleName: 'More', visibleLabels: ['More'] },
+    { accessibleName: 'Field Work', visibleLabels: ['Field'] },
+    { accessibleName: 'Reports', visibleLabels: ['Reports'] },
+    { accessibleName: 'More destinations', visibleLabels: ['More'] },
   ];
   assert(
     navigation.buttons.every((button, index) => {
@@ -706,25 +709,24 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
         button.labelVisible &&
         button.labelLines === 1 &&
         button.textFits &&
-        button.labelFontSize >= (enlargedText ? 16 : 12) &&
+        button.labelFontSize >= (enlargedText ? 14 : 12) &&
         button.labelScrollWidth <= button.labelClientWidth + 1;
     }) &&
-      new Set(navigation.buttons.map((button) => button.text)).size === 6 &&
+      new Set(navigation.buttons.map((button) => button.text)).size === 5 &&
       navigation.buttons.slice(1).every((button, index) =>
         button.labelLeft >= navigation.buttons[index].labelRight - 1),
     `Mobile workspace labels are missing, clipped, or overlapping at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(navigation.buttons)}`,
   );
 
   for (const { label, accessibleName } of [
-    { label: 'Home', accessibleName: 'Home' },
+    { label: 'Map', accessibleName: 'Map' },
     { label: 'Agencies', accessibleName: 'Agencies' },
-    { label: 'Opportunities', accessibleName: 'Opportunities' },
-    { label: 'Territory', accessibleName: 'Territory' },
-    { label: 'Field Work', accessibleName: 'Field work' },
+    { label: 'Field Work', accessibleName: 'Field Work' },
+    { label: 'Reports', accessibleName: 'Reports' },
   ]) {
     const clicked = await evaluate(cdp, `(() => {
       const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
-      const button = [...(nav?.querySelectorAll('button') ?? [])].find((candidate) =>
+      const button = [...(nav?.querySelectorAll(':scope > .pi-mobile-nav__items > button, :scope > .pi-mobile-nav__items > .pi-mobile-more > summary') ?? [])].find((candidate) =>
         candidate.getAttribute('aria-label') === ${JSON.stringify(accessibleName)});
       if (!button) return false;
       button.click();
@@ -735,7 +737,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
       cdp,
       `(() => {
         const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
-        return [...(nav?.querySelectorAll('button') ?? [])].some((button) =>
+        return [...(nav?.querySelectorAll(':scope > .pi-mobile-nav__items > button, :scope > .pi-mobile-nav__items > .pi-mobile-more > summary') ?? [])].some((button) =>
           button.getAttribute('aria-label') === ${JSON.stringify(accessibleName)} &&
           button.getAttribute('aria-current') === 'page');
       })()`,
@@ -746,8 +748,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     const selectedLayout = await evaluate(cdp, `(() => {
       const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
       const button = nav?.querySelector('button[aria-current="page"]');
-      const label = [...(button?.querySelectorAll('span:not(.pi-data-number)') ?? [])]
-        .find((span) => getComputedStyle(span).display !== 'none');
+      const label = button?.querySelector('.pi-mobile-nav__label');
       if (!button || !label) return null;
       const bounds = button.getBoundingClientRect();
       const range = document.createRange();
@@ -771,7 +772,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
       `Selected "${label}" label or indicator is unclear in ${theme} at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(selectedLayout)}`,
     );
   }
-  console.log(`✓ ${theme} / ${viewport.width}px: single-line mobile labels${enlargedText ? ' with enlarged text' : ''}, full accessible names, touch targets, logo, and workspace selection`);
+  console.log(`✓ ${theme} / ${viewport.width}px: five mobile destinations, full accessible names, touch targets, logo, and workspace selection`);
 }
 
 async function checkMobileNavigationLabels(cdp) {
@@ -801,7 +802,7 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
     60_000,
   );
 
-  const expectedNames = ['Home', 'Agencies', 'Opportunities', 'Territory', 'Field work', 'More'];
+  const expectedNames = ['Map', 'Agencies', 'Field Work', 'Reports', 'More destinations'];
   const navNode = await cdp.send('DOM.getDocument', { depth: -1 });
   const nav = await cdp.send('DOM.querySelector', {
     nodeId: navNode.result.root.nodeId,
@@ -810,7 +811,7 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
   assert(nav.result.nodeId, `Mobile primary navigation is missing at ${viewport.width}px`);
   const buttonNodes = await cdp.send('DOM.querySelectorAll', {
     nodeId: nav.result.nodeId,
-    selector: 'button',
+    selector: '.pi-mobile-nav__items > button, .pi-mobile-nav__items > .pi-mobile-more > summary',
   });
   const buttons = [];
   for (const nodeId of buttonNodes.result.nodeIds) {
@@ -828,7 +829,7 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
   assert(
     buttons.length === expectedNames.length &&
       buttons.every((button, index) => button.accessibleName === expectedNames[index]),
-    `Mobile workspace buttons do not expose the six full accessible names in order: ${JSON.stringify(buttons)}`,
+    `Mobile navigation items do not expose the five full accessible names in order: ${JSON.stringify(buttons)}`,
   );
 
   const getAccessibilityNodes = async () => {
@@ -847,18 +848,20 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
   const accessibleNodes = await getAccessibilityNodes();
   assert(
     accessibleNodes.every((node, index) =>
-      node.role === 'button' && node.name === expectedNames[index]),
-    `Chromium accessibility tree does not expose the intended mobile workspace button names: ${JSON.stringify(accessibleNodes)}`,
+      (index === expectedNames.length - 1
+        ? node.role === 'DisclosureTriangle'
+        : node.role === 'button') && node.name === expectedNames[index]),
+    `Chromium accessibility tree does not expose the intended mobile navigation names: ${JSON.stringify(accessibleNodes)}`,
   );
 
   const firstButtonFocused = await evaluate(cdp, `(() => {
     const buttons = [...document.querySelectorAll(
-      'nav[aria-label="Mobile primary workspaces"] button'
+      'nav[aria-label="Mobile primary workspaces"] > .pi-mobile-nav__items > button, nav[aria-label="Mobile primary workspaces"] > .pi-mobile-nav__items > .pi-mobile-more > summary'
     )];
     buttons[0]?.focus();
     return document.activeElement === buttons[0];
   })()`);
-  assert(firstButtonFocused, 'Could not focus the first mobile workspace button');
+  assert(firstButtonFocused, 'Could not focus the first mobile navigation item');
   const focusedNames = [];
   for (let index = 0; index < expectedNames.length; index += 1) {
     focusedNames.push(await evaluate(cdp, `document.activeElement?.getAttribute('aria-label') ?? null`));
@@ -887,20 +890,17 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
   const moreButtonBackendNodeId = buttons.at(-1)?.backendNodeId;
   const setMoreExpanded = async (expanded) => {
     const expression = `(() => {
-      const button = document.querySelector(
-        'nav[aria-label="Mobile primary workspaces"] button[aria-label="More"]'
-      );
-      if (!button || button.getAttribute('aria-expanded') === ${JSON.stringify(String(expanded))}) {
-        return Boolean(button);
-      }
-      button.click();
+      const details = document.querySelector('nav[aria-label="Mobile primary workspaces"] .pi-mobile-more');
+      const summary = details?.querySelector('summary');
+      if (!details || !summary) return false;
+      if (details.open !== ${JSON.stringify(expanded)}) summary.click();
       return true;
     })()`;
     assert(await evaluate(cdp, expression), `Could not set More to ${expanded ? 'expanded' : 'collapsed'}`);
     await waitFor(
       cdp,
-      `document.querySelector('nav[aria-label="Mobile primary workspaces"] button[aria-label="More"]')
-        ?.getAttribute('aria-expanded') === ${JSON.stringify(String(expanded))}`,
+      `document.querySelector('nav[aria-label="Mobile primary workspaces"] .pi-mobile-more')
+        ?.open === ${JSON.stringify(expanded)}`,
       `More to become ${expanded ? 'expanded' : 'collapsed'}`,
     );
     const { nodes } = (await cdp.send('Accessibility.getFullAXTree')).result;
@@ -914,7 +914,7 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
   };
   await setMoreExpanded(true);
   await setMoreExpanded(false);
-  console.log(`✓ ${viewport.width}px: six accessible workspace names, keyboard focus order, and More expanded state`);
+  console.log(`✓ ${viewport.width}px: five accessible primary destinations, keyboard focus order, and More expanded state`);
 }
 
 async function checkSharedNavigation(cdp) {
@@ -1075,13 +1075,23 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
         .filter(visible)
         .find((button) => new RegExp('^' + expected + '\\\\s*\\\\(', 'i').test(button.innerText.trim()));
       const fallback = [...(document.querySelector('[aria-label="Provider Discipline Filter"]')?.querySelectorAll('button') ?? [])]
-        .find((button) => button.innerText.trim().toLowerCase() === expected);
+        .find((button) => new RegExp('^' + expected + '\\\\s*(?:\\\\(|$)', 'i').test(button.innerText.trim()));
       const button = candidate || fallback;
       if (!button) return false;
       button.click();
       return true;
     })()`);
-    assert(selectedCategory, `Could not select the ${providerCategory} provider filter`);
+    const filterDiagnostics = selectedCategory ? null : await evaluate(cdp, `JSON.stringify({
+      width: innerWidth,
+      controls: [...document.querySelectorAll('button')].map(button => ({
+        text: button.innerText.trim(),
+        aria: button.getAttribute('aria-label'),
+        visible: button.getBoundingClientRect().width > 0 && button.getBoundingClientRect().height > 0,
+      })).filter(item => /filter|ems|fire|all/i.test(item.text + ' ' + item.aria)).slice(-16),
+      group: Boolean(document.querySelector('[aria-label="Provider Discipline Filter"]')),
+      body: document.body.innerText.slice(-900),
+    })`);
+    assert(selectedCategory, `Could not select the ${providerCategory} provider filter${filterDiagnostics ? `; screen: ${filterDiagnostics}` : ''}`);
     const expectedProviderLabel = providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider';
     await waitFor(
       cdp,

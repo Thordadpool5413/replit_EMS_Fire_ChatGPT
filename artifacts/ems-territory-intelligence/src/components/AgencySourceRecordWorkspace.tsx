@@ -50,7 +50,7 @@ const GEOGRAPHIC_RELATIONSHIPS: Array<{
 const INPUT_CLASS =
   "h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
 const LABEL_CLASS =
-  "mb-1 block text-[11px] font-semibold text-slate-700 dark:text-slate-300";
+  "mb-1 block text-[11px] font-semibold text-slate-700 dark:text-[#E2E8F0]";
 
 function formatDate(value?: string | null): string {
   if (!value) return "Not stated";

@@ -3407,12 +3407,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
-                <div className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
+              <div className="p-3.5 rounded-xl bg-[var(--pi-surface-subtle)] border border-[var(--pi-border)] space-y-1">
+                <div
+                  data-testid="profile-nppes-link-status"
+                  className="font-semibold text-[var(--pi-text-primary)] flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[var(--pi-text-secondary)]" />
                   <span>{hasUserLinkedNppesRecord ? 'NPPES record linked by user' : 'No NPPES record linked by user'}</span>
                 </div>
-                <p className="text-emerald-900/80 dark:text-emerald-200/80 leading-relaxed">
+                <p
+                  data-testid="profile-nppes-link-explanation"
+                  className="text-[var(--pi-text-secondary)] leading-relaxed"
+                >
                   The NPPES registry can return a legal-organization record for review. The app does not determine whether it belongs to this EMS or fire agency, whether an address is an operating station, or whether a listed official is operational command.
                 </p>
               </div>

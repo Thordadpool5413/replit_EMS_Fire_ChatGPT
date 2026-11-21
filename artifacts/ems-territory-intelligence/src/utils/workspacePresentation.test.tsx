@@ -15,10 +15,12 @@ test('report export preserves zero, corrections, source origin, latest action, a
 });
 test('five mobile destinations have readable labels and the correct selected group',()=>{
  const html=renderToStaticMarkup(<MobileBottomNav activeTab="grants" setActiveTab={()=>{}} dayRouteCount={2}/>);
- assert.equal((html.match(/aria-current="page"/g)??[]).length,1);
+  assert.equal((html.match(/aria-current="page"/g)??[]).length,2);
  assert.match(html,/aria-label="Reports" aria-current="page"/);
- for(const label of ['Map','Agencies','Field Work','Reports','Settings']) assert.ok(html.includes(`aria-label="${label}"`));
- assert.equal((html.match(/<button/g)??[]).length,5);
+  assert.ok(html.includes('class="pi-mobile-more__link" aria-current="page"'));
+  for(const label of ['Map','Agencies','Field Work','Reports']) assert.ok(html.includes(`aria-label="${label}"`));
+  assert.ok(html.includes('>Settings</span>'));
+  assert.equal((html.match(/class="pi-mobile-nav__item(?: |")/g)??[]).length,5);
 });
 test('empty report explains the next step and disables exporting empty work',()=>{
  const html=renderToStaticMarkup(<WorkspaceHub kind="reports" agencies={[]} navigate={()=>{}} pending={0} online={false}/>);

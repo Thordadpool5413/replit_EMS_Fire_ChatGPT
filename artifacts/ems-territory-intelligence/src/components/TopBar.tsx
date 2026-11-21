@@ -21,12 +21,12 @@ import {
   Database,
   Activity,
   ShieldCheck,
-  SlidersHorizontal,
+  Wrench,
   Sparkles,
   CircleHelp,
   Palette,
   MapPin,
-  LocateFixed,
+  Navigation,
   RefreshCw,
   Download,
   WifiOff
@@ -415,7 +415,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="workspace-context-title inline max-w-[9rem] truncate text-xs font-semibold text-[#14283F] dark:text-white sm:max-w-none sm:shrink-0 sm:whitespace-nowrap sm:text-sm">
-                  {getWorkspaceTitle()}
+                  {activeTab === 'home' && !activeAccountName ? 'EMS & Fire' : getWorkspaceTitle()}
                 </span>
                 {hasActiveGeography && (
                   <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-[#285EE8] dark:text-blue-400 bg-[#EEF3FE] dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800/60 font-medium">
@@ -462,7 +462,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 data-testid="button-mobile-nearby-search"
                 title="Find nearby EMS and fire agencies"
               >
-                <LocateFixed className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <Navigation className="nearby-arrow" size={22} strokeWidth={2} fill="currentColor" aria-hidden="true" />
                 <span className="hidden min-[375px]:inline sm:inline">Near me</span>
               </button>
             )}
@@ -498,7 +498,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 aria-haspopup="menu"
                 aria-controls="mobile-workspace-tools-menu"
               >
-                <SlidersHorizontal className="w-4 h-4 text-[#53657B] dark:text-slate-400" />
+                <Wrench className="w-4 h-4 text-[#53657B] dark:text-slate-400" aria-hidden="true" />
                 <span className="hidden sm:inline">Tools</span>
                 <ChevronDown className="hidden sm:block w-3 h-3 text-[#53657B]" />
                 {pendingSyncCount > 0 && (

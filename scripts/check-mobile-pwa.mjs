@@ -69,7 +69,7 @@ try{
       }
       const previousScroll=await evaluate(cdp,`window.scrollY`);
       await evaluate(cdp,`(()=>{document.documentElement.style.scrollBehavior='auto';document.body.style.scrollBehavior='auto';window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'});})()`);
-      await evaluate(cdp,`new Promise(r=>setTimeout(r,100))`);
+      await waitFor(cdp,`(()=>{const nav=document.querySelector('nav[aria-label="Mobile primary workspaces"]');const main=document.querySelector('main.workspace-grid-shell');if(!nav||!main)return false;const navTop=nav.getBoundingClientRect().top;const flow=[...main.children].filter(el=>getComputedStyle(el).position==='static'&&el.getBoundingClientRect().height>0);const contentBottom=Math.max(0,...flow.map(el=>el.getBoundingClientRect().bottom));return contentBottom<=navTop+1;})()`,`page end clears bottom navigation at ${width}px`,3000);
       const clearance=await evaluate(cdp,`(()=>{const nav=document.querySelector('nav[aria-label="Mobile primary workspaces"]');const main=document.querySelector('main.workspace-grid-shell');if(!nav||!main)return null;const navTop=nav.getBoundingClientRect().top;const flow=[...main.children].filter(el=>getComputedStyle(el).position==='static'&&el.getBoundingClientRect().height>0);const contentBottom=Math.max(0,...flow.map(el=>el.getBoundingClientRect().bottom));return{navTop,contentBottom,scrollTop:scrollY,scrollHeight:document.documentElement.scrollHeight};})()`);
       assert.ok(clearance,`${name}: mobile navigation or page content is missing`);
       assert.ok(clearance.contentBottom<=clearance.navTop+1,`${name}: page end is hidden behind bottom navigation ${JSON.stringify(clearance)}`);

@@ -9,6 +9,7 @@ import {WorkspaceIcon} from './design/WorkspaceIcon';
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { hasRecordedEquipmentValue } from '../utils/equipmentPresence';
 import { Agency } from '../types';
 import {
   Compass,
@@ -206,6 +207,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [mapOptionsOpen, setMapOptionsOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
+  const detailDialog = useRef<HTMLDialogElement>(null);
+  const [detailCode, setDetailCode] = useState<string | null>(null);
+  const [compactStatesOnly, setCompactStatesOnly] = useState(false);
   const statePicker = useRef<HTMLDialogElement>(null);
   const stateSearchInput = useRef<HTMLInputElement>(null);
   useEffect(()=>{if(registryOpen)registryDialog.current?.showModal();else registryDialog.current?.close();},[registryOpen]);
@@ -477,6 +481,15 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       return [code, activeMapPalette.stops[band]];
     }));
   }, [activeMapPalette, mapMetric, stateMapMetricsByCode]);
+  const legendBands = activeMapPalette.stops.map(color => {
+    const values = Array.from(mapMetricQuantileColors.entries())
+      .filter(([, fill]) => fill === color)
+      .map(([code]) => stateMapMetricsByCode[code][mapMetric].value as number);
+    if (!values.length) return {color, range: 'No areas'};
+    const low = formatStateMapValue(mapMetric, Math.min(...values));
+    const high = formatStateMapValue(mapMetric, Math.max(...values));
+    return {color, range: low === high ? low : low + ' – ' + high};
+  });
   const getStateMapFill = (code: string) =>
     mapMetricQuantileColors.get(code) ?? activeMapPalette.stops[0];
 
@@ -580,6 +593,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
   };
 
+  const inspectState = (code: string) => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return handleStateClick(code);
+    setDetailCode(code);
+    detailDialog.current?.showModal();
+  };
+  const detail = detailCode ? stateMapMetricsByCode[detailCode][mapMetric] : null;
+  const equipmentCount = detailCode ? scopedAgencies.filter(agency =>
+    agency.stateCode === detailCode && hasRecordedEquipmentValue(agency)).length : 0;
+  const pickerStates = Object.entries(ALL_50_STATES_SUMMARIES)
+    .filter(([code, state]) => (!compactStatesOnly || EAST_COAST_CALLOUT_STATES.some(s => s.code === code))
+      && (state.state + ' ' + code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
+    .sort((a, b) => a[1].state.localeCompare(b[1].state));
   const mapHeaderActions = (
     <>
       <button type="button" className="workspace-text-button" onClick={()=>{
@@ -601,21 +626,36 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <button autoFocus type="button" className="workspace-button mb-3" onClick={()=>setRegistryOpen(false)}>Close registry</button>
         {registryOpen&&<NationalSourceDirectory stateCode={selectedStateCode==='all'?'':selectedStateCode} providerScope={globalCategory}/>}
       </dialog>
+      <dialog ref={detailDialog} className="home-state-picker home-state-details" aria-labelledby="home-state-detail-title" onClose={() => setDetailCode(null)}>
+        {detailCode && detail && <>
+          <div className="home-state-picker-heading">
+            <h2 id="home-state-detail-title">{ALL_50_STATES_SUMMARIES[detailCode].state}</h2>
+            <button type="button" className="workspace-button" onClick={() => detailDialog.current?.close()}>Close</button>
+          </div>
+          <p>{activeMapMetric.label}</p>
+          <strong className="home-detail-value">{formatStateMapValue(mapMetric, detail.value)}</strong>
+          <p>{detail.coverage}</p>
+          {detail.source && <p>{detail.sourceUrl ? <a href={detail.sourceUrl} target="_blank" rel="noreferrer">{detail.source}</a> : detail.source}</p>}
+          <p>{detail.period}</p>
+          {equipmentCount > 0 && <p>Equipment recorded in {formatInteger(equipmentCount)} of {formatInteger(stateStatsByCode[detailCode].count)} agency profiles in this view.</p>}
+          <button type="button" className="workspace-button" onClick={() => { detailDialog.current?.close(); handleStateClick(detailCode); }}>Explore counties in {ALL_50_STATES_SUMMARIES[detailCode].state}</button>
+        </>}
+      </dialog>
       <dialog ref={statePicker} className="home-state-picker" aria-labelledby="home-state-picker-title">
         <div className="home-state-picker-heading">
-          <h2 id="home-state-picker-title">Choose a state</h2>
+          <h2 id="home-state-picker-title">{compactStatesOnly ? 'Small states and DC' : 'Choose a state'}</h2>
           <button type="button" className="workspace-button" onClick={() => statePicker.current?.close()}>Close</button>
         </div>
         <label htmlFor="home-state-search">Search by state name or abbreviation</label>
         <input ref={stateSearchInput} id="home-state-search" type="search" autoComplete="off" placeholder="Florida or FL" value={stateSearch} onChange={event => setStateSearch(event.target.value)} />
         <div className="home-state-picker-results" aria-label="States">
-          {Object.entries(ALL_50_STATES_SUMMARIES).filter(([code, state]) => `${state.state} ${code}`.toLowerCase().includes(stateSearch.trim().toLowerCase())).sort((a,b) => a[1].state.localeCompare(b[1].state)).map(([code, state]) => (
-            <button type="button" key={code} onClick={() => { statePicker.current?.close(); handleStateClick(code); }}>
+          {pickerStates.map(([code, state]) => (
+            <button type="button" key={code} onClick={() => { statePicker.current?.close(); inspectState(code); }}>
               <span>{state.state} <small>{code}</small></span>
               <span>{formatStateMapValue(mapMetric, stateMapMetricsByCode[code][mapMetric].value)} <span aria-hidden="true">→</span></span>
             </button>
           ))}
-          {!Object.entries(ALL_50_STATES_SUMMARIES).some(([code, state]) => `${state.state} ${code}`.toLowerCase().includes(stateSearch.trim().toLowerCase())) && <p role="status">No states match. Try a name or two-letter abbreviation.</p>}
+          {!pickerStates.length && <p role="status">No states match. Try a name or two-letter abbreviation.</p>}
         </div>
         <p className="home-state-picker-note">{activeMapMetric.label} · Select a state to explore counties and agencies.</p>
       </dialog>
@@ -675,7 +715,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         </div>
 
         <div className="home-map-phone-actions">
-          <button type="button" aria-label="Choose a state" onClick={() => { setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}>Choose state <Search aria-hidden="true" size={16}/></button>
+          <button type="button" aria-label="Choose a state" onClick={() => { setCompactStatesOnly(false); setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}>Choose state <Search aria-hidden="true" size={16}/></button>
           <button type="button" aria-expanded={mapOptionsOpen} aria-controls="home-map-options" onClick={() => setMapOptionsOpen(open => !open)}>Map options <SlidersHorizontal aria-hidden="true" size={16}/></button>
           <p>Showing: <strong>{activeMapMetric.label}</strong></p>
         </div>
@@ -742,6 +782,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <span className="home-map-legend-palette-note"> · Color-blind safe</span>
                   )}
                 </span>
+                <div className="home-phone-bands">
+                  <ul aria-label="Reported values by map color">{legendBands.map(({color, range}) =>
+                    <li key={color}><i aria-hidden="true" style={{backgroundColor: color}}/>{range}</li>)}</ul>
+                  <details><summary>How to read this map</summary>
+                    <p>Colors group reported values from lowest to highest across the US. Ranges show the lowest and highest displayed values in each group. Equal values share a color. Hatching marks missing values.</p>
+                  </details>
+                </div>
                 <span className="home-map-legend-scale flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-[#53657A]">
                   <span className="home-map-legend-endpoint">{mapMetricValues.length ? formatStateMapValue(mapMetric, mapMetricMin) : '—'} · {activeMapPalette.lowLabel}</span>
                   <span className="home-map-legend-gradient h-3 w-24 rounded-sm border border-[#7790A7]" style={{ background: getMapGradient(activeMapPalette) }} aria-hidden="true" />
@@ -805,6 +852,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   </div>
                 );
               })()}
+              <button type="button" className="home-small-state-list" onClick={() => {
+                setCompactStatesOnly(true); setStateSearch(''); statePicker.current?.showModal();
+              }}>Browse small states and DC <span aria-hidden="true">→</span></button>
               {/* East Coast Compact Callout Buttons */}
               <div className="home-map-shortcuts pt-2 border-t border-[#D7E0EA] text-xs">
                 <div className="home-map-shortcuts-heading">
@@ -819,7 +869,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <button
                       key={c.code}
                       type="button"
-                      onClick={() => handleStateClick(c.code)}
+                      onClick={() => inspectState(c.code)}
                       onMouseEnter={() => setHoveredStateCode(c.code)}
                       onFocus={() => setFocusedStateCode(c.code)}
                       aria-pressed={isSelected}
@@ -910,13 +960,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
-                          onClick={() => handleStateClick(st.code)}
+                          onClick={() => inspectState(st.code)}
                           onMouseEnter={() => setHoveredStateCode(st.code)}
                           onFocus={() => setFocusedStateCode(st.code)}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
-                              handleStateClick(st.code);
+                              inspectState(st.code);
                             }
                           }}
                           tabIndex={isInRegion ? 0 : -1}
@@ -958,7 +1008,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           key={`home-lbl-${st.code}`}
                           className="home-map-leader"
                           opacity={cIn ? 1 : 0.4}
-                          onClick={() => handleStateClick(st.code)}
+                          onClick={() => inspectState(st.code)}
                           onMouseEnter={() => setHoveredStateCode(st.code)}
                           style={{ cursor: 'pointer' }}
                           aria-hidden="true"

@@ -312,3 +312,19 @@
     color: #614932;
   }
 }
+
+.home-phone-bands, .home-small-state-list { display: none; }
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-legend-scale,
+  .home-territory-map-screen-v2 .home-map-shortcuts { display: none !important; }
+  .home-phone-bands { display: block; }
+  .home-phone-bands ul { display: grid; grid-template-columns: repeat(auto-fit,minmax(6.2rem,1fr)); gap: .55rem; list-style: none; padding: 0; }
+  .home-phone-bands li { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+  .home-phone-bands i { display: block; height: .5rem; border-radius: .25rem; margin-bottom: .25rem; }
+  .home-phone-bands summary { line-height: 1.5; padding-block: .75rem; cursor: pointer; }
+  .home-small-state-list { display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: .5rem .75rem; border-radius: .7rem; background: #fff3e5; color: #803410; font-weight: 650; }
+  .home-state-details p { margin-block: .6rem; line-height: 1.5; }
+  .home-detail-value { display: block; font-size: 2rem; line-height: 1.15; }
+  .home-state-details a { text-decoration: underline; }
+  .home-state-details button { min-height: 44px; }
+}

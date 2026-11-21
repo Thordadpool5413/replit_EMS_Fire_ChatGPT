@@ -122,7 +122,6 @@
 .home-state-picker-results small { color: var(--pi-text-secondary); margin-left: .25rem; }
 .home-state-picker-results button:hover, .home-state-picker-results button:focus-visible { background: var(--pi-action-subtle, #fff1e6); }
 .home-state-picker-note { margin-top: .75rem; color: var(--pi-text-secondary); }
-@media (max-width: 767px) {
 @media (max-width: 1023px) {
   .home-territory-map-screen-v2 { padding: .75rem !important; border-radius: 1rem !important; }
   .home-territory-map-screen-v2 .home-map-page-heading { display: grid !important; grid-template-columns: minmax(0,1fr) auto; gap: .5rem !important; padding-bottom: .5rem !important; }

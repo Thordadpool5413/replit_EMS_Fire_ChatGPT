@@ -17,8 +17,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  SlidersHorizontal,
-  Search,
   Layers,
   MapPin,
   ChevronDown,
@@ -639,16 +637,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <button autoFocus type="button" className="workspace-button mb-3" onClick={()=>setRegistryOpen(false)}>Close registry</button>
         {registryOpen&&<NationalSourceDirectory stateCode={selectedStateCode==='all'?'':selectedStateCode} providerScope={globalCategory}/>}
       </dialog>
-      <dialog ref={statePicker} className="home-state-picker" aria-labelledby="home-state-picker-title">
-        <div className="home-state-picker-heading">
-          <h2 id="home-state-picker-title">Choose a state</h2>
-          <button type="button" className="workspace-button" onClick={() => statePicker.current?.close()}>Close</button>
-        </div>
-        <label htmlFor="home-state-search">Search by state name or abbreviation</label>
-        <input ref={stateSearchInput} id="home-state-search" type="search" autoComplete="off" placeholder="Florida or FL" value={stateSearch} onChange={event => setStateSearch(event.target.value)} />
-        <div className="home-state-picker-results" aria-label="States">
-          {Object.entries(ALL_50_STATES_SUMMARIES).filter(([code, state]) => `${state.state} ${code}`.toLowerCase().includes(stateSearch.trim().toLowerCase())).sort((a,b) => a[1].state.localeCompare(b[1].state)).map(([code, state]) => (
-            <button type="button" key={code} onClick={() => { statePicker.current?.close(); handleStateClick(code); }}>
       <dialog ref={detailDialog} className="home-state-picker home-state-details" aria-labelledby="home-state-detail-title" onClose={() => setDetailCode(null)}>
         {detailCode && detail && <>
           <div className="home-state-picker-heading">
@@ -681,7 +669,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <span>{formatStateMapValue(mapMetric, stateMapMetricsByCode[code][mapMetric].value)} <span aria-hidden="true">→</span></span>
             </button>
           ))}
-          {!Object.entries(ALL_50_STATES_SUMMARIES).some(([code, state]) => `${state.state} ${code}`.toLowerCase().includes(stateSearch.trim().toLowerCase())) && <p role="status">No states match. Try a name or two-letter abbreviation.</p>}
           {!pickerStates.length && <p role="status">No states match. Try a name or two-letter abbreviation.</p>}
         </div>
         <p className="home-state-picker-note">{activeMapMetric.label} · Select a state to explore counties and agencies.</p>
@@ -710,22 +697,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </p>
           </div>
 
-          <div className="home-map-browse"><button type="button" className="home-map-browse-toggle" aria-expanded={browseOpen} aria-controls="home-map-browse-links" onClick={() => setBrowseOpen(open => !open)}>Browse</button><div id="home-map-browse-links" className="home-map-heading-actions" data-mobile-open={browseOpen}>
-            <button type="button" className="workspace-text-button" onClick={()=>{
-              setSelectedStateCode('all');
-              setRegionFilter('All');
-              saveMapPreference('region','All');
-              resetMapZoom();
-              onClearGeography?.();
-            }}>National view</button>
-            <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
-            <button type="button" className="workspace-text-button" data-testid="button-browse-national-records" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
           <div className="home-map-browse">
             <button type="button" className="home-map-browse-toggle" aria-expanded={browseOpen} aria-controls="home-map-browse-links" onClick={() => setBrowseOpen(open => !open)}>Browse <ChevronDown size={15} aria-hidden="true"/></button>
             <div id="home-map-browse-links" className="home-map-heading-actions" data-mobile-open={browseOpen}>
               {mapHeaderActions}
             </div>
-          </div>
           </div>
           {/* Region Filter Segmented Control */}
           {!isPhone && <div className="home-map-region-filter max-w-full overflow-x-auto" role="group" aria-label="Filter map by region">
@@ -751,19 +727,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </div>
           </div>}
         </div>
-
-        <div className="home-map-phone-actions">
-          <button type="button" onClick={() => { setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}>Choose a state <Search aria-hidden="true" size={16}/></button>
-          <button type="button" aria-expanded={mapOptionsOpen} aria-controls="home-map-options" onClick={() => setMapOptionsOpen(open => !open)}>Map options <SlidersHorizontal aria-hidden="true" size={16}/></button>
-          <p>Showing: <strong>{activeMapMetric.label}</strong></p>
-        </div>
-        {agencies.length === 0 && (
-          <div className="home-map-data-status" role="status">
-            <strong>No agency records are available in the saved directory.</strong>
-            <span>Map coverage and agency records are separate. Check data status or open the directory to review what is available.</span>
-            <button type="button" className="workspace-text-button" onClick={() => onNavigateTab('states_directory')}>Open agency directory</button>
-          </div>
-        )}
 
         {!isPhone && mapActions}
         {/* The Home screen keeps the interactive map as its only main content. */}

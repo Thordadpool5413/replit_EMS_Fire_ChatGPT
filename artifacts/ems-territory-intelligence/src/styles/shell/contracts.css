@@ -281,8 +281,6 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
   .workspace-grid-shell { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important; }
   .pi-mobile-nav { height: auto !important; min-height: 0 !important; padding: 0 0 env(safe-area-inset-bottom) !important; background: var(--pi-surface-bg, #fff) !important; }
   .pi-mobile-nav__grid { padding-bottom: 0 !important; }
-  .pi-mobile-nav .pi-mobile-nav__item { min-height: 60px !important; padding: .4rem .125rem !important; gap: .15rem; }
-  .pi-mobile-nav .pi-mobile-nav__item > span:last-child { font-size: .6875rem !important; line-height: 1.2 !important; }
   .pi-mobile-nav .pi-mobile-nav__item { min-height: 60px !important; padding: .4rem 0 !important; gap: .15rem; }
   .pi-mobile-nav .pi-mobile-nav__item > span:last-child { font-size: 12px !important; line-height: 1.2 !important; }
   .pi-mobile-nav__icon { position: relative; display: inline-flex; }

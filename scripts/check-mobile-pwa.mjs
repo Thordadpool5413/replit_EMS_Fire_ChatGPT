@@ -52,20 +52,48 @@ try{
     await evaluate(cdp,`new Promise(r=>setTimeout(r,250))`);
     const size=await evaluate(cdp,`({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,height:innerHeight})`);
     assert.ok(size.scroll<=size.width+1,`${name}: page overflow ${JSON.stringify(size)}`);
+    if(width<768&&!(await evaluate(cdp,`Boolean(document.querySelector('dialog[open],[role="dialog"][aria-modal="true"]'))`))){
+      if(name==='home'){
+        const layout=await evaluate(cdp,`(()=>{const rect=s=>document.querySelector(s)?.getBoundingClientRect();const viewport=rect('.home-map-viewport');const region=rect('.home-map-region-filter');const regionButton=rect('.home-map-region-filter button');const metric=rect('#home-state-map-metric');const tools=rect('.home-map-mobile-tools > summary');const actions=rect('.home-map-actions-menu > summary');return{viewport:viewport&&{top:viewport.top,bottom:viewport.bottom,width:viewport.width,height:viewport.height},region:region&&{top:region.top,bottom:region.bottom},regionButton:regionButton&&{height:regionButton.height},metric:metric&&{height:metric.height,bottom:metric.bottom},tools:tools&&{top:tools.top,bottom:tools.bottom,position:getComputedStyle(document.querySelector('.home-map-mobile-tools')).position},actions:actions&&{top:actions.top,bottom:actions.bottom},pageHeight:document.documentElement.scrollHeight};})()`);
+        assert.ok(layout.viewport&&layout.viewport.width>0&&layout.viewport.height>=180,`${name}: the map is not prominent at ${width}px: ${JSON.stringify(layout)}`);
+        assert.ok(layout.regionButton?.height>=44,`${name}: region controls are too small at ${width}px`);
+        assert.ok(layout.metric?.height>=44,`${name}: map selector is too small at ${width}px`);
+        assert.ok(layout.region.bottom<=layout.viewport.top+1,`${name}: region control overlaps the map at ${width}px`);
+        assert.ok(!layout.tools||layout.tools.position==='static',`${name}: map controls float over the filter area at ${width}px`);
+        assert.ok(!layout.actions||layout.actions.bottom<=layout.region.top+1,`${name}: the map action menu overlaps the region selector at ${width}px`);
+      }
+      const previousScroll=await evaluate(cdp,`window.scrollY`);
+      await evaluate(cdp,`window.scrollTo(0,document.documentElement.scrollHeight)`);
+      await evaluate(cdp,`new Promise(r=>setTimeout(r,100))`);
+      const clearance=await evaluate(cdp,`(()=>{const nav=document.querySelector('nav[aria-label="Mobile primary workspaces"]');const main=document.querySelector('main.workspace-grid-shell');if(!nav||!main)return null;const navTop=nav.getBoundingClientRect().top;const flow=[...main.children].filter(el=>getComputedStyle(el).position==='static'&&el.getBoundingClientRect().height>0);const contentBottom=Math.max(0,...flow.map(el=>el.getBoundingClientRect().bottom));return{navTop,contentBottom,scrollTop:scrollY,scrollHeight:document.documentElement.scrollHeight};})()`);
+      assert.ok(clearance,`${name}: mobile navigation or page content is missing`);
+      assert.ok(clearance.contentBottom<=clearance.navTop+1,`${name}: page end is hidden behind bottom navigation ${JSON.stringify(clearance)}`);
+      await evaluate(cdp,`window.scrollTo(0,${previousScroll})`);
+    }
     const shot=await cdp.send('Page.captureScreenshot',{format:'png'});
     await writeFile(`${output}/${production?'production':'preview'}-${width}-${height}-${name}.png`,Buffer.from(shot.result.data,'base64'));
     findings.push({name,width,height,...size});
     console.log('PASS',name,width,height,`content ${size.scroll}/${size.width}px`);
   };
+  const openMore=async()=>evaluate(cdp,`(()=>{const d=document.querySelector('nav[aria-label="Mobile primary workspaces"] .pi-mobile-more');if(!d)return false;if(!d.open)d.querySelector('summary')?.click();return d.open;})()`);
   const navigate=async(label)=>{
-    const clicked=await evaluate(cdp,`(()=>{const b=document.querySelector('nav[aria-label="Mobile primary workspaces"] button[aria-label=${JSON.stringify(label)}]');if(b&&b.getBoundingClientRect().height){b.click();return true;}return false;})()`);
-    if(!clicked){
-      const fallback=await evaluate(cdp,`(()=>{const label=${JSON.stringify(label.toLowerCase())};const b=[...document.querySelectorAll('button')].find(b=>b.getBoundingClientRect().height&&((b.getAttribute('aria-label')||'').toLowerCase()===label||(label==='field work'&&b.innerText.trim().toLowerCase().startsWith(label))));if(b){b.click();return true;}return false;})()`);
-      if(!fallback)await clickVisibleButton(cdp,label);
+    if(label==='More'){
+      assert.ok(await openMore(),'More destinations menu is unavailable');
+    }else if(['Opportunities','Territory','Settings'].includes(label) && await evaluate(cdp,`Boolean(document.querySelector('nav[aria-label="Mobile primary workspaces"] .pi-mobile-more'))`)){
+      assert.ok(await openMore(),'More destinations menu is unavailable');
+      const destination=label==='Opportunities'?'Contracts':label==='Territory'?'Directory':'Settings';
+      const selected=await evaluate(cdp,`(()=>{const b=[...document.querySelectorAll('.pi-mobile-more__link')].find(item=>item.innerText.trim()===${JSON.stringify(destination)});if(!b)return false;b.click();return true;})()`);
+      assert.ok(selected,`Missing ${destination} in More destinations`);
+    }else{
+      const clicked=await evaluate(cdp,`(()=>{const b=document.querySelector('nav[aria-label="Mobile primary workspaces"] [aria-label=${JSON.stringify(label)}]');if(b&&b.getBoundingClientRect().height){b.click();return true;}return false;})()`);
+      if(!clicked){
+        const fallback=await evaluate(cdp,`(()=>{const label=${JSON.stringify(label.toLowerCase())};const b=[...document.querySelectorAll('button')].find(b=>b.getBoundingClientRect().height&&((b.getAttribute('aria-label')||'').toLowerCase()===label||(label==='field work'&&b.innerText.trim().toLowerCase().startsWith(label))));if(b){b.click();return true;}return false;})()`);
+        if(!fallback)await clickVisibleButton(cdp,label);
+      }
     }
     await evaluate(cdp,`new Promise(r=>setTimeout(r,500))`);
   };
-  const viewports=production?[{width:390,height:844}]:JSON.parse(process.env.MOBILE_VIEWPORTS||'[{"width":375,"height":812},{"width":390,"height":844},{"width":430,"height":932},{"width":844,"height":390},{"width":1366,"height":768}]');
+  const viewports=JSON.parse(process.env.MOBILE_VIEWPORTS||(production?'[{"width":390,"height":844}]':'[{"width":320,"height":740},{"width":390,"height":844},{"width":430,"height":932},{"width":667,"height":375},{"width":844,"height":390},{"width":1366,"height":768}]'));
   for(const {width,height} of viewports){
     await cdp.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
     await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:width<1024,maxTouchPoints:1});
@@ -73,7 +101,12 @@ try{
     await waitFor(cdp,`Boolean(document.querySelector('[aria-label="Interactive U.S. Territory Map"]'))`,'Home map',60000);
     await evaluate(cdp,`(()=>{const style=document.createElement('style');style.textContent='*{scroll-behavior:auto!important;animation:none!important;transition:none!important}';document.head.appendChild(style)})()`);
     await capture('home',width,height);
+    if(width<768){
+      const mapActions=await evaluate(cdp,`(async()=>{const regionButtons=[...document.querySelectorAll('.home-map-region-filter button')];const south=regionButtons.find(button=>button.innerText.trim()==='South');const all=regionButtons.find(button=>button.innerText.trim()==='All');if(!south||!all)return null;south.click();await new Promise(resolve=>setTimeout(resolve,50));const regionChanged=south.getAttribute('aria-pressed')==='true';all.click();await new Promise(resolve=>setTimeout(resolve,50));const menu=document.querySelector('.home-map-actions-menu');menu?.querySelector('summary')?.click();const national=[...document.querySelectorAll('.home-map-actions-menu button')].find(button=>button.innerText.trim()==='National view');national?.click();await new Promise(resolve=>setTimeout(resolve,50));const regionReset=[...document.querySelectorAll('.home-map-region-filter button')].find(button=>button.innerText.trim()==='All')?.getAttribute('aria-pressed')==='true';if(menu?.open)menu.querySelector('summary')?.click();return{regionChanged,regionReset,nationalAction:Boolean(national)};})()`);
+      assert.ok(mapActions?.regionChanged&&mapActions.regionReset&&mapActions.nationalAction,`Map region or National view action failed: ${JSON.stringify(mapActions)}`);
+    }
     if(production){
+      assert.equal(await evaluate(cdp,`Boolean(document.querySelector('.pwa-status-banner'))`),false,'update notice should be hidden before an update is available');
       await waitFor(cdp,`Boolean(navigator.serviceWorker.controller)`,'production service worker control',30000);
       const cached=await evaluate(cdp,`(async()=>{const names=await caches.keys();const key=names.find(k=>k.startsWith('ems-territory-shell-v4'));if(!key)throw Error('No current app shell cache');const c=await caches.open(key);return {names,urls:(await c.keys()).map(r=>r.url),manifest:await fetch('manifest.webmanifest').then(r=>r.json())};})()`);
       assert.ok(cached.names.some(key=>key.startsWith('ems-territory-shell-v4')));
@@ -89,12 +122,18 @@ try{
       await waitFor(cdp,`Boolean(document.querySelector('[aria-label="Interactive U.S. Territory Map"]'))`,'offline cached launch',30000);
       assert.equal(await evaluate(cdp,`localStorage.getItem('mobile-pwa-qa-marker')`),'preserve-me');
       await navigate('More');
+      await navigate('Settings');
       await waitFor(cdp,`document.querySelector('[data-testid="pwa-controls"]')?.innerText.includes('Offline')`,'offline status in More');
       await capture('offline-more',width,height);
       await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
       serveUpdate=true;
       await evaluate(cdp,`(async()=>{await(await navigator.serviceWorker.getRegistration()).update();})()`);
       await waitFor(cdp,`Boolean(document.querySelector('[data-testid="button-update-pwa"]'))`,'waiting update action',30000);
+      await navigate('Map');
+      await waitFor(cdp,`Boolean(document.querySelector('.pwa-status-banner'))`,'update notice on the map');
+      await capture('update-notice',width,height);
+      await navigate('More');
+      await navigate('Settings');
       await evaluate(cdp,`(()=>{window.dispatchEvent(new CustomEvent('agency-profile-review-dirty',{detail:true}));document.querySelector('[data-testid="button-update-pwa"]').click();})()`);
       await waitFor(cdp,`document.querySelector('[data-testid="pwa-controls"]')?.innerText.includes('unfinished fact review')`,'unsaved review update guard');
       await capture('update-review-guard',width,height);
@@ -116,13 +155,14 @@ try{
         }
       }
       await evaluate(cdp,`localStorage.removeItem('mobile-pwa-qa-marker')`);
+      assert.equal(await evaluate(cdp,`Boolean(document.querySelector('.pwa-status-banner'))`),false,'update notice should clear after the new worker activates');
       findings.push({productionWorker:'activated',offlineLaunch:'passed',localDataPreserved:true,unsavedReviewGuard:'passed',updateCancel:'passed',updateReload:'passed',cachedAssets:cached.urls.length});
       continue;
     }
     for(const label of ['Agencies','Opportunities','Territory','Field work']){
       await navigate(label);
       await capture(label.toLowerCase().replaceAll(' ','-'),width,height);
-      if(label==='Territory'&&[390,844].includes(width)){
+      if(label==='Territory'&&(width<768||width===844)){
         await waitFor(cdp,`Boolean(document.querySelector('[data-testid="input-county-search"],[aria-label="Inspect Florida counties"]'))||[...document.querySelectorAll('button')].some(b=>/Florida counties/i.test(b.innerText))`,'county navigation ready',60000);
         await evaluate(cdp,`(()=>{if(document.querySelector('[data-testid="input-county-search"]'))return;const back=[...document.querySelectorAll('button')].find(b=>/Florida counties/i.test(b.innerText));if(back)back.click();else document.querySelector('[aria-label="Inspect Florida counties"]')?.dispatchEvent(new MouseEvent('click',{bubbles:true}));})()`);
         await waitFor(cdp,`Boolean(document.querySelector('[data-testid="input-county-search"]'))`,'state county directory',30000);
@@ -145,7 +185,7 @@ try{
           await capture(id,width,height);
           const rect=await evaluate(cdp,`document.querySelector('${canvas}').getBoundingClientRect().toJSON()`);
           assert.ok(rect.height<=height,`${label} canvas exceeds screen height: ${rect.height}`);
-          if(id==='workspace-fleet-map'){
+          if(id==='workspace-fleet-map'&&width>=360){
             await evaluate(cdp,`document.querySelector('.fleet-map-controls button').click()`);
             await evaluate(cdp,`new Promise(r=>setTimeout(r,100))`);
             const before=await evaluate(cdp,`document.querySelector('[data-testid="gis-map-svg"] g[transform*="scale("]')?.getAttribute('transform')`);
@@ -162,11 +202,21 @@ try{
     }
     if(width<768){
       await navigate('More');
-      await waitFor(cdp,`Boolean(document.querySelector('[data-testid="pwa-controls"]'))`,'PWA controls in More');
-      await evaluate(cdp,`document.querySelector('[data-testid="button-pwa-install-help"]')?.click()`);
-      await capture('more-install-help',width,height);
-      const close=await evaluate(cdp,`(()=>{const b=document.querySelector('button[aria-label="Close more tools"]');if(b){b.click();return true;}return false;})()`);
-      assert.ok(close,'More close control is reachable');
+      const menu=await evaluate(cdp,`(()=>{const d=document.querySelector('.pi-mobile-more');return{open:Boolean(d?.open),links:[...document.querySelectorAll('.pi-mobile-more__link')].length};})()`);
+      assert.ok(menu.open&&menu.links>=10,`More destinations menu incomplete: ${JSON.stringify(menu)}`);
+      await capture('more-menu',width,height);
+      await evaluate(cdp,`document.querySelector('.pi-mobile-more')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+      assert.equal(await evaluate(cdp,`Boolean(document.querySelector('.pi-mobile-more[open]'))`),false,'Escape closes the More destinations menu');
+      await navigate('More');
+      await navigate('Settings');
+      await waitFor(cdp,`Boolean(document.querySelector('[data-testid="pwa-controls"]'))`,'PWA controls under More > Settings');
+      const installState=await evaluate(cdp,`(()=>{const help=document.querySelector('[data-testid="button-pwa-install-help"]');if(help){help.click();return{mode:'help',expanded:help.getAttribute('aria-expanded')};}return{mode:document.querySelector('[data-testid="button-install-pwa"]')?'install-prompt-ready':'unavailable'};})()`);
+      assert.notEqual(installState.mode,'unavailable','Settings should explain installation or expose the browser install prompt');
+      await capture(installState.mode==='help'?'install-help':'install-prompt-ready',width,height);
+      if(installState.mode==='help'){
+        const close=await evaluate(cdp,`(async()=>{const b=document.querySelector('[data-testid="button-pwa-install-help"]');if(!b)return false;b.click();await new Promise(resolve=>setTimeout(resolve,50));return b.getAttribute('aria-expanded')==='false';})()`);
+        assert.ok(close,'PWA install help can be collapsed again');
+      }
     }
   }
   await writeFile(`${output}/${production?'production':'preview'}-results.json`,JSON.stringify(findings,null,2));

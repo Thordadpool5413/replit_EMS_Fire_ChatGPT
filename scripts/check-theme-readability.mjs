@@ -266,6 +266,8 @@ async function clickButtonAndScroll(cdp, label) {
     const button = [...document.querySelectorAll('button')]
       .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(label)});
     if (!button) return false;
+    const actions = button.closest('details.home-map-actions-menu');
+    if (actions && !actions.open) actions.querySelector('summary')?.click();
     const style = getComputedStyle(button);
     if (style.display === 'none' || style.visibility === 'hidden') return false;
     button.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
@@ -1332,7 +1334,7 @@ async function checkHome(cdp, dark) {
     cdp,
     `!document.querySelector('.home-map-state-path[aria-pressed="true"]') &&
       Boolean([...document.querySelectorAll('button')].find((button) => button.innerText.trim() === 'National view')) &&
-      document.querySelector('.home-map-page-heading p')?.innerText.includes('Choose a state to review')`,
+      document.querySelector('.home-map-page-heading p')?.innerText.includes('Select a state to explore its counties and EMS/fire agencies')`,
     'return to the national map',
   );
   if (!missingLayer) {

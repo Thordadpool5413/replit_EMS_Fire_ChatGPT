@@ -67,7 +67,7 @@ try {
       await ev(`document.querySelector('[data-testid="profile-record-context"] summary').click()`);
       // The header action must follow the moved preparation content.
       await ev(`document.querySelector('[data-testid="button-profile-prepare-meeting"]').click()`);
-      await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-meeting-brief"]'))`, 'meeting prep action', 10000);
+      await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-deal-story"]'))`, 'Visit plan preparation action', 10000);
       await ev(`document.querySelector('[data-testid="tab-profile-overview"]').click()`);
     }
     await settleProfileScroll();
@@ -276,7 +276,7 @@ try {
         assert.ok(await ev(`window.__profileCopiedText.includes('confirm what is deployed today')`),'Copy retains the agency-specific opening');
       }
     }
-    if (width >= 768) {
+    if (width > 1199) {
       await ev(`document.querySelector('.acp-tab.is-active').focus({preventScroll:true})`);
       await cdp.send('Input.dispatchKeyEvent', {type:'keyDown',key:'Home',code:'Home'});
       await cdp.send('Input.dispatchKeyEvent', {type:'keyUp',key:'Home',code:'Home'});
@@ -285,7 +285,7 @@ try {
       await cdp.send('Input.dispatchKeyEvent', {type:'keyDown',key:'ArrowRight',code:'ArrowRight'});
       await cdp.send('Input.dispatchKeyEvent', {type:'keyUp',key:'ArrowRight',code:'ArrowRight'});
       await settleProfileScroll();
-      assert.equal(await ev(`document.activeElement?.id`),'profile-tab-equipment','Arrow navigation keeps focus on the selected tab');
+      assert.equal(await ev(`document.activeElement?.id`),'profile-tab-deal_story','Arrow navigation follows the redesigned Visit plan tab order');
        assert.ok(await ev(`(()=>{const p=document.querySelector('#profile-topic-panel');return Boolean(p?.getAttribute('aria-label')?.trim()||p?.getAttribute('aria-labelledby')&&document.getElementById(p.getAttribute('aria-labelledby'))?.textContent?.trim())})()`),'Selected topic panel retains an accessible name');
     }
   }

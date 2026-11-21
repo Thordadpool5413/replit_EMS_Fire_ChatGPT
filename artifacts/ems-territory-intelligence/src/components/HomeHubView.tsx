@@ -16,6 +16,7 @@ import {
   ZoomOut,
   RotateCcw,
   SlidersHorizontal,
+  MoreHorizontal,
 } from 'lucide-react';
 import { ALL_50_STATES_SUMMARIES } from '../data/nationalGeographicData';
 import { US_STATES_SVG_PATHS, EAST_COAST_CALLOUT_STATES } from '../data/usStatesSvgPaths';
@@ -199,6 +200,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const {manifest:sourceDirectory}=useNationalSourceDirectory();
   const registryDialog=useRef<HTMLDialogElement>(null);
   const [registryOpen,setRegistryOpen]=useState(false);
+  const [compactMapHeader,setCompactMapHeader]=useState(() => (
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  ));
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const syncCompactHeader = () => setCompactMapHeader(media.matches);
+    syncCompactHeader();
+    media.addEventListener('change', syncCompactHeader);
+    return () => media.removeEventListener('change', syncCompactHeader);
+  }, []);
   useEffect(()=>{if(registryOpen)registryDialog.current?.showModal();else registryDialog.current?.close();},[registryOpen]);
   const [selectedStateCode, setSelectedStateCode] = useState<string>(() => {
     const code = globalState?.trim().toUpperCase();
@@ -571,6 +582,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     }
   };
 
+  const mapHeaderActions = (
+    <div className="home-map-heading-actions">
+      <button type="button" className="workspace-text-button" onClick={()=>{
+        setSelectedStateCode('all');
+        setRegionFilter('All');
+        saveMapPreference('region','All');
+        resetMapZoom();
+        onClearGeography?.();
+      }}>National view</button>
+      <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
+      <button type="button" className="workspace-text-button" data-testid="button-browse-national-records" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
+    </div>
+  );
+
   return (
     <div>
       <dialog ref={registryDialog} onClose={()=>setRegistryOpen(false)} onCancel={()=>setRegistryOpen(false)} aria-label="Browse national registry listings" style={{width:'min(960px,94vw)',maxHeight:'90dvh',overflow:'auto',padding:16,borderRadius:12,background:'var(--pi-surface, white)',color:'var(--pi-text-primary, #14283f)'}}>
@@ -585,7 +610,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         className="home-territory-map-screen home-territory-map-screen-v2 pi-surface p-4 sm:p-5 space-y-4 sm:space-y-5"
       >
         <div className="home-map-page-heading flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
-          <div>
+          <div className="home-map-heading-copy">
             <h2 className="pi-section-heading flex items-center gap-2">
               <WorkspaceIcon name="home"/>
               <span>Territory map</span>
@@ -597,21 +622,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   ? `Current area: ${globalCounty}, ${globalState && globalState !== 'all' ? globalState : ''}`
                   : globalState && globalState !== 'all'
                     ? `Current area: ${ALL_50_STATES_SUMMARIES[globalState]?.state || globalState}`
-                    : 'Choose a state to review national registry listings, county coverage and agency records.'}
+                    : 'Select a state to explore its counties and EMS/fire agencies.'}
             </p>
           </div>
 
-          <div className="home-map-heading-actions">
-            <button type="button" className="workspace-text-button" onClick={()=>{
-              setSelectedStateCode('all');
-              setRegionFilter('All');
-              saveMapPreference('region','All');
-              resetMapZoom();
-              onClearGeography?.();
-            }}>National view</button>
-            <button type="button" className="workspace-text-button" onClick={()=>onNavigateTab('states_directory')}>Browse agency directory</button>
-            <button type="button" className="workspace-text-button" data-testid="button-browse-national-records" onClick={()=>setRegistryOpen(true)}>Browse national records</button>
-          </div>
+          {compactMapHeader
+            ? <details className="home-map-actions-menu">
+                <summary aria-label="Open map actions">
+                  <MoreHorizontal aria-hidden="true" size={18}/>
+                  <span>Map actions</span>
+                </summary>
+                {mapHeaderActions}
+              </details>
+            : mapHeaderActions}
           {/* Region Filter Segmented Control */}
           <div className="home-map-region-filter max-w-full overflow-x-auto">
             <div className="flex w-max items-center gap-1 bg-[#F5F7FA] dark:bg-[#16243A] p-1 rounded-xl border border-[#DFE6EF] dark:border-[#1E2D42]">
@@ -624,7 +647,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   setRegionFilter(reg);
                   saveMapPreference('region', reg);
                 }}
-                className={`min-h-10 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`min-h-11 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   regionFilter === reg
                     ? 'bg-white dark:bg-[#111C2D] text-[#14283F] dark:text-white shadow-2xs font-bold'
                     : 'text-[#53657B] dark:text-slate-400 hover:text-[#14283F] dark:hover:text-white'
@@ -699,9 +722,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 )}
                 {renderMapZoomControls()}
                 <details className="home-map-mobile-tools md:hidden">
-                  <summary aria-label="Open map tools">
+                  <summary aria-label="Open map controls">
                     <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                    <span>Tools</span>
+                    <span>Map controls</span>
                   </summary>
                   <div className="home-map-mobile-tools-panel">
                     {renderMapZoomControls('mobile-button-map', true)}

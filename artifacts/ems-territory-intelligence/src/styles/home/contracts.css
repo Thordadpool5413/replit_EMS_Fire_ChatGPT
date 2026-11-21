@@ -103,3 +103,10 @@
   border-color: #7899bf !important;
   color: #173f67 !important;
 }
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 .home-map-stage-v2,
+  .home-territory-map-screen-v2 .home-map-viewport {
+    box-shadow: none !important;
+  }
+}

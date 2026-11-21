@@ -467,7 +467,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMin = mapMetricValues.length ? Math.min(...mapMetricValues) : 0;
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
-  const activeMapPalette = getMapPalette(mapMetric, mapColorScheme);
+  const activeMapPalette = useMemo(() => {
+    const palette = getMapPalette(mapMetric, mapColorScheme);
+    if (isPhone && mapColorScheme === 'standard') {
+      return {...palette, stops: ['#FFE4A3', '#FFC36B', '#FF9B66', '#F87570', '#DC4F79']};
+    }
+    return palette;
+  }, [isPhone, mapMetric, mapColorScheme]);
   const mapMetricQuantileColors = useMemo(() => {
     const values = Object.entries(stateMapMetricsByCode)
       .map(([code, metrics]) => ({ code, value: metrics[mapMetric].value }))
@@ -693,7 +699,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   ? `Current area: ${globalCounty}, ${globalState && globalState !== 'all' ? globalState : ''}`
                   : globalState && globalState !== 'all'
                     ? `Current area: ${ALL_50_STATES_SUMMARIES[globalState]?.state || globalState}`
-                    : 'Select a state to explore its counties and EMS/fire agencies.'}
+                    : isPhone ? 'Tap a state to explore counties and agencies.' : 'Select a state to explore its counties and EMS/fire agencies.'}
             </p>
           </div>
 
@@ -972,8 +978,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          stroke={isSelected ? '#F4C86A' : isHovered ? '#FF4B36' : '#9A7658'}
-                          strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
+                          stroke={isSelected ? '#A52F4C' : isHovered ? '#E96A3D' : isPhone ? '#FFFFFF' : '#9A7658'}
+                          strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : isPhone ? 1.3 : 1.15}
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
                           onClick={() => inspectState(st.code)}

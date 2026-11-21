@@ -1,6 +1,6 @@
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 import React, {useRef} from 'react';
-import { MapPinned, Building2, ClipboardList, ChartNoAxesCombined, LayoutGrid } from 'lucide-react';
+import { MapPinned, Building2, Route, ChartNoAxesCombined, Ellipsis } from 'lucide-react';
 import {
   FIELD_WORKSPACE_TABS,
   OPPORTUNITIES_WORKSPACE_TABS,
@@ -13,7 +13,7 @@ import {
 const mobileIcons = {
   home: MapPinned,
   queue: Building2,
-  field: ClipboardList,
+  field: Route,
   reports: ChartNoAxesCombined,
 };
 
@@ -52,7 +52,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setAc
       })}
       <details ref={moreMenuRef} className="pi-mobile-more" onKeyDown={handleMoreKeyDown}>
         <summary ref={moreSummaryRef} className="pi-mobile-nav__item pi-mobile-more__summary" aria-label="More destinations" aria-controls="pi-mobile-more-panel">
-          <span className="pi-mobile-nav__icon"><LayoutGrid aria-hidden="true" size={22} strokeWidth={1.9}/></span><span className="pi-mobile-nav__label">More</span>
+          <span className="pi-mobile-nav__icon"><Ellipsis aria-hidden="true" size={22} strokeWidth={1.9}/></span><span className="pi-mobile-nav__label">More</span>
         </summary>
         <div id="pi-mobile-more-panel" className="pi-mobile-more__panel" role="group" aria-label="More destinations">
           {groups.map(group=><section className="pi-mobile-more__group" key={group.label} aria-label={group.label}>

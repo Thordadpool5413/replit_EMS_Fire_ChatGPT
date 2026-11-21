@@ -1835,8 +1835,8 @@ async function checkProfileAndSources(cdp, dark) {
   assert(sourceCues.statusText, 'Provider source match status is not expressed in text');
   await checkReadable(cdp, `${themeLabel(dark)} source panel`, [
     { name: 'source drawer title', selector: '[aria-label="Evidence and Source Inspection Drawer"] h3' },
-    { name: 'source match status', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-800' },
-    { name: 'source explanation', selector: '[aria-label="Evidence and Source Inspection Drawer"] .text-emerald-900\\/80' },
+    { name: 'source match status', selector: '[data-testid="profile-nppes-link-status"]' },
+    { name: 'source explanation', selector: '[data-testid="profile-nppes-link-explanation"]' },
   ]);
   console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
   await captureThemeScreenshot(cdp, dark, 'agency-profile');

@@ -467,13 +467,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const mapMetricMin = mapMetricValues.length ? Math.min(...mapMetricValues) : 0;
   const mapMetricMax = mapMetricValues.length ? Math.max(...mapMetricValues) : 0;
   const activeMapMetric = STATE_MAP_METRICS.find((metric) => metric.key === mapMetric)!;
-  const activeMapPalette = useMemo(() => {
-    const palette = getMapPalette(mapMetric, mapColorScheme);
-    if (isPhone && mapColorScheme === 'standard') {
-      return {...palette, stops: ['#FFE4A3', '#FFC36B', '#FF9B66', '#F87570', '#DC4F79']};
-    }
-    return palette;
-  }, [isPhone, mapMetric, mapColorScheme]);
+  const activeMapPalette = useMemo(() => getMapPalette(mapMetric, mapColorScheme), [mapMetric, mapColorScheme]);
   const mapMetricQuantileColors = useMemo(() => {
     const values = Object.entries(stateMapMetricsByCode)
       .map(([code, metrics]) => ({ code, value: metrics[mapMetric].value }))
@@ -1107,6 +1101,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
         </div>
 
+        {isPhone && <section className="phone-state-browser" aria-label="Explore states">
+          <label htmlFor="phone-state-search">Explore states <span>{regionFilter === 'All' ? '50 states + DC' : regionFilter}</span></label>
+          <input id="phone-state-search" type="search" placeholder="Find a state" autoComplete="off" value={stateSearch} onChange={event => setStateSearch(event.target.value)}/>
+          <div className="phone-state-browser-results">
+            {Object.values(ALL_50_STATES_SUMMARIES)
+              .filter(state => (regionFilter === 'All' || state.region === regionFilter) && (state.state + ' ' + state.code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
+              .sort((a,b) => a.state.localeCompare(b.state))
+              .map(state => <button key={state.code} type="button" onClick={() => inspectState(state.code)}>
+                <span className="phone-state-dot" aria-hidden="true" style={{backgroundColor: hasReportedValue(stateMapMetricsByCode[state.code][mapMetric].value) ? getStateMapFill(state.code) : '#e2e2e2'}}/>
+                <span>{state.state}</span><strong>{formatStateMapValue(mapMetric, stateMapMetricsByCode[state.code][mapMetric].value)}</strong>
+              </button>)}
+            {!Object.values(ALL_50_STATES_SUMMARIES).some(state => (regionFilter === 'All' || state.region === regionFilter) && (state.state + ' ' + state.code).toLowerCase().includes(stateSearch.trim().toLowerCase())) && <p role="status">No matching states in this region.</p>}
+          </div>
+        </section>}
         <HomeDirectoryStatus
           status={directoryLoad}
           visibleAgencyCount={agencies.length}

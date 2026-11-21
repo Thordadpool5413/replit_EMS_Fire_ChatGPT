@@ -70,5 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: profile-presentation
-          path: generated-artifacts/profile-redesign/results.json
+          path: |
+            generated-artifacts/profile-redesign/results.json
+            generated-artifacts/mobile-field-polish/
           if-no-files-found: ignore

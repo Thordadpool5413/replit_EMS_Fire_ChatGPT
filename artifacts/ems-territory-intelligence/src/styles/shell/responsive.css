@@ -1,11 +1,11 @@
 /* Owner: shell. Cascade phase: responsive. See ../README.md. */
 @media (max-width: 767px) {
-  .pi-mobile-nav { height: calc(3.75rem + env(safe-area-inset-bottom)) !important; }
+  .pi-mobile-nav { height: calc(60px + env(safe-area-inset-bottom)) !important; }
 }
 
 @media (max-width: 767px) {
   .pi-mobile-nav > div {
-    height: 3.75rem !important;
+    height: 60px !important;
     padding-inline: 0.2rem !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   }
@@ -81,7 +81,7 @@
 @media (max-width: 767px) {
 
   .pi-mobile-nav {
-    height: calc(3.75rem + env(safe-area-inset-bottom)) !important;
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
     padding-bottom: env(safe-area-inset-bottom);
     overflow: visible !important;
   }
@@ -90,7 +90,7 @@
 @media (max-width: 767px) {
 
   .pi-mobile-nav > div {
-    height: 3.75rem !important;
+    height: 60px !important;
   }
 }
 
@@ -268,7 +268,7 @@
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     align-items: stretch;
     width: 100%;
-    height: 3.75rem !important;
+    height: 60px !important;
     padding-inline: .2rem !important;
     padding-bottom: 0 !important;
   }
@@ -309,17 +309,22 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .pi-mobile-nav .pi-mobile-nav__icon {
+    position: relative;
+    display: inline-flex;
+  }
   .pi-mobile-nav .pi-mobile-nav__badge {
     position: absolute;
-    top: .08rem;
-    right: .2rem;
+    top: -.25rem;
+    left: calc(100% - .2rem);
+    right: auto;
     display: grid;
     min-width: 1rem;
     min-height: 1rem;
     place-items: center;
     border-radius: 999px;
-    background: var(--pi-action);
-    color: #fff;
+    background: #fff0d9;
+    color: #8c380f;
     font-size: .62rem !important;
     font-weight: 700;
     line-height: 1;

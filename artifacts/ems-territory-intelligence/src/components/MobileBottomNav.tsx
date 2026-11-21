@@ -24,6 +24,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setAc
   ];
   const selectDestination = (tab:string) => {
     if (moreMenuRef.current) moreMenuRef.current.open = false;
+    moreSummaryRef.current?.focus();
     setActiveTab(tab);
   };
   const handleMoreKeyDown = (event:React.KeyboardEvent<HTMLDetailsElement>) => {
@@ -34,10 +35,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setAc
     }
   };
   return <nav className="pi-mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" aria-label="Mobile primary workspaces">
-    <div className="pi-mobile-nav__items">
+    <div className="pi-mobile-nav__items pi-mobile-nav__grid">
       {PRIMARY_WORKSPACES.map(item => <button key={item.id} type="button" className={`pi-mobile-nav__item ${current===item.id?'is-active':''}`} aria-label={item.label} aria-current={current===item.id?'page':undefined} onClick={()=>item.id==='home'&&onGoHome?onGoHome():setActiveTab(item.id)}>
-        <WorkspaceIcon name={item.id}/><span className="pi-mobile-nav__label">{item.id==='field'?'Field':item.label}</span>
-        {item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>}
+        <span className="pi-mobile-nav__icon"><WorkspaceIcon name={item.id}/>{item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount>99?'99+':dayRouteCount}</span>}</span>
+        <span className="pi-mobile-nav__label">{item.id==='field'?'Field':item.label}</span>
       </button>)}
       <details ref={moreMenuRef} className="pi-mobile-more" onKeyDown={handleMoreKeyDown}>
         <summary ref={moreSummaryRef} className="pi-mobile-nav__item pi-mobile-more__summary" aria-label="More destinations" aria-controls="pi-mobile-more-panel">

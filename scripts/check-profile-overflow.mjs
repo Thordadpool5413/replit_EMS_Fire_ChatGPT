@@ -573,7 +573,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     await evaluate(cdp, `(() => {
       const style = document.createElement('style');
       style.id = 'mobile-navigation-enlarged-text-check';
-      style.textContent = 'nav[aria-label="Mobile primary workspaces"] button .pi-mobile-nav__label, nav[aria-label="Mobile primary workspaces"] summary .pi-mobile-nav__label { font-size: 14px !important; }';
+      style.textContent = 'nav.pi-mobile-nav .pi-mobile-nav__item .pi-mobile-nav__label, nav.pi-mobile-nav .pi-mobile-more__summary .pi-mobile-nav__label { font-size: 14px !important; }';
       document.head.append(style);
       return true;
     })()`);
@@ -627,8 +627,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     const buttons = [...nav.querySelectorAll(':scope > .pi-mobile-nav__items > button, :scope > .pi-mobile-nav__items > .pi-mobile-more > summary')].map((button) => {
       const bounds = button.getBoundingClientRect();
       const rect = bounds.toJSON();
-      const label = [...button.querySelectorAll('span:not(.pi-data-number)')]
-        .find((span) => getComputedStyle(span).display !== 'none');
+      const label = button.querySelector('.pi-mobile-nav__label');
       const labelBounds = label?.getBoundingClientRect();
       const range = document.createRange();
       if (label) range.selectNodeContents(label);
@@ -667,10 +666,15 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     });
     return {
       viewport: innerWidth,
+      viewportHeight: innerHeight,
       documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
       nav: {
         left: navBounds.left,
         right: navBounds.right,
+        top: navBounds.top,
+        bottom: navBounds.bottom,
+        position: getComputedStyle(nav).position,
+        bottomInset: getComputedStyle(nav).bottom,
         clientWidth: nav.clientWidth,
         scrollWidth: nav.scrollWidth,
       },
@@ -688,7 +692,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     navigation.buttons.length === 5 &&
       navigation.buttons.every((button) =>
         button.visible && button.width >= 44 && button.height >= 44),
-    `Mobile navigation has an unusable touch target at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify(navigation.buttons)}`,
+    `Mobile navigation has an unusable touch target at ${viewport.width}px${enlargedText ? ' with enlarged text' : ''}: ${JSON.stringify({ viewportHeight: navigation.viewportHeight, nav: navigation.nav, buttons: navigation.buttons })}`,
   );
   const expectedMobileLabels = [
     { accessibleName: 'Map', visibleLabels: ['Map'] },
@@ -744,8 +748,7 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
     const selectedLayout = await evaluate(cdp, `(() => {
       const nav = document.querySelector('nav[aria-label="Mobile primary workspaces"]');
       const button = nav?.querySelector('button[aria-current="page"]');
-      const label = [...(button?.querySelectorAll('span:not(.pi-data-number)') ?? [])]
-        .find((span) => getComputedStyle(span).display !== 'none');
+      const label = button?.querySelector('.pi-mobile-nav__label');
       if (!button || !label) return null;
       const bounds = button.getBoundingClientRect();
       const range = document.createRange();

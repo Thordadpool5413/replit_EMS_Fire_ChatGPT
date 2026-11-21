@@ -4,12 +4,14 @@ on:
     paths:
       - 'artifacts/ems-territory-intelligence/**'
       - 'scripts/check-profile-*.mjs'
+      - 'scripts/check-mobile-*.mjs'
       - '.github/workflows/profile-presentation.yml'
   push:
     branches: [main]
     paths:
       - 'artifacts/ems-territory-intelligence/**'
       - 'scripts/check-profile-*.mjs'
+      - 'scripts/check-mobile-*.mjs'
       - '.github/workflows/profile-presentation.yml'
 permissions:
   contents: read
@@ -59,6 +61,8 @@ jobs:
           done
           cat "$RUNNER_TEMP/profile-preview.log"
           exit 1
+      - name: Responsive mobile map and control checks
+        run: node scripts/check-mobile-field-polish.mjs
       - name: Responsive read-only profile checks
         run: node scripts/check-profile-redesign.mjs
       - name: Keep layout measurements

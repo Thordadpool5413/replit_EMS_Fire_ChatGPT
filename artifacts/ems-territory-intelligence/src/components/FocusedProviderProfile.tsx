@@ -1653,7 +1653,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 {[...PRIMARY_PROFILE_IDS.map(id=>PROFILE_SECTIONS.find(tab=>tab.id===id)!),...PROFILE_SECTIONS.filter(tab=>!PRIMARY_PROFILE_IDS.includes(tab.id))].map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
               </select>
             </div>
-            <div className="acp-nav-tabs hidden md:flex" role="tablist" aria-label="Profile sections" onKeyDown={(event) => {
+            <div className="acp-nav-tabs overflow-x-auto" role="tablist" aria-label="Profile sections" onKeyDown={(event) => {
               if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
               const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="tab"]'));
               const index = buttons.indexOf(document.activeElement as HTMLButtonElement);

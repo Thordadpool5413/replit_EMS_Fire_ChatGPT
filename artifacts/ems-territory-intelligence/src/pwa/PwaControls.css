@@ -14,8 +14,7 @@
 .pwa-status-banner svg { flex-shrink:0; }
 .pwa-status-banner button { min-height:44px; padding:.5rem .75rem; border:1px solid currentColor; border-radius:8px; font-weight:600; }
 .pwa-status-banner button:focus-visible { outline:2px solid var(--pi-focus-ring,#2454c6); outline-offset:2px; }
-
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .pwa-status-banner {
     position: sticky;
     top: calc(4.75rem + env(safe-area-inset-top));

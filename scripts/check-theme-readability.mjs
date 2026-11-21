@@ -266,8 +266,9 @@ async function clickButtonAndScroll(cdp, label) {
     const button = [...document.querySelectorAll('button')]
       .find((candidate) => candidate.innerText.trim() === ${JSON.stringify(label)});
     if (!button) return false;
-    const actions = button.closest('details.home-map-actions-menu');
-    if (actions && !actions.open) actions.querySelector('summary')?.click();
+    const browse = button.closest('.home-map-browse');
+    const browseToggle = browse?.querySelector('.home-map-browse-toggle');
+    if (browseToggle?.getAttribute('aria-expanded') !== 'true') browseToggle?.click();
     const style = getComputedStyle(button);
     if (style.display === 'none' || style.visibility === 'hidden') return false;
     button.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });

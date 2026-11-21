@@ -8,6 +8,7 @@ process.env.PROFILE_HELPERS_ONLY='1';
 const {createCdpClient,evaluate,waitFor,reservePort,waitForJson,clickVisibleButton}=await import('./check-profile-overflow.mjs');
 const production=process.env.MOBILE_AUDIT_TARGET==='production';
 const output=process.env.MOBILE_AUDIT_OUTPUT||'generated-artifacts/mobile-polish';
+const usesMobileShell=(width,height)=>width<768||(width<=1023&&height<=500);
 await mkdir(output,{recursive:true});
 let server;
 let serveUpdate=false;
@@ -52,18 +53,22 @@ try{
     await evaluate(cdp,`new Promise(r=>setTimeout(r,250))`);
     const size=await evaluate(cdp,`({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,height:innerHeight})`);
     assert.ok(size.scroll<=size.width+1,`${name}: page overflow ${JSON.stringify(size)}`);
-    if(width<768&&!(await evaluate(cdp,`Boolean(document.querySelector('dialog[open],[role="dialog"][aria-modal="true"]'))`))){
+    if(usesMobileShell(width,height)&&!(await evaluate(cdp,`Boolean(document.querySelector('dialog[open],[role="dialog"][aria-modal="true"]'))`))){
       if(name==='home'){
-        const layout=await evaluate(cdp,`(()=>{const rect=s=>document.querySelector(s)?.getBoundingClientRect();const viewport=rect('.home-map-viewport');const region=rect('.home-map-region-filter');const regionButton=rect('.home-map-region-filter button');const metric=rect('#home-state-map-metric');const tools=rect('.home-map-mobile-tools > summary');const actions=rect('.home-map-actions-menu > summary');return{viewport:viewport&&{top:viewport.top,bottom:viewport.bottom,width:viewport.width,height:viewport.height},region:region&&{top:region.top,bottom:region.bottom},regionButton:regionButton&&{height:regionButton.height},metric:metric&&{height:metric.height,bottom:metric.bottom},tools:tools&&{top:tools.top,bottom:tools.bottom,position:getComputedStyle(document.querySelector('.home-map-mobile-tools')).position},actions:actions&&{top:actions.top,bottom:actions.bottom},pageHeight:document.documentElement.scrollHeight};})()`);
-        assert.ok(layout.viewport&&layout.viewport.width>0&&layout.viewport.height>=180,`${name}: the map is not prominent at ${width}px: ${JSON.stringify(layout)}`);
-        assert.ok(layout.regionButton?.height>=44,`${name}: region controls are too small at ${width}px`);
-        assert.ok(layout.metric?.height>=44,`${name}: map selector is too small at ${width}px`);
+        const layout=await evaluate(cdp,`(()=>{const rect=s=>document.querySelector(s)?.getBoundingClientRect();const viewport=rect('.home-map-viewport');const region=rect('.home-map-region-filter');const status=rect('[data-testid^="home-directory-status-"]');const regionButtons=[...document.querySelectorAll('.home-map-region-filter button')].map(button=>{const b=button.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(button);const text=[...range.getClientRects()];return{label:button.innerText.trim(),left:b.left,right:b.right,top:b.top,bottom:b.bottom,height:b.height,textFits:text.every(r=>r.left>=b.left-1&&r.right<=b.right+1&&r.top>=b.top-1&&r.bottom<=b.bottom+1)}});const chooseState=rect('.home-map-phone-actions button:first-child');const options=rect('.home-map-phone-actions button[aria-controls="home-map-options"]');const browse=rect('.home-map-browse-toggle');return{viewport:viewport&&{top:viewport.top,bottom:viewport.bottom,width:viewport.width,height:viewport.height},statusTop:status?.top,region:region&&{top:region.top,bottom:region.bottom},regionButtons,chooseState:chooseState&&{top:chooseState.top,bottom:chooseState.bottom,height:chooseState.height},options:options&&{top:options.top,bottom:options.bottom,height:options.height},browse:browse&&{height:browse.height},pageHeight:document.documentElement.scrollHeight};})()`);
+        assert.ok(layout.viewport&&layout.viewport.width>0&&layout.viewport.height>=Math.max(140,width*.45),`${name}: the map is not prominent at ${width}px: ${JSON.stringify(layout)}`);
+        assert.ok(layout.statusTop===undefined||layout.viewport.top<layout.statusTop,`${name}: directory loading state displaced the map at ${width}px: ${JSON.stringify(layout)}`);
+        assert.ok(layout.regionButtons[0]?.height>=44,`${name}: region controls are too small at ${width}px`);
+        assert.ok(layout.regionButtons.length===5&&layout.regionButtons.every(button=>button.height>=44&&button.textFits),`${name}: region labels are clipped at ${width}px: ${JSON.stringify(layout.regionButtons)}`);
+        assert.ok(layout.regionButtons.every((button,index)=>layout.regionButtons.slice(index+1).every(other=>button.right<=other.left+1||other.right<=button.left+1||button.bottom<=other.top+1||other.bottom<=button.top+1)),`${name}: region labels overlap at ${width}px: ${JSON.stringify(layout.regionButtons)}`);
         assert.ok(layout.region.bottom<=layout.viewport.top+1,`${name}: region control overlaps the map at ${width}px`);
-        assert.ok(!layout.tools||layout.tools.position==='static',`${name}: map controls float over the filter area at ${width}px`);
-        assert.ok(!layout.actions||layout.actions.bottom<=layout.region.top+1,`${name}: the map action menu overlaps the region selector at ${width}px`);
+        assert.ok(layout.chooseState?.height>=44&&layout.options?.height>=44,`${name}: state or map-options action is too small at ${width}px`);
+        assert.ok(layout.region.bottom<=layout.chooseState.top+1,`${name}: region control overlaps map actions at ${width}px`);
+        assert.ok(layout.options.bottom<=layout.viewport.top+1,`${name}: map-options control overlaps the map at ${width}px`);
+        assert.ok(layout.browse?.height>=44,`${name}: browse actions are not reachable at ${width}px`);
       }
       const previousScroll=await evaluate(cdp,`window.scrollY`);
-      await evaluate(cdp,`window.scrollTo(0,document.documentElement.scrollHeight)`);
+      await evaluate(cdp,`(()=>{document.documentElement.style.scrollBehavior='auto';document.body.style.scrollBehavior='auto';window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'});})()`);
       await evaluate(cdp,`new Promise(r=>setTimeout(r,100))`);
       const clearance=await evaluate(cdp,`(()=>{const nav=document.querySelector('nav[aria-label="Mobile primary workspaces"]');const main=document.querySelector('main.workspace-grid-shell');if(!nav||!main)return null;const navTop=nav.getBoundingClientRect().top;const flow=[...main.children].filter(el=>getComputedStyle(el).position==='static'&&el.getBoundingClientRect().height>0);const contentBottom=Math.max(0,...flow.map(el=>el.getBoundingClientRect().bottom));return{navTop,contentBottom,scrollTop:scrollY,scrollHeight:document.documentElement.scrollHeight};})()`);
       assert.ok(clearance,`${name}: mobile navigation or page content is missing`);
@@ -101,9 +106,17 @@ try{
     await waitFor(cdp,`Boolean(document.querySelector('[aria-label="Interactive U.S. Territory Map"]'))`,'Home map',60000);
     await evaluate(cdp,`(()=>{const style=document.createElement('style');style.textContent='*{scroll-behavior:auto!important;animation:none!important;transition:none!important}';document.head.appendChild(style)})()`);
     await capture('home',width,height);
-    if(width<768){
-      const mapActions=await evaluate(cdp,`(async()=>{const regionButtons=[...document.querySelectorAll('.home-map-region-filter button')];const south=regionButtons.find(button=>button.innerText.trim()==='South');const all=regionButtons.find(button=>button.innerText.trim()==='All');if(!south||!all)return null;south.click();await new Promise(resolve=>setTimeout(resolve,50));const regionChanged=south.getAttribute('aria-pressed')==='true';all.click();await new Promise(resolve=>setTimeout(resolve,50));const menu=document.querySelector('.home-map-actions-menu');menu?.querySelector('summary')?.click();const national=[...document.querySelectorAll('.home-map-actions-menu button')].find(button=>button.innerText.trim()==='National view');national?.click();await new Promise(resolve=>setTimeout(resolve,50));const regionReset=[...document.querySelectorAll('.home-map-region-filter button')].find(button=>button.innerText.trim()==='All')?.getAttribute('aria-pressed')==='true';if(menu?.open)menu.querySelector('summary')?.click();return{regionChanged,regionReset,nationalAction:Boolean(national)};})()`);
-      assert.ok(mapActions?.regionChanged&&mapActions.regionReset&&mapActions.nationalAction,`Map region or National view action failed: ${JSON.stringify(mapActions)}`);
+    if(usesMobileShell(width,height)){
+      const mapOptionsClicked=await evaluate(cdp,`(()=>{const b=document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]');if(!b)return false;b.click();return true;})()`);
+      assert.ok(mapOptionsClicked,`Map options button is missing at ${width}px`);
+      await waitFor(cdp,`document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.getAttribute('aria-expanded')==='true'`,'map options open');
+      await evaluate(cdp,`new Promise(resolve=>setTimeout(resolve,50))`);
+      const mapOptions=await evaluate(cdp,`(()=>{const panel=document.querySelector('#home-map-options');const metric=document.querySelector('#home-state-map-metric');const map=document.querySelector('.home-map-viewport');const p=panel.getBoundingClientRect(),m=metric.getBoundingClientRect(),v=map.getBoundingClientRect();return{open:panel.dataset.mobileOpen,metricHeight:m.height,metricTop:m.top,metricBottom:m.bottom,mapTop:v.top,mapBottom:v.bottom};})()`);
+      assert.equal(mapOptions.open,'true',`Map options panel failed to open at ${width}px`);
+      assert.ok(mapOptions.metricHeight>=44&&(mapOptions.metricBottom<=mapOptions.mapTop+1||mapOptions.metricTop>=mapOptions.mapBottom-1),`Map options are clipped or overlap the map at ${width}px: ${JSON.stringify(mapOptions)}`);
+      await evaluate(cdp,`document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]').click()`);
+      const mapActions=await evaluate(cdp,`(async()=>{const regionButtons=[...document.querySelectorAll('.home-map-region-filter button')];const south=regionButtons.find(button=>button.innerText.trim()==='South');const all=regionButtons.find(button=>button.innerText.trim()==='All');if(!south||!all)return null;south.click();await new Promise(resolve=>setTimeout(resolve,50));const regionChanged=south.getAttribute('aria-pressed')==='true';all.click();await new Promise(resolve=>setTimeout(resolve,50));const browse=document.querySelector('.home-map-browse-toggle');browse?.click();const national=[...document.querySelectorAll('.home-map-heading-actions button')].find(button=>button.innerText.trim()==='National view');national?.click();await new Promise(resolve=>setTimeout(resolve,50));const regionReset=[...document.querySelectorAll('.home-map-region-filter button')].find(button=>button.innerText.trim()==='All')?.getAttribute('aria-pressed')==='true';const browseClosed=browse?.getAttribute('aria-expanded')==='false';return{regionChanged,regionReset,nationalAction:Boolean(national),browseClosed};})()`);
+      assert.ok(mapActions?.regionChanged&&mapActions.regionReset&&mapActions.nationalAction&&mapActions.browseClosed,`Map region or National view action failed: ${JSON.stringify(mapActions)}`);
     }
     if(production){
       assert.equal(await evaluate(cdp,`Boolean(document.querySelector('.pwa-status-banner'))`),false,'update notice should be hidden before an update is available');
@@ -200,7 +213,7 @@ try{
         }
       }
     }
-    if(width<768){
+    if(usesMobileShell(width,height)){
       await navigate('More');
       const menu=await evaluate(cdp,`(()=>{const d=document.querySelector('.pi-mobile-more');return{open:Boolean(d?.open),links:[...document.querySelectorAll('.pi-mobile-more__link')].length};})()`);
       assert.ok(menu.open&&menu.links>=10,`More destinations menu incomplete: ${JSON.stringify(menu)}`);

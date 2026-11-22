@@ -49,6 +49,10 @@ try {
     }
     await waitFor(cdp, 'Boolean(document.querySelector(".profile-redesign .acp-header"))', 'profile', 60000);
     await ev('document.fonts.ready.then(()=>true)');
+    if(width===390){
+      const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile(path.join(output,(scenario.agency?'fire':'ems')+'-identity.png'),Buffer.from(shot.result.data,'base64'));
+    }
     const storageBefore = await ev('JSON.stringify({...localStorage})');
     assert.equal(await ev('document.querySelector("[data-testid=profile-contact-disclosure]").open'), false, 'Repeated contacts start collapsed');
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');
@@ -66,6 +70,14 @@ try {
       if (width === 390) {
         const shot = await cdp.send('Page.captureScreenshot', {format:'png', captureBeyondViewport:false});
         await writeFile(path.join(output, (scenario.agency ? 'fire' : 'ems')+'-'+topic+'.png'), Buffer.from(shot.result.data,'base64'));
+      }
+      if(width===390){
+        const previous=await ev('document.querySelector(".agency-command-profile").scrollTop');
+        await ev('(()=>{const root=document.querySelector(".agency-command-profile");root.scrollTop=root.scrollHeight})()');
+        await ev('new Promise(r=>setTimeout(r,150))');
+        const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+        await writeFile(path.join(output,(scenario.agency?'fire':'ems')+'-'+topic+'-bottom.png'),Buffer.from(shot.result.data,'base64'));
+        await ev('document.querySelector(".agency-command-profile").scrollTop='+previous);
       }
       results.push(geometry);
       await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));

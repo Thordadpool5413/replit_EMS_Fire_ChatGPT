@@ -283,7 +283,7 @@
   .workspace-destination span span { font-size: .8125rem; line-height: 1.4; }
   .workspace-export-panel { padding: .75rem; gap: .65rem; margin-bottom: .75rem; }
   .workspace-export-panel p { font-size: .8125rem; }
-  .workspace-grid-shell > :not(.home-territory-map-screen-v2) :is(.pi-surface,.workspace-export-panel) { box-shadow: none; }
+  .workspace-grid-shell :is(.pi-surface,.workspace-export-panel) { box-shadow: none; }
   .followup-workspace { padding: .75rem; }
   .followup-filters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .3rem; }
   .followup-filters .workspace-button { min-width: 0; padding: .35rem .25rem; font-size: .75rem; background: var(--pi-surface-bg) !important; color: var(--pi-text-secondary) !important; border: 1px solid var(--pi-border); }

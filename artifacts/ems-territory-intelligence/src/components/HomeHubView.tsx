@@ -136,8 +136,8 @@ const MAP_PALETTES: Record<StateMapMetricKey, StateMapPalette> = {
   ambulances: { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
   'fire-engines': { stops: ['#D8F0FF', '#91D2FF', '#45A9F2', '#1674C9', '#084783'], lowLabel: 'Fewer', highLabel: 'More' },
   pulseiq: { stops: ['#F1E5FF', '#D0AEFF', '#A56CF4', '#753ED1', '#462080'], lowLabel: 'Lower priority', highLabel: 'Higher priority' },
-  'cardiac-survival': { stops: ['#C62835', '#EC6B3D', '#F1C64B', '#88BC4A', '#198A4C'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
-  'scene-transit': { stops: ['#168958', '#63B85D', '#E0C446', '#F08C35', '#C93535'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
+  'cardiac-survival': { stops: ['#EF2345', '#FF7934', '#FFD12E', '#96CE28', '#00A65A'], lowLabel: 'Lower', highLabel: 'Higher · stronger' },
+  'scene-transit': { stops: ['#00A65A', '#96CE28', '#FFD12E', '#FF7934', '#EF2345'], lowLabel: 'Shorter', highLabel: 'Longer · concerning' },
   'acs-population': { stops: ['#D8EEFF', '#9ACFFF', '#58A9ED', '#247BC7', '#0B4C8C'], lowLabel: 'Lower', highLabel: 'Higher' },
   'acs-age65-share': { stops: ['#D8EEFF', '#9ACFFF', '#58A9ED', '#247BC7', '#0B4C8C'], lowLabel: 'Lower share', highLabel: 'Higher share' },
   'acs-poverty-rate': { stops: ['#FFF0B8', '#FFD166', '#FFA63B', '#EE702F', '#BD342E'], lowLabel: 'Lower rate', highLabel: 'Higher rate' },
@@ -933,10 +933,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#FFF0D8" fillOpacity="0.98" stroke="#B68A60" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke="#B68A60" strokeWidth="1.25" strokeDasharray="4 4" />
                   <text x="24" y="373" fill="#674C38" fontSize="10" fontWeight="800" fontFamily="monospace">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#FFF0D8" fillOpacity="0.98" stroke="#B68A60" strokeWidth="1.25" strokeDasharray="4 4" />
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke="#B68A60" strokeWidth="1.25" strokeDasharray="4 4" />
                   <text x="206" y="413" fill="#674C38" fontSize="10" fontWeight="800" fontFamily="monospace">HAWAII (HI)</text>
                 </g>
 
@@ -1012,6 +1012,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     if (!boundary) return null;
                     if (callout) {
                       const anchor = getHomeMapGeometryPoint(boundary.labelX, boundary.labelY, true);
+                      const calloutY = isPhone ? 95 + EAST_COAST_CALLOUT_STATES.indexOf(callout) * 40 : callout.calloutY;
+                      const calloutX = isPhone ? 824 : callout.calloutX;
                       const cIn = regionFilter === 'All' || st.region === regionFilter;
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
@@ -1030,16 +1032,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           aria-hidden="true"
                         >
                           <polyline
-                            points={`${anchor.x},${anchor.y} ${callout.calloutX - 22},${callout.calloutY} ${callout.calloutX - 14},${callout.calloutY}`}
+                            points={`${anchor.x},${anchor.y} ${calloutX - 22},${calloutY} ${calloutX - 14},${calloutY}`}
                             fill="none"
                             stroke={cSel ? '#F4C86A' : cHov ? '#FF4B36' : '#BA906A'}
                             strokeWidth={cSel || cHov ? 1.3 : 0.8}
                             pointerEvents="none"
                           />
                           <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? '#F4C86A' : '#BA906A'} pointerEvents="none" />
-                          <rect x={callout.calloutX - 14} y={callout.calloutY - 9} width="28" height="18" rx="4" fill="#FFE9C6" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />
-                          <rect x={callout.calloutX - 12} y={callout.calloutY - 7} width="4" height="14" rx="1.5" fill={cFill} />
-                          <text x={callout.calloutX + 3} y={callout.calloutY + 3.5} textAnchor="middle" fill={cSel ? '#F4C86A' : '#49372C'} fontSize="10" fontWeight="800" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">{st.code}</text>
+                          <rect x={calloutX - (isPhone ? 27 : 14)} y={calloutY - (isPhone ? 18 : 9)} width={isPhone ? 54 : 28} height={isPhone ? 36 : 18} rx="4" fill="#FFFFFF" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />
+                          <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 10 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 30 : 10} fontWeight="800" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">{st.code}</text>
                         </g>
                       );
                     }
@@ -1053,29 +1055,33 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       boundary.labelY,
                       !isHomeMapInsetState(st.code),
                     );
+                    const phoneOffset = isPhone ? ({
+                      IL: [-8, -6], IN: [-4, 4], OH: [9, -4], KY: [0, 7],
+                      TN: [-8, 7], WV: [10, 0], VA: [9, 6], NY: [0, -5],
+                    } as Record<string, number[]>)[st.code] : undefined;
                     return (
                       <g
                         key={`home-lbl-${st.code}`}
-                        transform={`translate(${labelPoint.x}, ${labelPoint.y})`}
+                        transform={`translate(${labelPoint.x + (phoneOffset?.[0] ?? 0)}, ${labelPoint.y + (phoneOffset?.[1] ?? 0)})`}
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
                         <rect
-                          x="-13"
-                          y="-9"
-                          width="26"
-                          height="18"
+                          x={isPhone ? -25 : -13}
+                          y={isPhone ? -18 : -9}
+                          width={isPhone ? 50 : 26}
+                          height={isPhone ? 36 : 18}
                           rx="5"
-                          fill={isSelected ? '#F4C86A' : '#FFE9C6'}
+                          fill={isSelected ? '#FFD12E' : '#FFFFFF'}
                           fillOpacity="0.98"
                           stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#BA906A'}
                           strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
                         />
                         <text
                           textAnchor="middle"
-                          dy="3.5"
-                          fill={isSelected ? '#17202A' : '#49372C'}
-                          fontSize="10"
+                          dy={isPhone ? 10 : 3.5}
+                          fill="#202124"
+                          fontSize={isPhone ? 30 : 10}
                           fontWeight="800"
                           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
                         >

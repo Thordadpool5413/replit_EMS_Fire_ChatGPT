@@ -1090,7 +1090,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             data-testid="home-map-callout-label"
                           />}
                           <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 6.5 : 3.5)} textAnchor="middle" fill="#172B4D" fontSize={isPhone ? 19 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.2 : undefined}>{st.code}</text>
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 18 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.15 : undefined}>{st.code}</text>
                         </g>
                       );
                     }
@@ -1117,11 +1117,24 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
+                        {isPhone && st.code !== 'HI' && <rect
+                          x="-18"
+                          y="-11"
+                          width="36"
+                          height="22"
+                          rx="5"
+                          fill={isSelected ? '#1E56A8' : isHovered ? '#EEF4FF' : '#FFFFFF'}
+                          fillOpacity="0.97"
+                          stroke={isSelected ? '#17458A' : isHovered ? '#245BB7' : '#B8C5D3'}
+                          strokeWidth={isSelected ? 1.4 : 0.9}
+                          data-testid="home-map-state-label-chip"
+                          data-state-code={st.code}
+                        />}
                         {!isPhone && <rect
-                          x={isPhone ? -25 : -13}
-                          y={isPhone ? -18 : -9}
-                          width={isPhone ? 50 : 26}
-                          height={isPhone ? 36 : 18}
+                          x="-13"
+                          y="-9"
+                          width="26"
+                          height="18"
                           rx="5"
                           fill={isSelected ? '#FFD12E' : '#FFFFFF'}
                           fillOpacity="0.98"
@@ -1129,16 +1142,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
                         />}
                         <text
+                          x="0"
+                          y={isPhone ? 0 : undefined}
                           textAnchor="middle"
-                          dy={isPhone ? 6.5 : 3.5}
-                          fill="#172B4D"
-                          fontSize={isPhone ? 19 : 10}
+                          dy={isPhone ? undefined : 3.5}
+                          dominantBaseline={isPhone ? 'central' : undefined}
+                          fill={isPhone && isSelected ? '#FFFFFF' : isPhone ? '#172B4D' : '#202124'}
+                          fontSize={isPhone ? 18 : 10}
                           fontWeight={isPhone ? 700 : 800}
                           fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
-                          letterSpacing={isPhone ? 0.2 : undefined}
-                          stroke={isPhone ? "#fff" : undefined}
-                          strokeWidth={isPhone ? 2.4 : undefined}
-                          paintOrder={isPhone ? "stroke" : undefined}
+                          letterSpacing={isPhone ? 0.15 : undefined}
                         >
                           {st.code}
                         </text>

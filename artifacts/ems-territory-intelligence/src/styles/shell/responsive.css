@@ -923,8 +923,8 @@
 @media (max-width: 767px) {
   .pi-command-header {
     box-sizing: border-box !important;
-    height: calc(4.75rem + env(safe-area-inset-top)) !important;
-    min-height: calc(4.75rem + env(safe-area-inset-top)) !important;
+    height: calc(3.75rem + env(safe-area-inset-top)) !important;
+    min-height: calc(3.75rem + env(safe-area-inset-top)) !important;
     padding-top: env(safe-area-inset-top) !important;
     overflow: visible !important;
   }
@@ -933,8 +933,8 @@
 @media (max-width: 767px) {
 
   .pi-command-header > div {
-    height: 4.75rem !important;
-    min-height: 4.75rem !important;
+    height: 3.75rem !important;
+    min-height: 3.75rem !important;
     overflow: visible !important;
   }
 }

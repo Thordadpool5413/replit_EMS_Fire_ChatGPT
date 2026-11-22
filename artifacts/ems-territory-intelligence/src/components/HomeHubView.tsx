@@ -598,6 +598,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   const inspectState = (code: string) => {
     if (!window.matchMedia('(max-width: 767px)').matches) return handleStateClick(code);
+    setSelectedStateCode(code);
+    saveMapPreference('state', code);
     setDetailCode(code);
     detailDialog.current?.showModal();
   };
@@ -608,6 +610,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     .filter(([code, state]) => (!compactStatesOnly || EAST_COAST_CALLOUT_STATES.some(s => s.code === code))
       && (state.state + ' ' + code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
     .sort((a, b) => a[1].state.localeCompare(b[1].state));
+  const phoneStates = Object.values(ALL_50_STATES_SUMMARIES)
+    .filter(state => (regionFilter === 'All' || state.region === regionFilter)
+      && (!stateSearch.trim()
+        || state.state.toLowerCase().includes(stateSearch.trim().toLowerCase())
+        || state.code.toLowerCase() === stateSearch.trim().toLowerCase()))
+    .sort((a, b) => a.state.localeCompare(b.state));
+  const phoneRegionStateCount = Object.values(ALL_50_STATES_SUMMARIES)
+    .filter(state => regionFilter === 'All' || state.region === regionFilter).length;
   const mapActions = (
     <div className="home-map-phone-actions">
           <button type="button" aria-label="Choose a state" onClick={() => { setCompactStatesOnly(false); setStateSearch(''); statePicker.current?.showModal(); stateSearchInput.current?.focus(); }}><MapPin aria-hidden="true" size={19}/> Choose state</button>
@@ -745,14 +755,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               {isPhone && mapActions}
               <aside className="home-map-control-rail" aria-label="Territory map controls and preview">
               <div id="home-map-options" data-mobile-open={mapOptionsOpen} className="home-map-control-row home-map-toolbar-v2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                {isPhone && <label htmlFor="atlas-phone-region">Region
+                {isPhone && <label className="home-map-region-control" htmlFor="atlas-phone-region">Region
                   <select id="atlas-phone-region" className="home-map-layer-select" value={regionFilter} onChange={event => {
                     const region = event.target.value as StateMapRegion;
                     setRegionFilter(region);
                     saveMapPreference('region', region);
                   }}>{(['All', 'Northeast', 'Midwest', 'South', 'West'] as const).map(region => <option key={region}>{region}</option>)}</select>
                 </label>}
-                <label htmlFor="home-state-map-metric" className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#53657A]">
+                <label htmlFor="home-state-map-metric" className="home-map-metric-control flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#53657A]">
                   <DataLabel kind="coverage">Shade states by</DataLabel>
                   <select
                     id="home-state-map-metric"
@@ -798,7 +808,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   <span className="atlas-key-scale" aria-hidden="true">{legendBands.map(band => <i key={band.color} style={{backgroundColor:band.color}}/>)}</span>
                 </div><span className="atlas-key-label">Legend <ChevronDown size={16} aria-hidden="true"/></span></summary>
                 <ul>{legendBands.map(band => <li key={band.color}><i style={{backgroundColor: band.color}}/>{band.range}</li>)}</ul>
-                <p>{mapMetricValues.length} of {Object.keys(stateMapMetricsByCode).length} areas reported. Colors group values from low to high. Hatching marks missing data.</p>
+                <p>{mapMetricValues.length} of {Object.keys(stateMapMetricsByCode).length} areas reported. Colors group reported values from low to high; hatching means not reported, not zero.</p>
+                {mapMetric === 'cardiac-survival' && <p className="atlas-key-caveat">Cardiac survival values are reference estimates; a reporting period is not stated. They are not verified agency outcomes.</p>}
               </details>}
               {hasNationwideMapGeometry && !isPhone && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white border border-[#D7E0EA] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#40546A]">
@@ -987,6 +998,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           }}
                           tabIndex={isInRegion ? 0 : -1}
                           role="button"
+                          data-state-code={st.code}
                           aria-pressed={isSelected}
                           aria-label={`${stateAriaLabel}. ${countyCount} counties. Select to explore.`}
                           className={`home-map-state-path cursor-pointer transition-[fill,stroke,opacity] duration-150 focus:outline-none${isSelected ? ' is-selected' : ''}${isHovered ? ' is-hovered' : ''}`}
@@ -1101,27 +1113,50 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <HomeMapUnavailableFallback onBrowseDirectory={() => onNavigateTab('states_directory')} />
               )}
 
-
-
-
+              {isPhone && selectedStateCode !== 'all' && (() => {
+                const state = ALL_50_STATES_SUMMARIES[selectedStateCode];
+                const datum = stateMapMetricsByCode[selectedStateCode]?.[mapMetric];
+                if (!state || !datum) return null;
+                return (
+                  <section className="home-map-selected-state" aria-label={`Selected state: ${state.state}`} data-testid="mobile-selected-state">
+                    <div className="home-map-selected-state-heading">
+                      <span className="home-map-selected-state-kicker">Selected state</span>
+                      <h3>{state.state} <span>{state.code}</span></h3>
+                      <p>{formatInteger(territoryEngine.getCountiesForState(state.code).length)} counties</p>
+                    </div>
+                    <div className="home-map-selected-state-metric">
+                      <span>{activeMapMetric.label}</span>
+                      <strong>{formatStateMapValue(mapMetric, datum.value)}</strong>
+                    </div>
+                    <p className="home-map-selected-state-coverage">{datum.coverage} {datum.period}</p>
+                    <button type="button" onClick={() => handleStateClick(state.code)}>Explore {state.state} counties <span aria-hidden="true">→</span></button>
+                  </section>
+                );
+              })()}
               </div>
               </div>
             </div>
           </div>
         </div>
 
-        {isPhone && <section className="phone-state-browser" aria-label="Explore states">
-          <label htmlFor="phone-state-search">Explore states <span>{regionFilter === 'All' ? '50 states + DC' : regionFilter}</span></label>
-          <input id="phone-state-search" type="search" placeholder="Find a state" autoComplete="off" value={stateSearch} onChange={event => setStateSearch(event.target.value)}/>
-          <div className="phone-state-browser-results">
-            {Object.values(ALL_50_STATES_SUMMARIES)
-              .filter(state => (regionFilter === 'All' || state.region === regionFilter) && (state.state + ' ' + state.code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
-              .sort((a,b) => a.state.localeCompare(b.state))
-              .map(state => <button key={state.code} type="button" onClick={() => inspectState(state.code)}>
+        {isPhone && <details className="phone-state-browser">
+          <summary>
+            <span><strong>Browse states</strong><small>{phoneRegionStateCount === 51 ? '50 states + DC' : `${phoneRegionStateCount} states in ${regionFilter}`}</small></span>
+            <ChevronDown size={18} aria-hidden="true"/>
+          </summary>
+          <div className="phone-state-browser-content">
+            <label htmlFor="phone-state-search">Find a state by name or abbreviation</label>
+            <input id="phone-state-search" type="search" placeholder="Example: California or CA" autoComplete="off" value={stateSearch} onChange={event => setStateSearch(event.target.value)}/>
+            <div className="phone-state-browser-results">
+            {phoneStates.map(state => <button key={state.code} type="button" data-state-code={state.code} onClick={() => inspectState(state.code)}>
                 <span className="phone-state-dot" aria-hidden="true" style={{backgroundColor: hasReportedValue(stateMapMetricsByCode[state.code][mapMetric].value) ? getStateMapFill(state.code) : '#e2e2e2'}}/>
                 <span>{state.state}</span><strong>{formatStateMapValue(mapMetric, stateMapMetricsByCode[state.code][mapMetric].value)}</strong>
               </button>)}
-            {!Object.values(ALL_50_STATES_SUMMARIES).some(state => (regionFilter === 'All' || state.region === regionFilter) && (state.state + ' ' + state.code).toLowerCase().includes(stateSearch.trim().toLowerCase())) && <p role="status">No matching states in this region.</p>}
+            {!phoneStates.length && <div className="phone-state-empty" role="status">
+              <p>No states match “{stateSearch}”{regionFilter !== 'All' ? ` in ${regionFilter}` : ''}.</p>
+              <button type="button" onClick={() => { setStateSearch(''); setRegionFilter('All'); saveMapPreference('region', 'All'); }}>Clear search and show all states</button>
+            </div>}
+            </div>
           </div>
         </section>}
         <HomeDirectoryStatus

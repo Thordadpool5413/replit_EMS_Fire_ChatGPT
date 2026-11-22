@@ -107,6 +107,29 @@ try{
     await evaluate(cdp,`(()=>{const style=document.createElement('style');style.textContent='*{scroll-behavior:auto!important;animation:none!important;transition:none!important}';document.head.appendChild(style)})()`);
     await capture('home',width,height);
     if(usesMobileShell(width,height)){
+      if(width<768){
+        const browser=await evaluate(cdp,`(()=>{const d=document.querySelector('.phone-state-browser');return d?{exists:true,open:d.open,summaryHeight:d.querySelector('summary')?.getBoundingClientRect().height}:null})()`);
+        assert.ok(browser?.exists&&!browser.open&&browser.summaryHeight>=44,`State browser should start compact and remain accessible at ${width}px: ${JSON.stringify(browser)}`);
+        await evaluate(cdp,`document.querySelector('.phone-state-browser summary').click()`);
+        await waitFor(cdp,`Boolean(document.querySelector('#phone-state-search'))&&document.querySelector('#phone-state-search').getBoundingClientRect().height>=40`,'expanded state search');
+        await evaluate(cdp,`(()=>{const input=document.querySelector('#phone-state-search');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'CA');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+        await waitFor(cdp,`document.querySelectorAll('.phone-state-browser-results [data-state-code]').length===1`,'exact state abbreviation search');
+        const abbreviationMatches=await evaluate(cdp,`[...document.querySelectorAll('.phone-state-browser-results [data-state-code]')].map(button=>button.dataset.stateCode)`);
+        assert.deepEqual(abbreviationMatches,['CA'],`State abbreviation should not match unrelated names at ${width}px`);
+        await evaluate(cdp,`(()=>{const input=document.querySelector('#phone-state-search');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'ZZ');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+        await waitFor(cdp,`Boolean(document.querySelector('.phone-state-empty button'))`,'state search recovery action');
+        await evaluate(cdp,`document.querySelector('.phone-state-empty button').click()`);
+        await waitFor(cdp,`document.querySelector('#phone-state-search')?.value===''&&document.querySelectorAll('.phone-state-browser-results [data-state-code]').length===51`,'clear state search recovery');
+        await evaluate(cdp,`(()=>{const input=document.querySelector('#phone-state-search');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'CA');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+        await waitFor(cdp,`document.querySelectorAll('.phone-state-browser-results [data-state-code]').length===1`,'restore California search');
+        await evaluate(cdp,`document.querySelector('.phone-state-browser-results [data-state-code="CA"]').click()`);
+        await waitFor(cdp,`document.querySelector('.home-state-details[open] #home-state-detail-title')?.textContent==='California'`,'selected-state details');
+        const selectedState=await evaluate(cdp,`(()=>({code:document.querySelector('[data-testid="mobile-selected-state"]')?.getAttribute('aria-label'),mapSelected:Boolean(document.querySelector('.home-map-state-path[data-state-code="CA"].is-selected'))}))()`);
+        assert.ok(selectedState.code==='Selected state: California'&&selectedState.mapSelected,`Selected-state feedback is missing at ${width}px: ${JSON.stringify(selectedState)}`);
+        await evaluate(cdp,`document.querySelector('.home-state-details .home-state-picker-heading button').click()`);
+        await waitFor(cdp,`!document.querySelector('.home-state-details[open]')`,'close state details');
+        assert.ok(await evaluate(cdp,`Boolean(document.querySelector('[data-testid="mobile-selected-state"] button'))`),`Selected state action is missing after closing details at ${width}px`);
+      }
       const mapOptionsClicked=await evaluate(cdp,`(()=>{const b=document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]');if(!b)return false;b.click();return true;})()`);
       assert.ok(mapOptionsClicked,`Map options button is missing at ${width}px`);
       await waitFor(cdp,`document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.getAttribute('aria-expanded')==='true'`,'map options open');

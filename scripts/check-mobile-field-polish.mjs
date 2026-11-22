@@ -74,6 +74,23 @@ try {
     results.push({width,height,...initial});
     console.log('PASS mobile map layout and interactions '+width+'x'+height);
   }
+
+  await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
+  await cdp.send('Page.navigate',{url:base});
+  await waitFor(cdp,'Boolean(document.querySelector(".pi-mobile-nav"))','navigation',60000);
+  const destinations = ['Agencies','Field Work','Reports'];
+  await ev('document.querySelector(".pi-mobile-more").open=true');
+  const extra = await ev('[...document.querySelectorAll(".pi-mobile-more__link")].map(e=>e.textContent.trim())');
+  for (const destination of [...destinations,...extra]) {
+    await ev('document.querySelector(".pi-mobile-more").open=true');
+    await ev('(()=>{const b=[...document.querySelectorAll(".pi-mobile-nav button")].find(b=>(b.getAttribute("aria-label")||b.textContent).trim()==='+JSON.stringify(destination)+');if(!b)throw Error("Missing destination");b.click()})()');
+    await ev('new Promise(r=>setTimeout(r,1000))');
+    await ev('window.scrollTo(0,0);document.querySelector(".pi-mobile-more").open=false');
+    const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(output,'workspace-'+destination.replace(/[^a-z0-9]+/gi,'-')+'.png'),Buffer.from(shot.result.data,'base64'));
+    const pageWidth=await ev('document.documentElement.scrollWidth');
+    assert.ok(pageWidth<=391,'Workspace overflow '+destination);
+  }
   await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));
 } finally {
   if(cdp)cdp.close();

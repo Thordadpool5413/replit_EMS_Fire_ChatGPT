@@ -71,6 +71,6 @@ jobs:
         with:
           name: profile-presentation
           path: |
-            generated-artifacts/profile-redesign/results.json
+            generated-artifacts/profile-redesign/
             generated-artifacts/mobile-field-polish/
           if-no-files-found: ignore

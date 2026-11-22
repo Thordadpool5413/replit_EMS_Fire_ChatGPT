@@ -37,6 +37,8 @@ try {
     const before=await ev('JSON.stringify({...localStorage})');
     const measure=()=>ev(`(()=>{const r=s=>{const e=document.querySelector(s),b=e.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,map:r(".home-map-viewport"),nav:r(".pi-mobile-nav"),actions:r(".home-map-phone-actions"),padding:parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom)}})()`);
     const initial=await measure();
+    const capture = await cdp.send('Page.captureScreenshot', {format:'png', captureBeyondViewport:false});
+    await writeFile(path.join(output, 'home-'+width+'x'+height+'.png'), Buffer.from(capture.result.data, 'base64'));
     console.log("MAP_GEOMETRY "+JSON.stringify({width,height,...initial}));
     console.log("MAP_ANCESTORS "+JSON.stringify(await ev('(()=>{let e=document.querySelector(".home-map-viewport"),out=[];while(e){let b=e.getBoundingClientRect(),c=getComputedStyle(e);out.push({class:e.className,width:b.width,min:c.minWidth,max:c.maxWidth,display:c.display});e=e.parentElement}return out})()')));
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);

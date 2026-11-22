@@ -105,6 +105,9 @@ try {
     const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
     await writeFile(path.join(output,'geography-'+name+'.png'),Buffer.from(shot.result.data,'base64'));
     assert.ok(await ev('document.documentElement.scrollWidth<=391'),'Geography width '+name);
+    await ev('document.querySelector(".equipment-filter-disclosure").open=true');
+    assert.ok(await ev('document.querySelector(".equipment-filter-select").getBoundingClientRect().height>=44'),'Expanded equipment filter target');
+    await ev('document.querySelector(".equipment-filter-disclosure").open=false');
   }
   await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));
 } finally {

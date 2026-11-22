@@ -209,7 +209,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             onClick={() => setActiveTab('claims_ingest')}
             className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
               activeTab === 'claims_ingest'
-                ? 'bg-blue-50/80 dark:bg-blue-950/50 border-[#1E3A8A] shadow-2xs'
+                ? 'bg-[var(--pi-action-subtle)] border-[var(--pi-action)] shadow-2xs'
                 : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white'
             }`}
           >
@@ -226,7 +226,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             onClick={() => setActiveTab('procurement')}
             className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
               activeTab === 'procurement'
-                ? 'bg-blue-50/80 dark:bg-blue-950/50 border-[#1E3A8A] shadow-2xs'
+                ? 'bg-[var(--pi-action-subtle)] border-[var(--pi-action)] shadow-2xs'
                 : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white'
             }`}
           >
@@ -243,7 +243,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             onClick={() => setActiveTab('confidential_outcomes')}
             className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
               activeTab === 'confidential_outcomes'
-                ? 'bg-blue-50/80 dark:bg-blue-950/50 border-[#1E3A8A] shadow-2xs'
+                ? 'bg-[var(--pi-action-subtle)] border-[var(--pi-action)] shadow-2xs'
                 : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white'
             }`}
           >
@@ -260,7 +260,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
             onClick={() => setActiveTab('installed_base')}
             className={`p-3 rounded-lg text-left border transition-all text-xs cursor-pointer ${
               activeTab === 'installed_base'
-                ? 'bg-blue-50/80 dark:bg-blue-950/50 border-[#1E3A8A] shadow-2xs'
+                ? 'bg-[var(--pi-action-subtle)] border-[var(--pi-action)] shadow-2xs'
                 : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white'
             }`}
           >

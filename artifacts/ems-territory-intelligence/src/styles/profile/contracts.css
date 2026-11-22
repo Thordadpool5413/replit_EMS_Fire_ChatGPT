@@ -399,7 +399,7 @@
   .agency-command-profile.profile-redesign .fr-workspace { grid-template-columns: minmax(220px, .85fr) minmax(0, 1.5fr); }
 }
 @media screen and (max-width: 767px) {
-  .agency-command-profile.profile-redesign .profile-brief-layout { padding: 16px 12px 32px; }
+  .agency-command-profile.profile-redesign .profile-brief-layout { padding: 10px 10px 24px; }
   .agency-command-profile.profile-redesign[data-laptop-density="compact"] .acp-next-step .workspace-button { min-height: 46px !important; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock {
     display: flex !important; min-width: 0; width: 100%; max-width: 100%;
@@ -413,9 +413,9 @@
   .agency-command-profile.profile-redesign .profile-workspace > header nav { min-width: 0; max-width: 100%; }
   .agency-command-profile.profile-redesign .profile-workspace > header > div > div { width: 100%; max-width: 100%; min-width: 0; }
   .agency-command-profile.profile-redesign .profile-mobile-breadcrumb { flex: 1 1 0; min-width: 0; max-width: 100%; }
-  .agency-command-profile.profile-redesign .acp-header { padding: 20px 16px 16px !important; grid-template-columns: minmax(0, 1fr); }
+  .agency-command-profile.profile-redesign .acp-header { padding: 12px 12px 10px !important; grid-template-columns: minmax(0, 1fr); }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock { justify-self: stretch; justify-content: start; }
-  .agency-command-profile.profile-redesign .acp-name { font-size: 26px !important; }
+  .agency-command-profile.profile-redesign .acp-name { font-size: 22px !important; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure { width: calc(100% - 24px); margin-top: 12px; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure > summary { padding: 12px; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure-heading { gap: 0; flex-direction: column; }
@@ -426,19 +426,19 @@
   .agency-command-profile.profile-redesign .fr-zones,
   .agency-command-profile.profile-redesign .dsb-grid { grid-template-columns: minmax(0, 1fr) !important; }
   .agency-command-profile.profile-redesign .acp-nav { width: 100%; margin-inline: 0; }
-  .agency-command-profile.profile-redesign :is(.acp-ledger, .acp-detail-body, .aib, .dsb-full, .deal-discovery-workspace, .afn > *, .fr-heading, .fr-list, .fr-detail) { padding: 16px !important; }
-  .agency-command-profile.profile-redesign .acp-detail > summary { padding: 14px !important; flex-wrap: wrap; }
+  .agency-command-profile.profile-redesign :is(.acp-ledger, .acp-detail-body, .aib, .dsb-full, .deal-discovery-workspace, .afn > *, .fr-heading, .fr-list, .fr-detail) { padding: 12px !important; }
+  .agency-command-profile.profile-redesign .acp-detail > summary { padding: 10px 12px !important; flex-wrap: wrap; }
   .agency-command-profile.profile-redesign .acp-detail-summary { max-width: 100%; }
   .agency-command-profile.profile-redesign .acp-next-step { align-items: stretch; flex-direction: column; }
-  .agency-command-profile.profile-redesign .acp-monitor-feature { grid-template-columns: minmax(0, 1fr); padding: 16px !important; }
+  .agency-command-profile.profile-redesign .acp-monitor-feature { grid-template-columns: minmax(0, 1fr); padding: 12px !important; }
   .agency-command-profile.profile-redesign .acp-monitor-art { width: 72px; }
-  .agency-command-profile.profile-redesign .acp-monitor-model { font-size: 22px !important; }
+  .agency-command-profile.profile-redesign .acp-monitor-model { font-size: 18px !important; }
   .agency-command-profile.profile-redesign .acp-ctx { grid-template-columns: 20px minmax(0, 1fr); }
   .agency-command-profile.profile-redesign .acp-ctx-open { grid-column: 2; justify-self: start; max-width: none; }
   .agency-command-profile.profile-redesign .acp-scale-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agency-command-profile.profile-redesign .adm-row {
     grid-template-columns: 36px minmax(0, 1fr);
-    grid-template-areas: "a w" ". s" ". c"; padding: 16px !important;
+    grid-template-areas: "a w" ". s" ". c"; padding: 12px !important;
   }
   .agency-command-profile.profile-redesign .adm-contact { justify-items: start; }
   .agency-command-profile.profile-redesign .afn-row { grid-template-columns: minmax(0, 1fr); }
@@ -449,6 +449,83 @@
   .agency-command-profile.profile-redesign .fr-form-grid { grid-template-columns: minmax(0, 1fr); }
   /* Topic controls must outrank the desktop primary-button variants. */
   .agency-command-profile.profile-redesign #profile-topic-panel :is(button, select) { min-height: 44px !important; }
+  .agency-command-profile.profile-redesign :is(
+    [class~="text-[9px]"], [class~="text-[10px]"], [class~="text-[11px]"],
+    [class~="text-[12px]"], .text-xs, .pi-meta, .pi-supporting,
+    .acp-meta, .acp-ledger-meta, .acp-ledger-overline, .acp-ledger-label,
+    .acp-ledger-qty, .acp-ledger-foot, .acp-ctx-label, .acp-ctx-detail, .acp-panel-title,
+    .acp-monitor-kicker, .acp-monitor-art-label, .acp-monitor-facts span,
+    .acp-detail-summary, .acp-dates, .acp-gaps, .acp-next-step small, .acp-next-step span,
+    .profile-attention-evidence, .profile-attention-source, .profile-attention-timing, .profile-attention-notice,
+    .aib-note, .aib-scope, .aib-sub, .aib-eq-label, .aib-eq-src, .aib-eq-srcstate, .aib-eq-qty,
+    .aib-src-meta, .aib-src-state, .aib-device-note, .aib-unit, .aib-b, .aib-n, .aib-row,
+    .aib-tag, .afi-note, .afi-kind, .afi-flag, .afi-unavailable,
+    .pds-hint, .pds-local, .pds-gaps, .pds-chip, .pds-empty,
+    .adm-title, .adm-src, .adm-contact, .adm-hint, .adm-source,
+    .apt-when, .apt-detail, .apt-state, .apt-foot,
+    .afn-meta, .afn-next, .afn-form label,
+    .fr-heading p, .fr-eyebrow, .fr-local, .fr-hint, .fr-fact-label, .fr-facts button small,
+    .fr-mark, .fr-zone-label, .fr-source, .fr-status,
+    .deal-plan-save, .deal-plan-footnote, .workspace-eyebrow,
+    .dsb-kicker, .dsb-hero p, .dsb-facts dt, .dsb-footer
+  ) { font-size: 12px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign :is(
+    .text-sm, .acp-ledger-value, .acp-ctx-value, .acp-strong, .acp-next-step strong,
+    .profile-attention-label, .aib-eq-value, .aib-f, .pds-device, .pds-quote,
+    .adm-name, .apt-title, .afn-text, .fr-facts button strong, .fr-zone,
+    .deal-plan-grid label, .deal-commitment label, .afi, .acm, .fact-review
+  ) { font-size: 14px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign :is(
+    .acp-ledger-title, .aib-title, .aib-label, .acp-detail-title,
+    .afn h3, .fr-heading h2, .deal-discovery-workspace h2, .deal-commitment h3,
+    .dsb-hero h2.pi-section-heading, .dsb-card h3, .pi-section-heading
+  ) { font-size: 16px !important; line-height: 1.3 !important; letter-spacing: -.02em; }
+
+
+  .agency-command-profile.profile-redesign .acp-notice { display: block; font-size: 12px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign .acp-notice > svg { display: inline; margin-right: 5px; vertical-align: middle; }
+  .agency-command-profile.profile-redesign .acp-notice strong { margin-right: 5px; }
+  .agency-command-profile.profile-redesign .acp-monitor-art-label { font-size: 9px !important; white-space: nowrap; }
+  .agency-command-profile.profile-redesign .acp-next-step { flex-direction: row; align-items: center; padding: 10px 12px !important; gap: 10px; }
+  .agency-command-profile.profile-redesign .acp-next-step .workspace-button { flex: none; padding-inline: 10px; }
+  .agency-command-profile.profile-redesign .adm-group { margin-top: 10px; }
+  .agency-command-profile.profile-redesign .adm-group > h3 { padding: 10px 12px !important; font-size: 13px !important; }
+  .agency-command-profile.profile-redesign .aib-device-feature { padding: 12px !important; }
+  .agency-command-profile.profile-redesign .aib-keyfacts { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .agency-command-profile.profile-redesign .aib-keyfacts dt { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .aib-keyfacts dd { font-size: 14px !important; }
+
+  .agency-command-profile.profile-redesign :is(table,.afi-table) { font-size: 13px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign :is(th,td) { padding: 8px !important; }
+  .agency-command-profile.profile-redesign th { font-size: 12px !important; }
+
+  .agency-command-profile.profile-redesign .acp-detail:not([open]) .acp-detail-summary { display: none; }
+  .agency-command-profile.profile-redesign .acp-detail > summary { display: grid; grid-template-columns: 18px minmax(0,1fr) 16px; gap: 6px 8px; }
+  .agency-command-profile.profile-redesign .acp-detail-text { grid-column: 2; min-width: 0; }
+  .agency-command-profile.profile-redesign .acp-detail > summary > .afi-kind { grid-column: 2; justify-self: start; font-size: 11px !important; }
+  .agency-command-profile.profile-redesign .acp-detail-chev { grid-column: 3; grid-row: 1; }
+  .agency-command-profile.profile-redesign .aib-num { font-size: 22px !important; }
+  .agency-command-profile.profile-redesign .aib-finding { padding-block: 10px !important; gap: 8px; }
+  .agency-command-profile.profile-redesign { font-size: 14px; line-height: 1.45; }
+  .agency-command-profile.profile-redesign .acp-section-intro { padding: 4px 0 10px !important; margin-bottom: 10px !important; }
+  .agency-command-profile.profile-redesign .acp-section-intro h2 { font-size: 18px !important; }
+  .agency-command-profile.profile-redesign .acp-section-intro p { font-size: 13px !important; line-height: 1.45; }
+  .agency-command-profile.profile-redesign :is(.acp-overview,.acp-overview-primary,.acp-overview-secondary,.acp-hero,.acp-detail-body) { gap: 12px !important; }
+  .agency-command-profile.profile-redesign :is(.acp-panel,.acp-detail,.acp-ledger,.acp-context,.aib,.deal-discovery-workspace,.fact-review,.adm-group,.afn > *,.dsb-full,.pi-surface) { border-radius: 10px !important; box-shadow: none !important; }
+  .agency-command-profile.profile-redesign .acp-monitor-feature { grid-template-columns: 48px minmax(0,1fr); gap: 10px; }
+  .agency-command-profile.profile-redesign .acp-monitor-art { width: 44px; }
+  .agency-command-profile.profile-redesign .acp-monitor-facts { gap: 8px; margin-top: 6px; }
+  .agency-command-profile.profile-redesign .acp-scale { padding: 12px !important; }
+  .agency-command-profile.profile-redesign .acp-scale-grid dt { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .acp-scale-grid dd { font-size: 20px !important; }
+  .agency-command-profile.profile-redesign :is(.brief-location,.brief-people,.brief-contact) { padding: 12px; }
+  .agency-command-profile.profile-redesign .acp-detail-summary { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .acp-type { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary { flex: 1 1 160px; }
+  .agency-command-profile.profile-redesign :is(.workspace-button,.profile-meeting-primary,.pds-btn) { font-size: 13px !important; }
+  .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { padding-block: 6px; }
+  .agency-command-profile.profile-redesign .acp-nav { border-radius: 10px; padding: 4px; }
+  .agency-command-profile.profile-redesign .acp-nav-tabs { display: none !important; }
 }
 @media screen and (prefers-reduced-motion: reduce) {
   .agency-command-profile.profile-redesign *,
@@ -467,7 +544,7 @@
 
 @media (max-width:767px) {
   .agency-command-profile.profile-redesign .acp-nav { display:block !important; }
-  .agency-command-profile.profile-redesign .acp-nav .acp-nav-tabs { display:flex !important; flex-wrap:nowrap !important; overflow-x:auto; width:100%; gap:.35rem; padding-block:.4rem; scrollbar-width:thin; }
+  .agency-command-profile.profile-redesign .acp-nav .acp-nav-tabs { display:none !important; }
   .acp-nav .acp-tab { flex:0 0 auto; min-height:44px !important; padding:.5rem .75rem !important; font-size:.875rem !important; }
   .acp-nav .acp-tab.is-active { background:#fff0df; color:#a33f20; border-color:#e7b18c; }
   .acp-nav-select { min-height:44px !important; font-size:16px !important; }

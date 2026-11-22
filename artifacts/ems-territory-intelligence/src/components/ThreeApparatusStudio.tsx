@@ -312,6 +312,7 @@ function createContactShadow(): THREE.Mesh {
 
 export const ThreeApparatusStudio: React.FC<ThreeApparatusStudioProps> = ({ activeAccount }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [webglUnavailable, setWebglUnavailable] = useState(false);
 
   // UI state (consolidated into collapsible bottom dock)
   const [apparatusType, setApparatusType] = useState<ApparatusType>(() => {
@@ -377,7 +378,13 @@ export const ThreeApparatusStudio: React.FC<ThreeApparatusStudioProps> = ({ acti
     camera.lookAt(0, 1.2, 0);
 
     // 2. Renderer Setup with PBR Tone Mapping
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    } catch {
+      setWebglUnavailable(true);
+      return;
+    }
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -950,6 +957,22 @@ export const ThreeApparatusStudio: React.FC<ThreeApparatusStudioProps> = ({ acti
       }
     };
   }, []);
+
+  if (webglUnavailable) return (
+    <section className="pi-surface p-4 space-y-3" aria-label="Equipment reference">
+      <h2 className="font-semibold">Equipment reference</h2>
+      <p className="text-sm" role="status">This browser could not start the 3D viewer. Product reference topics are available below.</p>
+      <label className="block text-sm">Reference model
+        <select className="block w-full min-h-11 text-base border rounded-lg p-2 mt-1 bg-transparent" value={apparatusType} onChange={event => setApparatusType(event.target.value as ApparatusType)}>
+          <option value="ambulance">Ambulance</option><option value="engine">Fire engine</option><option value="defib">Monitor / defibrillator</option>
+        </select>
+      </label>
+      <ul className="divide-y">{APPARATUS_HOTSPOTS[apparatusType].map(hotspot => <li className="py-3" key={hotspot.id}>
+        <h3 className="text-sm font-semibold">{hotspot.label}</h3>
+        <p className="text-sm">{hotspot.subsystem}</p>
+      </li>)}</ul>
+    </section>
+  );
 
   return (
     <div className="apparatus-studio-stage relative w-full h-[min(620px,calc(var(--app-visible-height,100dvh)-9rem))] min-h-[22rem] md:h-[620px] rounded-xl overflow-hidden border border-slate-300 dark:border-slate-800 bg-slate-950 shadow-md select-none">

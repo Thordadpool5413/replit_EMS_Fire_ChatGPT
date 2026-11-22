@@ -1248,8 +1248,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             {/* Interactive SVG U.S. State Boundary Choropleth Map Canvas */}
             <div className="relative bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden p-3">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex items-center gap-2">
-                  <label htmlFor="us-state-map-layer" className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                  <label htmlFor="us-state-map-layer" className="text-xs font-semibold text-slate-700 dark:text-slate-200 shrink-0 whitespace-nowrap">
                     Map data
                   </label>
                   <select
@@ -1257,7 +1257,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       data-testid="select-state-map-layer"
                     value={stateMapLayer}
                       onChange={(event) => setStateMapLayer(event.target.value as StateMapLayer)}
-                    className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="min-h-11 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-2 text-base font-semibold text-slate-800 sm:w-auto sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   >
                     <option value="agency-records">Agency records in this app</option>
                       <option value="fema-loss">FEMA county expected annual loss</option>
@@ -1285,7 +1285,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               </div>
               <svg
                 viewBox="0 0 920 500"
-                className="w-full h-[380px] sm:h-[440px] select-none"
+                className="w-full h-auto sm:h-[440px] select-none"
                 role="group"
                 preserveAspectRatio="xMidYMid meet"
                 aria-label="United States state boundary map. Select a state to inspect its counties."

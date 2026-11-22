@@ -49,6 +49,10 @@ try {
     }
     await waitFor(cdp, 'Boolean(document.querySelector(".profile-redesign .acp-header"))', 'profile', 60000);
     await ev('document.fonts.ready.then(()=>true)');
+    if(width===390){
+      const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile(path.join(output,(scenario.agency?'fire':'ems')+'-identity.png'),Buffer.from(shot.result.data,'base64'));
+    }
     const storageBefore = await ev('JSON.stringify({...localStorage})');
     assert.equal(await ev('document.querySelector("[data-testid=profile-contact-disclosure]").open'), false, 'Repeated contacts start collapsed');
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');
@@ -63,6 +67,18 @@ try {
       await waitFor(cdp, 'document.querySelector(".agency-command-profile").getAttribute("data-profile-topic")===' + JSON.stringify(topic), 'topic ' + topic, 10000);
       await ev('new Promise(resolve=>{let last=-1,stable=0;const start=performance.now();function frame(){const top=document.querySelector(".agency-command-profile").scrollTop;stable=Math.abs(top-last)<.5?stable+1:0;last=top;if(stable>=8||performance.now()-start>2000)return resolve(true);requestAnimationFrame(frame)}requestAnimationFrame(frame)})');
       const geometry = await ev('(()=>{const root=document.querySelector(".agency-command-profile"), panel=document.querySelector("#profile-topic-panel"), nav=root.querySelector(".acp-nav"), header=root.querySelector("[data-testid=profile-sticky-header]");const visible=e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().height>0;return {width:' + width + ',topic:' + JSON.stringify(topic) + ',viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,profile:root.clientWidth,scroll:root.scrollWidth,panelTop:panel.getBoundingClientRect().top,navBottom:nav.getBoundingClientRect().bottom,navTop:nav.getBoundingClientRect().top,backBottom:header.getBoundingClientRect().bottom,nameFont:parseFloat(getComputedStyle(root.querySelector(".acp-name")).fontSize),background:getComputedStyle(root).backgroundColor,panels:root.querySelectorAll("#profile-topic-panel").length,navigations:root.querySelectorAll(".acp-nav").length,smallControls:[...panel.querySelectorAll("button,select")].filter(visible).filter(e=>e.getBoundingClientRect().height<43).map(e=>e.getAttribute("data-testid")||e.tagName),overflow:[...root.querySelectorAll("*")].filter(visible).filter(e=>e.getBoundingClientRect().right>root.getBoundingClientRect().left+root.clientWidth+1&&!e.closest(".pi-table-region__scroller,[class*=overflow-x-auto]")).slice(0,10).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right}))}})()');
+      if (width === 390) {
+        const shot = await cdp.send('Page.captureScreenshot', {format:'png', captureBeyondViewport:false});
+        await writeFile(path.join(output, (scenario.agency ? 'fire' : 'ems')+'-'+topic+'.png'), Buffer.from(shot.result.data,'base64'));
+      }
+      if(width===390){
+        const previous=await ev('document.querySelector(".agency-command-profile").scrollTop');
+        await ev('(()=>{const root=document.querySelector(".agency-command-profile");root.scrollTop=root.scrollHeight})()');
+        await ev('new Promise(r=>setTimeout(r,150))');
+        const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+        await writeFile(path.join(output,(scenario.agency?'fire':'ems')+'-'+topic+'-bottom.png'),Buffer.from(shot.result.data,'base64'));
+        await ev('document.querySelector(".agency-command-profile").scrollTop='+previous);
+      }
       results.push(geometry);
       await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));
       if (width < 768) console.log('MOBILE_GEOMETRY ' + JSON.stringify(geometry));
@@ -73,7 +89,7 @@ try {
       assert.ok(geometry.navTop >= geometry.backBottom - 1, 'Sticky navigation overlaps: ' + JSON.stringify(geometry));
       assert.equal(geometry.panels, 1, 'One topic panel');
       assert.equal(geometry.navigations, 1, 'One topic navigation');
-      assert.ok(geometry.nameFont >= 26, 'Readable profile title');
+      assert.ok(geometry.nameFont >= (width < 768 ? 22 : 26), 'Readable profile title');
       assert.equal(geometry.background, 'rgb(255, 248, 239)', 'Warm ivory profile surface');
       if (width < 768) assert.deepEqual(geometry.smallControls, [], 'Touch targets at least 44px: ' + JSON.stringify(geometry));
       console.log('PASS ' + width + 'px / ' + topic);

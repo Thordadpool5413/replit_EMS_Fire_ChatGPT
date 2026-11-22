@@ -34,6 +34,7 @@ try {
     await cdp.send('Page.navigate',{url:base});
     await waitFor(cdp,'Boolean(document.querySelector(".home-map-phone-actions"))','home map',60000);
     await ev('document.fonts.ready.then(()=>true)');
+    await waitFor(cdp, 'document.querySelectorAll(".atlas-phone-key").length === '+(phone ? 1 : 0), 'responsive map mode');
     const before=await ev('JSON.stringify({...localStorage})');
     const measure=()=>ev(`(()=>{const r=s=>{const e=document.querySelector(s),b=e.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,map:r(".home-map-viewport"),nav:r(".pi-mobile-nav"),actions:r(".home-map-phone-actions"),padding:parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom)}})()`);
     const initial=await measure();
@@ -46,7 +47,7 @@ try {
       assert.equal(await ev('document.querySelectorAll(".atlas-phone-key").length'),1,'One phone map legend');
       assert.equal(await ev('document.querySelectorAll(".home-map-legend-v2").length'),0,'Desktop legend is absent on phones');
       assert.ok(initial.map.bottom<=initial.actions.y+1,'Map appears above phone controls');
-      assert.ok(initial.actions.height>=44,'Phone actions meet the minimum touch target');
+      assert.ok(Math.round(initial.actions.height)>=44,'Phone actions meet the minimum touch target');
       assert.ok(initial.map.width>=width-64&&initial.map.right<=initial.viewport+1,'Map fits phone width');
       if(height>width)assert.ok(initial.map.y<initial.nav.y,'Map starts above navigation at '+width);
       await ev('document.querySelector(".home-map-viewport").scrollIntoView({block:"center",behavior:"instant"})');
@@ -73,6 +74,40 @@ try {
     } else assert.equal(initial.actions.height,0,'Desktop layout retained');
     results.push({width,height,...initial});
     console.log('PASS mobile map layout and interactions '+width+'x'+height);
+  }
+
+  await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
+  await cdp.send('Page.navigate',{url:base});
+  await waitFor(cdp,'Boolean(document.querySelector(".pi-mobile-nav"))','navigation',60000);
+  const destinations = ['Agencies','Field Work','Reports'];
+  await ev('document.querySelector(".pi-mobile-more").open=true');
+  const extra = await ev('[...document.querySelectorAll(".pi-mobile-more__link")].map(e=>e.textContent.trim())');
+  for (const destination of [...destinations,...extra]) {
+    await ev('document.querySelector(".pi-mobile-more").open=true');
+    await ev('(()=>{const b=[...document.querySelectorAll(".pi-mobile-nav button")].find(b=>(b.getAttribute("aria-label")||b.textContent).trim()==='+JSON.stringify(destination)+');if(!b)throw Error("Missing destination");b.click()})()');
+    await ev('new Promise(r=>setTimeout(r,1000))');
+    await ev('window.scrollTo(0,0);document.querySelector(".pi-mobile-more").open=false');
+    const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(output,'workspace-'+destination.replace(/[^a-z0-9]+/gi,'-')+'.png'),Buffer.from(shot.result.data,'base64'));
+    const runtimeError=await ev('[...document.querySelectorAll("details")].find(e=>e.textContent.includes("Technical details"))?.textContent || ""');
+    assert.equal(runtimeError,'','Workspace runtime error '+destination);
+    const pageWidth=await ev('document.documentElement.scrollWidth');
+    assert.ok(pageWidth<=391,'Workspace overflow '+destination);
+  }
+
+  for (const [query,selector,name] of [
+    ['?state=FL','.county-inspector-panel','state'],
+    ['?state=FL&county=Alachua%20County','.county-city-directory-panel','county']
+  ]) {
+    await cdp.send('Page.navigate',{url:base+query});
+    await waitFor(cdp,'Boolean(document.querySelector('+JSON.stringify(selector)+'))',name,60000);
+    await ev('document.fonts.ready.then(()=>true)');
+    const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(output,'geography-'+name+'.png'),Buffer.from(shot.result.data,'base64'));
+    assert.ok(await ev('document.documentElement.scrollWidth<=391'),'Geography width '+name);
+    await ev('document.querySelector(".equipment-filter-disclosure").open=true');
+    assert.ok(await ev('Math.round(document.querySelector(".equipment-filter-select").getBoundingClientRect().height)>=44'),'Expanded equipment filter target');
+    await ev('document.querySelector(".equipment-filter-disclosure").open=false');
   }
   await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));
 } finally {

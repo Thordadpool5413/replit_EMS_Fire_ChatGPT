@@ -64,6 +64,7 @@ jobs:
       - name: Responsive mobile map and control checks
         run: node scripts/check-mobile-field-polish.mjs
       - name: Responsive read-only profile checks
+        if: always()
         run: node scripts/check-profile-redesign.mjs
       - name: Keep layout measurements
         if: always()
@@ -71,6 +72,6 @@ jobs:
         with:
           name: profile-presentation
           path: |
-            generated-artifacts/profile-redesign/results.json
+            generated-artifacts/profile-redesign/
             generated-artifacts/mobile-field-polish/
           if-no-files-found: ignore

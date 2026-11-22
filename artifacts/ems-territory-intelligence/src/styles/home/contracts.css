@@ -428,3 +428,13 @@
 @media (max-width: 767px) and (max-height: 599px) {
   .phone-state-browser { max-height: 180px; }
 }
+
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2:has(.phone-state-browser) {
+    height: auto !important; min-height: 0 !important;
+  }
+  .home-territory-map-screen-v2 > .phone-state-browser {
+    flex: none; height: 220px; min-height: 220px;
+  }
+  .phone-state-browser-results { flex: 1; grid-auto-rows: 44px; }
+}

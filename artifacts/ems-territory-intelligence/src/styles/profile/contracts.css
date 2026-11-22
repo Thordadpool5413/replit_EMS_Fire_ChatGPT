@@ -506,6 +506,11 @@
   .agency-command-profile.profile-redesign .acp-detail-chev { grid-column: 3; grid-row: 1; }
   .agency-command-profile.profile-redesign .aib-num { font-size: 22px !important; }
   .agency-command-profile.profile-redesign .aib-finding { padding-block: 10px !important; gap: 8px; }
+  .agency-command-profile.profile-redesign,
+  .agency-command-profile.profile-redesign .profile-workspace {
+    --acp-bg: #fff; --tp-wash: #fff; --pi-surface-subtle: #fff;
+    background-color: #fff !important;
+  }
   .agency-command-profile.profile-redesign { font-size: 14px; line-height: 1.45; }
   .agency-command-profile.profile-redesign .acp-section-intro { padding: 4px 0 10px !important; margin-bottom: 10px !important; }
   .agency-command-profile.profile-redesign .acp-section-intro h2 { font-size: 18px !important; }

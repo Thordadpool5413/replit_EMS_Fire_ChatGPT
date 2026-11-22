@@ -44,6 +44,7 @@ try {
     console.log("MAP_ANCESTORS "+JSON.stringify(await ev('(()=>{let e=document.querySelector(".home-map-viewport"),out=[];while(e){let b=e.getBoundingClientRect(),c=getComputedStyle(e);out.push({class:e.className,width:b.width,min:c.minWidth,max:c.maxWidth,display:c.display});e=e.parentElement}return out})()')));
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);
     if(phone){
+      assert.ok(await ev('[...document.querySelectorAll(".home-map-svg text")].filter(t=>/^[A-Z]{2}$/.test(t.textContent)).every(t=>parseFloat(getComputedStyle(t).fontSize)*Math.abs(t.getScreenCTM().a)>=9.5)'), 'State labels remain readable at phone scale');
       assert.equal(await ev('document.querySelectorAll(".atlas-phone-key").length'),1,'One phone map legend');
       assert.equal(await ev('document.querySelectorAll(".home-map-legend-v2").length'),0,'Desktop legend is absent on phones');
       assert.ok(initial.map.bottom<=initial.actions.y+1,'Map appears above phone controls');

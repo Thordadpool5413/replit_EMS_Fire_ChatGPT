@@ -90,14 +90,14 @@ try {
       assert.equal(geometry.panels, 1, 'One topic panel');
       assert.equal(geometry.navigations, 1, 'One topic navigation');
       assert.ok(geometry.nameFont >= (width < 768 ? 22 : 26), 'Readable profile title');
-      assert.equal(geometry.background, 'rgb(255, 248, 239)', 'Warm ivory profile surface');
+      assert.equal(geometry.background, width < 768 ? 'rgb(255, 255, 255)' : 'rgb(255, 248, 239)', 'Profile surface matches viewport');
       if (width < 768) assert.deepEqual(geometry.smallControls, [], 'Touch targets at least 44px: ' + JSON.stringify(geometry));
       console.log('PASS ' + width + 'px / ' + topic);
       } catch (error) { failures.push(error.message); console.error('LAYOUT_FAILURE ' + error.message); }
     }
     // Theme changes stay visual and must keep this profile readable.
     await ev('document.documentElement.classList.add("dark")');
-    assert.equal(await ev('getComputedStyle(document.querySelector(".agency-command-profile")).backgroundColor'), 'rgb(255, 248, 239)');
+    assert.equal(await ev('getComputedStyle(document.querySelector(".agency-command-profile")).backgroundColor'), width < 768 ? 'rgb(255, 255, 255)' : 'rgb(255, 248, 239)');
     await ev('document.documentElement.classList.remove("dark")');
   }
   await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));

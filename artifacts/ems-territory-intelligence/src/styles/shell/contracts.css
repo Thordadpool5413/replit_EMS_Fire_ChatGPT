@@ -399,3 +399,8 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
   .pi-mobile-nav .pi-mobile-nav__item .pi-mobile-nav__icon { color: #716963; }
   .pi-mobile-nav .pi-mobile-nav__item.is-active .pi-mobile-nav__icon { color: #a83f20; }
 }
+
+
+@media (max-width: 767px) {
+  .pi-app-shell, .pi-app-shell .workspace-grid-shell { background: #fff !important; }
+}

@@ -43,6 +43,18 @@ const HOME_MAP_GEOMETRY_TRANSFORM =
   `scale(${HOME_MAP_GEOMETRY_SCALE}) ` +
   `translate(${-HOME_MAP_SCALE_ORIGIN_X} ${-HOME_MAP_SCALE_ORIGIN_Y})`;
 const isHomeMapInsetState = (stateCode: string) => stateCode === 'AK' || stateCode === 'HI';
+const PHONE_STATE_LABEL_ANCHORS: Record<string, { x: number; y: number }> = {
+  CA: { x: 96, y: 250 },
+  FL: { x: 590, y: 394 },
+  HI: { x: 292, y: 463 },
+  KY: { x: 548, y: 218 },
+  LA: { x: 452, y: 338 },
+  ME: { x: 758, y: 90 },
+  NY: { x: 665, y: 130 },
+  PA: { x: 646, y: 164 },
+  VA: { x: 620, y: 217 },
+  WV: { x: 610, y: 200 },
+};
 const getHomeMapGeometryPoint = (x: number, y: number, scaleGeometry: boolean) => ({
   x: scaleGeometry ? HOME_MAP_SCALE_ORIGIN_X + (x - HOME_MAP_SCALE_ORIGIN_X) * HOME_MAP_GEOMETRY_SCALE : x,
   y: scaleGeometry ? HOME_MAP_SCALE_ORIGIN_Y + (y - HOME_MAP_SCALE_ORIGIN_Y) * HOME_MAP_GEOMETRY_SCALE : y,
@@ -1078,7 +1090,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             data-testid="home-map-callout-label"
                           />}
                           <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 7 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 21 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "Manrope, Inter, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}>{st.code}</text>
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 6.5 : 3.5)} textAnchor="middle" fill="#172B4D" fontSize={isPhone ? 19 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.2 : undefined}>{st.code}</text>
                         </g>
                       );
                     }
@@ -1087,15 +1099,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     const isSelected = selectedStateCode === st.code;
                     const isHovered = hoveredStateCode === st.code;
                     const datum = stateMapMetricsByCode[st.code][mapMetric];
+                    const phoneOffset = isPhone ? ({
+                      IL: [-8, -6], IN: [-4, 4], OH: [9, -4], TN: [-8, 7],
+                    } as Record<string, number[]>)[st.code] : undefined;
+                    const labelAnchor = isPhone
+                      ? PHONE_STATE_LABEL_ANCHORS[st.code] ?? { x: boundary.labelX, y: boundary.labelY }
+                      : { x: boundary.labelX, y: boundary.labelY };
                     const labelPoint = getHomeMapGeometryPoint(
-                      boundary.labelX,
-                      boundary.labelY,
+                      labelAnchor.x,
+                      labelAnchor.y,
                       !isHomeMapInsetState(st.code),
                     );
-                    const phoneOffset = isPhone ? ({
-                      IL: [-8, -6], IN: [-4, 4], OH: [9, -4], KY: [0, 7],
-                      TN: [-8, 7], WV: [10, 0], VA: [9, 6], NY: [0, -5],
-                    } as Record<string, number[]>)[st.code] : undefined;
                     return (
                       <g
                         key={`home-lbl-${st.code}`}
@@ -1116,13 +1130,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         />}
                         <text
                           textAnchor="middle"
-                          dy={isPhone ? 7 : 3.5}
-                          fill="#202124"
-                          fontSize={isPhone ? 21 : 10}
+                          dy={isPhone ? 6.5 : 3.5}
+                          fill="#172B4D"
+                          fontSize={isPhone ? 19 : 10}
                           fontWeight={isPhone ? 700 : 800}
-                          fontFamily={isPhone ? "Manrope, Inter, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
+                          fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
+                          letterSpacing={isPhone ? 0.2 : undefined}
                           stroke={isPhone ? "#fff" : undefined}
-                          strokeWidth={isPhone ? 3 : undefined}
+                          strokeWidth={isPhone ? 2.4 : undefined}
                           paintOrder={isPhone ? "stroke" : undefined}
                         >
                           {st.code}

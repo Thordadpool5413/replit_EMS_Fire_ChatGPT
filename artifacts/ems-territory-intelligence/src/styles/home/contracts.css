@@ -692,7 +692,9 @@
   .home-territory-map-screen-v2 .home-map-viewport {
     display: flex !important;
     flex: none !important;
-    width: 100% !important;
+    width: calc(100% + 1.25rem) !important;
+    max-width: none !important;
+    margin-left: -.625rem !important;
     height: auto !important;
     min-height: 0 !important;
     aspect-ratio: 872 / 494 !important;

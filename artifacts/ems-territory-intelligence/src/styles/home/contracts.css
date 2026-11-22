@@ -651,3 +651,79 @@
     grid-template-areas: "region" "metric" "zoom";
   }
 }
+
+/* Phone home is a map-led document, not a viewport-sized dashboard. Let the
+   existing state browser contribute real navigation content below the map. */
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .home-territory-map-screen-v2 > * + * {
+    margin-top: .55rem !important;
+  }
+  .home-territory-map-screen-v2 > .grid {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
+  .home-territory-map-screen-v2 > .grid > .min-w-0 {
+    display: block !important;
+    min-height: 0 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-stage-v2 {
+    display: flex !important;
+    flex: none !important;
+    min-height: 0 !important;
+    gap: .55rem !important;
+    margin: 0 !important;
+  }
+  .home-territory-map-screen-v2 .home-map-content-v2,
+  .home-territory-map-screen-v2 .home-map-visual-v2 {
+    display: flex !important;
+    flex: none !important;
+    min-height: 0 !important;
+    gap: .35rem !important;
+  }
+  .home-territory-map-screen-v2 .home-map-viewport {
+    display: flex !important;
+    flex: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 872 / 494 !important;
+    overflow: auto !important;
+  }
+  .home-territory-map-screen-v2 .home-map-viewport svg[data-fit-screen="true"] {
+    flex: none;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: auto;
+  }
+  .home-territory-map-screen-v2 .phone-state-browser {
+    max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .home-territory-map-screen-v2 .phone-state-browser-results {
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto !important;
+  }
+  .home-territory-map-screen-v2 .phone-state-browser-results > button {
+    min-height: 46px;
+    font-size: .8125rem;
+  }
+  .home-territory-map-screen-v2 .phone-state-browser > summary:focus-visible,
+  .home-territory-map-screen-v2 .phone-state-browser input:focus-visible,
+  .home-territory-map-screen-v2 .home-map-control-rail select:focus-visible {
+    outline: 3px solid #2e64c5;
+    outline-offset: 2px;
+  }
+}

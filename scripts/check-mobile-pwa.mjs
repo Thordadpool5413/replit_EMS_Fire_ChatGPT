@@ -111,8 +111,10 @@ try{
     await capture('home',width,height);
     if(usesMobileShell(width,height)){
       if(width<768){
-        const browser=await evaluate(cdp,`(()=>{const d=document.querySelector('.phone-state-browser');return d?{exists:true,open:d.open,summaryHeight:d.querySelector('summary')?.getBoundingClientRect().height}:null})()`);
-        assert.ok(browser?.exists&&!browser.open&&browser.summaryHeight>=44,`State browser should start compact and remain accessible at ${width}px: ${JSON.stringify(browser)}`);
+        const browser=await evaluate(cdp,`(()=>{const d=document.querySelector('.phone-state-browser'),results=d?.querySelector('.phone-state-browser-results');return d?{exists:true,open:d.open,summaryHeight:d.querySelector('summary')?.getBoundingClientRect().height,resultCount:results?.querySelectorAll('[data-state-code]').length,resultsOverflow:results&&getComputedStyle(results).overflowY,pageHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight}:null})()`);
+        assert.ok(browser?.exists&&browser.open&&browser.summaryHeight>=44&&browser.resultCount===51&&browser.resultsOverflow==='visible'&&browser.pageHeight>browser.viewportHeight,`State browser should use the phone's lower space and let the page scroll naturally at ${width}px: ${JSON.stringify(browser)}`);
+        await evaluate(cdp,`document.querySelector('.phone-state-browser summary').click()`);
+        await waitFor(cdp,`!document.querySelector('.phone-state-browser')?.open`,'collapse state browser');
         await evaluate(cdp,`document.querySelector('.phone-state-browser summary').click()`);
         await waitFor(cdp,`Boolean(document.querySelector('#phone-state-search'))&&document.querySelector('#phone-state-search').getBoundingClientRect().height>=40`,'expanded state search');
         await setInputValue('#phone-state-search','CA');

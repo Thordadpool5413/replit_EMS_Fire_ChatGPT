@@ -211,6 +211,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [browseOpen, setBrowseOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const phoneStateBrowser = useRef<HTMLDetailsElement>(null);
+  const [phoneBrowserOpen, setPhoneBrowserOpen] = useState(true);
   const detailDialog = useRef<HTMLDialogElement>(null);
   const [detailCode, setDetailCode] = useState<string | null>(null);
   const [compactStatesOnly, setCompactStatesOnly] = useState(false);
@@ -606,6 +607,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   };
   const selectPhoneState = (code: string) => {
     if (phoneStateBrowser.current) phoneStateBrowser.current.open = false;
+    setPhoneBrowserOpen(false);
     inspectState(code);
   };
   const detail = detailCode ? stateMapMetricsByCode[detailCode][mapMetric] : null;
@@ -1150,7 +1152,12 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
         </div>
 
-        {isPhone && <details ref={phoneStateBrowser} className="phone-state-browser">
+        {isPhone && <details
+          ref={phoneStateBrowser}
+          className="phone-state-browser"
+          open={phoneBrowserOpen}
+          onToggle={(event) => setPhoneBrowserOpen(event.currentTarget.open)}
+        >
           <summary>
             <span><strong>Browse states</strong><small>{phoneRegionStateCount === 51 ? '50 states + DC' : `${phoneRegionStateCount} states in ${regionFilter}`}</small></span>
             <ChevronDown size={18} aria-hidden="true"/>

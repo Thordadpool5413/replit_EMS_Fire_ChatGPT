@@ -71,6 +71,11 @@ try{
         if(layout.region)assert.ok(layout.region.bottom<=layout.chooseState.top+1,`${name}: region control overlaps map actions at ${width}px`);
         assert.ok(layout.options.bottom<=layout.viewport.top+1||layout.options.top>=layout.viewport.bottom-1,`${name}: map-options control overlaps the map at ${width}px`);
         assert.ok(layout.browse?.height>=44,`${name}: browse actions are not reachable at ${width}px`);
+        if(width<768){
+          const labels=await evaluate(cdp,`(()=>{const v=document.querySelector('.home-map-viewport')?.getBoundingClientRect();const boxes=[...document.querySelectorAll('[data-testid="home-map-callout-label"]')].map(e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return{viewport:v&&{left:v.left,right:v.right,top:v.top,bottom:v.bottom},boxes};})()`);
+          assert.ok(labels.boxes.length>0&&labels.viewport&&labels.boxes.every(b=>b.left>=labels.viewport.left-1&&b.right<=labels.viewport.right+1&&b.top>=labels.viewport.top-1&&b.bottom<=labels.viewport.bottom+1),`${name}: map callout labels are missing or clipped at ${width}px: ${JSON.stringify(labels)}`);
+          assert.ok(labels.boxes.every((b,i)=>labels.boxes.slice(i+1).every(o=>b.right<=o.left+1||o.right<=b.left+1||b.bottom<=o.top+1||o.bottom<=b.top+1)),`${name}: map callout labels overlap at ${width}px: ${JSON.stringify(labels.boxes)}`);
+        }
       }
       const previousScroll=await evaluate(cdp,`window.scrollY`);
       await evaluate(cdp,`(()=>{document.documentElement.style.scrollBehavior='auto';document.body.style.scrollBehavior='auto';window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'});})()`);

@@ -1078,7 +1078,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             data-testid="home-map-callout-label"
                           />}
                           <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 8.5 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 26 : 10} fontWeight={isPhone ? 600 : 800} fontFamily={isPhone ? "Instrument Sans, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}>{st.code}</text>
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 7 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 21 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "Manrope, Inter, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}>{st.code}</text>
                         </g>
                       );
                     }
@@ -1116,11 +1116,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         />}
                         <text
                           textAnchor="middle"
-                          dy={isPhone ? 8.5 : 3.5}
+                          dy={isPhone ? 7 : 3.5}
                           fill="#202124"
-                          fontSize={isPhone ? 26 : 10}
-                          fontWeight={isPhone ? 600 : 800}
-                          fontFamily={isPhone ? "Instrument Sans, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
+                          fontSize={isPhone ? 21 : 10}
+                          fontWeight={isPhone ? 700 : 800}
+                          fontFamily={isPhone ? "Manrope, Inter, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
                           stroke={isPhone ? "#fff" : undefined}
                           strokeWidth={isPhone ? 3 : undefined}
                           paintOrder={isPhone ? "stroke" : undefined}

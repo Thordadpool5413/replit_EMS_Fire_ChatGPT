@@ -34,6 +34,7 @@ try {
     await cdp.send('Page.navigate',{url:base});
     await waitFor(cdp,'Boolean(document.querySelector(".home-map-phone-actions"))','home map',60000);
     await ev('document.fonts.ready.then(()=>true)');
+    await waitFor(cdp, 'document.querySelectorAll(".atlas-phone-key").length === '+(phone ? 1 : 0), 'responsive map mode');
     const before=await ev('JSON.stringify({...localStorage})');
     const measure=()=>ev(`(()=>{const r=s=>{const e=document.querySelector(s),b=e.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth,map:r(".home-map-viewport"),nav:r(".pi-mobile-nav"),actions:r(".home-map-phone-actions"),padding:parseFloat(getComputedStyle(document.querySelector("main")).paddingBottom)}})()`);
     const initial=await measure();

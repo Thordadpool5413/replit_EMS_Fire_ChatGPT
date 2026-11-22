@@ -1034,14 +1034,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <polyline
                             points={`${anchor.x},${anchor.y} ${calloutX - 22},${calloutY} ${calloutX - 14},${calloutY}`}
                             fill="none"
-                            stroke={cSel ? '#F4C86A' : cHov ? '#FF4B36' : '#BA906A'}
+                            stroke={cSel ? '#F4C86A' : cHov ? '#FF4B36' : isPhone ? '#aeb4b8' : '#BA906A'}
                             strokeWidth={cSel || cHov ? 1.3 : 0.8}
                             pointerEvents="none"
                           />
                           <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? '#F4C86A' : '#BA906A'} pointerEvents="none" />
-                          <rect x={calloutX - (isPhone ? 27 : 14)} y={calloutY - (isPhone ? 18 : 9)} width={isPhone ? 54 : 28} height={isPhone ? 36 : 18} rx="4" fill="#FFFFFF" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />
+                          {!isPhone && <rect x={calloutX - (isPhone ? 27 : 14)} y={calloutY - (isPhone ? 18 : 9)} width={isPhone ? 54 : 28} height={isPhone ? 36 : 18} rx="4" fill="#FFFFFF" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />}
                           <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 10 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 30 : 10} fontWeight="800" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">{st.code}</text>
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 8.5 : 3.5)} textAnchor="middle" fill="#202124" fontSize={isPhone ? 26 : 10} fontWeight={isPhone ? 600 : 800} fontFamily={isPhone ? "Instrument Sans, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}>{st.code}</text>
                         </g>
                       );
                     }
@@ -1066,7 +1066,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
-                        <rect
+                        {!isPhone && <rect
                           x={isPhone ? -25 : -13}
                           y={isPhone ? -18 : -9}
                           width={isPhone ? 50 : 26}
@@ -1076,14 +1076,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           fillOpacity="0.98"
                           stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#BA906A'}
                           strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
-                        />
+                        />}
                         <text
                           textAnchor="middle"
-                          dy={isPhone ? 10 : 3.5}
+                          dy={isPhone ? 8.5 : 3.5}
                           fill="#202124"
-                          fontSize={isPhone ? 30 : 10}
-                          fontWeight="800"
-                          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+                          fontSize={isPhone ? 26 : 10}
+                          fontWeight={isPhone ? 600 : 800}
+                          fontFamily={isPhone ? "Instrument Sans, system-ui, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
+                          stroke={isPhone ? "#fff" : undefined}
+                          strokeWidth={isPhone ? 3 : undefined}
+                          paintOrder={isPhone ? "stroke" : undefined}
                         >
                           {st.code}
                         </text>

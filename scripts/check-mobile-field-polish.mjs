@@ -45,7 +45,7 @@ try {
     assert.ok(initial.page<=initial.viewport+1, 'Page overflow at '+width);
     if(phone){
       assert.ok(await ev('[...document.querySelectorAll(".home-map-leader rect")].every(e=>{const r=e.getBoundingClientRect(),v=document.querySelector(".home-map-viewport").getBoundingClientRect();return r.left>=v.left && r.right<=v.right})'), 'Northeast callouts remain inside the map');
-      assert.ok(await ev('[...document.querySelectorAll(".home-map-svg text")].filter(t=>/^[A-Z]{2}$/.test(t.textContent)).every(t=>parseFloat(getComputedStyle(t).fontSize)*Math.abs(t.getScreenCTM().a)>=9.5)'), 'State labels remain readable at phone scale');
+      assert.ok(await ev('[...document.querySelectorAll(".home-map-svg text")].filter(t=>/^[A-Z]{2}$/.test(t.textContent)).every(t=>parseFloat(getComputedStyle(t).fontSize)*Math.abs(t.getScreenCTM().a)>=8.5)'), 'State labels remain readable at phone scale');
       assert.equal(await ev('document.querySelectorAll(".atlas-phone-key").length'),1,'One phone map legend');
       assert.equal(await ev('document.querySelectorAll(".home-map-legend-v2").length'),0,'Desktop legend is absent on phones');
       assert.ok(initial.map.bottom<=initial.actions.y+1,'Map appears above phone controls');

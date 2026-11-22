@@ -52,8 +52,8 @@ const PHONE_STATE_LABEL_ANCHORS: Record<string, { x: number; y: number }> = {
   ME: { x: 758, y: 90 },
   NY: { x: 665, y: 130 },
   PA: { x: 646, y: 164 },
-  VA: { x: 620, y: 217 },
-  WV: { x: 610, y: 200 },
+  VA: { x: 646, y: 229 },
+  WV: { x: 606, y: 194 },
 };
 const getHomeMapGeometryPoint = (x: number, y: number, scaleGeometry: boolean) => ({
   x: scaleGeometry ? HOME_MAP_SCALE_ORIGIN_X + (x - HOME_MAP_SCALE_ORIGIN_X) * HOME_MAP_GEOMETRY_SCALE : x,

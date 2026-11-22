@@ -271,6 +271,27 @@
   .workspace-data-status { align-items:flex-start; }
   .workspace-data-status .workspace-button { margin-left:0; }
   .workspace-hub-heading { padding-top:.25rem; }
+  .workspace-page-heading { gap: .65rem !important; padding-block: .4rem .7rem !important; }
+  .workspace-page-heading h1 { font-size: 1.25rem !important; line-height: 1.2; }
+  .workspace-page-heading p:last-child { font-size: .8125rem !important; line-height: 1.45; }
+  .workspace-page-heading .workspace-icon-badge { width: 32px; height: 32px; border-radius: 9px; }
+  .workspace-page-heading .workspace-eyebrow { display: none; }
+  .workspace-hub-summary { margin-bottom: .65rem; padding-block: .5rem; gap: .35rem .65rem; }
+  .workspace-destination { padding: .75rem; gap: .65rem; border-radius: 10px; }
+  .workspace-destination > span:not(.workspace-icon-badge) { gap: .2rem; }
+  .workspace-destination strong { font-size: .875rem; }
+  .workspace-destination span span { font-size: .8125rem; line-height: 1.4; }
+  .workspace-export-panel { padding: .75rem; gap: .65rem; margin-bottom: .75rem; }
+  .workspace-export-panel p { font-size: .8125rem; }
+  .workspace-grid-shell > :not(.home-territory-map-screen-v2) :is(.pi-surface,.workspace-export-panel) { box-shadow: none; }
+  .followup-workspace { padding: .75rem; }
+  .followup-filters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .3rem; }
+  .followup-filters .workspace-button { min-width: 0; padding: .35rem .25rem; font-size: .75rem; background: var(--pi-surface-bg) !important; color: var(--pi-text-secondary) !important; border: 1px solid var(--pi-border); }
+  .followup-filters .workspace-button[aria-pressed="true"] { background: var(--pi-action-subtle) !important; color: var(--pi-action-ink) !important; border-color: var(--pi-action); outline: 0; }
+  .workspace-grid-shell :is(.p-6,.p-5) { padding: .75rem; }
+  .workspace-grid-shell :is(.text-3xl,.text-2xl) { font-size: 1.25rem; line-height: 1.25; }
+  .workspace-grid-shell :is(.space-y-6,.space-y-8) > :not([hidden]) ~ :not([hidden]) { margin-top: .85rem; }
+
 }
 @media(prefers-reduced-motion:reduce) { .workspace-destination { transition:none; } }
 

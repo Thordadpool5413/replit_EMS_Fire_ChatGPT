@@ -89,6 +89,8 @@ try {
     await ev('window.scrollTo(0,0);document.querySelector(".pi-mobile-more").open=false');
     const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
     await writeFile(path.join(output,'workspace-'+destination.replace(/[^a-z0-9]+/gi,'-')+'.png'),Buffer.from(shot.result.data,'base64'));
+    const runtimeError=await ev('[...document.querySelectorAll("details")].find(e=>e.textContent.includes("Technical details"))?.textContent || ""');
+    if(runtimeError)console.log('WORKSPACE_ERROR '+destination+' '+runtimeError);
     const pageWidth=await ev('document.documentElement.scrollWidth');
     assert.ok(pageWidth<=391,'Workspace overflow '+destination);
   }

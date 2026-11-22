@@ -1297,7 +1297,7 @@ export default function App() {
         )}
 
         <React.Suspense fallback={<WorkspaceLoadingState />}>
-        <ErrorBoundary onReset={handleGoHome}>
+        <ErrorBoundary key={activeTab} onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
         {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} />}
         {activeTab === 'home' && (

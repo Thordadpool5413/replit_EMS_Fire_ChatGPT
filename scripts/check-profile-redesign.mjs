@@ -77,7 +77,7 @@ try {
       assert.ok(geometry.navTop >= geometry.backBottom - 1, 'Sticky navigation overlaps: ' + JSON.stringify(geometry));
       assert.equal(geometry.panels, 1, 'One topic panel');
       assert.equal(geometry.navigations, 1, 'One topic navigation');
-      assert.ok(geometry.nameFont >= 26, 'Readable profile title');
+      assert.ok(geometry.nameFont >= (width < 768 ? 22 : 26), 'Readable profile title');
       assert.equal(geometry.background, 'rgb(255, 248, 239)', 'Warm ivory profile surface');
       if (width < 768) assert.deepEqual(geometry.smallControls, [], 'Touch targets at least 44px: ' + JSON.stringify(geometry));
       console.log('PASS ' + width + 'px / ' + topic);

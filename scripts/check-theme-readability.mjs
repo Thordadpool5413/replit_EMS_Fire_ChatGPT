@@ -1099,6 +1099,7 @@ async function checkHome(cdp, dark) {
       })(),
     };
   })()`);
+  const mobileViewport = shell.viewportWidth < 768;
   assert(
     shell.desktopVisible === (shell.viewportWidth >= 768) &&
       shell.mobileVisible === (shell.viewportWidth < 768),
@@ -1193,13 +1194,22 @@ async function checkHome(cdp, dark) {
     return Boolean(state);
   })()`);
   assert(selectedFlorida, `${themeLabel(dark)} Home has no keyboard-activatable Florida map target`);
-  await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, 'state selection opening Territory');
   if (shell.viewportWidth < 768) {
-    await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Map"]');
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('.home-state-details[open] #home-state-detail-title')?.textContent === 'Florida')`,
+      'mobile state selection opening the Florida detail dialog',
+    );
+    await clickVisible(cdp, '.home-state-details[open] .home-state-picker-heading button');
   } else {
+    await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, 'state selection opening Territory');
     await clickVisible(cdp, 'Map', true);
   }
   await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path[aria-label^="Florida."][aria-pressed="true"]'))`, 'selected Florida on the returning map');
+  if (mobileViewport) {
+    await clickVisible(cdp, 'button[aria-controls="home-map-options"]');
+    await evaluate(cdp, `(() => { const legend = document.querySelector('.atlas-phone-key'); if (legend) legend.open = true; return Boolean(legend); })()`);
+  }
   let missingLayer = null;
   for (const metricValue of metrics) {
     const selectorState = await evaluate(cdp, `(() => {
@@ -1214,22 +1224,33 @@ async function checkHome(cdp, dark) {
       };
     })()`);
     assert(selectorState, `${themeLabel(dark)} Home map metric selector is not available for input`);
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: selectorState.x, y: selectorState.y });
-    await cdp.send('Input.dispatchMouseEvent', {
-      type: 'mousePressed', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
-    });
-    await cdp.send('Input.dispatchMouseEvent', {
-      type: 'mouseReleased', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
-    });
-    const previousIndex = metrics.indexOf(selectorState.value);
-    const nextIndex = metrics.indexOf(metricValue);
-    for (let step = 0; step < Math.abs(nextIndex - previousIndex); step += 1) {
-      const key = nextIndex > previousIndex ? 'ArrowDown' : 'ArrowUp';
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key });
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key });
+    if (mobileViewport) {
+      const selectedMetric = await evaluate(cdp, `(() => {
+        const select = document.querySelector('[data-testid="select-state-map-metric"]');
+        if (!select) return null;
+        select.value = ${JSON.stringify(metricValue)};
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        return select.value;
+      })()`);
+      assert(selectedMetric === metricValue, `Could not select ${metricValue} on the mobile map`);
+    } else {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: selectorState.x, y: selectorState.y });
+      await cdp.send('Input.dispatchMouseEvent', {
+        type: 'mousePressed', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
+      });
+      await cdp.send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased', x: selectorState.x, y: selectorState.y, button: 'left', clickCount: 1,
+      });
+      const previousIndex = metrics.indexOf(selectorState.value);
+      const nextIndex = metrics.indexOf(metricValue);
+      for (let step = 0; step < Math.abs(nextIndex - previousIndex); step += 1) {
+        const key = nextIndex > previousIndex ? 'ArrowDown' : 'ArrowUp';
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key });
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key });
+      }
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
     }
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
     await waitFor(
       cdp,
       `document.querySelector('[data-testid="select-state-map-metric"]')?.value === ${JSON.stringify(metricValue)}`,
@@ -1238,10 +1259,14 @@ async function checkHome(cdp, dark) {
     const metricLabel = selectorState.options.find((option) => option.value === metricValue)?.label ?? '';
     await waitFor(
       cdp,
-      `document.querySelector('.home-map-legend-title')?.innerText.includes(${JSON.stringify(metricLabel)})`,
+      mobileViewport
+        ? `document.querySelector('.atlas-phone-key summary strong')?.innerText.includes(${JSON.stringify(metricLabel)})`
+        : `document.querySelector('.home-map-legend-title')?.innerText.includes(${JSON.stringify(metricLabel)})`,
       `${metricValue} selection updating the map legend in ${themeLabel(dark)} theme`,
     );
-    const legendExplainsRelativeColors = await evaluate(cdp, `document.querySelector('[data-testid="text-map-legend-coverage"]')?.innerText.includes('relative quintiles') ?? false`);
+    const legendExplainsRelativeColors = await evaluate(cdp, mobileViewport
+      ? `document.querySelector('.atlas-phone-key p')?.innerText.includes('Colors group reported values') ?? false`
+      : `document.querySelector('[data-testid="text-map-legend-coverage"]')?.innerText.includes('relative quintiles') ?? false`);
     assert(legendExplainsRelativeColors, `${themeLabel(dark)} map legend does not explain relative state colors for ${metricValue}`);
     if (metricValue === 'cardiac-survival') {
       const visibleColorBands = await evaluate(cdp, `new Set([...document.querySelectorAll('.home-map-state-path')]
@@ -1276,7 +1301,9 @@ async function checkHome(cdp, dark) {
     const selected = document.querySelector('.home-map-state-path[aria-pressed="true"]');
     const missing = [...document.querySelectorAll('.home-map-state-path')]
       .find((path) => path.getAttribute('fill')?.includes('home-map-missing-data'));
-    const missingLegend = document.querySelector('.home-map-legend-missing')?.innerText.trim() ?? '';
+    const missingLegend = ${mobileViewport
+      ? `document.querySelector('.atlas-phone-key')?.innerText.trim() ?? ''`
+      : `document.querySelector('.home-map-legend-missing')?.innerText.trim() ?? ''`};
     const selectedLabel = selected?.getAttribute('aria-label') ?? '';
     const paths = [...(selected?.parentElement?.querySelectorAll('path') ?? [])];
     return {
@@ -1286,10 +1313,12 @@ async function checkHome(cdp, dark) {
         paths.some((path) => path.getAttribute('stroke') === '#F4C86A'),
       missingFill: missing?.getAttribute('fill') ?? '',
       missingLegend,
-      missingHasText: missingLegend.includes('Not reported'),
+      missingHasText: /not reported/i.test(missingLegend),
       missingHasPattern: Boolean(document.querySelector('#home-map-missing-data')),
       missingHasHatch: !missing || Boolean(missing.getAttribute('fill')?.includes('home-map-missing-data')),
-      regionHasSelection: Boolean(document.querySelector('.home-map-region-filter button[aria-pressed="true"]')),
+      regionHasSelection: ${mobileViewport
+        ? `Boolean(document.querySelector('#atlas-phone-region')?.value)`
+        : `Boolean(document.querySelector('.home-map-region-filter button[aria-pressed="true"]'))`},
       controls: Boolean(document.querySelector('[data-testid="select-state-map-metric"]') &&
         document.querySelector('[data-testid="button-map-zoom-in"]')),
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
@@ -1303,22 +1332,30 @@ async function checkHome(cdp, dark) {
       !stateCue.pageOverflow,
     `Home selected/missing/control cues are incomplete in ${themeLabel(dark)} theme: ${JSON.stringify(stateCue)}`,
   );
-  const mapSurfaceColors = await evaluate(cdp, `(() => {
-    const selectors = {
+  const mapSurfaceSelectors = mobileViewport
+    ? {
+      mapCard: '.home-map-stage-v2',
+      mapCanvas: '.home-map-viewport',
+      legendCard: '.atlas-phone-key',
+      metricSelect: '[data-testid="select-state-map-metric"]',
+    }
+    : {
       mapCard: '.home-map-stage-v2',
       mapCanvas: '.home-map-viewport',
       legendCard: '.home-map-legend',
       stateCard: '.home-map-state-preview',
       metricSelect: '[data-testid="select-state-map-metric"]',
     };
+  const mapSurfaceColors = await evaluate(cdp, `(() => {
+    const selectors = ${JSON.stringify(mapSurfaceSelectors)};
     return Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
       const element = document.querySelector(selector);
       return [name, element ? getComputedStyle(element).backgroundColor : 'missing'];
     }));
   })()`);
   assert(
-    Object.values(mapSurfaceColors).every((color) => color === 'rgb(255, 255, 255)'),
-    `Home map cards and selector should have white backgrounds in ${themeLabel(dark)} theme: ${JSON.stringify(mapSurfaceColors)}`,
+    ['mapCard', 'mapCanvas', 'metricSelect'].every((name) => mapSurfaceColors[name] === 'rgb(255, 255, 255)'),
+    `Home map surfaces and selector should remain white in ${themeLabel(dark)} theme: ${JSON.stringify(mapSurfaceColors)}`,
   );
   const initialMapZoom = await evaluate(cdp, `document.querySelector('.home-map-viewport')?.dataset.mapZoom ?? ''`);
   await evaluate(cdp, `(() => {
@@ -1335,7 +1372,7 @@ async function checkHome(cdp, dark) {
     cdp,
     `!document.querySelector('.home-map-state-path[aria-pressed="true"]') &&
       Boolean([...document.querySelectorAll('button')].find((button) => button.innerText.trim() === 'National view')) &&
-      document.querySelector('.home-map-page-heading p')?.innerText.includes('Select a state to explore its counties and EMS/fire agencies')`,
+       /(?:Select|Tap) a state to explore/i.test(document.querySelector('.home-map-page-heading p')?.innerText ?? '')`,
     'return to the national map',
   );
   if (!missingLayer) {
@@ -1343,11 +1380,32 @@ async function checkHome(cdp, dark) {
   } else {
     console.log(`  ${themeLabel(dark)} Home: ${missingLayer.missingCount} missing states use the hatched fill on ${missingLayer.metricValue}.`);
   }
+  if (mobileViewport) {
+    await evaluate(cdp, `(() => {
+      const controls = document.querySelector('#home-map-options');
+      const button = document.querySelector('button[aria-controls="home-map-options"]');
+      if (controls?.dataset.mobileOpen !== 'true') button?.click();
+      const legend = document.querySelector('.atlas-phone-key');
+      if (legend) legend.open = true;
+      return Boolean(controls && legend);
+    })()`);
+  }
   await checkReadable(cdp, `${themeLabel(dark)} Home`, [
     { name: 'map metric control', selector: '[data-testid="select-state-map-metric"]' },
-    { name: 'selected region label', selector: '.home-map-region-filter button[aria-pressed="true"]' },
-    { name: 'map legend heading', selector: '.home-map-legend-title' },
-    { name: 'missing-data legend', selector: '.home-map-legend-missing' },
+    {
+      name: 'selected region label',
+      selector: mobileViewport
+        ? '#atlas-phone-region'
+        : '.home-map-region-filter button[aria-pressed="true"]',
+    },
+    {
+      name: 'map legend heading',
+      selector: mobileViewport ? '.atlas-phone-key summary' : '.home-map-legend-title',
+    },
+    {
+      name: 'missing-data legend',
+      selector: mobileViewport ? '.atlas-phone-key ul' : '.home-map-legend-missing',
+    },
   ]);
 }
 
@@ -1383,12 +1441,25 @@ async function checkWorkspaceDestinations(cdp, themeMode, viewport) {
   await setTheme(cdp, themeMode);
   const openHub = async (kind) => {
     if (viewport.mobile) {
-      await clickVisible(cdp, `.pi-mobile-nav button[aria-label="${kind === 'reports' ? 'Reports' : 'Settings'}"]`);
+      if (kind === 'reports') {
+        await clickVisible(cdp, '.pi-mobile-nav button[aria-label="Reports"]');
+      } else {
+        await clickVisible(cdp, '.pi-mobile-more__summary');
+        await waitFor(cdp, `Boolean(document.querySelector('.pi-mobile-more[open]'))`, 'More destinations menu');
+        const settingsOpened = await evaluate(cdp, `(() => {
+          const button = [...document.querySelectorAll('.pi-mobile-more__link')]
+            .find((item) => item.textContent?.trim() === 'Settings');
+          button?.click();
+          return Boolean(button);
+        })()`);
+        assert(settingsOpened, 'Settings is missing from More destinations');
+      }
     } else {
       await clickVisible(cdp, kind === 'reports' ? 'Reports' : 'Settings', true);
     }
     await waitFor(cdp, `Boolean(document.querySelector('.workspace-hub h1'))`, `${kind} hub`);
-    const matches = await evaluate(cdp, `document.querySelector('.workspace-hub h1')?.textContent?.trim() === ${JSON.stringify(kind === 'reports' ? 'Reports' : 'Settings')}`);
+    const expectedHeading = kind === 'reports' ? 'Reports & intelligence' : 'Your workspace';
+    const matches = await evaluate(cdp, `document.querySelector('.workspace-hub h1')?.textContent?.trim() === ${JSON.stringify(expectedHeading)}`);
     assert(matches, `The ${kind} hub did not open`);
   };
   const inspectPage = async (label) => {

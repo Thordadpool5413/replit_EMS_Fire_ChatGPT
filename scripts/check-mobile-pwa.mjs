@@ -98,6 +98,7 @@ try{
       }
     }
     await evaluate(cdp,`new Promise(r=>setTimeout(r,500))`);
+    await evaluate(cdp,`window.scrollTo({top:0,behavior:'instant'})`);
   };
   const setInputValue=async(selector,value)=>evaluate(cdp,`(()=>{const input=document.querySelector(${JSON.stringify(selector)});if(!input)return false;const oldValue=input.value;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input._valueTracker?.setValue(oldValue);input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
   const viewports=JSON.parse(process.env.MOBILE_VIEWPORTS||(production?'[{"width":390,"height":844}]':'[{"width":320,"height":740},{"width":390,"height":844},{"width":430,"height":932},{"width":667,"height":375},{"width":844,"height":390},{"width":1366,"height":768}]'));
@@ -200,7 +201,7 @@ try{
       findings.push({productionWorker:'activated',offlineLaunch:'passed',localDataPreserved:true,unsavedReviewGuard:'passed',updateCancel:'passed',updateReload:'passed',cachedAssets:cached.urls.length});
       continue;
     }
-    for(const label of ['Agencies','Opportunities','Territory','Field work']){
+    for(const label of ['Agencies','Opportunities','Territory','Field Work']){
       await navigate(label);
       await capture(label.toLowerCase().replaceAll(' ','-'),width,height);
       if(label==='Territory'&&(width<768||width===844)){

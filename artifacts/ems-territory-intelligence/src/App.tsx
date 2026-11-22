@@ -1681,7 +1681,6 @@ export default function App() {
         {/* Field Mode & Day Route Planner (My Work Workspace) */}
         {activeTab === 'field' && (
           <div className="workspace-view-container min-w-0 w-full">
-            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onCreate={createFollowUp} onOpen={handleOpenAgencyProfile} />
             <FieldModeView
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}
@@ -1700,7 +1699,9 @@ export default function App() {
               onNavigateTab={handleNavigateTab}
               comparedAgencyIds={comparisonAgencyIds}
               onToggleAgencyComparison={handleToggleAgencyComparison}
-            />
+            >
+            <FollowUpWorkspace agencies={agencies} onUpdate={updateFollowUp} onCreate={createFollowUp} onOpen={handleOpenAgencyProfile} />
+            </FieldModeView>
           </div>
         )}
 

@@ -481,6 +481,24 @@
     .dsb-hero h2.pi-section-heading, .dsb-card h3, .pi-section-heading
   ) { font-size: 16px !important; line-height: 1.3 !important; letter-spacing: -.02em; }
 
+
+  .agency-command-profile.profile-redesign .acp-notice { display: block; font-size: 12px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign .acp-notice > svg { display: inline; margin-right: 5px; vertical-align: middle; }
+  .agency-command-profile.profile-redesign .acp-notice strong { margin-right: 5px; }
+  .agency-command-profile.profile-redesign .acp-monitor-art-label { font-size: 9px !important; white-space: nowrap; }
+  .agency-command-profile.profile-redesign .acp-next-step { flex-direction: row; align-items: center; padding: 10px 12px !important; gap: 10px; }
+  .agency-command-profile.profile-redesign .acp-next-step .workspace-button { flex: none; padding-inline: 10px; }
+  .agency-command-profile.profile-redesign .adm-group { margin-top: 10px; }
+  .agency-command-profile.profile-redesign .adm-group > h3 { padding: 10px 12px !important; font-size: 13px !important; }
+  .agency-command-profile.profile-redesign .aib-device-feature { padding: 12px !important; }
+  .agency-command-profile.profile-redesign .aib-keyfacts { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .agency-command-profile.profile-redesign .aib-keyfacts dt { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .aib-keyfacts dd { font-size: 14px !important; }
+
+  .agency-command-profile.profile-redesign :is(table,.afi-table) { font-size: 13px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign :is(th,td) { padding: 8px !important; }
+  .agency-command-profile.profile-redesign th { font-size: 12px !important; }
+  .agency-command-profile.profile-redesign .aib-finding { padding-block: 10px !important; gap: 8px; }
   .agency-command-profile.profile-redesign { font-size: 14px; line-height: 1.45; }
   .agency-command-profile.profile-redesign .acp-section-intro { padding: 4px 0 10px !important; margin-bottom: 10px !important; }
   .agency-command-profile.profile-redesign .acp-section-intro h2 { font-size: 18px !important; }

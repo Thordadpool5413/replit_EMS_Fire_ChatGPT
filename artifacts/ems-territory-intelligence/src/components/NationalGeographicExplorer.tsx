@@ -1285,7 +1285,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               </div>
               <svg
                 viewBox="0 0 920 500"
-                className="w-full h-[380px] sm:h-[440px] select-none"
+                className="w-full h-auto sm:h-[440px] select-none"
                 role="group"
                 preserveAspectRatio="xMidYMid meet"
                 aria-label="United States state boundary map. Select a state to inspect its counties."

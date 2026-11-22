@@ -90,7 +90,7 @@ try {
     const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
     await writeFile(path.join(output,'workspace-'+destination.replace(/[^a-z0-9]+/gi,'-')+'.png'),Buffer.from(shot.result.data,'base64'));
     const runtimeError=await ev('[...document.querySelectorAll("details")].find(e=>e.textContent.includes("Technical details"))?.textContent || ""');
-    if(runtimeError)console.log('WORKSPACE_ERROR '+destination+' '+runtimeError);
+    assert.equal(runtimeError,'','Workspace runtime error '+destination);
     const pageWidth=await ev('document.documentElement.scrollWidth');
     assert.ok(pageWidth<=391,'Workspace overflow '+destination);
   }

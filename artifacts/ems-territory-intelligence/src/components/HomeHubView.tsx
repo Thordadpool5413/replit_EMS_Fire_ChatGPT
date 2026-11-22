@@ -210,6 +210,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   const [mapOptionsOpen, setMapOptionsOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
+  const phoneStateBrowser = useRef<HTMLDetailsElement>(null);
   const detailDialog = useRef<HTMLDialogElement>(null);
   const [detailCode, setDetailCode] = useState<string | null>(null);
   const [compactStatesOnly, setCompactStatesOnly] = useState(false);
@@ -603,6 +604,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     setDetailCode(code);
     detailDialog.current?.showModal();
   };
+  const selectPhoneState = (code: string) => {
+    if (phoneStateBrowser.current) phoneStateBrowser.current.open = false;
+    inspectState(code);
+  };
   const detail = detailCode ? stateMapMetricsByCode[detailCode][mapMetric] : null;
   const equipmentCount = detailCode ? scopedAgencies.filter(agency =>
     agency.stateCode === detailCode && hasRecordedEquipmentValue(agency)).length : 0;
@@ -610,11 +615,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     .filter(([code, state]) => (!compactStatesOnly || EAST_COAST_CALLOUT_STATES.some(s => s.code === code))
       && (state.state + ' ' + code).toLowerCase().includes(stateSearch.trim().toLowerCase()))
     .sort((a, b) => a[1].state.localeCompare(b[1].state));
+  const phoneStateQuery = stateSearch.trim().toLowerCase();
+  const exactPhoneStateCode = phoneStateQuery.length === 2
+    && ALL_50_STATES_SUMMARIES[phoneStateQuery.toUpperCase()]
+    ? phoneStateQuery.toUpperCase()
+    : null;
   const phoneStates = Object.values(ALL_50_STATES_SUMMARIES)
     .filter(state => (regionFilter === 'All' || state.region === regionFilter)
-      && (!stateSearch.trim()
-        || state.state.toLowerCase().includes(stateSearch.trim().toLowerCase())
-        || state.code.toLowerCase() === stateSearch.trim().toLowerCase()))
+      && (!phoneStateQuery
+        || (exactPhoneStateCode
+          ? state.code === exactPhoneStateCode
+          : state.state.toLowerCase().includes(phoneStateQuery))))
     .sort((a, b) => a.state.localeCompare(b.state));
   const phoneRegionStateCount = Object.values(ALL_50_STATES_SUMMARIES)
     .filter(state => regionFilter === 'All' || state.region === regionFilter).length;
@@ -1139,7 +1150,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           </div>
         </div>
 
-        {isPhone && <details className="phone-state-browser">
+        {isPhone && <details ref={phoneStateBrowser} className="phone-state-browser">
           <summary>
             <span><strong>Browse states</strong><small>{phoneRegionStateCount === 51 ? '50 states + DC' : `${phoneRegionStateCount} states in ${regionFilter}`}</small></span>
             <ChevronDown size={18} aria-hidden="true"/>
@@ -1148,7 +1159,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             <label htmlFor="phone-state-search">Find a state by name or abbreviation</label>
             <input id="phone-state-search" type="search" placeholder="Example: California or CA" autoComplete="off" value={stateSearch} onChange={event => setStateSearch(event.target.value)}/>
             <div className="phone-state-browser-results">
-            {phoneStates.map(state => <button key={state.code} type="button" data-state-code={state.code} onClick={() => inspectState(state.code)}>
+            {phoneStates.map(state => <button key={state.code} type="button" data-state-code={state.code} onClick={() => selectPhoneState(state.code)}>
                 <span className="phone-state-dot" aria-hidden="true" style={{backgroundColor: hasReportedValue(stateMapMetricsByCode[state.code][mapMetric].value) ? getStateMapFill(state.code) : '#e2e2e2'}}/>
                 <span>{state.state}</span><strong>{formatStateMapValue(mapMetric, stateMapMetricsByCode[state.code][mapMetric].value)}</strong>
               </button>)}
@@ -1158,7 +1169,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             </div>}
             </div>
           </div>
-        </section>}
+        </details>}
         <HomeDirectoryStatus
           status={directoryLoad}
           visibleAgencyCount={agencies.length}

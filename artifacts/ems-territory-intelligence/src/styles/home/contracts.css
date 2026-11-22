@@ -600,10 +600,12 @@
     color: #253b54;
   }
   .home-map-browse-toggle { color: #1e56a8 !important; }
-  .home-map-control-row[data-mobile-open="true"] {
+  .home-territory-map-screen-v2 .home-map-control-rail .home-map-toolbar-v2[data-mobile-open="true"] {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "region palette" "metric metric" "zoom zoom";
     align-items: start !important;
+    flex-direction: initial !important;
     gap: .75rem !important;
     padding: .75rem !important;
     border-color: #d7e0ea !important;
@@ -611,14 +613,13 @@
     background: #f7f9fc !important;
   }
   .home-map-control-row[data-mobile-open="true"] .home-map-metric-control {
-    grid-column: 1 / -1;
+    grid-area: metric;
   }
-  .home-map-control-row[data-mobile-open="true"] .home-map-region-control,
-  .home-map-control-row[data-mobile-open="true"] .home-map-palette-control {
-    grid-column: span 1;
-  }
-  .home-map-control-row[data-mobile-open="true"] .home-map-phone-zoom {
-    grid-column: 1 / -1;
+  .home-map-control-row[data-mobile-open="true"] .home-map-region-control { grid-area: region; }
+  .home-map-control-row[data-mobile-open="true"] .home-map-palette-control { grid-area: palette; }
+  .home-map-control-row[data-mobile-open="true"] .home-map-phone-zoom { grid-area: zoom; }
+  .home-territory-map-screen-v2 .home-map-control-rail .home-map-toolbar-v2[data-mobile-open="true"]:not(:has(.home-map-palette-control)) {
+    grid-template-areas: "region region" "metric metric" "zoom zoom";
   }
   .home-map-control-row[data-mobile-open="true"] .home-map-layer-select {
     width: 100% !important;
@@ -642,9 +643,11 @@
 }
 
 @media (max-width: 359px) {
-  .home-map-control-row[data-mobile-open="true"] { grid-template-columns: minmax(0, 1fr); }
-  .home-map-control-row[data-mobile-open="true"] .home-map-region-control,
-  .home-map-control-row[data-mobile-open="true"] .home-map-palette-control,
-  .home-map-control-row[data-mobile-open="true"] .home-map-metric-control,
-  .home-map-control-row[data-mobile-open="true"] .home-map-phone-zoom { grid-column: 1; }
+  .home-territory-map-screen-v2 .home-map-control-rail .home-map-toolbar-v2[data-mobile-open="true"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "region" "palette" "metric" "zoom";
+  }
+  .home-territory-map-screen-v2 .home-map-control-rail .home-map-toolbar-v2[data-mobile-open="true"]:not(:has(.home-map-palette-control)) {
+    grid-template-areas: "region" "metric" "zoom";
+  }
 }

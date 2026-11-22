@@ -418,3 +418,34 @@ html[data-theme="miami-vice"] .pi-primary-sidebar .pi-primary-nav .pi-sb-item[ar
     border-color: var(--pi-border-strong) !important;
   }
 }
+
+/* Keep the full brand mark inside the sticky header in installed PWAs and Safari.
+   The logo is 4.25rem tall; the previous 3.75rem header centered it above the
+   viewport edge on phones. Keep the same logo size and give its ring clearance. */
+@media (max-width: 767px) {
+  .pi-command-header {
+    box-sizing: border-box !important;
+    height: calc(4.5rem + env(safe-area-inset-top)) !important;
+    min-height: calc(4.5rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  .pi-command-header > div {
+    height: 4.5rem !important;
+    min-height: 4.5rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .pi-command-header {
+    box-sizing: border-box !important;
+    height: calc(4.5rem + env(safe-area-inset-top)) !important;
+    min-height: calc(4.5rem + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  .pi-command-header > div {
+    height: 4.5rem !important;
+    min-height: 4.5rem !important;
+  }
+}

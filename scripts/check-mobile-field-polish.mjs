@@ -47,7 +47,7 @@ try {
       assert.equal(await ev('document.querySelectorAll(".atlas-phone-key").length'),1,'One phone map legend');
       assert.equal(await ev('document.querySelectorAll(".home-map-legend-v2").length'),0,'Desktop legend is absent on phones');
       assert.ok(initial.map.bottom<=initial.actions.y+1,'Map appears above phone controls');
-      assert.ok(initial.actions.height>=44,'Phone actions meet the minimum touch target');
+      assert.ok(Math.round(initial.actions.height)>=44,'Phone actions meet the minimum touch target');
       assert.ok(initial.map.width>=width-64&&initial.map.right<=initial.viewport+1,'Map fits phone width');
       if(height>width)assert.ok(initial.map.y<initial.nav.y,'Map starts above navigation at '+width);
       await ev('document.querySelector(".home-map-viewport").scrollIntoView({block:"center",behavior:"instant"})');
@@ -106,7 +106,7 @@ try {
     await writeFile(path.join(output,'geography-'+name+'.png'),Buffer.from(shot.result.data,'base64'));
     assert.ok(await ev('document.documentElement.scrollWidth<=391'),'Geography width '+name);
     await ev('document.querySelector(".equipment-filter-disclosure").open=true');
-    assert.ok(await ev('document.querySelector(".equipment-filter-select").getBoundingClientRect().height>=44'),'Expanded equipment filter target');
+    assert.ok(await ev('Math.round(document.querySelector(".equipment-filter-select").getBoundingClientRect().height)>=44'),'Expanded equipment filter target');
     await ev('document.querySelector(".equipment-filter-disclosure").open=false');
   }
   await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));

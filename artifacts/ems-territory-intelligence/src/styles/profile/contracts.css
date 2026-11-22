@@ -498,6 +498,13 @@
   .agency-command-profile.profile-redesign :is(table,.afi-table) { font-size: 13px !important; line-height: 1.45 !important; }
   .agency-command-profile.profile-redesign :is(th,td) { padding: 8px !important; }
   .agency-command-profile.profile-redesign th { font-size: 12px !important; }
+
+  .agency-command-profile.profile-redesign .acp-detail:not([open]) .acp-detail-summary { display: none; }
+  .agency-command-profile.profile-redesign .acp-detail > summary { display: grid; grid-template-columns: 18px minmax(0,1fr) 16px; gap: 6px 8px; }
+  .agency-command-profile.profile-redesign .acp-detail-text { grid-column: 2; min-width: 0; }
+  .agency-command-profile.profile-redesign .acp-detail > summary > .afi-kind { grid-column: 2; justify-self: start; font-size: 11px !important; }
+  .agency-command-profile.profile-redesign .acp-detail-chev { grid-column: 3; grid-row: 1; }
+  .agency-command-profile.profile-redesign .aib-num { font-size: 22px !important; }
   .agency-command-profile.profile-redesign .aib-finding { padding-block: 10px !important; gap: 8px; }
   .agency-command-profile.profile-redesign { font-size: 14px; line-height: 1.45; }
   .agency-command-profile.profile-redesign .acp-section-intro { padding: 4px 0 10px !important; margin-bottom: 10px !important; }

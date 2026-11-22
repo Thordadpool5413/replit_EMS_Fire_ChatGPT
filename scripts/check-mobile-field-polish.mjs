@@ -94,6 +94,18 @@ try {
     const pageWidth=await ev('document.documentElement.scrollWidth');
     assert.ok(pageWidth<=391,'Workspace overflow '+destination);
   }
+
+  for (const [query,selector,name] of [
+    ['?state=FL','.county-inspector-panel','state'],
+    ['?state=FL&county=Alachua%20County','.county-city-directory-panel','county']
+  ]) {
+    await cdp.send('Page.navigate',{url:base+query});
+    await waitFor(cdp,'Boolean(document.querySelector('+JSON.stringify(selector)+'))',name,60000);
+    await ev('document.fonts.ready.then(()=>true)');
+    const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(output,'geography-'+name+'.png'),Buffer.from(shot.result.data,'base64'));
+    assert.ok(await ev('document.documentElement.scrollWidth<=391'),'Geography width '+name);
+  }
   await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));
 } finally {
   if(cdp)cdp.close();

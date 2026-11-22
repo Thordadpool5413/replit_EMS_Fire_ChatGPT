@@ -1012,8 +1012,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     if (!boundary) return null;
                     if (callout) {
                       const anchor = getHomeMapGeometryPoint(boundary.labelX, boundary.labelY, true);
-                      const calloutY = isPhone ? 60 + EAST_COAST_CALLOUT_STATES.indexOf(callout) * 40 : callout.calloutY;
-                      const calloutX = isPhone ? 868 : callout.calloutX;
+                      const calloutY = isPhone ? 95 + EAST_COAST_CALLOUT_STATES.indexOf(callout) * 40 : callout.calloutY;
+                      const calloutX = isPhone ? 824 : callout.calloutX;
                       const cIn = regionFilter === 'All' || st.region === regionFilter;
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
@@ -1055,10 +1055,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       boundary.labelY,
                       !isHomeMapInsetState(st.code),
                     );
+                    const phoneOffset = isPhone ? ({
+                      IL: [-8, -6], IN: [-4, 4], OH: [9, -4], KY: [0, 7],
+                      TN: [-8, 7], WV: [10, 0], VA: [9, 6], NY: [0, -5],
+                    } as Record<string, number[]>)[st.code] : undefined;
                     return (
                       <g
                         key={`home-lbl-${st.code}`}
-                        transform={`translate(${labelPoint.x}, ${labelPoint.y})`}
+                        transform={`translate(${labelPoint.x + (phoneOffset?.[0] ?? 0)}, ${labelPoint.y + (phoneOffset?.[1] ?? 0)})`}
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >

@@ -1164,6 +1164,18 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
             </summary>
             <div className="profile-more-actions-menu">
+              <div className="profile-more-sheet-heading md:hidden">
+                <strong>Account actions</strong>
+                <button
+                  type="button"
+                  aria-label="Close account actions"
+                  onClick={(event) => {
+                    const disclosure = event.currentTarget.closest('details');
+                    if (disclosure) disclosure.open = false;
+                    disclosure?.querySelector('summary')?.focus({ preventScroll: true });
+                  }}
+                ><X aria-hidden="true" className="h-4 w-4" />Close</button>
+              </div>
               <div className="profile-stage-control">
                 <label htmlFor="profile-sales-stage">Pipeline stage</label>
                 <select
@@ -1251,11 +1263,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </details>
         </div>
-          <p className="acp-notice" role="note" data-testid="text-profile-verification-notice">
+          <div className="acp-notice" role="note" data-testid="text-profile-verification-notice">
             <ShieldAlert aria-hidden="true" className="h-3.5 w-3.5" />
-            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}</strong>{' '}
-            Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.
-          </p>
+            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}<span className="md:hidden"> · Verify facts</span></strong>
+            <span className="hidden md:inline"> Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</span>
+            <details className="acp-notice-phone-details md:hidden">
+              <summary>About this data <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" /></summary>
+              <p>Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</p>
+            </details>
+          </div>
         </section>
 
           <ProfileContactDisclosure>
@@ -1641,7 +1657,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             className="acp-nav sticky top-[var(--acp-sticky-header-h,108px)] z-30 md:top-[var(--acp-sticky-header-h,4rem)]"
           >
             <div className="w-full md:hidden">
-              <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
+              <label htmlFor="profile-section-select" className="acp-mobile-section-label">Explore</label>
               <select
                 id="profile-section-select"
                 value={activeSection}

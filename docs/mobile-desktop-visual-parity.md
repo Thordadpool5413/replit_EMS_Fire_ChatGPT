@@ -35,6 +35,20 @@ The **existing desktop application is the single visual source of truth** for th
 4. `profile/contracts.css` intentionally styles the provider profile across viewport sizes. The previous PR changed that **shared** desktop experience. The unintended desktop changes were reverted; this branch now makes only targeted adjustments inside the profile's phone-only media query.
 5. `styles/README.md` documents a complex CSS cascade including high-specificity legacy theme bridges. Future mobile work should modify the owning responsive CSS module or existing selector. Do not append random `!important` patches or switch component styling to a new global palette.
 
+## Focused mobile EMS/Fire provider-profile implementation
+
+The profile is a single full-screen workspace, not two stacked mobile navigation systems.
+
+- `App.tsx`: suppresses the regular five-destination app navigation while the provider dossier is open. The profile has its own visible Back control.
+- `FocusedProviderProfile.tsx`: replaces the phone's overflowing comparison/RFP/meeting/route/save/sources/back grid with four actions: **Notes, Route, Save, Sources**. The original full action set remains in **More actions** and the existing tablet presentation. The mobile More menu now includes a visible Close control and dismisses after a selected button.
+- `FocusedProviderProfile.tsx`: keeps desktop identity details but compacts phone verification into an evidence note and expandable caveat. The source-completeness percentage is **not** presented as independently verified truth.
+- `profile/contracts.css`: phone-only masthead reflow, 22px minimum provider name, readable contact buttons, one compact Explore section picker, consistent source/account cards, safe-area bottom clearance and single four-action dock. Existing desktop CSS preceding the phone-only media block is unchanged.
+- `profile/records.css`: on phones, the secondary account-actions menu is a bounded two-column sheet above the dock, with a stage selector and explicit Close.
+- `ProfileCommandOverview.tsx`: the first screen features the monitor/device summary and a **View additional equipment & software** disclosure. The underlying six category rows remain mounted and are available when expanded; all six categories remain accessible in the Equipment topic.
+- `scripts/check-profile-overflow.mjs`, `scripts/check-profile-polish.mjs` and `scripts/check-profile-redesign.mjs` now assert the intentional single-dock design, expand inventory before mobile stress tests, and verify the mobile background matches the warm desktop profile.
+
+The work preserves current EMS/Fire data, agency identifiers, real or missing values, review workflows, sources, geography links, and all existing content areas. **Do not merge without responsive screenshots and passing browser tests.**
+
 ## Remaining improvements before calling this polished
 
 - **Mobile home:** verify recognizable state labels, responsive map fit, pan/zoom behavior, readable legend and no accidental document zoom.

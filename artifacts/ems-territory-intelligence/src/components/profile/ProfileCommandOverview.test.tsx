@@ -80,6 +80,7 @@ test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
 test('populated data without source records is never counted as mapped evidence',()=>{
   const html=render(fixture({}));
   assert.match(html,/<strong class="acp-num">0<\/strong> of/);
+  assert.match(html,/data-evidence-state="none"/);
 });
 test('EMS, fire and combined profiles omit the removed recommended-next-action section',()=>{
   for(const agency of [
@@ -101,6 +102,7 @@ test('source count uses mapped sources and ignores an unsupported broad source',
     stationCount:{reviewed:false,sourceKind:'dataset',sourceName:'State count',sourceRecordId:'state',note:'Not agency scope',geographicLevel:'state'},
   }}));
   assert.match(html,/<strong class="acp-num">1<\/strong> of/);
+  assert.match(html,/data-evidence-state="mapped"/);
 });
 test('expired contracts are history rather than upcoming deadlines',()=>{
   const agency=fixture({competitorContract:{contractEndDate:'2020-01-01',vendor:'Recorded vendor'} as Agency['competitorContract']});

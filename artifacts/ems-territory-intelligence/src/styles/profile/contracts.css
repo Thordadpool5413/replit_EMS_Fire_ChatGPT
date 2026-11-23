@@ -159,6 +159,9 @@
     background: #FFFFFF !important; border-radius: 14px;
     box-shadow: 0 4px 20px -16px #17243A1F;
   }
+  .agency-command-profile.profile-redesign[data-profile-topic] {
+    --tp-topic: #1B66C9;
+  }
   .agency-command-profile.profile-redesign .acp-nav-tabs { flex: 1 1 auto; min-width: 0; width: auto; gap: 3px; }
   .agency-command-profile.profile-redesign .acp-tab {
     min-height: 40px !important; padding: 8px 10px !important;
@@ -388,6 +391,11 @@
   .agency-command-profile.profile-redesign button:disabled { cursor: not-allowed; }
   .agency-command-profile.profile-redesign :is(.acp-tab, .acp-section-intro, .acp-panel-title, .brief-icon, .aib-label, .afn h3) svg { width: 20px; height: 20px; flex-shrink: 0; }
   .agency-command-profile.profile-redesign :is(.acp-hero, .aib, .dsb-full, .adm, .afn, .fact-review) { overflow-wrap: anywhere; }
+  .agency-command-profile.profile-redesign .dsb-tab[data-active] {
+    color: #1B66C9 !important; border-bottom-color: #1B66C9 !important;
+  }
+  .agency-command-profile.profile-redesign .dsb-tab[data-active] svg { color: #1B66C9 !important; }
+  .agency-command-profile.profile-redesign .acp-mobile-section-label { color: #596A7F; }
   /* Precision profile presentation: quiet surfaces, strong hierarchy, one action accent. */
   .agency-command-profile.profile-redesign .acp-header {
     box-shadow: none !important;
@@ -717,8 +725,12 @@
     border-radius: 10px; color: var(--acp-text); text-align: center; font-size: 12px; font-weight: 650;
   }
   .agency-command-profile.profile-redesign .profile-phone-action-row > button svg { width: 18px; height: 18px; flex: none; }
+  .agency-command-profile.profile-redesign .profile-phone-action-row > button {
+    border: 1px solid #E2E8F0 !important; background: #FFFFFF !important;
+    color: #31435B !important; box-shadow: none !important;
+  }
   .agency-command-profile.profile-redesign .profile-phone-action-row > button[aria-pressed="true"] {
-    background: var(--acp-blue-soft); border-color: var(--acp-blue); color: var(--acp-blue);
+    background: #EEF4FF !important; border-color: #B7D1F2 !important; color: #1B66C9 !important;
   }
   .agency-command-profile.profile-redesign .profile-phone-action-row > button:focus-visible {
     outline: 2px solid var(--acp-blue); outline-offset: 2px;
@@ -743,6 +755,6 @@
   .agency-command-profile.profile-redesign .acp-nav { display:block !important; }
   .agency-command-profile.profile-redesign .acp-nav .acp-nav-tabs { display:none !important; }
   .acp-nav .acp-tab { flex:0 0 auto; min-height:44px !important; padding:.5rem .75rem !important; font-size:.875rem !important; }
-  .acp-nav .acp-tab.is-active { background:#fff0df; color:#a33f20; border-color:#e7b18c; }
+  .acp-nav .acp-tab.is-active { background:#EEF4FF; color:#1B66C9; border-color:#B7D1F2; }
   .acp-nav-select { min-height:44px !important; font-size:16px !important; }
 }

@@ -476,6 +476,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const profileTopicRef = useRef<HTMLDivElement | null>(null);
   const profileScrollFrameRef = useRef<number | null>(null);
   useEffect(() => {
+    // Opening an agency from Search can leave the previous screen's search box
+    // focused behind this full-screen dossier. Dismiss that stale keyboard so
+    // the four phone actions are usable immediately.
+    const focused = document.activeElement;
+    if (
+      focused instanceof HTMLElement &&
+      !profileRootRef.current?.contains(focused) &&
+      focused.matches('input, textarea, select, [contenteditable="true"]')
+    ) {
+      focused.blur();
+    }
+  }, []);
+  useEffect(() => {
     profileRootRef.current?.scrollTo({ top: 0, behavior: 'instant' });
     return () => {
       if (profileScrollFrameRef.current !== null) {
@@ -1163,7 +1176,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <span>More actions</span>
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
             </summary>
-            <div className="profile-more-actions-menu">
+            <div
+              className="profile-more-actions-menu"
+              onClick={(event) => {
+                const target = event.target as HTMLElement;
+                if (target.closest('button') && !target.closest('.profile-more-sheet-heading')) {
+                  const disclosure = event.currentTarget.closest('details');
+                  if (disclosure) disclosure.open = false;
+                }
+              }}
+            >
+              <div className="profile-more-sheet-heading md:hidden">
+                <strong>Account actions</strong>
+                <button
+                  type="button"
+                  aria-label="Close account actions"
+                  onClick={(event) => {
+                    const disclosure = event.currentTarget.closest('details');
+                    if (disclosure) disclosure.open = false;
+                    disclosure?.querySelector('summary')?.focus({ preventScroll: true });
+                  }}
+                ><X aria-hidden="true" className="h-4 w-4" />Close</button>
+              </div>
               <div className="profile-stage-control">
                 <label htmlFor="profile-sales-stage">Pipeline stage</label>
                 <select
@@ -1251,11 +1285,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </details>
         </div>
-          <p className="acp-notice" role="note" data-testid="text-profile-verification-notice">
+          <div className="acp-notice" role="note" data-testid="text-profile-verification-notice">
             <ShieldAlert aria-hidden="true" className="h-3.5 w-3.5" />
-            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}</strong>{' '}
-            Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.
-          </p>
+            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}<span className="md:hidden"> · Verify facts</span></strong>
+            <span className="hidden md:inline"> Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</span>
+            <details className="acp-notice-phone-details md:hidden">
+              <summary>About this data <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" /></summary>
+              <p>Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</p>
+            </details>
+          </div>
         </section>
 
           <ProfileContactDisclosure>
@@ -1641,7 +1679,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             className="acp-nav sticky top-[var(--acp-sticky-header-h,108px)] z-30 md:top-[var(--acp-sticky-header-h,4rem)]"
           >
             <div className="w-full md:hidden">
-              <label htmlFor="profile-section-select" className="sr-only">Profile section</label>
+              <label htmlFor="profile-section-select" className="acp-mobile-section-label">Explore</label>
               <select
                 id="profile-section-select"
                 value={activeSection}
@@ -3284,8 +3322,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </div>
 
-          {/* Right: Action Buttons */}
-          <div className="grid w-full grid-cols-4 gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:flex-nowrap sm:items-center sm:gap-2">
+          {/* The phone has one focused action dock. The full set of account tools
+              remains in the header's More actions menu and on tablet/desktop. */}
+          <div className="profile-phone-action-row sm:hidden" role="group" aria-label="Agency quick actions">
+            <button type="button" onClick={() => navigateProfileSection('activity')} data-testid="button-profile-phone-notes" aria-label="Open agency notes and follow-ups">
+              <FileText aria-hidden="true" />
+              <span>Notes</span>
+            </button>
+            <button type="button" onClick={() => onToggleRoute(agency.id)} aria-pressed={agency.inDayRoute} data-testid="button-profile-phone-route" aria-label={agency.inDayRoute ? "Remove agency from today's route" : "Add agency to today's route"}>
+              <Navigation aria-hidden="true" />
+              <span>{agency.inDayRoute ? 'On route' : 'Route'}</span>
+            </button>
+            <button type="button" onClick={() => onToggleBookmark(agency.id)} aria-pressed={agency.isBookmarked} data-testid="button-profile-phone-save" aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}>
+              <Bookmark aria-hidden="true" />
+              <span>{agency.isBookmarked ? 'Saved' : 'Save'}</span>
+            </button>
+            <button type="button" onClick={() => setIsSourceDrawerOpen(true)} data-testid="button-profile-phone-sources" aria-label="Inspect agency sources">
+              <ShieldCheck aria-hidden="true" />
+              <span>Sources</span>
+            </button>
+          </div>
+          {/* Tablet-specific extended action bar is unchanged. */}
+          <div className="hidden w-full gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:flex-nowrap sm:items-center sm:gap-2">
             <AgencyCompareButton
               agency={agency}
               selected={comparedAgencyIds.includes(agency.id)}

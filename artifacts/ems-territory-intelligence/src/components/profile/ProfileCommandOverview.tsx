@@ -9,6 +9,7 @@ import {
   Activity,
   ArrowRight,
   ChevronRight,
+  ChevronDown,
   FileText,
   Gauge,
   HeartPulse,
@@ -102,6 +103,7 @@ export interface ProfileCommandOverviewProps {
 }
 
 export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, onReviewFact, children }) => {
+  const [showFullEquipment, setShowFullEquipment] = React.useState(false);
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
@@ -228,7 +230,18 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
               </div>
             </div>
           </div>
-          <div className="acp-ledger-catalog">
+          <button
+            type="button"
+            className="acp-ledger-phone-expand md:hidden"
+            aria-controls={`${artworkId}-equipment-catalog`}
+            aria-expanded={showFullEquipment}
+            onClick={() => setShowFullEquipment(expanded => !expanded)}
+            data-testid="button-overview-expand-equipment-phone"
+          >
+            <span>{showFullEquipment ? 'Hide additional equipment & software' : 'View additional equipment & software'}</span>
+            <ChevronDown aria-hidden="true" className={showFullEquipment ? 'is-expanded' : ''} />
+          </button>
+          <div id={`${artworkId}-equipment-catalog`} className={`acp-ledger-catalog${showFullEquipment ? ' is-phone-expanded' : ''}`}>
             <section className="acp-equipment-group" aria-label="Other clinical devices">
               <h3><Activity aria-hidden="true" />Clinical devices</h3>
               <ul className="acp-ledger-list">{clinicalLines.map(renderEquipmentLine)}</ul>
@@ -324,7 +337,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             ) : <p className="acp-meta">Core fields are recorded. Confirm them with the agency.</p>}
           </section>
 
-          <section className="acp-panel" data-testid="panel-overview-verification">
+          <section className="acp-panel" data-testid="panel-overview-verification" data-evidence-state={evidenceCount > 0 ? 'mapped' : 'none'}>
             <h3 className="acp-panel-title"><ShieldCheck aria-hidden="true" className="h-4 w-4" />Verification context</h3>
             <p className="acp-meta"><strong className="acp-num">{evidenceCount}</strong> of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact groups have a mapped source. A source is not a confirmation.</p>
             <button type="button" className="acp-link" onClick={onOpenSources} data-testid="button-overview-review-evidence">

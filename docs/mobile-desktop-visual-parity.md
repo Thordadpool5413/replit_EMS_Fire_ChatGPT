@@ -5,13 +5,13 @@ Baseline reviewed: `main` commit `a15305adcb4d4469e9d75aeaa4ec5dd993f86fff`
 
 ## Product direction
 
-The **existing desktop application is the single visual source of truth** for the installed mobile PWA. This is **not** a new brand, a new "Precision White" theme, or a full-screen desktop layout squeezed into a phone. Mobile should feel like the same application with more disciplined hierarchy, smaller screens, touch controls, and responsive reflow.
+The **existing desktop application is the single visual source of truth** for the installed mobile PWA. This keeps the application brand intact while intentionally replacing the provider-profile's prior beige/red palette with a shared crisp white, slate and blue presentation on desktop **and** mobile. Mobile should feel like the same application with more disciplined hierarchy, smaller screens, touch controls, and responsive reflow.
 
 ### What is non-negotiable
 
 - **Identity:** same original logo, product name, app icons, color meanings, icons, and typography as desktop.
-- **Themes:** preserve desktop's Daylight, Dark and Miami Vice variants. Use the same design tokens and active theme; do not hard-code a special orange/beige/red "mobile theme" or invent a fourth palette.
-- **Page personality:** respect page-specific desktop styling. For example, the existing agency profile has a deliberately warm presentation in `profile/contracts.css`. The previous attempt incorrectly recolored **both** desktop and mobile profile styling and was reverted. The follow-up changes are **mobile-scoped only**: they inherit the existing profile background and raise exceptionally small informational text without modifying desktop presentation.
+- **Themes:** preserve desktop's Daylight, Dark and Miami Vice variants throughout the broader app. The provider dossier intentionally uses one readable light presentation across viewport sizes, and should never bring back the old orange/beige/red palette.
+- **Profile palette:** the user rejected the warm provider-profile coloring. `profile/contracts.css` now owns a **shared desktop/mobile profile palette**: canvas `#F6F8FB`, card `#FFFFFF`, primary ink `#17243A`, borders `#E2E8F0`, action `#1B66C9`. Only meaningful warning and verified-source states may use semantic red or green; the active topic is always blue. The rest of the application retains its existing desktop-led identity.
 - **Information:** retain all original EMS/Fire content, tabs, account actions, equipment information, decision makers, map layers, source timestamps, verification statuses, and user data. Mobile may organize them into contextual sections, sheets, or disclosures, but not remove capabilities.
 - **Trust:** source-confirmed, user-reviewed, estimated, unavailable, and unsynced states must remain visibly different and never imply a level of validation not supported by the data.
 
@@ -23,7 +23,7 @@ The **existing desktop application is the single visual source of truth** for th
 | Identity/header | Original logo and current workspace | Same logo and title, compact Near me / Search / More actions |
 | Home map | Full US map and related inspector | Same map colors and labels, correctly scaled and touch-accessible; filters in disclosures |
 | Agency directory | Multi-column cards/controls | Same card visual vocabulary, single-column or compact rows, quick search and meaningful status labels |
-| Agency profile | Original identity, topic navigation, forms and evidence | Same colors and content, but concise first-screen summary, clear action row and progressive disclosure |
+| Agency profile | Crisp white/slate/blue identity, topic navigation, forms and evidence | The exact same visual palette and content, but concise first-screen summary, clear action row and progressive disclosure |
 | Reports and tools | Broad tables and charts | Responsive cards and local horizontal scrolling for genuinely tabular information |
 | Inputs and dialogs | Desktop pointer/keyboard controls | 44px touch targets, 16px editable inputs, safe-area spacing, accessible bottom sheets |
 
@@ -32,7 +32,7 @@ The **existing desktop application is the single visual source of truth** for th
 1. `shared/foundation.css` defines the base desktop themes and semantic tokens; the original `shell/contracts.css` phone selectors replaced these with rust/orange colors. The active branch switches those controls back to the **same semantic tokens** used across desktop.
 2. The original `home/contracts.css` phone-map controls introduced a second warm UI palette even though desktop Home uses a white/navy/blue map treatment. The active branch replaces the mobile-only warm controls with desktop tokens, retaining the map data palette.
 3. The original `MobileBottomNav.tsx` duplicated icon definitions, including a home-map glyph different from the desktop sidebar. The active branch reuses `WorkspaceIcon` for each primary destination.
-4. `profile/contracts.css` intentionally styles the provider profile across viewport sizes. The previous PR changed that **shared** desktop experience. The unintended desktop changes were reverted; this branch now makes only targeted adjustments inside the profile's phone-only media query.
+4. The new user instruction explicitly requests a clean, white premium look for **all individual provider profile cards, tabs, and pages**. `profile/contracts.css` now intentionally harmonizes shared desktop/mobile provider-profile colors and preserves targeted phone-only reflow rules. Non-profile desktop workspaces remain unchanged.
 5. `styles/README.md` documents a complex CSS cascade including high-specificity legacy theme bridges. Future mobile work should modify the owning responsive CSS module or existing selector. Do not append random `!important` patches or switch component styling to a new global palette.
 
 ## Focused mobile EMS/Fire provider-profile implementation
@@ -42,10 +42,10 @@ The profile is a single full-screen workspace, not two stacked mobile navigation
 - `App.tsx`: suppresses the regular five-destination app navigation while the provider dossier is open. The profile has its own visible Back control.
 - `FocusedProviderProfile.tsx`: replaces the phone's overflowing comparison/RFP/meeting/route/save/sources/back grid with four actions: **Notes, Route, Save, Sources**. The original full action set remains in **More actions** and the existing tablet presentation. The mobile More menu now includes a visible Close control and dismisses after a selected button.
 - `FocusedProviderProfile.tsx`: keeps desktop identity details but compacts phone verification into an evidence note and expandable caveat. The source-completeness percentage is **not** presented as independently verified truth.
-- `profile/contracts.css`: phone-only masthead reflow, 22px minimum provider name, readable contact buttons, one compact Explore section picker, consistent source/account cards, safe-area bottom clearance and single four-action dock. Existing desktop CSS preceding the phone-only media block is unchanged.
+- `profile/contracts.css`: shared premium palette for every provider tab and card, restrained blue controls and selection states, white content surfaces, slate typography, uniform shadows and borders, plus phone-only masthead reflow, 22px minimum provider name, readable contact buttons, one compact Explore section picker, safe-area bottom clearance and four-action dock. The provider's **desktop profile** deliberately adopts these same new colors.
 - `profile/records.css`: on phones, the secondary account-actions menu is a bounded two-column sheet above the dock, with a stage selector and explicit Close.
 - `ProfileCommandOverview.tsx`: the first screen features the monitor/device summary and a **View additional equipment & software** disclosure. The underlying six category rows remain mounted and are available when expanded; all six categories remain accessible in the Equipment topic.
-- `scripts/check-profile-overflow.mjs`, `scripts/check-profile-polish.mjs` and `scripts/check-profile-redesign.mjs` now assert the intentional single-dock design, expand inventory before mobile stress tests, and verify the mobile background matches the warm desktop profile.
+- `scripts/check-profile-overflow.mjs`, `scripts/check-profile-polish.mjs` and `scripts/check-profile-redesign.mjs` assert a single usable phone dock, expand inventory for stress tests, and require consistent cool-neutral background, white header/navigation, and blue action tokens on both phone and desktop.
 
 The work preserves current EMS/Fire data, agency identifiers, real or missing values, review workflows, sources, geography links, and all existing content areas. **Do not merge without responsive screenshots and passing browser tests.**
 
@@ -53,7 +53,7 @@ The work preserves current EMS/Fire data, agency identifiers, real or missing va
 
 - **Mobile home:** verify recognizable state labels, responsive map fit, pan/zoom behavior, readable legend and no accidental document zoom.
 - **Agency cards:** compare desktop versus mobile screenshots at matched theme; fix oversized spacing, cut-off labels, inconsistent actions, missing and ambiguous evidence badges.
-- **Profiles:** compare EMS and Fire variants across every section. Reduce on-screen clutter and redundant headings without changing source-specific colors or removing actions.
+- **Profiles:** compare EMS and Fire variants across every section. Reduce on-screen clutter and redundant headings without removing data or falsely upgrading evidence statuses. Retain semantic warnings and source-review cues without coloring entire cards by category.
 - **Navigation:** test Map, Agencies, Field Work, Reports, More, specialist subpages, Back and active state on all screen widths.
 - **Visual and functional checks:** typography scale, icon alignment, gradients, shadows, modal clipping, touch hit areas, sticky positioning, side panels, native keyboard and safe areas.
 - **PWA:** iPhone standalone installation/reopening, Android installation, splash and icon crop, service-worker upgrade prompts, offline status/sync behavior and recovery.
@@ -72,4 +72,4 @@ pnpm --filter @workspace/ems-territory-intelligence test:mobile-nav-labels
 node scripts/check-mobile-pwa.mjs
 ```
 
-**Current verification status:** This branch was edited through the GitHub connector. The available execution container cannot resolve `github.com`, so these changes have not been built, browser-rendered, screenshot-compared, or tested on physical phones. Do not merge or mark the full mobile polish done based on this initial parity pass.
+**Verification status:** GitHub Actions runs the unit suite, typecheck, production build, style ownership checks, and read-only Chromium screenshots for profile pages. Validate the latest commit's workflow result and inspect generated EMS/Fire captures before merging. Physical iPhone and Android standalone PWA checks remain outstanding.

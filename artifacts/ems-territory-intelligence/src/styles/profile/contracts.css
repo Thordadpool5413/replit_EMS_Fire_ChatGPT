@@ -635,18 +635,18 @@
   .agency-command-profile.profile-redesign .profile-workspace {
     padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
   }
-  /* An agency opened from a search result must not inherit the previous
-     screen's keyboard state and lose its profile actions. Hide this dock only
-     while an input inside the open agency dossier actually owns keyboard focus. */
-  html[data-mobile-keyboard="open"]:not(:has(.agency-command-profile.profile-redesign :is(input:focus,textarea:focus,[contenteditable="true"]:focus))) .agency-command-profile.profile-redesign .profile-mobile-dock {
-    display: block !important;
-  }
   /* One mobile dock, with no competing global app navigation. */
   .agency-command-profile.profile-redesign .profile-mobile-dock {
+    display: block !important;
     background: var(--acp-surface) !important;
     border-top: 1px solid var(--acp-border) !important;
     padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important;
     box-shadow: 0 -4px 20px rgba(15,23,42,.12);
+  }
+  /* Hide only during editing inside this dossier when the software keyboard
+     actually obscures the viewport. Stale search focus outside it must not hide actions. */
+  html[data-mobile-keyboard="open"]:has(.agency-command-profile.profile-redesign :is(input:focus,textarea:focus,[contenteditable="true"]:focus)) .agency-command-profile.profile-redesign .profile-mobile-dock {
+    display: none !important;
   }
   .agency-command-profile.profile-redesign .profile-phone-action-row {
     display: grid !important; grid-template-columns: repeat(4, minmax(0,1fr));

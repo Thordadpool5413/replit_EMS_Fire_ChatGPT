@@ -286,12 +286,51 @@
   .profile-workspace .profile-more-actions-menu {
     position: fixed;
     top: auto;
-    right: .75rem;
-    left: .75rem;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    right: max(.75rem, env(safe-area-inset-right));
+    left: max(.75rem, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
     width: auto;
-    max-height: min(65dvh, 32rem);
+    max-height: min(62dvh, 32rem);
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: .75rem;
+    border-radius: .85rem;
+    box-shadow: 0 16px 50px rgba(17, 30, 45, .2);
+  }
+  .profile-workspace .profile-more-sheet-heading {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .1rem .15rem .55rem;
+    border-bottom: 1px solid var(--acp-border);
+    color: var(--acp-text);
+    font-size: .95rem;
+  }
+  .profile-workspace .profile-more-sheet-heading > button {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    min-height: 44px;
+    padding: 0 .5rem;
+    color: var(--acp-blue);
+    font-size: .8125rem;
+    font-weight: 650;
+  }
+  .profile-workspace .profile-more-actions-menu .profile-stage-control {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+  .profile-workspace .profile-more-actions-menu :is(.profile-secondary-action, [data-testid="agency-compare-button"]) {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
   }
 }
 

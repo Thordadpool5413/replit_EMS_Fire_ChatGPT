@@ -1820,13 +1820,16 @@ export default function App() {
         />
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        setActiveTab={handleNavigateTab}
-        onGoHome={handleGoHome}
-        dayRouteCount={dayRouteCount}
-      />
+      {/* The full-screen agency profile owns its mobile actions. Do not stack
+          the global bottom navigation over the profile's action dock. */}
+      {!currentActive && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          setActiveTab={handleNavigateTab}
+          onGoHome={handleGoHome}
+          dayRouteCount={dayRouteCount}
+        />
+      )}
 
       {/* Data Lineage & Trust Disclosures Center Modal */}
       {isDataLineageOpen && <DataLineageTrustModal

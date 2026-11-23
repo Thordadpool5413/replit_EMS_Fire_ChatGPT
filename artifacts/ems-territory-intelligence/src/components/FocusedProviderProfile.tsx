@@ -3284,8 +3284,28 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </div>
 
-          {/* Right: Action Buttons */}
-          <div className="grid w-full grid-cols-4 gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:flex-nowrap sm:items-center sm:gap-2">
+          {/* The phone has one focused action dock. The full set of account tools
+              remains in the header's More actions menu and on tablet/desktop. */}
+          <div className="profile-phone-action-row sm:hidden" role="group" aria-label="Agency quick actions">
+            <button type="button" onClick={() => navigateProfileSection('activity')} data-testid="button-profile-phone-notes" aria-label="Open agency notes and follow-ups">
+              <FileText aria-hidden="true" />
+              <span>Notes</span>
+            </button>
+            <button type="button" onClick={() => onToggleRoute(agency.id)} aria-pressed={agency.inDayRoute} data-testid="button-profile-phone-route" aria-label={agency.inDayRoute ? "Remove agency from today's route" : "Add agency to today's route"}>
+              <Navigation aria-hidden="true" />
+              <span>{agency.inDayRoute ? 'On route' : 'Route'}</span>
+            </button>
+            <button type="button" onClick={() => onToggleBookmark(agency.id)} aria-pressed={agency.isBookmarked} data-testid="button-profile-phone-save" aria-label={agency.isBookmarked ? 'Remove agency from saved work' : 'Save agency to My Work'}>
+              <Bookmark aria-hidden="true" />
+              <span>{agency.isBookmarked ? 'Saved' : 'Save'}</span>
+            </button>
+            <button type="button" onClick={() => setIsSourceDrawerOpen(true)} data-testid="button-profile-phone-sources" aria-label="Inspect agency sources">
+              <ShieldCheck aria-hidden="true" />
+              <span>Sources</span>
+            </button>
+          </div>
+          {/* Tablet-specific extended action bar is unchanged. */}
+          <div className="hidden w-full gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:flex-nowrap sm:items-center sm:gap-2">
             <AgencyCompareButton
               agency={agency}
               selected={comparedAgencyIds.includes(agency.id)}

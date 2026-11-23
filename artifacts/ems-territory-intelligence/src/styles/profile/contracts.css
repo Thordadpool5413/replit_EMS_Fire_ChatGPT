@@ -417,7 +417,7 @@
   .agency-command-profile.profile-redesign .profile-mobile-breadcrumb { flex: 1 1 auto; min-width: 0; max-width: none; overflow-x: auto; scrollbar-width: none; }
   .agency-command-profile.profile-redesign .acp-header { padding: 12px 12px 10px !important; grid-template-columns: minmax(0, 1fr); gap: 10px !important; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock { justify-self: stretch; justify-content: start; }
-  .agency-command-profile.profile-redesign .acp-name { font-size: clamp(21px, 6vw, 24px) !important; line-height: 1.17 !important; }
+  .agency-command-profile.profile-redesign .acp-name { font-size: clamp(22px, 6vw, 24px) !important; line-height: 1.17 !important; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure { width: calc(100% - 24px); margin: 0 12px 8px; border-radius: 10px; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure > summary { padding: 8px 12px; min-height: 44px; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure-heading { gap: 0; flex-direction: column; }

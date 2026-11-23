@@ -11,7 +11,7 @@ The **existing desktop application is the single visual source of truth** for th
 
 - **Identity:** same original logo, product name, app icons, color meanings, icons, and typography as desktop.
 - **Themes:** preserve desktop's Daylight, Dark and Miami Vice variants. Use the same design tokens and active theme; do not hard-code a special orange/beige/red "mobile theme" or invent a fourth palette.
-- **Page personality:** respect page-specific desktop styling. For example, the existing agency profile has a deliberately warm presentation in `profile/contracts.css`. The previous attempt incorrectly recolored **both** desktop and mobile profile styling and was reverted.
+- **Page personality:** respect page-specific desktop styling. For example, the existing agency profile has a deliberately warm presentation in `profile/contracts.css`. The previous attempt incorrectly recolored **both** desktop and mobile profile styling and was reverted. The follow-up changes are **mobile-scoped only**: they inherit the existing profile background and raise exceptionally small informational text without modifying desktop presentation.
 - **Information:** retain all original EMS/Fire content, tabs, account actions, equipment information, decision makers, map layers, source timestamps, verification statuses, and user data. Mobile may organize them into contextual sections, sheets, or disclosures, but not remove capabilities.
 - **Trust:** source-confirmed, user-reviewed, estimated, unavailable, and unsynced states must remain visibly different and never imply a level of validation not supported by the data.
 
@@ -32,7 +32,7 @@ The **existing desktop application is the single visual source of truth** for th
 1. `shared/foundation.css` defines the base desktop themes and semantic tokens; the original `shell/contracts.css` phone selectors replaced these with rust/orange colors. The active branch switches those controls back to the **same semantic tokens** used across desktop.
 2. The original `home/contracts.css` phone-map controls introduced a second warm UI palette even though desktop Home uses a white/navy/blue map treatment. The active branch replaces the mobile-only warm controls with desktop tokens, retaining the map data palette.
 3. The original `MobileBottomNav.tsx` duplicated icon definitions, including a home-map glyph different from the desktop sidebar. The active branch reuses `WorkspaceIcon` for each primary destination.
-4. `profile/contracts.css` intentionally styles the provider profile across viewport sizes. The previous PR changed that **shared** desktop experience. That file is restored exactly to `main`.
+4. `profile/contracts.css` intentionally styles the provider profile across viewport sizes. The previous PR changed that **shared** desktop experience. The unintended desktop changes were reverted; this branch now makes only targeted adjustments inside the profile's phone-only media query.
 5. `styles/README.md` documents a complex CSS cascade including high-specificity legacy theme bridges. Future mobile work should modify the owning responsive CSS module or existing selector. Do not append random `!important` patches or switch component styling to a new global palette.
 
 ## Remaining improvements before calling this polished

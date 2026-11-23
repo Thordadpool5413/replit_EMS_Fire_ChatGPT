@@ -43,8 +43,10 @@
 
 @media (max-width: 767px) {
 
+  /* The agency dossier is a full-screen mobile workspace with its own action dock.
+     Do not reserve space for the global nav, which is hidden while a profile opens. */
   .provider-profile-overlay {
-    bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
+    bottom: 0 !important;
   }
 }
 

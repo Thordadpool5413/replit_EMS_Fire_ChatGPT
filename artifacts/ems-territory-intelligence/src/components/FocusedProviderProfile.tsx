@@ -1163,7 +1163,16 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <span>More actions</span>
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
             </summary>
-            <div className="profile-more-actions-menu">
+            <div
+              className="profile-more-actions-menu"
+              onClick={(event) => {
+                const target = event.target as HTMLElement;
+                if (target.closest('button') && !target.closest('.profile-more-sheet-heading')) {
+                  const disclosure = event.currentTarget.closest('details');
+                  if (disclosure) disclosure.open = false;
+                }
+              }}
+            >
               <div className="profile-more-sheet-heading md:hidden">
                 <strong>Account actions</strong>
                 <button

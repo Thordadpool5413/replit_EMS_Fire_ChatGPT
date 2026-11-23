@@ -584,6 +584,40 @@
     background: var(--acp-surface); color: var(--acp-text);
     padding-inline: 10px; font-size: 16px !important;
   }
+  /* Restore context action labels. Legacy mobile CSS hid them, leaving orphan chevrons. */
+  .agency-command-profile.profile-redesign .acp-ctx {
+    display: grid; grid-template-columns: 20px minmax(0,1fr) !important;
+    align-items: start; gap: 8px; padding: 12px;
+  }
+  .agency-command-profile.profile-redesign .acp-ctx-open {
+    grid-column: 2; justify-self: start; display: inline-flex; align-items: center;
+    gap: 4px; min-width: 0; min-height: 44px; padding: 0 5px;
+    color: var(--tp-accent); font-weight: 650;
+  }
+  .agency-command-profile.profile-redesign .acp-ctx-open span {
+    position: static; display: inline; width: auto; height: auto;
+    overflow: visible; clip-path: none; white-space: normal;
+  }
+  /* The Activity filters belong to a single account, not six full-bleed warning buttons. */
+  .agency-command-profile.profile-redesign .followup-filters {
+    display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 6px !important; align-items: stretch; width: 100%;
+  }
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 4px; min-width: 0; min-height: 44px !important;
+    padding: 6px 4px !important; font-size: 12px !important; line-height: 1.25;
+    font-weight: 650; background: var(--acp-surface) !important;
+    border: 1px solid var(--acp-border) !important;
+    color: var(--acp-text) !important; border-radius: 8px !important;
+  }
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button[aria-pressed="true"] {
+    background: var(--acp-blue-soft) !important; border-color: var(--acp-blue) !important;
+    color: var(--acp-blue) !important;
+  }
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button span {
+    color: inherit; font-variant-numeric: tabular-nums;
+  }
   /* The detailed inventory is available in its full Equipment tab or on demand. */
   .agency-command-profile.profile-redesign .acp-ledger-phone-expand {
     display: flex !important; justify-content: space-between; align-items: center;

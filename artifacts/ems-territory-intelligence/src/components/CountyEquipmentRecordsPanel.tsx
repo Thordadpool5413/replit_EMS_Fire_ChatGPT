@@ -42,7 +42,7 @@ function formatDate(value?: string): string | undefined {
 
 function EvidenceDetails({ evidence }: { evidence: EquipmentEvidenceReference[] }) {
   if (!evidence.length) {
-    return <p className="county-equipment-evidence-missing">Source details are not attached to this entry. Confirm it with the agency.</p>;
+    return <p className="county-equipment-evidence-missing">Source details are not attached to this entry.</p>;
   }
 
   return (
@@ -64,8 +64,7 @@ function EvidenceDetails({ evidence }: { evidence: EquipmentEvidenceReference[] 
             {source.reportingPeriod && <span>Reporting period: {source.reportingPeriod}</span>}
             {source.effectivePeriod && <span>Effective period: {source.effectivePeriod}</span>}
             {source.enteredAt && <span>Entered: {formatDate(source.enteredAt)}</span>}
-            {source.reviewedAt && <span>Reviewed: {formatDate(source.reviewedAt)}</span>}
-            {!source.reportingPeriod && !source.effectivePeriod && !source.enteredAt && !source.reviewedAt
+            {!source.reportingPeriod && !source.effectivePeriod && !source.enteredAt
               && <span>Source date not stated</span>}
           </div>
         </li>
@@ -83,7 +82,7 @@ function EquipmentRecordCard({ record }: { record: CountyEquipmentRecord }) {
           <div className="min-w-0">
             <p className="county-equipment-record-category">
               {record.category}
-              {record.recordType === 'source-fact' && <span className="county-equipment-record-kind">Source fact · not assumed current</span>}
+              {record.recordType === 'source-fact' && <span className="county-equipment-record-kind">Source fact</span>}
             </p>
             <h6>{record.product}</h6>
           </div>
@@ -151,7 +150,7 @@ function AgencyRecord({ record, onSelectAgency }: {
             {record.equipmentRecords.map((entry) => <EquipmentRecordCard key={entry.id} record={entry} />)}
           </div>
         ) : (
-          <p className="county-equipment-not-reported">No equipment details are attached to this agency record. This is not evidence that the agency has no equipment.</p>
+          <p className="county-equipment-not-reported">No equipment details are attached to this agency record.</p>
         )}
         {record.notReportedFamilies.length > 0 && record.equipmentRecords.length > 0 && (
           <p className="county-equipment-not-reported-categories">
@@ -191,7 +190,6 @@ export function CountyEquipmentRecordsPanel({
       <dl className="county-equipment-summary">
         <div><dt>Installed entries</dt><dd>{coverage?.equipmentRecordCount ?? 0}</dd></div>
         <div><dt>Source facts only</dt><dd>{coverage?.sourceFactRecordCount ?? 0}</dd></div>
-        <div><dt>Installed source mapped</dt><dd>{coverage?.documentedEquipmentRecordCount ?? 0}</dd></div>
       </dl>
 
       {notReported && coverage?.total ? (

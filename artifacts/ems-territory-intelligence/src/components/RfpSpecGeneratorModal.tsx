@@ -38,10 +38,10 @@ export const RfpSpecGeneratorModal: React.FC<RfpSpecGeneratorModalProps> = ({
 WORKING DRAFT — NOT AN ISSUED RFP OR PROCUREMENT AUTHORIZATION
 Generated: ${new Date().toISOString().split('T')[0]}
 AGENCY: ${agency.name.toUpperCase()} (${agency.city}, ${agency.stateCode})
-${hasAgencyFactEvidence(agency, 'providerAddress') ? `Address source reviewed: ${agency.address}` : 'Address: verify against an official agency source before issue.'}
-${hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.stateLicenseNumber ? `Florida EMS license: ${agency.stateLicenseNumber} (${agency.stateLicenseType || 'type not listed'}; expires ${agency.stateLicenseExpiration || 'not listed'}).` : 'EMS license, FDID, and NPI: not source-verified.'}
+${hasAgencyFactEvidence(agency, 'providerAddress') ? `Address: ${agency.address}` : 'Address: Not reported.'}
+${hasAgencyFactEvidence(agency, 'departmentRegistry') && agency.stateLicenseNumber ? `Florida EMS license: ${agency.stateLicenseNumber} (${agency.stateLicenseType || 'type not listed'}; expires ${agency.stateLicenseExpiration || 'not listed'}).` : 'EMS license, FDID, and NPI: Not reported.'}
 
-IMPORTANT: Confirm the agency identity, service scope, current inventory, receiving-hospital protocols, installed systems, legal requirements, and all purchasing terms with the agency before use. This template does not represent an agency-approved specification, a verified budget, or legal advice.
+WORKING DRAFT: This template is not an agency-approved specification or legal advice.
 
 SECTION 1. CLINICAL AND TECHNICAL REQUIREMENTS
 The agency’s clinical leadership and procurement team must define acceptance criteria, regulatory requirements, interoperability, cybersecurity, field testing, and support requirements. Do not assume a particular device, vendor, hospital, ePCR/CAD system, or clinical protocol.

@@ -39,8 +39,8 @@ function displayLocation(
 
 function recordLabel(matchLevel: string): string {
   return matchLevel === "strong_candidate"
-    ? "Strong name/location candidate · not confirmed"
-    : "Possible match · review the record";
+    ? "Strong name/location match"
+    : "Possible name/location match";
 }
 
 export function FireRegistryLookup({

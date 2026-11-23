@@ -43,7 +43,7 @@ export function quoteState(offer: DocumentedTradeInOffer, now = new Date()): str
   if (expiry && expiry < today) return 'Expired — request a new quote';
   if (!issued) return 'Issue date unknown — confirm availability';
   if (!expiry) return 'Expiry unknown — confirm validity';
-  return expiry === today ? 'Expires today — confirm validity' : 'Within recorded dates — eligibility unconfirmed';
+  return expiry === today ? 'Expires today' : 'Within recorded dates — eligibility not listed';
 }
 export function preparationGaps(check?: DeviceCheck): string[] {
   return [
@@ -61,7 +61,7 @@ export type Recommendation = {
 export function buildRecommendations(agency: Agency, research: ProfileResearch, now = new Date()): Recommendation[] {
   const results: Recommendation[] = research.signals.map(s => ({
     id: s.id, title: s.title, evidence: s.detail || `${s.kind} signal recorded by user`,
-    confidence: 'Medium', rationale: 'User-entered source citation; applicability and current status need confirmation.',
+    confidence: 'Medium', rationale: 'User-entered source citation.',
     sourceName: s.sourceName, sourceUrl: safeSourceUrl(s.sourceUrl),
     timing: s.date ? `${s.date} · ${dateState(s.date, now)}` : 'Date not recorded',
     nextAction: s.kind === 'grant' ? 'Confirm the published deadline, time zone, agency eligibility and allowable equipment before planning an application.'
@@ -81,7 +81,7 @@ export function buildRecommendations(agency: Agency, research: ProfileResearch, 
       id: 'record-contract', title: 'Review the recorded service-contract date',
       evidence: `${contract.vendor || 'Vendor not stated'} · recorded end ${contract.contractEndDate}`,
       confidence: contract.isVerifiedContract && contractSource ? 'Medium' : 'Low',
-      rationale: 'A contract reference is recorded; covered assets, renewal and current status still need confirmation.',
+      rationale: 'A contract reference is recorded; review covered assets, renewal and current status.',
       sourceName: contractSource || maintenance.sourceName,
       sourceUrl: safeSourceUrl(contractSource || '') || maintenance.sourceUrl,
       timing: dateState(contract.contractEndDate, now),
@@ -93,7 +93,7 @@ export function buildRecommendations(agency: Agency, research: ProfileResearch, 
     results.push({
       id: 'record-warranty', title: 'Confirm recorded warranty coverage',
       evidence: `${fleet.defibBrand || 'Monitor fleet'} · ${fleet.defibWarrantyStatus}`,
-      confidence: 'Medium', rationale: 'Source mapped to maintenance; device-level coverage has not been independently confirmed here.',
+      confidence: 'Medium', rationale: 'A maintenance source is attached; device-level coverage is listed separately.',
       sourceName: maintenance.sourceName, sourceUrl: maintenance.sourceUrl,
       nextAction: 'Confirm serial-level warranty coverage, extensions and current service arrangements; do not assume the devices require replacement.',
     });
@@ -123,26 +123,26 @@ export function buildMeetingBrief(agency: Agency, research: ProfileResearch, now
     `What is the current CPR and ventilator setup compared with these records: CPR ${cpr.value}; ventilator ${vent.value}? Which units carry them?`,
     `The software record lists ${software.map(e=>`${e.label}: ${e.value}`).join('; ')}. Which are currently used, and which systems handle ePCR and CAD separately?`,
     documentedSignal
-      ? `What is the current status of “${documentedSignal.title}”? Confirm that the cited source applies to your agency, its exact dates and purchasing requirements.`
+      ? `What is the current status of “${documentedSignal.title}”, including its dates and purchasing requirements?`
       : `Do you have a documented replacement plan, warranty/service renewal or relevant funding deadline?`,
     `For any released ${monitor.value === NOT_REPORTED ? 'monitors' : monitor.value} devices, who owns them, which quantities are eligible, what is their condition, and which accessories and disposal restrictions apply?`,
   ];
   const lines = [
-    `${agency.name} — equipment meeting brief`, `Prepared ${calendarToday(now)} · working references, not confirmed current deployment`,
+    `${agency.name} — equipment meeting brief`, `Prepared ${calendarToday(now)}`,
     '', 'Recorded equipment and software',
     ...equipment.map(e => {
       const sources = e.evidenceKeys.map(k => summarizeEvidence(agency, k)).filter(s => s.sourceName);
       const citation = sources.length
-        ? `\nSource: ${sources.map(s=>`${s.sourceName} ${s.sourceUrl || ''} · period ${s.period || 'not stated'} · ${s.stateLabel}`).join('; ')}`
+         ? `\nSource: ${sources.map(s=>`${s.sourceName} ${s.sourceUrl || ''} · period ${s.period || 'not stated'}`).join('; ')}`
         : '';
       return `${e.label}: ${e.value}${e.quantity ? ` · ${e.quantity}` : ''}${citation}`;
     }),
     '', 'Relevant signals and evidence',
-    ...(recommendations.length ? recommendations.map(r => `${r.title}: ${r.evidence}. Confidence: ${r.confidence} — ${r.rationale}${r.timing ? ` ${r.timing}.` : ''}${r.sourceName || r.sourceUrl ? ` Source: ${r.sourceName || ''} ${r.sourceUrl || ''}` : ''}\nNext: ${r.nextAction}`) : ['No documented opportunity signals recorded. Do not infer buying intent.']),
+    ...(recommendations.length ? recommendations.map(r => `${r.title}: ${r.evidence}. Confidence: ${r.confidence} — ${r.rationale}${r.timing ? ` ${r.timing}.` : ''}${r.sourceName || r.sourceUrl ? ` Source: ${r.sourceName || ''} ${r.sourceUrl || ''}` : ''}\nNext: ${r.nextAction}`) : ['No documented opportunity signals recorded.']),
     '', 'Buy-back records',
-    ...(!getDocumentedOffers(agency).length && !research.offers.length ? ['No current quote recorded. Request written offers; inventory does not establish eligibility.'] : []),
+     ...(!getDocumentedOffers(agency).length && !research.offers.length ? ['No current quote recorded.'] : []),
     ...([...getDocumentedOffers(agency), ...research.offers].map(o => `${offerKindLabel(o.kind)} · ${o.provider} · ${o.eligibleDevice || 'Device not stated'} · ${quoteState(o, now)} · quoted total ${offerTotal(o) == null ? 'not calculated' : offerValue(offerTotal(o), o.currency)} · conditions: ${o.conditions || 'not stated'} · source: ${o.sourceName || 'not stated'} ${o.sourceUrl || ''}`)),
-    ...equipment.filter(e=>e.category!=='software').map(e=>`${e.label}: eligibility ${preparationGaps(research.devices[e.key as 'monitor'|'cpr'|'vent']).join(', ') || 'details recorded; provider must still confirm eligibility'}`),
+     ...equipment.filter(e=>e.category!=='software').map(e=>`${e.label}: eligibility ${preparationGaps(research.devices[e.key as 'monitor'|'cpr'|'vent']).join(', ') || 'details recorded'}`),
     '', 'Five discovery questions', ...questions.map((q, i) => `${i + 1}. ${q}`),
   ];
   return { equipment, software, recommendations, questions, text: lines.join('\n') };

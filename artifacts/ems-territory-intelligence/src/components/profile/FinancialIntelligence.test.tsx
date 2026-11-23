@@ -37,7 +37,7 @@ test('capital credit is explicitly capped and cannot produce a negative capital 
   assert.match(html,/capped/);
   assert.match(html,/Illustrative net replacement capital/);
   assert.match(html,/<td>Net capital<\/td><td colSpan="3">\$0<\/td>/);
-  assert.match(html,/Inventory is not an eligible-quantity confirmation/);
+  assert.doesNotMatch(html,/eligible-quantity confirmation/i);
 });
 test('payer discrepancies retain raw values and do not normalize displayed percentages',()=>{
   const a=agency('Unknown');a.cmsData={...a.cmsData,medicarePayerPct:120,medicaidPayerPct:0,commercialPayerMixPct:0,selfPayPayerPct:0};

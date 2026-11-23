@@ -97,9 +97,9 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
   // A spoken opening, not the entire financial methodology or a presumed buying signal.
   const elevatorPitch = useMemo(() => {
     const inventory = !generated && defibBrand !== 'Not reported'
-      ? `Our working record for ${agency.name} lists ${defibBrand}${hasReportedDefibCount ? ` (${defibCount} units)` : ''}. Can you confirm what is deployed today?`
+      ? `Our working record for ${agency.name} lists ${defibBrand}${hasReportedDefibCount ? ` (${defibCount} units)` : ''}. What is currently deployed?`
       : `For ${agency.name}, we would like to establish which monitors and software are currently deployed.`;
-    return `${inventory} We would like to understand your service coverage, equipment plans and purchasing process. Any financial comparison or buy-back discussion would require confirmed quantities, eligibility and written terms—not assumptions from equipment age.`;
+    return `${inventory} We would like to understand your service coverage, equipment plans and purchasing process. Any financial comparison or buy-back discussion depends on quantities, eligibility and written terms—not assumptions from equipment age.`;
   }, [agency.name, defibBrand, hasReportedDefibCount, defibCount, generated]);
 
   // Tailored Discovery Questions (3+ for different command roles)
@@ -240,7 +240,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <span>3. Procurement vehicle</span>
             </div>
             <p className="text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
-              Listed cooperative option <strong className="text-[#14283F] dark:text-white">{coopContract.contractName.split(' ')[0]}</strong> ({coopContract.contractNumber}), local eligibility and purchasing limits unconfirmed.
+              Listed cooperative option <strong className="text-[#14283F] dark:text-white">{coopContract.contractName.split(' ')[0]}</strong> ({coopContract.contractNumber}); review local eligibility and purchasing limits.
             </p>
           </div>
         </div>
@@ -271,7 +271,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             Deal story: {agency.name}
           </h2>
           <p className="pi-supporting mt-1">
-            Recorded account facts, research gaps, discovery questions and conversation guidance. Confirm every value with the agency.
+              Recorded account facts, research gaps, discovery questions and conversation guidance.
           </p>
         </div>
 
@@ -336,7 +336,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
         ))}
       </div>
 
-      {/* TAB 1: ACCOUNT BRIEF & WHAT WE KNOW VS NEED TO CONFIRM */}
+      {/* TAB 1: ACCOUNT BRIEF & DISCOVERY TOPICS */}
       {activeTab === 'brief' && (
         <div className="space-y-6">
           {/* Executive Opening Pitch Box */}
@@ -361,21 +361,21 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
             </div>
           </div>
 
-          <dl className="dsb-facts" data-testid="dealstory-fact-strip" aria-label="Recorded account figures, unconfirmed">
+          <dl className="dsb-facts" data-testid="dealstory-fact-strip" aria-label="Recorded account figures">
             <div><dt><Ambulance aria-hidden="true" />Ambulances</dt><dd>{reportMetric(agency.totalAmbulances)}</dd></div>
             <div><dt><Building2 aria-hidden="true" />Stations</dt><dd>{reportMetric(agency.stationsCount)}</dd></div>
             <div><dt><Monitor aria-hidden="true" />Monitor units</dt><dd>{defibCount}</dd></div>
             <div><dt><Activity aria-hidden="true" />Transports / yr</dt><dd>{reportMetric(agency.annual911Transports)}</dd></div>
             <div><dt><HeartPulse aria-hidden="true" />Arrest runs / yr</dt><dd>{reportMetric(agency.annualCardiacArrestCalls)}</dd></div>
           </dl>
-          {/* Two-Column Grid: What We Know vs. What We Need to Confirm */}
+          {/* Two-Column Grid: Recorded information and discovery topics */}
           <div className="dsb-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* What We Know (Supported Facts) */}
             <div className="dsb-card dsb-know p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
-                  What the record shows (unconfirmed)
+                  Recorded information
                 </h3>
               </div>
               <ul className="space-y-2.5 text-xs text-[#53657B] dark:text-slate-300">
@@ -412,19 +412,19 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                     <Landmark aria-hidden="true" className="dsb-li-ico" />
                     <span>
                       <strong className="text-[#14283F] dark:text-white">Recorded grant: </strong>
-                      FEMA AFG award listed for FY{grantFiscalYear}, amount {grantAmt}; current availability not verified.
+                      FEMA AFG award listed for FY{grantFiscalYear}, amount {grantAmt}.
                     </span>
                   </li>
                 )}
               </ul>
             </div>
 
-            {/* What We Need to Confirm (Research Gaps) */}
+            {/* Discovery topics (research gaps) */}
             <div className="dsb-card dsb-confirm p-3.5 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2.5">
               <div className="flex items-center gap-2 border-b border-[#DFE6EF] dark:border-[#1E2D42] pb-3">
                 <HelpCircle className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-[#14283F] dark:text-white">
-                  What we need to confirm (Research gaps)
+                  Discovery topics
                 </h3>
               </div>
               <ul className="space-y-2.5 text-xs text-[#53657B] dark:text-slate-300">
@@ -432,7 +432,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                   <ClipboardCheck aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Biomedical Trade-In Serial Numbers: </strong>
-                    Confirm serial numbers, battery health, and accessory compatibility for the reported {defibCount} {defibBrand} units.
+                    Ask about serial numbers, battery health, and accessory compatibility for the reported {defibCount} {defibBrand} units.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -453,7 +453,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                   <Scale aria-hidden="true" className="dsb-li-ico" />
                   <span>
                     <strong className="text-[#14283F] dark:text-white">Procurement Vehicle Policy: </strong>
-                    Confirm whether local municipal ordinance permits piggybacking on {coopContract.contractName} ({coopContract.contractNumber}) or requires sealed bidding.
+                    Ask whether local municipal ordinance permits piggybacking on {coopContract.contractName} ({coopContract.contractNumber}) or requires sealed bidding.
                   </span>
                 </li>
               </ul>
@@ -509,7 +509,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
       {activeTab === 'solution' && (
         <div className="space-y-4">
           <p className="text-xs text-[#53657B] dark:text-slate-300">
-            Possible ZOLL product categories to discuss. Agency need and fit are not verified.
+            Potential ZOLL product categories for discussion.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -524,7 +524,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </span>
               </div>
               <p className="text-[#53657B] dark:text-slate-300 leading-relaxed">
-                Potential monitor option: lightweight (11.7 lbs) ruggedized hardware with Real BVM Help® ventilation feedback and automated 12-lead cellular transmission. Agency fit and replacement need are not verified.
+                Potential monitor option: lightweight (11.7 lbs) ruggedized hardware with Real BVM Help® ventilation feedback and automated 12-lead cellular transmission.
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Target Clinical Metric: </strong>
@@ -543,7 +543,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
                 </span>
               </div>
               <p className="text-[#53657B] dark:text-slate-300 leading-relaxed">
-                Possible discussion: load-distributing band CPR for continuous, consistent compressions during transport to {agency.hospitalLogistics?.primaryCathLabHospital || 'the cath lab'} . Agency need not verified.
+                Possible discussion: load-distributing band CPR for continuous, consistent compressions during transport to {agency.hospitalLogistics?.primaryCathLabHospital || 'the cath lab'}.
               </p>
               <div className="pt-2 border-t border-[#DFE6EF] dark:border-[#1E2D42] text-[11px] text-[#53657B] dark:text-slate-400">
                 <strong className="text-[#14283F] dark:text-slate-300">Transport Logistics: </strong>
@@ -585,7 +585,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <div>
                 <div className="font-semibold text-[#14283F] dark:text-white">Acknowledge &amp; Validate Current Operations</div>
                 <p className="text-[#53657B] dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Ask about annual transport volume ({reportMetric(agency.annual911Transports)} reported) and CPR community initiatives. Confirm the reported {defibCount} {defibBrand} units and local trauma logistics.
+                  Ask about annual transport volume ({reportMetric(agency.annual911Transports)} reported), CPR community initiatives, the reported {defibCount} {defibBrand} units, and local trauma logistics.
                 </p>
               </div>
             </div>
@@ -595,7 +595,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
               <div>
                 <div className="font-semibold text-[#14283F] dark:text-white">Explore Equipment Lifecycle &amp; Maintenance Burden</div>
                 <p className="text-[#53657B] dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Inquire about maintenance turnaround times, battery replacements, and manufacturer end-of-service dates for {defibAgeQuestionPhrase} without assuming those details are verified.
+                    Inquire about maintenance turnaround times, battery replacements, and manufacturer end-of-service dates for {defibAgeQuestionPhrase}.
                 </p>
               </div>
             </div>
@@ -629,7 +629,7 @@ export const DealStoryBriefingView: React.FC<DealStoryBriefingViewProps> = ({
         </div>
 
         <div className="text-[11px] text-[#53657B] dark:text-slate-400 italic">
-          Recorded identifiers only; confirm current status with each registry.
+          Recorded identifiers and registry links.
         </div>
       </div>
     </section>

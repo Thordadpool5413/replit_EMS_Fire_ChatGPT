@@ -116,7 +116,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
     });
   }, [agencies, searchQuery, sourceFilter, cloudSyncCount]);
 
-  // Filter NPI audit items for the NPI Verification Console
+  // Filter NPI audit items for the NPI check console
   const filteredNpiAuditItems = useMemo(() => {
     const q = npiSearchQuery.trim().toLowerCase();
     return npiAuditReport.items.filter((item) => {
@@ -142,7 +142,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
       setAuditScanTimestamp(now);
       dataSanitizationService.recordAuditEvent(
         'SANITIZE_PASS',
-        `Executed in-memory NPI audit scan. Verified ${npiAuditReport.validCheckDigits} valid check digits, identified ${npiAuditReport.validMismatchedEntities} entity mismatches, and flagged ${npiAuditReport.totalFlaggedForManualReview} records. 0 production Firestore mutations executed.`,
+        `Executed in-memory NPI audit scan. Checked ${npiAuditReport.validCheckDigits} valid check digits, identified ${npiAuditReport.validMismatchedEntities} entity mismatches, and flagged ${npiAuditReport.totalFlaggedForManualReview} records. 0 production Firestore mutations executed.`,
         npiAuditReport.totalInspected,
         0,
         report.firestoreSyncedCount
@@ -332,7 +332,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            10-digit Federal NPI &amp; verified municipal station coordinates
+            10-digit Federal NPI &amp; mapped municipal station coordinates
           </div>
         </div>
 
@@ -371,12 +371,12 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            {report.pulseIqVerifiedTotal.toLocaleString()} PulseIQ scores mathematically verified
+            {report.pulseIqVerifiedTotal.toLocaleString()} PulseIQ scores passed formula checks
           </div>
         </div>
       </section>
 
-      {/* 2.5 NPI CHECK DIGIT & OPERATING ENTITY MISMATCH VERIFICATION CONSOLE */}
+      {/* 2.5 NPI CHECK DIGIT & OPERATING ENTITY MISMATCH CONSOLE */}
       <section className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
         {/* Header Bar */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -384,7 +384,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
                 <Fingerprint className="w-4 h-4 shrink-0" />
-                CMS Luhn-80840 Verification Gate
+                CMS Luhn-80840 Check
               </span>
               <span aria-hidden="true">·</span>
               <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300">
@@ -397,11 +397,11 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
 
             <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] dark:text-white tracking-tight">
-              NPI Check Digit &amp; Operating Entity Mismatch Verification Console
+              NPI Check Digit &amp; Operating Entity Match Console
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Real-time mathematical validation of 10-digit National Provider Identifiers using the official CMS 80840-prefixed Luhn algorithm. Mismatched individual clinician NPIs (such as Dr. Maureen Connolly or Dr. Shawn Anglemyer) are strictly quarantined from fire/EMS operating entities without deleting prospective territory data or mutating production Firestore.
+              Mathematical checks of 10-digit National Provider Identifiers using the CMS 80840-prefixed Luhn algorithm. Mismatched individual clinician NPIs are kept separate from fire/EMS operating entities without deleting prospective territory data or mutating production Firestore.
             </p>
           </div>
 
@@ -639,7 +639,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                         </span>
                       ) : (
                         <span className="text-emerald-700 dark:text-emerald-400 font-medium text-[11px]">
-                          Verified
+                          Valid
                         </span>
                       )}
                     </td>
@@ -872,7 +872,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                     </td>
 
                     <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                      <div>FDID: {agency.fdid || 'Not source-verified'}</div>
+                      <div>FDID: {agency.fdid || '—'}</div>
                       {agency.npiNumber && <div>NPI: {agency.npiNumber}</div>}
                     </td>
 
@@ -958,7 +958,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               LIVE SANITIZATION &amp; FIRESTORE PROVENANCE AUDIT LOG
             </span>
           </div>
-          <span>{report.auditEvents.length} recorded verification events</span>
+          <span>{report.auditEvents.length} recorded audit events</span>
         </div>
 
         <div className="space-y-2 max-h-56 overflow-y-auto pr-2">
@@ -1069,7 +1069,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                     </span>
                   ) : (
                     <span className="font-semibold text-rose-700 dark:text-rose-400">
-                      Failed Modulo-10 Check Digit Verification
+                      Failed Modulo-10 Check Digit Check
                     </span>
                   )}
                 </div>

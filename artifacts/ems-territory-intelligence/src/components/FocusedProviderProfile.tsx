@@ -73,6 +73,7 @@ import {
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
+import { saveAgencyProfileReviewedAt } from '../services/agencyProfileReviewStore';
 import { ClinicalMeasures } from './profile/ClinicalMeasures';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { FireRegistryLookup } from './FireRegistryLookup';
@@ -171,7 +172,7 @@ const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string
   { id: 'medicare', label: 'Financial Intelligence', short: 'Financial', purpose: 'Reported claims data separated from planning estimates. Assumptions are adjustable; projections are not agency outcomes.', icon: DollarSign },
   { id: 'meeting', label: 'Account findings & meeting preparation', short: 'Meeting prep', purpose: 'Evidence, confidence, cited signals and a practical meeting brief. Records are working references, not proof of buying intent.', icon: FileText },
   { id: 'deal_story', label: 'Visit plan', short: 'Visit plan', purpose: 'Prepare an agency-specific conversation, discovery questions and a clearly labeled planning comparison.', icon: Sparkles },
-  { id: 'evidence', label: 'Sources & review', short: 'Sources & review', purpose: 'Review sources, confirm or correct individual facts, flag discrepancies and inspect review history.', icon: FileCheck2 },
+  { id: 'evidence', label: 'Sources', short: 'Sources', purpose: 'View source records, record notes and corrections, and inspect change history.', icon: FileCheck2 },
 ];
 
 type NppesSourceCandidate = {
@@ -460,6 +461,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     return () => observer.disconnect();
   }, []);
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
+  const [profileReviewError, setProfileReviewError] = useState('');
   const [profileDetailsHost, setProfileDetailsHost] = useState<HTMLDivElement | null>(null);
   const [compactOpening, setCompactOpening] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
@@ -486,6 +488,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, []);
+  const markProfileReviewed = () => {
+    if (!saveAgencyProfileReviewedAt(agency.id, new Date().toISOString())) {
+      setProfileReviewError('This browser could not save the review marker. The agency data was not changed.');
+      return;
+    }
+    setProfileReviewError('');
+  };
 
   // Interactive Actuarial Forecasting Sensitivity Controls (Low / Base / High Confidence Intervals)
   const [customUnitMsrp, setCustomUnitMsrp] = useState<number>(38500);
@@ -640,7 +649,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
       setLiveNppesResult({
         outcome: data.outcome ?? 'SOURCE_RESPONSE',
-        details: data.details ?? 'NPPES returned source records for end-user review.',
+        details: data.details ?? 'NPPES returned source records.',
         fetchedAt,
         candidates,
         candidateCount: candidates.length,
@@ -832,7 +841,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       secondaryFact: actuarialForecast.hasTcoInputs
         ? `${formatCurrency(actuarialForecast.fiveYrTcoBase, { showSign: true })} illustrative 5-year estimate; reported unit count × benchmark service, battery, and consumables savings plus selected trade-in credit.`
         : '5-year fleet estimate not calculated: positive reported defibrillator count is unavailable.',
-      whyItMatters: `Illustrative trade-in assumption: ${formatCurrency(customTradeInCredit)} per unit; confirm current pricing and eligibility before use.`,
+      whyItMatters: `Illustrative trade-in assumption: ${formatCurrency(customTradeInCredit)} per unit.`,
       nextActionLabel: 'Review purchasing',
       targetTopic: 'purchasing' as ProfileSection,
       sourceBadge: 'OpenFEMA AFG & TCO model'
@@ -846,7 +855,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       secondaryFact: actuarialForecast.hasRecoveryInputs
         ? `${formatCurrency(actuarialForecast.annualRecoveryBase, { perYear: true, showSign: true })} illustrative recovery scenario; reported denied-claim dollars × selected ${customDenialCapturePct}% capture assumption (±18% sensitivity).`
         : 'Recovery estimate not calculated: same-scope reported denied-claim dollars and reporting period are required.',
-      whyItMatters: 'Review billing and documentation workflows; no agency-specific recovery amount is attributed to product features without verified inputs.',
+      whyItMatters: 'Review billing and documentation workflows; product features are not used to attribute an agency-specific recovery amount.',
       nextActionLabel: 'Inspect Medicare',
       targetTopic: 'medicare' as ProfileSection,
       sourceBadge: medicareDenialMetric?.source ?? 'Medicare claim summary'
@@ -869,7 +878,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         ? `Department address: ${agency.address} (official department source).`
         : 'Department address not reported in the record.',
       hasAgencyFactEvidence(agency, 'departmentRegistry')
-        ? `Florida EMS provider license ${agency.stateLicenseNumber || 'listed'} is on the state provider report. This is not a verified USFA FDID.`
+        ? `Florida EMS provider license ${agency.stateLicenseNumber || 'listed'} is on the state provider report.`
         : 'State EMS license or USFA FDID not reported in the record.',
       hasAgencyFactEvidence(agency, 'agencyLeadership')
         ? `Leadership is listed in the cited agency source: ${primaryContact?.name || 'see source record'}.`
@@ -884,7 +893,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         ? `${reportMetric(agency.annualCallVolume)} Fire Rescue calls were received in ${agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'the cited reporting period'}; this is not an EMS transport count.`
         : 'Annual Fire Rescue call volume not reported in the record.',
       hasAgencyFactEvidence(agency, 'epcrSystem')
-        ? `${agency.installedFleet.epcrCadSoftware} is recorded in the combined ePCR/CAD field; separate systems and current use need confirmation.`
+        ? `${agency.installedFleet.epcrCadSoftware} is recorded in the combined ePCR/CAD field.`
         : 'Current ePCR and CAD systems not reported in the record.',
       hasAgencyFactEvidence(agency, 'monitorModelTransition')
         ? 'The county reports LIFEPAK-15 devices in use and LIFEPAK-35 replacement activity; exact counts and completion are unknown.'
@@ -906,7 +915,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
       developmentsThatMatter.push('No current operational or procurement development is listed in this agency record.');
     }
 
-    // 3. What Is Not Yet Confirmed (Research Gaps)
+    // 3. Research Gaps
     const whatIsNotConfirmed = [
       'Exact biomedical inventory, serial numbers, and battery inventory across frontline units.',
       `Municipal council or district board capital budget voting timeline and FY2026 appropriation gates.`,
@@ -915,9 +924,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     ];
 
     // 4. Primary Recommended Move
-    let primaryMoveAction = `Verify ${isFire ? 'fire department' : 'EMS provider'} operational records`;
-    let primaryMoveWhy = 'Confirm stations, frontline units, annual volume, receiving hospitals, equipment, systems, contracts, and decision makers from current agency or procurement sources.';
-    let primaryMoveEvidence = 'Source links are provided where mapped; users should confirm operational details with the agency.';
+    let primaryMoveAction = `Review ${isFire ? 'fire department' : 'EMS provider'} operational records`;
+    let primaryMoveWhy = 'Review stations, frontline units, annual volume, receiving hospitals, equipment, systems, contracts, and decision makers.';
+    let primaryMoveEvidence = 'Source links are provided where available.';
     let primaryMoveNextStep = 'Prepare for Meeting';
 
     if (hasNotes && topNote?.nextAction) {
@@ -1230,7 +1239,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           {/* Registry identifiers, planning estimates, assessment and review controls are portaled
               into the Financial / Evidence detail host below; this container renders nothing in place. */}
           <div hidden aria-hidden="true" className="profile-portal-sources">
-            {/* BLOCK 1: AGENCY IDENTITY, OFFICIAL IDENTIFIERS & SOURCE VERIFICATION */}
+            {/* BLOCK 1: AGENCY IDENTITY AND OFFICIAL IDENTIFIERS */}
             <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
               <div className="space-y-3 min-w-0">
 
@@ -1284,6 +1293,24 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 </div>
               </details>,
               profileDetailsHost,
+              )}
+              {profileDetailsHost && createPortal(
+                <div className="profile-review-strip flex flex-wrap items-center gap-2 border-t border-[#DFE6EF] pt-3 dark:border-[#1E2D42]">
+                  <button
+                    type="button"
+                    onClick={markProfileReviewed}
+                    className="inline-flex min-h-9 items-center justify-center rounded-lg border border-[#B8C9C0] bg-white px-3 text-xs font-semibold text-[#176568] transition-colors hover:bg-[#E7F1EE] dark:border-[#40585A] dark:bg-[#172528] dark:text-[#9BD0C6] dark:hover:bg-[#203735]"
+                    data-testid={`button-mark-profile-reviewed-${agency.id}`}
+                  >
+                    Save review marker
+                  </button>
+                  {profileReviewError && (
+                    <p className="text-[11px] font-medium text-rose-700 dark:text-rose-300" role="alert">
+                      {profileReviewError}
+                    </p>
+                  )}
+                </div>,
+                profileDetailsHost,
               )}
 
               {/* Less-frequent commercial planning details remain available but collapsed by default. */}
@@ -2056,7 +2083,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               No equipment, supplier, or maintenance details are listed in this agency record.
               {hasAgencyFactEvidence(agency, 'monitorModelTransition') && (
                 <div className="rounded-lg border border-amber-200 bg-white/70 p-3 space-y-1">
-                  <div className="font-semibold">Verified partial monitor record</div>
+                  <div className="font-semibold">Recorded monitor details</div>
                   <p>{agency.factEvidence?.monitorModelTransition?.note}</p>
                   <a
                     className="inline-flex text-blue-700 hover:underline"
@@ -2501,7 +2528,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 )}
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
                   {hasAgencyFactEvidence(agency, 'epcrSystem')
-                    ? 'A source is mapped to this software record. Separate ePCR/CAD systems and current deployment require confirmation; this source does not verify annual EMS transports.'
+                    ? 'A source is mapped to this software record.'
                     : 'System details are not listed in this record.'}
                 </p>
                 {hasAgencyFactEvidence(agency, 'epcrSystem') && (
@@ -3384,7 +3411,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     rel="noopener noreferrer"
                     className="w-full p-3 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8] flex items-center justify-between font-medium text-[#14283F] dark:text-white transition-colors"
                   >
-                    <span>Google Maps Station Verification</span>
+                    <span>Mapped station locations</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#285EE8]" />
                   </a>
                 </div>

@@ -2,7 +2,7 @@ import { validateCorrection } from '../../services/agencyReviewOverlay';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCheck, ExternalLink, FileCheck2, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert, UserCheck } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
-import { appendFactReview, effectiveFactValue, factReviewStatus, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
+import { appendFactReview, effectiveFactValue, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
 import './FactReviewPanel.css';
 
 type Fact = { id: string; label: string; value: string; sourceKey: AgencyFactEvidenceKey };
@@ -30,7 +30,7 @@ export function reviewableAgencyFacts(a: Agency): Fact[] {
     {id:'operations.stations',label:'Stations',value:text(a.stationsCount),sourceKey:'stationCount'},
   ].map(f => ({...f, value: a._reviewOriginalValues?.[f.id] ?? f.value})) as Fact[];
 }
-const labels: Record<FactReviewAction,string> = {review:'Review information',confirm:'Confirm this fact',correct:'Correct this value',flag:'Flag a discrepancy',note:'Add verification note'};
+const labels: Record<FactReviewAction,string> = {review:'Review information',confirm:'Record confirmation',correct:'Correct this value',flag:'Flag a discrepancy',note:'Add note'};
 export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}> = ({agency,requestedFieldId}) => {
   const facts = useMemo(()=>reviewableAgencyFacts(agency),[agency]);
   const [entries,setEntries]=useState<FactReviewEntry[]>([]);
@@ -93,32 +93,32 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}>
     } catch(e){setError(e instanceof Error?e.message:'Review could not be saved.');}
   };
   return <section className="fact-review" data-testid="fact-review-panel" aria-labelledby="fact-review-title">
-    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Fact-level review</span><h2 id="fact-review-title">Evidence, not assumptions</h2><p>Review one value at a time. Source type and your review status are separate.</p></div><span className="fr-local">Fact review history</span></header>
+    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Record details</span><h2 id="fact-review-title">Recorded values and sources</h2><p>View source records, add notes, and keep corrections with their history.</p></div><span className="fr-local">Change history</span></header>
     {loadError&&<p role="alert" className="fr-error">{loadError} Saving is blocked to protect existing history.</p>}
     <div className="fr-workspace">
       <div className="fr-list">
-        <label className="fr-desktop-filter">Show facts<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All facts</option><option value="needs">Needs review</option><option value="reviewed">Has review history</option></select></label>
+        <label className="fr-desktop-filter">Show facts<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All facts</option><option value="needs">No saved entries</option><option value="reviewed">With saved entries</option></select></label>
         <label className="fr-mobile-picker">Fact to review<select value={fact.id} onChange={e=>changeFact(e.target.value)} data-testid="select-review-fact-mobile">{facts.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></label>
         <div className="fr-facts">{facts.filter(f=>filter==='all'||(filter==='reviewed'?entries.some(e=>e.fieldId===f.id):!entries.some(e=>e.fieldId===f.id))).map(f=>{
           const reviews=entries.filter(e=>e.fieldId===f.id);
           const hasSource=Boolean(agency.factEvidence?.[f.sourceKey]);
-          return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`} data-source={hasSource?'yes':undefined} data-reviewed={reviews.length>0?'yes':undefined}><span className="fr-fact-label">{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><span className="fr-fact-marks">{hasSource&&<span className="fr-mark fr-mark--source"><FileCheck2 size={13} aria-hidden="true"/>Source</span>}{reviews.length>0&&<span className="fr-mark fr-mark--review"><UserCheck size={13} aria-hidden="true"/>{reviews.length}</span>}</span><small>{factReviewStatus(f.value,reviews)}</small></button>;
+           return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`} data-source={hasSource?'yes':undefined}><span className="fr-fact-label">{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><span className="fr-fact-marks">{hasSource&&<span className="fr-mark fr-mark--source"><FileCheck2 size={13} aria-hidden="true"/>Source</span>}</span></button>;
         })}</div>
       </div>
       <div className="fr-detail">
-        <h3>{fact.label}</h3><div className="fr-zones"><div className="fr-zone fr-zone--source"><p className="fr-zone-label"><FileCheck2 size={15} aria-hidden="true"/>Record</p><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div></dl>
-        {source&&<div className="fr-source">{source.sourceKind&&<span>Type <strong>{source.sourceKind}</strong></span>}{source.sourceName&&<span>{source.sourceName}</span>}{source.reportingPeriod&&<span>Period {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}</div>}</div><div className="fr-zone fr-zone--review"><p className="fr-zone-label"><UserCheck size={15} aria-hidden="true"/>Your review</p><dl className="fr-values"><div><dt>Current research value</dt><dd>{current}</dd></div></dl><p className="fr-status">{factReviewStatus(fact.value,history)}</p></div></div>
+         <h3>{fact.label}</h3><div className="fr-zones"><div className="fr-zone fr-zone--source"><p className="fr-zone-label"><FileCheck2 size={15} aria-hidden="true"/>Record</p><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div></dl>
+         {source&&<div className="fr-source">{source.sourceKind&&<span>Type <strong>{source.sourceKind}</strong></span>}{source.sourceName&&<span>{source.sourceName}</span>}{source.reportingPeriod&&<span>Period {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}</div>}</div><div className="fr-zone fr-zone--review"><p className="fr-zone-label"><UserCheck size={15} aria-hidden="true"/>Entry details</p><dl className="fr-values"><div><dt>Current value</dt><dd>{current}</dd></div></dl></div></div>
         <form onSubmit={save} onChange={()=>{setDirty(true);setMessage('');}}>
           <label>Review action<select value={action} onChange={e=>setAction(e.target.value as FactReviewAction)} data-testid="fact-review-action">{Object.entries(labels).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
           <div className="fr-form-grid"><label>Reviewer name<input required maxLength={120} value={reviewer} onChange={e=>setReviewer(e.target.value)} autoComplete="name" data-testid="fact-review-reviewer"/></label><label>Review method<input required maxLength={240} placeholder="e.g. agency phone call, document review" value={method} onChange={e=>setMethod(e.target.value)} data-testid="fact-review-method"/></label></div>
-          <p className="fr-hint">Name is self-entered, not an authenticated identity. Reviews save on this device and queue for cloud synchronization.</p>
+           <p className="fr-hint">Name and method are saved with this entry. Changes save on this device and queue for cloud synchronization.</p>
           {action==='correct'&&<label>Corrected value<input required maxLength={2000} value={correction} onChange={e=>setCorrection(e.target.value)} data-testid="fact-review-correction"/><span className="fr-hint">Original values and previous corrections remain in history. Valid corrections update the profile, equipment totals, scoring, and exports.</span></label>}
-          <label>Review notes<textarea rows={3} maxLength={4000} required={action==='flag'||action==='note'} value={note} onChange={e=>setNote(e.target.value)} data-testid="fact-review-note"/></label>
+           <label>Entry notes<textarea rows={3} maxLength={4000} required={action==='flag'||action==='note'} value={note} onChange={e=>setNote(e.target.value)} data-testid="fact-review-note"/></label>
           <label>Supporting link <span className="fr-hint">(optional)</span><input type="url" maxLength={2000} placeholder="https://" value={supportingUrl} onChange={e=>setSupportingUrl(e.target.value)}/></label>
           {error&&<p role="alert" className="fr-error">{error}</p>}{message&&<p role="status" className="fr-success">{message}</p>}
-          <div className="fr-save"><span>{dirty?'Unsaved review':'Changes apply to this fact only'}</span><button disabled={!!loadError} type="submit" data-testid="save-fact-review">{action==='confirm'?<CheckCheck size={16}/>:action==='correct'?<PencilLine size={16}/>:action==='flag'?<TriangleAlert size={16}/>:<MessageSquareText size={16}/>}Save review</button></div>
+           <div className="fr-save"><span>{dirty?'Unsaved changes':'Changes apply to this fact only'}</span><button disabled={!!loadError} type="submit" data-testid="save-fact-review">{action==='confirm'?<CheckCheck size={16}/>:action==='correct'?<PencilLine size={16}/>:action==='flag'?<TriangleAlert size={16}/>:<MessageSquareText size={16}/>}Save entry</button></div>
         </form>
-        <details className="fr-history" open={history.length>0}><summary><History size={16} aria-hidden="true"/>Review history ({history.length})</summary>{history.length===0?<p>No reviews recorded for this fact.</p>:<ol>{[...history].reverse().map(e=><li key={e.id}><strong>{labels[e.action]}</strong><span>{e.reviewer} · {new Date(e.reviewedAt).toLocaleString()}</span><span>Method: {e.method}</span><span>Original: {e.originalValue} · Previous: {e.previousValue}</span>{e.correctedValue&&<span>Correction: {e.correctedValue}</span>}<span>Source at review: {e.sourceName||'Not attached'} · {e.sourceKind||'Type not specified'} · {e.sourcePeriod||'Period not stated'}</span>{safeSourceUrl(e.sourceUrl)&&<a href={safeSourceUrl(e.sourceUrl)} target="_blank" rel="noopener noreferrer">Original source ↗</a>}{e.note&&<p>{e.note}</p>}{safeSourceUrl(e.supportingUrl)&&<a href={safeSourceUrl(e.supportingUrl)} target="_blank" rel="noopener noreferrer">Supporting record ↗</a>}</li>)}</ol>}</details>
+         <details className="fr-history" open={history.length>0}><summary><History size={16} aria-hidden="true"/>Change history ({history.length})</summary>{history.length===0?<p>No entries recorded for this fact.</p>:<ol>{[...history].reverse().map(e=><li key={e.id}><strong>{labels[e.action]}</strong><span>{e.reviewer} · {new Date(e.reviewedAt).toLocaleString()}</span><span>Method: {e.method}</span><span>Original: {e.originalValue} · Previous: {e.previousValue}</span>{e.correctedValue&&<span>Correction: {e.correctedValue}</span>}<span>Source: {e.sourceName||'Not attached'} · {e.sourceKind||'Type not specified'} · {e.sourcePeriod||'Period not stated'}</span>{safeSourceUrl(e.sourceUrl)&&<a href={safeSourceUrl(e.sourceUrl)} target="_blank" rel="noopener noreferrer">Original source ↗</a>}{e.note&&<p>{e.note}</p>}{safeSourceUrl(e.supportingUrl)&&<a href={safeSourceUrl(e.supportingUrl)} target="_blank" rel="noopener noreferrer">Supporting record ↗</a>}</li>)}</ol>}</details>
       </div>
     </div>
   </section>;

@@ -4,20 +4,20 @@ import { Briefcase, ClipboardList, ExternalLink, Landmark, Mail, Phone, Stethosc
 import type { Agency, KeyContact } from '../../types';
 import { hasMappedAgencyFactEvidence } from '../../data/agencyFactEvidence';
 
-type Influence = 'Recorded economic buyer' | 'Clinical role' | 'Operational role' | 'Procurement role' | 'Leadership · authority unconfirmed' | 'Role not classified';
+type Influence = 'Recorded economic buyer' | 'Clinical role' | 'Operational role' | 'Procurement role' | 'Leadership role' | 'Role not classified';
 
 const classify = (c: KeyContact): Influence => {
   const t = `${c.role} ${c.title}`.toLowerCase();
   if (/economic buyer|final purchasing authority/.test(t)) return 'Recorded economic buyer';
   if (/purchas|procure|finance|budget|city manager|county manager/.test(t)) return 'Procurement role';
   if (/medical director|clinical|quality|educat|nurse/.test(t)) return 'Clinical role';
-  if (/chief|director|commissioner|administrator/.test(t) && !/battalion|deputy|assistant/.test(t)) return 'Leadership · authority unconfirmed';
+  if (/chief|director|commissioner|administrator/.test(t) && !/battalion|deputy|assistant/.test(t)) return 'Leadership role';
   if (/captain|logistic|fleet|deputy|battalion|operations|assistant|supervisor/.test(t)) return 'Operational role';
   return 'Role not classified';
 };
-const ORDER: Influence[] = ['Recorded economic buyer', 'Leadership · authority unconfirmed', 'Procurement role', 'Clinical role', 'Operational role', 'Role not classified'];
+const ORDER: Influence[] = ['Recorded economic buyer', 'Leadership role', 'Procurement role', 'Clinical role', 'Operational role', 'Role not classified'];
 const GROUP_ICON: Record<Influence, React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>> = {
-  'Recorded economic buyer': Landmark, 'Leadership · authority unconfirmed': Briefcase, 'Procurement role': ClipboardList,
+  'Recorded economic buyer': Landmark, 'Leadership role': Briefcase, 'Procurement role': ClipboardList,
   'Clinical role': Stethoscope, 'Operational role': Wrench, 'Role not classified': Users,
 };
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
@@ -33,12 +33,11 @@ export const DecisionMakerDirectory: React.FC<{ agency: Agency }> = ({ agency })
   return (
     <div className="adm" data-testid="decision-maker-directory">
       <div className="adm-source">
-        {mapped && <span className="afi-kind" data-kind="reported">Source mapped</span>}
         {ev?.sourceName && (safeUrl(ev.sourceUrl)
           ? <a href={safeUrl(ev.sourceUrl)} target="_blank" rel="noopener noreferrer">{ev.sourceName}<ExternalLink aria-hidden="true" className="h-3 w-3" /></a>
           : <span>{ev.sourceName}</span>)}
         {ev?.reportingPeriod && <span>· {ev.reportingPeriod}</span>}
-        <span className="adm-hint">Grouped by recorded titles. A title alone does not establish purchasing authority or influence.</span>
+        <span className="adm-hint">Grouped by recorded titles.</span>
       </div>
       {contacts.length === 0 ? (
         <div className="adm-empty">
@@ -64,7 +63,7 @@ export const DecisionMakerDirectory: React.FC<{ agency: Agency }> = ({ agency })
                     {c.phone ? <a href={`tel:${c.phone}`} data-testid={`link-contact-phone-${c.id || i}`}><Phone aria-hidden="true" className="h-3.5 w-3.5" />{c.phone}</a> : <span className="is-missing">No direct phone</span>}
                     {c.email ? <a href={`mailto:${c.email}`} data-testid={`link-contact-email-${c.id || i}`}><Mail aria-hidden="true" className="h-3.5 w-3.5" />{c.email}</a> : <span className="is-missing">No email listed</span>}
                   </div>
-                  <p className="adm-src">{c.verificationSource || 'Source not listed'}{c.isVerifiedOfficial ? ' · official listing recorded' : ''}</p>
+                   <p className="adm-src">{c.verificationSource || 'Source not listed'}</p>
                 </li>
               ))}
             </ul>

@@ -7,8 +7,7 @@ import { getRecordOrigin } from '../utils/workspacePresentation';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Agency, AgencyFactEvidenceKey, PredictiveWeights } from '../types';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
-import { AGENCY_FACT_EVIDENCE_FIELDS, getAgencyFactEvidenceStatus } from '../data/agencyFactEvidence';
-import { getAgencyProfileReviewedAt } from '../services/agencyProfileReviewStore';
+import { AGENCY_FACT_EVIDENCE_FIELDS } from '../data/agencyFactEvidence';
 import {
   Printer,
   Download,
@@ -156,7 +155,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   const [pdfPaperSize, setPdfPaperSize] = useState<'a4' | 'letter'>('a4');
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
   const [includedSections, setIncludedSections] = useState<Record<ReportSectionKey, boolean>>(
     allReportSectionsIncluded,
   );
@@ -170,7 +168,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
   // Support closing with Escape key
   useEffect(() => {
     if (!isOpen) return;
-    setProfileReviewedAt(getAgencyProfileReviewedAt(agency.id));
     setIncludedSections(allReportSectionsIncluded());
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -232,18 +229,12 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
     ...Object.entries(agency.factEvidence ?? {}).flatMap(([key, evidence]) => {
       if (!evidence || (!evidence.sourceName?.trim() && !evidence.sourceUrl)) return [];
       const fieldKey = key as AgencyFactEvidenceKey;
-      const status = getAgencyFactEvidenceStatus(agency, fieldKey);
       return [{
         label: factLabel(fieldKey),
         sourceName: evidence.sourceName?.trim() || 'Source name not provided',
         url: evidence.sourceUrl,
         period: evidence.reportingPeriod,
         periodLabel: 'Reporting period',
-        status: status === 'source-reviewed'
-          ? `Review marker recorded${evidence.reviewedAt ? ` · ${new Date(evidence.reviewedAt).toLocaleDateString()}` : ''}`
-          : status === 'source-mapped'
-            ? 'Source mapped; not marked reviewed'
-            : 'Source record incomplete',
         detail: evidence.note,
       }];
     }),
@@ -253,11 +244,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       url: fact.sourceUrl,
       period: fact.reportingPeriod || fact.effectivePeriod,
       periodLabel: 'Reporting period',
-      status: fact.basis === 'user-entered'
-        ? 'User-entered source record'
-        : fact.basis === 'calculated'
-          ? 'Calculated source record'
-          : 'Source-reported record',
       detail: fact.note,
     })),
     ...(agency.sourceRecordAssociations ?? []).map((association) => ({
@@ -266,9 +252,6 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
       url: association.sourceUrl,
       period: association.sourceDate || undefined,
       periodLabel: 'Source date',
-      status: association.decision === 'confirmed'
-        ? 'User-confirmed source match'
-        : 'User-rejected source match',
       detail: association.matchBasis,
     })),
   ].filter((reference, index, references) => references.findIndex((candidate) =>
@@ -933,7 +916,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
                 </div>
               </div>
               <p className="mt-2 text-[10px] text-slate-600">
-                Values are shown as recorded in this profile; see the source references below for field-level source and review status.
+                Values are shown as recorded in this profile; see the source references below for details.
               </p>
             </div>
 
@@ -944,17 +927,12 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
               <span>Taxonomy: {agency.taxonomyCode || 'Not reported'}</span>
             </div>
 
-            <div className="print-profile-review border-l-2 border-slate-300 pl-2 text-[9px] text-slate-500">
-              User review status in this browser: {profileReviewedAt
-                ? `profile marked reviewed ${new Date(profileReviewedAt).toLocaleDateString()} (user-recorded; not independent verification)`
-                : 'not marked reviewed (this is not a verification status)'}
-            </div>
 
             {/* Official Leadership & Key Contacts Directory */}
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
-                <span>Agency leadership and contact details</span>
-                <span className="text-xs text-slate-500">See source references for field-level status</span>
+                  <span>Agency leadership and contact details</span>
+                  <span className="text-xs text-slate-500">See source references for details</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <div>
@@ -1397,7 +1375,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             {agency.fieldNotes && agency.fieldNotes.length > 0 && (
               <div>
                 <div className="text-xs font-semibold text-slate-700 mb-2">
-                  User-recorded field notes (not independently verified)
+                  User-recorded field notes
                 </div>
                 <div className="border border-slate-200 rounded-lg overflow-hidden text-xs">
                   <table className="w-full text-left border-collapse">
@@ -1652,7 +1630,7 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             <div>
               <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
                 <span>FEMA AFG &amp; federal grant awards (reported records)</span>
-                  <span className="text-xs text-slate-500">Record and review status vary; see source references</span>
+                  <span className="text-xs text-slate-500">See source references for record details</span>
               </div>
               {femaGrants.length > 0 ? <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left border-collapse text-xs">
@@ -1709,34 +1687,14 @@ export const ExecutiveBriefingDossier: React.FC<ExecutiveBriefingDossierProps> =
             hidden={!includedSections.sources}
             className="print-source-references pt-3 border-t-2 border-slate-900 text-xs text-slate-700"
           >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-bold text-slate-900">Agency source references</h2>
-                <span className="text-[10px] text-slate-600">
-                  Source citations show provenance. A review marker records user activity; neither independently verifies a fact.
-                </span>
-              </div>
+              <h2 className="font-bold text-slate-900">Agency source references</h2>
               {sourceReferences.length > 0 ? (
                 <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   {sourceReferences.map((reference, index) => {
                     const sourceUrl = printableSourceUrl(reference.url);
-                    const normalizedStatus = reference.status.toLowerCase();
-                    const statusKind = /review marker|confirmed/.test(normalizedStatus)
-                      ? 'reviewed'
-                      : /incomplete|rejected/.test(normalizedStatus)
-                        ? 'warning'
-                        : normalizedStatus.includes('mapped')
-                          ? 'mapped'
-                          : normalizedStatus.includes('calculated')
-                            ? 'calculated'
-                            : normalizedStatus.includes('user-entered')
-                              ? 'user-entered'
-                              : 'reported';
                     return <li key={`${reference.label}-${reference.sourceName}-${index}`} className="min-w-0 break-words">
                       <div className="font-semibold text-slate-900">
-                        {reference.label} ·{' '}
-                        <span className="print-status-badge" data-status-kind={statusKind}>
-                          {reference.status}
-                        </span>
+                        {reference.label}
                       </div>
                       <div>{reference.sourceName}</div>
                       <div className="text-slate-600">

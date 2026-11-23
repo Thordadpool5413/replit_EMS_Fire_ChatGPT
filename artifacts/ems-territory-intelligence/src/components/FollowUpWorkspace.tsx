@@ -107,7 +107,7 @@ export function FollowUpWorkspace({agencies,onUpdate,onOpen,onCreate,compact=fal
       <p><strong>Last interaction:</strong> {agencies[0].lastContactDate || 'Not recorded'}</p>
       <p><strong>Account stage:</strong> {agencies[0].zollOpportunity?.salesStage || 'Not recorded'}</p>
       <p><strong>Recorded contacts:</strong> {agencies[0].keyContacts?.length ? agencies[0].keyContacts.map(contact=>`${contact.name} (${contact.title || contact.role})`).join('; ') : 'No contacts recorded. Add or research contacts in People.'}</p>
-      <p>Confirm current equipment, purchasing authority, and timing with the agency. Review individual facts in Evidence; a completed follow-up does not validate agency information.</p>
+      <p>Use follow-ups to track work only; completing a task does not change agency records or profile metrics.</p>
     </div>}
     {onCreate&&<TaskCreator agencies={agencies} onCreate={onCreate}/> }
     <div className="followup-filters" role="group" aria-label="Filter follow-ups">{buckets.map(bucket=><button className="workspace-button" key={bucket} aria-pressed={filter===bucket} onClick={()=>setFilter(bucket)}>{bucket} <span>{rows.filter(({note})=>bucket==='All open'?note.followUpStatus!=='completed':followUpBucket(note)===bucket).length}</span></button>)}</div>

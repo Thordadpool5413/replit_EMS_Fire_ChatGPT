@@ -267,7 +267,7 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
                 {dataset.rows.length.toLocaleString()} NPI × county rows · {dataset.reportingPeriod} · {dataset.sourceName} · {dataset.sourceReference}
               </div>
               <div className="mt-1 text-[11px] text-slate-600 dark:text-slate-400">
-                Imported {new Date(dataset.importedAt).toLocaleString()} · source details are user-entered and not independently verified
+                Imported {new Date(dataset.importedAt).toLocaleString()}
               </div>
             </div>
             <div className="flex shrink-0 gap-2">

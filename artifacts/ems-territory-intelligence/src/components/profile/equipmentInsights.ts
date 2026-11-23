@@ -159,7 +159,7 @@ export const TRADE_IN_CHECKLIST: string[] = [
   'Record unit condition and service history',
   'Check ownership, lease or grant-funding restrictions',
   'Inventory accessories (batteries, cables, cases)',
-  'Confirm current service/warranty status',
+  'Review service and warranty terms',
   'Plan secure removal of patient data before release',
   'Confirm disposal and procurement rules with purchasing',
 ];

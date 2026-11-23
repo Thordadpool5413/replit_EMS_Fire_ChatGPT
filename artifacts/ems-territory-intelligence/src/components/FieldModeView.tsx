@@ -92,17 +92,17 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
       'Stop #',
       'Department Name',
       'Category',
-      'Verified Street Address',
+      'Recorded Street Address',
       'City',
       'County',
       'State',
       'ZIP Code',
-      'Verified Command Official',
+      'Recorded Command Official',
       'Title',
       'Official Website',
       'Google Maps Link',
-      'Verified Defib Brand',
-      'Verified Defib Units',
+      'Recorded Defib Brand',
+      'Recorded Defib Units',
       `${PULSE_IQ_ESTIMATE_LABEL} (0–100)`
     ];
     const rows = targetList.map((a, idx) => {
@@ -232,7 +232,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
               <span>Today's field route itinerary</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Optimized station sequence with verified addresses, navigation links, and rapid post-visit logging.
+              Optimized station sequence with mapped addresses, navigation links, and rapid post-visit logging.
             </p>
           </div>
 
@@ -398,7 +398,7 @@ export const FieldModeView: React.FC<FieldModeViewProps> = ({
                         rows={2}
                         value={quickNoteText}
                         onChange={(e) => setQuickNoteText(e.target.value)}
-                        placeholder="Chief confirmed interest in Real BVM Help evaluation. Left product specification sheets..."
+                        placeholder="Add visit notes, next steps, or topics discussed..."
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 shadow-sm"
                       />
 

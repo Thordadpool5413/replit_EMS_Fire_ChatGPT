@@ -171,7 +171,6 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
                 className="text-lg font-semibold text-slate-900 dark:text-white tracking-[-0.015em] leading-snug mt-1"
               >
                 {agency.name}
-                            <small className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect · needs review' : 'Imported · needs review'}</small>
               </h2>
 
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
@@ -345,7 +344,7 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
               </span>
             </div>
             <div className="p-3 flex items-center justify-between gap-2">
-              <span className="text-slate-500 dark:text-slate-400">Public Record Verification</span>
+              <span className="text-slate-500 dark:text-slate-400">Public record details</span>
               <div className="flex items-center gap-2.5 font-mono text-[11px]">
                 <a
                   href={nppesUrl}

@@ -94,12 +94,13 @@ const ContextRow: React.FC<ContextRowProps> = ({ tone, icon: Icon, label, value,
 export interface ProfileCommandOverviewProps {
   agency: Agency;
   onNavigate: (section: CommandSection) => void;
+  onOpenSources: () => void;
   onReviewFact?: (fieldId:string)=>void;
   /** Concise agency focus summary; detailed preparation lives in its own topic. */
   children: React.ReactNode;
 }
 
-export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onReviewFact, children }) => {
+export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, onReviewFact, children }) => {
   const [showFullEquipment, setShowFullEquipment] = React.useState(false);
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
@@ -330,6 +331,14 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
                 ))}
               </ul>
             ) : <p className="acp-meta">Core fields are recorded.</p>}
+          </section>
+
+          <section className="acp-panel" data-testid="panel-overview-sources">
+            <h3 className="acp-panel-title"><FileText aria-hidden="true" className="h-4 w-4" />Source records</h3>
+            <p className="acp-meta">View source links and supporting documents for profile details.</p>
+            <button type="button" className="acp-link" onClick={onOpenSources} data-testid="button-overview-open-sources">
+              Open sources<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </button>
           </section>
 
         </aside>

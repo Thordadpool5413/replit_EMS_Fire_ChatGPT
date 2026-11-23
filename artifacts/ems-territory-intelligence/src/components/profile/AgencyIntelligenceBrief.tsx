@@ -136,18 +136,17 @@ const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }>
   };
   return (
     <details className="aib-sources" data-testid="equipment-source-basis">
-      <summary>Source basis &amp; review state{items.length > 0 && <span className="aib-sources-count">{items.length}</span>}</summary>
+      <summary>Source details{items.length > 0 && <span className="aib-sources-count">{items.length}</span>}</summary>
       {items.length > 0 && <ul>
         {items.map((e) => (
           <li key={e.field} data-state={e.state}>
             <p className="aib-eq-label">{labels[e.field] || 'Equipment record'}</p>
-            <p className="aib-src-state">{e.stateLabel}</p>
             {e.state !== 'none' && (
               <p className="aib-src-meta">
                 {e.sourceUrl
                   ? <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">{e.sourceName}</a>
                   : e.sourceName}
-                {[e.period && `Period ${e.period}`, e.scope && `Scope ${e.scope}`, e.reviewedAt && `Marker ${e.reviewedAt.slice(0, 10)}`]
+                {[e.period && `Period ${e.period}`, e.scope && `Scope ${e.scope}`]
                   .filter(Boolean).map((t) => <span key={String(t)}> · {t}</span>)}
               </p>
             )}
@@ -340,7 +339,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
               ))}
             </ol>
           ) : (
-            <p className="aib-empty">No contract, grant or budget-cycle records are present yet. Add or confirm them in source records.</p>
+            <p className="aib-empty">No contract, grant or budget-cycle records are present yet. Add records in the source section.</p>
           )}
 
           <div className="aib-facts">

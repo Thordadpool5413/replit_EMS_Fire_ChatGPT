@@ -130,7 +130,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                     ? activeAccount.annual911Transports.toLocaleString()
                     : hasAgencyFactEvidence(activeAccount, 'annualCallsReceived')
                       ? `${activeAccount.annualCallVolume.toLocaleString()} · ${activeAccount.factEvidence?.annualCallsReceived?.reportingPeriod || 'reported period'}`
-                      : 'Not source-verified'}
+                      : '—'}
                 </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-lg">
@@ -138,7 +138,7 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 <span className="text-sky-700 dark:text-sky-300 font-semibold text-sm">
                   {hasAgencyFactEvidence(activeAccount, 'cmsClaims')
                     ? activeAccount.cmsData.primaryPayerMix || (activeAccount.cmsData.medicareBilledAnnual > activeAccount.cmsData.medicaidBilledAnnual ? 'Medicare FFS' : 'Commercial')
-                    : 'Not source-verified'}
+                    : '—'}
                 </span>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/80 px-3 py-1.5 rounded-lg">
@@ -167,14 +167,13 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               Public healthcare, CMS claims &amp; EMS outcomes engine
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-3xl leading-relaxed">
-              Reference playbooks for reviewing public datasets. Agency-specific claims, outcomes, fleet, and grant figures require a current primary source before they are used in outreach.
+              Reference playbooks for public datasets, claims, outcomes, fleet, and grant programs.
             </p>
           </div>
 
           <div className="bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 p-4 rounded-xl shrink-0 text-right">
             <div className="text-[11px] text-sky-800 dark:text-sky-300 font-medium"><DataLabel kind="cost">National market estimate</DataLabel></div>
-            <div className="text-sm font-semibold text-sky-950 dark:text-white mt-0.5">Reference value not source-verified</div>
-            <div className="text-[11px] text-sky-700 dark:text-sky-400 mt-0.5">Do not use as an audited market total</div>
+            <div className="text-sm font-semibold text-sky-950 dark:text-white mt-0.5">Reference value</div>
           </div>
         </div>
 
@@ -432,9 +431,6 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 1: The CMS Medicare Ground Ambulance Reimbursement Play
               </div>
               <p>
-                <strong>Source check:</strong> Use agency-specific CMS claims only when the reporting period, provider identity, and claim measure are documented. Do not assume denial rates or penalties from national averages.
-              </p>
-              <p>
                 <strong>Discussion:</strong> If an agency-specific claims review identifies a billing workflow issue, compare vendor capabilities, costs, compliance responsibilities, and expected outcomes with finance and procurement.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
@@ -450,9 +446,6 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 2: The Out-of-Hospital Cardiac Arrest (OHCA) Survival Play
               </div>
               <p>
-                <strong>Source check:</strong> Confirm the agency’s CARES participation, case definition, reporting period, and comparison benchmark before describing local cardiac-arrest outcomes.
-              </p>
-              <p>
                 <strong>Discussion:</strong> Review protocol, training, and clinical evidence with medical direction. Compare equipment options using the agency’s requirements and independently reviewed evidence; do not infer an outcome improvement.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
@@ -467,9 +460,6 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <div className="font-semibold text-slate-900 dark:text-white text-sm">
                 Playbook 3: The Aging Competitor Fleet & Obsolescence Replacement
               </div>
-              <p>
-                <strong>Source check:</strong> Verify each agency’s actual monitor models, service status, age, and replacement plans from current inventory and procurement records. Do not generalize one agency’s equipment status to another.
-              </p>
               <p>
                 <strong>Discussion:</strong> Compare requested capabilities, service terms, training, lifecycle costs, and any trade-in offer using current written vendor quotes and the agency’s verified inventory.
               </p>
@@ -504,9 +494,6 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
                 Playbook 5: NEMSQA Quality Measures & AHA Mission: Lifeline Recognition
               </div>
               <p>
-                <strong>Source check:</strong> Validate any quality measure against its original registry, inclusion criteria, and reporting period. Do not infer a quality gap or recognition status from general benchmarks.
-              </p>
-              <p>
                 <strong>Discussion:</strong> Compare device and documentation features with the agency’s clinical, technical, privacy, and procurement requirements; have the agency validate all interoperability and recognition criteria.
               </p>
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-blue-950 dark:text-blue-200 text-xs leading-relaxed">
@@ -521,9 +508,6 @@ export const PublicHealthcareExplorer: React.FC<PublicHealthcareExplorerProps> =
               <div className="font-semibold text-slate-900 dark:text-white text-sm">
                 Playbook 6: CMS ET3, Hospital Handoff Reduction & Community Paramedicine
               </div>
-              <p>
-                <strong>Source check:</strong> Confirm current program availability, local protocols, payer rules, destination agreements, and any agency-specific offload-time data before discussing reimbursement or coverage impacts.
-              </p>
               <p>
                 <strong>Discussion:</strong> Review dispatch, telehealth, and alternative-destination workflows with clinical leadership, receiving facilities, compliance, and procurement. Do not assume eligibility or payment.
               </p>

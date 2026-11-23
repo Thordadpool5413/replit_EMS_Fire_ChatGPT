@@ -25,7 +25,7 @@ function agency(overrides: Record<string, unknown> = {}) {
   } as unknown as Agency;
 }
 
-test('empty county panel says equipment is not reported, not absent', () => {
+test('empty county panel keeps a concise not-reported state', () => {
   const coverage = buildEquipmentGeography(
     [],
     states,
@@ -39,7 +39,7 @@ test('empty county panel says equipment is not reported, not absent', () => {
 
   assert.match(html, /No directory agency records are assigned/);
   assert.match(html, /Equipment status is not reported/);
-  assert.match(html, /does not establish that equipment is absent/);
+  assert.doesNotMatch(html, /does not establish that equipment is absent/);
 });
 
 test('county panel retains evidence dates and service-area context without duplicating totals', () => {
@@ -91,7 +91,8 @@ test('county panel retains evidence dates and service-area context without dupli
   assert.equal(result.byCounty['12005'].sourceFactRecordCount, 1);
   assert.match(html, /ZOLL X Series/);
   assert.match(html, /Philips HeartStart MRx/);
-  assert.match(html, /Source fact · not assumed current/);
+  assert.match(html, /Source fact/);
+  assert.doesNotMatch(html, /not assumed current|unverified|not verified/i);
   assert.match(html, /County equipment roster/);
   assert.match(html, /Reporting period: 2025/);
   assert.match(html, /County inventory/);

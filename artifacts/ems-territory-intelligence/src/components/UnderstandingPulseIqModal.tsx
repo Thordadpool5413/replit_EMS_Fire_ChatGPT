@@ -159,7 +159,7 @@ export const UnderstandingPulseIqModal: React.FC<UnderstandingPulseIqModalProps>
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            Data Sources & Verification
+            Data sources and scoring method
           </button>
         </div>
 

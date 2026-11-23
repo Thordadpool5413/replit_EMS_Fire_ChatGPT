@@ -23,6 +23,6 @@ test('collapsed contacts keep the full existing identity content mounted', () =>
   assert.ok(wrapped.includes(original), 'The wrapper preserves every identity value, source and action');
   assert.ok(!wrapped.slice(0, wrapped.indexOf('<summary')).includes('open='), 'Contacts start collapsed');
   assert.ok(wrapped.includes('Location &amp; recorded contacts'));
-  assert.ok(wrapped.includes('authority unconfirmed'));
+  assert.doesNotMatch(wrapped, /authority unconfirmed|confirm each person/i);
   assert.equal(JSON.stringify(agency), before, 'Rendering does not mutate the record');
 });

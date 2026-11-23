@@ -21,7 +21,7 @@ export const ProfileAttentionSummary: React.FC<{
       <header className="profile-attention-head">
         <div>
           <h2 id="profile-attention-title"><Target aria-hidden="true" />Why focus on this provider?</h2>
-          <p>Recorded reasons to investigate—not a claim of buying intent.</p>
+          <p>Recorded signals and relevant context.</p>
         </div>
         <button type="button" className="acp-link" onClick={() => onNavigate('meeting')} data-testid="button-overview-findings">
           All findings<ArrowRight aria-hidden="true" />
@@ -49,7 +49,7 @@ export const ProfileAttentionSummary: React.FC<{
       ) : (
         <div className="profile-attention-empty">
           <SearchCheck aria-hidden="true" />
-          <div><h3>No documented opportunity signal yet</h3><p>Start with the recorded equipment and operating scale above. Confirm current systems, purchasing authority and plans before assigning priority.</p></div>
+           <div><h3>No documented opportunity signal yet</h3><p>Start with the recorded equipment and operating scale above.</p></div>
         </div>
       )}
       <footer>

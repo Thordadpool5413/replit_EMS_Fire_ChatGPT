@@ -133,8 +133,8 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
           </dl>
           <p className="afi-note">{(safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl) || agency.factEvidence?.cmsClaims?.sourceName) ? <>Source: {safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl)
             ? <a href={safeSourceUrl(agency.factEvidence?.cmsClaims?.sourceUrl)} target="_blank" rel="noopener noreferrer">{agency.factEvidence?.cmsClaims?.sourceName || 'Claim source'}</a>
-            : agency.factEvidence?.cmsClaims?.sourceName}. </> : 'Unconfirmed record entries. '}
-            Claim-source period: {agency.factEvidence?.cmsClaims?.reportingPeriod || 'not reported'}. A shared claim citation does not establish the denominator or period of each payer share.</p>
+            : agency.factEvidence?.cmsClaims?.sourceName}. </> : null}
+            Claim-source period: {agency.factEvidence?.cmsClaims?.reportingPeriod || 'not reported'}.</p>
           <div className="afi-payer-bar" role="img" aria-label={`Reported payer shares: ${payers.map((p) => `${p.label} ${pct(p.value)}`).join(', ')}`}>
             {reported.map((p) => (
               <span key={p.key} data-tone={p.tone} style={{ width: `${Math.min(100, ((p.value as number) / Math.max(100, payerSum)) * 100)}%` }} />
@@ -190,7 +190,7 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
           <p className="afi-unavailable" role="status" data-testid="scenario-unavailable">Not calculated. {active.why}</p>
         ) : scenario === 'operating' && tcoModel ? (
           <div className="afi-body">
-            <p className="afi-note">{benchmarkMatched ? `Benchmark matched to the recorded model: ${agency.installedFleet.defibBrand}.` : `Selected comparison assumption: the recorded monitor is "${agency.installedFleet.defibBrand}", which is not confirmed as ${tcoModel.incumbentModel}.`}</p>
+            <p className="afi-note">{benchmarkMatched ? `Benchmark matched to the recorded model: ${agency.installedFleet.defibBrand}.` : `Selected comparison assumption: recorded monitor "${agency.installedFleet.defibBrand}" compared with ${tcoModel.incumbentModel}.`}</p>
             <p className="afi-result"><span><Wrench aria-hidden="true" className="afi-ico" />Illustrative 5-year operating difference</span><strong>{usd(tcoModel.fiveYearOperatingSavings)}</strong></p>
             <ScrollableTableRegion label="Operating cost comparison"><table className="afi-table">
               <thead><tr><th>Cost driver ({tcoModel.unitCount} of {units} reported units)</th><th>{tcoModel.incumbentModel}</th><th>{tcoModel.zollModel}</th><th>Difference</th></tr></thead>
@@ -226,13 +226,12 @@ export const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
             <ScrollableTableRegion label="Replacement capital calculation"><table className="afi-table">
               <tbody>
                 <tr><td>Reported monitor units (inventory)</td><td colSpan={3}>{isNum(units) ? units.toLocaleString() : 'Not reported'}</td></tr>
-                <tr><td>Units included (assumed eligible)</td><td colSpan={3}>{n != null ? n.toLocaleString() : 'Not reported'}</td></tr>
+                <tr><td>Units included in this scenario</td><td colSpan={3}>{n != null ? n.toLocaleString() : 'Not reported'}</td></tr>
                 <tr><td>Gross = units x per-unit price</td><td colSpan={3}>{usd(gross)}</td></tr>
                 <tr><td>Less trade-in = included units x per-unit credit</td><td colSpan={3}>-{usd(credit)}</td></tr>
                 <tr className="is-total"><td>Net capital</td><td colSpan={3}>{usd(net)}</td></tr>
               </tbody>
             </table></ScrollableTableRegion>
-            <p className="afi-note">Inventory is not an eligible-quantity confirmation. Trade-in is an assumption, not a written offer; record quotes in Equipment buy-back research.</p>
           </div>
         ) : (
           <div className="afi-body">

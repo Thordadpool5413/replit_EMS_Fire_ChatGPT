@@ -34,7 +34,7 @@ export const ClinicalMeasures: React.FC<{ agency: Agency }> = ({ agency }) => {
         <span className="afi-kind" data-kind="reported">Reported</span>
       </header>
       <p className="afi-note">
-        {ev?.sourceName ? <>Source: {safeUrl(ev.sourceUrl) ? <a href={safeUrl(ev.sourceUrl)} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}{ev.reportingPeriod ? ` · ${ev.reportingPeriod}` : ' · period not stated'}</> : 'Unconfirmed record entries.'}
+        {ev?.sourceName ? <>Source: {safeUrl(ev.sourceUrl) ? <a href={safeUrl(ev.sourceUrl)} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}{ev.reportingPeriod ? ` · ${ev.reportingPeriod}` : ' · period not stated'}</> : 'No source details attached.'}
         {' '}Context only: {isNum(agency.annualCardiacArrestCalls) ? `${agency.annualCardiacArrestCalls.toLocaleString()} cardiac arrest responses / yr recorded` : 'annual arrest volume not reported'}. This volume is not the denominator of the rates below; case counts per measure are not recorded.
       </p>
       {reported.length === 0 ? (

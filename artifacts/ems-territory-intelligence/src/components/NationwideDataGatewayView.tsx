@@ -269,7 +269,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               <span>4. Fleet Lifecycle &amp; TCO Ledger</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Derived from {agencies.length.toLocaleString()} Verified Agencies
+              Derived from {agencies.length.toLocaleString()} source-listed agencies
             </div>
           </button>
         </div>
@@ -519,12 +519,12 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
               </ScrollableTableRegion>
             ) : (
               <div className="break-all p-4 text-xs text-slate-500 font-mono">
-                {isLoadingFema ? 'Querying https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants...' : afgQuery.isError ? 'OpenFEMA request failed. Federal award records are unavailable; no local estimates are presented as verified awards.' : 'No OpenFEMA awards returned for this state.'}
+                {isLoadingFema ? 'Querying https://www.fema.gov/api/open/v2/AssistanceToFirefightersGrants...' : afgQuery.isError ? 'OpenFEMA request failed. Federal award records are unavailable; no local estimates are used for award totals.' : 'No OpenFEMA awards returned for this state.'}
               </div>
             )}
             {femaFetchedAt && (
               <div className="text-[11px] font-mono text-slate-400">
-                Last verified from OpenFEMA API v2 at {femaFetchedAt}
+                Last retrieved from OpenFEMA API v2 at {femaFetchedAt}
               </div>
             )}
           </div>

@@ -151,7 +151,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
       `Department: ${activeAgency.name}`,
       `Jurisdiction: ${activeAgency.city}, ${activeAgency.stateCode} (${activeAgency.county})`,
       `FDID: ${activeAgency.fdid || 'Not recorded'}`,
-      `Automated source-mapping estimate: ${auditReport.overallIntegrityScore ?? 'Not assessed'}% (not end-user verification)`,
+      `Automated source-mapping estimate: ${auditReport.overallIntegrityScore ?? 'Not assessed'}%`,
       `Audit Date: ${new Date().toISOString().split('T')[0]}`,
       ``,
       `FIELD-BY-FIELD DATA CHAIN & CITATIONS:`,
@@ -161,7 +161,6 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
     auditReport.records.forEach(r => {
       lines.push(`• [${r.category}] ${r.fieldName}: ${r.fieldValue}`);
       lines.push(`  Source: ${r.sourceRegistry} | Schema: ${r.schemaIdentifier}`);
-      lines.push(`  Status: ${r.verificationStatus === 'Verified Official' ? 'Official source listed; end-user review needed' : r.verificationStatus}`);
       lines.push(`  Documentation: ${r.documentationQuote}`);
       lines.push(``);
     });
@@ -301,7 +300,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
           {activeTab === 'account_lineage' && (
             <div className="space-y-4">
               
-              {/* Account Selector & Live Verification Banner */}
+              {/* Account selector and source context */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
@@ -350,16 +349,13 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                           ? `${auditReport.overallIntegrityScore}% · automated`
                           : 'Not available'}
                       </span>
-                      <span className="block text-[9px] text-slate-500 dark:text-slate-400">
-                        Source mapping only; end-user review is still needed.
-                      </span>
                     </div>
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
                       <span className="text-[10px] text-slate-400 block font-semibold">FDID / Registry ID</span>
                       <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs tabular-nums">{activeAgency.fdid || 'Not Recorded'}</span>
                     </div>
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-xs">
-                      <span className="text-[10px] text-slate-400 block font-semibold">NEMSIS / CMS Match</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold">NPI record</span>
                       <span className={`font-semibold text-xs ${
                         activeAgency.sourceRecordAssociations?.some(
                           (association) =>
@@ -372,37 +368,37 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                             association.sourceName.toLowerCase().includes('nppes') &&
                             association.decision === 'confirmed',
                         )
-                          ? 'NPPES record linked by user'
+                          ? 'NPPES record linked'
                           : activeAgency.npiNumber
-                            ? 'NPI listed · no user association'
-                            : 'No NPI listed'}
+                            ? `NPI ${activeAgency.npiNumber}`
+                            : 'NPI not listed'}
                       </span>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Confidence & Verification Indicator Legend (Hard Federal Record vs Modeled Estimate) */}
+              {/* Referenced source sets */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden text-[11px]">
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white block">USFA National Fire Registry</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verify this agency and FDID against a current source</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">National fire registry</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white block">CMS Part B PUF</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Provider-level claims require a matched NPI and source record</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Provider claims data</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">●</span>
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white block">NEMSIS v3.5 &amp; FEMA AFG</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Verified OHCA &amp; Grant Awards</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">EMS records and grant awards</span>
                   </div>
                 </div>
                 <div className="p-3 bg-white dark:bg-slate-900 flex items-start gap-2">
@@ -557,7 +553,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                         <span className="font-mono text-[10px] text-indigo-700">{repo.schemaSpecification}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-semibold block">Verification Method:</span>
+                        <span className="text-slate-400 font-semibold block">Source method:</span>
                         <span className="text-slate-600">{repo.verificationMethod}</span>
                       </div>
                       {repo.sourceUrl && (
@@ -720,7 +716,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                     <span className="font-bold text-slate-900 text-xs">GADCS framework reference</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-relaxed">
-                    This references the CMS Ground Ambulance Data Collection System framework; it is not an agency-specific audit or confirmation of reporting readiness.
+                    This section summarizes the CMS Ground Ambulance Data Collection System framework.
                   </p>
                 </div>
               </div>
@@ -733,7 +729,7 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2 font-mono text-[11px]">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>{auditReport?.verifiedSupportedFields ?? 0} of {auditReport?.applicableAuditedFields ?? 0} fields have reviewed, field-specific evidence</span>
+            <span>Source references and reporting periods</span>
           </div>
           <button
             ref={closeButtonRef}

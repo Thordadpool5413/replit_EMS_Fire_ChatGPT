@@ -42,7 +42,7 @@ export const PlanningValueDisclosure: React.FC<PlanningValueDisclosureProps> = (
           <>
             {explanation.status === 'value_mismatch' && (
               <p className="font-semibold text-amber-700 dark:text-amber-300">
-                The saved value does not match the attached model inputs; it needs review.
+                The saved value differs from the attached model inputs.
               </p>
             )}
             <p>

@@ -95,7 +95,7 @@ export const BuybackDecisionSupport: React.FC<{ agency: Agency; research: Profil
               )}
               {gaps.length > 0
                 ? <p className="pds-gaps" data-testid={`gaps-${key}`}><span>Still needed:</span> {gaps.join(', ')}</p>
-                : <p className="pds-gaps is-done" data-testid={`gaps-${key}`}>Preparation facts recorded. Eligibility still unconfirmed.</p>}
+                : <p className="pds-gaps is-done" data-testid={`gaps-${key}`}>Preparation facts recorded.</p>}
               {editDevice === key && <DeviceCheckForm device={key} initial={check} disabled={blocked} onSave={saveDevice(key)} onCancel={() => setEditDevice(null)} />}
             </li>
           );

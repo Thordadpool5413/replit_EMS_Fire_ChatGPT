@@ -239,7 +239,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">
-                        {hasVerifiedModelInputs(agency) ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} model pipeline` : 'Model not validated'}
+                          {hasVerifiedModelInputs(agency) ? `${formatCurrency(agency.zollOpportunity.projectedPipelineValue)} model pipeline` : 'Model inputs incomplete'}
                       </span>
                       {agency.npiNumber && hasAgencyFactEvidence(agency, 'departmentRegistry') && (
                         <>

@@ -352,9 +352,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-            Source references do not independently verify agency facts
-          </div>
         </div>
 
         {/* KPI 4: Mock & Test Data Sanitization Shield */}
@@ -690,7 +687,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 <th className="py-3 px-4"><DataLabel kind="source">Origin &amp; Authority</DataLabel></th>
                 <th className="py-3 px-4"><DataLabel kind="source">Fields Governed</DataLabel></th>
                 <th className="py-3 px-4 text-right"><DataLabel kind="source">Active Record Count</DataLabel></th>
-                <th className="py-3 px-5 text-right"><DataLabel kind="review">Verification Status</DataLabel></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -708,9 +704,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
                   {report.firestoreSyncedCount.toLocaleString()} records
                 </td>
-                <td className="py-3.5 px-5 text-right font-medium text-emerald-700 dark:text-emerald-400">
-                  Live Bidirectional Sync
-                </td>
               </tr>
 
               {/* Row 2: Live Federal APIs */}
@@ -726,9 +719,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 </td>
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
                   {report.liveFederalNpiCount.toLocaleString()} records
-                </td>
-                <td className="py-3.5 px-5 text-right font-medium text-emerald-700 dark:text-emerald-400">
-                  Real-Time API Verified
                 </td>
               </tr>
 
@@ -746,9 +736,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
                   {report.publicBaselineCount.toLocaleString()} records
                 </td>
-                <td className="py-3.5 px-5 text-right font-medium text-sky-700 dark:text-sky-400">
-                  Authentic Public Baseline
-                </td>
               </tr>
 
               {/* Row 4: Mathematical PulseIQ & Forecasting Models */}
@@ -765,9 +752,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
                   {report.pulseIqVerifiedTotal.toLocaleString()} models
                 </td>
-                <td className="py-3.5 px-5 text-right font-medium text-amber-700 dark:text-amber-400">
-                  Calculated Predictive Model
-                </td>
               </tr>
 
               {/* Row 5: Mock / Sample / Test Data */}
@@ -783,9 +767,6 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 </td>
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-400">
                   0 active ({report.mockAgenciesStrippedTotal + report.mockNotesStrippedTotal} stripped)
-                </td>
-                <td className="py-3.5 px-5 text-right font-semibold text-rose-700 dark:text-rose-400">
-                  Excluded from local analysis
                 </td>
               </tr>
             </tbody>

@@ -834,7 +834,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 </div><span className="atlas-key-label">Legend <ChevronDown size={16} aria-hidden="true"/></span></summary>
                 <ul>{legendBands.map(band => <li key={band.color}><i style={{backgroundColor: band.color}}/>{band.range}</li>)}</ul>
                 <p>{mapMetricValues.length} of {Object.keys(stateMapMetricsByCode).length} areas reported. Colors group reported values from low to high; hatching means not reported, not zero.</p>
-                {mapMetric === 'cardiac-survival' && <p className="atlas-key-caveat">Cardiac survival values are reference estimates; a reporting period is not stated. They are not verified agency outcomes.</p>}
               </details>}
               {hasNationwideMapGeometry && !isPhone && <div className="home-map-legend home-map-legend-v2 flex flex-nowrap items-center gap-x-5 overflow-x-auto rounded-lg bg-white border border-[#D7E0EA] px-3.5 py-2.5">
                 <span className="home-map-legend-title shrink-0 text-[11px] font-bold text-[#40546A]">

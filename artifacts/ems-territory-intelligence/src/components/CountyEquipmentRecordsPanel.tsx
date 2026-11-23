@@ -2,15 +2,12 @@ import type {EquipmentFamily} from '../utils/equipmentPresence';
 import {EquipmentRecordSummary} from './EquipmentRecordComposition';
 import React from 'react';
 import {
-  BadgeCheck,
   Building2,
   CircleHelp,
   ExternalLink,
   FileText,
   MapPin,
   Package,
-  ShieldCheck,
-  TriangleAlert,
 } from 'lucide-react';
 import type { Agency } from '../types';
 import type { Coverage } from '../utils/equipmentGeography';
@@ -78,7 +75,6 @@ function EvidenceDetails({ evidence }: { evidence: EquipmentEvidenceReference[] 
 }
 
 function EquipmentRecordCard({ record }: { record: CountyEquipmentRecord }) {
-  const statusText = record.status === 'documented' ? 'Source mapped' : 'Unverified';
   return (
     <article className="county-equipment-record" data-testid="county-equipment-record">
       <div className="county-equipment-record-icon" aria-hidden="true"><Package /></div>
@@ -91,21 +87,11 @@ function EquipmentRecordCard({ record }: { record: CountyEquipmentRecord }) {
             </p>
             <h6>{record.product}</h6>
           </div>
-          <span className={`county-equipment-status is-${record.status}`}>
-            {record.status === 'documented' ? <BadgeCheck aria-hidden="true" /> : <CircleHelp aria-hidden="true" />}
-            {statusText}
-          </span>
         </div>
         <p className="county-equipment-manufacturer">
           <strong>Manufacturer</strong>
           <span>{record.manufacturers.length ? record.manufacturers.join(' · ') : 'Not recognized in this entry'}</span>
         </p>
-        {record.evidenceReview === 'review-needed' && (
-          <p className="county-equipment-review-note"><TriangleAlert aria-hidden="true" /> Source linked; user review is not recorded.</p>
-        )}
-        {record.evidenceReview === 'reviewed' && (
-          <p className="county-equipment-review-note is-reviewed"><ShieldCheck aria-hidden="true" /> Source marked reviewed; independently confirm before relying on it.</p>
-        )}
         <EvidenceDetails evidence={record.evidence} />
       </div>
     </article>
@@ -116,34 +102,21 @@ function AgencyRecord({ record, onSelectAgency }: {
   record: CountyAgencyEquipmentRecord;
   onSelectAgency?: (agency: Agency) => void;
 }) {
-  const documentedCount = record.equipmentRecords.filter((entry) => entry.status === 'documented').length;
-  const unverifiedCount = record.equipmentRecords.length - documentedCount;
   return (
     <details className="county-equipment-agency" data-testid="county-equipment-agency">
       <summary>
         <Building2 aria-hidden="true" />
         <span className="county-equipment-agency-name">{record.agencyName}</span>
-        <span className={`county-equipment-status is-${record.equipmentStatus}`}>
-          {record.equipmentStatus === 'documented'
-            ? <BadgeCheck aria-hidden="true" />
-            : record.equipmentStatus === 'not-reported'
-              ? <CircleHelp aria-hidden="true" />
-              : <TriangleAlert aria-hidden="true" />}
-          {record.equipmentStatus === 'not-reported'
-            ? record.sourceFactRecordCount
-              ? `Installed entry not reported · ${record.sourceFactRecordCount} source ${record.sourceFactRecordCount === 1 ? 'fact' : 'facts'}`
-              : 'Installed equipment not reported'
-            : `${documentedCount} documented · ${unverifiedCount} unverified`}
-        </span>
+        {record.equipmentStatus === 'not-reported' && (
+          <span className="county-equipment-status">
+            {record.sourceFactRecordCount
+              ? `${record.sourceFactRecordCount} source ${record.sourceFactRecordCount === 1 ? 'fact' : 'facts'}`
+              : 'Equipment not reported'}
+          </span>
+        )}
       </summary>
       <div className="county-equipment-agency-body">
         <div className="county-equipment-agency-meta">
-          <span className={record.agencyIdentityStatus === 'verified' ? 'is-verified' : 'is-unverified'}>
-            {record.agencyIdentityStatus === 'verified'
-              ? <BadgeCheck aria-hidden="true" />
-              : <CircleHelp aria-hidden="true" />}
-            Agency identity {record.agencyIdentityStatus === 'verified' ? 'verified' : 'not verified'}
-          </span>
           <span><MapPin aria-hidden="true" />County assignment: {record.assignmentBasis.replaceAll('-', ' ')}</span>
           {onSelectAgency && (
             <button type="button" className="county-equipment-profile-link" onClick={() => onSelectAgency(record.agency)}>
@@ -211,7 +184,7 @@ export function CountyEquipmentRecordsPanel({
         </span>
       </div>
       <p className="county-equipment-panel-note">
-        Each directory ID is assigned to one county by recorded location. Service-area references remain visible but do not duplicate agency or equipment totals. Source facts are kept separate from installed fields and are not assumed current. Missing entries mean not reported, not that equipment is absent.
+        Each directory ID is assigned to one county by recorded location. Service-area references remain visible but do not duplicate agency or equipment totals. Source facts are kept separate from installed fields.
       </p>
 
       <EquipmentRecordSummary coverage={coverage} family={family}/>
@@ -219,9 +192,6 @@ export function CountyEquipmentRecordsPanel({
         <div><dt>Installed entries</dt><dd>{coverage?.equipmentRecordCount ?? 0}</dd></div>
         <div><dt>Source facts only</dt><dd>{coverage?.sourceFactRecordCount ?? 0}</dd></div>
         <div><dt>Installed source mapped</dt><dd>{coverage?.documentedEquipmentRecordCount ?? 0}</dd></div>
-        <div><dt>Unverified</dt><dd>{coverage?.unverifiedEquipmentRecordCount ?? 0}</dd></div>
-        <div><dt>Agency identity verified</dt><dd>{coverage?.verifiedAgencyCount ?? 0}</dd></div>
-        <div><dt>Agency identity unverified</dt><dd>{coverage?.unverifiedAgencyCount ?? 0}</dd></div>
       </dl>
 
       {notReported && coverage?.total ? (
@@ -235,7 +205,7 @@ export function CountyEquipmentRecordsPanel({
           <CircleHelp aria-hidden="true" />
           <div>
             <strong>No directory agency records are assigned to this county.</strong>
-            <p>Equipment status is not reported. The missing county record does not establish that equipment is absent.</p>
+            <p>Equipment status is not reported.</p>
           </div>
         </div>
       ) : (

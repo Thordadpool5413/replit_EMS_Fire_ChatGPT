@@ -34,7 +34,7 @@ export const MeetingBriefPanel: React.FC<{ agency: Agency; research: ProfileRese
         </div>
       </div>
       {status && <p className={status.tone === 'error' ? 'pds-error' : 'pds-ok'} role={status.tone === 'error' ? 'alert' : 'status'} data-testid="status-meeting-brief">{status.text}</p>}
-      <p className="aib-scope">Generated from recorded fields and your cited sources. Working references, not confirmed current deployment.</p>
+      <p className="aib-scope">Generated from recorded fields and cited sources.</p>
       <div className="pds-meeting-grid">
         <div>
           <p className="aib-sub"><Cpu className="aib-icon" aria-hidden="true" />Recorded equipment</p>

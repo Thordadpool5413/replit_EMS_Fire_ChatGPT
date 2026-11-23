@@ -3,7 +3,6 @@ import { AgencyIdentityStrip } from './profile/AgencyIdentityStrip';
 import { DealDiscoveryWorkspace } from './profile/DealDiscoveryWorkspace';
 import { FollowUpWorkspace } from './FollowUpWorkspace';
 import type { FollowUpUpdater } from '../utils/followUps';
-import { scoreEvidenceCompleteness } from '../utils/pulseIqScoring';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -74,10 +73,6 @@ import {
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
-import {
-  getAgencyProfileReviewedAt,
-  saveAgencyProfileReviewedAt
-} from '../services/agencyProfileReviewStore';
 import { ClinicalMeasures } from './profile/ClinicalMeasures';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
 import { FireRegistryLookup } from './FireRegistryLookup';
@@ -132,50 +127,7 @@ const FactVerificationTag: React.FC<{
   agency: Agency;
   field: AgencyFactEvidenceKey;
   unverifiedLabel?: string;
-}> = ({ agency, field, unverifiedLabel }) => {
-  const status = getAgencyFactEvidenceStatus(agency, field);
-  const evidence = agency.factEvidence?.[field];
-  const label = agency.verificationSource?.includes('Geographic prospect generator') && status === 'source-required' ? 'Generated estimate · not an agency fact' : status === 'source-reviewed'
-    ? 'Review marker recorded'
-    : status === 'source-mapped'
-      ? 'Source available'
-      : unverifiedLabel;
-  if (!label) return null;
-  const className = `profile-evidence-tag inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-    status === 'source-reviewed'
-      ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
-      : status === 'source-mapped'
-        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-  }`;
-  const title = evidence
-    ? [
-        evidence.sourceName,
-        evidence.sourceKind?.toUpperCase(),
-        evidence.reportingPeriod,
-        evidence.geographicLevel
-          ? `Scope: ${evidence.geographicLevel}${evidence.geographicId ? ` ${evidence.geographicId}` : ''}`
-          : undefined,
-        evidence.note,
-      ].filter(Boolean).join(' · ')
-    : unverifiedLabel;
-  return evidence?.sourceUrl ? (
-    <a
-      data-testid={`status-fact-${field}-${agency.id}`}
-      className={className}
-      href={evidence.sourceUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={title}
-    >
-      {label} ↗
-    </a>
-  ) : (
-    <span data-testid={`status-fact-${field}-${agency.id}`} className={className} title={title}>
-      {label}
-    </span>
-  );
-};
+}> = () => null;
 
 const reportMetric = (value: number | null | undefined, suffix = '') =>
   value == null || !Number.isFinite(value) ? 'Not reported' : `${value.toLocaleString()}${suffix}`;
@@ -212,7 +164,7 @@ const PRIMARY_PROFILE_IDS = ['overview','deal_story','equipment','decision_maker
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
   { id: 'activity', label: 'Activity & follow-up', short: 'Activity', purpose: 'Visit history, next actions, and notes. Unfinished notes are saved on this device.', icon: FileText },
   { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Start with recorded equipment, operating scale, key contacts and your next action.', icon: Layers },
-  { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison. Current use needs confirmation.', icon: Cpu },
+      { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison.', icon: Cpu },
   { id: 'purchasing', label: 'Purchasing & Funding', short: 'Purchasing', purpose: 'Contract and supplier records, procurement timing, cooperative vehicles and grant history. Past dates are history, not deadlines.', icon: Scale },
   { id: 'decision_makers', label: 'People & roles', short: 'People', purpose: 'Recorded leadership and purchasing authority with source context. Relationships are never inferred.', icon: UserCheck },
   { id: 'operations', label: 'Operations & Clinical', short: 'Ops & clinical', purpose: 'Operational scale, apparatus, receiving hospitals and source-supported clinical measures.', icon: Activity },
@@ -508,8 +460,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     return () => observer.disconnect();
   }, []);
   const [isSourceDrawerOpen, setIsSourceDrawerOpen] = useState<boolean>(false);
-  const [profileReviewedAt, setProfileReviewedAt] = useState<string | null>(null);
-  const [profileReviewError, setProfileReviewError] = useState('');
   const [profileDetailsHost, setProfileDetailsHost] = useState<HTMLDivElement | null>(null);
   const [compactOpening, setCompactOpening] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
@@ -536,21 +486,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, []);
-
-  useEffect(() => {
-    setProfileReviewedAt(getAgencyProfileReviewedAt(rawAgency.id));
-    setProfileReviewError('');
-  }, [rawAgency.id]);
-
-  const markProfileReviewed = () => {
-    const reviewedAt = new Date().toISOString();
-    if (!saveAgencyProfileReviewedAt(agency.id, reviewedAt)) {
-      setProfileReviewError('This browser could not save the review status. The agency data was not changed.');
-      return;
-    }
-    setProfileReviewedAt(reviewedAt);
-    setProfileReviewError('');
-  };
 
   // Interactive Actuarial Forecasting Sensitivity Controls (Low / Base / High Confidence Intervals)
   const [customUnitMsrp, setCustomUnitMsrp] = useState<number>(38500);
@@ -1144,10 +1079,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   <p className="acp-fresh" data-testid="text-profile-source-period" title="Periods are stated by the source records, not import or review timestamps. Review each source separately when periods differ.">
                     <Clock aria-hidden="true" className="h-3.5 w-3.5" />Source period {latestSourcePeriod ?? 'not stated'}
                   </p>
-                  <p className="acp-fresh" data-testid="text-profile-freshness" title="Browser-local review marker; not an authenticated identity.">
-                    <UserCheck aria-hidden="true" className="h-3.5 w-3.5" />
-                    {profileReviewedAt ? `Your review ${profileReviewedAt.slice(0, 10)}` : 'Not reviewed in this browser'}
-                  </p>
                 </div>
               </details>
             </div>
@@ -1285,15 +1216,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
           </details>
         </div>
-          <div className="acp-notice" role="note" data-testid="text-profile-verification-notice">
-            <ShieldAlert aria-hidden="true" className="h-3.5 w-3.5" />
-            <strong>{agency.verificationSource?.includes('Geographic prospect generator') ? 'Generated prospect' : 'Imported record'} · Evidence completeness {scoreEvidenceCompleteness(agency)}%{Object.keys(agency._reviewOriginalValues ?? {}).length > 0 ? ` · ${Object.keys(agency._reviewOriginalValues ?? {}).length} user corrections applied` : ''}<span className="md:hidden"> · Verify facts</span></strong>
-            <span className="hidden md:inline"> Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</span>
-            <details className="acp-notice-phone-details md:hidden">
-              <summary>About this data <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" /></summary>
-              <p>Agency intelligence is provided for research and planning. Users must independently verify all information before relying on it.</p>
-            </details>
-          </div>
         </section>
 
           <ProfileContactDisclosure>
@@ -1312,64 +1234,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             <div className="flex flex-col gap-4 pb-6 border-b border-[#DFE6EF] dark:border-[#1E2D42]">
               <div className="space-y-3 min-w-0">
 
-                {profileDetailsHost && createPortal(
-                  <div
-                  className="profile-review-strip flex min-w-0 flex-col gap-2 border-t border-[#DFE6EF] pt-3 dark:border-[#1E2D42] sm:flex-row sm:items-center sm:justify-between"
-                  data-testid={`panel-profile-review-${agency.id}`}
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-semibold text-[#14283F] dark:text-white">Your review</span>
-                      {profileReviewedAt ? (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                          data-testid={`status-profile-review-${agency.id}`}
-                          aria-live="polite"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          Reviewed in this browser · {new Date(profileReviewedAt).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      ) : (
-                        <span
-                          className="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
-                          data-testid={`status-profile-review-${agency.id}`}
-                          aria-live="polite"
-                        >
-                          Not reviewed in this browser
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-[11px] leading-relaxed text-[#53657B] dark:text-slate-400">
-                      Mark this profile after checking its details. This note stays in this browser and does not independently verify the information.
-                    </p>
-                    {profileReviewError && (
-                      <p className="mt-1 text-[11px] font-medium text-rose-700 dark:text-rose-300" role="alert">
-                        {profileReviewError}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={markProfileReviewed}
-                    aria-pressed={Boolean(profileReviewedAt)}
-                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#B8C9C0] bg-white px-3 text-xs font-semibold text-[#176568] transition-colors hover:bg-[#E7F1EE] dark:border-[#40585A] dark:bg-[#172528] dark:text-[#9BD0C6] dark:hover:bg-[#203735]"
-                    data-testid={`button-mark-profile-reviewed-${agency.id}`}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    {profileReviewedAt ? 'Review again' : 'I reviewed these details'}
-                  </button>
-                  </div>,
-                  profileDetailsHost,
-                )}
               </div>
 
               {profileDetailsHost && createPortal(
               <details className="rounded-lg border border-[#DFE6EF] bg-[#F8FAFC] p-3 dark:border-[#1E2D42] dark:bg-[#111C2D]">
-                <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Registry identifiers and verification</summary>
+                <summary className="min-h-9 cursor-pointer list-none font-semibold text-sm text-[#30465C] dark:text-slate-200">Registry identifiers</summary>
                 <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 text-xs text-[#53657B] dark:text-slate-400">
                   <span className="break-words [overflow-wrap:anywhere]">
                     {agency.stateLicenseNumber
@@ -1477,7 +1346,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       ))}
                     </select>
                   ) : (
-                    <div className="text-xs text-amber-700 dark:text-amber-400">No reviewed opportunity record is attached.</div>
+                    <div className="text-xs text-amber-700 dark:text-amber-400">No opportunity record is attached.</div>
                   )}
                 </div>
                 </div>
@@ -1509,7 +1378,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               </div>
 
               {/* 4 Assessment Columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* 1. What is Known */}
                 <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#14283F] dark:text-white">
@@ -1536,22 +1405,6 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     {accountAssessment.developmentsThatMatter.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-1.5">
                         <span className="w-1 h-1 rounded-full bg-[#285EE8] mt-1.5 shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* 3. What is Not Yet Confirmed */}
-                <div className="p-4 rounded-xl bg-white dark:bg-[#111C2D] border border-[#DFE6EF] dark:border-[#1E2D42] space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                    <HelpCircle className="w-3.5 h-3.5" />
-                    <span>3. Not yet confirmed</span>
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-[#53657B] dark:text-slate-300 leading-relaxed">
-                    {accountAssessment.whatIsNotConfirmed.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <span className="w-1 h-1 rounded-full bg-amber-600 mt-1.5 shrink-0" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -1604,11 +1457,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </div>
 
             {/* ================================================================
-                PLANNING CONTEXT — discovery prompts and unverified fit
+                PLANNING CONTEXT — discussion topics
                ================================================================ */}
             <div className="space-y-3">
               <h2 className="text-xs font-semibold text-[#53657B] dark:text-slate-400">
-                <DataLabel kind="score">Planning context &middot; Confirm with the agency</DataLabel>
+                <DataLabel kind="score">Planning context</DataLabel>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1653,12 +1506,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                   </div>
                   <p className="text-xs text-[#53657B] dark:text-slate-300">
                     {agency.zollOpportunity.primaryTargetProduct
-                      ? 'Potential fit only; validate requirements and procurement before relying on this suggestion.'
+                      ? 'Potential product discussion based on the recorded profile.'
                       : 'Product fit not reported in this record.'}
                   </p>
-                  <div className="text-[11px] text-[#53657B] dark:text-slate-400 pt-1">
-                    Not a verified purchase plan
-                  </div>
                 </div>
               </div>
             </div>

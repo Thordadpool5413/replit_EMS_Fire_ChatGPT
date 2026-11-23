@@ -36,7 +36,7 @@ export const PlanningValueDisclosure: React.FC<PlanningValueDisclosureProps> = (
         {explanation.status === 'method_missing' ? (
           <p>
             The calculation method, inputs, source period, and time horizon were not stored with this record.
-            Treat the displayed value as unverified until the agency confirms it.
+            Calculation inputs and method are not available for this value.
           </p>
         ) : (
           <>
@@ -61,7 +61,6 @@ export const PlanningValueDisclosure: React.FC<PlanningValueDisclosureProps> = (
             </p>
           </>
         )}
-        <p>Agency staff should verify the population basis, unit count, price, and timing.</p>
       </div>
     </details>
   );

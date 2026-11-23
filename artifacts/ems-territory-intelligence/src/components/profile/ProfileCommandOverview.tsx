@@ -22,11 +22,9 @@ import {
   Mail,
   Radio,
   SearchCheck,
-  ShieldCheck,
   Users,
 } from 'lucide-react';
 import type { Agency } from '../../types';
-import { AGENCY_FACT_EVIDENCE_FIELDS, hasMappedAgencyFactEvidence } from '../../data/agencyFactEvidence';
 import { NOT_REPORTED, buildEquipmentLines } from './equipmentInsights';
 import { getAgencyServiceMode } from './AgencyIntelligenceBrief';
 
@@ -96,13 +94,12 @@ const ContextRow: React.FC<ContextRowProps> = ({ tone, icon: Icon, label, value,
 export interface ProfileCommandOverviewProps {
   agency: Agency;
   onNavigate: (section: CommandSection) => void;
-  onOpenSources: () => void;
   onReviewFact?: (fieldId:string)=>void;
   /** Concise agency focus summary; detailed preparation lives in its own topic. */
   children: React.ReactNode;
 }
 
-export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, onReviewFact, children }) => {
+export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onReviewFact, children }) => {
   const [showFullEquipment, setShowFullEquipment] = React.useState(false);
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
@@ -146,14 +143,13 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
   if (!contract?.contractEndDate) gaps.push({ label: 'Service contract dates', section: 'purchasing' });
   if (!isNum(agency.annualCallVolume)) gaps.push({ label: 'Annual call volume', section: 'operations' });
 
-  const evidenceCount = AGENCY_FACT_EVIDENCE_FIELDS.filter(({ key }) => hasMappedAgencyFactEvidence(agency, key)).length;
   const renderEquipmentLine = (line: typeof lines[number]) => {
     const Icon = LINE_ICON[line.key] ?? Cpu;
     const missing = line.value === NOT_REPORTED;
     return (
       <li key={line.key} className="acp-ledger-row" data-category={line.category} data-missing={missing || undefined} data-testid={`row-overview-equipment-${line.key}`}>
         <Icon aria-hidden="true" className="acp-ledger-ico" />
-        <span className="acp-ledger-label">{line.label}{agency.verificationSource?.includes('Geographic prospect generator')&&<small className="block">Generated prospect · confirm each value</small>}</span>
+        <span className="acp-ledger-label">{line.label}{agency.verificationSource?.includes('Geographic prospect generator')&&<small className="block">Generated prospect</small>}</span>
         <span className={`acp-ledger-value${missing ? ' is-missing' : ''}`}>{line.value}</span>
         <span className={`acp-ledger-qty${!line.quantity || line.quantity === NOT_REPORTED ? ' is-missing' : ''}`}>
           {line.quantity && line.quantity !== NOT_REPORTED ? line.quantity : line.category !== 'software' ? 'Units not reported' : ''}
@@ -165,7 +161,6 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
 
   return (
     <div className="acp-overview" data-testid="profile-command-overview">
-      {agency.verificationSource?.includes('Geographic prospect generator') && <p role="note" className="pi-surface p-3">Generated prospect: identity and operational details are not source-confirmed. Unreferenced equipment, volumes, clinical measures, contracts and financial figures are planning estimates, not observed agency facts. Confirm individual fields before use.</p>}
       <section className="acp-next-step" aria-label="Latest activity and next action"><div><span>Next action</span><strong>{nextFollowUp?.nextAction || 'No open follow-ups. Log your next interaction.'}</strong><small>{latestNote ? `Last interaction: ${displayDate(latestNote.date)}${nextFollowUp?.dueDate ? ` · Follow-up: ${displayDate(nextFollowUp.dueDate)}` : ''}` : 'No interactions recorded yet'}</small></div><button className="workspace-button" onClick={()=>onNavigate('activity')}>Open activity<ArrowRight size={16} aria-hidden="true"/></button></section>
       <div className="acp-hero">
         <div className="acp-overview-primary">
@@ -334,16 +329,9 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
                   </li>
                 ))}
               </ul>
-            ) : <p className="acp-meta">Core fields are recorded. Confirm them with the agency.</p>}
+            ) : <p className="acp-meta">Core fields are recorded.</p>}
           </section>
 
-          <section className="acp-panel" data-testid="panel-overview-verification" data-evidence-state={evidenceCount > 0 ? 'mapped' : 'none'}>
-            <h3 className="acp-panel-title"><ShieldCheck aria-hidden="true" className="h-4 w-4" />Verification context</h3>
-            <p className="acp-meta"><strong className="acp-num">{evidenceCount}</strong> of {AGENCY_FACT_EVIDENCE_FIELDS.length} fact groups have a mapped source. A source is not a confirmation.</p>
-            <button type="button" className="acp-link" onClick={onOpenSources} data-testid="button-overview-review-evidence">
-              Review evidence<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-            </button>
-          </section>
         </aside>
         </div>
       </div>

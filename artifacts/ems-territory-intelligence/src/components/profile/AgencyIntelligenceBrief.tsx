@@ -155,7 +155,6 @@ const SourceBasis: React.FC<{ agency: Agency; fields: AgencyFactEvidenceKey[] }>
           </li>
         ))}
       </ul>}
-      <p className="aib-src-meta">A source or review marker shows where a value came from; it does not prove the equipment is in current use.</p>
     </details>
   );
 };
@@ -180,8 +179,7 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
           <p className={`aib-eq-value${missing ? ' is-missing' : ''}`}>{l.value}</p>
           {ev.state !== 'none' && (
             <p className="aib-eq-src" data-state={ev.state} data-testid={`equipment-source-${l.key}`}>
-              <span className="aib-eq-srcstate" data-state={ev.state}>{ev.state === 'reviewed' ? 'Source reviewed · use unconfirmed' : 'Source mapped · use unconfirmed'}</span>
-              {ev.sourceName && <> · {ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
+              {ev.sourceName && <>{ev.sourceUrl ? <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer">{ev.sourceName}</a> : ev.sourceName}</>}
             </p>
           )}
         </div>
@@ -192,7 +190,7 @@ const EquipmentSummary: React.FC<{ agency: Agency; renderFactTag: AgencyIntellig
   return (
     <section className="aib-block aib-tech" data-testid="profile-equipment-summary" aria-labelledby="aib-tech-title">
       <h3 id="aib-tech-title" className="aib-label"><Cpu className="aib-icon" aria-hidden="true" />Recorded inventory</h3>
-      <p className="aib-scope">Reported inventory · current use needs confirmation.</p>
+      <p className="aib-scope">Recorded inventory</p>
       <div className="aib-device-feature" data-testid="equipment-featured-device">
         {featured && <ul className="aib-eqlist aib-eqlist--feature">{line(featured)}</ul>}
         <dl className="aib-keyfacts">
@@ -276,7 +274,7 @@ export const AgencyIntelligenceBrief: React.FC<AgencyIntelligenceBriefProps> = (
       <header className="aib-top">
         <div className="min-w-0">
           <h2 id={`agency-operational-baseline-title`} className="aib-title">{view === 'equipment' ? 'Recorded equipment & buy-back' : view === 'purchasing' ? 'Findings, contracts & funding' : view === 'operations' ? 'Operational volume' : 'Account findings & meeting preparation'}</h2>
-          <p className="aib-note">{modeLabel} · Reported values; confirm current use with the agency.</p>
+          <p className="aib-note">{modeLabel}</p>
         </div>
         {onOpenSources && (
           <button type="button" className="aib-link" onClick={onOpenSources} data-testid="button-brief-open-sources">

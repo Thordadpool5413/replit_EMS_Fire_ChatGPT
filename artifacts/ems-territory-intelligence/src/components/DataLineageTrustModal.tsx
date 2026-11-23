@@ -453,7 +453,6 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                       <th className="py-2.5 px-3">Mapped Value</th>
                       <th className="py-2.5 px-3"><DataLabel kind="source">Public Source Registry</DataLabel></th>
                       <th className="py-2.5 px-3"><DataLabel kind="source">Schema / Citation Code</DataLabel></th>
-                      <th className="py-2.5 px-3">Verification Tier</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -481,30 +480,12 @@ export const DataLineageTrustModal: React.FC<DataLineageTrustModalProps> = ({
                           )}
                           {r.sourceRecordId && (
                             <span className="block text-[10px] text-slate-500 dark:text-slate-400">
-                              Record: {r.sourceRecordId}{r.reviewedAt ? ` · Review marker ${r.reviewedAt.slice(0, 10)}` : ''}
+                              Record: {r.sourceRecordId}
                             </span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                           {r.schemaIdentifier}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
-                            r.verificationStatus === 'Verified Official'
-                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                              : r.verificationStatus === 'Legal Public Record'
-                                ? 'bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                : r.verificationStatus === 'HIPAA De-Identified'
-                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                          }`}>
-                            <Database className="w-3 h-3" />
-                            <span>
-                              {r.verificationStatus === 'Verified Official'
-                                ? 'Official source listed · end-user review needed'
-                                : r.verificationStatus}
-                            </span>
-                          </span>
                         </td>
                       </tr>
                     ))}

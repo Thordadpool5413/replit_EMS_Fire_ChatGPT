@@ -44,7 +44,9 @@
     --pi-surface-bg: #FFFFFF;
     --pi-surface-subtle: #F6F8FB;
     --pi-action: #1B66C9;
+    --pi-action-hover: #1454B3;
     --pi-action-ink: #1B66C9;
+    --pi-border-strong: #CBD5E1;
     --pi-action-subtle: #EEF4FF;
     --pi-focus-ring: #1B66C9;
     --atlas-ink: #17243A;
@@ -396,6 +398,19 @@
   }
   .agency-command-profile.profile-redesign .dsb-tab[data-active] svg { color: #1B66C9 !important; }
   .agency-command-profile.profile-redesign .acp-mobile-section-label { color: #596A7F; }
+  /* Filtering is a secondary selection, never six competing blue CTAs. */
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button {
+    min-width: 0; border: 1px solid #E2E8F0 !important;
+    background: #FFFFFF !important; color: #3D5068 !important;
+    box-shadow: none !important; font-weight: 600;
+  }
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button[aria-pressed="true"] {
+    border-color: #B7D1F2 !important; background: #EEF4FF !important;
+    color: #1B66C9 !important;
+  }
+  .agency-command-profile.profile-redesign .followup-filters .workspace-button span {
+    color: inherit !important;
+  }
   /* Precision profile presentation: quiet surfaces, strong hierarchy, one action accent. */
   .agency-command-profile.profile-redesign .acp-header {
     box-shadow: none !important;

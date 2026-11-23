@@ -411,6 +411,26 @@
   .agency-command-profile.profile-redesign .followup-filters .workspace-button span {
     color: inherit !important;
   }
+  /* Equipment categories are not warnings: CPR and software use calm icon tones. */
+  .agency-command-profile.profile-redesign .acp-ledger-row[data-category="cpr"] { --c: #476C95; }
+  .agency-command-profile.profile-redesign .aib-tech .aib-eq:has([data-category="cpr"]) { --c: #476C95; }
+  .agency-command-profile.profile-redesign .acp-ledger-row[data-category="software"] { --c: #64748B; }
+
+  /* Payer mix is a categorical comparison, not a risk dashboard.
+     Use distinct coordinated shades rather than a misleading red segment. */
+  .agency-command-profile.profile-redesign :is(.afi-payer-bar > span, .afi-payers > div)[data-tone="navy"] { --c: #284B73; }
+  .agency-command-profile.profile-redesign :is(.afi-payer-bar > span, .afi-payers > div)[data-tone="blue"] { --c: #1B66C9; }
+  .agency-command-profile.profile-redesign :is(.afi-payer-bar > span, .afi-payers > div)[data-tone="teal"] { --c: #6E92BE; }
+  .agency-command-profile.profile-redesign :is(.afi-payer-bar > span, .afi-payers > div)[data-tone="red"] { --c: #A9BBD0; }
+  .agency-command-profile.profile-redesign .afi-payer-bar > span[data-tone] {
+    background: var(--c) !important;
+  }
+  .agency-command-profile.profile-redesign .afi-payers > div[data-tone] {
+    border-color: #E2E8F0 !important;
+  }
+  .agency-command-profile.profile-redesign .afi-payers > div[data-tone] dt::before {
+    background: var(--c) !important;
+  }
   /* Precision profile presentation: quiet surfaces, strong hierarchy, one action accent. */
   .agency-command-profile.profile-redesign .acp-header {
     box-shadow: none !important;

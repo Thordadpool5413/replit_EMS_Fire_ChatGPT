@@ -399,26 +399,29 @@
   .agency-command-profile.profile-redesign .fr-workspace { grid-template-columns: minmax(220px, .85fr) minmax(0, 1.5fr); }
 }
 @media screen and (max-width: 767px) {
-  .agency-command-profile.profile-redesign .profile-brief-layout { padding: 10px 10px 24px; }
+  .agency-command-profile.profile-redesign .profile-brief-layout { padding: 8px 12px 28px; }
   .agency-command-profile.profile-redesign[data-laptop-density="compact"] .acp-next-step .workspace-button { min-height: 46px !important; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock {
-    display: flex !important; min-width: 0; width: 100%; max-width: 100%;
-    flex-wrap: wrap !important; gap: 8px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch; min-width: 0; width: 100%; max-width: 100%;
+    padding: 0 !important; gap: 8px !important;
   }
-  .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary { flex: 1 1 220px; min-width: 0; flex-shrink: 1; }
+  .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary { flex: none; width: 100%; min-width: 0; justify-content: center; padding-inline: 10px; }
   .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary span { min-width: 0; white-space: normal; }
   .agency-command-profile.profile-redesign .acp-header .profile-more-actions { flex: 0 1 auto; max-width: 100%; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { white-space: normal; max-width: 100%; height: auto; padding-block: 10px; }
-  .agency-command-profile.profile-redesign .profile-workspace > header > div { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .agency-command-profile.profile-redesign .profile-workspace > header > div { display: flex; flex-wrap: nowrap !important; align-items: center; min-width: 0; max-width: 100%; gap: 8px; }
   .agency-command-profile.profile-redesign .profile-workspace > header nav { min-width: 0; max-width: 100%; }
-  .agency-command-profile.profile-redesign .profile-workspace > header > div > div { width: 100%; max-width: 100%; min-width: 0; }
-  .agency-command-profile.profile-redesign .profile-mobile-breadcrumb { flex: 1 1 0; min-width: 0; max-width: 100%; }
-  .agency-command-profile.profile-redesign .acp-header { padding: 12px 12px 10px !important; grid-template-columns: minmax(0, 1fr); }
+  .agency-command-profile.profile-redesign .profile-workspace > header > div > div { display: flex; flex: 1 1 auto; width: auto; max-width: 100%; min-width: 0; align-items: center; gap: 8px; }
+  .agency-command-profile.profile-redesign .profile-mobile-breadcrumb { flex: 1 1 auto; min-width: 0; max-width: none; overflow-x: auto; scrollbar-width: none; }
+  .agency-command-profile.profile-redesign .acp-header { padding: 12px 12px 10px !important; grid-template-columns: minmax(0, 1fr); gap: 10px !important; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock { justify-self: stretch; justify-content: start; }
-  .agency-command-profile.profile-redesign .acp-name { font-size: 22px !important; }
-  .agency-command-profile.profile-redesign .profile-contact-disclosure { width: calc(100% - 24px); margin-top: 12px; }
-  .agency-command-profile.profile-redesign .profile-contact-disclosure > summary { padding: 12px; }
+  .agency-command-profile.profile-redesign .acp-name { font-size: clamp(21px, 6vw, 24px) !important; line-height: 1.17 !important; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure { width: calc(100% - 24px); margin: 0 12px 8px; border-radius: 10px; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure > summary { padding: 8px 12px; min-height: 44px; }
   .agency-command-profile.profile-redesign .profile-contact-disclosure-heading { gap: 0; flex-direction: column; }
+  .agency-command-profile.profile-redesign .profile-contact-disclosure-heading > span { display: none; }
   .agency-command-profile.profile-redesign .agency-identity-strip.agency-briefing,
   .agency-command-profile.profile-redesign .acp-overview-secondary,
   .agency-command-profile.profile-redesign .deal-plan-grid,
@@ -482,12 +485,12 @@
   ) { font-size: 17px !important; line-height: 1.3 !important; letter-spacing: -.02em; }
 
 
-  .agency-command-profile.profile-redesign .acp-notice { display: block; font-size: 13px !important; line-height: 1.45 !important; }
-  .agency-command-profile.profile-redesign .acp-notice > svg { display: inline; margin-right: 5px; vertical-align: middle; }
-  .agency-command-profile.profile-redesign .acp-notice strong { margin-right: 5px; }
+  .agency-command-profile.profile-redesign .acp-notice { display: grid !important; grid-template-columns: 16px minmax(0,1fr); align-items: start; gap: 4px 8px; padding: 8px 10px !important; font-size: 13px !important; line-height: 1.45 !important; }
+  .agency-command-profile.profile-redesign .acp-notice > svg { display: block; margin: 2px 0 0; grid-column: 1; }
+  .agency-command-profile.profile-redesign .acp-notice strong { margin: 0; min-width: 0; grid-column: 2; overflow-wrap: anywhere; }
   .agency-command-profile.profile-redesign .acp-monitor-art-label { font-size: 9px !important; white-space: nowrap; }
-  .agency-command-profile.profile-redesign .acp-next-step { flex-direction: row; align-items: center; padding: 10px 12px !important; gap: 10px; }
-  .agency-command-profile.profile-redesign .acp-next-step .workspace-button { flex: none; padding-inline: 10px; }
+  .agency-command-profile.profile-redesign .acp-next-step { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; flex-direction: row; align-items: start; padding: 12px !important; gap: 8px; }
+  .agency-command-profile.profile-redesign .acp-next-step .workspace-button { flex: none; padding-inline: 10px; min-width: 0; align-self: center; white-space: nowrap; }
   .agency-command-profile.profile-redesign .adm-group { margin-top: 10px; }
   .agency-command-profile.profile-redesign .adm-group > h3 { padding: 10px 12px !important; font-size: 13px !important; }
   .agency-command-profile.profile-redesign .aib-device-feature { padding: 12px !important; }
@@ -525,8 +528,103 @@
   .agency-command-profile.profile-redesign .acp-header .profile-meeting-primary { flex: 1 1 160px; }
   .agency-command-profile.profile-redesign :is(.workspace-button,.profile-meeting-primary,.pds-btn) { font-size: 14px !important; }
   .agency-command-profile.profile-redesign .acp-header .profile-action-dock > button { padding-block: 6px; }
-  .agency-command-profile.profile-redesign .acp-nav { border-radius: 10px; padding: 4px; }
+  .agency-command-profile.profile-redesign .acp-nav { border-radius: 10px; padding: 6px 8px; background: var(--acp-surface) !important; border: 1px solid var(--acp-border) !important; box-shadow: 0 2px 6px rgba(25,35,50,.04); }
   .agency-command-profile.profile-redesign .acp-nav-tabs { display: none !important; }
+  /* Mobile header: one clear return control, a compact geographic breadcrumb. */
+  .agency-command-profile.profile-redesign .profile-workspace > header {
+    min-height: 54px !important; padding: 4px 12px !important; box-shadow: none !important;
+  }
+  .agency-command-profile.profile-redesign .profile-workspace > header > div > div > div:first-child {
+    flex: none; min-width: 0; gap: 6px;
+  }
+  .agency-command-profile.profile-redesign .profile-workspace > header .acp-home-btn {
+    width: 40px; height: 44px;
+  }
+  /* Compact actions, not a second large dashboard inside the agency masthead. */
+  .agency-command-profile.profile-redesign .acp-header .acp-contact-row {
+    display: flex !important; flex-wrap: wrap; gap: 6px !important; margin-top: 10px !important;
+  }
+  .agency-command-profile.profile-redesign .acp-header .acp-contact-row > a {
+    flex: 1 1 80px; min-width: 0; min-height: 44px; gap: 4px;
+    justify-content: center; border: 1px solid var(--acp-border) !important;
+    border-radius: 9px; background: var(--acp-surface) !important;
+    color: var(--acp-blue) !important; font-size: 12px !important; padding-inline: 6px;
+    text-decoration: none;
+  }
+  .agency-command-profile.profile-redesign .acp-header .acp-record-context {
+    flex-basis: 100%; width: 100%; border-top: 1px solid var(--acp-border); margin-top: 2px;
+  }
+  .agency-command-profile.profile-redesign .acp-header .acp-record-context > summary {
+    min-height: 36px !important; color: var(--acp-muted) !important; font-size: 12px !important;
+  }
+  .agency-command-profile.profile-redesign .acp-header .profile-more-actions > summary {
+    min-height: 44px !important; padding-inline: 10px; justify-content: center;
+  }
+  .agency-command-profile.profile-redesign .acp-notice-phone-details {
+    display: block; grid-column: 2; min-width: 0;
+  }
+  .agency-command-profile.profile-redesign .acp-notice-phone-details > summary {
+    display: inline-flex; align-items: center; gap: 4px;
+    min-height: 36px; color: var(--acp-blue); cursor: pointer;
+    font-size: 12px; font-weight: 650; list-style: none;
+  }
+  .agency-command-profile.profile-redesign .acp-notice-phone-details > summary::-webkit-details-marker { display: none; }
+  .agency-command-profile.profile-redesign .acp-notice-phone-details[open] > summary svg { transform: rotate(180deg); }
+  .agency-command-profile.profile-redesign .acp-notice-phone-details p { margin: 0 0 4px; font-size: 13px; line-height: 1.5; }
+  /* Single, always-identifiable mobile topic selector. */
+  .agency-command-profile.profile-redesign .acp-nav > div:first-child {
+    display: flex !important; align-items: center; gap: 8px;
+  }
+  .agency-command-profile.profile-redesign .acp-mobile-section-label {
+    flex: none; color: var(--acp-muted); font-size: 13px; font-weight: 650;
+  }
+  .agency-command-profile.profile-redesign .acp-nav-select {
+    flex: 1; min-width: 0; width: 100%; min-height: 44px !important;
+    border: 1px solid var(--acp-border); border-radius: 8px;
+    background: var(--acp-surface); color: var(--acp-text);
+    padding-inline: 10px; font-size: 16px !important;
+  }
+  /* The detailed inventory is available in its full Equipment tab or on demand. */
+  .agency-command-profile.profile-redesign .acp-ledger-phone-expand {
+    display: flex !important; justify-content: space-between; align-items: center;
+    width: 100%; min-height: 44px; margin-top: 8px; padding: 8px 10px;
+    background: var(--acp-blue-soft); border: 1px solid var(--acp-border);
+    border-radius: 8px; color: var(--acp-blue); text-align: left;
+    font-size: 13px; font-weight: 650;
+  }
+  .agency-command-profile.profile-redesign .acp-ledger-phone-expand svg { width: 16px; height: 16px; flex: none; }
+  .agency-command-profile.profile-redesign .acp-ledger-phone-expand svg.is-expanded { transform: rotate(180deg); }
+  .agency-command-profile.profile-redesign .acp-ledger-catalog { display: none !important; }
+  .agency-command-profile.profile-redesign .acp-ledger-catalog.is-phone-expanded {
+    display: grid !important; grid-template-columns: minmax(0,1fr) !important; gap: 8px; margin-top: 12px;
+  }
+  .agency-command-profile.profile-redesign .profile-workspace {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  }
+  /* One mobile dock, with no competing global app navigation. */
+  .agency-command-profile.profile-redesign .profile-mobile-dock {
+    background: var(--acp-surface) !important;
+    border-top: 1px solid var(--acp-border) !important;
+    padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important;
+    box-shadow: 0 -4px 20px rgba(15,23,42,.12);
+  }
+  .agency-command-profile.profile-redesign .profile-phone-action-row {
+    display: grid !important; grid-template-columns: repeat(4, minmax(0,1fr));
+    width: 100%; gap: 6px; align-items: stretch;
+  }
+  .agency-command-profile.profile-redesign .profile-phone-action-row > button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; min-width: 0; min-height: 53px; padding: 4px 2px;
+    background: var(--acp-surface); border: 1px solid var(--acp-border);
+    border-radius: 10px; color: var(--acp-text); text-align: center; font-size: 12px; font-weight: 650;
+  }
+  .agency-command-profile.profile-redesign .profile-phone-action-row > button svg { width: 18px; height: 18px; flex: none; }
+  .agency-command-profile.profile-redesign .profile-phone-action-row > button[aria-pressed="true"] {
+    background: var(--acp-blue-soft); border-color: var(--acp-blue); color: var(--acp-blue);
+  }
+  .agency-command-profile.profile-redesign .profile-phone-action-row > button:focus-visible {
+    outline: 2px solid var(--acp-blue); outline-offset: 2px;
+  }
 }
 @media screen and (prefers-reduced-motion: reduce) {
   .agency-command-profile.profile-redesign *,

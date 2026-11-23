@@ -431,6 +431,19 @@
   .agency-command-profile.profile-redesign .afi-payers > div[data-tone] dt::before {
     background: var(--c) !important;
   }
+  /* Text headings are information, not additional calls to action. */
+  .agency-command-profile.profile-redesign .acp-ledger-overline,
+  .agency-command-profile.profile-redesign .acp-equipment-group h3 {
+    color: #64748B !important;
+  }
+  .agency-command-profile.profile-redesign .acp-monitor-kicker {
+    color: #476C95 !important;
+  }
+  /* A count of zero mapped sources must not visually imply verification. */
+  .agency-command-profile.profile-redesign .acp-panel[data-evidence-state="none"] .acp-num,
+  .agency-command-profile.profile-redesign .acp-panel[data-evidence-state="none"] .acp-panel-title svg {
+    color: #64748B !important;
+  }
   /* Precision profile presentation: quiet surfaces, strong hierarchy, one action accent. */
   .agency-command-profile.profile-redesign .acp-header {
     box-shadow: none !important;

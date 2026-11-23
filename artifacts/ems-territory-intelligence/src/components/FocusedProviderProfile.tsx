@@ -476,6 +476,19 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const profileTopicRef = useRef<HTMLDivElement | null>(null);
   const profileScrollFrameRef = useRef<number | null>(null);
   useEffect(() => {
+    // Opening an agency from Search can leave the previous screen's search box
+    // focused behind this full-screen dossier. Dismiss that stale keyboard so
+    // the four phone actions are usable immediately.
+    const focused = document.activeElement;
+    if (
+      focused instanceof HTMLElement &&
+      !profileRootRef.current?.contains(focused) &&
+      focused.matches('input, textarea, select, [contenteditable="true"]')
+    ) {
+      focused.blur();
+    }
+  }, []);
+  useEffect(() => {
     profileRootRef.current?.scrollTo({ top: 0, behavior: 'instant' });
     return () => {
       if (profileScrollFrameRef.current !== null) {

@@ -56,6 +56,14 @@ test('overview keeps all six equipment and software rows, missing labels, and in
   assert.match(html,/Inventory as recorded/);
   assert.match(html,/not condition, intent or buy-back eligibility/);
 });
+test('phone overview offers a labeled equipment disclosure while retaining all six source rows',()=>{
+  const html=render(populated);
+  assert.match(html,/data-testid="button-overview-expand-equipment-phone"/);
+  assert.match(html,/aria-expanded="false"/);
+  assert.match(html,/View additional equipment &amp; software/);
+  assert.match(html,/id="[^"]+-equipment-catalog" class="acp-ledger-catalog"/);
+  assert.equal((html.match(/data-testid="row-overview-equipment-/g)||[]).length,6);
+});
 test('unknown equipment quantity and age are not displayed as reported zeros',()=>{
   const html=render(fixture({installedFleet:{
     defibBrand:'Recorded Monitor Model',

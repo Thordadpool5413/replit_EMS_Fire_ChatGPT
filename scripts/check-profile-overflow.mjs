@@ -3615,24 +3615,28 @@ async function checkProfileAtViewport(cdp, viewport) {
     throw new Error(`${error.message}. Meeting state: ${meetingState}`);
   }
   await assertNoHorizontalOverflow(cdp, viewport.width, 'profile');
-  if (viewport.mobile) {
+  if (viewport.mobile && viewport.width < 640) {
     const dockState = await evaluate(cdp, `(() => {
-      const dock = document.querySelector('.profile-action-dock');
+      const profile = document.querySelector('.provider-profile-overlay');
+      const dock = profile?.querySelector('[data-testid="profile-action-dock"]');
+      const quickActions = dock?.querySelector('.profile-phone-action-row');
       const nav = document.querySelector('.pi-mobile-nav');
-      if (!dock || !nav) return null;
-      const dockRect = dock.getBoundingClientRect();
-      const navRect = nav.getBoundingClientRect();
+      const rect = dock?.getBoundingClientRect();
+      const buttons = [...(quickActions?.querySelectorAll('button') ?? [])].map(button => {
+        const bounds = button.getBoundingClientRect();
+        return { name: button.getAttribute('aria-label'), width: bounds.width, height: bounds.height, left: bounds.left, right: bounds.right };
+      });
       return {
-        position: getComputedStyle(dock).position,
-        top: dockRect.top,
-        bottom: dockRect.bottom,
-        navTop: navRect.top,
-        visible: dockRect.height > 0 && dockRect.top >= 0 && dockRect.bottom <= navRect.top,
+        count: buttons.length, buttons,
+        bottomDockVisible: Boolean(rect && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight + 1),
+        globalNavigationHidden: !nav || getComputedStyle(nav).display === 'none' || nav.getBoundingClientRect().height === 0,
       };
     })()`);
     assert(
-      dockState?.position === 'sticky' && dockState.visible,
-      `Mobile agency actions are not sticky and clear of bottom navigation at ${viewport.width}px: ${JSON.stringify(dockState)}`,
+      dockState?.bottomDockVisible && dockState.globalNavigationHidden &&
+      dockState.count === 4 && dockState.buttons.every(button =>
+        button.name && button.height >= 44 && button.width >= 44 && button.left >= -1 && button.right <= viewport.width + 1),
+      `Phone profile must have one usable four-action dock without stacked app navigation at ${viewport.width}px: ${JSON.stringify(dockState)}`,
     );
   }
 

@@ -77,6 +77,13 @@ try {
         await settleProfileScroll();
       }
       if (equipmentTextOnly && topic === 'overview') {
+        // Phone users can expand the full recorded inventory on demand.
+        // Exercise the visible expanded state before measuring text reflow.
+        await ev(`(()=>{
+          const control=document.querySelector('[data-testid="button-overview-expand-equipment-phone"]');
+          if(control&&getComputedStyle(control).display!=='none')control.click();
+        })()`);
+        await settleProfileScroll();
         await ev(`(()=>{
           const root=document.querySelector('[data-testid="profile-command-overview"]');
           // Emulate browser text enlargement without page zoom or persisted changes.

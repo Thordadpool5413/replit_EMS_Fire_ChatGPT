@@ -9,6 +9,7 @@ import {
   Activity,
   ArrowRight,
   ChevronRight,
+  ChevronDown,
   FileText,
   Gauge,
   HeartPulse,
@@ -102,6 +103,7 @@ export interface ProfileCommandOverviewProps {
 }
 
 export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ agency, onNavigate, onOpenSources, onReviewFact, children }) => {
+  const [showFullEquipment, setShowFullEquipment] = React.useState(false);
   const mode = getAgencyServiceMode(agency);
   const lines = buildEquipmentLines(agency);
   const knownEquipment = lines.filter((l) => l.value !== NOT_REPORTED);
@@ -228,7 +230,18 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
               </div>
             </div>
           </div>
-          <div className="acp-ledger-catalog">
+          <button
+            type="button"
+            className="acp-ledger-phone-expand md:hidden"
+            aria-controls={`${artworkId}-equipment-catalog`}
+            aria-expanded={showFullEquipment}
+            onClick={() => setShowFullEquipment(expanded => !expanded)}
+            data-testid="button-overview-expand-equipment-phone"
+          >
+            <span>{showFullEquipment ? 'Hide additional equipment & software' : 'View additional equipment & software'}</span>
+            <ChevronDown aria-hidden="true" className={showFullEquipment ? 'is-expanded' : ''} />
+          </button>
+          <div id={`${artworkId}-equipment-catalog`} className={`acp-ledger-catalog${showFullEquipment ? ' is-phone-expanded' : ''}`}>
             <section className="acp-equipment-group" aria-label="Other clinical devices">
               <h3><Activity aria-hidden="true" />Clinical devices</h3>
               <ul className="acp-ledger-list">{clinicalLines.map(renderEquipmentLine)}</ul>

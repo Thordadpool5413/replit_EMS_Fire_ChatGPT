@@ -2,6 +2,7 @@ import {WorkspaceIcon} from './components/design/WorkspaceIcon';
 import {PwaControls, PwaStatusBanner} from './pwa/PwaControls';
 import { recordImportRun } from './services/importRunStore';
 import { FollowUpWorkspace } from './components/FollowUpWorkspace';
+import { useTerritoryAlerts } from './hooks/useTerritoryAlerts';
 import { WorkspaceHub } from './components/WorkspaceHub';
 /**
  * @license
@@ -837,6 +838,7 @@ export default function App() {
     showToast(remaining.length ? `${remaining.length} changes need attention. They remain saved on this device.` : 'All queued changes acknowledged by the cloud.', remaining.length ? 'warn' : 'success');
   }, [isOnline, showToast, syncPendingChanges]);
 
+  const territoryAlerts = useTerritoryAlerts(agencies, isOnline);
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const storedActive = activeAccount || selectedAgency;
@@ -1087,6 +1089,7 @@ export default function App() {
         onClearGeography={handleClearGeography}
         activeAccountName={currentActive?.name || null}
         dayRouteCount={dayRouteCount}
+        territoryAlertCount={territoryAlerts.alerts.length}
         onOpenProviderFinder={openProviderFinder}
         onOpenNearbyProviderFinder={openNearbyProviderFinder}
       />
@@ -1300,7 +1303,7 @@ export default function App() {
         <React.Suspense fallback={<WorkspaceLoadingState />}>
         <ErrorBoundary key={activeTab} onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
-        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} />}
+        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub territoryAlerts={territoryAlerts} kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} />}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
             <ErrorBoundary fallback={<HomeMapFailureFallback onBrowseDirectory={() => handleNavigateTab('states_directory')} />}>
@@ -1833,6 +1836,7 @@ export default function App() {
           setActiveTab={handleNavigateTab}
           onGoHome={handleGoHome}
           dayRouteCount={dayRouteCount}
+          territoryAlertCount={territoryAlerts.alerts.length}
         />
       )}
 

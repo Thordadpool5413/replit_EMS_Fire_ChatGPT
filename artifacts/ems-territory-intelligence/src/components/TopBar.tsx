@@ -65,6 +65,7 @@ interface TopBarProps {
   onClearGeography?: () => void;
   activeAccountName?: string | null;
   dayRouteCount?: number;
+  territoryAlertCount?: number;
   onOpenProviderFinder?: () => void;
   onOpenNearbyProviderFinder?: () => void;
 }
@@ -92,6 +93,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onClearGeography,
   activeAccountName = null,
   dayRouteCount = 0,
+  territoryAlertCount = 0,
   onOpenProviderFinder,
   onOpenNearbyProviderFinder
 }) => {
@@ -235,6 +237,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               const active = currentPrimary === item.id;
               return <button key={item.id} type="button" className="pi-sb-item" onClick={() => item.id === 'home' ? onGoHome() : setActiveTab(item.id)} aria-current={active ? 'page' : undefined} title={item.description}>
                 <WorkspaceIcon name={item.id}/><span className="pi-sb-label">{item.label}</span>
+                {item.id === 'reports' && territoryAlertCount > 0 && <span className="pi-sb-badge" title={territoryAlertCount+' territory alerts'} aria-label={territoryAlertCount+' territory alerts'}>{territoryAlertCount>99?'99+':territoryAlertCount}</span>}
                 {item.id === 'field' && dayRouteCount > 0 && <span className="pi-sb-badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount}</span>}
               </button>;
             })}

@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Agency } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect, isGeneratedFdid, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from './providerRecordTrust';
 import { hasAgencyContractEvidence, hasAgencyFactData } from '../data/agencyFactEvidence';
-import { findLinkedRegistryAgency, registryIdentifierText } from '../services/registryAccountLink';
+import { findLinkedRegistryAgency, registryIdentifierText, snapshotRegistryIdentity,createReviewedRegistryAssociation } from '../services/registryAccountLink';
 import type { SourceDirectoryRecord } from '../services/nationalSourceDirectory';
 const agency = {id:'fire-va-51001-chincoteague',stateCode:'VA',agencyType:'Volunteer Fire',fdid:'VA-FD-51001-CHI',isFdidVerified:true,verificationSource:'Federal CMS NPI Registry',competitorContract:{contractEndDate:'2028-03-28',vendor:'Synthetic'},fieldNotes:[{id:'keep'}],factEvidence:{},installedFleet:{defibBrand:'Illustrative'}} as unknown as Agency;
 test('known geographic identity survives a verification label change; generated ID is quarantined',()=>{
@@ -41,4 +41,16 @@ test('blank USFA FDIDs stay missing and state-prefixed confirmed IDs link correc
 test('contract evidence cannot establish impossible calendar dates',()=>{
  const mapped={...agency,competitorContract:{...agency.competitorContract,contractEndDate:'2026-02-31'},factEvidence:{maintenanceContracts:{sourceName:'Town procurement',sourceRecordId:'contract-7',sourceUrl:'https://example.gov/contracts/7',sourceKind:'link',reviewed:false}}} as Agency;
  assert.equal(hasAgencyContractEvidence(mapped),false);
+});
+
+test('manual source reconciliation preserves account identity and rejects duplicate association',()=>{
+ const row=['usfa:VA:00103','USFA','Chincoteague Volunteer Fire Company','VA','Chincoteague','23336','51001','Accomack','source-county','','',''] as SourceDirectoryRecord;
+ const identity=snapshotRegistryIdentity(row,'2026-11-17')!;
+ const assoc=createReviewedRegistryAssociation(identity,agency,'Official name and address match',[agency]);
+ assert.equal(assoc.sourceRecordId,'VA:00103');assert.equal(assoc.sourceFields.fdid,'00103');assert.equal(agency.fdid,'VA-FD-51001-CHI');
+ const linked={...agency,sourceRecordAssociations:[assoc]};
+ assert.equal(agencyIdentifierLabel(linked),'FDID 00103');
+ assert.throws(()=>createReviewedRegistryAssociation(identity,{...agency,id:'other'},'Verified',[linked]),/another saved account/);
+ assert.throws(()=>createReviewedRegistryAssociation(identity,{...agency,stateCode:'TX'},'Verified',[]),/state does not match/);
+ assert.throws(()=>createReviewedRegistryAssociation(identity,agency,'',[]),/required/);
 });

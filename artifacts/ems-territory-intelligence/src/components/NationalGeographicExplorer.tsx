@@ -1,3 +1,4 @@
+import type { AgencySourceRecordAssociation } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect } from '../utils/providerRecordTrust';
 import { NationalSourceDirectory } from './NationalSourceDirectory';
 import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
@@ -203,6 +204,7 @@ interface NationalGeographicExplorerProps {
   initialMode?: 'states' | 'counties' | 'cities' | 'pulseiq_chart';
   onModeChange?: (mode: 'states' | 'counties' | 'cities' | 'pulseiq_chart') => void;
   onSelectAgency: (agency: Agency) => void;
+  onDecideSourceRecord?: (id:string,association:AgencySourceRecordAssociation)=>void;
   onPreviewAgency?: (agency: Agency) => void;
   onNavigateToQueueWithFilter?: (stateCode?: string, county?: string, city?: string, zip?: string) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
@@ -226,6 +228,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   initialMode,
   onModeChange,
   onSelectAgency,
+  onDecideSourceRecord,
   onPreviewAgency,
   onNavigateToQueueWithFilter,
   onOpenRfpGenerator,
@@ -2310,7 +2313,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
           {/* Source-native discovery, separate from saved or modeled records. */}
           {selectedStateCode !== 'all' && (
-            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} />
+            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} onDecideSourceRecord={onDecideSourceRecord} />
           )}
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">

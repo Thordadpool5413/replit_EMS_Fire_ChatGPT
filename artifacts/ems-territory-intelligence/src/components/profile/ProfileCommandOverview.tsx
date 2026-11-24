@@ -178,7 +178,19 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
               Details<ArrowRight aria-hidden="true" className="h-3 w-3" />
             </button>
           </header>
-          {knownEquipment.length === 0 && <p className="acp-ledger-empty">No equipment recorded yet. Confirm the devices and software currently used by the agency.</p>}
+          {knownEquipment.length === 0 ? (
+            <div className="acp-ledger-empty" data-testid="overview-equipment-empty">
+              <p>No equipment has been recorded here. The Equipment tab lists each category for follow-up.</p>
+              <button
+                type="button"
+                className="acp-link"
+                data-testid="button-overview-open-equipment-empty"
+                onClick={() => onNavigate('equipment')}
+              >
+                Open Equipment <ArrowRight aria-hidden="true" className="h-3 w-3" />
+              </button>
+            </div>
+          ) : <>
           <div className="acp-monitor-feature" data-category="monitor" data-testid="row-overview-equipment-monitor">
             <div className="acp-monitor-art" aria-hidden="true">
               <svg viewBox="0 0 180 150" role="presentation" focusable="false">
@@ -248,6 +260,7 @@ export const ProfileCommandOverview: React.FC<ProfileCommandOverviewProps> = ({ 
             </section>
           </div>
           <p className="acp-ledger-foot">Inventory as recorded. Age and quantity describe the record, not condition, intent or buy-back eligibility.</p>
+          </>}
         </section>
         <div className="acp-main">{children}</div>
         </div>

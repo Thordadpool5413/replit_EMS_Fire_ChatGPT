@@ -938,7 +938,27 @@
   font-size: 12.5px;
   line-height: 1.45;
 }
-.agency-command-profile .acp-ledger-empty { color: var(--ledger-rust); font-size: 13px; }
+.agency-command-profile .acp-ledger-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin: .35rem 0 .5rem;
+  padding: .75rem .85rem;
+  border: 1px solid var(--ledger-rule);
+  border-radius: 10px;
+  background: var(--ledger-teal-wash);
+  color: var(--ledger-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.agency-command-profile .acp-ledger-empty p { margin: 0; }
+.agency-command-profile .acp-ledger-empty .acp-link { flex: none; min-height: 40px; }
+
+@media (max-width: 767px) {
+  .agency-command-profile .acp-ledger-empty { align-items: flex-start; flex-direction: column; gap: .35rem; }
+  .agency-command-profile .acp-ledger-empty .acp-link { min-height: 44px; }
+}
 
 @media (max-width: 767px) {
   .agency-command-profile .acp-ledger-head { gap: .25rem .4rem; }

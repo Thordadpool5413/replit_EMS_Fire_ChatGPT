@@ -407,7 +407,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <img
                   src={logoSrc}
                   alt="EMS and Fire logo"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </button>

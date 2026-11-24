@@ -1,3 +1,5 @@
+import {PublicIntelligenceDiscovery} from './PublicIntelligenceDiscovery';
+import {SharedEvidenceWorkspace} from './SharedEvidenceWorkspace';
 import {OpportunityRadar} from './OpportunityRadar';
 import {IntelligenceResearchQueue} from './IntelligenceResearchQueue';
 import {NationalSourceDirectory} from './NationalSourceDirectory';
@@ -34,7 +36,9 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
 
     <div className="workspace-hub-summary" role="status"><span>{online?'Online':'Offline · saved work stays on this device'}</span><span>{pending?`${pending} changes waiting for cloud acknowledgment`:'No queued changes'}</span><span>{work.length.toLocaleString()} accounts with saved work</span></div>
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation. Generated equipment values are excluded from reported equipment columns.</small><label className="text-sm block mt-2"><input type="checkbox" checked={includeEstimates} onChange={e=>setIncludeEstimates(e.target.checked)}/> Include a separate planning-estimates column</label></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
+    {kind==='reports'&&<SharedEvidenceWorkspace agencies={agencies}/>}
     {kind==='reports'&&<OpportunityRadar agencies={agencies} onOpen={onOpenAgency}/>}
+    {kind==='reports'&&<PublicIntelligenceDiscovery agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<IntelligenceResearchQueue agencies={agencies} onOpen={onOpenAgency}/>}
     <div className="workspace-hub-grid">{(kind==='reports'?reports:settings).map(([id,title,description])=><button key={id} type="button" className="workspace-destination" onClick={()=>navigate(id)}><WorkspaceIcon name={id} badge/><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} aria-hidden="true"/></button>)}</div>
     {kind==='settings'&&<div className="workspace-data-tools"><DataCoverageSummary agencies={agencies}/><ImportRunHistory/><NationalSourceDirectory savedAgencies={agencies} onOpenSavedAgency={onOpenAgency} onCreateAgency={onCreateAgency} onDecideSourceRecord={onDecideSourceRecord}/><BulkRegistryDirectory/></div>}

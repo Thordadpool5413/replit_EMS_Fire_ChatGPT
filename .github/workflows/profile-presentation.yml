@@ -9,6 +9,11 @@ on:
       - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
+      - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
+      - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
+      - 'artifacts/api-server/src/routes/index.ts'
+      - 'scripts/test-ems-unit.mjs'
+      - 'security/**'
       - '.github/workflows/profile-presentation.yml'
   push:
     branches: [main]
@@ -20,6 +25,11 @@ on:
       - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
+      - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
+      - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
+      - 'artifacts/api-server/src/routes/index.ts'
+      - 'scripts/test-ems-unit.mjs'
+      - 'security/**'
       - '.github/workflows/profile-presentation.yml'
 permissions:
   contents: read
@@ -54,6 +64,7 @@ jobs:
       - run: node --test scripts/audit-production-providers.test.mjs
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
+      - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs
       - run: pnpm --dir artifacts/ems-territory-intelligence run build
       - name: Install browser for responsive profile checks
@@ -88,3 +99,29 @@ jobs:
             generated-artifacts/profile-redesign/
             generated-artifacts/mobile-field-polish/
           if-no-files-found: ignore
+
+  evidence-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run isolated Firestore rule tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEST_DIR=$(mktemp -d)
+          cp security/atlas-evidence.firestore.rules security/atlas-evidence.rules.test.mjs "$TEST_DIR/"
+          cp security/atlas-evidence.emulator.json "$TEST_DIR/firebase.json"
+          cd "$TEST_DIR"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund --save-exact firebase@13.0.0 @firebase/rules-unit-testing@6.0.0 firebase-tools@15.36.0
+          CI=true ./node_modules/.bin/firebase emulators:exec --only firestore --project demo-atlas-evidence --config firebase.json 'node --test atlas-evidence.rules.test.mjs'

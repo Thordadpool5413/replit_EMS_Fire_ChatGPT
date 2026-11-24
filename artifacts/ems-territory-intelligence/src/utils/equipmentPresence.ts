@@ -1,11 +1,13 @@
+import {equipmentObservationFacts,definitionFor} from '../services/documentedIntelligence';
 import { matchesAgencyCounty } from './countyIdentity';
 import type {Agency, AgencyFactEvidenceKey} from '../types';
 import {hasAgencyFactData,getAgencyFactEvidenceStatus} from '../data/agencyFactEvidence';
 export type EquipmentPresence = 'all'|'zoll'|'competitor'|'mixed'|'unknown';
 export type EquipmentFamily = 'all'|'monitors'|'cpr'|'ventilators'|'software';
-export type EquipmentMapFilter = {presence:EquipmentPresence;family:EquipmentFamily;vendor?:string};
+export type EquipmentEvidenceMode='recorded'|'documented';
+export type EquipmentMapFilter = {presence:EquipmentPresence;family:EquipmentFamily;vendor?:string;evidence?:EquipmentEvidenceMode};
 export const DEFAULT_EQUIPMENT_FILTER:EquipmentMapFilter={presence:'all',family:'all'};
-export function isEquipmentFilterActive(filter:EquipmentMapFilter):boolean { return filter.presence!=='all'||filter.family!=='all'||Boolean(filter.vendor&&filter.vendor!=='all'); }
+export function isEquipmentFilterActive(filter:EquipmentMapFilter):boolean { return filter.presence!=='all'||filter.family!=='all'||filter.evidence==='documented'||Boolean(filter.vendor&&filter.vendor!=='all'); }
 // Names describe recorded brands, not a claim about current corporate ownership.
 export const EQUIPMENT_VENDORS = [
  {id:'zoll',name:'ZOLL',pattern:/\b(zoll|autopulse|rescuenet|emscharts)\b|\bz[ -]?vent\b|\b[rx] series\b/i},
@@ -65,7 +67,16 @@ const FAMILY_LABELS:Record<Exclude<EquipmentFamily,'all'>,string>={
  software:'ePCR / CAD / billing',
 };
 /** Returns the substantive values even when manufacturer recognition is unavailable. */
-export function getRecordedEquipmentEntries(agency:Agency,family:EquipmentFamily='all'):RecordedEquipmentEntry[] {
+export function getRecordedEquipmentEntries(agency:Agency,family:EquipmentFamily='all',evidence:EquipmentEvidenceMode='recorded'):RecordedEquipmentEntry[] {
+ if(evidence==='documented'){
+  const result=new Map<string,RecordedEquipmentEntry>();
+  for(const fact of equipmentObservationFacts(agency)){
+   const category=definitionFor(fact.intelligence.kind)?.family;if(!category||(family!=='all'&&family!==category))continue;
+   const key=category+':'+fact.value.trim().toLowerCase();const vendors=EQUIPMENT_VENDORS.filter(v=>v.pattern.test(fact.value));
+   result.set(key,{family:category,label:FAMILY_LABELS[category],value:fact.value,sourceStatus:'documented-observation',evidenceKeys:[fact.fieldKey],manufacturerIds:vendors.map(v=>v.id),manufacturerNames:vendors.map(v=>v.name)});
+  }
+  return [...result.values()];
+ }
  const entries=new Map<string,RecordedEquipmentEntry>();
  const statusRank:Record<string,number>={'source-required':0,'source-mapped':1,'source-reviewed':2};
  for(const {family:category,key,value} of equipmentFields(agency)){
@@ -102,7 +113,8 @@ export function hasRecordedEquipmentValue(agency:Agency,family:EquipmentFamily='
  return getRecordedEquipmentEntries(agency,family).length>0;
 }
 /** Only installed-product fields participate; sales targets and bundles never do. */
-export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='all'):RecordedVendorMatch[] {
+export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='all',evidence:EquipmentEvidenceMode='recorded'):RecordedVendorMatch[] {
+ if(evidence==='documented')return getRecordedEquipmentEntries(agency,family,evidence).flatMap(entry=>entry.manufacturerIds.map((vendor,i)=>({vendor,name:entry.manufacturerNames[i],family:entry.family,product:entry.value,sourceStatus:entry.sourceStatus})));
  const matches:RecordedVendorMatch[]=[];
  const seen=new Set<string>();
  for(const {family:category,key,value:raw} of equipmentFields(agency)) {
@@ -119,22 +131,22 @@ export function getRecordedVendorMatches(agency:Agency,family:EquipmentFamily='a
  }
  return matches;
 }
-export function equipmentPresence(agency:Agency,family:EquipmentFamily='all'):Exclude<EquipmentPresence,'all'> {
- const matches=getRecordedVendorMatches(agency,family);
+export function equipmentPresence(agency:Agency,family:EquipmentFamily='all',evidence:EquipmentEvidenceMode='recorded'):Exclude<EquipmentPresence,'all'> {
+ const matches=getRecordedVendorMatches(agency,family,evidence);
  const zoll=matches.some(m=>m.vendor==='zoll'),competitor=matches.some(m=>m.vendor!=='zoll');
  return zoll&&competitor?'mixed':zoll?'zoll':competitor?'competitor':'unknown';
 }
 
 export function matchesEquipmentFilter(agency:Agency,filter:EquipmentMapFilter) {
- if(filter.vendor&&filter.vendor!=='all'&&!getRecordedVendorMatches(agency,filter.family).some(m=>m.vendor===filter.vendor))return false;
+ if(filter.vendor&&filter.vendor!=='all'&&!getRecordedVendorMatches(agency,filter.family,filter.evidence).some(m=>m.vendor===filter.vendor))return false;
  if(filter.presence==='all')return true;
- const presence=equipmentPresence(agency,filter.family);
+ const presence=equipmentPresence(agency,filter.family,filter.evidence);
  return filter.presence==='zoll'?presence==='zoll'||presence==='mixed':filter.presence==='competitor'?presence==='competitor'||presence==='mixed':presence===filter.presence;
 }
 export function parseEquipmentFilter(value:unknown):EquipmentMapFilter {
  const v=value as Partial<EquipmentMapFilter>|null;
  const vendor=(v?.presence==='competitor'||v?.presence==='mixed')&&EQUIPMENT_VENDORS.some(item=>item.id===v?.vendor&&item.id!=='zoll')?v!.vendor:undefined;
- return {...(vendor?{vendor}:{}),presence:['all','zoll','competitor','mixed','unknown'].includes(v?.presence||'')?v!.presence!:'all',family:['all','monitors','cpr','ventilators','software'].includes(v?.family||'')?v!.family!:'all'};
+ return {...(vendor?{vendor}:{}),...(v?.evidence==='documented'?{evidence:'documented' as const}:{}),presence:['all','zoll','competitor','mixed','unknown'].includes(v?.presence||'')?v!.presence!:'all',family:['all','monitors','cpr','ventilators','software'].includes(v?.family||'')?v!.family!:'all'};
 }
 
 /** Colors encode recorded equipment presence, never clinical performance or evidence quality. */
@@ -144,8 +156,8 @@ export const EQUIPMENT_MAP_STYLES = {
  mixed:{label:'ZOLL + competitor',background:'#A78BFA',glyphColor:'#251541',glyph:'M'},
  unknown:{label:'No recognized maker',background:'#718096',glyphColor:'#FFFFFF',glyph:'?'},
 } as const;
-export function equipmentMapStyle(agency:Agency,family:EquipmentFamily='all') {
- return EQUIPMENT_MAP_STYLES[equipmentPresence(agency,family)];
+export function equipmentMapStyle(agency:Agency,family:EquipmentFamily='all',evidence:EquipmentEvidenceMode='recorded') {
+ return EQUIPMENT_MAP_STYLES[equipmentPresence(agency,family,evidence)];
 }
 
 export function equipmentGeographyScope(agencies:Agency[],scope:{state?:string;county?:string;city?:string;category?:string}) {

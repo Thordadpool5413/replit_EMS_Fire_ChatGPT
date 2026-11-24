@@ -1,0 +1,23 @@
+import React,{useState} from 'react';
+import type {Agency,AgencySourceFact} from '../types';
+import {INTELLIGENCE_DEFINITIONS,createIntelligenceFact,hasDocumentedAgencyIdentity,type IntelligenceKind} from '../services/documentedIntelligence';
+export function IntelligenceEvidenceEditor({agency,onSave}:{agency:Agency;onSave:(fact:AgencySourceFact)=>boolean}){
+ const [kind,setKind]=useState<IntelligenceKind>('installed-monitor'),[value,setValue]=useState(''),[name,setName]=useState(''),[record,setRecord]=useState(''),[url,setUrl]=useState(''),[date,setDate]=useState(''),[due,setDue]=useState(''),[note,setNote]=useState(''),[reviewed,setReviewed]=useState(false),[message,setMessage]=useState('');
+ const disabled=!hasDocumentedAgencyIdentity(agency);
+ const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
+ return <details className="rounded-md border border-slate-200 dark:border-slate-700 p-3 space-y-3" data-testid="documented-intelligence-editor"><summary className="cursor-pointer font-semibold text-sm">Add documented sales intelligence</summary>
+ <p className="text-sm">Record what an agency-specific document actually states. Installed equipment, open bids, grants and contract dates are different evidence types. Saved in this browser; nothing is independently verified or uploaded.</p>
+ {disabled&&<p role="status" className="text-sm">Link this geographic prospect to a confirmed registry identity before its evidence can enter the intelligence layer.</p>}
+ <form className="space-y-3" onSubmit={e=>{e.preventDefault();setMessage('');try{if(disabled||!reviewed)throw Error('Review the source and organization identity first.');const fact=createIntelligenceFact(agency,{kind,value,sourceName:name,sourceRecordId:record,sourceUrl:url,documentDate:date,dueDate:due,note},crypto.randomUUID());if(!onSave(fact))throw Error('The browser did not save the evidence. Your entry remains in the form.');setValue('');setName('');setRecord('');setUrl('');setDate('');setDue('');setNote('');setReviewed(false);setMessage('Evidence saved locally. Open Reports & intelligence to review any eligible opportunity signal.');}catch(e){setMessage(e instanceof Error?e.message:String(e));}}}>
+ <label className="block text-sm">Evidence type<select className={control} value={kind} onChange={e=>{setKind(e.target.value as IntelligenceKind);setReviewed(false);setValue('');setDue('')}}>{Object.entries(INTELLIGENCE_DEFINITIONS).map(([id,d])=><option key={id} value={id}>{d.label}</option>)}</select></label>
+ <label className="block text-sm">{kind==='contract-expiration'?'Exact contract end date':'Source-reported fact or award scope'}<input required className={control} type={kind==='contract-expiration'?'date':'text'} value={value} maxLength={500} onChange={e=>{setValue(e.target.value);setReviewed(false)}}/></label>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><label className="block text-sm">Source / issuing organization<input className={control} required maxLength={160} value={name} onChange={e=>{setName(e.target.value);setReviewed(false)}}/></label>
+ <label className="block text-sm">Source record ID (same ID across procurement updates)<input className={control} required maxLength={160} value={record} onChange={e=>{setRecord(e.target.value);setReviewed(false)}}/></label></div>
+ <label className="block text-sm">Public source document URL<input className={control} type="url" required value={url} onChange={e=>{setUrl(e.target.value);setReviewed(false)}} placeholder="https://…"/></label>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><label className="block text-sm">Document date<input className={control} type="date" required max={new Date().toISOString().slice(0,10)} value={date} onChange={e=>{setDate(e.target.value);setReviewed(false)}}/></label>
+ {kind==='procurement-open'&&<label className="block text-sm">Published bid deadline<input className={control} type="date" required min={date||undefined} value={due} onChange={e=>{setDue(e.target.value);setReviewed(false)}}/></label>}</div>
+ <label className="block text-sm">Context / limitations<textarea className={control} rows={2} maxLength={1000} value={note} onChange={e=>setNote(e.target.value)}/></label>
+ <label className="block text-sm"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/> I checked the organization, document date, actual fact and evidence type. A planned purchase is not installed equipment.</label>
+ <button className="workspace-button" disabled={disabled||!reviewed} type="submit">Save documented evidence</button>{message&&<p role="status" className="text-sm">{message}</p>}
+ </form></details>;
+}

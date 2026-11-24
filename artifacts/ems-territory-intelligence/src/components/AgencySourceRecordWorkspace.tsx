@@ -1,3 +1,4 @@
+import {IntelligenceEvidenceEditor} from './IntelligenceEvidenceEditor';
 import { useState, type FormEvent } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import {
@@ -382,6 +383,7 @@ export function AgencySourceRecordWorkspace({
       </div>
 
       <div className="space-y-4 p-3.5">
+        <IntelligenceEvidenceEditor key={agency.id} agency={agency} onSave={fact=>onSave({sourceRecordAssociations:associations,sourceFacts:[fact,...facts]})}/>
         <details
           className="rounded-md border border-slate-200 dark:border-slate-700"
           data-testid="agency-data-map"

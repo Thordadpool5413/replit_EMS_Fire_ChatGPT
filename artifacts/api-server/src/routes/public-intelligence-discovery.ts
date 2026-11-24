@@ -6,6 +6,8 @@ import {createMunicipalDiscoveryService} from '../lib/municipalSpendingDiscovery
 import {parseMunicipalQuery} from '../lib/municipalDiscoveryContract';
 import {authorizedSamGateway,readSamConfig,createSamDiscoveryService,SamDiscoveryError} from '../lib/samSolicitationDiscovery';
 import {parseSamQuery} from '../lib/samDiscoveryContract';
+import {boundedJson} from '../lib/publicIntelligenceDiscovery';
+import {FEED_SOURCE_URL,validateDiscoveryFeed} from '../lib/recurringDiscoveryContract';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
 router.get('/discovery/fema',async(req,res)=>{
@@ -45,5 +47,16 @@ router.get('/discovery/sam',async(req,res)=>{
   if(error instanceof SamDiscoveryError&&error.category==='quota'){res.status(429).json({error:'SAM.gov request budget reached.'});return;}
   req.log.warn('SAM.gov discovery unavailable');res.status(502).json({error:'SAM.gov could not confirm a notice page. No records were inferred.'});
  }
+});
+router.get('/discovery/feed',async(req,res)=>{
+ res.set('Cache-Control','no-store');
+ try{
+  const response=await fetch(FEED_SOURCE_URL,{headers:{Accept:'application/json, text/plain'},redirect:'error',signal:AbortSignal.timeout(10_000)});
+  if(response.status===404){res.status(503).json({error:'The recurring discovery feed has not been initialized.'});return;}
+  if(!response.ok)throw Error('Feed unavailable.');
+  // GitHub raw serves JSON as text/plain. Preserve the shared streaming size limit.
+  const page=await boundedJson(new Response(response.body,{status:response.status,headers:{'content-type':'application/json','content-length':response.headers.get('content-length')??'0'}}),'ATLAS feed');
+  res.json(validateDiscoveryFeed(page));
+ }catch{req.log.warn('Recurring public discovery feed unavailable');res.status(502).json({error:'Discovery feed unavailable or invalid. No new records were inferred.'});}
 });
 export default router;

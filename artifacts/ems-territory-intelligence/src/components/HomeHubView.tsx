@@ -1089,7 +1089,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             data-testid="home-map-callout-label"
                           />}
                           <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 20 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.15 : undefined}>{st.code}</text>
+                          <text x={calloutX + 3} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 26 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.15 : undefined}>{st.code}</text>
                         </g>
                       );
                     }
@@ -1117,10 +1117,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         opacity={isInRegion ? 1 : 0.4}
                       >
                         {isPhone && st.code !== 'HI' && <rect
-                          x="-17"
-                          y="-12"
-                          width="34"
-                          height="24"
+                          x="-22"
+                          y="-15"
+                          width="44"
+                          height="30"
                           rx="5"
                           fill={isSelected ? '#1E56A8' : isHovered ? '#EEF4FF' : '#FFFFFF'}
                           fillOpacity="0.97"
@@ -1147,7 +1147,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           dy={isPhone ? undefined : 3.5}
                           dominantBaseline={isPhone ? 'central' : undefined}
                           fill={isPhone && isSelected ? '#FFFFFF' : isPhone ? '#172B4D' : '#202124'}
-                          fontSize={isPhone ? 20 : 10}
+                          fontSize={isPhone ? 26 : 10}
                           fontWeight={isPhone ? 700 : 800}
                           fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
                           letterSpacing={isPhone ? 0.15 : undefined}

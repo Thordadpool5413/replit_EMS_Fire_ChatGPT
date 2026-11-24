@@ -8,17 +8,20 @@ const serviceLevels=new Set([null,'None','EMR','EMT','AEMT','Paramedic']);
 export function parseOhioRoster(html,retrievedAt=new Date().toISOString().slice(0,10),minRows=500){
  const match=html.match(/<div\b[^>]*\bid=["']js-placeholder-json-data["'][^>]*>([\s\S]*?)<\/div>/i);
  if(!match)throw Error('Expected Ohio structured roster is missing; retain the published snapshot.');
- const data=JSON.parse(match[1].trim());
- if(!Array.isArray(data)||data.length<2||!data.every(Array.isArray))throw Error('Unexpected source roster format.');
+ const parsed=JSON.parse(match[1].trim());
+ if(!parsed||!Array.isArray(parsed.data)||!Array.isArray(parsed.errors)||parsed.errors.length||parsed.meta?.aborted||parsed.meta?.truncated)throw Error('Unexpected or incomplete source roster format.');
+ const data=parsed.data.slice(1);
+ if(!Array.isArray(parsed.data[0])||parsed.data[0].length!==5||!parsed.data[0].every(v=>v==='s')||data.length<2||!data.every(Array.isArray))throw Error('Unexpected source roster format.');
  // The official array has five columns. Resolve them from the source header instead of assuming column order.
  const headers=data[0].map(v=>String(v).trim().toLowerCase().replace(/[^a-z0-9]+/g,' '));
  const index=(patterns)=>headers.findIndex(h=>patterns.some(p=>p.test(h)));
  const code=index([/agency.*(code|id|number)/,/^code$/]),name=index([/^agency.*name$/,/^agency$/]),city=index([/city/]),level=index([/service.*level/,/ems.*level/,/^level$/]);
  if(data[0].length!==5||[code,name,city,level].some(i=>i<0)||new Set([code,name,city,level]).size!==4)throw Error('Ohio roster schema changed; manual mapping required.');
+ const decode=v=>String(v??'').replace(/&(?:amp|quot|apos|lt|gt|nbsp|#\d+|#x[0-9a-f]+);/gi,entity=>{const k=entity.slice(1,-1);if(k.startsWith('#')){const n=k[1].toLowerCase()==='x'?parseInt(k.slice(2),16):parseInt(k.slice(1),10);return Number.isInteger(n)&&n>=0&&n<=0x10ffff?String.fromCodePoint(n):entity;}return ({amp:'&',quot:'"',apos:"'",lt:'<',gt:'>',nbsp:' '})[k.toLowerCase()]??entity;}).trim();
  const records=[];const seen=new Set();
  for(const r of data.slice(1)){
   if(r.length!==5)throw Error('Malformed source row.');
-  const identifier=String(r[code]??'').trim(),n=String(r[name]??'').trim(),c=String(r[city]??'').trim(),serviceLevel=String(r[level]??'').trim()||null;
+  const identifier=decode(r[code]),n=decode(r[name]),c=decode(r[city]),serviceLevel=decode(r[level])||null;
   if(!/^[-A-Z0-9]+$/i.test(identifier)||seen.has(identifier.toUpperCase())||!n||!serviceLevels.has(serviceLevel))throw Error('Missing, duplicate or invalid source agency code or service level.');
   seen.add(identifier.toUpperCase());records.push({identifier,name:n,city:c,serviceLevel});
  }

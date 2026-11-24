@@ -1,6 +1,7 @@
 import {NationalCompetitiveResearch} from './NationalCompetitiveResearch';
 import {RecurringDiscoveryInbox} from './RecurringDiscoveryInbox';
 import {SamSolicitationDiscovery} from './SamSolicitationDiscovery';
+import {ChicagoContractDiscovery} from './ChicagoContractDiscovery';
 import {MunicipalSpendingDiscovery} from './MunicipalSpendingDiscovery';
 import {FederalSpendingDiscovery} from './FederalSpendingDiscovery';
 import {PublicIntelligenceDiscovery} from './PublicIntelligenceDiscovery';
@@ -48,6 +49,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
     {kind==='reports'&&<PublicIntelligenceDiscovery agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<FederalSpendingDiscovery agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<MunicipalSpendingDiscovery/>}
+    {kind==='reports'&&<ChicagoContractDiscovery/>}
     {kind==='reports'&&<SamSolicitationDiscovery/>}
     {kind==='reports'&&<IntelligenceResearchQueue agencies={agencies} onOpen={onOpenAgency}/>}
     <div className="workspace-hub-grid">{(kind==='reports'?reports:settings).map(([id,title,description])=><button key={id} type="button" className="workspace-destination" onClick={()=>navigate(id)}><WorkspaceIcon name={id} badge/><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} aria-hidden="true"/></button>)}</div>

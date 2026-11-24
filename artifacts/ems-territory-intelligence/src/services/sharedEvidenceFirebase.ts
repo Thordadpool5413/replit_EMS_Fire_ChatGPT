@@ -2,6 +2,7 @@ import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, inMemoryPersistence, browserPopupRedirectResolver, type Auth, type User } from 'firebase/auth';
 import { collection, doc, documentId, getDocFromServer, getDocsFromServer, getFirestore, limit, orderBy, query, runTransaction, serverTimestamp, startAfter, type Firestore, Timestamp } from 'firebase/firestore';
 import { DECISION_ACTIONS, readDecision, sameDecision, summarizeDecisions, validDecisionDraft, type DecisionDraft, type EvidenceDecision } from './sharedEvidenceGovernance';
+import type { ReviewedEvidenceRow } from './sharedOpportunityRadar';
 import legacyConfig from '../../firebase-applet-config.json';
 import { readSharedEvidence, sameSharedEvidence, validWorkspaceId, type SharedEvidence } from './sharedEvidence';
 
@@ -155,4 +156,31 @@ export async function recordEvidenceDecision(session:EvidenceSession,user:User,r
   });
   assertSession(session,user);
   return result;
+}
+
+/** Two bounded server reads of evidence and decision histories, not an atomic database snapshot.
+ * Reject changing, incomplete, invalid or offline results. Never persist the reviewed batch locally. */
+export async function loadReviewedRadarRows(session:EvidenceSession,user:User,agencyKey:string):Promise<{rows:ReviewedEvidenceRow[];checkedAt:string}>{
+  await evidenceRole(session,user);
+  const page=await listSharedEvidence(session,user,agencyKey);
+  if(page.next||page.withheld||page.records.length>=50)throw Error('Reviewed signals require a complete first page with fewer than 50 valid published records.');
+  async function readRows(records:PublishedEvidence[]){
+    const rows:ReviewedEvidenceRow[]=[];
+    for(let i=0;i<records.length;i+=6){
+      const batch=await Promise.all(records.slice(i,i+6).map(async record=>{
+        const history=await loadEvidenceDecisions(session,user,record);
+        if(history.invalid||history.status==='unavailable')throw Error('One or more review histories are unavailable.');
+        return {...record,invalid:history.invalid,decisions:[...history.decisions].sort((a,b)=>a.action.localeCompare(b.action))};
+      }));
+      rows.push(...batch);
+    }
+    return rows;
+  }
+  const first=await readRows(page.records);
+  const confirm=await listSharedEvidence(session,user,agencyKey);
+  if(confirm.next||confirm.withheld||JSON.stringify(confirm.records)!==JSON.stringify(page.records))throw Error('Shared evidence changed during review. Refresh and try again.');
+  const second=await readRows(confirm.records);
+  if(JSON.stringify(first)!==JSON.stringify(second))throw Error('Review decisions changed during evaluation. Refresh and try again.');
+  await evidenceRole(session,user);
+  return {rows:second,checkedAt:new Date().toISOString()};
 }

@@ -20,7 +20,8 @@ export interface EvidenceReviewResult {
   items: EvidenceReviewItem[];
 }
 const norm = normalizedValue;
-const signature = (e: SharedEvidence) => JSON.stringify([e.agencyKey,e.stateCode,e.kind,e.documentDate,norm(e.sourceName),e.sourceRecordId.trim(),e.sourceUrl,norm(e.value),e.dueDate]);
+export const sharedObservationSignature = (e: SharedEvidence) => JSON.stringify([e.agencyKey,e.stateCode,e.kind,e.documentDate,norm(e.sourceName),e.sourceRecordId.trim(),e.sourceUrl,norm(e.value),e.dueDate]);
+const signature = sharedObservationSignature;
 const issuerRecord = (e: SharedEvidence) => JSON.stringify([norm(e.sourceName), e.sourceRecordId.trim()]);
 const documentKey = (e: SharedEvidence) => JSON.stringify([issuerRecord(e), e.sourceUrl]);
 const statusRank: Record<EvidenceReviewStatus,number> = {'conflict':0,'incomplete':1,'local-review-required':2,'deadline-passed':3,'stale':4,'superseded':5,'closed':6,'historical':7,'review-candidate':8};

@@ -1,3 +1,4 @@
+import { canBulkHydrateAgency } from '../utils/providerRecordTrust';
 import { createAgencyDirectoryLoader, mergeDirectoryAgency, type DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
 import type { FollowUpChange } from '../utils/followUps';
 import { withWorkspaceLock } from '../services/workspaceLock';
@@ -237,9 +238,9 @@ export function useFirestoreAgencies({
   // Batch hydrate unsynced active agencies into Firestore
   const hydrateBatchToCloud = useCallback(async (maxRecords: number = 35): Promise<number> => {
     const unsynced = allSanitizedAgencies.filter(
-      a => !a.isCloudPersisted && !dataSanitizationService.isAgencyCloudSynced(a.id)
+      a => canBulkHydrateAgency(a) && !a.isCloudPersisted && !dataSanitizationService.isAgencyCloudSynced(a.id)
     );
-    const targetBatch = (unsynced.length > 0 ? unsynced : allSanitizedAgencies).slice(0, maxRecords);
+    const targetBatch = unsynced.slice(0, Math.min(25,Math.max(0,maxRecords)));
     if (targetBatch.length === 0) return 0;
 
     setIsSyncing(true);
@@ -259,7 +260,7 @@ export function useFirestoreAgencies({
 
       dataSanitizationService.recordAuditEvent(
         'CLOUD_HYDRATE',
-        `Synchronized ${count} verified agency records to Google Cloud Firestore (${dataSanitizationService.getCloudSyncedIdsCount()} total in cloud).`,
+        `Synchronized ${count} source-native registry accounts to Google Cloud Firestore (${dataSanitizationService.getCloudSyncedIdsCount()} total in cloud).`,
         stampedBatch.length,
         0,
         dataSanitizationService.getCloudSyncedIdsCount()

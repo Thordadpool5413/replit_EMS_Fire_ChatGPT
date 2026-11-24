@@ -1081,9 +1081,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               }}>
                 <summary><FileText aria-hidden="true" className="h-3.5 w-3.5" />Record details<ChevronDown aria-hidden="true" className="h-3 w-3" /></summary>
                 <div className="acp-record-context-body">
-                  {(agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
+                  {(agency.registryIdentity || agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
                     <div className="acp-ids" aria-label="Registry identifiers">
-                      {agency.fdid && <span className="acp-id"><b>{agencyIdentifierLabel(agency)}</b></span>}
+                      {(agency.registryIdentity || agency.fdid) && <span className="acp-id"><b>{agencyIdentifierLabel(agency)}</b></span>}{agency.registryIdentity&&<span className="acp-id">Source listing only · operations unverified</span>}
                       {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
                       {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
                     </div>

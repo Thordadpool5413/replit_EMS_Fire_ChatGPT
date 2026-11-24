@@ -1,4 +1,4 @@
-import { isGeographicProspect, isGeneratedFdid } from '../utils/providerRecordTrust';
+import { requiresAgencyFieldEvidence, isGeneratedFdid } from '../utils/providerRecordTrust';
 import type { Agency, AgencyFactEvidence, AgencyFactEvidenceKey } from '../types';
 
 export const AGENCY_FACT_EVIDENCE_FIELDS: Array<{
@@ -117,7 +117,7 @@ export function getAgencyFactValues(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): unknown[] {
-  if (isGeographicProspect(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
+  if (requiresAgencyFieldEvidence(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
   const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
     providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
     departmentRegistry: [isGeneratedFdid(agency.fdid, agency) ? undefined : agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],
@@ -154,7 +154,7 @@ export function hasAgencyFactData(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): boolean {
-  if (isGeographicProspect(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return false;
+  if (requiresAgencyFieldEvidence(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return false;
   return getAgencyFactValues(agency, key).length > 0;
 }
 

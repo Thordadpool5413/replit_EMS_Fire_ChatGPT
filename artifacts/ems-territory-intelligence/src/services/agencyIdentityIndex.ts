@@ -1,3 +1,4 @@
+import { registryIdentityKey } from './registryAccountLink';
 import { isGeographicProspect, isGeneratedFdid } from '../utils/providerRecordTrust';
 import type {Agency} from '../types';
 export interface IdentityLink {key:string;agencyId:string;agencyName:string;basis:string;reviewedAt?:string;sourceUrl?:string}
@@ -6,6 +7,8 @@ export function buildAgencyIdentityIndex(agencies:Agency[]) {
  const links:IdentityLink[]=[]; const byLink=new Map<string,IdentityLink>(); const linkedAgencies=new Set<string>();
  for(const a of agencies){
   const add=(key:string,basis:string,reviewedAt?:string,sourceUrl?:string)=>{const unique=JSON.stringify([key,a.id]);if(!byLink.has(unique)){const link={key,agencyId:a.id,agencyName:a.name,basis,reviewedAt,sourceUrl};links.push(link);byLink.set(unique,link);linkedAgencies.add(a.id);}};
+  const native=a.registryIdentity&&registryIdentityKey(a.registryIdentity);
+  if(native)add(native,'Source-native registry account',undefined,a.registryIdentity?.sourceUrl);
   const generated=isGeographicProspect(a);
   if(!generated){
    if(/^\d{10}$/.test(a.npiNumber??''))add(`NPI:${a.npiNumber}`,'Recorded identifier; association needs review');

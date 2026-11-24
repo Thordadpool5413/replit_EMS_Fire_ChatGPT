@@ -1,3 +1,4 @@
+import { registryIdentityKey } from './registryAccountLink';
 import type { Agency, SyncOutboxItem } from '../types';
 
 const validDate = (value: unknown) => typeof value === 'string' && (value === '' || (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value));
@@ -15,8 +16,14 @@ export function applyAgencyMutation(current: Agency | undefined, item: SyncOutbo
   const result = structuredClone(base) as Agency;
   const changes = item.actionType === 'UPDATE_STAGE' ? { 'zollOpportunity.salesStage': item.payload.stage }
     : item.actionType === 'AGENCY_PATCH' ? item.payload.changes : {};
-  if (item.actionType === 'CREATE_AGENCY' && current && checkConflicts && current.name !== item.payload.agency.name)
-    throw new Error('An agency with this ID already exists. Review the existing agency before retrying.');
+  if (item.actionType === 'CREATE_AGENCY' && current) {
+    const incoming=item.payload.agency as Agency;
+    const currentKey=current.registryIdentity&&registryIdentityKey(current.registryIdentity);
+    const incomingKey=incoming.registryIdentity&&registryIdentityKey(incoming.registryIdentity);
+    if((currentKey||incomingKey)?(!currentKey||currentKey!==incomingKey):current.name!==incoming.name)
+      throw new Error('An agency with this ID already exists. Review the existing agency before retrying.');
+    return result; // deterministic replay preserves all newer fields, notes and activities
+  }
   for (const [path, value] of Object.entries(changes)) {
     if (!['zollOpportunity.salesStage', 'isBookmarked', 'inDayRoute'].includes(path)) throw new Error('Unsupported agency change.');
     const old = path === 'zollOpportunity.salesStage' ? result.zollOpportunity.salesStage : Boolean((result as any)[path]);

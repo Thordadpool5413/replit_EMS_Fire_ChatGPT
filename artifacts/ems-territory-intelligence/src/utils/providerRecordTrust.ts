@@ -1,3 +1,4 @@
+import { registryIdentityKey,registryIdentityLabel } from '../services/registryAccountLink';
 import type { Agency } from '../types';
 
 /** Geographic prospect origin survives verification-label changes and cloud sync.
@@ -28,6 +29,7 @@ export function withoutGeneratedFdid<T extends Agency>(agency: T): T {
 
 /** Preserve source namespaces. A bare, unreviewed legacy FDID is not an official ID. */
 export function agencyIdentifierLabel(agency: Agency): string {
+  if(agency.registryIdentity&&registryIdentityKey(agency.registryIdentity))return registryIdentityLabel(agency.registryIdentity);
   const fdid = agency.fdid?.trim();
   const usfa = (agency.sourceRecordAssociations ?? []).filter(a =>
     a.decision === 'confirmed' && /USFA|NFDR/i.test(a.sourceName) && typeof a.sourceFields?.fdid === 'string');
@@ -50,4 +52,12 @@ export function withoutUnsubstantiatedProspectContract(agency: Agency, supported
   return {...agency, competitorContract:{...agency.competitorContract,
     vendor:'',contractEndDate:'',renewalWindowDays:0,annualServiceCostPerUnit:0,
     status:'Not reported',actionRecommendation:'Confirm contract terms with agency sources.',isVerifiedContract:false}};
+}
+
+/** Origin evidence supports identity, not operational fields. */
+export function requiresAgencyFieldEvidence(agency:Agency):boolean {
+ return isGeographicProspect(agency)||!!agency.registryIdentity;
+}
+export function canBulkHydrateAgency(agency:Agency):boolean {
+ return !isGeographicProspect(agency)&&!!agency.registryIdentity&&!!registryIdentityKey(agency.registryIdentity);
 }

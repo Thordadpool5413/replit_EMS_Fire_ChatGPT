@@ -1,3 +1,5 @@
+import {TerritoryAlerts} from './TerritoryAlerts';
+import type {TerritoryAlertState} from '../hooks/useTerritoryAlerts';
 import {NationalCompetitiveResearch} from './NationalCompetitiveResearch';
 import {RecurringDiscoveryInbox} from './RecurringDiscoveryInbox';
 import {SamSolicitationDiscovery} from './SamSolicitationDiscovery';
@@ -30,7 +32,7 @@ const settings = [
   ['gateway','Source directory','Find federal and state sources for your research.'],
   ['claims','Public data & imports','Review Medicare and public-health reference data.'],
 ];
-export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean;onOpenAgency?:(a:Agency)=>void;onCreateAgency?:(a:Agency)=>Promise<void>;onDecideSourceRecord?:(id:string,a:AgencySourceRecordAssociation)=>void}> = ({kind,agencies,navigate,pending,online,onOpenAgency,onCreateAgency,onDecideSourceRecord}) => {
+export const WorkspaceHub: React.FC<{kind:'reports'|'settings';territoryAlerts?:TerritoryAlertState;agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean;onOpenAgency?:(a:Agency)=>void;onCreateAgency?:(a:Agency)=>Promise<void>;onDecideSourceRecord?:(id:string,a:AgencySourceRecordAssociation)=>void}> = ({kind,territoryAlerts,agencies,navigate,pending,online,onOpenAgency,onCreateAgency,onDecideSourceRecord}) => {
   const [includeEstimates,setIncludeEstimates]=useState(false);
   const work = useMemo(()=>agencies.filter(a=>a.isBookmarked||a.inDayRoute||(a.fieldNotes?.length || a.followUpTasks?.length)||Object.keys(a._reviewOriginalValues??{}).length),[agencies]);
   const exportWork=()=>{
@@ -41,6 +43,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
     <WorkspaceHeading name={kind} title={kind==='reports'?'Reports & intelligence':'Your workspace'} description={kind==='reports'?'Turn account research into a clear view of your territory.':'Manage sources, protect your work, and make this workspace yours.'}/>
 
     <div className="workspace-hub-summary" role="status"><span>{online?'Online':'Offline · saved work stays on this device'}</span><span>{pending?`${pending} changes waiting for cloud acknowledgment`:'No queued changes'}</span><span>{work.length.toLocaleString()} accounts with saved work</span></div>
+    {kind==='reports'&&territoryAlerts&&<TerritoryAlerts data={territoryAlerts} onOpen={onOpenAgency} onFollowUps={()=>navigate('field')}/>}
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation. Generated equipment values are excluded from reported equipment columns.</small><label className="text-sm block mt-2"><input type="checkbox" checked={includeEstimates} onChange={e=>setIncludeEstimates(e.target.checked)}/> Include a separate planning-estimates column</label></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
     {kind==='reports'&&<SharedEvidenceWorkspace agencies={agencies}/>}
     {kind==='reports'&&<OpportunityRadar agencies={agencies} onOpen={onOpenAgency}/>}

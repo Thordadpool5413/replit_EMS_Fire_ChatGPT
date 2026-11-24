@@ -11,8 +11,8 @@ import {
   primaryWorkspaceFor,
 } from '../navigation/workspaceNavigation';
 
-interface MobileBottomNavProps { activeTab:string; setActiveTab:(tab:string)=>void; onGoHome?:()=>void; dayRouteCount:number }
-export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setActiveTab,onGoHome,dayRouteCount}) => {
+interface MobileBottomNavProps { activeTab:string; setActiveTab:(tab:string)=>void; onGoHome?:()=>void; dayRouteCount:number; territoryAlertCount?:number }
+export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setActiveTab,onGoHome,dayRouteCount,territoryAlertCount=0}) => {
   const current = primaryWorkspaceFor(activeTab);
   const moreMenuRef = useRef<HTMLDetailsElement>(null);
   const moreSummaryRef = useRef<HTMLElement>(null);
@@ -39,7 +39,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({activeTab,setAc
     <div className="pi-mobile-nav__items pi-mobile-nav__grid">
       {PRIMARY_WORKSPACES.map(item => {
         return <button key={item.id} type="button" className={`pi-mobile-nav__item ${current===item.id?'is-active':''}`} aria-label={item.label} aria-current={current===item.id?'page':undefined} onClick={()=>item.id==='home'&&onGoHome?onGoHome():setActiveTab(item.id)}>
-        <span className="pi-mobile-nav__icon"><WorkspaceIcon name={item.id}/>{item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount>99?'99+':dayRouteCount}</span>}</span>
+        <span className="pi-mobile-nav__icon"><WorkspaceIcon name={item.id}/>{item.id==='reports'&&territoryAlertCount>0&&<span className="pi-mobile-nav__badge" title={territoryAlertCount+' territory alerts'} aria-label={territoryAlertCount+' territory alerts'}>{territoryAlertCount>99?'99+':territoryAlertCount}</span>}{item.id==='field'&&dayRouteCount>0&&<span className="pi-mobile-nav__badge" aria-label={`${dayRouteCount} agencies in today's route`}>{dayRouteCount>99?'99+':dayRouteCount}</span>}</span>
         <span className="pi-mobile-nav__label">{item.id==='field'?'Field':item.label}</span>
       </button>;
       })}

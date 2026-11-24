@@ -14,3 +14,9 @@ Test actual rules in an emulator and the new staging project: anonymous/unverifi
 
 ## Remaining phase work
 Rules emulator and staging validation, correction/supersession and administrator audit/export workflow, durable offline outbox only after its identity/privacy model is approved, shared conflict-aware Radar/map integration, and production deployment/reconciliation. No live Firebase access, rules deployment, secret changes or data migration performed by this PR. Current standalone production audit remains separate.
+
+## Phase 5.1B security validation
+
+The evidence-security GitHub Actions job uses the official rules-unit-testing library, an isolated temporary dependency directory, a loopback-only emulator and the fictional demo-atlas-evidence project. It never uses production credentials. Run results must be checked for the exact PR head before merging. The suite exercises verified identity, workspace membership, bounded lists, create-only access, field and path checks, author and timestamp spoofing, revocation, retry conflicts and server-only reads. The mock transaction exercises the underlying Firestore behavior, not the live browser sign-in flow. The job uses pinned direct tool versions; transitive npm dependencies are not lockfile-pinned. A green emulator run is necessary but not sufficient for production activation.
+
+Server rules enforce access and bounded shape, not all calendar validity, source authenticity or public-versus-sensitive content. Editors remain trusted to share only approved public document fields. Browser validation is repeated before displaying documents, and publication consent is bound to the exact previewed payload. Previously viewed data cannot be retroactively withdrawn from a user's memory or screenshots; membership removal denies future server operations, and users should sign out on shared devices.

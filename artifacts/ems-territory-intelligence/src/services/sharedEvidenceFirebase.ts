@@ -1,13 +1,14 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, inMemoryPersistence, browserPopupRedirectResolver, type Auth, type User } from 'firebase/auth';
-import { collection, doc, documentId, getDocFromServer, getDocsFromServer, getFirestore, limit, orderBy, query, runTransaction, serverTimestamp, startAfter, type Firestore } from 'firebase/firestore';
+import { collection, doc, documentId, getDocFromServer, getDocsFromServer, getFirestore, limit, orderBy, query, runTransaction, serverTimestamp, startAfter, type Firestore, Timestamp } from 'firebase/firestore';
 import legacyConfig from '../../firebase-applet-config.json';
 import { readSharedEvidence, sameSharedEvidence, validWorkspaceId, type SharedEvidence } from './sharedEvidence';
 
 export type EvidenceSession = { auth: Auth; db: Firestore; workspace: string };
 export type EvidenceRole = 'viewer' | 'editor';
 export type PublishedEvidence = { evidence: SharedEvidence; authorUid: string; publishedAt: string };
-const env = import.meta.env;
+// Node-based rendering/tests have no Vite environment. Default to disabled.
+const env = import.meta.env ?? ({} as ImportMetaEnv);
 const settings = {
   apiKey: env.VITE_ATLAS_EVIDENCE_API_KEY,
   authDomain: env.VITE_ATLAS_EVIDENCE_AUTH_DOMAIN,
@@ -55,7 +56,7 @@ export async function listSharedEvidence(session: EvidenceSession, user: User, a
   for (const d of snapshot.docs) {
     const raw = d.data();
     const evidence = readSharedEvidence(raw, agencyKey, d.id);
-    const stamp: unknown = raw.publishedAt?.toDate?.().toISOString();
+    const stamp = raw.publishedAt instanceof Timestamp ? raw.publishedAt.toDate().toISOString() : undefined;
     if (!evidence || typeof raw.authorUid !== 'string' || typeof stamp !== 'string') { withheld++; continue; }
     records.push({ evidence, authorUid: raw.authorUid, publishedAt: stamp });
   }
@@ -64,17 +65,19 @@ export async function listSharedEvidence(session: EvidenceSession, user: User, a
 /** Immutable, retry-safe create. A differing record ID is a conflict, never an overwrite. */
 export async function publishSharedEvidence(session: EvidenceSession, user: User, evidence: SharedEvidence): Promise<'created' | 'exists'> {
   assertSession(session, user);
-  if (!readSharedEvidence(evidence, evidence.agencyKey, evidence.factId)) throw new Error('Invalid evidence.');
+  const clean = readSharedEvidence(evidence, evidence.agencyKey, evidence.factId);
+  if (!clean) throw new Error('Invalid evidence.');
+  if (await evidenceRole(session, user) !== 'editor') throw new Error('Editor membership is required to publish evidence.');
   const ref = doc(evidenceCollection(session, evidence.agencyKey), evidence.factId);
   const result = await runTransaction(session.db, async transaction => {
     assertSession(session, user);
     const existing = await transaction.get(ref);
     if (existing.exists()) {
       const previous = readSharedEvidence(existing.data(), evidence.agencyKey, evidence.factId);
-      if (!previous || !sameSharedEvidence(previous, evidence)) throw new Error('Shared record ID conflicts with existing evidence. Nothing was overwritten.');
+      if (!previous || !sameSharedEvidence(previous, clean)) throw new Error('Shared record ID conflicts with existing evidence. Nothing was overwritten.');
       return 'exists' as const;
     }
-    transaction.set(ref, { ...evidence, authorUid: user.uid, publishedAt: serverTimestamp() });
+    transaction.set(ref, { ...clean, authorUid: user.uid, publishedAt: serverTimestamp() });
     return 'created' as const;
   });
   assertSession(session, user);

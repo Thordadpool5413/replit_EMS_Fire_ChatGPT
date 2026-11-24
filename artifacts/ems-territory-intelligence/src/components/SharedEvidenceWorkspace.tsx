@@ -70,7 +70,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
   const key = sharedAgencyKey(agency)!;
   const local = useMemo(() => (agency.sourceFacts ?? []).flatMap(f => { try { return [toSharedEvidence(agency, f)]; } catch { return []; } }), [agency]);
   const [factId, setFactId] = useState('');
-  const [consent, setConsent] = useState(false);
+  const [consentFor, setConsentFor] = useState('');
   const [records, setRecords] = useState<PublishedEvidence[]>([]);
   const [cursor, setCursor] = useState<string>();
   const [loaded, setLoaded] = useState(false);
@@ -78,6 +78,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const selected = local.find(f => f.factId === factId);
+  const consent = Boolean(selected && consentFor === JSON.stringify(selected));
   async function refresh(after?: string) {
     setBusy(true); setStatus(''); setRecords([]); setLoaded(false); setCursor(undefined); setWithheld(0);
     try {
@@ -90,7 +91,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
     setBusy(true); setStatus('');
     try {
       const outcome = await publishSharedEvidence(session, user, evidence);
-      setConsent(false);
+      setConsentFor('');
       setStatus(outcome === 'created' ? 'Server acknowledged publication. Refresh shared records to see it.' : 'Identical evidence already exists. No duplicate was written.');
     } catch (e) { setStatus('Publication not confirmed. Your local record is unchanged. '+message(e)); } finally { setBusy(false); }
   }
@@ -99,8 +100,8 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
     {role === 'editor' && <div className="space-y-2 border rounded-md p-3">
       <h3 className="font-semibold text-sm">Publish one saved document</h3>
       <p className="text-sm">Only typed document evidence is eligible. Notes, contacts, generic facts and account changes are excluded. Published records cannot be edited or removed by members.</p>
-      <label className="block text-sm">Local document<select className={control} disabled={busy} value={factId} onChange={e => { setFactId(e.target.value); setConsent(false); }}><option value="">Choose evidence ({local.length})</option>{local.map(f => <option key={f.factId} value={f.factId}>{INTELLIGENCE_DEFINITIONS[f.kind].label}: {f.value} · {f.documentDate}</option>)}</select></label>
-      {selected && <><EvidenceDetails evidence={selected}/><label className="block text-sm"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)}/> I reviewed these exact fields and authorize sharing this public document with workspace members.</label>
+      <label className="block text-sm">Local document<select className={control} disabled={busy} value={factId} onChange={e => { setFactId(e.target.value); setConsentFor(''); }}><option value="">Choose evidence ({local.length})</option>{local.map(f => <option key={f.factId} value={f.factId}>{INTELLIGENCE_DEFINITIONS[f.kind].label}: {f.value} · {f.documentDate}</option>)}</select></label>
+      {selected && <><EvidenceDetails evidence={selected}/><label className="block text-sm"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsentFor(e.target.checked ? JSON.stringify(selected) : '')}/> I reviewed these exact fields and authorize sharing this public document with workspace members.</label>
       <button type="button" className="workspace-button" disabled={busy || !consent} onClick={() => void publish(selected)}>Publish selected evidence</button></>}
     </div>}
     <div className="flex flex-wrap gap-2"><button type="button" className="workspace-button" disabled={busy} onClick={() => void refresh()}>Refresh shared records</button>{cursor && <button type="button" className="workspace-button" disabled={busy} onClick={() => void refresh(cursor)}>Next 50 records</button>}</div>

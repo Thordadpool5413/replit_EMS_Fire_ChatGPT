@@ -63,6 +63,12 @@ Keep every county detail visible; do not move secondary figures, geography, plac
 
 **How to apply:** Reduce redundant chrome and improve composition rather than hiding content, truncating labels, omitting records, or making essential type smaller. On phones, let county place lists flow with the page rather than capping them inside a nested scroll box; this preserves the same visible-detail requirement during touch browsing.
 
+For county views, remove the dedicated mapped-place lists from county reference panels, map-side previews, and county directory cards, but retain city/town markers and labels on the county map.
+
+**Why:** The user asked to remove the “Places in the county” section and then explicitly chose to keep map pins, which preserve geographic discovery and city-level selection.
+
+**How to apply:** Remove place-list panels and rows without deleting underlying geography data or map markers; keep map pin selection and the all-places reset action available.
+
 Use a clearly colored blue county-name header, not an almost-white tint. Keep Home's desktop map controls on the normal app surface (white in Daylight), separate from the dark geographic canvas.
 
 **Why:** The user explicitly requested a header color for each county and proposed white for the map's side options after rejecting the oversized cards and all-dark options panel.

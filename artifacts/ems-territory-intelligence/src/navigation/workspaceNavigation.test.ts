@@ -96,36 +96,50 @@ test('desktop workspaces share compact tabs and quiet connection status', () => 
   assert.doesNotMatch(app, /Choose an agency before generating a quote/);
 });
 
-test('home and mobile tools do not seed or restore alert badges', () => {
+test('home and mobile tools do not seed or restore alert badges; Reports count is derived from records', () => {
   const app = readSource('App.tsx');
   const topBar = readSource('components/TopBar.tsx');
+  const mobileNav = readSource('components/MobileBottomNav.tsx');
   const home = readSource('components/HomeHubView.tsx');
+  const hub = readSource('components/WorkspaceHub.tsx');
+  const panel = readSource('components/TerritoryAlerts.tsx');
+  const engine = readSource('services/territoryAlerts.ts');
+  const hook = readSource('hooks/useTerritoryAlerts.ts');
   const mobileToolsStart = topBar.indexOf('/* Compact mobile utility menu');
   const mobileToolsEnd = topBar.indexOf('</header>', mobileToolsStart);
   assert.ok(mobileToolsStart >= 0 && mobileToolsEnd > mobileToolsStart, 'The mobile tools menu should remain identifiable.');
   const mobileTools = topBar.slice(mobileToolsStart, mobileToolsEnd);
-  // ARIA error announcements and the quota warning are not an alert feed.
-  const appAndHome = `${app}\n${home}`
-    .replace(/role="alert"/g, '')
-    .replace(/role=\{toast\.type === 'boundary' \? 'status' : 'alert'\}/g, '')
-    .replace(/\bpi-alert-banner\b/g, '');
-
+  // Only Reports has the record-backed alert panel; home stays focused on the map.
+  const normalizedHome = home.replace(/role="alert"/g, '').replace(/\bpi-alert-banner\b/g, '');
+  assert.doesNotMatch(normalizedHome, /\balerts?\b|\bunread\b|\b(?:alertFeed|notificationFeed|unreadAlertCount|unreadNotificationCount)\b/i);
+  assert.match(app, /const territoryAlerts = useTerritoryAlerts\(agencies, isOnline\)/);
+  assert.equal((app.match(/territoryAlertCount=\{territoryAlerts\.alerts\.length\}/g) ?? []).length, 2);
+  assert.match(app, /<WorkspaceHub territoryAlerts=\{territoryAlerts\}/);
+  assert.match(hub, /kind==='reports'&&territoryAlerts&&<TerritoryAlerts data=\{territoryAlerts\}/);
+  assert.equal((hub.match(/<TerritoryAlerts\b/g) ?? []).length, 1);
+  for (const nav of [topBar,mobileNav]) {
+    assert.match(nav, /item\.id\s*===\s*'reports'\s*&&\s*territoryAlertCount\s*>\s*0/);
+    assert.match(nav, /territoryAlertCount>99\?'99\+':territoryAlertCount/);
+    assert.doesNotMatch(nav, /unread(?:Alert|Notification)Count/);
+  }
+  assert.match(hook, /buildLocalTerritoryAlerts\(agencies,clock\)/);
+  assert.match(hook, /buildPublicTerritoryAlerts\(feed,clock\)/);
+  assert.match(engine, /buildOpportunityPriorities\(agencies,'all','all',now\)/);
+  assert.match(engine, /validateDiscoveryFeed\(input,now\)/);
+  assert.match(engine, /feedIsStale\(feed,now\)/);
+  assert.match(engine, /i\.lastSeen===feed\.runAt&&i\.lastChanged===feed\.runAt&&i\.event!=='baseline'/);
+  assert.match(panel, /sourceRecordId/);
+  assert.match(panel, /sourceUrl/);
+  assert.match(panel, /documentDate/);
+  assert.match(panel, /nativeId/);
+  assert.match(panel, /a\.date/);
   assert.doesNotMatch(
-    appAndHome,
-    /\balerts?\b|\bunread\b|\b(?:alertFeed|notificationFeed|unreadAlertCount|unreadNotificationCount)\b/i,
-    'Home should not render an alert feed or unread-alert state.',
-  );
-  // If a feed is added later, replace this no-feed guard with a contract check for record IDs, sources, and timestamps.
-  assert.doesNotMatch(
-    `${app}\n${topBar}`,
+    [app,topBar,mobileNav,hub,panel,hook,engine].join('\n'),
     /(?:localStorage|sessionStorage)\.(?:getItem|setItem)\(\s*['"][^'"]*(?:alert|notification)/i,
     'Reloading should not restore alert or notification state from browser storage.',
   );
-  assert.doesNotMatch(
-    mobileTools,
-    /\b(?:alert|notification|unread)\b/i,
-    'Mobile tools should not display an alert feed or unread badge.',
-  );
+  assert.doesNotMatch([app,topBar,mobileNav,hub,panel,hook,engine].join('\n'), /\b(?:unreadAlertCount|unreadNotificationCount|alertBadgeCount|notificationBadgeCount)\s*[:=]\s*(?:\{\s*)?\d+\b/i);
+  assert.doesNotMatch(mobileTools, /\b(?:alert|notification|unread)\b/i, 'Mobile tools should not display an alert feed or unread badge.');
   assert.match(mobileTools, /pendingSyncCount > 0/, 'The mobile tools badge should only appear for pending sync work.');
   assert.match(mobileTools, /{pendingSyncCount}/, 'The mobile tools badge should show the pending sync count.');
 });

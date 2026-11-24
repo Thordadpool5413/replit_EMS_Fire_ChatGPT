@@ -5,11 +5,13 @@ on:
     paths:
       - 'scripts/data/recover_nad_locations.py'
       - '.github/workflows/nad-provider-locations.yml'
+      - 'scripts/data/recover_census_locations.py'
+      - 'scripts/data/test_recover_census_locations.py'
   workflow_dispatch:
     inputs:
       states:
         description: "all or comma-separated state codes"
-        default: all
+        default: FL,OH
         type: string
 permissions:
   contents: read
@@ -29,11 +31,28 @@ jobs:
           ref: ${{ github.sha }}
       - name: Validate matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Retry normalized physical addresses nationwide
+        id: census
+        continue-on-error: true
+        run: python3 scripts/data/recover_census_locations.py
+      - name: Publish Census retry review branch
+        if: steps.census.outcome == 'success'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git diff --cached --quiet || git commit -m "Recover exact component matches from normalized Census retry"
+          git push origin "HEAD:refs/heads/atlas/census-retry-data-${GITHUB_RUN_ID}"
+          echo "Census review branch: atlas/census-retry-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
       - name: Recover unmatched public organization addresses
+        id: nad
+        continue-on-error: true
         env:
-          ATLAS_NAD_STATES: ${{ inputs.states || 'all' }}
-        run: python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 1200
+          ATLAS_NAD_STATES: ${{ inputs.states || 'FL,OH' }}
+        run: python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 100
       - name: Publish review-only data branch
+        if: steps.nad.outcome == 'success'
         run: |
           set -euo pipefail
           python3 scripts/data/backfill_provider_locations.py --verify
@@ -45,6 +64,11 @@ jobs:
           git push origin "HEAD:refs/heads/$branch"
           echo "Review branch: $branch" >> "$GITHUB_STEP_SUMMARY"
           python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps({"coverage":x["coverage"],"nadRecovery":x["nadRecovery"]},indent=2))' >> "$GITHUB_STEP_SUMMARY"
+      - name: Report source failure explicitly
+        if: steps.census.outcome == 'failure' || steps.nad.outcome == 'failure'
+        run: |
+          echo 'One or more recovery sources failed. Any independently published review branch is still subject to validation.'
+          exit 1
       - name: Retain coverage report
         if: always()
         uses: actions/upload-artifact@v4

@@ -25,16 +25,12 @@ def target_parts(a):
 def address_clause(a):
  parts=target_parts(a)
  if not parts:return None
- number,street=parts
- normalized=normal_street(street)
- # Full original, abbreviated and long-form variants only. No street-number or ZIP substitution.
- reverse={v:k for k,v in ALIAS.items()}
- expanded=' '.join(reverse.get(t,t) for t in normalized.split())
- variants=sorted({street.upper(),normalized,expanded})
- return "(Zip_Code="+sql(a['zip'])+" AND Add_Number="+str(number)+" AND UPPER(StNam_Full) IN ("+','.join(sql(v) for v in variants)+"))"
+ number,_=parts
+ # Indexed predicates only. Street/city comparisons happen locally on the bounded result.
+ return "(Zip_Code="+sql(a['zip'])+" AND Add_Number="+str(number)+")"
 def query_params(state,addresses):
- if state not in STATES or not 1<=len(addresses)<=20 or any(a['state']!=state for a in addresses):raise ValueError('Invalid targeted batch scope')
- clauses=[address_clause(a) for a in addresses]
+ if state not in STATES or not 1<=len(addresses)<=8 or any(a['state']!=state for a in addresses):raise ValueError('Invalid targeted batch scope')
+ clauses=list(dict.fromkeys(address_clause(a) for a in addresses))
  if not all(clauses):raise ValueError('Ineligible address in NAD query')
  return dict(f='json',where="State="+sql(state)+" AND ("+" OR ".join(clauses)+")",outFields=FIELDS,returnGeometry='true',outSR='4326',resultRecordCount='1000')
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -42,12 +38,17 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def json_request(url,params):
  if url not in (LAYER,LAYER+'/query'):raise ValueError('Unapproved NAD host')
  body=urllib.parse.urlencode(params).encode()
- req=urllib.request.Request(url+('?'+body.decode() if url==LAYER else ''),data=None if url==LAYER else body,headers={'Accept':'application/json','User-Agent':'ATLAS-public-address-reconciliation/1.0','Content-Type':'application/x-www-form-urlencoded'})
+ # Use the advertised read-only GET query endpoint with a bounded URL.
+ if len(body)>3500:raise ValueError('NAD query exceeds URL budget')
+ req=urllib.request.Request(url+'?'+body.decode(),headers={'Accept':'application/json','User-Agent':'ATLAS-public-address-reconciliation/1.1'})
  with urllib.request.build_opener(NoRedirect()).open(req,timeout=25) as response:
   raw=response.read(4_000_001)
  if len(raw)>4_000_000:raise ValueError('NAD response exceeds bound')
  value=json.loads(raw)
- if not isinstance(value,dict) or 'error' in value:raise ValueError('NAD upstream error')
+ if not isinstance(value,dict):raise ValueError('NAD returned a non-object response')
+ if 'error' in value:
+  error=value['error'];code=error.get('code','unknown') if isinstance(error,dict) else 'unknown'
+  raise ValueError('NAD upstream error code '+str(code)[:20])
  return value
 def verify_service():
  data=json_request(LAYER,{'f':'json'})
@@ -56,6 +57,7 @@ def verify_service():
  return data.get('editingInfo',{}).get('lastEditDate')
 def parse_features(payload):
  if payload.get('exceededTransferLimit') or not isinstance(payload.get('features'),list) or len(payload['features'])>=1000:raise ValueError('Incomplete NAD response')
+ if not payload['features']:return []
  sr=payload.get('spatialReference',{})
  if sr.get('wkid')!=4326 and sr.get('latestWkid')!=4326:raise ValueError('Expected WGS84 coordinates')
  features=[];ids=set()
@@ -104,16 +106,17 @@ def recover(entries,counties,states,max_requests,delay=1.25,request=json_request
  for key,items in groups.items():by_state[key[0]].append(items)
  consecutive_errors=0;requests=0
  for state in sorted(by_state):
-  values=by_state[state]
-  for start in range(0,len(values),20):
-   batch=values[start:start+20]
+  values=sorted(by_state[state],key=lambda g:(g[0]['address']['zip'],g[0]['address']['street']))
+  for start in range(0,len(values),8):
+   batch=values[start:start+8]
    if requests>=max_requests or consecutive_errors>=3:stats['not_attempted']+=sum(len(g) for g in batch);continue
    addresses=[g[0]['address'] for g in batch]
    requests+=1
    try:
     features=parse_features(request(LAYER+'/query',query_params(state,addresses)))
     consecutive_errors=0
-   except (OSError,ValueError,KeyError,TypeError,TimeoutError):
+   except (OSError,ValueError,KeyError,TypeError,TimeoutError) as exc:
+    print('NAD query unavailable:',type(exc).__name__,str(exc)[:180],flush=True)
     consecutive_errors+=1;stats['unavailable']+=sum(len(g) for g in batch);time.sleep(min(30,delay*2**consecutive_errors));continue
    for group in batch:
     for entry in group:

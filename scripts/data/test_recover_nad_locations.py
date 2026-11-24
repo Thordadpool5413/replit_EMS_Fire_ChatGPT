@@ -18,10 +18,12 @@ class NadTests(unittest.TestCase):
   self.assertEqual(resolve_point(A,[F,feature(OBJECTID=2,County='Broward')],C,'12009')[1],'review')
   self.assertRaises(ValueError,parse_features,{'spatialReference':{'wkid':4326},'features':[F],'exceededTransferLimit':True})
   self.assertRaises(ValueError,parse_features,{'spatialReference':{'wkid':3857},'features':[F]})
+  self.assertEqual(parse_features({'features':[]}),[])
+  self.assertRaises(ValueError,query_params,'FL',[A]*9)
   self.assertRaises(ValueError,parse_features,{'spatialReference':{'wkid':4326},'features':[F,F]})
  def test_targeted_query_and_preservation(self):
   q=query_params('FL',[A]);self.assertIn("State='FL'",q['where']);self.assertIn("Zip_Code='32901'",q['where']);self.assertIn('Add_Number=123',q['where'])
-  self.assertIn('MAIN ST',q['where']);self.assertRaises(ValueError,query_params,'GA',[A])
+  self.assertNotIn('UPPER(',q['where']);self.assertNotIn('StNam_Full',q['where']);self.assertRaises(ValueError,query_params,'GA',[A])
   old={'key':'old','state':'FL','status':'mapped','address':A,'sourceCounty':'12009','match':{'method':'census-address-range'}}
   new={'key':'new','state':'FL','status':'no-match','address':A,'sourceCounty':'12009','match':None,'countyFips':''}
   before=copy.deepcopy(old)

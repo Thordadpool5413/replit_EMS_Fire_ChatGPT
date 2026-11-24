@@ -20,7 +20,7 @@
 - [Browser regression checks](browser-regression-checks.md) — use the installed Chromium with Node's built-in DevTools connection for dependency-free viewport checks.
 - [PWA registration timing](pwa-registration-timing.md) — register the worker during entry startup and cache versioned app assets, never live source records.
 - [API checks through artifact proxies](api-proxy-local-vs-preview.md) — direct localhost Vite tests bypass Replit’s root `/api` proxy; verify API-backed UI through the artifact preview URL.
-- [Firestore read scope](firestore-read-scope.md) — keep nationwide browsing cache-first; only load live provider documents for an explicitly selected state.
+- [Replit backend boundary](replit-backend-boundary.md) — use Replit as the app's backend; do not assume Firebase/Firestore is the active store.
 - [Landscape map breakpoints](landscape-map-breakpoints.md) — phone landscape widths can activate desktop CSS; test the layout each viewport width actually selects.
 - [Territory browser history](territory-browser-history.md) — keep one app-level history owner; filter-only changes replace the current snapshot instead of adding entries.
 - [API startup health paths](api-startup-health-paths.md) — production probes may hit both the service base path and the configured readiness path; keep both aligned.

@@ -51,6 +51,7 @@ export async function listSharedEvidence(session: EvidenceSession, user: User, a
   const ref = evidenceCollection(session, agencyKey);
   const snapshot = await getDocsFromServer(query(ref, orderBy(documentId()), ...(cursor ? [startAfter(cursor)] : []), limit(50)));
   assertSession(session, user);
+  if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) throw new Error('A server-only evidence snapshot could not be confirmed.');
   const records: PublishedEvidence[] = [];
   let withheld = 0;
   for (const d of snapshot.docs) {

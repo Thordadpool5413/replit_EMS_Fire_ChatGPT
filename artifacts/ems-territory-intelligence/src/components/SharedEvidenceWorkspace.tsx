@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import type { Agency } from '../types';
+import { reconcileSharedEvidence } from '../services/sharedEvidenceReconciliation';
+import { SharedEvidenceReview } from './SharedEvidenceReview';
 import { INTELLIGENCE_DEFINITIONS } from '../services/documentedIntelligence';
 import { shareableAgencies, sharedAgencyKey, toSharedEvidence, type SharedEvidence } from '../services/sharedEvidence';
 import { evidenceEnabled, evidenceRole, listSharedEvidence, openEvidenceSession, publishSharedEvidence, type EvidenceSession, type EvidenceRole, type PublishedEvidence } from '../services/sharedEvidenceFirebase';
@@ -74,13 +76,14 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
   const [records, setRecords] = useState<PublishedEvidence[]>([]);
   const [cursor, setCursor] = useState<string>();
   const [loaded, setLoaded] = useState(false);
+  const [firstPage, setFirstPage] = useState(false);
   const [withheld, setWithheld] = useState(0);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const selected = local.find(f => f.factId === factId);
   const consent = Boolean(selected && consentFor === JSON.stringify(selected));
   async function refresh(after?: string) {
-    setBusy(true); setStatus(''); setRecords([]); setLoaded(false); setCursor(undefined); setWithheld(0);
+    setBusy(true); setStatus(''); setRecords([]); setLoaded(false); setCursor(undefined); setWithheld(0); setFirstPage(!after);
     try {
       const result = await listSharedEvidence(session, user, key, after);
       setRecords(result.records); setCursor(result.next); setWithheld(result.withheld); setLoaded(true);
@@ -88,7 +91,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
   }
   async function publish(evidence: SharedEvidence) {
     if (!consent || role !== 'editor') return;
-    setBusy(true); setStatus('');
+    setBusy(true); setStatus(''); setRecords([]); setLoaded(false); setCursor(undefined); setFirstPage(false); setWithheld(0);
     try {
       const outcome = await publishSharedEvidence(session, user, evidence);
       setConsentFor('');
@@ -109,6 +112,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
     {status && <p role="status" className="text-sm break-words">{status}</p>}
     {loaded && <p className="text-sm">{records.length} displayed on this page. {withheld} invalid entries withheld. This is a paginated research library, not a complete opportunity assessment.</p>}
     <ul className="divide-y divide-slate-200 dark:divide-slate-700">{records.map(r => <li key={r.evidence.factId} className="py-3 space-y-1 min-w-0"><EvidenceDetails evidence={r.evidence}/><p className="text-xs break-all">Published {r.publishedAt} · member {r.authorUid}</p></li>)}</ul>
+    {loaded && !busy && <SharedEvidenceReview result={reconcileSharedEvidence(agency, records.map(r=>r.evidence), {singleCompletePage:firstPage && !cursor,withheld})}/>}
     <p className="text-xs">Shared records are fetched from the server and kept in memory only. They do not overwrite browser-local evidence, provider data, the equipment map or Opportunity Radar.</p>
   </div>;
 }

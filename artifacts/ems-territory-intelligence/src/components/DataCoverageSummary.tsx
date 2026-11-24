@@ -1,10 +1,11 @@
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 import React, {useMemo} from 'react';
 import type {Agency} from '../types';
+import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {buildAgencyIdentityIndex} from '../services/agencyIdentityIndex';
 export function DataCoverageSummary({agencies}:{agencies:Agency[]}){
  const index=useMemo(()=>buildAgencyIdentityIndex(agencies),[agencies]);
- const generated=agencies.filter(a=>a.verificationSource?.includes('Geographic prospect generator')).length;
+ const generated=agencies.filter(isGeographicProspect).length;
  const exportIndex=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),scope:'Loaded workspace agencies only',...index},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='agency-identity-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  return <section className="pi-surface p-4 mb-4" aria-label="Record coverage and identifiers"><h2 className="workspace-tool-title font-semibold"><WorkspaceIcon name="data_health"/>Record coverage & identifiers</h2><p className="text-sm">Loaded workspace: {agencies.length} records · {generated} generated prospects · {index.unlinked} without indexed identifiers · {index.conflicts.length} shared identifiers.</p><details><summary>Inspect identifiers and associations</summary>{index.links.length?<ul>{index.links.slice(0,100).map(link=><li className="my-2 text-sm" key={`${link.key}:${link.agencyId}`}><strong>{link.agencyName}</strong> · {link.key}<br/>{link.basis}</li>)}</ul>:<p>No identifiers indexed.</p>}{index.links.length>100&&<p>Showing the first 100 links. Export includes all loaded links.</p>}</details>{index.conflicts.length>0&&<details><summary>Shared identifiers ({index.conflicts.length})</summary><ul>{index.conflicts.map(c=><li className="my-2 text-sm" key={c.key}><strong>{c.key}</strong>: {c.items.map(i=>i.agencyName).join(' / ')}</li>)}</ul></details>}<button className="workspace-button mt-3" onClick={exportIndex} disabled={!index.links.length}>Export associations</button></section>;
 }

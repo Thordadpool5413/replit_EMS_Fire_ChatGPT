@@ -48,6 +48,7 @@ jobs:
         run: node scripts/check-profile-presentation-scope.mjs
       - run: node scripts/check-national-registry-integrity.mjs
       - run: node scripts/check-ems-source-coverage.mjs
+      - run: node --test scripts/refresh-ohio-state-ems.test.mjs
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: node scripts/check-style-ownership.mjs

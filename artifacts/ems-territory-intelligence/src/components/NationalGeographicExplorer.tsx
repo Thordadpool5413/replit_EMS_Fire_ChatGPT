@@ -209,7 +209,7 @@ interface NationalGeographicExplorerProps {
   onNavigateToQueueWithFilter?: (stateCode?: string, county?: string, city?: string, zip?: string) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
   onOpenDataLineage?: (agency?: Agency) => void;
-  onAddAgency?: (agency: Agency) => void;
+  onAddAgency?: (agency: Agency) => void | Promise<void>;
   globalState?: string;
   globalCounty?: string;
   globalCity?: string;
@@ -2313,7 +2313,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
 
           {/* Source-native discovery, separate from saved or modeled records. */}
           {selectedStateCode !== 'all' && (
-            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} onDecideSourceRecord={onDecideSourceRecord} />
+            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} onDecideSourceRecord={onDecideSourceRecord} onCreateAgency={onAddAgency} />
           )}
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">

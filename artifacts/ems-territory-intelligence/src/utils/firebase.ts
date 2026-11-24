@@ -1,3 +1,4 @@
+import { canBulkHydrateAgency } from './providerRecordTrust';
 import { stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
 /**
  * @license
@@ -198,7 +199,7 @@ export async function saveAgencyToFirestore(agency: Agency): Promise<void> {
 /** Explicit hydration creates missing records only; never overwrites live work. */
 export async function batchSyncAgenciesToFirestore(agenciesList: Agency[], maxBatch = 25): Promise<string[]> {
   const { runTransaction } = await import('firebase/firestore');
-  const targets = agenciesList.filter(a => a.id).slice(0, maxBatch);
+  const targets = agenciesList.filter(a => a.id && canBulkHydrateAgency(a)).slice(0, Math.min(25,Math.max(0,maxBatch)));
   if (!targets.length) return [];
   return runTransaction(db, async transaction => {
     const refs = targets.map(a => doc(db, 'agencies', a.id));

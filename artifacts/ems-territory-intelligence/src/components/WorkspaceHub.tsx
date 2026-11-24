@@ -1,3 +1,4 @@
+import {RecurringDiscoveryInbox} from './RecurringDiscoveryInbox';
 import {SamSolicitationDiscovery} from './SamSolicitationDiscovery';
 import {MunicipalSpendingDiscovery} from './MunicipalSpendingDiscovery';
 import {FederalSpendingDiscovery} from './FederalSpendingDiscovery';
@@ -41,6 +42,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation. Generated equipment values are excluded from reported equipment columns.</small><label className="text-sm block mt-2"><input type="checkbox" checked={includeEstimates} onChange={e=>setIncludeEstimates(e.target.checked)}/> Include a separate planning-estimates column</label></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
     {kind==='reports'&&<SharedEvidenceWorkspace agencies={agencies}/>}
     {kind==='reports'&&<OpportunityRadar agencies={agencies} onOpen={onOpenAgency}/>}
+    {kind==='reports'&&<RecurringDiscoveryInbox/>}
     {kind==='reports'&&<PublicIntelligenceDiscovery agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<FederalSpendingDiscovery agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<MunicipalSpendingDiscovery/>}

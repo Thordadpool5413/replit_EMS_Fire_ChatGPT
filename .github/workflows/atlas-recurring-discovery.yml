@@ -1,0 +1,58 @@
+name: ATLAS recurring public discovery
+on:
+  schedule:
+    - cron: '23 12 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-public-discovery-feed
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main' && vars.ATLAS_PUBLIC_DISCOVERY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    env:
+      ATLAS_PUBLIC_DISCOVERY_ENABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Reconcile and publish public snapshot to data-only branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref=refs/heads/atlas/public-discovery-feed
+          work="$RUNNER_TEMP/atlas-public-feed"
+          output="$RUNNER_TEMP/atlas-discovery-next.json"
+          prior=--initial
+          if git ls-remote --exit-code --heads origin "$ref" >/dev/null; then
+            git fetch --no-tags origin "$ref"
+            git worktree add --detach "$work" FETCH_HEAD
+            test "$(git -C "$work" ls-tree -r --name-only HEAD)" = "feed.json"
+            prior="$work/feed.json"
+            test -f "$prior" && test ! -L "$prior"
+          else
+            code=$?
+            test "$code" -eq 2
+            git worktree add --detach "$work" HEAD
+            git -C "$work" switch --orphan atlas-feed-initial
+          fi
+          pnpm --dir scripts exec tsx ../artifacts/api-server/src/lib/recurringDiscoveryJob.ts "$prior" "$output"
+          test -s "$output"
+          cp "$output" "$work/feed.json"
+          git -C "$work" add -- feed.json
+          git -C "$work" -c user.name=atlas-discovery-bot -c user.email=atlas-discovery-bot@users.noreply.github.com commit -m "Refresh bounded public discovery feed"
+          git -C "$work" push origin "HEAD:$ref"

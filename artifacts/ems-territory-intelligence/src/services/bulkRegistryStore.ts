@@ -1,5 +1,5 @@
 import {validateNpiCheckDigit} from './npiVerificationService';
-export interface BulkCandidate {kind:'candidate';npi:string;legalName:string;alternateName:string;location:{city:string;state:string;postalCode:string};taxonomies:string[];deactivationDate:string;reactivationDate:string;sourceUpdatedAt:string;associationStatus:'unreviewed'}
+export interface BulkCandidate {kind:'candidate';npi:string;legalName:string;alternateName:string;location:{city:string;state:string;postalCode:string;street?:string};taxonomies:string[];deactivationDate:string;reactivationDate:string;sourceUpdatedAt:string;associationStatus:'unreviewed'}
 export interface BulkRegistry {manifest:{kind:'manifest';schemaVersion:1;sourceUrl:string;reportingPeriod:string;stagedAt:string;scope:string};records:BulkCandidate[];summary:{received:number;accepted:number;excluded:number;rejected:number;duplicates:number};importedAt:string}
 /** Parse the staging format only, never arbitrary raw provider or patient files. */
 export function parseBulkRegistry(text:string):BulkRegistry {
@@ -11,7 +11,7 @@ export function parseBulkRegistry(text:string):BulkRegistry {
  if(summary?.kind!=='summary'||!['received','accepted','excluded','rejected','duplicates'].every(k=>Number.isSafeInteger(summary[k])&&summary[k]>=0)||summary.accepted!==values.length||summary.received!==summary.accepted+summary.excluded+summary.rejected+summary.duplicates)throw Error('Staging totals do not reconcile.');
  const seen=new Set<string>();const records:BulkCandidate[]=[];
  for(const row of values){
-  if(row?.kind!=='candidate'||typeof row.npi!=='string'||!validateNpiCheckDigit(row.npi).isValid||seen.has(row.npi)||typeof row.legalName!=='string'||!row.legalName.trim()||row.associationStatus!=='unreviewed'||!row.location||!['city','state','postalCode'].every(k=>typeof row.location[k]==='string')||!['alternateName','deactivationDate','reactivationDate','sourceUpdatedAt'].every(k=>typeof row[k]==='string')||!Array.isArray(row.taxonomies)||!row.taxonomies.every((t:unknown)=>typeof t==='string')||!row.taxonomies.some((t:string)=>t.startsWith('3416')))throw Error(`Invalid or duplicate candidate at record ${records.length+1}. Nothing was imported.`);
+  if(row?.kind!=='candidate'||typeof row.npi!=='string'||!validateNpiCheckDigit(row.npi).isValid||seen.has(row.npi)||typeof row.legalName!=='string'||!row.legalName.trim()||row.associationStatus!=='unreviewed'||!row.location||!['city','state','postalCode'].every(k=>typeof row.location[k]==='string')||(row.location.street!==undefined&&(typeof row.location.street!=='string'||row.location.street.length>300))||!['alternateName','deactivationDate','reactivationDate','sourceUpdatedAt'].every(k=>typeof row[k]==='string')||!Array.isArray(row.taxonomies)||!row.taxonomies.every((t:unknown)=>typeof t==='string')||!row.taxonomies.some((t:string)=>t.startsWith('3416')))throw Error(`Invalid or duplicate candidate at record ${records.length+1}. Nothing was imported.`);
   seen.add(row.npi);records.push(row);
  }
  return {manifest,records,summary,importedAt:new Date().toISOString()};

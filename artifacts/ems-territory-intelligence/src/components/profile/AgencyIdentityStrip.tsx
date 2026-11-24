@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {MapPin, Phone, Globe, Users, Mail, Copy, ArrowUpRight, FileText, ChevronDown} from 'lucide-react';
+import {isPhysicalStreet} from '../../services/providerLocationContract';
 import type {Agency, AgencyFactEvidence} from '../../types';
 
 function SourceContext({evidence, fallback}: {evidence?: AgencyFactEvidence; fallback?: string}) {
@@ -22,7 +23,7 @@ export function AgencyIdentityStrip({agency, onPeople}: {agency: Agency; onPeopl
       <div className="brief-section-heading"><span className="brief-icon"><MapPin aria-hidden="true"/></span><h2>Location & contact</h2></div>
       <address><strong>{usable ? address : 'Street address not recorded'}</strong><span>{locality}</span></address>
       <p className="brief-caption">Recorded location</p>
-      <div className="brief-location-actions">{usable && <><button type="button" onClick={() => void copy()}><Copy aria-hidden="true"/>Copy address</button><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}><MapPin aria-hidden="true"/>Directions</a></>}</div>
+      <div className="brief-location-actions">{usable && <><button type="button" onClick={() => void copy()}><Copy aria-hidden="true"/>Copy address</button>{isPhysicalStreet(address)&&<a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`}><MapPin aria-hidden="true"/>Directions</a>}</>}</div>
       <div className="brief-communication">{agency.headquartersPhone ? <a href={`tel:${agency.headquartersPhone}`}><Phone aria-hidden="true"/><span><small>Main phone</small>{agency.headquartersPhone}</span></a> : <p><Phone aria-hidden="true"/><span>Main phone not recorded</span></p>}{website ? <a href={website.href} target="_blank" rel="noreferrer"><Globe aria-hidden="true"/><span><small>Website</small>{website.hostname.replace(/^www\./,'')}</span><ArrowUpRight aria-hidden="true"/></a> : <p><Globe aria-hidden="true"/><span>Website not recorded</span></p>}</div>
       <SourceContext evidence={agency.factEvidence?.providerAddress}/>
       {notice && <p role="status">{notice}</p>}

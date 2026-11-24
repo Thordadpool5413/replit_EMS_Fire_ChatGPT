@@ -85,6 +85,8 @@ import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
 import { PreCallPlanner } from './profile/PreCallPlanner';
+import { ProviderAddressLine } from './profile/ProviderAddressLine';
+import { displayedProviderLocation,useLocationRevision,locationDirections } from '../services/providerLocation';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
@@ -394,7 +396,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     setLiveNppesError('');
   }, [rawAgency.id]);
 
-  const agency = useMemo(() => ensureCompleteAgencyData(rawAgency), [rawAgency]);
+  const locationRevision = useLocationRevision();
+  const agency = useMemo(() => {
+    const a=ensureCompleteAgencyData(rawAgency),loc=displayedProviderLocation(rawAgency,directoryAgencies);
+    return loc?{...a,address:loc.address.street,city:loc.address.city,zipCode:loc.address.zip,googleMapsUri:locationDirections(loc),factEvidence:{...a.factEvidence,providerAddress:{reviewed:false,sourceKind:'dataset' as const,sourceName:loc.sourceName,sourceUrl:loc.sourceUrl,sourceRecordId:loc.identityKey,reportingPeriod:loc.sourceDate??undefined,geographicLevel:'agency' as const,note:loc.kind}}}:{...a,address:'',googleMapsUri:undefined};
+  }, [rawAgency,directoryAgencies,locationRevision]);
   const suppliers = resolveEquipmentSuppliers();
   const geographicLinks = useMemo(
     () => getAgencyGeographicLinks(agency),
@@ -881,8 +887,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
     // 1. What Is Known About the Organization
     const whatIsKnown = [
-      hasAgencyFactEvidence(agency, 'providerAddress')
-        ? `Department address: ${agency.address} (official department source).`
+      agency.address
+        ? `Recorded address: ${agency.address} (source location; verify before visiting).`
         : 'Department address not reported in the record.',
       hasAgencyFactEvidence(agency, 'departmentRegistry')
         ? `Florida EMS provider license ${agency.stateLicenseNumber || 'listed'} is on the state provider report.`
@@ -1063,16 +1069,11 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
-            <p className="acp-loc">
-              <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
-              <span>{[agency.city,agency.stateCode].filter(Boolean).join(', ')}</span>
-              <FactVerificationTag agency={agency} field="providerAddress" />
-            </p>
+            <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>
             <div className="acp-contact-row" aria-label="Agency contact actions">
               {agency.headquartersPhone && (
                 <a href={`tel:${agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Main phone</a>
               )}
-              <a href={agency.googleMapsUri} target="_blank" rel="noopener noreferrer" data-testid="link-header-directions"><Navigation aria-hidden="true" className="h-3.5 w-3.5" />Directions</a>
               {safeExternalUrl(agency.officialWebsite) && (
                 <a href={safeExternalUrl(agency.officialWebsite)} target="_blank" rel="noopener noreferrer" data-testid="link-header-website"><Globe aria-hidden="true" className="h-3.5 w-3.5" />Website</a>
               )}
@@ -3411,15 +3412,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>U.S. Fire Administration Registry</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#285EE8]" />
                   </a>
-                  <a
+                  {agency.googleMapsUri&&<a
                     href={agency.googleMapsUri}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full p-3 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8] flex items-center justify-between font-medium text-[#14283F] dark:text-white transition-colors"
                   >
-                    <span>Mapped station locations</span>
+                    <span>Recorded provider address</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#285EE8]" />
-                  </a>
+                  </a>}
                 </div>
               </div>
 

@@ -45,7 +45,7 @@ for chunk in index['chunks']:
   sid='nppes:'+r['npi'];assert sid not in seen;seen.add(sid);nppes_count+=1
   loc=r['location']
   # A postal city/ZIP is not a county boundary. NPPES has no county field here.
-  rows.append([sid,'NPPES',r['legalName'],loc['state'],loc['city'],loc['postalCode'],'','','unassigned',r['deactivationDate'],'', 'https://npiregistry.cms.hhs.gov/provider-view/'+r['npi']])
+  rows.append([sid,'NPPES',r['legalName'],loc['state'],loc['city'],loc['postalCode'],'','','unassigned',r['deactivationDate'],loc.get('street',''), 'https://npiregistry.cms.hhs.gov/provider-view/'+r['npi']])
 assert nppes_count==index['summary']['accepted']
 by_state={}
 for state in sorted(states):

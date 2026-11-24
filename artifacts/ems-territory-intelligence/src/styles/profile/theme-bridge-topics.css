@@ -1025,3 +1025,10 @@
 .agency-command-profile .pcp-copy { min-width:0; max-width:100%; }
 .agency-command-profile .pcp-copy-text { resize:vertical; }
 .agency-command-profile .pcp-select:focus-visible,.agency-command-profile .pcp-precall-details summary:focus-visible,.agency-command-profile .pcp-copy-text:focus-visible { outline:2px solid var(--pi-focus-ring); outline-offset:2px; }
+
+.agency-command-profile .acp-provider-location{min-width:0;overflow-wrap:anywhere}
+.agency-command-profile .acp-provider-location .acp-loc{align-items:flex-start;white-space:normal;min-width:0}
+.agency-command-profile .acp-address-note{font-size:12px;line-height:1.35;margin:3px 0;color:var(--tp-sub)}
+.agency-command-profile .acp-address-note a{text-decoration:underline;color:var(--tp-accent)}
+.agency-command-profile .acp-address-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.agency-command-profile .acp-address-actions a,.agency-command-profile .acp-address-actions button{display:inline-flex;gap:5px;align-items:center;min-height:44px;padding:2px 5px;font-size:13px;font-weight:650;color:var(--tp-accent);background:transparent;border:0;text-decoration:underline}

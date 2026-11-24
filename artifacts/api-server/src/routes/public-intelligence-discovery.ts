@@ -10,6 +10,8 @@ import {boundedJson} from '../lib/publicIntelligenceDiscovery';
 import {FEED_SOURCE_URL,validateDiscoveryFeed} from '../lib/recurringDiscoveryContract';
 import {createChicagoDiscoveryService} from '../lib/chicagoDiscovery';
 import {parseChicagoQuery} from '../lib/chicagoDiscoveryContract';
+import {fetchNppesLocation,fetchCensusLocation,boundedLocationService} from '../lib/providerLocation';
+import {validNpi,parseStreetAddress,isPhysicalStreet,addressKey} from '../lib/providerLocationContract';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
 router.get('/discovery/fema',async(req,res)=>{
@@ -66,5 +68,17 @@ router.get('/discovery/chicago',async(req,res)=>{
  res.set('Cache-Control','no-store');const q=parseChicagoQuery(req.query);
  if(!q){res.status(400).json({error:'Choose a supported contract topic, approval window and page.'});return;}
  try{res.json(await chicago(q));}catch{req.log.warn('Chicago contract discovery unavailable');res.status(502).json({error:'Chicago contract source unavailable or invalid. No records were inferred.'});}
+});
+const npiAddress=boundedLocationService((npi:string)=>fetchNppesLocation(npi),npi=>npi);
+const streetLocation=boundedLocationService(fetchCensusLocation,addressKey);
+router.get('/discovery/provider-address',async(req,res)=>{
+ res.set('Cache-Control','no-store');const npi=req.query.npi;
+ if(!validNpi(npi)||Object.keys(req.query).length!==1){res.status(400).json({error:'Valid organization NPI required.'});return;}
+ try{res.json(await npiAddress(npi));}catch{req.log.warn('Provider address lookup unavailable');res.status(502).json({error:'Public registry address unavailable.'});}
+});
+router.get('/discovery/address-location',async(req,res)=>{
+ res.set('Cache-Control','no-store');const a=parseStreetAddress(req.query);
+ if(!a||!a.zip||Object.keys(req.query).some(k=>!['street','city','state','zip'].includes(k))||!isPhysicalStreet(a.street)){res.status(400).json({error:'A complete physical street address is required.'});return;}
+ try{res.json(await streetLocation(a));}catch{req.log.warn('Street location lookup unavailable');res.status(502).json({error:'Street location service unavailable.'});}
 });
 export default router;

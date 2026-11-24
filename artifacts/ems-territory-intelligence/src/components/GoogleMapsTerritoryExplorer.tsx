@@ -1,3 +1,6 @@
+import {ProviderAddressMapping} from './ProviderAddressMapping';
+import {locationOverlay,useLocationRevision} from '../services/providerLocation';
+import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {equipmentGeographyScope,matchesEquipmentFilter,equipmentMapStyle,EQUIPMENT_MAP_STYLES} from '../utils/equipmentPresence';
 /**
@@ -263,7 +266,7 @@ const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter,
 };
 
 export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerProps> = ({
-  agencies,
+  agencies: originalAgencies,
   onSelectAgency,
   onToggleRoute,
   onOpenRfpGenerator,
@@ -281,6 +284,9 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   comparedAgencyIds = [],
   onToggleAgencyComparison
 }) => {
+  const locationRevision=useLocationRevision();
+  const agencies=useMemo(()=>originalAgencies.map(a=>locationOverlay(a,originalAgencies)),[originalAgencies,locationRevision]);
+  const mappedIds=useMemo(()=>new Set(agencies.filter((a,i)=>a!==originalAgencies[i]).map(a=>a.id)),[agencies,originalAgencies]);
   // Resolve Google Maps API Key from environment or localStorage
   const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
   const [storedKey, setStoredKey] = useState<string>(() => {
@@ -451,7 +457,8 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     const maxScore = maxPulseIqScore === '' ? null : Number(maxPulseIqScore);
     let pool = agencies.filter((agency) => {
       if (!matchesEquipmentFilter(agency,equipmentFilter)) return false;
-      // Must have valid coordinates
+      // Geographic prospect centroids are not provider street locations.
+      if(isGeographicProspect(agency)&&!mappedIds.has(agency.id))return false;
       return Number.isFinite(agency.latitude) && Math.abs(agency.latitude)<=90 &&
              Number.isFinite(agency.longitude) && Math.abs(agency.longitude)<=180 &&
              !(agency.latitude===0 && agency.longitude===0);
@@ -603,10 +610,12 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     }
   };
 
+  const addressScope=useMemo(()=>equipmentGeographyScope(originalAgencies,{state:globalState,county:globalCounty,city:globalCity,category:globalCategory}),[originalAgencies,globalState,globalCounty,globalCity,globalCategory]);
   const vendorScope=useMemo(()=>equipmentGeographyScope(agencies,isNearMeActive?{category:globalCategory}:{state:globalState,county:globalCounty,city:globalCity,category:globalCategory}),[agencies,globalState,globalCounty,globalCity,globalCategory,isNearMeActive]);
 
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
+      <ProviderAddressMapping agencies={originalAgencies} scope={addressScope} state={globalState}/>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
       <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">{equipmentFilter.evidence==='documented'?'Dated source observations':'Recorded vendor presence'}</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background,color:style.glyphColor}}>{style.glyph}</b>{style.label}</span>)}</div></>}</section>
       
@@ -635,7 +644,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   : 'Google Maps Live Territory Explorer'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5">
-              High-resolution satellite imagery, street topography, station locations, and real-time field proximity.
+              Street map and provider location records; address-range points are approximate.
             </p>
           </div>
 
@@ -1068,7 +1077,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                Plotting <strong className="text-slate-900 dark:text-white font-semibold">{filteredAgencies.length}</strong> active stations
+                Plotting <strong className="text-slate-900 dark:text-white font-semibold">{filteredAgencies.length}</strong> mapped account records
               </span>
               <button
                 type="button"
@@ -1367,7 +1376,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Local Stations in Scope ({filteredAgencies.length})</span>
+                  <span>Mapped accounts in scope ({filteredAgencies.length})</span>
                 </span>
                 <span className="text-xs text-slate-500">Tap to inspect &amp; open</span>
               </div>

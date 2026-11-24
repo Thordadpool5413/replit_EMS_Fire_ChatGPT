@@ -43,6 +43,8 @@ def stage(source, destination, reporting_period, source_url):
                 if npi in seen: counts['duplicates']+=1;continue
                 seen.add(npi)
                 location={key:row.get('Provider Business Practice Location Address '+suffix,'').strip() for key,suffix in [('city','City Name'),('state','State Name'),('postalCode','Postal Code')]}
+                # Public Type 2 business practice location only; never mailing or individual addresses.
+                location['street']=', '.join(v for v in (row.get('Provider First Line Business Practice Location Address','').strip(),row.get('Provider Second Line Business Practice Location Address','').strip()) if v)
                 record=dict(kind='candidate',npi=npi,legalName=name,alternateName=row.get('Provider Other Organization Name',''),location=location,taxonomies=codes,deactivationDate=row.get('NPI Deactivation Date',''),reactivationDate=row.get('NPI Reactivation Date',''),sourceUpdatedAt=row.get('Last Update Date',''),associationStatus='unreviewed')
                 out.write(json.dumps(record)+'\n');counts['accepted']+=1
             out.write(json.dumps(dict(kind='summary',**counts))+'\n')

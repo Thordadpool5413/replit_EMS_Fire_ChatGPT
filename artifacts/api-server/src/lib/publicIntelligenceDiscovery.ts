@@ -15,6 +15,7 @@ const safeText=(v:unknown,n:number):v is string=>typeof v==='string'&&v.trim().l
 const integer=(v:unknown):number|undefined=>{
  if(typeof v==='number'&&Number.isInteger(v))return v;
  if(typeof v==='string'&&/^\d{1,4}$/.test(v))return Number(v);
+ return undefined;
 };
 export function parseDiscoveryQuery(input:unknown,now=Date.now()):DiscoveryQuery|undefined{
  if(!isRecord(input)||Object.keys(input).some(k=>!['state','fromYear','offset'].includes(k)))return;

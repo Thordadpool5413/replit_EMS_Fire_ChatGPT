@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import type { Agency } from '../types';
 import { reconcileSharedEvidence } from '../services/sharedEvidenceReconciliation';
+import { SharedOpportunityRadar } from './SharedOpportunityRadar';
 import { EvidenceGovernancePanel } from './EvidenceGovernancePanel';
 import { SharedEvidenceReview } from './SharedEvidenceReview';
 import { INTELLIGENCE_DEFINITIONS } from '../services/documentedIntelligence';
@@ -76,6 +77,7 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
   const [consentFor, setConsentFor] = useState('');
   const [records, setRecords] = useState<PublishedEvidence[]>([]);
   const [reviewId,setReviewId]=useState('');
+  const [radarRevision,setRadarRevision]=useState(0);
   const [cursor, setCursor] = useState<string>();
   const [loaded, setLoaded] = useState(false);
   const [firstPage, setFirstPage] = useState(false);
@@ -115,9 +117,10 @@ function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSess
     {status && <p role="status" className="text-sm break-words">{status}</p>}
     {loaded && <p className="text-sm">{records.length} displayed on this page. {withheld} invalid entries withheld. This is a paginated research library, not a complete opportunity assessment.</p>}
     <ul className="divide-y divide-slate-200 dark:divide-slate-700">{records.map(r => <li key={r.evidence.factId} className="py-3 space-y-1 min-w-0"><EvidenceDetails evidence={r.evidence}/><p className="text-xs break-all">Published {r.publishedAt} · member {r.authorUid}</p></li>)}</ul>
-    {loaded && !busy && records.length>0 && <div className="space-y-2"><label className="block text-sm">Review published document<select className={control} value={reviewId} onChange={ev=>setReviewId(ev.target.value)}><option value="">Choose a document</option>{records.map(r=><option key={r.evidence.factId} value={r.evidence.factId}>{r.evidence.value} · {r.evidence.sourceRecordId} · {r.evidence.documentDate}</option>)}</select></label>{reviewRecord&&<EvidenceGovernancePanel key={reviewRecord.evidence.factId} session={session} user={user} role={role} record={reviewRecord} records={records}/>}</div>}
+    {loaded && !busy && records.length>0 && <div className="space-y-2"><label className="block text-sm">Review published document<select className={control} value={reviewId} onChange={ev=>setReviewId(ev.target.value)}><option value="">Choose a document</option>{records.map(r=><option key={r.evidence.factId} value={r.evidence.factId}>{r.evidence.value} · {r.evidence.sourceRecordId} · {r.evidence.documentDate}</option>)}</select></label>{reviewRecord&&<EvidenceGovernancePanel key={reviewRecord.evidence.factId} session={session} user={user} role={role} record={reviewRecord} records={records} onReviewChange={()=>setRadarRevision(n=>n+1)}/>}</div>}
+    {!busy && <SharedOpportunityRadar key={radarRevision} session={session} user={user} agency={agency}/>}
     {loaded && !busy && <SharedEvidenceReview result={reconcileSharedEvidence(agency, records.map(r=>r.evidence), {singleCompletePage:firstPage && !cursor,withheld})}/>}
-    <p className="text-xs">Shared records are fetched from the server and kept in memory only. They do not overwrite browser-local evidence, provider data, the equipment map or Opportunity Radar.</p>
+    <p className="text-xs">Shared records are fetched from the server and kept in memory only. They do not overwrite browser-local evidence, provider data, the equipment map or the existing local Opportunity Radar.</p>
   </div>;
 }
 function EvidenceDetails({ evidence: e }: { evidence: SharedEvidence }) {

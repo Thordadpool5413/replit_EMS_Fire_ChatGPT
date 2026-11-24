@@ -5,7 +5,7 @@ import { loadEvidenceDecisions, recordEvidenceDecision, type EvidenceSession, ty
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const labels={approved:'Source reviewed',challenged:'Challenged',withdrawn:'Withdrawn',superseded:'Superseded',pending:'Not yet reviewed',unavailable:'Review state unavailable'} as const;
 const actions={approved:'Approve source observation',challenged:'Challenge observation',withdrawn:'Withdraw observation',superseded:'Link approved correction'} as const;
-export function EvidenceGovernancePanel({session,user,role,record,records}:{session:EvidenceSession;user:User;role:EvidenceRole;record:PublishedEvidence;records:PublishedEvidence[]}){
+export function EvidenceGovernancePanel({session,user,role,record,records,onReviewChange}:{session:EvidenceSession;user:User;role:EvidenceRole;record:PublishedEvidence;records:PublishedEvidence[];onReviewChange?:()=>void}){
   const [result,setResult]=useState<Awaited<ReturnType<typeof loadEvidenceDecisions>>>();
   const [action,setAction]=useState<DecisionAction>('approved');
   const [reason,setReason]=useState<string>(DECISION_REASONS.approved[0]);
@@ -25,13 +25,14 @@ export function EvidenceGovernancePanel({session,user,role,record,records}:{sess
   }
   async function save(){
     if(!confirmed||!available.includes(action)||!result||result.status==='unavailable'||!validDecisionDraft(draft,e.factId))return;
+    onReviewChange?.();
     setBusy(true);setResult(undefined);setStatus('');setConfirmed(false);
     try{
       const outcome=await recordEvidenceDecision(session,user,record,draft);
       setStatus(outcome==='created'?'Server acknowledged the permanent decision.':'Identical decision already recorded.');
       try{setResult(await loadEvidenceDecisions(session,user,record));}catch{setStatus('Decision acknowledged. Refresh to confirm the current review state.');}
     }catch(err){setStatus('Decision not confirmed. '+(err instanceof Error?err.message:'Refresh before retrying.'));}
-    finally{setBusy(false);}
+    finally{setBusy(false);onReviewChange?.();}
   }
   return <section className="border rounded-md p-3 space-y-3 min-w-0" aria-label="Permanent document review">
     <h3 className="font-semibold">Permanent document review</h3>

@@ -135,7 +135,10 @@ const purchasing:Partial<Record<PrioritySignal['kind'],TalkingPoints>>={
  },
 };
 function localObservation(doc:ProfileDocument|undefined){return doc?.status==='document-observation'?doc.item.evidence:null;}
-function sourceContext(e:SharedEvidence){return 'Local document dated '+e.documentDate+' reports: '+e.value+'. Verify the original source and current status.';}
+function sourceContext(e:SharedEvidence,signal?:PrioritySignal){
+ const timing=signal?.date?' Published date: '+signal.date+'. '+signal.reason:'';
+ return 'Local document dated '+e.documentDate+' reports: '+e.value+'.'+timing+' Verify the original source and current status.';
+}
 const category=(kind:string):kind is ProviderEquipmentKind=>PROVIDER_EQUIPMENT_KINDS.some(k=>k===kind);
 
 /** Reuse the same identity/reconciliation gates as the Radar. Never join independent documents into a purchase narrative. */
@@ -149,7 +152,7 @@ export function buildPreCallPlan(agency:Agency,directory:Agency[],focus:CallFocu
  const r=ranked.ranked[0];
  const needsReview=ranked.reviewRequired>0;
  const reviewNote=needsReview?'Some local documents require review. Do not combine them with this plan or assume separate documents refer to the same purchase.':null;
- const withSource=(e:SharedEvidence,points:TalkingPoints,topic:string,signal?:PrioritySignal):CallPlan=>({...base,topic,status:'document-led',context:sourceContext(e),source:e,priority:signal?PRIORITY_LABELS[signal.band]:null,points,preparation:signal?.kind==='open-procurement'?'Check the official notice and communication restrictions before contact. Published dates are not verified current deadlines.':'Open the original document and confirm its date, scope and current status before the conversation.',reviewNote});
+ const withSource=(e:SharedEvidence,points:TalkingPoints,topic:string,signal?:PrioritySignal):CallPlan=>({...base,topic,status:'document-led',context:sourceContext(e,signal),source:e,priority:signal?PRIORITY_LABELS[signal.band]:null,points,preparation:signal?.kind==='open-procurement'?'Check the official notice and communication restrictions before contact. Published dates are not verified current deadlines.':'Open the original document and confirm its date, scope and current status before the conversation.',reviewNote});
  if(selected==='recommended'&&r){
   const s=r.primary,e=s.evidence;
   const points=s.kind==='competitor-equipment'&&category(e.kind)?equipment[e.kind]:purchasing[s.kind];

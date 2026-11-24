@@ -13,7 +13,7 @@ test('recommended plan follows the actual priority signal, never merges unrelate
  const p=plan(agency);
  assert.equal(p.status,'document-led');assert.equal(p.topic,'Solicitation verification');assert.equal(p.priority,'Verify now');assert.equal(p.source?.factId,'bid');
  assert.equal(p.points.questions.length,3);assert.match(p.points.role,/officially designated/);assert.match(p.points.response,/authorized channel/);
- const text=formatPreCallPlan(p);assert.match(text,/https:\/\/example.gov\/PIN-1/);assert.doesNotMatch(text,/99999999|LIFEPAK/);
+ const text=formatPreCallPlan(p);assert.match(text,/https:\/\/example.gov\/PIN-1/);assert.match(text,/2026-12-02/);assert.match(text,/8 days away/);assert.doesNotMatch(text,/99999999|LIFEPAK/);
 });
 test('identity duplicates, invalid records and missing native identity block document-led plans',()=>{
  const agency=withDocs(fact('fleet','installed-monitor','LIFEPAK 15'));

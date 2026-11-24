@@ -5455,15 +5455,20 @@ async function checkCountyPolish(cdp, viewport) {
     `page overflow in ${area} at ${viewport.width}px`);
   await cdp.send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 });
   await cdp.send('Page.navigate', { url: baseUrl });
-  await waitFor(cdp, `Boolean([...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Territory'))`, 'territory navigation', 60000);
+  await waitFor(cdp, `Boolean([...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='Map'))`, 'territory map navigation', 60000);
   await evaluate(cdp, `(() => {const s=document.createElement('style');s.textContent='*{scroll-behavior:auto!important}';document.head.appendChild(s);})()`);
-  await clickVisibleButton(cdp, 'Territory', 'Territory');
-  await waitFor(cdp, `Boolean(document.querySelector('#home-state-picker'))`, 'state selector');
-  await evaluate(cdp, `(() => {
-    const e=document.querySelector('#home-state-picker');
-    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(e,'FL');
-    e.dispatchEvent(new Event('change',{bubbles:true}));
+  await clickVisibleButton(cdp, 'Map', 'Territory map');
+  await waitFor(cdp, `Boolean(document.querySelector('.home-map-state-path'))`, 'national map states');
+  const floridaSelected=await evaluate(cdp, `(() => {
+    const state=[...document.querySelectorAll('.home-map-state-path')].find(path=>path.getAttribute('aria-label')?.startsWith('Florida.'));
+    state?.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+    return Boolean(state);
   })()`);
+  assert(floridaSelected,'Florida could not be selected from the national map');
+  if (viewport.mobile) {
+    await waitFor(cdp, `Boolean(document.querySelector('.home-state-details[open]'))`, 'Florida map details');
+    await clickVisibleButton(cdp, 'Explore counties in Florida', 'Florida county directory');
+  }
   await waitFor(cdp, `Boolean(document.querySelector('.county-brief')) && Boolean(document.querySelector('.county-inspector-panel'))`, 'county cards',60000);
   await waitFor(cdp, `Boolean(document.querySelector('.ci-name'))`, 'county preview data',60000);
   const state = await evaluate(cdp, `(() => {
@@ -5500,14 +5505,14 @@ async function checkCountyPolish(cdp, viewport) {
         contextGrid:getComputedStyle(card.querySelector('.cb-group--context .cb-figs')).gridTemplateColumns,
         containers:(()=>{const a=[];let e=card.querySelector('.cb-group--context .cb-figs');while(e){if(getComputedStyle(e).containerType!=='normal')a.push({class:e.className,width:e.clientWidth,type:getComputedStyle(e).containerType});e=e.parentElement;}return a})(),
         rowStyle:[...card.querySelectorAll('.cb-group--context .cb-fig,.cb-group--context dt,.cb-sources')].slice(0,3).map(e=>({class:e.className,font:getComputedStyle(e).fontSize,line:getComputedStyle(e).lineHeight,padding:getComputedStyle(e).padding,margin:getComputedStyle(e).margin})),
-        places:card.querySelectorAll('.cb-place').length,
+         placeListings:card.querySelectorAll('.cb-place').length,
         primaryTouch:card.querySelector('.cb-inspect').getBoundingClientRect().height};
     })()`);
     assert(!readability.missing.length, 'county facts lost: '+JSON.stringify(readability.missing));
     assert(!readability.overlap.length, 'county labels overlap values: '+JSON.stringify(readability.overlap));
     assert(!readability.clipped.length, 'county text clipped: '+JSON.stringify(readability.clipped));
     assert(!readability.outside.length, 'county content outside card: '+JSON.stringify(readability.outside));
-    assert(readability.places===7,'county places lost');
+    assert(readability.placeListings===0,'county directory still renders mapped-place listings');
     if(viewport.mobile) assert(readability.primaryTouch>=44,'phone Inspect target below44px');
     await evaluate(cdp, `(() => {
       const p=[...document.querySelectorAll('path.cv-county-path')].find(p=>p.querySelector('title')?.textContent.startsWith('Madison County'));
@@ -5525,10 +5530,12 @@ async function checkCountyPolish(cdp, viewport) {
   const selected=await evaluate(cdp, `(() => {
     const r=e=>{const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
     return {map:r(document.querySelector('.cv-map-stage--county').closest('.cv-map-panel')),
-      places:r(document.querySelector('.county-city-directory-panel')),
+       reference:r(document.querySelector('.county-city-directory-panel')),
       mapStage:r(document.querySelector('.cv-map-stage--county')),
-      placesCount:document.querySelectorAll('.cv-place-row').length};
+       placeListingCount:document.querySelectorAll('.cv-place-row').length,
+       mapPins:document.querySelectorAll('.cv-map-stage--county .cv-pin').length};
   })()`);
+  assert(selected.placeListingCount===0 && selected.mapPins>0, 'selected county should omit the place list while retaining map pins');
   await checkOverflow('selected county');
   await evaluate(cdp, `document.querySelector('.cv-map-stage--county').scrollIntoView({block:'center'})`);
   shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
@@ -5552,7 +5559,7 @@ async function checkCountyPolish(cdp, viewport) {
       assert(table && !table.recovery, 'unsupported claim recovery column remains');
       assert(table.headerIcons >= 4 && table.rows > 0, 'provider table lacks recognizable visual labels or records');
     }
-    await evaluate(cdp, `document.querySelector('.cv-place-row').click()`);
+    await evaluate(cdp, `document.querySelector('.cv-map-stage--county .cv-pin[aria-pressed="false"]')?.dispatchEvent(new MouseEvent('click',{bubbles:true}))`);
     await waitFor(cdp, `Boolean(document.querySelector('[data-testid="button-show-all-places"]'))`, 'selected place filter');
     await evaluate(cdp, `document.querySelector('[data-testid="button-show-all-places"]').click()`);
   }

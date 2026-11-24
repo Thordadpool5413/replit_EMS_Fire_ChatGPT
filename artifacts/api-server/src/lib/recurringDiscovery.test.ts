@@ -5,7 +5,7 @@ import {FEED_SCOPE_IDS,FEED_LIMIT,feedSourceUrl,feedKey,possibleGrantOverlap,val
 import {reconcileDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
 const now=Date.parse('2026-11-24T12:00:00Z'),day=86_400_000;
 const fema=(id='f1',changes:Partial<FeedCandidate>={}):FeedCandidate=>({source:'openfema-afg',nativeId:id,recordNumber:'AWARD-1',organization:'Example Fire Department',state:'FL',kind:'grant',title:'Assistance to Firefighters Grant',amount:0,fiscalYear:2025,publishedDay:null,periodStart:null,periodEnd:null,deadlineLocal:null,vendor:null,sourceUrl:feedSourceUrl('openfema-afg',id),...changes});
-const nyc=(id='123',changes:Partial<FeedCandidate>={}):FeedCandidate=>({source:'nyc-city-record',nativeId:id,recordNumber:'PIN-1',organization:'Example City',state:'NY',kind:'municipal-solicitation',title:'Defibrillator CPR purchase',amount:null,fiscalYear:null,publishedDay:'2026-11-20',periodStart:null,periodEnd:null,deadlineLocal:'2026-12-01T14:00:00',vendor:null,sourceUrl:feedSourceUrl('nyc-city-record',id),...changes});
+const nyc=(id='123',changes:Partial<FeedCandidate>={}):FeedCandidate=>({source:'nyc-city-record',nativeId:id,recordNumber:'PIN-1',organization:'Example City',state:'NY',kind:'municipal-solicitation',title:'Defibrillator and mechanical CPR purchase',amount:null,fiscalYear:null,publishedDay:'2026-11-20',periodStart:null,periodEnd:null,deadlineLocal:'2026-12-01T14:00:00',vendor:null,sourceUrl:feedSourceUrl('nyc-city-record',id),...changes});
 const outcome=(id:FeedScope,candidates:FeedCandidate[]=[],status:ScopeResult['status']='ok'):ScopeResult=>({id,status,sourceRows:candidates.length,withheld:0,hasMore:status==='partial',candidates});
 const all=(...r:ScopeResult[])=>FEED_SCOPE_IDS.map(id=>r.find(x=>x.id===id)??outcome(id));
 test('initial baseline and new-to-sample/changed semantics preserve first observation and do not re-flag unchanged records',()=>{
@@ -52,5 +52,6 @@ test('malformed history, foreign URLs, wrong scope, duplicates, unexpected field
  assert.throws(()=>reconcileDiscoveryFeed(a,all(),now));
  assert.throws(()=>reconcileDiscoveryFeed(undefined,[outcome('fema-fl')],now));
  assert.throws(()=>reconcileDiscoveryFeed(undefined,all(outcome('fema-fl',[nyc()])),now));
+ assert.throws(()=>reconcileDiscoveryFeed(undefined,all(outcome('nyc-ventilation',[nyc()])),now));
  assert.equal(readFileSync(new URL('./recurringDiscoveryContract.ts',import.meta.url),'utf8'),readFileSync(new URL('../../../ems-territory-intelligence/src/services/recurringDiscoveryContract.ts',import.meta.url),'utf8'));
 });

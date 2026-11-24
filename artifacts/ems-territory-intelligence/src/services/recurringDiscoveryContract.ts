@@ -1,5 +1,6 @@
 /** Versioned, public-only recurring discovery feed. Not a reviewed evidence store. */
-export const FEED_SOURCE_URL='https://raw.githubusercontent.com/Thordadpool5413/replit_EMS_Fire_ChatGPT/atlas/public-discovery-feed/feed.json';
+import {titleMatches,type MunicipalTopic} from './municipalDiscoveryContract';
+export const FEED_SOURCE_URL='https://raw.githubusercontent.com/Thordadpool5413/replit_EMS_Fire_ChatGPT/refs/heads/atlas/public-discovery-feed/feed.json';
 export const FEED_LIMIT=400, FEED_RETAIN_DAYS=90, FEED_STALE_MS=48*60*60_000;
 export const FEED_SCOPES={
  'fema-fl':{source:'openfema-afg',state:'FL',label:'OpenFEMA · Florida assistance grants',limit:50},
@@ -51,7 +52,7 @@ export function validateFeedCandidate(v:unknown):FeedCandidate{
 }
 export function scopeMatches(id:FeedScope,c:FeedCandidate){
  const s=FEED_SCOPES[id];
- return s.source===c.source&&s.state===c.state&&(id==='federal-fl-grants'?c.kind==='grant':id==='federal-fl-defibrillator'?c.kind==='federal-contract-award':true);
+ return s.source===c.source&&s.state===c.state&&(id==='federal-fl-grants'?c.kind==='grant':id==='federal-fl-defibrillator'?c.kind==='federal-contract-award':id.startsWith('nyc-')?titleMatches(c.title,id.slice(4) as MunicipalTopic):true);
 }
 export function validateDiscoveryFeed(v:unknown,now=Date.now()):DiscoveryFeed{
  if(!obj(v)||!keys(v,['schemaVersion','runAt','scopes','items','evicted','conflictingIds'])||v.schemaVersion!==1||!iso(v.runAt)||Date.parse(v.runAt)>now+60_000||!Array.isArray(v.scopes)||v.scopes.length!==FEED_SCOPE_IDS.length||!Array.isArray(v.items)||v.items.length>FEED_LIMIT||!bounded(v.evicted,FEED_LIMIT+225)||!bounded(v.conflictingIds,225))throw Error('Invalid public discovery feed.');

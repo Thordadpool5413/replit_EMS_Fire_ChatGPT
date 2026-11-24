@@ -1,0 +1,70 @@
+name: National provider address backfill
+on:
+  push:
+    branches: [atlas/national-location-backfill]
+    paths:
+      - 'scripts/data/backfill_provider_locations.py'
+      - '.github/workflows/national-provider-locations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-national-provider-location-build
+  cancel-in-progress: false
+jobs:
+  public-data:
+    if: github.ref == 'refs/heads/atlas/national-location-backfill' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate pipeline
+        run: python3 -m unittest discover -s scripts/data -p test_backfill_provider_locations.py
+      - name: Download the pinned official monthly release
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="$RUNNER_TEMP/nppes-november-2026.zip"
+          if curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 1800 --max-filesize 2000000000 --retry 1 --output "$ARCHIVE" 'https://download.cms.gov/nppes/NPPES_Data_Dissemination_November_2026_V2.zip' && python3 -m zipfile -l "$ARCHIVE" >/dev/null; then
+            echo "NPPES_ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+          else
+            rm -f "$ARCHIVE"
+            echo "::warning::CMS archive unavailable. Produce source-reported fire/Florida records only; NPPES remains explicitly incomplete."
+          fi
+      - name: Build and publish address-only review branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${NPPES_ARCHIVE:-}" ]; then args+=(--archive "$NPPES_ARCHIVE"); fi
+          python3 scripts/data/backfill_provider_locations.py "${args[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git diff --cached --quiet || git commit -m "Build source-ID-bound public provider street addresses"
+          branch="atlas/location-data-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Review branch: $branch" >> "$GITHUB_STEP_SUMMARY"
+      - name: Batch geocode public source addresses
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${NPPES_ARCHIVE:-}" ]; then args+=(--archive "$NPPES_ARCHIVE"); fi
+          python3 scripts/data/backfill_provider_locations.py "${args[@]}" --geocode
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git diff --cached --quiet || git commit -m "Add validated Census street-range coordinates and county location"
+          git push origin "HEAD:refs/heads/atlas/location-data-${GITHUB_RUN_ID}"
+          echo 'Only public registry assets were generated. Review results and validate a PR before merging.' >> "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps(x["coverage"],indent=2))' >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-provider-location-coverage
+          path: artifacts/ems-territory-intelligence/public/registry/locations/index.json
+          if-no-files-found: ignore

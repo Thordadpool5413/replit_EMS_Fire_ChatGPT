@@ -84,6 +84,7 @@ import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
+import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
 import { ProfileDetail } from './profile/ProfileDetail';
@@ -105,6 +106,7 @@ interface FocusedProviderProfileProps {
   onCreateFollowUp: (id:string,task:FieldNote)=>Promise<void>;
   onUpdateFollowUp: FollowUpUpdater;
   agency: Agency;
+  directoryAgencies?: Agency[];
   weights?: PredictiveWeights;
   backLabel: string;
   comparedAgencyIds: string[];
@@ -359,6 +361,7 @@ function resolveEquipmentSuppliers() {
 
 export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   agency: rawAgency,
+  directoryAgencies = [],
   weights,
   backLabel,
   comparedAgencyIds,
@@ -1640,6 +1643,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </header>
           )}
 
+          {activeSection === 'equipment' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="equipment" onOpenSources={openProfileSources}/>}
           {activeSection === 'equipment' && (
             <AgencyIntelligenceBrief view="equipment" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
           )}
@@ -1652,6 +1656,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>
           )}
+          {activeSection === 'purchasing' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="purchasing" onOpenSources={openProfileSources}/>}
           {activeSection === 'purchasing' && (
             <AgencyIntelligenceBrief view="purchasing" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
           )}

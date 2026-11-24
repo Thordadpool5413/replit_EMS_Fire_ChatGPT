@@ -1794,6 +1794,7 @@ export default function App() {
           onCreateFollowUp={createFollowUp}
           onUpdateFollowUp={updateFollowUp}
           agency={currentActive}
+          directoryAgencies={agencies}
           weights={weights}
           backLabel={profileBackLabel}
           comparedAgencyIds={comparisonAgencyIds}

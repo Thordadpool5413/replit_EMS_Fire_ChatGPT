@@ -993,3 +993,24 @@
  .agency-command-profile .adm-name { font-size:14px; }
  .agency-command-profile .acp-detail-body { height:auto !important; max-height:none !important; overflow:visible !important; }
 }
+
+/* Provider competitive evidence: a compact disclosure, using the existing profile theme. */
+.agency-command-profile .pcp-panel { min-width:0; margin:0 0 .75rem; padding:.7rem .85rem; background:var(--tp-card); color:var(--tp-ink); border:1px solid var(--tp-rule); border-radius:var(--tp-r); overflow-wrap:anywhere; }
+.agency-command-profile .pcp-heading { display:flex; gap:.55rem; align-items:center; flex-wrap:wrap; }
+.agency-command-profile .pcp-heading > svg { flex:none; color:var(--tp-topic); }
+.agency-command-profile .pcp-heading > div { flex:1; min-width:0; }
+.agency-command-profile .pcp-panel h3 { margin:0; font-size:14px; line-height:1.35; font-weight:700; color:var(--tp-ink); }
+.agency-command-profile .pcp-panel h4 { margin:0; font-size:13px; line-height:1.4; font-weight:700; color:var(--tp-ink); }
+.agency-command-profile .pcp-panel p,.agency-command-profile .pcp-panel li,.agency-command-profile .pcp-actions span { margin:.2rem 0; font-size:13px; line-height:1.45; color:var(--tp-sub); }
+.agency-command-profile .pcp-toggle,.agency-command-profile .pcp-button,.agency-command-profile .pcp-actions button { display:inline-flex; align-items:center; justify-content:center; gap:.35rem; min-height:44px; max-width:100%; padding:.35rem .6rem; border:1px solid var(--tp-rule-strong); border-radius:7px; color:var(--tp-accent); background:var(--tp-card); font-size:13px; font-weight:650; text-align:left; }
+.agency-command-profile .pcp-panel button:disabled { opacity:.55; cursor:not-allowed; }
+.agency-command-profile .pcp-panel button:focus-visible,.agency-command-profile .pcp-link:focus-visible { outline:2px solid var(--pi-focus-ring); outline-offset:2px; }
+.agency-command-profile .pcp-body { display:grid; min-width:0; gap:.55rem; border-top:1px solid var(--tp-rule); margin-top:.55rem; padding-top:.55rem; }
+.agency-command-profile .pcp-category-list,.agency-command-profile .pcp-documents,.agency-command-profile .pcp-coverage { list-style:none; padding:0; margin:0; min-width:0; }
+.agency-command-profile .pcp-category-list > li,.agency-command-profile .pcp-document,.agency-command-profile .pcp-research { border-top:1px solid var(--tp-rule); padding:.55rem 0; min-width:0; }
+.agency-command-profile .pcp-panel .pcp-value { color:var(--tp-ink); font-size:14px; font-weight:650; }
+.agency-command-profile .pcp-panel .pcp-status { font-weight:650; }
+.agency-command-profile .pcp-link { display:inline-flex; align-items:center; gap:.35rem; min-height:44px; font-size:13px; color:var(--tp-accent); text-decoration:underline; }
+.agency-command-profile .pcp-actions { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+.agency-command-profile .pcp-body > .pcp-button { justify-self:start; }
+@media(max-width:420px) { .agency-command-profile .pcp-toggle { flex:1 0 100%; justify-content:space-between; } }

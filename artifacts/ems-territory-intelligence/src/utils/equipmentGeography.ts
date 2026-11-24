@@ -108,8 +108,9 @@ function addRecord(
   includeAgencyRecords: boolean,
 ) {
   const agencyId = agencies[0]?.id?.trim() || 'directory-id-not-stated';
-  const scoped=filter.evidence==='documented'?[{...agencies[0],sourceFacts:agencies.flatMap(a=>a.sourceFacts??[]),_factReviews:agencies.flatMap(a=>a._factReviews??[])}]:agencies;
-  const profile = buildCountyAgencyEquipmentRecord(agencyId, scoped, location,filter.evidence);
+  const representative=agencies.find(a=>a.isVerifiedRecord)??agencies[0];
+  const scoped=filter.evidence==='documented'?[{...representative,sourceFacts:agencies.flatMap(a=>a.sourceFacts??[]),_factReviews:agencies.flatMap(a=>a._factReviews??[])}]:agencies;
+  const profile = buildCountyAgencyEquipmentRecord(agencyId, agencies, location,filter.evidence);
   const entries = profile.equipmentRecords;
   const matches = scoped.flatMap((agency) => getRecordedVendorMatches(agency, filter.family,filter.evidence));
   const vendorIds = new Set(matches.map((match) => match.vendor));

@@ -1,6 +1,6 @@
 import type {Agency} from '../types';
 import {EQUIPMENT_VENDORS} from '../utils/equipmentPresence';
-import {DAY_MS,PROCUREMENT_LOOKBACK_DAYS,utcDay,validIntelligenceFacts,equipmentObservationFacts,documentedContractExpiration,definitionFor,mostRecentFacts,type DocumentedFact} from './documentedIntelligence';
+import {DAY_MS,PROCUREMENT_LOOKBACK_DAYS,utcDay,validIntelligenceFacts,equipmentObservationFacts,documentedContractExpiration,mostRecentFacts,type DocumentedFact} from './documentedIntelligence';
 export type OpportunityKind='competitor-equipment'|'contract-renewal'|'open-procurement'|'awarded-procurement'|'grant-award'|'capital-approved';
 export const OPPORTUNITY_LABELS:Record<OpportunityKind,string>={'competitor-equipment':'Competitor equipment observed','contract-renewal':'Documented contract expiration','open-procurement':'Open procurement candidate','awarded-procurement':'Recent procurement award','grant-award':'Documented grant award','capital-approved':'Approved capital funding'};
 export interface OpportunitySignal{key:string;kind:OpportunityKind;agency:Agency;fact:DocumentedFact;date?:string;nextAction:string}
@@ -34,15 +34,17 @@ export function agencyOpportunitySignals(agency:Agency,now=Date.now()):Opportuni
 }
 export function buildOpportunityRadar(agencies:Agency[],state='all',kind:OpportunityKind|'all'='all',now=Date.now()){
  const groups=new Map<string,Agency[]>();
- for(const a of agencies)if(a.id&&(state==='all'||a.stateCode===state))groups.set(a.id,[...(groups.get(a.id)??[]),a]);
- const rows:OpportunitySignal[]=[];let evidenceAccounts=0;
+ for(const a of agencies)if(a.id)groups.set(a.id,[...(groups.get(a.id)??[]),a]);
+ const rows:OpportunitySignal[]=[];let evidenceAccounts=0,accounts=0,conflictingAccounts=0;
  for(const group of groups.values()){
-  // Same account ID with conflicting geography is not silently aggregated.
-  if(new Set(group.map(a=>a.stateCode)).size!==1)continue;
+  if(state!=='all'&&!group.some(a=>a.stateCode===state))continue;
+  accounts++;
+  // Check all rows before state filtering so conflicts cannot be hidden.
+  if(new Set(group.map(a=>a.stateCode)).size!==1){conflictingAccounts++;continue;}
   const agency={...group[0],sourceFacts:group.flatMap(a=>a.sourceFacts??[]),_factReviews:group.flatMap(a=>a._factReviews??[])};
   if(validIntelligenceFacts(agency,now).length)evidenceAccounts++;
   rows.push(...agencyOpportunitySignals(agency,now));
  }
  const signals=rows.filter(s=>kind==='all'||s.kind===kind).sort((a,b)=>(a.date??'9999-12-31').localeCompare(b.date??'9999-12-31')||b.fact.intelligence.documentDate.localeCompare(a.fact.intelligence.documentDate)||a.agency.name.localeCompare(b.agency.name));
- return {accounts:groups.size,evidenceAccounts,signalAccounts:new Set(signals.map(s=>s.agency.id)).size,signals};
+ return {accounts,conflictingAccounts,evidenceAccounts,signalAccounts:new Set(signals.map(s=>s.agency.id)).size,signals};
 }

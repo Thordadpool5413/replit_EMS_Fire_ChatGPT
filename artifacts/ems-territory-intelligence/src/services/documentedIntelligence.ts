@@ -44,7 +44,7 @@ export function hasDocumentedAgencyIdentity(agency:Agency):boolean{
 export function isDocumentedIntelligenceFact(fact:AgencySourceFact,agencyId:string,now=Date.now()):fact is DocumentedFact{
  const meta=fact.intelligence,def=definitionFor(meta?.kind);
  if(!meta||!def||fact.fieldKey!==def.fieldKey||fact.basis!=='source-reported'||fact.geographicLevel!=='agency'||fact.geographicId!==agencyId||!text(fact.id)||!text(fact.value)||!text(fact.sourceName)||!text(fact.sourceRecordId)||!validDocumentUrl(fact.sourceUrl)||!validIsoDay(meta.documentDate)||meta.documentDate>utcDay(now)||!Number.isFinite(Date.parse(fact.enteredAt))||Date.parse(fact.enteredAt)>now||meta.documentDate>fact.enteredAt.slice(0,10))return false;
- if(def.family&&/\b(?:unknown|not installed|not deployed|not purchased|proposed|recommended|considering|planned|requested|bid solicitation)\b/i.test(fact.value))return false;
+ if(def.family&&/\b(?:unknown|no|without|not|proposed|recommended|considering|planned|requested|bid solicitation|previously used|formerly|retired|removed|out of service|decommissioned|discontinued|replaced|disposed|sold|surplus|trade.in|demonstration|demo|loaner)\b/i.test(fact.value))return false;
  if(meta.kind==='contract-expiration'&&(!validIsoDay(fact.value)||fact.value<meta.documentDate))return false;
  if(meta.kind==='procurement-open'&&(!validIsoDay(meta.dueDate)||meta.dueDate<meta.documentDate))return false;
  return meta.dueDate===undefined||meta.kind==='procurement-open';

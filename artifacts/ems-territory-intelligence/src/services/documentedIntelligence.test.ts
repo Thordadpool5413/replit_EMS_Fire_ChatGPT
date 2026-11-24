@@ -13,7 +13,7 @@ test('explicit agency evidence excludes category-only data, future documents, wr
  assert.equal(equipmentObservationFacts(agency,now).length,0);
  assert.equal(equipmentObservationFacts({...agency,sourceFacts:[fact]},now).length,1);
  for(const invalid of [{...fact,basis:'calculated' as const},{...fact,geographicId:'other'},{...fact,geographicLevel:'county' as const},{...fact,intelligence:undefined},{...fact,sourceUrl:'https://example.gov/'},{...fact,intelligence:{...fact.intelligence,documentDate:'2027-01-01'}}])assert.equal(validIntelligenceFacts({...agency,sourceFacts:[invalid]},now).length,0);
- assert.throws(()=>make('installed-monitor','Proposed LIFEPAK 15'),/exact/);
+ for(const value of ['Proposed LIFEPAK 15','No ZOLL devices','Previously used LIFEPAK 15','Retired LIFEPAK 15','LIFEPAK 15 out of service','Not recorded: ZOLL X Series'])assert.throws(()=>make('installed-monitor',value),/exact/);
  assert.throws(()=>make('contract-expiration','2027-02-31'),/exact/);
  assert.equal(validIntelligenceFacts({...agency,id:'fire-fl-12005-town',sourceFacts:[{...fact,geographicId:'fire-fl-12005-town'}]},now).length,0);
 });
@@ -38,6 +38,8 @@ test('Radar includes dated facts, not raw contracts or inferred grants; closure 
  assert.equal(agencyOpportunitySignals({...agency,sourceFacts:[make('procurement-open','Old bid',{dueDate:'2026-11-21'})]},now).length,0);
  assert.equal(documentedContractExpiration({...agency,sourceFacts:[contract,make('contract-expiration','2027-03-15',{sourceRecordId:'doc2'})]},now),undefined);
  assert.equal(buildOpportunityRadar([populated,populated],'FL','all',now).signalAccounts,1);
+ const conflict=buildOpportunityRadar([populated,{...populated,stateCode:'GA'}],'FL','all',now);
+ assert.equal(conflict.conflictingAccounts,1);assert.equal(conflict.signals.length,0);
 });
 test('documented equipment filter and county composition use source observations rather than recorded brand fields',()=>{
  const actualNow=Date.now(),d=new Date(actualNow-1000).toISOString().slice(0,10);

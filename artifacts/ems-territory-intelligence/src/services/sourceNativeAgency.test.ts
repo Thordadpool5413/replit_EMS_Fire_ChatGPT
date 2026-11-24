@@ -8,6 +8,7 @@ import {canBulkHydrateAgency,agencyIdentifierLabel} from '../utils/providerRecor
 import {hasAgencyFactEvidence} from '../data/agencyFactEvidence';
 import {calculateScore} from '../utils/pulseIqScoring';
 import {applyAgencyMutation} from './agencyMutation';
+import {stripBrowserLocalAgencySourceData} from './agencySourceRecordStore';
 import {auditLoadedProviderIdentities} from './providerIdentityAudit';
 import type {SyncOutboxItem} from '../types';
 const roster=validateOhioRoster(JSON.parse(readFileSync(new URL('../../public/registry/state-ems/OH.json',import.meta.url),'utf8')));
@@ -53,4 +54,10 @@ test('loaded identity audit flags review candidates without including private fi
  const audit=auditLoadedProviderIdentities([account,copy]);
  assert.equal(audit.totals.loaded,2);assert.equal(audit.identifierConflicts.length,1);
  assert.equal(JSON.stringify(audit).includes('PRIVATE CONTACT'),false);
+});
+
+test('source-native public identity survives cloud payload stripping; browser-local reviews stay private',()=>{
+ const association=createReviewedRegistryAssociation(identity,account,'Local private review',[]);
+ const payload=stripBrowserLocalAgencySourceData({...account,sourceRecordAssociations:[association]});
+ assert.deepEqual(payload.registryIdentity,account.registryIdentity);assert.equal(payload.sourceRecordAssociations,undefined);
 });

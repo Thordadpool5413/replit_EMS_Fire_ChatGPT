@@ -236,12 +236,12 @@ export function useFirestoreAgencies({
   }, [onToast]);
 
   // Batch hydrate unsynced active agencies into Firestore
-  const hydrateBatchToCloud = useCallback(async (maxRecords: number = 35): Promise<number> => {
+  const hydrateBatchToCloud = useCallback(async (maxRecords: number = 25): Promise<number> => {
     const unsynced = allSanitizedAgencies.filter(
       a => canBulkHydrateAgency(a) && !a.isCloudPersisted && !dataSanitizationService.isAgencyCloudSynced(a.id)
     );
     const targetBatch = unsynced.slice(0, Math.min(25,Math.max(0,maxRecords)));
-    if (targetBatch.length === 0) return 0;
+    if (targetBatch.length === 0) { onToast?.('No eligible unsynced source-native accounts in this workspace.', 'info'); return 0; }
 
     setIsSyncing(true);
     try {
@@ -289,7 +289,7 @@ export function useFirestoreAgencies({
     } catch (err) {
       console.error('Batch cloud hydration error:', err);
       if (onToast) {
-        onToast('Cloud hydration encountered a network delay; queued locally.', 'warn');
+        onToast('Cloud batch synchronization could not be confirmed. Saved local accounts remain available; retry after checking connectivity.', 'warn');
       }
       return 0;
     } finally {

@@ -84,6 +84,7 @@ import AgencyIntelligenceOverview from './AgencyIntelligenceOverview';
 import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
+import { PreCallPlanner } from './profile/PreCallPlanner';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
@@ -1464,11 +1465,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                       type="button"
                       onClick={() => {
                         if (accountAssessment.primaryMove.nextStep === 'Prepare for Meeting') {
-                          if (!changeSection('overview')) return;
-                          setTimeout(() => {
-                            const el = document.getElementById('meeting-preparation-section');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }, 50);
+                          navigateProfileSection('deal_story');
                         } else if (accountAssessment.primaryMove.nextStep === 'Generate Co-Op RFP' && onOpenRfpGenerator) {
                           onOpenRfpGenerator(agency);
                         } else if (accountAssessment.primaryMove.nextStep === 'Review Purchasing') {
@@ -1652,6 +1649,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
           {activeSection === 'deal_story' && (
             <div className="profile-deal-workspace" data-testid="profile-deal-story">
+              <PreCallPlanner key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources}/>
               <DealDiscoveryWorkspace agency={agency} onCreateTask={onCreateFollowUp}/>
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>

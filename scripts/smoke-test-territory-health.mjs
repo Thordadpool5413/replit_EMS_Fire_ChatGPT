@@ -9,7 +9,7 @@ import { gunzipSync } from "node:zlib";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const webPackage = "@workspace/ems-territory-intelligence";
 const apiPackage = "@workspace/api-server";
-const webBasePath = "/ems-territory-intelligence/";
+const webBasePath = process.env.ATLAS_SMOKE_PREBUILT === "1" ? "/" : "/ems-territory-intelligence/";
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -97,10 +97,12 @@ async function main() {
     PORT: "4178",
     NODE_ENV: "production",
   };
-  await Promise.all([
-    run("pnpm", ["--filter", webPackage, "run", "build"], { env: { ...process.env, ...buildEnv } }),
-    run("pnpm", ["--filter", apiPackage, "run", "build"]),
-  ]);
+  if (process.env.ATLAS_SMOKE_PREBUILT !== "1") {
+    await Promise.all([
+      run("pnpm", ["--filter", webPackage, "run", "build"], { env: { ...process.env, ...buildEnv } }),
+      run("pnpm", ["--filter", apiPackage, "run", "build"]),
+    ]);
+  }
 
   const assetDir = path.join(
     rootDir,
@@ -131,7 +133,7 @@ async function main() {
   const api = startProcess(
     process.execPath,
     [path.join(rootDir, "artifacts/api-server/dist/index.mjs")],
-    { PORT: String(apiPort), NODE_ENV: "production" },
+    { PORT: String(apiPort), NODE_ENV: "production", ATLAS_SAM_DISCOVERY_ENABLED: "false", ATLAS_SAM_API_KEY: "", ATLAS_SAM_GATEWAY_TOKEN: "" },
   );
 
   try {
@@ -166,6 +168,18 @@ async function main() {
         `${new URL(url).pathname} should return the expected status payload`);
       console.log(`PASS API health: ${new URL(url).pathname} returned { status: "ok" }`);
     }
+    for (const route of ["fema","federal","municipal","chicago"]) {
+      const response = await fetch(apiOrigin + "/api/discovery/" + route + "?invalid=1", {signal:AbortSignal.timeout(3000),redirect:"error"});
+      assert.equal(response.status,400,route+" rejects invalid query");
+      assert.match(response.headers.get("cache-control")??"",/no-store/);
+      assert.equal(typeof (await response.json()).error,"string");
+      console.log("PASS invalid discovery query: "+route);
+    }
+    const sam = await fetch(apiOrigin+"/api/discovery/sam",{signal:AbortSignal.timeout(3000),redirect:"error"});
+    assert.equal(sam.status,503,"SAM must fail closed without operator activation");
+    assert.match(sam.headers.get("cache-control")??"",/no-store/);
+    assert.equal(typeof (await sam.json()).error,"string");
+    console.log("PASS disabled credentialed discovery");
   } finally {
     stopProcess(web);
     stopProcess(api);

@@ -7,7 +7,13 @@ on:
       - 'scripts/check-mobile-*.mjs'
       - 'scripts/check-national-registry-integrity.mjs'
       - 'scripts/audit-production-providers*.mjs'
-      - 'artifacts/api-server/src/lib/fireRegistry.ts'
+      - 'artifacts/api-server/**'
+      - 'lib/db/**'
+      - 'lib/api-zod/**'
+      - 'pnpm-lock.yaml'
+      - 'scripts/post-merge.sh'
+      - 'scripts/smoke-test-territory-health.mjs'
+      - 'scripts/check-mobile-pwa.mjs'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
       - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
       - 'artifacts/api-server/src/lib/federal*'
@@ -29,7 +35,13 @@ on:
       - 'scripts/check-mobile-*.mjs'
       - 'scripts/check-national-registry-integrity.mjs'
       - 'scripts/audit-production-providers*.mjs'
-      - 'artifacts/api-server/src/lib/fireRegistry.ts'
+      - 'artifacts/api-server/**'
+      - 'lib/db/**'
+      - 'lib/api-zod/**'
+      - 'pnpm-lock.yaml'
+      - 'scripts/post-merge.sh'
+      - 'scripts/smoke-test-territory-health.mjs'
+      - 'scripts/check-mobile-pwa.mjs'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
       - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
       - 'artifacts/api-server/src/lib/federal*'
@@ -79,6 +91,8 @@ jobs:
       - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs
       - run: pnpm --dir artifacts/ems-territory-intelligence run build
+      - name: Smoke-test compiled frontend and API
+        run: ATLAS_SMOKE_PREBUILT=1 node scripts/smoke-test-territory-health.mjs
       - name: Install browser for responsive profile checks
         run: |
           npx --yes --package=@playwright/test playwright install --with-deps chromium

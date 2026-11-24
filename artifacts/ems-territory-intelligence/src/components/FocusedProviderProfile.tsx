@@ -1,3 +1,5 @@
+import { agencyIdentifierLabel, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from '../utils/providerRecordTrust';
+import { hasAgencyContractEvidence } from '../data/agencyFactEvidence';
 import { ProfileContactDisclosure } from './profile/ProfileContactDisclosure';
 import { AgencyIdentityStrip } from './profile/AgencyIdentityStrip';
 import { DealDiscoveryWorkspace } from './profile/DealDiscoveryWorkspace';
@@ -212,6 +214,7 @@ import { DataLabel } from './DataLabel';
  * without ever injecting synthetic (555) phone numbers or fabricated staff emails.
  */
 function ensureCompleteAgencyData(raw: Agency): Agency {
+  raw = withoutUnsubstantiatedProspectContract(withoutGeneratedFdid(raw), hasAgencyContractEvidence(raw));
   const existingContacts = raw.keyContacts || [];
   // Honest Evidence Integrity: No synthetic NPI or FDID hashing
   const npiNumber = raw.npiNumber || undefined;
@@ -1078,9 +1081,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               }}>
                 <summary><FileText aria-hidden="true" className="h-3.5 w-3.5" />Record details<ChevronDown aria-hidden="true" className="h-3 w-3" /></summary>
                 <div className="acp-record-context-body">
-                  {(agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
+                  {(agency.registryIdentity || agency.fdid || agency.npiNumber || agency.stateLicenseNumber) && (
                     <div className="acp-ids" aria-label="Registry identifiers">
-                      {agency.fdid && <span className="acp-id">FDID <b>{agency.fdid}</b></span>}
+                      {(agency.registryIdentity || agency.fdid) && <span className="acp-id"><b>{agencyIdentifierLabel(agency)}</b></span>}{agency.registryIdentity&&<span className="acp-id">Source listing only · operations unverified</span>}
                       {agency.npiNumber && <span className="acp-id">NPI <b>{agency.npiNumber}</b></span>}
                       {agency.stateLicenseNumber && <span className="acp-id">License <b>{agency.stateLicenseNumber}</b></span>}
                     </div>

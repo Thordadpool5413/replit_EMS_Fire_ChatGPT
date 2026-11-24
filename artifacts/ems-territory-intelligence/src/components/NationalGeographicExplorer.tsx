@@ -1,3 +1,6 @@
+import type { AgencySourceRecordAssociation } from '../types';
+import { agencyIdentifierLabel, isGeographicProspect } from '../utils/providerRecordTrust';
+import { NationalSourceDirectory } from './NationalSourceDirectory';
 import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
 /**
  * @license
@@ -201,11 +204,12 @@ interface NationalGeographicExplorerProps {
   initialMode?: 'states' | 'counties' | 'cities' | 'pulseiq_chart';
   onModeChange?: (mode: 'states' | 'counties' | 'cities' | 'pulseiq_chart') => void;
   onSelectAgency: (agency: Agency) => void;
+  onDecideSourceRecord?: (id:string,association:AgencySourceRecordAssociation)=>void;
   onPreviewAgency?: (agency: Agency) => void;
   onNavigateToQueueWithFilter?: (stateCode?: string, county?: string, city?: string, zip?: string) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
   onOpenDataLineage?: (agency?: Agency) => void;
-  onAddAgency?: (agency: Agency) => void;
+  onAddAgency?: (agency: Agency) => void | Promise<void>;
   globalState?: string;
   globalCounty?: string;
   globalCity?: string;
@@ -224,6 +228,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   initialMode,
   onModeChange,
   onSelectAgency,
+  onDecideSourceRecord,
   onPreviewAgency,
   onNavigateToQueueWithFilter,
   onOpenRfpGenerator,
@@ -2038,7 +2043,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     : `${activeStateSummary?.state || selectedStateCode} Statewide Providers`}
               </div>
               <h2 className="cv-geo-title">
-                <Building2 aria-hidden="true" />EMS &amp; Fire Providers ({matchingAgencies.length.toLocaleString()})
+                <Building2 aria-hidden="true" />Saved EMS &amp; Fire Records ({matchingAgencies.length.toLocaleString()})
               </h2>
               </div>
             </div>
@@ -2306,10 +2311,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </div>
           )}
 
+          {/* Source-native discovery, separate from saved or modeled records. */}
+          {selectedStateCode !== 'all' && (
+            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} onDecideSourceRecord={onDecideSourceRecord} onCreateAgency={onAddAgency} />
+          )}
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">
             <div>
-              <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong>
+              <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong><p className="text-xs">{matchingAgencies.filter(isGeographicProspect).length.toLocaleString()} geography-generated prospects; not a count of registered or operating providers.</p>
               <span> in {selectedAreaLabel}</span>
             </div>
             <div className="territory-active-filters" aria-label="Active filters">
@@ -2410,14 +2419,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             {isFire ? 'Fire Dept' : 'EMS Provider'}
                           </span>
                           <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                            FDID {agency.fdid || 'Not reported'}
+                            {agencyIdentifierLabel(agency)}
                           </span>
                           {agency.npiNumber && (
                             <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-medium tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                               NPI {agency.npiNumber}
                             </span>
                           )}
-                          {agency.grantStatus.afgAwarded && (
+                          {hasAgencyFactEvidence(agency, 'federalGrant') && agency.grantStatus.afgAwarded && (
                             <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold tabular-nums text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                                 FEMA AFG ${(agency.grantStatus.afgAwardAmount / 1000).toFixed(0)}K
                             </span>
@@ -2444,6 +2453,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <h3 className="agency-card-title text-[17px] font-bold leading-snug tracking-[-0.02em] text-slate-950 transition-colors group-hover:text-blue-800 dark:text-white dark:group-hover:text-blue-300">
                             {agency.name}
                           </h3>
+                          {isGeographicProspect(agency) && <span className="text-xs text-slate-600 dark:text-slate-300">Unverified geographic prospect</span>}
                           <div className="agency-card-geography mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                             {agency.state} ({agency.stateCode}) <span className="text-slate-400">›</span> {agency.county} <span className="text-slate-400">›</span>{' '}
                             <strong className="font-semibold text-slate-900 dark:text-white">{agency.city}</strong>{' '}
@@ -2512,7 +2522,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           </span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">PulseIQ planning model · not agency performance</span>
                           <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {agency.competitorContract.contractEndDate
+                            {hasAgencyFactEvidence(agency, 'maintenanceContracts') && agency.competitorContract.contractEndDate
                               ? `Contract end · ${agency.competitorContract.contractEndDate}`
                               : 'Contract end · Not reported'}
                           </span>
@@ -2629,12 +2639,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {isFire ? 'Fire' : 'EMS'}
                             </span>
                             <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
-                              FDID {agency.fdid || 'Not reported'}
+                              {agencyIdentifierLabel(agency)}
                             </span>
                           </div>
                           <h3 className="break-words text-sm font-bold leading-snug text-slate-950 dark:text-white">
                             {agency.name}
                           </h3>
+                          {isGeographicProspect(agency) && <span className="text-xs text-slate-600 dark:text-slate-300">Unverified geographic prospect</span>}
                           <p className="mt-1 text-xs leading-snug text-slate-600 dark:text-slate-300">
                             {agency.city}, {agency.stateCode} · {agency.county}
                           </p>
@@ -2735,8 +2746,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                             <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#1E3A8A] dark:group-hover:text-blue-400 transition-colors">
                               {agency.name}
                             </div>
+                            {isGeographicProspect(agency) && <div className="text-xs text-slate-600 dark:text-slate-300">Unverified geographic prospect</div>}
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                              <span className={`provider-discipline ${isFire ? 'provider-discipline--fire' : 'provider-discipline--ems'}`}>{isFire ? 'Fire' : 'EMS'}</span> <span className="provider-fdid">FDID {agency.fdid || 'Not reported'}</span> · {agency.city}, {agency.stateCode} · {agency.county}
+                              <span className={`provider-discipline ${isFire ? 'provider-discipline--fire' : 'provider-discipline--ems'}`}>{isFire ? 'Fire' : 'EMS'}</span> <span className="provider-fdid">{agencyIdentifierLabel(agency)}</span> · {agency.city}, {agency.stateCode} · {agency.county}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 hidden md:table-cell">
@@ -2756,7 +2768,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               {hasVerifiedModel ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue) : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
                             </div>
                             <div className="text-xs text-slate-500 tabular-nums">
-                              {agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}
+                              {hasAgencyFactEvidence(agency, 'maintenanceContracts') && agency.competitorContract.contractEndDate ? `Contract end · ${agency.competitorContract.contractEndDate}` : 'Contract end · Not reported'}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right hidden 2xl:table-cell">

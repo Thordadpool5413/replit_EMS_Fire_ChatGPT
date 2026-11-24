@@ -175,7 +175,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
   const handleHydrateBatch = async () => {
     const approved = window.confirm('Write up to 35 local agency records to the configured Firestore database? This is an external cloud write. No existing cloud records will be deleted.');
     if (!approved) return;
-    await onHydrateBatchToCloud(35);
+    await onHydrateBatchToCloud(25);
     setRefreshTick((t) => t + 1);
   };
 
@@ -236,7 +236,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-          <span>Batch sync writes only after you select the action above; county selection never writes to Firestore.</span>
+          <span>Batch sync is limited to 25 explicitly saved source-native accounts. Geographic prospects are excluded; county selection never writes to Firestore.</span>
           <span>API health: {healthQuery.isLoading ? 'checking…' : healthQuery.isError ? 'unavailable' : healthQuery.data?.status || 'response received'}</span>
           {healthQuery.isError && <span role="status">Health endpoint unavailable; local data remains available.</span>}
         </div>

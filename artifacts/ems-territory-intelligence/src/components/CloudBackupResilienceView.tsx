@@ -1,3 +1,4 @@
+import {ProviderIdentityAuditPanel} from './ProviderIdentityAuditPanel';
 import {WorkspaceIcon} from './design/WorkspaceIcon';
 import { createWorkspaceBackup, parseWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from '../services/workspaceBackup';
 import { loadStoredAgencies } from '../utils/syncStore';
@@ -472,6 +473,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
         )}
       </section>
 
+      <ProviderIdentityAuditPanel agencies={agencies}/>
       {/* Tabs: Snapshot History vs Live Audit Stream */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         

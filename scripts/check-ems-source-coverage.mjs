@@ -47,9 +47,12 @@ assert.equal(florida?.coverageStatus, "official-license-reference");
 assert.equal(florida?.appConnection.includes("no automated"), true);
 assert.equal(
   EMS_JURISDICTION_SOURCE_COVERAGE.filter((entry) => entry.coverageStatus === "official-license-reference").length,
-  1,
+  4,
   "Do not claim that unreviewed state licensing sources are mapped",
 );
 assert.equal(EMS_JURISDICTION_SOURCE_URLS.floridaMqaLicenseSearch, florida?.sourceUrl);
 
-console.log("EMS source coverage checks passed: 50 states, DC, five territories, Florida license route.");
+assert.equal(EMS_JURISDICTION_SOURCE_COVERAGE.find(entry=>entry.code==="VA")?.coverageStatus,"official-license-reference");
+assert.deepEqual(EMS_JURISDICTION_SOURCE_COVERAGE.filter(entry=>entry.coverageStatus==="official-license-reference").map(entry=>entry.code).sort(),["FL","MA","PA","VA"]);
+assert.deepEqual(EMS_JURISDICTION_SOURCE_COVERAGE.filter(entry=>entry.coverageStatus==="official-agency-roster").map(entry=>entry.code),["OH"]);
+console.log("EMS source coverage checks passed: 56 jurisdictions, four official lookup routes and Ohio agency roster.");

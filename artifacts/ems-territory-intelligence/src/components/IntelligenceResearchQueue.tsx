@@ -1,0 +1,24 @@
+import React,{useMemo,useState} from 'react';
+import {Search,ShieldAlert} from 'lucide-react';
+import type {Agency} from '../types';
+import {buildIntelligenceResearchQueue,type ResearchStatus} from '../services/intelligenceResearchQueue';
+const labels:Record<ResearchStatus,string>={unknown:'Not reported','recorded-unsubstantiated':'Recorded · source required','value-matched-source':'Value-matched source','user-confirmed':'User confirmed (local)','user-corrected':'User corrected (local)',flagged:'Flagged for review',invalid:'Invalid value'};
+export function IntelligenceResearchQueue({agencies,onOpen}:{agencies:Agency[];onOpen?:(a:Agency)=>void}){
+ const [scope,setScope]=useState<'saved'|'loaded'>('saved'),[state,setState]=useState('all'),[page,setPage]=useState(1),[query,setQuery]=useState('');
+ const states=useMemo(()=>[...new Set(agencies.map(a=>a.stateCode).filter(Boolean))].sort(),[agencies]);
+ const result=useMemo(()=>buildIntelligenceResearchQueue(agencies,state,scope),[agencies,state,scope]);
+ const filtered=result.rows.filter(r=>!query.trim()||[r.agency.name,r.agency.city,r.agency.stateCode].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
+ const current=Math.min(page,Math.max(1,Math.ceil(filtered.length/8)));
+ return <section className="pi-surface p-4 min-w-0 space-y-3" aria-label="Intelligence research queue" data-testid="intelligence-research-queue">
+ <div className="flex items-start gap-2"><Search size={20} aria-hidden="true" className="shrink-0"/><div className="min-w-0"><h2 className="font-semibold">Intelligence research queue</h2><p className="text-sm">Prioritize missing or unsupported equipment and contract facts. A value-matched source is not an independent verification of current use.</p></div></div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><label className="text-sm">Account scope<select className="block w-full min-w-0 border rounded p-2 bg-transparent text-base" value={scope} onChange={e=>{setScope(e.target.value as typeof scope);setPage(1)}}><option value="saved">Saved work &amp; registry accounts</option><option value="loaded">All loaded accounts</option></select></label><label className="text-sm">State<select className="block w-full min-w-0 border rounded p-2 bg-transparent text-base" value={state} onChange={e=>{setState(e.target.value);setPage(1)}}><option value="all">All loaded states</option>{states.map(s=><option key={s}>{s}</option>)}</select></label></div>
+ <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">{[['Accounts assessed',result.accounts],['Accounts to research',result.accountsNeedingResearch],['Facts needing evidence',result.fieldsNeedingResearch]].map(([label,value])=><div key={label} className="min-w-0"><dt>{label}</dt><dd className="text-xl font-semibold tabular-nums">{Number(value).toLocaleString()}</dd></div>)}</dl>
+ <label className="block text-sm">Find account<input className="block w-full min-w-0 border rounded p-2 bg-transparent text-base" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Agency name or city"/></label>
+ <p className="text-xs">Scope: loaded accounts only, not national market share. User reviews are local. No automated assignments, purchases, or cloud writes.</p>
+ {!filtered.length&&<p role="status">No research candidates in this selection. This does not establish complete source coverage.</p>}
+ <ul className="divide-y divide-slate-200 dark:divide-slate-700">{filtered.slice((current-1)*8,current*8).map(r=><li className="py-3 space-y-2 min-w-0 break-words" key={r.agency.id}><div className="flex flex-wrap gap-2 items-center justify-between"><strong>{r.agency.name}</strong><span className="text-sm">{r.agency.stateCode} · {r.needs.length} facts to research</span></div>{r.identityNeedsReview&&<p className="flex gap-2 text-sm"><ShieldAlert size={16} className="shrink-0" aria-hidden="true"/>Geographic prospect: establish organization identity before relying on operational data.</p>}
+ <details><summary className="cursor-pointer text-sm font-medium">Review research needs</summary><ul className="space-y-2 pt-2">{r.needs.map(f=><li key={f.id} className="border rounded-lg p-2 text-sm"><strong>{f.label}</strong><p>{labels[f.status]}</p>{f.value&&<p>Recorded value: {f.value}</p>}<p className="text-xs">{f.question}</p></li>)}</ul></details>
+ {onOpen&&<button type="button" className="workspace-button" onClick={()=>onOpen(r.agency)}>Open agency profile</button>}</li>)}</ul>
+ <div className="flex flex-wrap gap-2 items-center"><button type="button" className="workspace-button" disabled={current===1} onClick={()=>setPage(current-1)}>Previous</button><span className="text-sm">Page {current} of {Math.max(1,Math.ceil(filtered.length/8))}</span><button type="button" className="workspace-button" disabled={current*8>=filtered.length} onClick={()=>setPage(current+1)}>Next</button></div>
+ </section>
+}

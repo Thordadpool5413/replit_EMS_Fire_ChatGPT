@@ -1,3 +1,5 @@
+import { isGeographicProspect, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from '../utils/providerRecordTrust';
+import { hasAgencyContractEvidence } from '../data/agencyFactEvidence';
 import { canonicalizeAgencyCounty } from '../utils/countyIdentity';
 /**
  * @license
@@ -272,7 +274,7 @@ export function executeStoredNpiAudit(agencies: Agency[] = []): StoredNpiAuditRe
         details = `Authentic NPPES Type 2 Organization match: ${record.legalBusinessName} (${record.doingBusinessAs})`;
         actualNppesEntity = `${record.legalBusinessName} (${record.doingBusinessAs})`;
       } else {
-        auditClassification = 'VALID_MISMATCHED';
+        auditClassification = 'UNASSESSED';
         requiresManualReview = true;
         details = `Pending manual review: ${record.legalBusinessName} (${record.doingBusinessAs})`;
       }
@@ -316,10 +318,14 @@ export function executeStoredNpiAudit(agencies: Agency[] = []): StoredNpiAuditRe
         actualNppesEntity = agency.npiNumber === '1982736450'
           ? 'MAUREEN CONNOLLY M.D. (NPI-1 Family Medicine, Oak Park, IL)'
           : 'SHAWN ALLEN ANGLEMYER D.C (NPI-1 Chiropractor, Westminster, MD)';
+      } else if (agency.registryIdentity?.sourceName==='NPPES'&&agency.registryIdentity.identifier===agency.npiNumber) {
+        auditClassification='VALID_MATCHED';
+        details='NPI matches the stored source-native NPPES listing; operating relationship not established.';
+        actualNppesEntity=agency.registryIdentity.name;
       } else {
-        auditClassification = 'VALID_MATCHED';
-        details = `Valid check digit assigned to agency "${agency.name}"`;
-        actualNppesEntity = agency.name;
+        auditClassification='UNASSESSED';
+        requiresManualReview=true;
+        details='Check digit is valid; organization identity has not been established by the source.';
       }
 
       items.push({
@@ -589,7 +595,7 @@ class DataSanitizationService {
    * Determines the exact data provenance tier of an agency record.
    */
   public classifyProvenanceTier(agency: Agency): DataProvenanceTier {
-    if (agency.verificationSource?.includes('Geographic prospect generator')) return 'generated_prospect';
+    if (isGeographicProspect(agency)) return 'generated_prospect';
     if (
       agency.isCloudPersisted ||
       Boolean(agency._syncedAt) ||
@@ -660,7 +666,8 @@ class DataSanitizationService {
       return null;
     }
 
-    agency = canonicalizeAgencyCounty(agency);
+    agency = withoutGeneratedFdid(canonicalizeAgencyCounty(agency));
+    agency = withoutUnsubstantiatedProspectContract(agency, hasAgencyContractEvidence(agency));
 
     // 1. Filter out any mock or test field notes
     const rawNotes = Array.isArray(agency.fieldNotes) ? agency.fieldNotes : [];
@@ -727,7 +734,7 @@ class DataSanitizationService {
       zollOpportunity: verifiedOpportunity,
       isCloudPersisted: isCloud,
       isVerifiedRecord: Boolean(agency.isVerifiedRecord),
-      dataProvenanceTier: agency.verificationSource?.includes('Geographic prospect generator')
+      dataProvenanceTier: isGeographicProspect(agency)
         ? 'generated_prospect'
         : isCloud
         ? 'firestore_cloud_synced'

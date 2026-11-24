@@ -3,7 +3,7 @@ import {
   GetFireRegistryMatchesQueryParams,
   GetFireRegistryMatchesResponse,
 } from "@workspace/api-zod";
-import { searchFireRegistryMatches } from "../lib/fireRegistry";
+import { searchFireRegistryMatches, listNerisDepartments } from "../lib/fireRegistry";
 
 const router: IRouter = Router();
 
@@ -48,5 +48,12 @@ router.get(
     }
   },
 );
+
+router.get("/fire-registry/directory", async (req: Request, res: Response): Promise<void> => {
+  const stateCode=typeof req.query.stateCode==='string'?req.query.stateCode.trim().toUpperCase():'';
+  if(!/^[A-Z]{2}$/.test(stateCode)){res.status(400).json({error:"A two-letter state code is required."});return;}
+  try {res.json(await listNerisDepartments(stateCode));}
+  catch(error){req.log.warn({err:error,stateCode},"NERIS directory unavailable");res.status(502).json({error:"NERIS state directory is temporarily unavailable."});}
+});
 
 export default router;

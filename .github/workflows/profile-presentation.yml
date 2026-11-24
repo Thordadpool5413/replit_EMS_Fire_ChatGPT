@@ -5,6 +5,10 @@ on:
       - 'artifacts/ems-territory-intelligence/**'
       - 'scripts/check-profile-*.mjs'
       - 'scripts/check-mobile-*.mjs'
+      - 'scripts/check-national-registry-integrity.mjs'
+      - 'scripts/audit-production-providers*.mjs'
+      - 'artifacts/api-server/src/lib/fireRegistry.ts'
+      - 'artifacts/api-server/src/routes/fire-registry.ts'
       - '.github/workflows/profile-presentation.yml'
   push:
     branches: [main]
@@ -12,6 +16,10 @@ on:
       - 'artifacts/ems-territory-intelligence/**'
       - 'scripts/check-profile-*.mjs'
       - 'scripts/check-mobile-*.mjs'
+      - 'scripts/check-national-registry-integrity.mjs'
+      - 'scripts/audit-production-providers*.mjs'
+      - 'artifacts/api-server/src/lib/fireRegistry.ts'
+      - 'artifacts/api-server/src/routes/fire-registry.ts'
       - '.github/workflows/profile-presentation.yml'
 permissions:
   contents: read
@@ -40,6 +48,10 @@ jobs:
         env:
           PROFILE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/check-profile-presentation-scope.mjs
+      - run: node scripts/check-national-registry-integrity.mjs
+      - run: node scripts/check-ems-source-coverage.mjs
+      - run: node --test scripts/refresh-ohio-state-ems.test.mjs
+      - run: node --test scripts/audit-production-providers.test.mjs
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: node scripts/check-style-ownership.mjs

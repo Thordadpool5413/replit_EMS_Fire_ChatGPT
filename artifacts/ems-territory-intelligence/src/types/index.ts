@@ -252,6 +252,8 @@ export interface DocumentedTradeInOffer {
 }
 
 export interface Agency {
+  /** Public, source-native identity stored with the account; separate from browser-local reviews. */
+  registryIdentity?: import('../services/registryAccountLink').RegistryIdentity;
   sourceCountyName?: string;
   sourceCountyFips?: string;
   countyLocationBasis?: 'canonical-name' | 'town-crosswalk';

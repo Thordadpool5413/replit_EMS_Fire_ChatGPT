@@ -1,3 +1,4 @@
+import { withoutGeneratedFdid } from '../utils/providerRecordTrust';
 import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
 import { canonicalizeAgencyCounty, normalizeCountyName } from '../utils/countyIdentity';
 /**
@@ -355,7 +356,7 @@ class NationalProviderDatabaseService {
     return {
       id: agencyId,
       name: agencyName,
-      fdid: `${sc}-${isFire ? 'FD' : 'EMS'}-${c.countyFips}${isMunicipalCity ? `-${citySlug.slice(0, 3).toUpperCase()}` : ''}`,
+      fdid: '', // Registry identity must come from a source, not geography.
       agencyType,
       providerCategory: isFire ? 'FIRE' : 'EMS',
       jurisdictionLevel: isMunicipalCity ? 'Local' : 'County',
@@ -417,7 +418,7 @@ class NationalProviderDatabaseService {
       },
       competitorContract: {
         vendor: defibBrand.includes('Stryker') ? 'Stryker ProCare' : 'Philips Master Service',
-        contractEndDate: `202${6 + (posHash % 3)}-0${1 + (posHash % 9)}-28`,
+        contractEndDate: '', // No agency contract was observed.
         renewalWindowDays: 60 + (posHash % 90),
         annualServiceCostPerUnit: 2350,
         status: (posHash % 3 === 0) ? 'Expiring Soon (90 Days)' : 'Active Term',
@@ -504,6 +505,7 @@ class NationalProviderDatabaseService {
   }
 
   private registerAgency(agency: Agency) {
+    agency = withoutGeneratedFdid(agency);
     if (this.providersById.has(agency.id)) return;
     this.providers.push(agency);
     this.providersById.set(agency.id, agency);

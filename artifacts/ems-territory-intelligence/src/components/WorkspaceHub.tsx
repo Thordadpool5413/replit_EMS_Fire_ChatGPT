@@ -1,3 +1,4 @@
+import {IntelligenceResearchQueue} from './IntelligenceResearchQueue';
 import {NationalSourceDirectory} from './NationalSourceDirectory';
 import {WorkspaceIcon,WorkspaceHeading} from './design/WorkspaceIcon';
 import { BulkRegistryDirectory } from './BulkRegistryDirectory';
@@ -5,7 +6,7 @@ import { ImportRunHistory } from './ImportRunHistory';
 import { DataCoverageSummary } from './DataCoverageSummary';
 import React, { useMemo, useState } from 'react';
 import { ArrowUpRight, Download, MapPin } from 'lucide-react';
-import type { Agency } from '../types';
+import type { Agency,AgencySourceRecordAssociation } from '../types';
 import { buildWorkspaceCsv } from '../utils/workspacePresentation';
 const reports = [
   ['contracts','Purchasing timeline','Review recorded contracts and upcoming renewal dates.'],
@@ -20,7 +21,7 @@ const settings = [
   ['gateway','Source directory','Find federal and state sources for your research.'],
   ['claims','Public data & imports','Review Medicare and public-health reference data.'],
 ];
-export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean}> = ({kind,agencies,navigate,pending,online}) => {
+export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean;onOpenAgency?:(a:Agency)=>void;onCreateAgency?:(a:Agency)=>Promise<void>;onDecideSourceRecord?:(id:string,a:AgencySourceRecordAssociation)=>void}> = ({kind,agencies,navigate,pending,online,onOpenAgency,onCreateAgency,onDecideSourceRecord}) => {
   const [includeEstimates,setIncludeEstimates]=useState(false);
   const work = useMemo(()=>agencies.filter(a=>a.isBookmarked||a.inDayRoute||(a.fieldNotes?.length || a.followUpTasks?.length)||Object.keys(a._reviewOriginalValues??{}).length),[agencies]);
   const exportWork=()=>{
@@ -32,8 +33,9 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';agencies:Agency[]
 
     <div className="workspace-hub-summary" role="status"><span>{online?'Online':'Offline · saved work stays on this device'}</span><span>{pending?`${pending} changes waiting for cloud acknowledgment`:'No queued changes'}</span><span>{work.length.toLocaleString()} accounts with saved work</span></div>
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation. Generated equipment values are excluded from reported equipment columns.</small><label className="text-sm block mt-2"><input type="checkbox" checked={includeEstimates} onChange={e=>setIncludeEstimates(e.target.checked)}/> Include a separate planning-estimates column</label></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
+    {kind==='reports'&&<IntelligenceResearchQueue agencies={agencies} onOpen={onOpenAgency}/>}
     <div className="workspace-hub-grid">{(kind==='reports'?reports:settings).map(([id,title,description])=><button key={id} type="button" className="workspace-destination" onClick={()=>navigate(id)}><WorkspaceIcon name={id} badge/><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} aria-hidden="true"/></button>)}</div>
-    {kind==='settings'&&<div className="workspace-data-tools"><DataCoverageSummary agencies={agencies}/><ImportRunHistory/><NationalSourceDirectory/><BulkRegistryDirectory/></div>}
+    {kind==='settings'&&<div className="workspace-data-tools"><DataCoverageSummary agencies={agencies}/><ImportRunHistory/><NationalSourceDirectory savedAgencies={agencies} onOpenSavedAgency={onOpenAgency} onCreateAgency={onCreateAgency} onDecideSourceRecord={onDecideSourceRecord}/><BulkRegistryDirectory/></div>}
     <footer className="workspace-hub-footer"><MapPin size={16} aria-hidden="true"/><span>Need an account? Start with the map or agency directory.</span><button className="workspace-text-button" onClick={()=>navigate('states_directory')}>Open directory</button></footer>
   </section>;
 };

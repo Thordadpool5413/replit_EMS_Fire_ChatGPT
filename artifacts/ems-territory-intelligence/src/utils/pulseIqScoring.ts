@@ -1,3 +1,4 @@
+import { requiresAgencyFieldEvidence } from './providerRecordTrust';
 import { hasMappedFactSource } from '../data/agencyFactEvidence';
 import type { Agency, AgencyFactEvidenceKey, PredictiveWeights } from '../types';
 
@@ -192,8 +193,8 @@ export function evaluatePulseIqFactors(
 
   // An incomplete factor contributes zero, never an invented default or score floor.
   for (const factor of factors) {
-    if (agency.verificationSource?.includes('Geographic prospect generator')) {
-      for (const input of factor.inputs) if (!hasMappedFactSource(agency.factEvidence?.[input.sourceKey])) { input.usedDefault=true; input.valueUsed='Generated estimate excluded; agency source required'; }
+    if (requiresAgencyFieldEvidence(agency)) {
+      for (const input of factor.inputs) if (!hasMappedFactSource(agency.factEvidence?.[input.sourceKey])) { input.usedDefault=true; input.valueUsed='Agency-specific source required'; }
     }
     if (factor.inputs.some(input => input.usedDefault)) factor.baseScore = 0;
   }

@@ -38,7 +38,7 @@ export function useTerritoryAlerts(agencies:Agency[],online:boolean){
  const localResult=useMemo(()=>buildLocalTerritoryAlerts(agencies,clock),[agencies,utc,local]);
  const publicResult=useMemo(()=>online&&phase==='ready'?buildPublicTerritoryAlerts(feed,clock):{status:'unavailable' as const,alerts:[],feed:undefined},[feed,phase,online,clock]);
  const alerts=useMemo(()=>combineTerritoryAlerts(localResult.alerts,publicResult.alerts),[localResult,publicResult]);
- const feedStatus=!online?'offline':phase==='loading'?'loading':phase==='idle'?'unchecked':phase==='unavailable'?'unavailable':publicResult.status;
+ const feedStatus:'offline'|'loading'|'unchecked'|'unavailable'|'stale'|'ready'=!online?'offline':phase==='loading'?'loading':phase==='idle'?'unchecked':phase==='unavailable'?'unavailable':publicResult.status;
  return {local:localResult,public:publicResult,alerts,feedStatus,refresh:()=>setRefreshKey(n=>n+1)};
 }
 export type TerritoryAlertState=ReturnType<typeof useTerritoryAlerts>;

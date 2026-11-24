@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   ArrowRight, ExternalLink, Users, Ambulance, HeartPulse, Timer, Hospital, Wallet, UserRound,
-  HandCoins, Shield, MapPinned, Navigation, Hash, MapPin, Database,
+  HandCoins, Shield, MapPinned, Navigation, Hash, Database,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
-import { formatCoordinates, uniquePlaceNames } from '../utils/countyPresentation';
+import { formatCoordinates } from '../utils/countyPresentation';
 import { ACS_COUNTY_SOURCE } from '../data/acsCountyData';
 import './countyGeoTokens.css';
 import './CountyFigures.css';
@@ -28,7 +28,6 @@ interface CountyDirectoryCardProps {
   nriLoading: boolean;
   nriError: boolean;
   onInspectCounty: () => void;
-  onSelectPlace: (placeName: string) => void;
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -42,14 +41,12 @@ const ALL_FIGURE_KEYS: CountyFigureSourceKey[] = [
  * County brief. Reading order:
  * blue name bar -> three lead figures (population, average EMS transport time, cardiac arrests)
  * -> context ledger (care access + community, label left / value right, never wrapping)
- * -> FEMA natural-hazard line -> places & geography -> citations.
+ * -> FEMA natural-hazard line -> geography -> citations.
  */
 export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
-  county: c, nri, nriSourceUrl, nriLoading, nriError, onInspectCounty, onSelectPlace,
+  county: c, nri, nriSourceUrl, nriLoading, nriError, onInspectCounty,
 }) => {
   const values = c as unknown as Record<string, unknown>;
-  const places = uniquePlaceNames(c.cities && c.cities.length > 0 ? c.cities : [c.countySeat]);
-  const hasMappedPlaces = Boolean(c.cities && c.cities.length > 0);
   const riskColor = nri?.riskRating ? FEMA_NRI_RATING_COLORS[nri.riskRating] : undefined;
   const nriScore = isNum(nri?.riskScore) ? nri!.riskScore!.toFixed(2) : null;
   const vintage = nri?.sourceVersion && nri.sourceVersion !== 'Version not stated' ? nri.sourceVersion : null;
@@ -163,19 +160,11 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           </details>
         )}
 
-        <section className="cb-geo" aria-label={`Geography and places for ${c.countyName}`}>
+        <section className="cb-geo" aria-label={`Geography for ${c.countyName}`}>
           <p className="cb-geo-facts">
             <span><MapPinned className="cfs-ico" aria-hidden="true" />{isNum(c.landAreaSqMiles) ? <><strong>{c.landAreaSqMiles.toLocaleString()}</strong> sq mi</> : 'Area not reported'}</span>
             <span><Navigation className="cfs-ico" aria-hidden="true" />{formatCoordinates(c.centroidLat, c.centroidLng, 3)}</span>
           </p>
-          <div className="cb-geo-row">
-            <span className="cb-geo-label"><MapPin className="cfs-ico" aria-hidden="true" />{hasMappedPlaces ? `${places.length} ${places.length === 1 ? 'place' : 'places'}` : 'Seat'}</span>
-            <div className="cb-place-list county-profile-city-list" role="group" aria-label={`Mapped places for ${c.countyName}`}>
-              {places.map(name => (
-                <button key={`${c.stateCode}-${c.countyName}-${name}`} type="button" className="cb-place county-profile-place-button" onClick={() => onSelectPlace(name)}>{name}</button>
-              ))}
-            </div>
-          </div>
           <div className="cb-geo-row">
             <span className="cb-geo-label"><Hash className="cfs-ico" aria-hidden="true" />{zips.length} ZIP{zips.length === 1 ? '' : 's'}</span>
             <p className="cb-zip-run">{zips.length > 0 ? zips.join(' · ') : 'None listed'}</p>

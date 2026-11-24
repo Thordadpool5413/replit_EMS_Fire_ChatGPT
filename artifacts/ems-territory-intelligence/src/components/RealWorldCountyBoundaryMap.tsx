@@ -22,7 +22,7 @@ import {
   getGetNriCountyContextQueryKey,
   useGetNriCountyContext,
 } from '@workspace/api-client-react';
-import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, Ambulance, Hospital, ZoomIn, ZoomOut, Maximize2, MapPin, Building2, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, Hash, FileText } from 'lucide-react';
+import { ExternalLink, ChevronRight, ArrowLeft, Users, HeartPulse, Ambulance, Hospital, ZoomIn, ZoomOut, Maximize2, MapPin, Map as MapIcon, ShieldAlert, Landmark, Timer, Shield, BadgeDollarSign, HeartHandshake, FileText } from 'lucide-react';
 import { formatCoordinates } from '../utils/countyPresentation';
 import './countyGeoTokens.css';
 import './CountyFigures.css';
@@ -624,32 +624,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   </section>
 
 
-                  <section className="ci-places" aria-label="Mapped places">
-                    <h5 className="ci-section"><MapPin className="ci-ico" aria-hidden="true" />Places &amp; ZIP codes <span className="ci-count">{inspectedCounty.node.citiesList.length}</span></h5>
-                    <ul className="ci-place-list">
-                      {inspectedCounty.node.citiesList.map((cityNode) => (
-                        <li key={`${inspectedCounty.countyFips}-${cityNode.cityName}`} className="ci-place-item">
-                          <button
-                            type="button"
-                            className="ci-place"
-                            onClick={() => onSelectCity(cityNode.cityName, inspectedCounty.countyName, stateNode.stateCode)}
-                            title={`${formatCoordinates(cityNode.latitude, cityNode.longitude, 3)}`}
-                          >
-                            <MapPin className={`ci-place-ico${cityNode.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" /><span className="ci-place-name">{cityNode.cityName}</span>
-                            {cityNode.isCountySeat && <span className="ci-tag">Seat</span>}
-                          </button>
-                          <span className="ci-place-sub">{cityNode.zipCodes.join(', ') || 'ZIP not listed'}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {inspectedCounty.node.primaryZipCodes.length > 0 && (
-                      <div className="ci-zips">
-                        <span className="ci-section ci-section--sub"><Hash className="ci-ico" aria-hidden="true" />All county ZIPs <span className="ci-count">{inspectedCounty.node.primaryZipCodes.length}</span></span>
-                        <p className="ci-zip-run">{inspectedCounty.node.primaryZipCodes.join(', ')}</p>
-                      </div>
-                    )}
-                  </section>
-
                   <footer className="ci-foot">
                     <a
                       href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${inspectedCounty.countyName}, ${stateNode.stateName}`)}`}
@@ -771,7 +745,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               </div>
             </div>
 
-            <section className="cv-panel county-geo county-reference-panel county-city-directory-panel" aria-label={`${activeCountyNode.countyName} county reference and places`} data-testid="county-reference-panel">
+            <section className="cv-panel county-geo county-reference-panel county-city-directory-panel" aria-label={`${activeCountyNode.countyName} county reference`} data-testid="county-reference-panel">
               <div className="cv-geo-head">
                 <div className="min-w-0">
                   <p className="cv-geo-kicker"><Landmark aria-hidden="true" />County reference</p>
@@ -834,66 +808,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 {sourceStrip}
               </section>
 
-              <section className="county-reference-section county-place-context" aria-labelledby="county-reference-places-title">
-                <h5 className="cv-section-label">
-                  <span className="cv-geo-sub" id="county-reference-places-title"><MapPin aria-hidden="true" />Places in {activeCountyNode.countyName}</span>
-                </h5>
-                <dl className="cv-geo-figs" data-testid="text-county-place-summary">
-                  <div data-tone="ops"><dt><MapPin aria-hidden="true" />Mapped places</dt><dd>{projectedSingleCounty.cityPins.length.toLocaleString()}</dd></div>
-                  <div data-tone="community"><dt><Building2 aria-hidden="true" />Provider records</dt><dd>{projectedSingleCounty.providerRecordCount.toLocaleString()}<small>unique</small></dd></div>
-                  <div data-tone="reference"><dt><Hash aria-hidden="true" />County ZIPs</dt><dd>{activeCountyNode.primaryZipCodes.length.toLocaleString()}</dd></div>
-                </dl>
-
-                <div className="cv-place-list" role="list">
-                  {projectedSingleCounty.cityPins.map((pin) => {
-                    const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                    return (
-                      <div role="listitem" key={pin.cityName}>
-                        <button
-                          type="button"
-                          className="cv-place-row"
-                          aria-pressed={isSelected}
-                          data-hover={hoveredCityName === pin.cityName}
-                          onMouseEnter={() => setHoveredCityName(pin.cityName)}
-                          onMouseLeave={() => setHoveredCityName(null)}
-                          onFocus={() => setHoveredCityName(pin.cityName)}
-                          onBlur={() => setHoveredCityName(null)}
-                          onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                          data-testid={`button-place-${pin.cityName}`}
-                        >
-                          <MapPin className={`cv-place-ico${pin.isCountySeat ? ' is-seat' : ''}`} aria-hidden="true" />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-1.5">
-                              <span className="cv-place-name">{pin.cityName}</span>
-                              {pin.isCountySeat && <span className="cv-tag">County seat</span>}
-                            </span>
-                            <span className="cv-place-sub block">
-                              ZIP {pin.zipCodes.join(', ') || 'not listed'} · {formatCoordinates(pin.latitude, pin.longitude, 3)}
-                            </span>
-                          </span>
-                          <span className="cv-place-count">
-                            <Building2 aria-hidden="true" />{pin.providersCount} {pin.providersCount === 1 ? 'record' : 'records'}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div>
-                  <div className="cv-section-label"><span className="cv-geo-sub"><Hash aria-hidden="true" />County ZIP references</span></div>
-                  <p className="cv-zips mt-1">{activeCountyNode.primaryZipCodes.join(', ') || 'None listed'}</p>
-                </div>
-
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${activeCountyNode.countyName}, ${stateNode.stateName}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cv-link cv-geo-foot"
-                >
-                  Check boundary on OpenStreetMap <ExternalLink aria-hidden="true" />
-                </a>
-              </section>
             </section>
           </div>
           {unmatchedSection}

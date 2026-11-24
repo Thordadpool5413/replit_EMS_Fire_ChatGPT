@@ -2006,16 +2006,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         onSyncGlobalGeography(c.stateCode, c.countyName, 'all', agencyCategoryFilter);
                       }
                     }}
-                    onSelectPlace={(cityName) => {
-                      setSelectedStateCode(c.stateCode);
-                      setSelectedCountyName(c.countyName);
-                      setSelectedCityName(cityName);
-                      setMiddleTab('cities');
-                      setAgencyPage(1);
-                      if (onSyncGlobalGeography) {
-                        onSyncGlobalGeography(c.stateCode, c.countyName, cityName, agencyCategoryFilter);
-                      }
-                    }}
                   />
                 );
               })}

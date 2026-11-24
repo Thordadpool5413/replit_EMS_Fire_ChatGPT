@@ -69,7 +69,7 @@ test('home map keeps its original controls without equipment filter panels', () 
   assert.match(countyMap, /EquipmentMapFilter/, 'County equipment controls stay available in the county map');
 });
 
-test('selected county leads with its reference card and omits unrelated registry and equipment panels', () => {
+test('county views omit mapped-place lists and unrelated registry and equipment panels', () => {
   const src = readFileSync(new URL('./RealWorldCountyBoundaryMap.tsx', import.meta.url), 'utf8');
   const selectedCountyStart = src.indexOf('<section className="cv-panel county-geo county-reference-panel county-city-directory-panel"');
   const selectedCountyEnd = src.indexOf('{unmatchedSection}', selectedCountyStart);
@@ -78,28 +78,28 @@ test('selected county leads with its reference card and omits unrelated registry
 
   assert.match(selectedCountyView, /County reference/);
   assert.match(selectedCountyView, /<CountyFigureSourceDetails/);
-  assert.match(selectedCountyView, /Places in \{activeCountyNode\.countyName\}/, 'mapped places remain available within the reference card');
-  assert.match(selectedCountyView, /cv-place-list/);
+  assert.doesNotMatch(selectedCountyView, /Places in \{activeCountyNode\.countyName\}|cv-place-list|cv-place-row|button-place-/);
   assert.doesNotMatch(selectedCountyView, /stateNode\.stateName\} · FIPS/);
   assert.doesNotMatch(selectedCountyView, /NationalSourceDirectory|CountyEquipmentRecordsPanel/);
   const sections = ['county-reference-meta', 'county-reference-figures-title', 'county-reference-risk-title',
-    'county-reference-sources-title', 'county-reference-places-title'].map((id) => selectedCountyView.indexOf(id));
+    'county-reference-sources-title'].map((id) => selectedCountyView.indexOf(id));
   assert.ok(sections.every((index) => index >= 0));
-  assert.deepEqual([...sections].sort((a, b) => a - b), sections, 'identity, figures, risk, sources, and places read in order');
-  assert.equal((selectedCountyView.match(/primaryZipCodes\.length/g) ?? []).length, 1, 'ZIP count is shown once');
+  assert.deepEqual([...sections].sort((a, b) => a - b), sections, 'identity, figures, risk, and sources read in order');
+  const countyInspector = src.slice(0, selectedCountyStart);
+  assert.doesNotMatch(countyInspector, /ci-places|Places &amp; ZIP codes/, 'state-map county preview also omits the places section');
   const styles = readFileSync(new URL('./CountyInspector.css', import.meta.url), 'utf8');
-  assert.match(styles, /county-selected-grid[\s\S]*align-items: start/);
-  assert.match(styles, /@container \(max-width: 420px\)/, 'narrow cards adapt place rows for phones');
   assert.match(styles, /\.cv-pin\[data-selected="true"\][\s\S]*cv-pin-ring/);
 });
 
-test('county card keeps primary figures visible and labels optional Census source context', () => {
+test('county card keeps primary figures visible, removes place lists, and retains Census context', () => {
   const src = readFileSync(new URL('./CountyDirectoryCard.tsx', import.meta.url), 'utf8');
   const order = ['className="cb-name"', 'className="cfs-lead"', 'className="cfs-ledger"', 'className="cb-risk"', 'className="cb-geo"', '<CountyFigureSourceDetails'].map(k => src.indexOf(k));
   order.forEach(i => assert.ok(i >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.ok(src.includes('data-testid={`panel-acs-county-context-'));
   assert.ok(src.includes('Official Census context'));
+  assert.doesNotMatch(src, /Mapped places|county-profile-city-list|county-profile-place-button|onSelectPlace/);
+  assert.match(src, /ZIP\{zips\.length === 1 \? '' : 's'\}/, 'county ZIP references remain available');
   // Core county figures stay visible; the optional ACS source context may collapse.
   const withoutAcsDisclosure = src.replace(/<details[^>]*data-testid=\{`panel-acs-county-context-[\s\S]*?<\/details>/, '');
   assert.doesNotMatch(withoutAcsDisclosure, /<details/);

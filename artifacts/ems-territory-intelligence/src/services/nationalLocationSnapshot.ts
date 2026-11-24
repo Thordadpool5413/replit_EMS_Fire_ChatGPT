@@ -1,9 +1,12 @@
 import {compatibleSourceAddress,parseStreetAddress,isPhysicalStreet,validateAddressMatch,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {loadSourceDirectoryManifest,type SourceDirectoryRecord} from './nationalSourceDirectory';
 import {registryIdentityKey,snapshotRegistryIdentity,type RegistryIdentity} from './registryAccountLink';
+import officialAddressResearch from '../data/officialProviderAddressResearch.json';
+
+export type OfficialAddressEvidence={key:string;name:string;state:string;countyFips:string;address:StreetAddress;authority:string;sourceUrl:string;checkedAt:string;note:string};
 
 export type LocationStatus='mapped'|'no-match'|'not-eligible'|'source-missing'|'unavailable'|'review'|'historical'|'pending';
-export type SnapshotLocation={key:string;name:string;state:string;source:'USFA'|'NPPES'|'State EMS';sourceDate:string|null;address:StreetAddress|null;status:LocationStatus;match:AddressMatch|null;sourceCounty:string;countyFips:string;countyName?:string};
+export type SnapshotLocation={key:string;name:string;state:string;source:'USFA'|'NPPES'|'State EMS';sourceDate:string|null;address:StreetAddress|null;status:LocationStatus;match:AddressMatch|null;sourceCounty:string;countyFips:string;countyName?:string;officialAddressEvidence?:OfficialAddressEvidence};
 type Chunk={state:string;file:string;count:number;sha256:string;registrySha256:string};
 type LocationManifest={schemaVersion:1;generatedAt:string;benchmark:'Public_AR_Current';vintage:'Current_Current';chunks:Chunk[];nppesArchive:{status:'processed'|'unavailable'}};
 export type LocationState={generatedAt:string;entries:ReadonlyMap<string,SnapshotLocation>;nppesProcessed:boolean};
@@ -28,6 +31,17 @@ export function parseSnapshotEntry(value:unknown,state:string,counties:Readonly<
  }
  if(e.match!==null||e.countyFips)throw Error('Unmapped record contains coordinates.');
  return {...e,address:address??null,match:null};
+}
+/** Local reviewed evidence is supplemental only; never overwrite registry or mapped coordinates. */
+export function applyOfficialAddressEvidence(entry:SnapshotLocation):SnapshotLocation{
+ if(entry.source!=='USFA'||entry.status!=='source-missing'||entry.address!==null||entry.match!==null||entry.countyFips)return entry;
+ const candidates=officialAddressResearch.accepted.filter(e=>e.key===entry.key);
+ if(candidates.length!==1)return entry;
+ const e=candidates[0];
+ if(e.name!==entry.name||e.state!==entry.state||e.countyFips!==entry.sourceCounty)return entry;
+ const address=parseStreetAddress(e.address);
+ if(!address||address.state!==entry.state||!address.zip||!isPhysicalStreet(address.street)||!e.sourceUrl.startsWith('https://')||!e.authority||!e.checkedAt)return entry;
+ return {...entry,address,status:'pending',officialAddressEvidence:{...e,address}};
 }
 const loaded=new Map<string,LocationState>(),pending=new Map<string,Promise<LocationState|undefined>>();
 let manifestPromise:Promise<LocationManifest|undefined>|undefined;
@@ -60,7 +74,7 @@ export async function loadNationalLocationState(state:string):Promise<LocationSt
   const rows:unknown=JSON.parse(content);
   if(!Array.isArray(rows)||rows.length!==chunk.count)throw Error('Location count mismatch.');
   const entries=new Map<string,SnapshotLocation>();
-  for(const value of rows){const entry=parseSnapshotEntry(value,state,registry.countyNames);if(entries.has(entry.key))throw Error('Duplicate location identity.');entries.set(entry.key,entry);}
+  for(const value of rows){const entry=parseSnapshotEntry(value,state,registry.countyNames);if(entries.has(entry.key))throw Error('Duplicate location identity.');entries.set(entry.key,applyOfficialAddressEvidence(entry));}
   const result={generatedAt:index.generatedAt,entries,nppesProcessed:index.nppesArchive.status==='processed'};
   loaded.set(state,result);return result;
  })().catch(()=>undefined).finally(()=>pending.delete(state));
@@ -77,7 +91,7 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  const id=snapshotRegistryIdentity(row);
  const key=id&&registryIdentityKey(id);
  const e=key&&locations?.entries.get(key);
- if(!id||!e||!e.address||e.status==='review'||e.status==='historical'||nameKey(e.name)!==nameKey(row[2])||e.state!==row[3])return row;
+ if(!id||!e||!e.address||e.officialAddressEvidence||e.status==='review'||e.status==='historical'||nameKey(e.name)!==nameKey(row[2])||e.state!==row[3])return row;
  const a=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]});
  if(a&&!compatibleSourceAddress(a,e.address))return row;
  const out=[...row] as SourceDirectoryRecord;
@@ -85,7 +99,7 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  if(!out[6]&&e.match&&e.countyFips){out[6]=e.countyFips;out[8]=e.match.method;}
  return out;
 }
-export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null};
+export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null;officialAddressEvidence?:OfficialAddressEvidence};
 export function listingLocation(row:SourceDirectoryRecord,locations:LocationState|undefined):ListingLocation{
  const id=snapshotRegistryIdentity(row),key=id&&registryIdentityKey(id);
  const address=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]})??null;
@@ -93,19 +107,19 @@ export function listingLocation(row:SourceDirectoryRecord,locations:LocationStat
  if(!key)return {address,status:'missing-identity',match:null};
  const e=locations?.entries.get(key);
  if(!e)return {address,status:address?'not-checked':'source-missing',match:null};
- if(e.state!==row[3]||nameKey(e.name)!==nameKey(row[2])||address&&e.address&&!compatibleSourceAddress(address,e.address))return {address,status:'review',match:null};
+ if(e.state!==row[3]||nameKey(e.name)!==nameKey(row[2])||e.officialAddressEvidence&&row[6]!==e.sourceCounty||address&&e.address&&!compatibleSourceAddress(address,e.address))return {address,status:'review',match:null};
  if(e.status==='historical'||e.status==='review')return {address:address??e.address,status:e.status,match:null};
  const loc=e.address??address;
  if(!loc)return {address:null,status:'source-missing',match:null};
  if(!isPhysicalStreet(loc.street)||!loc.zip)return {address:loc,status:'not-eligible',match:null};
  if(e.match&&(e.sourceCounty&&e.sourceCounty!==e.countyFips||row[6]&&row[6]!==e.countyFips))return {address:loc,status:'review',match:null};
- return {address:loc,status:e.status,match:e.match};
+ return {address:loc,status:e.status,match:e.match,officialAddressEvidence:e.officialAddressEvidence};
 }
 export const LISTING_LOCATION_LABELS:Record<ListingLocation['status'],string>={
  mapped:'Mapped street address', 'missing-identity':'Registry ID not reported; location association needs review', 'source-missing':'Street address not reported', 'not-eligible':'Mailing/nonstandard address or ZIP missing; no street pin', historical:'Historical source record', review:'Source or county disagreement; review required', pending:'Address recovered; coordinate match pending', unavailable:'Geocoder unavailable; retry required', 'no-match':'No exact street match; research required', 'not-checked':'Address recorded; coordinates not checked',
 };
 export function snapshotSourceUrl(e:SnapshotLocation){
- return e.source==='NPPES'?'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4):e.source==='USFA'?'https://apps.usfa.fema.gov/registry/search':'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf';
+ return e.officialAddressEvidence?.sourceUrl??(e.source==='NPPES'?'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4):e.source==='USFA'?'https://apps.usfa.fema.gov/registry/search':'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf');
 }
 export function snapshotMapRows(state:LocationState|undefined,scope:{county:string;city:string;category:string}){
  const normalize=(s:string)=>s.trim().toLowerCase().replace(/\s+(county|parish|borough|planning region|census area|municipality)$/,'');

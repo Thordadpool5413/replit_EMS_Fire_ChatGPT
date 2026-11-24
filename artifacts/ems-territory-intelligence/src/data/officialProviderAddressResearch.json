@@ -1,0 +1,207 @@
+{
+  "reviewedAt": "2026-11-24",
+  "accepted": [
+    {
+      "key": "FDID:NY:15033",
+      "name": "Farnham Volunteer Fire Department",
+      "state": "NY",
+      "countyFips": "36029",
+      "address": {
+        "street": "526 Commercial St",
+        "city": "Farnham",
+        "state": "NY",
+        "zip": "14061"
+      },
+      "authority": "Erie County Fire Safety",
+      "sourceUrl": "https://www3.erie.gov/fire/fire-departmentsems-agencies",
+      "checkedAt": "2026-11-24",
+      "note": "County department directory explicitly names the Village of Farnham Volunteer Fire Department and lists this address. Use its directory postal address; alternate postal designations require geocoder reconciliation."
+    },
+    {
+      "key": "FDID:NC:04601",
+      "name": "Ahoskie Fire Department",
+      "state": "NC",
+      "countyFips": "37091",
+      "address": {
+        "street": "301 Dr. Martin Luther King Jr. Drive",
+        "city": "Ahoskie",
+        "state": "NC",
+        "zip": "27910"
+      },
+      "authority": "Town of Ahoskie",
+      "sourceUrl": "https://www.ahoskienc.gov/events/41938/",
+      "checkedAt": "2026-11-24",
+      "note": "Official town event names the fire department as the venue at this address; no claim that it is the sole station or current headquarters."
+    },
+    {
+      "key": "FDID:WY:09505",
+      "name": "Douglas Volunteer Fire Department",
+      "state": "WY",
+      "countyFips": "56009",
+      "address": {
+        "street": "230 N 2nd Street",
+        "city": "Douglas",
+        "state": "WY",
+        "zip": "82633"
+      },
+      "authority": "Converse County",
+      "sourceUrl": "https://www.conversecountywy.gov/272/Douglas-Volunteer-Fire-Department",
+      "checkedAt": "2026-11-24",
+      "note": "County fire department page explicitly labels this physical address."
+    }
+  ],
+  "unresolved": [
+    {
+      "key": "FDID:NY:33721",
+      "name": "Midstate Correctional Facility Fire Brigade",
+      "state": "NY",
+      "countyFips": "36065",
+      "status": "needs-official-address",
+      "note": "Do not substitute parent facility address for brigade/department without direct evidence."
+    },
+    {
+      "key": "FDID:IL:CN581",
+      "name": "Hines Fire Department",
+      "state": "IL",
+      "countyFips": "17031",
+      "status": "needs-official-address",
+      "note": "Do not substitute parent facility address for brigade/department without direct evidence."
+    },
+    {
+      "key": "FDID:NC:06201",
+      "name": "Troy Fire Department",
+      "state": "NC",
+      "countyFips": "37123",
+      "status": "needs-official-address",
+      "note": "Conflicting department addresses in public directories; require a current agency-specific physical address before adoption."
+    },
+    {
+      "key": "FDID:GA:12503",
+      "name": "Iron City Volunteer Fire Department",
+      "state": "GA",
+      "countyFips": "13253",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:KS:RH306",
+      "name": "Rush County Fire District #3",
+      "state": "KS",
+      "countyFips": "20165",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:LA:02025",
+      "name": "Fire District 3 Ward 4 Allen Parish",
+      "state": "LA",
+      "countyFips": "22003",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:LA:43005",
+      "name": "Ward 1 & 2 District #1",
+      "state": "LA",
+      "countyFips": "22085",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:MN:45101",
+      "name": "Alvarado Fire and Rescue",
+      "state": "MN",
+      "countyFips": "27089",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:ND:02112",
+      "name": "Fingal Fire Department",
+      "state": "ND",
+      "countyFips": "38003",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:ND:02270",
+      "name": "Oriska Volunteer Fire Department",
+      "state": "ND",
+      "countyFips": "38003",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:ND:27226",
+      "name": "McKenzie County Rural Fire Protection District",
+      "state": "ND",
+      "countyFips": "38053",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:ND:48098",
+      "name": "Egeland Rural Fire Protection District",
+      "state": "ND",
+      "countyFips": "38095",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:NV:05867",
+      "name": "Ten-Mile Volunteer Fire Department",
+      "state": "NV",
+      "countyFips": "32007",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:NE:19004",
+      "name": "Humboldt Volunteer Fire Department",
+      "state": "NE",
+      "countyFips": "31147",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:NE:35005",
+      "name": "Newcastle Volunteer Fire & Rescue",
+      "state": "NE",
+      "countyFips": "31051",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:NE:50007",
+      "name": "Upland Volunteer Fire Department",
+      "state": "NE",
+      "countyFips": "31061",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:NE:63001",
+      "name": "Bristow Volunteer Fire Department",
+      "state": "NE",
+      "countyFips": "31015",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:OK:31008",
+      "name": "Lequire Fire Department",
+      "state": "OK",
+      "countyFips": "40061",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    },
+    {
+      "key": "FDID:OK:48007",
+      "name": "Pine Creek Volunteer Fire Department",
+      "state": "OK",
+      "countyFips": "40089",
+      "status": "needs-official-address",
+      "note": "Require agency-specific physical-address evidence, not a PO box, municipal hall, county centroid, or unlinked station."
+    }
+  ]
+}

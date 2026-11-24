@@ -1,3 +1,4 @@
+import {equipmentObservationFacts,definitionFor} from '../services/documentedIntelligence';
 import type {
   Agency,
   AgencyFactEvidenceKey,
@@ -8,6 +9,7 @@ import {
   EQUIPMENT_VENDORS,
   getRecordedEquipmentEntries,
   type EquipmentFamily,
+  type EquipmentEvidenceMode,
   type RecordedEquipmentEntry,
 } from './equipmentPresence';
 import { hasMappedFactSource, hasReviewedFactEvidence } from '../data/agencyFactEvidence';
@@ -221,6 +223,7 @@ export function buildCountyAgencyEquipmentRecord(
     countyName: string;
     basis: CountyAgencyEquipmentRecord['assignmentBasis'];
   },
+  evidenceMode:EquipmentEvidenceMode='recorded',
 ): CountyAgencyEquipmentRecord {
   const representative = agencies.find((agency) => agency.isVerifiedRecord)
     ?? agencies[0];
@@ -229,6 +232,22 @@ export function buildCountyAgencyEquipmentRecord(
   }
   const equipmentByKey = new Map<string, CountyEquipmentRecord>();
   const groupSourceFacts = agencies.flatMap((agency) => agency.sourceFacts ?? []);
+  if(evidenceMode==='documented'){
+    const combined={...representative,sourceFacts:groupSourceFacts,_factReviews:agencies.flatMap(a=>a._factReviews??[])};
+    for(const fact of equipmentObservationFacts(combined)){
+      const def=definitionFor(fact.intelligence.kind)!;
+      if(!def.family)continue;
+      const key=def.family+':'+normalize(fact.value);
+      const current=equipmentByKey.get(key);
+      const sources=new Map<string,EquipmentEvidenceReference>();
+      for(const prior of current?.evidence??[])addEvidence(sources,prior);
+      addEvidence(sources,{sourceName:fact.sourceName,sourceRecordId:fact.sourceRecordId,sourceUrl:fact.sourceUrl,reportingPeriod:fact.intelligence.documentDate,enteredAt:fact.enteredAt,basis:fact.basis,reviewed:false});
+      equipmentByKey.set(key,{id:agencyId+':'+key,family:def.family,category:def.label,product:fact.value,recordType:'source-fact',manufacturers:EQUIPMENT_VENDORS.filter(v=>v.pattern.test(fact.value)).map(v=>v.name),status:'documented',evidenceReview:'review-needed',evidence:[...sources.values()]});
+    }
+    const equipmentRecords=[...equipmentByKey.values()];
+    return {agencyId,agencyName:representative.name||'Agency name not stated',agency:representative,agencyIdentityStatus:agencies.some(a=>a.isVerifiedRecord)?'verified':'unverified',countyFips:assignment.countyFips,countyName:assignment.countyName,assignmentBasis:assignment.basis,equipmentStatus:equipmentRecords.length?'documented':'not-reported',sourceFactRecordCount:equipmentRecords.length,equipmentRecords,notReportedFamilies:EQUIPMENT_FAMILIES.filter(f=>!equipmentRecords.some(r=>r.family===f)),serviceAreas:serviceAreaReferences(agencies)};
+  }
+
 
   for (const agency of agencies) {
     for (const entry of getRecordedEquipmentEntries(agency)) {

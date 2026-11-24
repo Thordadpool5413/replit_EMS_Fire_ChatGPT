@@ -408,7 +408,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <div className="cv-state-grid county-state-map-grid">
             <div className="cv-map-panel county-geo county-state-map-panel">
               <div className="cv-map-head">
-                <strong className="cv-head-ico"><ShieldAlert aria-hidden="true" />{stateNode.stateName} · {!isEquipmentMapActive?'FEMA NRI risk by county':'Recorded equipment by county'}</strong>
+                <strong className="cv-head-ico"><ShieldAlert aria-hidden="true" />{stateNode.stateName} · {!isEquipmentMapActive?'FEMA NRI risk by county':equipmentFilter.evidence==='documented'?'Dated equipment observations by county':'Recorded equipment by county'}</strong>
                 <span className="tabular-nums">
                   {projectedState.projectedCounties.length} of {stateNode.countiesList.length} boundaries drawn
                 </span>

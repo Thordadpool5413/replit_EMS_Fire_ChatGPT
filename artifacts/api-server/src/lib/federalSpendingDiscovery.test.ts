@@ -10,7 +10,7 @@ test('fixed filters distinguish grant listing from contract keywords, enforce al
  assert.equal(new Set(FEDERAL_STATES).size,51);
  for(const state of ['AK','NE','NV','MS','DC'])assert.ok(FEDERAL_STATES.includes(state));
  const g=federalRequest(q,now),c=federalRequest({...q,topic:'defibrillator'},now);
- assert.deepEqual(g.filters.award_type_codes,['02','03','04','05']);assert.deepEqual(g.filters.recipient_locations,[{country:'USA',state:'FL'}]);assert.deepEqual(g.filters.program_numbers,['97.044']);assert.deepEqual(c.filters.award_type_codes,['A','B','C','D']);assert.deepEqual(c.filters.keywords,['defibrillator']);
+ assert.deepEqual(g.filters.award_type_codes,['02','03','04','05']);assert.deepEqual(g.filters.recipient_locations,[{country:'USA',state:'FL'}]);assert.ok('program_numbers' in g.filters);assert.deepEqual(g.filters.program_numbers,['97.044']);assert.deepEqual(c.filters.award_type_codes,['A','B','C','D']);assert.ok('keywords' in c.filters);assert.deepEqual(c.filters.keywords,['defibrillator']);
  for(const x of [{...q,topic:'toString'},{...q,state:'XX'},{...q,fromYear:2027},{...q,page:21},{...q,url:'https://bad.example'}])assert.equal(parseFederalQuery(x,now),undefined);
 });
 test('native award IDs, reported dates, nullable amounts and independent recipient scope are preserved',()=>{

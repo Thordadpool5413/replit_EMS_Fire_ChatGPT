@@ -1,6 +1,9 @@
 import {ProviderAddressMapping} from './ProviderAddressMapping';
-import {locationOverlay,useLocationRevision} from '../services/providerLocation';
+import {locationOverlay,useLocationRevision,loadProviderLocationState} from '../services/providerLocation';
 import {isGeographicProspect} from '../utils/providerRecordTrust';
+import {loadedLocationState,snapshotMapRows} from '../services/nationalLocationSnapshot';
+import {PublicRegistryLocationMarkers} from './PublicRegistryLocationMarkers';
+import {registryIdentityKey} from '../services/registryAccountLink';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {equipmentGeographyScope,matchesEquipmentFilter,equipmentMapStyle,EQUIPMENT_MAP_STYLES} from '../utils/equipmentPresence';
 /**
@@ -285,6 +288,15 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   onToggleAgencyComparison
 }) => {
   const locationRevision=useLocationRevision();
+  const [showPublicRegistry,setShowPublicRegistry]=useState(false),[publicPage,setPublicPage]=useState(0);
+  useEffect(()=>{if(globalState!=='all')void loadProviderLocationState(globalState);setPublicPage(0);},[globalState,globalCounty,globalCity,globalCategory]);
+  const publicState=loadedLocationState(globalState);
+  const publicRows=useMemo(()=>{
+   const existing=new Set(originalAgencies.flatMap(a=>a.registryIdentity?[registryIdentityKey(a.registryIdentity)]:[]).filter(Boolean));
+   return snapshotMapRows(publicState,{county:globalCounty,city:globalCity,category:globalCategory}).filter(e=>!existing.has(e.key));
+  },[publicState,globalCounty,globalCity,globalCategory,originalAgencies]);
+  const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/150)-1));
+  const publicPins=showPublicRegistry?publicRows.slice(publicCurrent*150,(publicCurrent+1)*150):[];
   const agencies=useMemo(()=>originalAgencies.map(a=>locationOverlay(a,originalAgencies)),[originalAgencies,locationRevision]);
   const mappedIds=useMemo(()=>new Set(agencies.filter((a,i)=>a!==originalAgencies[i]).map(a=>a.id)),[agencies,originalAgencies]);
   // Resolve Google Maps API Key from environment or localStorage
@@ -539,8 +551,9 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     if (isNearMeActive && userLocation) {
       return { lat: userLocation.lat, lng: userLocation.lng };
     }
-    if (activeAccount && activeAccount.latitude && activeAccount.longitude) {
-      return { lat: activeAccount.latitude, lng: activeAccount.longitude };
+    if (activeAccount) {
+      const mapped=agencies.find(a=>a.id===activeAccount.id);
+      if(mapped&&Number.isFinite(mapped.latitude)&&Number.isFinite(mapped.longitude)&&(!isGeographicProspect(mapped)||mappedIds.has(mapped.id)))return {lat:mapped.latitude,lng:mapped.longitude};
     }
     if (filteredAgencies.length > 0) {
       const avgLat = filteredAgencies.reduce((acc, a) => acc + a.latitude, 0) / filteredAgencies.length;
@@ -549,7 +562,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     }
     // Default territory centroid (e.g. Illinois or Midwest)
     return { lat: 40.0, lng: -89.0 };
-  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies]);
+  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies,agencies,mappedIds]);
 
   const mapZoom = useMemo(() => {
     if (isNearMeActive) {
@@ -615,6 +628,11 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
+      <section className="pi-surface p-3 min-w-0 space-y-2" aria-label="Bundled public registry locations">
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showPublicRegistry} disabled={!publicState||isNearMeActive} onChange={e=>{setShowPublicRegistry(e.target.checked);setPublicPage(0);}}/> Show public registry street locations</label>
+        <p className="text-xs">{globalState==='all'?'Select a state to load its public registry locations.':publicState?publicRows.length.toLocaleString()+' mapped, unlinked public source listings in this geography. Source snapshot '+publicState.generatedAt.slice(0,10)+'.':'No validated bundled location snapshot for this state yet.'} Separate teal markers, not saved accounts, equipment evidence or confirmed stations.</p>
+        {showPublicRegistry&&!isNearMeActive&&publicRows.length>150&&<div className="flex flex-wrap gap-2 items-center"><button className="workspace-button" type="button" disabled={publicCurrent===0} onClick={()=>setPublicPage(publicCurrent-1)}>Previous locations</button><span className="text-xs">Showing {publicCurrent*150+1}–{Math.min((publicCurrent+1)*150,publicRows.length)} of {publicRows.length}</span><button className="workspace-button" type="button" disabled={(publicCurrent+1)*150>=publicRows.length} onClick={()=>setPublicPage(publicCurrent+1)}>Next locations</button></div>}
+      </section>
       <ProviderAddressMapping agencies={originalAgencies} scope={addressScope} state={globalState}/>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
       <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">{equipmentFilter.evidence==='documented'?'Dated source observations':'Recorded vendor presence'}</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background,color:style.glyphColor}}>{style.glyph}</b>{style.label}</span>)}</div></>}</section>
@@ -1341,6 +1359,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                       </InfoWindow>
                     );
                   })()}
+                  {!isNearMeActive&&<PublicRegistryLocationMarkers rows={publicPins}/>}
                 </Map>
               </APIProvider>
             ) : (

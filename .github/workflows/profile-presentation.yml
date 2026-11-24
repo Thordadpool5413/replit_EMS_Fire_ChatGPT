@@ -16,6 +16,9 @@ on:
       - 'artifacts/api-server/src/lib/providerLocation*'
       - 'scripts/data/stage_nppes.py'
       - 'scripts/data/test_stage_nppes.py'
+      - 'scripts/data/backfill_provider_locations.py'
+      - 'scripts/data/test_backfill_provider_locations.py'
+      - '.github/workflows/national-provider-locations.yml'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
@@ -42,6 +45,9 @@ on:
       - 'artifacts/api-server/src/lib/providerLocation*'
       - 'scripts/data/stage_nppes.py'
       - 'scripts/data/test_stage_nppes.py'
+      - 'scripts/data/backfill_provider_locations.py'
+      - 'scripts/data/test_backfill_provider_locations.py'
+      - '.github/workflows/national-provider-locations.yml'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
@@ -82,7 +88,14 @@ jobs:
       - run: node scripts/check-ems-source-coverage.mjs
       - run: node --test scripts/refresh-ohio-state-ems.test.mjs
       - run: node --test scripts/audit-production-providers.test.mjs
-      - run: python3 -m unittest discover -s scripts/data -p test_stage_nppes.py
+      - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Verify bundled public location snapshot if present
+        run: |
+          if test -f artifacts/ems-territory-intelligence/public/registry/locations/index.json; then
+            python3 scripts/data/backfill_provider_locations.py --verify
+          else
+            echo 'No generated location snapshot in this revision.'
+          fi
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build

@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {MapPin,Navigation} from 'lucide-react';
 import type {Agency} from '../../types';
 import {addressText,isPhysicalStreet} from '../../services/providerLocationContract';
-import {canResearchProviderLocation,displayedProviderLocation,mappedProviderLocation,researchProviderLocation,locationDirections,useLocationRevision} from '../../services/providerLocation';
+import {canResearchProviderLocation,displayedProviderLocation,mappedProviderLocation,researchProviderLocation,locationDirections,useLocationRevision,loadProviderLocationState} from '../../services/providerLocation';
 export function ProviderAddressLine({agency,directory,onReview}:{agency:Agency;directory:Agency[];onReview:()=>void}){
  useLocationRevision();
  const loc=displayedProviderLocation(agency,directory),pin=mappedProviderLocation(agency,directory),eligible=canResearchProviderLocation(agency,directory);
@@ -10,11 +10,11 @@ export function ProviderAddressLine({agency,directory,onReview}:{agency:Agency;d
  const request=useRef<AbortController|undefined>(undefined);
  async function run(geocode:boolean){
   request.current?.abort();const c=new AbortController();request.current=c;setBusy(true);setMessage('');
-  try{const found=await researchProviderLocation(agency,directory,c.signal,geocode);if(c.signal.aborted)return;setMessage(!found?'No exact source address was returned. Review the registry record.':geocode?mappedProviderLocation(agency,directory)?'Address-range location added to this session’s agency map.':'No unique street match; no pin was placed.':'');}
+  try{const found=await researchProviderLocation(agency,directory,c.signal,geocode);if(c.signal.aborted)return;setMessage(!found?'No exact source address was returned. Review the registry record.':geocode?mappedProviderLocation(agency,directory)?'Address-range location available on the agency map.':'No unique street match; no pin was placed.':'');}
   catch(e){if(!c.signal.aborted)setMessage(e instanceof Error?e.message:'Location source unavailable.');}
   finally{if(!c.signal.aborted)setBusy(false);}
  }
- useEffect(()=>{if(eligible&&!loc)void run(false);return()=>request.current?.abort();},[agency.id,agency.registryIdentity,agency.sourceRecordAssociations,eligible]);
+ useEffect(()=>{if(eligible){if(!loc)void run(false);else void loadProviderLocationState(agency.stateCode);}return()=>request.current?.abort();},[agency.id,agency.stateCode,agency.registryIdentity,agency.sourceRecordAssociations,eligible]);
  const physical=loc&&isPhysicalStreet(loc.address.street);
  return <div className="acp-provider-location" data-testid="provider-address-line">
   <div className="acp-loc"><MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0"/><span>{loc?addressText(loc.address):[agency.city,agency.stateCode].filter(Boolean).join(', ')||'Location not reported'}</span></div>

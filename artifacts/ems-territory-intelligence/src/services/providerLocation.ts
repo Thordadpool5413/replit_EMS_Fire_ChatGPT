@@ -6,6 +6,7 @@ import {loadFloridaRoster,floridaRegistryIdentity} from './floridaEmsRoster';
 import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,addressText,isPhysicalStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {useSyncExternalStore} from 'react';
+import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,snapshotSourceUrl} from './nationalLocationSnapshot';
 
 export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'};
 const norm=(s:unknown)=>typeof s==='string'?s.normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim():'';
@@ -98,8 +99,27 @@ function lookup(a:Agency,directory:Agency[]):Cached|undefined{
  if(c.binding!==binding(a,id,loc))return undefined;
  return c;
 }
-export function displayedProviderLocation(a:Agency,directory:Agency[]){return lookup(a,directory)?.location??recordedProviderLocation(a,directory);}
-export function mappedProviderLocation(a:Agency,directory:Agency[]){return lookup(a,directory)?.match;}
+export async function loadProviderLocationState(state:string){
+ const before=loadedLocationState(state),data=await loadNationalLocationState(state);
+ if(data&&!before)notify();
+ return data;
+}
+function snapshotFor(a:Agency,directory:Agency[]){
+ const id=nativeIdentity(a,directory);
+ if(!id)return undefined;
+ return matchingSnapshotLocation(id,recordedProviderLocation(a,directory)?.address);
+}
+function snapshotLocation(a:Agency,directory:Agency[]):ProviderLocation|undefined{
+ const e=snapshotFor(a,directory);if(!e?.address)return undefined;
+ return {address:e.address,identityKey:e.key,sourceName:e.source==='NPPES'?'CMS NPPES':e.source==='USFA'?'USFA NFDR':'Florida Department of Health',sourceUrl:snapshotSourceUrl(e),sourceDate:e.sourceDate,kind:e.source==='USFA'?'registry headquarters':e.source==='NPPES'?'registered practice location':'recorded license address'};
+}
+export function displayedProviderLocation(a:Agency,directory:Agency[]){return recordedProviderLocation(a,directory)??snapshotLocation(a,directory)??lookup(a,directory)?.location;}
+export function mappedProviderLocation(a:Agency,directory:Agency[]){
+ const e=snapshotFor(a,directory);
+ if(e?.match&&(!e.sourceCounty||e.sourceCounty===e.countyFips)&&(!a.countyFips||a.countyFips===e.countyFips))return e.match;
+ const c=lookup(a,directory),loc=displayedProviderLocation(a,directory);
+ return c?.match&&loc&&addressKey(loc.address)===addressKey(c.location.address)?c.match:undefined;
+}
 export function canResearchProviderLocation(a:Agency,directory:Agency[]){return !!nativeIdentity(a,directory)||!!recordedProviderLocation(a,directory);}
 async function fetchJson(url:string,signal:AbortSignal){
  const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:AbortSignal.any([signal,AbortSignal.timeout(22_000)]),headers:{Accept:'application/json'}});
@@ -108,8 +128,10 @@ async function fetchJson(url:string,signal:AbortSignal){
 }
 function put(a:Agency,c:Cached){if(cache.size>=500&&!cache.has(a.id)){const first=cache.keys().next().value;if(first!==undefined)cache.delete(first);}cache.set(a.id,c);notify();}
 export async function researchProviderLocation(a:Agency,directory:Agency[],signal:AbortSignal,geocode=false):Promise<ProviderLocation|undefined>{
+ await loadProviderLocationState(a.stateCode);
+ if(signal.aborted)throw Error('Location research canceled.');
  const id=nativeIdentity(a,directory),recorded=recordedProviderLocation(a,directory),bind=binding(a,id,recorded);
- let loc=lookup(a,directory)?.location??recorded;
+ let loc=displayedProviderLocation(a,directory);
  if(!loc&&id){
   if(id.sourceName==='NPPES'){
    const found=validateNpiAddress(await fetchJson('/api/discovery/provider-address?npi='+encodeURIComponent(id.identifier),signal),id.identifier);
@@ -125,7 +147,7 @@ export async function researchProviderLocation(a:Agency,directory:Agency[],signa
  }
  if(signal.aborted)throw Error('Location research canceled.');
  if(!loc)return undefined;
- let match=lookup(a,directory)?.match;
+ let match=mappedProviderLocation(a,directory);
  if(geocode&&loc.address.zip&&isPhysicalStreet(loc.address.street)&&!match&&loc.kind!=='source-reported address'){
   const params=new URLSearchParams(loc.address);
   match=validateAddressMatch(await fetchJson('/api/discovery/address-location?'+params,signal),loc.address)??undefined;
@@ -136,7 +158,9 @@ export async function researchProviderLocation(a:Agency,directory:Agency[],signa
 }
 export function locationDirections(loc:ProviderLocation){return 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(addressText(loc.address));}
 export function locationOverlay(a:Agency,directory:Agency[]):Agency{
- const c=lookup(a,directory);
- if(!c?.match)return a;
- return {...a,address:c.location.address.street,city:c.location.address.city,zipCode:c.location.address.zip,latitude:c.match.latitude,longitude:c.match.longitude,googleMapsUri:locationDirections(c.location)};
+ if(!loadedLocationState(a.stateCode)&&!cache.has(a.id))return a;
+ const match=mappedProviderLocation(a,directory),loc=displayedProviderLocation(a,directory);
+ if(!match||!loc)return a;
+ const e=snapshotFor(a,directory),county=e?.match&&(!a.countyFips||a.countyFips===e.countyFips)&&(!e.sourceCounty||e.sourceCounty===e.countyFips)?e:undefined;
+ return {...a,address:loc.address.street,city:loc.address.city,zipCode:loc.address.zip,latitude:match.latitude,longitude:match.longitude,googleMapsUri:locationDirections(loc),...(county&&!a.countyFips?{countyFips:county.countyFips,county:county.countyName??a.county}:{})};
 }

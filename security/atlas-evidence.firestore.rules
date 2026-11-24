@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verified() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function role(workspace) {
+      return get(/databases/$(database)/documents/workspaces/$(workspace)/members/$(request.auth.uid)).data.role;
+    }
+    function reader(workspace) {
+      return verified() && role(workspace) in ['viewer', 'editor'];
+    }
+    function editor(workspace) {
+      return verified() && role(workspace) == 'editor';
+    }
+    function text(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
+    function day(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    function validKey(key, state) {
+      return key.matches('^NPI:[0-9]{10}$') || key.matches('^NERIS:[A-Z0-9.-]{1,80}$')
+        || key.matches('^FDID:' + state + ':[A-Z0-9.-]{1,80}$')
+        || key.matches('^STATE-EMS:' + state + ':(agency-code|license):[A-Z0-9.-]{1,80}$');
+    }
+    function validEntry(key, factId) {
+      let d = request.resource.data;
+      return d.keys().hasAll(['agencyKey','agencyName','stateCode','factId','kind','value','sourceName','sourceRecordId','sourceUrl','documentDate','dueDate','enteredAt','authorUid','publishedAt'])
+        && d.keys().hasOnly(['agencyKey','agencyName','stateCode','factId','kind','value','sourceName','sourceRecordId','sourceUrl','documentDate','dueDate','enteredAt','authorUid','publishedAt'])
+        && d.agencyKey == key && d.factId == factId && factId.matches('^[A-Za-z0-9_-]{1,100}$')
+        && d.stateCode is string && d.stateCode.matches('^[A-Z]{2}$') && validKey(key, d.stateCode)
+        && text(d.agencyName,240) && text(d.value,500) && text(d.sourceName,160) && text(d.sourceRecordId,160)
+        && text(d.sourceUrl,2048) && d.sourceUrl.matches('^https://[^/@ ]+(/|[?]).+$')
+        && d.kind in ['installed-monitor','installed-cpr','installed-ventilator','installed-epcr','installed-cad','installed-billing','contract-expiration','procurement-open','procurement-awarded','procurement-closed','grant-awarded','capital-approved']
+        && day(d.documentDate) && text(d.enteredAt,40)
+        && ((d.kind == 'procurement-open' && day(d.dueDate) && d.dueDate >= d.documentDate) || (d.kind != 'procurement-open' && d.dueDate == ''))
+        && (d.kind != 'contract-expiration' || day(d.value))
+        && d.authorUid == request.auth.uid && d.publishedAt == request.time;
+    }
+    match /workspaces/{workspace}/members/{uid} {
+      allow get: if verified() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+    match /workspaces/{workspace}/agencies/{key}/evidence/{factId} {
+      allow get: if reader(workspace);
+      allow list: if reader(workspace) && request.query.limit != null && request.query.limit <= 50;
+      allow create: if editor(workspace) && validEntry(key, factId);
+      allow update, delete: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

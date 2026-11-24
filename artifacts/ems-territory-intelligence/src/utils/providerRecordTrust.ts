@@ -1,4 +1,4 @@
-import { registryIdentityKey,registryIdentityLabel } from '../services/registryAccountLink';
+import { registryIdentityKey,registryIdentityLabel,registryAccountId,canCreateRegistryAccount } from '../services/registryAccountLink';
 import type { Agency } from '../types';
 
 /** Geographic prospect origin survives verification-label changes and cloud sync.
@@ -41,6 +41,9 @@ export function agencyIdentifierLabel(agency: Agency): string {
   const neris = [...new Set((agency.sourceRecordAssociations ?? []).filter(a=>a.decision==='confirmed' && /^NERIS$/i.test(a.sourceName) && a.sourceRecordId.trim() && (!a.sourceFields?.stateCode || String(a.sourceFields.stateCode).toUpperCase()===agency.stateCode?.toUpperCase())).map(a=>a.sourceRecordId.trim()))];
   if (neris.length===1) return 'NERIS ID '+neris[0];
   if (neris.length>1) return 'NERIS association requires review';
+  const stateIds=[...new Set((agency.sourceRecordAssociations??[]).filter(a=>a.decision==='confirmed'&&a.sourceName==='State EMS'&&a.sourceFields?.stateCode===agency.stateCode&&a.sourceFields?.identifierKind==='agency-code'&&typeof a.sourceFields?.stateAgencyId==='string').map(a=>String(a.sourceFields.stateAgencyId)))];
+  if(stateIds.length===1)return 'State agency code '+stateIds[0];
+  if(stateIds.length>1)return 'State agency code association requires review';
   if (agency.stateLicenseNumber?.trim()) return 'State license ' + agency.stateLicenseNumber.trim();
   if (agency.npiNumber?.trim()) return 'NPI ' + agency.npiNumber.trim() + (agency.isVerifiedRecord ? '' : ' (recorded)');
   return fire ? 'FDID not reported' : 'EMS ID not reported';
@@ -59,5 +62,5 @@ export function requiresAgencyFieldEvidence(agency:Agency):boolean {
  return isGeographicProspect(agency)||!!agency.registryIdentity;
 }
 export function canBulkHydrateAgency(agency:Agency):boolean {
- return !isGeographicProspect(agency)&&!!agency.registryIdentity&&!!registryIdentityKey(agency.registryIdentity);
+ return !isGeographicProspect(agency)&&!!agency.registryIdentity&&canCreateRegistryAccount(agency.registryIdentity)&&registryAccountId(agency.registryIdentity)===agency.id;
 }

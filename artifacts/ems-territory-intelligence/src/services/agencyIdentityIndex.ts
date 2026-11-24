@@ -29,6 +29,12 @@ export function buildAgencyIdentityIndex(agencies:Agency[]) {
      key=`FDID:${state}:${fdid.toUpperCase()}`;
    }else if(/NPPES|NPI/.test(name)&&/^\d{10}$/.test(id))key=`NPI:${id}`;
    else if(name==='NERIS')key=`NERIS:${id.toUpperCase()}`;
+   else if(name==='STATE EMS'){
+     const kind=association.sourceFields?.identifierKind;
+     const nativeId=String(association.sourceFields?.stateAgencyId??'').trim().toUpperCase();
+     if(!state||!nativeId||!['agency-code','license'].includes(String(kind))||id.toUpperCase()!==state+':'+nativeId)continue;
+     key=`STATE-EMS:${state}:${kind}:${nativeId}`;
+   }
    else key=`SOURCE:${name}:${id}`;
    if(!id)continue;
    // A reviewed association upgrades the same link rather than duplicating it.

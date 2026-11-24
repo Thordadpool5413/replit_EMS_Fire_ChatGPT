@@ -1,10 +1,11 @@
 /**
  * State and territorial EMS source routes.
  *
- * A directory route is not a state license dataset. Florida and Virginia currently have
- * an identified official provider-license search route in this application.
+ * A directory route is not a state license dataset. Ohio has a staged state agency roster;
+ * the other direct state routes are manual references, not ingested license datasets.
  */
 export type EmsJurisdictionCoverageStatus =
+  | "official-agency-roster"
   | "official-license-reference"
   | "state-office-directory";
 
@@ -154,6 +155,26 @@ export const EMS_JURISDICTION_SOURCE_COVERAGE: EmsJurisdictionSourceCoverage[] =
           periodAndFreshness:"Check the state record and its current status directly.",
           appConnection:"Official manual lookup; no automatic statewide license ingestion.",
           limitations:"Source presence does not verify service area, purchasing, equipment or active license without checking the actual agency record."
+        } : code === "OH" ? {
+          code,name,level:"state" as const,coverageStatus:"official-agency-roster" as const,
+          sourceName:"Ohio Division of EMS agency list",
+          sourceUrl:"https://ems.ohio.gov/ems-trauma-data/data-center-resources/ohio-ems-agency-list",
+          directoryUrl:"https://ems.ohio.gov/ems-trauma-data/data-center-resources/ohio-ems-agency-list",
+          sourceScope:"State agency codes, names, headquarters cities and EMS service levels.",
+          matchKeys:["Ohio agency code","Agency name","Headquarters city"],
+          periodAndFreshness:"Bundled source update 2026-05-05; retrieved 2026-11-24.",
+          appConnection:"1,520 state source listings staged in the searchable Ohio roster; explicit account creation for reported EMS service levels.",
+          limitations:"Agency codes are not license numbers, FDIDs or NPIs. Listings are not current licensure or service-area proof."
+        } : code === "PA" || code === "MA" ? {
+          code,name,level:"state" as const,coverageStatus:"official-license-reference" as const,
+          sourceName:code==="PA"?"Pennsylvania EMS agency public search":"Massachusetts licensed ambulance service directory",
+          sourceUrl:code==="PA"?"https://ems.health.pa.gov/registry/Search/AgencyPublicSearch.aspx":"https://www.mass.gov/info-details/find-an-ambulance-service-in-massachusetts",
+          directoryUrl:code==="PA"?"https://ems.health.pa.gov/registry/Search/AgencyPublicSearch.aspx":"https://www.mass.gov/info-details/find-an-ambulance-service-in-massachusetts",
+          sourceScope:"Official state provider lookup or ambulance service listing.",
+          matchKeys:["Agency name","State-issued identifier where published"],
+          periodAndFreshness:"Check the source directly for the current record and reporting date.",
+          appConnection:"Official manual reference only; no automated roster or license ingestion.",
+          limitations:"A listing does not establish purchasing, fleet, service boundaries or current operating status."
         } : directoryRoute(code, name, code === "DC" ? "district" : "state"),
     ),
     ...TERRITORY_JURISDICTIONS.map(([code, name]) =>

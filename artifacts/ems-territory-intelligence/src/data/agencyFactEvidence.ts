@@ -1,3 +1,4 @@
+import { isGeographicProspect, isGeneratedFdid } from '../utils/providerRecordTrust';
 import type { Agency, AgencyFactEvidence, AgencyFactEvidenceKey } from '../types';
 
 export const AGENCY_FACT_EVIDENCE_FIELDS: Array<{
@@ -90,6 +91,7 @@ export function hasAgencyFactEvidence(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): boolean {
+  if (key === 'maintenanceContracts') return hasAgencyContractEvidence(agency);
   return hasMappedFactSource(agency.factEvidence?.[key]) || hasAgencyFactData(agency, key);
 }
 
@@ -115,10 +117,10 @@ export function getAgencyFactValues(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): unknown[] {
-  if (agency.verificationSource?.includes('Geographic prospect generator') && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
+  if (isGeographicProspect(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
   const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
     providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
-    departmentRegistry: [agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],
+    departmentRegistry: [isGeneratedFdid(agency.fdid, agency) ? undefined : agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],
     agencyLeadership: [agency.keyContacts],
     decisionMakers: [agency.keyContacts],
     frontlineApparatusStations: [
@@ -152,7 +154,7 @@ export function hasAgencyFactData(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): boolean {
-  if (agency.verificationSource?.includes('Geographic prospect generator') && !hasMappedFactSource(agency.factEvidence?.[key])) return false;
+  if (isGeographicProspect(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return false;
   return getAgencyFactValues(agency, key).length > 0;
 }
 
@@ -163,4 +165,12 @@ export function getAgencyFactEvidenceStatus(
   if (hasReviewedAgencyFactEvidence(agency, key)) return 'source-reviewed';
   if (hasMappedAgencyFactEvidence(agency, key)) return 'source-mapped';
   return 'source-required';
+}
+
+/** An exact expiry cannot be promoted by object presence or modeled methodology. */
+export function hasAgencyContractEvidence(agency: Agency): boolean {
+  const evidence = agency.factEvidence?.maintenanceContracts;
+  return Boolean(evidence && evidence.sourceKind !== 'logic' && hasMappedFactSource(evidence)
+    && /^\d{4}-\d{2}-\d{2}$/.test(agency.competitorContract?.contractEndDate ?? '')
+    && Number.isFinite(Date.parse(agency.competitorContract.contractEndDate)));
 }

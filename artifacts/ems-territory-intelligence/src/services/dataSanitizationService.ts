@@ -1,3 +1,5 @@
+import { isGeographicProspect, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from '../utils/providerRecordTrust';
+import { hasAgencyContractEvidence } from '../data/agencyFactEvidence';
 import { canonicalizeAgencyCounty } from '../utils/countyIdentity';
 /**
  * @license
@@ -589,7 +591,7 @@ class DataSanitizationService {
    * Determines the exact data provenance tier of an agency record.
    */
   public classifyProvenanceTier(agency: Agency): DataProvenanceTier {
-    if (agency.verificationSource?.includes('Geographic prospect generator')) return 'generated_prospect';
+    if (isGeographicProspect(agency)) return 'generated_prospect';
     if (
       agency.isCloudPersisted ||
       Boolean(agency._syncedAt) ||
@@ -660,7 +662,8 @@ class DataSanitizationService {
       return null;
     }
 
-    agency = canonicalizeAgencyCounty(agency);
+    agency = withoutGeneratedFdid(canonicalizeAgencyCounty(agency));
+    agency = withoutUnsubstantiatedProspectContract(agency, hasAgencyContractEvidence(agency));
 
     // 1. Filter out any mock or test field notes
     const rawNotes = Array.isArray(agency.fieldNotes) ? agency.fieldNotes : [];
@@ -727,7 +730,7 @@ class DataSanitizationService {
       zollOpportunity: verifiedOpportunity,
       isCloudPersisted: isCloud,
       isVerifiedRecord: Boolean(agency.isVerifiedRecord),
-      dataProvenanceTier: agency.verificationSource?.includes('Geographic prospect generator')
+      dataProvenanceTier: isGeographicProspect(agency)
         ? 'generated_prospect'
         : isCloud
         ? 'firestore_cloud_synced'

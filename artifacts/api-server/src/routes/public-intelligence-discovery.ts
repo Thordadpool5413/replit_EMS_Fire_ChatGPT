@@ -8,6 +8,8 @@ import {authorizedSamGateway,readSamConfig,createSamDiscoveryService,SamDiscover
 import {parseSamQuery} from '../lib/samDiscoveryContract';
 import {boundedJson} from '../lib/publicIntelligenceDiscovery';
 import {FEED_SOURCE_URL,validateDiscoveryFeed} from '../lib/recurringDiscoveryContract';
+import {createChicagoDiscoveryService} from '../lib/chicagoDiscovery';
+import {parseChicagoQuery} from '../lib/chicagoDiscoveryContract';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
 router.get('/discovery/fema',async(req,res)=>{
@@ -58,5 +60,11 @@ router.get('/discovery/feed',async(req,res)=>{
   const page=await boundedJson(new Response(response.body,{status:response.status,headers:{'content-type':'application/json','content-length':response.headers.get('content-length')??'0'}}),'ATLAS feed');
   res.json(validateDiscoveryFeed(page));
  }catch{req.log.warn('Recurring public discovery feed unavailable');res.status(502).json({error:'Discovery feed unavailable or invalid. No new records were inferred.'});}
+});
+const chicago=createChicagoDiscoveryService();
+router.get('/discovery/chicago',async(req,res)=>{
+ res.set('Cache-Control','no-store');const q=parseChicagoQuery(req.query);
+ if(!q){res.status(400).json({error:'Choose a supported contract topic, approval window and page.'});return;}
+ try{res.json(await chicago(q));}catch{req.log.warn('Chicago contract discovery unavailable');res.status(502).json({error:'Chicago contract source unavailable or invalid. No records were inferred.'});}
 });
 export default router;

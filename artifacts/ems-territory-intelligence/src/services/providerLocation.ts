@@ -35,12 +35,28 @@ function fromIdentity(id:RegistryIdentity):ProviderLocation|undefined{
  const key=registryIdentityKey(id);if(!address||!key)return undefined;
  return {address,identityKey:key,sourceName:id.sourceAuthority||id.sourceName,sourceUrl:id.sourceUrl,sourceDate:id.sourceDate,kind:id.sourceName==='NPPES'?'registered practice location':id.sourceName==='State EMS'?'recorded license address':'registry headquarters'};
 }
+// Index loaded identity keys once per immutable directory array instead of scanning the full directory per pin.
+const directoryIndexes=new WeakMap<Agency[],{ids:Map<string,number>;keys:Map<string,string[]>}>();
+function directoryIndex(directory:Agency[]){
+ const previous=directoryIndexes.get(directory);if(previous)return previous;
+ const ids=new Map<string,number>(),keys=new Map<string,string[]>();
+ for(const a of directory){
+  ids.set(a.id,(ids.get(a.id)??0)+1);
+  for(const key of new Set(identities(a).map(registryIdentityKey))){
+   if(!key)continue;const owners=keys.get(key)??[];owners.push(a.id);keys.set(key,owners);
+  }
+ }
+ const index={ids,keys};directoryIndexes.set(directory,index);return index;
+}
 function nativeIdentity(a:Agency,directory:Agency[]):RegistryIdentity|undefined{
  if(flagged(a)||!a.id)return undefined;
- const ids=identities(a);const keys=[...new Set(ids.map(registryIdentityKey))];
+ const all=identities(a),direct=a.registryIdentity&&canCreateRegistryAccount(a.registryIdentity)?registryIdentityKey(a.registryIdentity):undefined;
+ const ids=direct?all.filter(i=>registryIdentityKey(i)===direct):all;
+ const keys=[...new Set(ids.map(registryIdentityKey))];
  if(keys.length!==1)return undefined;
- const key=keys[0],matches=directory.filter(x=>x.id===a.id||identities(x).some(i=>registryIdentityKey(i)===key));
- if(matches.length!==1||matches[0].id!==a.id)return undefined;
+ const key=keys[0];if(!key)return undefined;
+ const index=directoryIndex(directory),owners=index.keys.get(key)??[];
+ if(index.ids.get(a.id)!==1||owners.length!==1||owners[0]!==a.id)return undefined;
  // Direct registry identity wins over a confirmed duplicate association; never merge differing addresses.
  const locations=ids.flatMap(i=>{const l=fromIdentity(i);return l?[l]:[];});
  if(new Set(locations.map(l=>addressKey(l.address))).size>1)return undefined;
@@ -51,7 +67,7 @@ export function recordedProviderLocation(a:Agency,directory:Agency[]):ProviderLo
  if(id){const location=fromIdentity(id);if(location)return location;}
  // A legacy agency address needs an explicit reviewed agency-level source, not a county model.
  const e=a.factEvidence?.providerAddress;
- if(!flagged(a)&&!isGeographicProspect(a)&&!a.registryIdentity&&e?.reviewed&&e.geographicLevel==='agency'&&e.sourceKind!=='logic'&&https(e.sourceUrl)&&directory.filter(x=>x.id===a.id).length===1){
+ if(!flagged(a)&&!isGeographicProspect(a)&&!a.registryIdentity&&e?.reviewed&&e.geographicLevel==='agency'&&e.sourceKind!=='logic'&&https(e.sourceUrl)&&directoryIndex(directory).ids.get(a.id)===1){
   const address=parseStreetAddress({street:a.address,city:a.city,state:a.stateCode,zip:a.zipCode});
   if(address)return {address,identityKey:'reviewed:'+a.id,sourceName:e.sourceName,sourceUrl:e.sourceUrl,sourceDate:e.reportingPeriod,kind:'source-reported address'};
  }
@@ -61,7 +77,16 @@ type Cached={identityKey:string;location:ProviderLocation;match?:AddressMatch;ch
 const cache=new Map<string,Cached>(),listeners=new Set<()=>void>();
 let revision=0;
 const notify=()=>{revision++;for(const l of listeners)l();};
-const subscribe=(l:()=>void)=>{listeners.add(l);return()=>{listeners.delete(l);};};
+let expiryTimer:ReturnType<typeof setInterval>|undefined;
+const subscribe=(l:()=>void)=>{
+ listeners.add(l);
+ if(!expiryTimer)expiryTimer=setInterval(()=>{
+  let changed=false;
+  for(const [id,c] of cache)if(c.checkedAt+60*60_000<=Date.now()){cache.delete(id);changed=true;}
+  if(changed)notify();
+ },60_000);
+ return()=>{listeners.delete(l);if(!listeners.size&&expiryTimer){clearInterval(expiryTimer);expiryTimer=undefined;}};
+};
 export function useLocationRevision(){return useSyncExternalStore(subscribe,()=>revision,()=>0);}
 function binding(a:Agency,id:RegistryIdentity|undefined,location:ProviderLocation|undefined){
  return JSON.stringify([a.id,a.stateCode,a.name,id,location,flagged(a)??false]);

@@ -887,8 +887,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
     // 1. What Is Known About the Organization
     const whatIsKnown = [
-      hasAgencyFactEvidence(agency, 'providerAddress')
-        ? `Department address: ${agency.address} (official department source).`
+      agency.address
+        ? `Recorded address: ${agency.address} (source location; verify before visiting).`
         : 'Department address not reported in the record.',
       hasAgencyFactEvidence(agency, 'departmentRegistry')
         ? `Florida EMS provider license ${agency.stateLicenseNumber || 'listed'} is on the state provider report.`
@@ -3412,15 +3412,15 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                     <span>U.S. Fire Administration Registry</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#285EE8]" />
                   </a>
-                  <a
+                  {agency.googleMapsUri&&<a
                     href={agency.googleMapsUri}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full p-3 rounded-lg border border-[#DFE6EF] dark:border-[#1E2D42] hover:border-[#285EE8] flex items-center justify-between font-medium text-[#14283F] dark:text-white transition-colors"
                   >
-                    <span>Mapped station locations</span>
+                    <span>Recorded provider address</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#285EE8]" />
-                  </a>
+                  </a>}
                 </div>
               </div>
 

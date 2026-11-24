@@ -15,6 +15,7 @@ on:
       - 'artifacts/api-server/src/lib/chicago*'
       - 'artifacts/api-server/src/lib/providerLocation*'
       - 'scripts/data/stage_nppes.py'
+      - 'scripts/data/test_stage_nppes.py'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
@@ -40,6 +41,7 @@ on:
       - 'artifacts/api-server/src/lib/chicago*'
       - 'artifacts/api-server/src/lib/providerLocation*'
       - 'scripts/data/stage_nppes.py'
+      - 'scripts/data/test_stage_nppes.py'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
@@ -80,6 +82,7 @@ jobs:
       - run: node scripts/check-ems-source-coverage.mjs
       - run: node --test scripts/refresh-ohio-state-ems.test.mjs
       - run: node --test scripts/audit-production-providers.test.mjs
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_nppes.py
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build

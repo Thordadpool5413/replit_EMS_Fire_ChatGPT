@@ -9,7 +9,7 @@ export function SharedEvidenceReview({result}:{result:EvidenceReviewResult}){
  const current=Math.min(page,Math.max(1,Math.ceil(rows.length/8)));
  return <section aria-label="Shared evidence reconciliation" className="border rounded-md p-3 space-y-3 min-w-0" data-testid="shared-evidence-review">
   <h3 className="font-semibold">Document reconciliation</h3>
-  <p className="text-sm">Compare shared evidence with typed records on this device. This is a research review, not verified equipment, a shared correction decision, or a qualified opportunity.</p>
+  <p className="text-sm">Compare shared evidence with typed records on this device. This is a research review, not verified equipment, a shared correction decision, or a qualified opportunity. Permanent review decisions are checked separately for each published document; these classifications do not establish approval.</p>
   {!result.complete&&<p role="status" className="text-sm font-medium">{result.reason} Refresh the complete first page before relying on any classification.</p>}
   <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
    {[['Shared rows',result.sharedCount],['Local typed rows',result.localCount],['Duplicate observations',result.duplicates],['Invalid / withheld',result.invalid]].map(([name,value])=><div key={name}><dt>{name}</dt><dd className="font-semibold tabular-nums text-lg">{value}</dd></div>)}

@@ -1,11 +1,12 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, inMemoryPersistence, browserPopupRedirectResolver, type Auth, type User } from 'firebase/auth';
 import { collection, doc, documentId, getDocFromServer, getDocsFromServer, getFirestore, limit, orderBy, query, runTransaction, serverTimestamp, startAfter, type Firestore, Timestamp } from 'firebase/firestore';
+import { DECISION_ACTIONS, readDecision, sameDecision, summarizeDecisions, validDecisionDraft, type DecisionDraft, type EvidenceDecision } from './sharedEvidenceGovernance';
 import legacyConfig from '../../firebase-applet-config.json';
 import { readSharedEvidence, sameSharedEvidence, validWorkspaceId, type SharedEvidence } from './sharedEvidence';
 
 export type EvidenceSession = { auth: Auth; db: Firestore; workspace: string };
-export type EvidenceRole = 'viewer' | 'editor';
+export type EvidenceRole = 'viewer' | 'editor' | 'reviewer';
 export type PublishedEvidence = { evidence: SharedEvidence; authorUid: string; publishedAt: string };
 // Node-based rendering/tests have no Vite environment. Default to disabled.
 const env = import.meta.env ?? ({} as ImportMetaEnv);
@@ -40,7 +41,7 @@ export async function evidenceRole(session: EvidenceSession, user: User): Promis
   const snap = await getDocFromServer(doc(session.db, 'workspaces', session.workspace, 'members', user.uid));
   assertSession(session, user);
   const role: unknown = snap.data()?.role;
-  if (role !== 'viewer' && role !== 'editor') throw new Error('Workspace membership has not been granted.');
+  if (role !== 'viewer' && role !== 'editor' && role !== 'reviewer') throw new Error('Workspace membership has not been granted.');
   return role;
 }
 function evidenceCollection(session: EvidenceSession, agencyKey: string) {
@@ -82,5 +83,76 @@ export async function publishSharedEvidence(session: EvidenceSession, user: User
     return 'created' as const;
   });
   assertSession(session, user);
+  return result;
+}
+
+function parseDecisionSnapshot(raw: Record<string,unknown>, factId:string, action:string): EvidenceDecision|undefined {
+  const reviewedAt = raw.reviewedAt instanceof Timestamp ? raw.reviewedAt.toDate().toISOString() : undefined;
+  return readDecision({...raw,reviewedAt},factId,action);
+}
+export async function loadEvidenceDecisions(session:EvidenceSession,user:User,record:PublishedEvidence){
+  assertSession(session,user);
+  const e=record.evidence;
+  if(!readSharedEvidence(e,e.agencyKey,e.factId))throw Error('Invalid evidence identity.');
+  const parent=doc(evidenceCollection(session,e.agencyKey),e.factId);
+  const result=await getDocsFromServer(query(collection(parent,'decisions'),limit(5)));
+  assertSession(session,user);
+  if(result.metadata.fromCache||result.metadata.hasPendingWrites)throw Error('A server-only review snapshot could not be confirmed.');
+  const decisions:EvidenceDecision[]=[];
+  let invalid=0;
+  for(const d of result.docs){
+    const event=parseDecisionSnapshot(d.data(),e.factId,d.id);
+    if(!event)invalid++;else decisions.push(event);
+  }
+  if(result.size>=5)invalid++;
+  return {decisions,invalid,status:summarizeDecisions(decisions,invalid)};
+}
+/** Decisions are fixed-ID immutable records. Corrections are new independently reviewed observations. */
+export async function recordEvidenceDecision(session:EvidenceSession,user:User,record:PublishedEvidence,draft:DecisionDraft):Promise<'created'|'exists'>{
+  assertSession(session,user);
+  if(await evidenceRole(session,user)!=='reviewer')throw Error('Reviewer membership is required.');
+  const e=record.evidence;
+  if(!readSharedEvidence(e,e.agencyKey,e.factId)||!validDecisionDraft(draft,e.factId))throw Error('Invalid decision.');
+  const parent=doc(evidenceCollection(session,e.agencyKey),e.factId);
+  const decisionRefs=DECISION_ACTIONS.map(action=>doc(parent,'decisions',action));
+  const result=await runTransaction(session.db,async tx=>{
+    assertSession(session,user);
+    const target=await tx.get(parent);
+    const remote=target.exists()?readSharedEvidence(target.data(),e.agencyKey,e.factId):undefined;
+    if(!remote||!sameSharedEvidence(remote,e)||target.data()?.authorUid!==record.authorUid)throw Error('Evidence changed or could not be confirmed. Refresh the record.');
+    const existing=await Promise.all(decisionRefs.map(ref=>tx.get(ref)));
+    const decisions:EvidenceDecision[]=[];
+    for(const snap of existing)if(snap.exists()){
+      const event=parseDecisionSnapshot(snap.data(),e.factId,snap.id);
+      if(!event)throw Error('Existing decision is invalid. Administrator review is required.');
+      decisions.push(event);
+    }
+    const prior=decisions.find(d=>d.action===draft.action);
+    if(prior){
+      if(!sameDecision(prior,draft,user.uid))throw Error('This permanent decision already exists. No history was changed.');
+      return 'exists' as const;
+    }
+    if(draft.action==='approved'&&(summarizeDecisions(decisions)!=='pending'||record.authorUid===user.uid))
+      throw Error('Blocked or self-authored evidence cannot be approved.');
+    if(draft.action==='superseded'){
+      const next=doc(evidenceCollection(session,e.agencyKey),draft.replacementId);
+      const nextSnap=await tx.get(next);
+      const replacement=nextSnap.exists()?readSharedEvidence(nextSnap.data(),e.agencyKey,draft.replacementId):undefined;
+      if(!replacement||replacement.stateCode!==e.stateCode||replacement.kind!==e.kind)throw Error('Choose a matching corrected observation.');
+      if(['procurement-open','procurement-awarded','procurement-closed','contract-expiration','grant-awarded','capital-approved'].includes(e.kind)
+        &&(replacement.sourceName!==e.sourceName||replacement.sourceRecordId!==e.sourceRecordId))throw Error('Correction must match the issuer and source record ID.');
+      const nextEvents=await Promise.all(DECISION_ACTIONS.map(action=>tx.get(doc(next,'decisions',action))));
+      const nextDecisions:EvidenceDecision[]=[];
+      for(const snap of nextEvents)if(snap.exists()){
+        const event=parseDecisionSnapshot(snap.data(),replacement.factId,snap.id);
+        if(!event)throw Error('Replacement decision is invalid.');
+        nextDecisions.push(event);
+      }
+      if(summarizeDecisions(nextDecisions)!=='approved')throw Error('The corrected observation must first be independently approved and unblocked.');
+    }
+    tx.set(doc(parent,'decisions',draft.action),{action:draft.action,reason:draft.reason,replacementId:draft.replacementId,factId:e.factId,reviewerUid:user.uid,reviewedAt:serverTimestamp()});
+    return 'created' as const;
+  });
+  assertSession(session,user);
   return result;
 }

@@ -10,10 +10,53 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/workspaces/$(workspace)/members/$(request.auth.uid)).data.role;
     }
     function reader(workspace) {
-      return verified() && role(workspace) in ['viewer', 'editor'];
+      return verified() && role(workspace) in ['viewer', 'editor', 'reviewer'];
     }
     function editor(workspace) {
       return verified() && role(workspace) == 'editor';
+    }
+    function reviewer(workspace) {
+      return verified() && role(workspace) == 'reviewer';
+    }
+    function evidencePath(workspace, key, factId) {
+      return /databases/$(database)/documents/workspaces/$(workspace)/agencies/$(key)/evidence/$(factId);
+    }
+    function decisionPath(workspace, key, factId, action) {
+      return /databases/$(database)/documents/workspaces/$(workspace)/agencies/$(key)/evidence/$(factId)/decisions/$(action);
+    }
+    function blockedAfter(workspace, key, factId) {
+      return existsAfter(decisionPath(workspace,key,factId,'challenged'))
+        || existsAfter(decisionPath(workspace,key,factId,'withdrawn'))
+        || existsAfter(decisionPath(workspace,key,factId,'superseded'));
+    }
+    function matchingReplacement(workspace,key,factId,replacementId) {
+      let original = get(evidencePath(workspace,key,factId)).data;
+      let replacement = get(evidencePath(workspace,key,replacementId)).data;
+      return replacementId != factId
+        && replacement.kind == original.kind && replacement.stateCode == original.stateCode
+        && replacement.agencyKey == key && replacement.factId == replacementId
+        && (!(original.kind in ['procurement-open','procurement-awarded','procurement-closed','contract-expiration','grant-awarded','capital-approved'])
+          || (replacement.sourceName == original.sourceName && replacement.sourceRecordId == original.sourceRecordId))
+        && exists(decisionPath(workspace,key,replacementId,'approved'))
+        && !blockedAfter(workspace,key,replacementId);
+    }
+    function validDecision(workspace,key,factId,action) {
+      let d = request.resource.data;
+      let original = get(evidencePath(workspace,key,factId)).data;
+      return d.keys().hasAll(['action','reason','replacementId','factId','reviewerUid','reviewedAt'])
+        && d.keys().hasOnly(['action','reason','replacementId','factId','reviewerUid','reviewedAt'])
+        && original.factId == factId && original.agencyKey == key
+        && d.factId == factId && d.action == action
+        && d.reviewerUid == request.auth.uid && d.reviewedAt == request.time
+        && (
+          (action == 'approved' && d.reason == 'source-checked' && d.replacementId == ''
+            && original.authorUid != request.auth.uid && !blockedAfter(workspace,key,factId))
+          || (action == 'challenged' && d.reason in ['source-conflict','identity-mismatch','scope-unclear','outdated','incorrect-value','unreliable-source'] && d.replacementId == '')
+          || (action == 'withdrawn' && d.reason in ['source-retracted','incorrect-value','privacy-concern','unreliable-source'] && d.replacementId == '')
+          || (action == 'superseded' && d.reason == 'corrected-evidence'
+            && d.replacementId is string && d.replacementId.matches('^[A-Za-z0-9_-]{1,100}$')
+            && matchingReplacement(workspace,key,factId,d.replacementId))
+        );
     }
     function text(v, max) { return v is string && v.trim().size() > 0 && v.size() <= max; }
     function day(v) { return v is string && v.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'); }
@@ -46,6 +89,12 @@ service cloud.firestore {
       allow get: if reader(workspace);
       allow list: if reader(workspace) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 50;
       allow create: if editor(workspace) && validEntry(key, factId);
+      allow update, delete: if false;
+    }
+    match /workspaces/{workspace}/agencies/{key}/evidence/{factId}/decisions/{action} {
+      allow get: if reader(workspace);
+      allow list: if reader(workspace) && request.query.limit != null && request.query.limit > 0 && request.query.limit <= 5;
+      allow create: if reviewer(workspace) && validDecision(workspace,key,factId,action);
       allow update, delete: if false;
     }
     match /{document=**} { allow read, write: if false; }

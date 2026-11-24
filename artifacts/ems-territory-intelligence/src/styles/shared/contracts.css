@@ -234,7 +234,7 @@
 }
 
 @media (min-width: 768px) {
-  .pi-workspace-body { padding-left: 14rem !important; }
+  .pi-workspace-body { padding-left: 216px !important; }
 }
 
 /* Shared workspace destinations and actions. */

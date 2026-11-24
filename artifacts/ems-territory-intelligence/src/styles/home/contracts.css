@@ -692,9 +692,11 @@
   .home-territory-map-screen-v2 .home-map-viewport {
     display: flex !important;
     flex: none !important;
-    width: calc(100% + 1.25rem) !important;
-    max-width: none !important;
-    margin-left: -.625rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    box-sizing: border-box !important;
     height: auto !important;
     min-height: 0 !important;
     aspect-ratio: 872 / 494 !important;
@@ -731,5 +733,21 @@
   .home-territory-map-screen-v2 .home-map-control-rail select:focus-visible {
     outline: 3px solid #2e64c5;
     outline-offset: 2px;
+  }
+}
+
+/* A phone turned sideways can be wider than the mobile breakpoint while still
+   having very little vertical room. Show one full-size touch zoom control set,
+   not both the compact desktop set and the phone set. */
+@media (min-width: 768px) and (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
+  .home-territory-map-screen-v2 #home-map-options > .home-map-zoom-control {
+    display: none !important;
+  }
+  .home-territory-map-screen-v2 #home-map-options .home-map-phone-zoom {
+    display: block !important;
+  }
+  .home-territory-map-screen-v2 #home-map-options .home-map-phone-zoom .home-map-zoom-control button {
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 }

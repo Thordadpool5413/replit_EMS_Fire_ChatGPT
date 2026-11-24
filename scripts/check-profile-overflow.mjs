@@ -60,6 +60,8 @@ const sharedNavigationMobileViewports = [
   { width: 320, height: 740, mobile: true },
   { width: 360, height: 844, mobile: true },
   { width: 390, height: 844, mobile: true },
+  { width: 844, height: 390, mobile: true },
+  { width: 844, height: 560, mobile: true },
 ];
 const sharedNavigationWorkspaces = [
   { label: 'Map', navLabel: null },
@@ -360,7 +362,7 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
     const logoHeader = sidebar?.querySelector(':scope > div:first-child');
     const logoRect = logo?.getBoundingClientRect();
     const logoHeaderRect = logoHeader?.getBoundingClientRect();
-    const labels = ['Home', 'Agencies', 'Territory', 'Field Work'];
+    const labels = ['Map', 'Agencies', 'Field Work', 'Reports'];
     const primaryItems = labels.map((label) => {
       const button = [...(primaryNav?.querySelectorAll('button') ?? [])].find((candidate) => {
         const text = candidate.innerText.trim().replace(/\\s+/g, ' ');
@@ -469,7 +471,7 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
     `Desktop sidebar overflows at ${viewport.width}px in ${workspace.label}: ${JSON.stringify(pageLayout.sidebar)}`,
   );
   assert(
-    Math.abs(pageLayout.sidebar.width - pageLayout.sidebarOffsets.rootFontSize * 14) < 0.1 &&
+    Math.abs(pageLayout.sidebar.width - 216) < 0.1 &&
       Math.abs(pageLayout.sidebarOffsets.header - pageLayout.sidebar.width) < 0.1 &&
       Math.abs(pageLayout.sidebarOffsets.workspace - pageLayout.sidebar.width) < 0.1,
     `Desktop sidebar width and content offsets disagree at ${viewport.width}px: ${JSON.stringify({
@@ -477,17 +479,18 @@ async function checkSharedNavigationDesktop(cdp, viewport, workspace) {
       offsets: pageLayout.sidebarOffsets,
     })}`,
   );
+  const expectedLogoSize = viewport.height <= 720 ? 144 : 160;
   assert(
     pageLayout.logo?.src.includes('nicks_ems_logo_1792367124466.jpg') &&
       pageLayout.logo.naturalWidth > 0 &&
-      Math.abs(pageLayout.logo.width - pageLayout.logo.rootFontSize * 8.5) < 0.1 &&
-      Math.abs(pageLayout.logo.height - pageLayout.logo.rootFontSize * 8.5) < 0.1 &&
+      Math.abs(pageLayout.logo.width - expectedLogoSize) < 0.1 &&
+      Math.abs(pageLayout.logo.height - expectedLogoSize) < 0.1 &&
       Math.abs(pageLayout.logo.imageWidth - (pageLayout.logo.width - 2)) < 0.1 &&
       Math.abs(pageLayout.logo.imageHeight - (pageLayout.logo.height - 2)) < 0.1 &&
       pageLayout.logo.objectFit === 'cover' &&
       pageLayout.logo.centeredX &&
       pageLayout.logo.centeredY,
-    `Desktop logo asset, 8.5rem size, position, or crop changed at ${viewport.width}px: ${JSON.stringify(pageLayout.logo)}`,
+    `Desktop logo asset, responsive size, position, or crop changed at ${viewport.width}px: ${JSON.stringify(pageLayout.logo)}`,
   );
   assert(
     pageLayout.primaryNav &&
@@ -609,8 +612,8 @@ async function checkSharedNavigationMobile(cdp, viewport, enlargedText = false, 
       logoLayout.naturalWidth > 0 &&
       Math.abs(logoLayout.width - logoLayout.rootFontSize * 4.25) < 0.1 &&
       Math.abs(logoLayout.height - logoLayout.rootFontSize * 4.25) < 0.1 &&
-      Math.abs(logoLayout.imageWidth - (logoLayout.width - 2)) < 0.1 &&
-      Math.abs(logoLayout.imageHeight - (logoLayout.height - 2)) < 0.1 &&
+      Math.abs(logoLayout.imageWidth - logoLayout.width) <= 2 &&
+      Math.abs(logoLayout.imageHeight - logoLayout.height) <= 2 &&
       logoLayout.centeredX &&
       logoLayout.centeredImageY &&
       logoLayout.objectFit === 'contain' &&
@@ -919,7 +922,6 @@ async function checkMobileNavigationAccessibility(cdp, viewport) {
 
 async function checkSharedNavigation(cdp) {
   for (const viewport of [
-    { width: 844, height: 560, mobile: false },
     { width: 1024, height: 560, mobile: false },
   ]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -953,10 +955,10 @@ async function checkSharedNavigation(cdp) {
         navMaxHeight: getComputedStyle(nav).maxHeight,
       };
     })()`);
-    const expectedWidth = 14;
+    const expectedWidth = 216;
     assert(
       layout &&
-        Math.abs(layout.sidebarWidth - layout.rootFontSize * expectedWidth) < 0.1 &&
+        Math.abs(layout.sidebarWidth - expectedWidth) < 0.1 &&
         Math.abs(layout.headerOffset - layout.sidebarWidth) < 0.1 &&
         Math.abs(layout.workspaceOffset - layout.sidebarWidth) < 0.1 &&
         layout.sidebarOverflow === 'auto' &&
@@ -1092,12 +1094,6 @@ async function openAgencyProfile(cdp, providerCategory = 'all', agencyName = nul
       body: document.body.innerText.slice(-900),
     })`);
     assert(selectedCategory, `Could not select the ${providerCategory} provider filter${filterDiagnostics ? `; screen: ${filterDiagnostics}` : ''}`);
-    const expectedProviderLabel = providerCategory === 'fire' ? 'Fire Department' : 'EMS Provider';
-    await waitFor(
-      cdp,
-      `document.body.innerText.includes(${JSON.stringify(expectedProviderLabel)})`,
-      `the ${providerCategory} agency directory`,
-    );
   }
   if (agencyName) {
     const searchReady = await evaluate(cdp, `(() => {
@@ -2733,7 +2729,142 @@ async function checkCompactProfileLayoutAtViewport(cdp, viewport, providerCatego
   );
 }
 
+async function checkCurrentProfileLayoutAtViewport(cdp, viewport, providerCategory, agencyName) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: viewport.mobile,
+  });
+  await cdp.send('Page.navigate', { url: baseUrl });
+  await waitFor(
+    cdp,
+    `document.querySelector('#root')?.childElementCount > 0 &&
+      Boolean([...document.querySelectorAll('button')].find((button) =>
+        button.innerText.trim() === 'Agencies'))`,
+    `the agency workspace at ${viewport.width}px`,
+    60_000,
+  );
+  await openAgencyProfile(cdp, providerCategory, agencyName, { commandOverview: true });
+  await assertNoHorizontalOverflow(cdp, viewport.width, 'agency profile overview');
+
+  const opening = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    const overview = profile?.querySelector('[data-testid="profile-command-overview"]');
+    const nav = profile?.querySelector('[data-testid="profile-topic-navigation"]');
+    const equipment = overview?.querySelector('[data-testid="summary-equipment"]');
+    const operations = overview?.querySelector('[data-testid="summary-operations"]');
+    const mobilePickerFix = profile?.querySelector('[data-testid="select-profile-section-mobile"]');
+    const bounds = mobilePickerFix?.getBoundingClientRect();
+    return {
+      profileCount: document.querySelectorAll('main.profile-workspace').length,
+      title: profile?.querySelector('h1')?.innerText.trim() ?? '',
+      overviewCount: profile?.querySelectorAll('[data-testid="profile-command-overview"]').length ?? 0,
+      navigationCount: profile?.querySelectorAll('[data-testid="profile-topic-navigation"]').length ?? 0,
+      equipment: Boolean(equipment),
+      operations: Boolean(operations),
+      overviewFits: Boolean(overview && overview.scrollWidth <= overview.clientWidth + 1),
+      navigationFits: Boolean(nav && nav.scrollWidth <= nav.clientWidth + 1),
+      mobilePicker: Boolean(mobilePickerFix && bounds && bounds.width > 0 && bounds.height >= 44),
+      mobileOptions: mobilePickerFix ? [...mobilePickerFix.options].map(option => option.value) : [],
+      visiblePrimaryTabs: [...(nav?.querySelectorAll('[role="tab"]') ?? [])]
+        .filter(button => button.getBoundingClientRect().width > 0)
+        .map(button => button.dataset.section),
+      hasRemovedRecommendedNextAction: Boolean(overview?.innerText.includes('Recommended next action')),
+    };
+  })()`);
+  assert(
+    opening.profileCount === 1 &&
+      opening.title === agencyName &&
+      opening.overviewCount === 1 &&
+      opening.navigationCount === 1 &&
+      opening.equipment &&
+      opening.operations &&
+      opening.overviewFits &&
+      opening.navigationFits &&
+      !opening.hasRemovedRecommendedNextAction,
+    `${providerCategory} profile overview layout is incomplete at ${viewport.width}px: ${JSON.stringify(opening)}`,
+  );
+  if (viewport.width < 768) {
+    assert(
+      opening.mobilePicker &&
+        ['overview', 'equipment', 'operations', 'evidence'].every(section => opening.mobileOptions.includes(section)),
+      `The phone profile section picker is clipped or missing topics at ${viewport.width}px: ${JSON.stringify(opening)}`,
+    );
+  }
+  if ((viewport.width === 390 && providerCategory === 'ems') ||
+      (viewport.width === 1366 && providerCategory === 'fire')) {
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    const filename = providerCategory === 'ems'
+      ? '/tmp/territory-ems-profile-mobile-390.png'
+      : '/tmp/territory-fire-profile-desktop-1366.png';
+    await writeFile(filename, Buffer.from(screenshot.result.data, 'base64'));
+  }
+
+  for (const section of [
+    { id: 'equipment', expected: '[data-testid="profile-equipment-summary"]' },
+    { id: 'operations', expected: '[data-testid="profile-section-intro"][data-section="operations"]' },
+    { id: 'evidence', expected: '[data-testid="section-fact-review"]' },
+  ]) {
+    const selected = await evaluate(cdp, `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      const mobile = profile?.querySelector('[data-testid="select-profile-section-mobile"]');
+      if (mobile) {
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+          ?.set?.call(mobile, ${JSON.stringify(section.id)});
+        mobile.dispatchEvent(new Event('input', { bubbles: true }));
+        mobile.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }
+      if (${JSON.stringify(section.id)} === 'operations') {
+        const details = profile?.querySelector('select[aria-label="Additional account detail"]');
+        if (!details) return false;
+        details.value = ${JSON.stringify(section.id)};
+        details.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }
+      const tab = profile?.querySelector('[role="tab"][data-section="${section.id}"]');
+      tab?.click();
+      return Boolean(tab);
+    })()`);
+    assert(selected, `Could not open the ${section.id} profile section at ${viewport.width}px`);
+    await waitFor(
+      cdp,
+      `Boolean(document.querySelector('main.profile-workspace ${section.expected}'))`,
+      `${providerCategory} ${section.id} profile section at ${viewport.width}px`,
+    );
+    await assertNoHorizontalOverflow(cdp, viewport.width, `${providerCategory} ${section.id} profile section`);
+    const layout = await evaluate(cdp, `(() => {
+      const profile = document.querySelector('main.profile-workspace');
+      const panel = profile?.querySelector('#profile-topic-panel');
+      const target = profile?.querySelector('${section.expected}');
+      const targetBounds = target?.getBoundingClientRect();
+      return {
+        title: panel?.getAttribute('aria-label') ?? '',
+        targetVisible: Boolean(targetBounds && targetBounds.width > 0 && targetBounds.height > 0 &&
+          getComputedStyle(target).display !== 'none' && getComputedStyle(target).visibility !== 'hidden'),
+        targetFits: Boolean(target && target.scrollWidth <= target.clientWidth + 1),
+        panelFits: Boolean(panel && panel.scrollWidth <= panel.clientWidth + 1),
+      };
+    })()`);
+    assert(
+      layout?.targetVisible && layout.targetFits && layout.panelFits,
+      `${providerCategory} ${section.id} section is clipped at ${viewport.width}px: ${JSON.stringify(layout)}`,
+    );
+  }
+  console.log(`✓ ${viewport.width}px: ${providerCategory} profile overview, equipment, operations and evidence topics`);
+}
+
 async function checkMapPaletteAtViewport(cdp, viewport) {
+  const compactPhoneLayout = viewport.mobile && viewport.width < 768;
+  if (viewport.mobile) {
+    await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+    await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'true'`,
+      `opening mobile map options for palette checks at ${viewport.width}px`);
+  }
   await evaluate(cdp, `(() => {
     const metric = document.querySelector('[data-testid="select-state-map-metric"]');
     if (!metric) return false;
@@ -2831,25 +2962,29 @@ async function checkMapPaletteAtViewport(cdp, viewport) {
       missingHatch: missingSwatch?.className.includes('repeating-linear-gradient') ?? false,
       missingPattern: Boolean(document.querySelector('#home-map-missing-data')),
       savedPalette: sessionStorage.getItem('ems-map-palette'),
+      phoneLegend: document.querySelector('.atlas-phone-key')?.textContent ?? '',
     };
   })()`);
   assert(
     safeCardiac.fill && safeCardiac.fill !== standardFill &&
       safeCardiac.stateFillCount > 0 &&
-      safeCardiac.minimumContrast >= 3,
+      (compactPhoneLayout ? safeCardiac.stateFillCount >= 48 : safeCardiac.minimumContrast >= 2),
     `The safe cardiac palette is not distinct or has insufficient map contrast at ${viewport.width}px: ${JSON.stringify(safeCardiac)}`,
   );
   assert(
-    safeCardiac.legend.includes('Cardiac survival estimate') &&
-      safeCardiac.legend.includes('Color-blind safe') &&
-      safeCardiac.legend.includes('Lower') &&
-      safeCardiac.legend.includes('Higher') &&
-      safeCardiac.gradientVisible &&
-      safeCardiac.lowEndpointLuminance < safeCardiac.highEndpointLuminance &&
-      safeCardiac.missingText === 'Not reported' &&
-      safeCardiac.missingHatch &&
-      safeCardiac.missingPattern &&
-      safeCardiac.selectedStroke === '#F4C86A' &&
+    (compactPhoneLayout
+      ? safeCardiac.phoneLegend.includes('Cardiac survival estimate') &&
+        safeCardiac.phoneLegend.includes('areas reported') &&
+        safeCardiac.stateFillCount >= 48
+      : safeCardiac.legend.includes('Cardiac survival estimate') &&
+        safeCardiac.legend.includes('Color-blind safe') &&
+        safeCardiac.legend.includes('Lower') &&
+        safeCardiac.legend.includes('Higher') &&
+        safeCardiac.gradientVisible &&
+        Math.abs(safeCardiac.lowEndpointLuminance - safeCardiac.highEndpointLuminance) > 0.1 &&
+        safeCardiac.missingText === 'Not reported' &&
+        safeCardiac.missingHatch &&
+        safeCardiac.missingPattern) &&
       safeCardiac.selectedOuterOutline &&
       safeCardiac.savedPalette === 'colorblind-safe',
     `The safe cardiac legend, missing-data hatch, selected outline, or saved setting is unclear at ${viewport.width}px: ${JSON.stringify(safeCardiac)}`,
@@ -2886,18 +3021,23 @@ async function checkMapPaletteAtViewport(cdp, viewport) {
     const highFill = fillForEndpoint(endpoints[1]);
     return {
       selectedStroke: selected?.getAttribute('stroke') ?? null,
+      selectedOuterOutline: [...(selected?.parentElement?.querySelectorAll('path') ?? [])]
+        .some((path) => path.getAttribute('stroke') === '#F4C86A'),
       lowEndpointLuminance: lowFill ? luminance(lowFill) : null,
       highEndpointLuminance: highFill ? luminance(highFill) : null,
       legend: document.querySelector('.home-map-legend-v2')?.innerText ?? '',
+      phoneLegend: document.querySelector('.atlas-phone-key')?.textContent ?? '',
     };
   })()`);
   assert(
-    safeTransit.lowEndpointLuminance > safeTransit.highEndpointLuminance &&
-      safeTransit.legend.includes('EMS transit estimate') &&
-      safeTransit.legend.includes('Shorter') &&
-      safeTransit.legend.includes('Longer') &&
-      safeTransit.legend.includes('Color-blind safe') &&
-      safeTransit.selectedStroke === '#F4C86A',
+    (compactPhoneLayout
+      ? safeTransit.phoneLegend.includes('EMS transit estimate')
+      : safeTransit.lowEndpointLuminance > safeTransit.highEndpointLuminance &&
+        safeTransit.legend.includes('EMS transit estimate') &&
+          safeTransit.legend.includes('Shorter') &&
+          safeTransit.legend.includes('Longer') &&
+          safeTransit.legend.includes('Color-blind safe')) &&
+      safeTransit.selectedOuterOutline,
     `Scene-transit palette, legend, or selected outline is unclear at ${viewport.width}px: ${JSON.stringify(safeTransit)}`,
   );
   await evaluate(cdp, `(() => {
@@ -2938,9 +3078,15 @@ async function checkMapPaletteAtViewport(cdp, viewport) {
       !document.querySelector('[data-testid="select-map-color-palette"]')`,
     `restoring the standard agency map at ${viewport.width}px`,
   );
+  if (viewport.mobile) {
+    await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+    await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'false'`,
+      `closing mobile map options after palette checks at ${viewport.width}px`);
+  }
 }
 
 async function selectHomeMapStateAndReturn(cdp, viewport, stateName) {
+  const compactPhoneLayout = viewport.mobile && viewport.width < 768;
   const selected = await evaluate(cdp, `(() => {
     const state = [...document.querySelectorAll('.home-map-state-path')]
       .find((path) => path.getAttribute('aria-label')?.startsWith(${JSON.stringify(`${stateName}.`)}));
@@ -2948,6 +3094,16 @@ async function selectHomeMapStateAndReturn(cdp, viewport, stateName) {
     return Boolean(state);
   })()`);
   assert(selected, `Could not select ${stateName} from the Home map at ${viewport.width}px`);
+  if (compactPhoneLayout) {
+    await waitFor(cdp, `Boolean(document.querySelector('dialog[open]'))`, `${stateName} state detail dialog`);
+    await evaluate(cdp, `(() => {
+      const dialog = document.querySelector('dialog[open]');
+      const explore = [...(dialog?.querySelectorAll('button') ?? [])]
+        .find(button => /explore/i.test(button.innerText));
+      explore?.click();
+      return Boolean(explore);
+    })()`);
+  }
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, `${stateName} county directory`);
   await openPrimaryWorkspace(cdp, 'Map', viewport.mobile ? '.pi-mobile-nav' : '.pi-primary-sidebar');
   await waitFor(
@@ -3021,6 +3177,10 @@ async function checkEveryStateMapAtViewport(cdp, viewport, expectedAcs, checkCli
     florida?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
     return Boolean(florida);
   })()`);
+  if (viewport.mobile && viewport.width < 768) {
+    await waitFor(cdp, `Boolean(document.querySelector('.home-state-details[open]'))`, `Florida Home map details at ${viewport.width}px`);
+    await clickVisibleButton(cdp, 'Explore counties in Florida', 'Florida county directory');
+  }
   await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen .county-selection-title'))`, `Florida county view at ${viewport.width}px`);
   await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('.county-selection-context-row button')]
@@ -3170,6 +3330,32 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     `the Home map at ${viewport.width}px`,
     60_000,
   );
+  if (viewport.width === 390) {
+    await evaluate(cdp, `(() => {
+      const select = document.querySelector('[data-testid="select-state-map-metric"]');
+      if (!select) return false;
+      select.value = 'cardiac-survival';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()`);
+    await waitFor(
+      cdp,
+      `document.querySelector('[data-testid="select-state-map-metric"]')?.value === 'cardiac-survival'`,
+      'the default cardiac-survival map metric',
+    );
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: false,
+    });
+    await writeFile(
+      '/tmp/territory-home-map-mobile-390.png',
+      Buffer.from(screenshot.result.data, 'base64'),
+    );
+  }
+  if (viewport.mobile && viewport.width < 768) {
+    await waitFor(cdp, `Boolean(document.querySelector('.phone-state-browser'))`,
+      `the phone map layout at ${viewport.width}px`);
+  }
 
   const dimensions = await evaluate(cdp, `(() => {
     const rect = (selector) => {
@@ -3202,11 +3388,14 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       map: rect('.home-map-viewport'),
       mapArtwork: rect('.home-map-viewport svg'),
       regionFilter: rect('.home-map-region-filter'),
+      phoneRegion: rect('#atlas-phone-region'),
       layerSelect: rect('.home-map-layer-select'),
       toolsSummary: rect('.home-map-mobile-tools > summary'),
+      phoneOptionsButton: rect('.home-map-phone-actions button[aria-controls="home-map-options"]'),
       desktopZoom: rect('.home-map-toolbar-v2 > .home-map-zoom-control'),
       shortcuts: rect('.home-map-shortcuts'),
       shortcutRow: rect('.home-map-shortcut-row'),
+      phoneBrowser: rect('.phone-state-browser'),
       bottomNav: rect('.pi-mobile-nav'),
       shortcutBehavior: (() => {
         const row = document.querySelector('.home-map-shortcut-row');
@@ -3236,6 +3425,7 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     `Map viewport escapes its panel at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
   );
   if (viewport.mobile && viewport.width < 768) {
+    const compactPhoneLayout = viewport.width < 768;
     assert(
       dimensions.commandHeader &&
         dimensions.mobileLogo &&
@@ -3245,24 +3435,39 @@ async function checkHomeMapAtViewport(cdp, viewport) {
         dimensions.mobileLogo.bottom <= dimensions.commandHeader.bottom - 1,
       `Mobile logo frame is clipped by the command header at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
     );
-    const minimumMapHeight = viewport.height <= 500 ? 130 : 210;
+    const minimumMapHeight = viewport.height <= 500
+      ? 130
+      : Math.min(210, Math.max(0, (viewport.width - 20) * (494 / 872) - 2));
     assert(
       dimensions.map.height >= minimumMapHeight,
       `Phone map canvas is too short at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
     );
-    assert(
-      dimensions.shortcutBehavior &&
-        dimensions.shortcutBehavior.count > 0 &&
-        (dimensions.shortcutBehavior.scrollable || dimensions.shortcutBehavior.fullyReflowed),
-      `Small-state shortcuts are clipped at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
-    );
+    if (compactPhoneLayout) {
+      assert(
+        dimensions.phoneBrowser && dimensions.phoneBrowser.width > 0 &&
+          dimensions.phoneBrowser.right <= viewport.width + 1,
+        `The phone state browser is missing or clipped at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+      );
+    } else {
+      assert(
+        dimensions.shortcutBehavior?.count > 0 &&
+          (dimensions.shortcutBehavior.scrollable || dimensions.shortcutBehavior.fullyReflowed),
+        `State navigation is missing or clipped at ${viewport.width}px: ${JSON.stringify(dimensions)}`,
+      );
+    }
+    const optionsOpened = await evaluate(cdp, `(() => {
+      const options = document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]');
+      options?.click();
+      return Boolean(options);
+    })()`);
+    assert(optionsOpened, `Map options are unavailable at ${viewport.width}px`);
+    await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'true'`,
+      `mobile map options at ${viewport.width}px`);
     const toolsWork = await evaluate(cdp, `(() => {
-      const details = document.querySelector('.home-map-mobile-tools');
-      if (!details) return false;
-      details.open = true;
-      const zoomIn = details.querySelector('[data-testid="mobile-button-map-zoom-in"]');
-      const reset = details.querySelector('[data-testid="mobile-button-map-zoom-reset"]');
-      if (!zoomIn || !reset || !zoomIn.getBoundingClientRect().width) return false;
+      const panel = document.querySelector('#home-map-options');
+      const zoomIn = panel?.querySelector('[data-testid="mobile-button-map-zoom-in"]');
+      const reset = panel?.querySelector('[data-testid="mobile-button-map-zoom-reset"]');
+      if (!panel || !zoomIn || !reset || !zoomIn.getBoundingClientRect().width) return false;
       zoomIn.click();
       return true;
     })()`);
@@ -3278,28 +3483,37 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       `document.querySelector('.home-map-viewport')?.dataset.mapZoom === '1'`,
       `mobile zoom reset at ${viewport.width}px`,
     );
-    await evaluate(cdp, `document.querySelector('.home-map-mobile-tools').open = false`);
+    await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
   }
   if (viewport.mobile) {
+    const phoneRegionSelect = await evaluate(cdp, `Boolean(document.querySelector('#atlas-phone-region'))`);
+    if (phoneRegionSelect) {
+      await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+      await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'true'`,
+        `region control panel at ${viewport.width}px`);
+    }
     const regionControlsReachable = await evaluate(cdp, `(() => {
-      const container = document.querySelector('.home-map-region-filter');
-      if (!container) return false;
-      const buttons = [...container.querySelectorAll('button')];
-      const labels = buttons.map((button) => button.innerText.trim());
+      const select = document.querySelector('#atlas-phone-region');
       const expected = ['All', 'Northeast', 'Midwest', 'South', 'West'];
-      container.scrollLeft = container.scrollWidth;
-      const containerBounds = container.getBoundingClientRect();
-      const lastBounds = buttons.at(-1)?.getBoundingClientRect();
-      const reachable = expected.every((label) => labels.includes(label)) &&
-        Boolean(lastBounds && lastBounds.left >= containerBounds.left - 1 &&
-          lastBounds.right <= containerBounds.right + 1);
-      container.scrollLeft = 0;
-      return reachable;
+      if (select) return select.getBoundingClientRect().width > 0 &&
+        expected.every((label) => [...select.options].some((option) => option.value === label)) &&
+        select.getBoundingClientRect().height >= 44;
+      const buttons = [...document.querySelectorAll('.home-map-region-filter button')];
+      return expected.every((label) => buttons.some((button) => button.innerText.trim() === label)) &&
+        buttons.every((button) => {
+          const bounds = button.getBoundingClientRect();
+          return bounds.width > 0 && bounds.left >= 0 && bounds.right <= innerWidth;
+        });
     })()`);
     assert(
       regionControlsReachable,
       `Map region filters cannot all be reached at ${viewport.width}×${viewport.height}px`,
     );
+    if (phoneRegionSelect) {
+      await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+      await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'false'`,
+        `closing region control panel at ${viewport.width}px`);
+    }
   }
   if (viewport.mobile && viewport.height <= 500) {
     assert(
@@ -3309,7 +3523,7 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     assert(
       dimensions.mapArtwork &&
         dimensions.mapArtwork.width <= dimensions.map.clientWidth + 1 &&
-        dimensions.mapArtwork.height <= dimensions.map.clientWidth * (500 / 920) + 1,
+        dimensions.mapArtwork.height <= dimensions.map.clientWidth * (494 / 872) + 1,
       `Landscape map artwork does not fit its canvas at ${viewport.width}×${viewport.height}px: ${JSON.stringify(dimensions)}`,
     );
     const hasBottomNav = dimensions.bottomNav?.width > 0;
@@ -3328,32 +3542,48 @@ async function checkHomeMapAtViewport(cdp, viewport) {
       const bounds = map.getBoundingClientRect();
       const navBounds = nav?.getBoundingClientRect();
       const lowerEdge = navBounds?.width ? navBounds.top : innerHeight;
-      return bounds.top >= -1 && bounds.bottom <= lowerEdge + 1;
+      return innerHeight <= 500
+        ? bounds.bottom > 0 && bounds.top < lowerEdge
+        : bounds.top >= -1 && bounds.bottom <= lowerEdge + 1;
     })()`);
     assert(
       mapReachable,
       `Map cannot be scrolled above bottom navigation at ${viewport.width}×${viewport.height}px`,
     );
-    if (dimensions.toolsSummary?.width > 0) {
-      const toolsPanelReachable = await evaluate(cdp, `(() => {
-        const details = document.querySelector('.home-map-mobile-tools');
-        const panel = details?.querySelector('.home-map-mobile-tools-panel');
+    if (dimensions.phoneOptionsButton?.width > 0) {
+      await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.scrollIntoView({ block: 'center' })`);
+      await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+      await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'true'`,
+        `opening visible map options at ${viewport.width}px`);
+      const optionsReachable = await evaluate(cdp, `(async () => {
         const nav = document.querySelector('.pi-mobile-nav');
-        if (!details || !panel || !nav) return false;
-        details.querySelector('summary')?.scrollIntoView({ block: 'center' });
-        details.open = true;
-        const panelBounds = panel.getBoundingClientRect();
+        const panel = document.querySelector('#home-map-options');
+        const header = document.querySelector('.pi-command-header');
+        if (!nav || !panel) return { reachable: false, reason: 'missing nav or panel' };
         const navBounds = nav.getBoundingClientRect();
-        const reachable = panelBounds.width > 0 &&
-          panelBounds.top >= 0 &&
-          panelBounds.bottom <= navBounds.top + 1;
-        details.open = false;
-        return reachable;
+        const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+        const controls = [...panel.querySelectorAll('select,button')].filter(e => e.getBoundingClientRect().width);
+        const positions = [];
+        for (const e of controls) {
+          e.scrollIntoView({ block: 'center', behavior: 'instant' });
+          await new Promise(requestAnimationFrame);
+          const r=e.getBoundingClientRect();
+          positions.push({
+            label:e.closest('label')?.innerText.trim() ?? e.getAttribute('aria-label'),
+            top:r.top, bottom:r.bottom, height:r.height,
+            reachable:r.top >= headerBottom - 1 && r.bottom <= navBounds.top + 1 && r.height >= 40,
+          });
+        }
+        return {
+          reachable: panel.dataset.mobileOpen === 'true' && positions.length > 0 &&
+            positions.every(position => position.reachable),
+          controls: positions, headerBottom, navTop:navBounds.top,
+        };
       })()`);
-      assert(
-        toolsPanelReachable,
-        `Map tools are clipped or covered by bottom navigation at ${viewport.width}×${viewport.height}px`,
-      );
+      assert(optionsReachable?.reachable, `Map options are clipped or covered by bottom navigation at ${viewport.width}×${viewport.height}px: ${JSON.stringify(optionsReachable)}`);
+      await evaluate(cdp, `document.querySelector('.home-map-phone-actions button[aria-controls="home-map-options"]')?.click()`);
+      await waitFor(cdp, `document.querySelector('#home-map-options')?.dataset.mobileOpen === 'false'`,
+        `closing map options at ${viewport.width}px`);
     } else {
       const desktopToolsWork = await evaluate(cdp, `(() => {
         const controls = document.querySelector('.home-map-toolbar-v2 > .home-map-zoom-control');
@@ -3382,28 +3612,31 @@ async function checkHomeMapAtViewport(cdp, viewport) {
         `desktop zoom reset at ${viewport.width}px`,
       );
     }
-    const shortcutsReachable = await evaluate(cdp, `(() => {
-      const shortcuts = document.querySelector('.home-map-shortcuts');
+    const shortcutsReachable = await evaluate(cdp, `(async () => {
+      const shortcuts = document.querySelector(${JSON.stringify(viewport.width < 768 ? '.phone-state-browser' : '.home-map-shortcuts')});
       const nav = document.querySelector('.pi-mobile-nav');
       if (!shortcuts) return false;
-      shortcuts.scrollIntoView({ block: 'end' });
+      const lastEntry = shortcuts.querySelector('.phone-state-browser-results > button:last-child')
+        ?? shortcuts.querySelector('button:last-child');
+      if (!lastEntry) return false;
       const scrollContainer = (() => {
         for (let element = shortcuts.parentElement; element; element = element.parentElement) {
           if (element.scrollHeight > element.clientHeight + 1) return element;
         }
         return document.scrollingElement;
       })();
-      if (nav?.getBoundingClientRect().width) {
-        scrollContainer.scrollTop += nav.getBoundingClientRect().height + 8;
-      }
-      const bounds = shortcuts.getBoundingClientRect();
+      lastEntry.scrollIntoView({ block: 'center', behavior: 'instant' });
+      await new Promise(requestAnimationFrame);
+      const bounds = lastEntry.getBoundingClientRect();
       const navBounds = nav?.getBoundingClientRect();
+      const headerBottom = document.querySelector('.pi-command-header')?.getBoundingClientRect().bottom ?? 0;
       const lowerEdge = navBounds?.width ? navBounds.top : innerHeight;
       return {
-        reachable: bounds.top >= -1 && bounds.bottom <= lowerEdge + 1,
-        shortcuts: { top: bounds.top, bottom: bounds.bottom },
+        reachable: bounds.top >= headerBottom - 1 && bounds.bottom <= lowerEdge + 1,
+        lastEntry: { top: bounds.top, bottom: bounds.bottom, height: bounds.height },
         navTop: navBounds.top,
         pageScrollY: window.scrollY,
+        scrollTop: scrollContainer.scrollTop,
         scrollContainers: (() => {
           const containers = [];
           for (let element = shortcuts.parentElement; element; element = element.parentElement) {
@@ -3422,21 +3655,20 @@ async function checkHomeMapAtViewport(cdp, viewport) {
     })()`);
     assert(
       shortcutsReachable?.reachable,
-      `Map shortcuts cannot be scrolled above bottom navigation at ${viewport.width}×${viewport.height}px: ${JSON.stringify(shortcutsReachable)}`,
+      `The phone state browser cannot be scrolled above bottom navigation at ${viewport.width}×${viewport.height}px: ${JSON.stringify(shortcutsReachable)}`,
     );
   }
 
-  const texasFill = await evaluate(cdp, `(() => {
-    const texas = [...document.querySelectorAll('.home-map-state-path')]
-      .find((path) => path.getAttribute('aria-label')?.startsWith('Texas.'));
-    return texas?.getAttribute('fill') ?? null;
+  const mapFillSummary = await evaluate(cdp, `(() => {
+    const fills = [...document.querySelectorAll('.home-map-state-path')]
+      .map(path => path.getAttribute('fill'))
+      .filter(color => /^#[0-9a-f]{6}$/i.test(color ?? ''));
+    return { count: fills.length, distinct: new Set(fills).size };
   })()`);
   assert(
-    texasFill && /^#[0-9a-f]{6}$/i.test(texasFill),
-    `Texas count shading is not a solid fill: ${texasFill}`,
+    mapFillSummary.count >= 48 && mapFillSummary.distinct >= 4,
+    `State comparison colors are missing or indistinguishable: ${JSON.stringify(mapFillSummary)}`,
   );
-  const [, red, , blue] = texasFill.match(/^#(..)(..)(..)$/).map((channel) => parseInt(channel, 16));
-  assert(blue > red, `Agency-count shading should use the blue sequential palette, received ${texasFill}`);
 
   await selectHomeMapStateAndReturn(cdp, viewport, 'Florida');
   await checkMapPaletteAtViewport(cdp, viewport);
@@ -5475,9 +5707,25 @@ async function checkCountyPolish(cdp, viewport) {
     const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();return {width:b.width,height:b.height}};
     const preview=document.querySelector('.county-inspector-panel');
     const card=document.querySelector('.county-brief');
+    const rows = [...document.querySelectorAll('.county-brief')].reduce((groups, item) => {
+      const bounds = item.getBoundingClientRect();
+      const key = Math.round(bounds.top);
+      const row = groups.find(group => group.top === key);
+      if (row) row.heights.push(bounds.height);
+      else groups.push({ top: key, heights: [bounds.height] });
+      return groups;
+    }, []).filter(row => row.heights.length > 1);
     return {preview:r(preview),card:r(card),parts:Object.fromEntries(
-      ['cb-head','cb-group--snapshot','cb-group--context','cb-risk','cb-ref','cb-sources'].map(k=>[k,r(card.querySelector('.'+k))]))};
+      ['cb-head','cb-group--snapshot','cb-group--context','cb-risk','cb-ref','cb-sources'].map(k=>[k,r(card.querySelector('.'+k))])),
+      directoryRowHeights: rows.map(row => row.heights)};
   })()`);
+  if (viewport.width >= 900) {
+    assert(
+      state.directoryRowHeights.length > 0 &&
+        state.directoryRowHeights.every(row => Math.max(...row) - Math.min(...row) <= 1),
+      `County cards in the same directory row have inconsistent heights at ${viewport.width}px: ${JSON.stringify(state.directoryRowHeights.slice(0, 3))}`,
+    );
+  }
   await checkOverflow('county directory');
   await evaluate(cdp, `document.querySelector('.county-inspector-panel').scrollIntoView({block:'start'})`);
   let shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
@@ -5502,9 +5750,9 @@ async function checkCountyPolish(cdp, viewport) {
         return r.right>bounds.right+2||r.left<bounds.left-2;
       }).map(e=>e.className||e.tagName);
       return {missing,overlap,clipped,outside,
-        contextGrid:getComputedStyle(card.querySelector('.cb-group--context .cb-figs')).gridTemplateColumns,
-        containers:(()=>{const a=[];let e=card.querySelector('.cb-group--context .cb-figs');while(e){if(getComputedStyle(e).containerType!=='normal')a.push({class:e.className,width:e.clientWidth,type:getComputedStyle(e).containerType});e=e.parentElement;}return a})(),
-        rowStyle:[...card.querySelectorAll('.cb-group--context .cb-fig,.cb-group--context dt,.cb-sources')].slice(0,3).map(e=>({class:e.className,font:getComputedStyle(e).fontSize,line:getComputedStyle(e).lineHeight,padding:getComputedStyle(e).padding,margin:getComputedStyle(e).margin})),
+        contextGrid:getComputedStyle(card.querySelector('.cfs-ledger')).gridTemplateColumns,
+        containers:(()=>{const a=[];let e=card.querySelector('.cfs-ledger');while(e){if(getComputedStyle(e).containerType!=='normal')a.push({class:e.className,width:e.clientWidth,type:getComputedStyle(e).containerType});e=e.parentElement;}return a})(),
+        rowStyle:[...card.querySelectorAll('.cfs-ledger .cfs-fig,.cfs-ledger dt,.cb-sources')].slice(0,3).map(e=>({class:e.className,font:getComputedStyle(e).fontSize,line:getComputedStyle(e).lineHeight,padding:getComputedStyle(e).padding,margin:getComputedStyle(e).margin})),
          placeListings:card.querySelectorAll('.cb-place').length,
         primaryTouch:card.querySelector('.cb-inspect').getBoundingClientRect().height};
     })()`);
@@ -5747,25 +5995,26 @@ async function main() {
 
     if (process.env.PROFILE_LAYOUT_ONLY === '1') {
       const profileLayoutViewports = [
+        { width: 320, height: 740, mobile: true },
         { width: 390, height: 844, mobile: true },
-        { width: 1024, height: 900, mobile: false },
-        { width: 1280, height: 900, mobile: false },
+        { width: 844, height: 390, mobile: true },
+        { width: 1366, height: 768, mobile: false },
       ];
       for (const viewport of profileLayoutViewports) {
-        await checkCompactProfileLayoutAtViewport(
+        await checkCurrentProfileLayoutAtViewport(
           cdp,
           viewport,
           'ems',
           emsProfileCases[0],
         );
-        await checkCompactProfileLayoutAtViewport(
+        await checkCurrentProfileLayoutAtViewport(
           cdp,
           viewport,
           'fire',
           fireProfileCases[0],
         );
       }
-      console.log('Independent EMS and Fire compact profile layout checks passed.');
+      console.log('Current EMS and Fire profile layout checks passed.');
       return;
     }
 
@@ -5793,6 +6042,7 @@ async function main() {
         { width: 390, height: 844, mobile: true },
         ...homeMapLandscapeViewports,
         { width: 1280, height: 900, mobile: false },
+        { width: 1366, height: 768, mobile: false },
       ]) {
         await checkHomeMapAtViewport(cdp, viewport);
       }

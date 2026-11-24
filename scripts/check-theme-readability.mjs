@@ -1840,17 +1840,34 @@ async function checkTaskWorkflow(cdp, viewport) {
 
 async function checkProfileAndSources(cdp, dark) {
   await setTheme(cdp, dark);
+  const openedOverview = await evaluate(cdp, `(() => {
+    const profile = document.querySelector('main.profile-workspace');
+    if (!profile) return false;
+    const mobile = profile.querySelector('[data-testid="select-profile-section-mobile"]');
+    if (mobile) {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+        ?.set?.call(mobile, 'overview');
+      mobile.dispatchEvent(new Event('input', { bubbles: true }));
+      mobile.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+    const overview = profile.querySelector('[role="tab"][data-section="overview"]');
+    overview?.click();
+    return Boolean(overview);
+  })()`);
+  assert(openedOverview, 'Could not return to the profile overview before checking theme readability');
+  await waitFor(cdp, `Boolean(document.querySelector('[data-testid="profile-command-overview"]'))`, 'profile overview after theme change');
   await evaluate(cdp, `(() => { const details = document.querySelector('.profile-more-actions'); if (details) details.open = true; })()`);
   await evaluate(cdp, `(() => { const details = document.querySelector('[data-testid="profile-record-context"]'); if (details) details.open = true; })()`);
   const profileCues = await evaluate(cdp, `(() => {
-    const status = document.querySelector('[data-testid="text-profile-freshness"]');
+    const overview = document.querySelector('[data-testid="profile-command-overview"]');
     const source = document.querySelector('[data-testid="button-profile-inspect-sources"]');
     const profile = document.querySelector('main.profile-workspace');
     const profileRect = profile?.getBoundingClientRect();
     return {
       agencyName: document.querySelector('[data-testid="text-agency-name"]')?.innerText.trim() ?? '',
-      statusText: status?.innerText.trim() ?? '',
-      statusHasAccessibleState: Boolean(status),
+      overview: Boolean(overview),
+      staleVerificationCallout: /not reviewed in this browser|not verified yet|hasn't been verified/i.test(profile?.innerText ?? ''),
       sourcePanel: Boolean(document.querySelector('[data-testid="text-profile-source-period"]')),
       sourceAction: Boolean(source && source.getAttribute('aria-label') === 'Inspect agency sources'),
       pageOverflow: document.documentElement.scrollWidth > innerWidth,
@@ -1869,8 +1886,8 @@ async function checkProfileAndSources(cdp, dark) {
       })) : [],
     };
   })()`);
-  assert(profileCues.statusText, `${themeLabel(dark)} profile status is missing`);
-  assert(profileCues.statusHasAccessibleState, 'Profile review status is missing its labelled control');
+  assert(profileCues.overview, `${themeLabel(dark)} profile overview is missing`);
+  assert(!profileCues.staleVerificationCallout, 'A removed profile verification callout has reappeared');
   assert(profileCues.agencyName, 'Provider profile is missing its agency identity');
   assert(profileCues.sourcePanel, 'Provider source-period context is missing');
   assert(profileCues.sourceAction, 'Agency source inspection action is missing or not labelled');
@@ -1909,7 +1926,7 @@ async function checkProfileAndSources(cdp, dark) {
     { name: 'source match status', selector: '[data-testid="profile-nppes-link-status"]' },
     { name: 'source explanation', selector: '[data-testid="profile-nppes-link-explanation"]' },
   ]);
-  console.log(`  ${themeLabel(dark)} profile status: ${profileCues.statusText}; source status: ${sourceCues.statusText}`);
+  console.log(`  ${themeLabel(dark)} profile overview: ${profileCues.overview ? 'present' : 'missing'}; source status: ${sourceCues.statusText}`);
   await captureThemeScreenshot(cdp, dark, 'agency-profile');
   await evaluate(cdp, `document.querySelector('[aria-label="Evidence and Source Inspection Drawer"] button')?.click()`);
   const openedEvidenceSection = await evaluate(cdp, `(() => {
@@ -2300,7 +2317,18 @@ async function openPulseIqCharts(cdp) {
   } else {
     await clickVisible(cdp, 'Reports', true);
   }
-  await waitFor(cdp, `Boolean(document.querySelector('#workspace-hub-title')?.innerText.includes('Reports'))`, 'Reports workspace');
+  try {
+    await waitFor(cdp, `Boolean(document.querySelector('.workspace-hub h1')?.innerText.includes('Reports'))`, 'Reports workspace');
+  } catch (error) {
+    const state = await evaluate(cdp, `JSON.stringify({
+      title: document.querySelector('.workspace-hub h1')?.innerText ?? '',
+      heading: document.querySelector('h1')?.innerText ?? '',
+      body: document.body.innerText.slice(0, 1200),
+      selectedNavigation: [...document.querySelectorAll('[aria-current="page"],[aria-selected="true"]')]
+        .map(element => element.innerText.trim()).filter(Boolean),
+    })`);
+    throw new Error(`${error.message}. Reports navigation state: ${state}`);
+  }
   const openedPriorities = await evaluate(cdp, `(() => {
     const card = [...document.querySelectorAll('.workspace-destination')]
       .find((button) => button.querySelector('strong')?.textContent?.trim() === 'Territory priorities');
@@ -2957,6 +2985,10 @@ async function runViewport(cdp, viewport, gisGroup) {
       return Boolean(state);
     })()`);
     assert(selectedFlorida, 'Could not select Florida from the national map');
+    if (viewport.mobile && viewport.width < 768) {
+      await waitFor(cdp, `Boolean(document.querySelector('.home-state-details[open]'))`, 'Florida Home map details');
+      await clickVisible(cdp, 'Explore counties in Florida', true);
+    }
     await waitFor(cdp, `Boolean(document.querySelector('.territory-explorer-screen'))`, 'Florida county directory');
     await openProfile(cdp);
     await checkProfileBackRestoration(cdp, viewport);

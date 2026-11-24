@@ -65,6 +65,14 @@ test('phone overview offers a labeled equipment disclosure while retaining all s
   assert.match(html,/id="[^"]+-equipment-catalog" class="acp-ledger-catalog"/);
   assert.equal((html.match(/data-testid="row-overview-equipment-/g)||[]).length,6);
 });
+test('empty equipment overview uses one recovery action instead of repeating unavailable rows',()=>{
+  const html=render(fixture({installedFleet:{} as Agency['installedFleet']}));
+  assert.match(html,/data-testid="overview-equipment-empty"/);
+  assert.match(html,/data-testid="button-overview-open-equipment-empty"/);
+  assert.doesNotMatch(html,/data-testid="row-overview-equipment-/);
+  assert.doesNotMatch(html,/data-testid="button-overview-expand-equipment-phone"/);
+  assert.match(html,/The Equipment tab lists each category for follow-up/);
+});
 test('unknown equipment quantity and age are not displayed as reported zeros',()=>{
   const html=render(fixture({installedFleet:{
     defibBrand:'Recorded Monitor Model',
@@ -74,8 +82,8 @@ test('unknown equipment quantity and age are not displayed as reported zeros',()
 });
 test('sparse EMS remains a research-needed view, not a fake dashboard',()=>{
   const html=render(fixture({annualCallVolume:undefined,annual911Transports:undefined,stationsCount:undefined,totalAmbulances:undefined} as unknown as Partial<Agency>));
-  assert.match(html,/No equipment recorded yet/);assert.match(html,/No signal recorded/);
-  assert.match(html,/No contact recorded/);assert.match(html,/Monitor \/ defibrillator model/);
+  assert.match(html,/No equipment has been recorded here/);assert.match(html,/Open Equipment/);
+  assert.match(html,/No signal recorded/);assert.match(html,/No contact recorded/);
   assert.doesNotMatch(html,/NaN|undefined/);
 });
 test('overview source access does not display per-record verification counts',()=>{

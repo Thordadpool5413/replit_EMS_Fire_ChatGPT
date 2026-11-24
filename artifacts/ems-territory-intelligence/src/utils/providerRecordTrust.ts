@@ -44,6 +44,9 @@ export function agencyIdentifierLabel(agency: Agency): string {
   const stateIds=[...new Set((agency.sourceRecordAssociations??[]).filter(a=>a.decision==='confirmed'&&a.sourceName==='State EMS'&&a.sourceFields?.stateCode===agency.stateCode&&a.sourceFields?.identifierKind==='agency-code'&&typeof a.sourceFields?.stateAgencyId==='string').map(a=>String(a.sourceFields.stateAgencyId)))];
   if(stateIds.length===1)return 'State agency code '+stateIds[0];
   if(stateIds.length>1)return 'State agency code association requires review';
+  const stateLicenses=[...new Set((agency.sourceRecordAssociations??[]).filter(a=>a.decision==='confirmed'&&a.sourceName==='State EMS'&&a.sourceFields?.stateCode===agency.stateCode&&a.sourceFields?.identifierKind==='license'&&typeof a.sourceFields?.stateAgencyId==='string').map(a=>String(a.sourceFields.stateAgencyId)))];
+  if(stateLicenses.length===1)return 'State EMS license '+stateLicenses[0];
+  if(stateLicenses.length>1)return 'State EMS license association requires review';
   if (agency.stateLicenseNumber?.trim()) return 'State license ' + agency.stateLicenseNumber.trim();
   if (agency.npiNumber?.trim()) return 'NPI ' + agency.npiNumber.trim() + (agency.isVerifiedRecord ? '' : ' (recorded)');
   return fire ? 'FDID not reported' : 'EMS ID not reported';

@@ -1,7 +1,7 @@
 /**
  * State and territorial EMS source routes.
  *
- * A directory route is not a state license dataset. Ohio has a staged state agency roster;
+ * A directory route is not a state license dataset. Ohio and Florida have staged state rosters;
  * the other direct state routes are manual references, not ingested license datasets.
  */
 export type EmsJurisdictionCoverageStatus =
@@ -127,7 +127,7 @@ export const EMS_JURISDICTION_SOURCE_COVERAGE: EmsJurisdictionSourceCoverage[] =
             code,
             name,
             level: "state" as const,
-            coverageStatus: "official-license-reference" as const,
+            coverageStatus: "official-agency-roster" as const,
             sourceName: "Florida DOH EMS Service Provider Licensing",
             sourceUrl: FLORIDA_MQA_LICENSE_SEARCH,
             directoryUrl: FLORIDA_EMS_PROGRAM,
@@ -139,11 +139,11 @@ export const EMS_JURISDICTION_SOURCE_COVERAGE: EmsJurisdictionSourceCoverage[] =
               "Address of record and listed secondary locations",
             ],
             periodAndFreshness:
-              "License search pages show a record-specific “Data As Of” date; the program page's aggregate provider count can change.",
+              "Bundled report processed 2026-11-24; live lookup may be newer. Verify individual license status.",
             appConnection:
-              "Official manual lookup linked in the app; no automated license search, roster ingestion, or agency match is implemented.",
+              "347 license listings in the bundled Florida report, including 332 Florida headquarters. Browse and review before creating or linking accounts; manual live MQA lookup remains available.",
             limitations:
-              "The linked provider roster PDF has an embedded processed date of 10/23/2020 despite its 2025/08 URL path; use each MQA record's own “Data As Of” date instead. A license record does not alone prove dispatch/service boundaries, current apparatus, frontline status, leadership authority, or call volume.",
+              "Report snapshots can be stale or served in different versions. Address county is not a service boundary. License dates do not establish contract dates, apparatus, or active operations. Out-of-state headquarters are browse-only.",
           }
         : code === "VA" ? {
           code,name,level:"state" as const,coverageStatus:"official-license-reference" as const,

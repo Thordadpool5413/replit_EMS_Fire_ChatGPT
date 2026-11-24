@@ -1014,3 +1014,14 @@
 .agency-command-profile .pcp-actions { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
 .agency-command-profile .pcp-body > .pcp-button { justify-self:start; }
 @media(max-width:420px) { .agency-command-profile .pcp-toggle { flex:1 0 100%; justify-content:space-between; } }
+
+/* Pre-call planning stays inside the existing compact profile evidence surface. */
+.agency-command-profile .pcp-focus-label { display:grid; gap:.25rem; font-size:13px; font-weight:650; color:var(--tp-ink); min-width:0; }
+.agency-command-profile .pcp-select,.agency-command-profile .pcp-copy-text { display:block; box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:44px; padding:.45rem .6rem; background:var(--tp-card); color:var(--tp-ink); border:1px solid var(--tp-rule-strong); border-radius:7px; font-size:14px; }
+.agency-command-profile .pcp-questions { list-style:decimal; padding:0 0 0 1.35rem; margin:0; min-width:0; }
+.agency-command-profile .pcp-questions li { padding:.18rem 0; }
+.agency-command-profile .pcp-precall-details { min-width:0; }
+.agency-command-profile .pcp-precall-details summary { min-height:44px; padding:.55rem 0; cursor:pointer; font-size:13px; color:var(--tp-accent); font-weight:650; }
+.agency-command-profile .pcp-copy { min-width:0; max-width:100%; }
+.agency-command-profile .pcp-copy-text { resize:vertical; }
+.agency-command-profile .pcp-select:focus-visible,.agency-command-profile .pcp-precall-details summary:focus-visible,.agency-command-profile .pcp-copy-text:focus-visible { outline:2px solid var(--pi-focus-ring); outline-offset:2px; }

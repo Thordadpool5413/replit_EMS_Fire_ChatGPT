@@ -172,5 +172,6 @@ export function hasAgencyContractEvidence(agency: Agency): boolean {
   const evidence = agency.factEvidence?.maintenanceContracts;
   return Boolean(evidence && evidence.sourceKind !== 'logic' && hasMappedFactSource(evidence)
     && /^\d{4}-\d{2}-\d{2}$/.test(agency.competitorContract?.contractEndDate ?? '')
-    && Number.isFinite(Date.parse(agency.competitorContract.contractEndDate)));
+    && Number.isFinite(Date.parse(agency.competitorContract.contractEndDate))
+    && new Date(agency.competitorContract.contractEndDate).toISOString().slice(0,10)===agency.competitorContract.contractEndDate);
 }

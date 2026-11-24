@@ -28,3 +28,17 @@ test('mapped contract evidence requires valid date and does not allow a modeled 
  assert.equal(hasAgencyContractEvidence({...mapped,factEvidence:{maintenanceContracts:{...mapped.factEvidence!.maintenanceContracts!,sourceKind:'logic',note:'estimate'}}}),false);
  assert.equal(hasAgencyContractEvidence({...mapped,competitorContract:{...mapped.competitorContract,contractEndDate:''}}),false);
 });
+
+test('blank USFA FDIDs stay missing and state-prefixed confirmed IDs link correctly',()=>{
+ const row=['usfa:VA:00103','USFA','Chincoteague Volunteer Fire Company','VA','Chincoteague','23336','51001','Accomack','source-county','','',''] as SourceDirectoryRecord;
+ const linked={...agency,sourceRecordAssociations:[{sourceName:'USFA NFDR',sourceRecordId:'VA:00103',decision:'confirmed',sourceFields:{fdid:'00103',stateCode:'VA'}}]} as unknown as Agency;
+ assert.equal(findLinkedRegistryAgency(row,[linked]),linked);
+ const missing=[...row] as SourceDirectoryRecord;missing[0]='usfa:VA:location-1234567890abcdef1234';
+ assert.equal(registryIdentifierText(missing),'FDID not reported');
+ assert.equal(findLinkedRegistryAgency(missing,[linked]),undefined);
+ assert.equal(isGeneratedFdid('location-1234567890abcdef1234'),true);
+});
+test('contract evidence cannot establish impossible calendar dates',()=>{
+ const mapped={...agency,competitorContract:{...agency.competitorContract,contractEndDate:'2026-02-31'},factEvidence:{maintenanceContracts:{sourceName:'Town procurement',sourceRecordId:'contract-7',sourceUrl:'https://example.gov/contracts/7',sourceKind:'link',reviewed:false}}} as Agency;
+ assert.equal(hasAgencyContractEvidence(mapped),false);
+});

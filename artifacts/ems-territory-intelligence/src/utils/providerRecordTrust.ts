@@ -16,6 +16,7 @@ export function isGeographicProspect(agency: Pick<Agency,'id'|'verificationSourc
 export function isGeneratedFdid(value: unknown, agency?: Pick<Agency,'id'|'verificationSource'|'dataProvenanceTier'>): boolean {
   if (typeof value !== 'string' || !value.trim()) return false;
   const id = value.trim();
+  if (/^location-[a-f0-9]+$/i.test(id)) return true;
   if (/^[A-Z]{2}-(?:FD|EMS)-\d{5}(?:-[A-Z0-9]{1,3})?$/i.test(id)) return true;
   return Boolean(agency && /^territory-[a-z]{2}-(?:ems|fire)-/i.test(agency.id ?? '') && /^[A-Z]{2}-\d{1,5}$/i.test(id));
 }
@@ -30,11 +31,14 @@ export function agencyIdentifierLabel(agency: Agency): string {
   const fdid = agency.fdid?.trim();
   const usfa = (agency.sourceRecordAssociations ?? []).filter(a =>
     a.decision === 'confirmed' && /USFA|NFDR/i.test(a.sourceName) && typeof a.sourceFields?.fdid === 'string');
-  const linkedIds = [...new Set(usfa.map(a=>String(a.sourceFields.fdid).trim()).filter(v=>v&&!isGeneratedFdid(v,agency)))];
+  const linkedIds = [...new Set(usfa.filter(a=>!a.sourceFields.stateCode || String(a.sourceFields.stateCode).toUpperCase()===agency.stateCode?.toUpperCase()).map(a=>String(a.sourceFields.fdid).trim()).filter(v=>v&&!isGeneratedFdid(v,agency)))];
   if (linkedIds.length === 1) return 'FDID ' + linkedIds[0];
   if (linkedIds.length > 1) return 'FDID association requires review';
   if (fdid && !isGeneratedFdid(fdid,agency) && agency.isFdidVerified) return 'FDID ' + fdid;
   const fire = (agency.providerCategory ?? '').toLowerCase() === 'fire' || /fire/i.test(agency.agencyType ?? '');
+  const neris = [...new Set((agency.sourceRecordAssociations ?? []).filter(a=>a.decision==='confirmed' && /^NERIS$/i.test(a.sourceName) && a.sourceRecordId.trim() && (!a.sourceFields?.stateCode || String(a.sourceFields.stateCode).toUpperCase()===agency.stateCode?.toUpperCase())).map(a=>a.sourceRecordId.trim()))];
+  if (neris.length===1) return 'NERIS ID '+neris[0];
+  if (neris.length>1) return 'NERIS association requires review';
   if (agency.stateLicenseNumber?.trim()) return 'State license ' + agency.stateLicenseNumber.trim();
   if (agency.npiNumber?.trim()) return 'NPI ' + agency.npiNumber.trim() + (agency.isVerifiedRecord ? '' : ' (recorded)');
   return fire ? 'FDID not reported' : 'EMS ID not reported';

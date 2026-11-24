@@ -15,8 +15,19 @@ export function buildAgencyIdentityIndex(agencies:Agency[]) {
   for(const association of a.sourceRecordAssociations??[]){
    if(association.decision!=='confirmed')continue;
    const name=association.sourceName.toUpperCase();const id=association.sourceRecordId.trim();
-   if(/USFA|NFDR/.test(name)&&isGeneratedFdid(id,a))continue;
-   const key=/NPPES|NPI/.test(name)&&/^\d{10}$/.test(id)?`NPI:${id}`:/USFA/.test(name)?`FDID:${a.stateCode.toUpperCase()}:${id.toUpperCase()}`:`SOURCE:${name}:${id}`;
+   const state=a.stateCode?.toUpperCase()??'';
+   if(association.sourceFields?.stateCode && String(association.sourceFields.stateCode).toUpperCase()!==state)continue;
+   let key:string;
+   if(/USFA|NFDR/.test(name)){
+     const parts=id.replace(/^usfa:/i,'').split(':');
+     if(parts.length>1 && parts[0].toUpperCase()!==state)continue;
+     const fdid=String(association.sourceFields?.fdid??parts.at(-1)??'').trim();
+     if(!state||!fdid||/^location-/i.test(fdid)||isGeneratedFdid(fdid,a))continue;
+     key=`FDID:${state}:${fdid.toUpperCase()}`;
+   }else if(/NPPES|NPI/.test(name)&&/^\d{10}$/.test(id))key=`NPI:${id}`;
+   else if(name==='NERIS')key=`NERIS:${id.toUpperCase()}`;
+   else key=`SOURCE:${name}:${id}`;
+   if(!id)continue;
    // A reviewed association upgrades the same link rather than duplicating it.
    const existing=byLink.get(JSON.stringify([key,a.id]));
    if(existing){existing.basis=association.matchBasis;existing.reviewedAt=association.decidedAt;existing.sourceUrl=association.sourceUrl;}

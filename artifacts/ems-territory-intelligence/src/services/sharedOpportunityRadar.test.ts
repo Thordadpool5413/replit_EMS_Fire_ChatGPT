@@ -66,3 +66,17 @@ test('same procurement number from different issuers is ambiguous, not two confi
  const b=row('b','procurement-open','Bid B','bid','2026-11-01','2026-12-01','City B');
  assert.equal(radar(a,b).signals.length,0);
 });
+
+test('reviewed equipment output includes ZOLL and independently approved competitor observations without promoting ambiguity',()=>{
+ const z=row('z','installed-monitor','ZOLL X Series');
+ const c=row('c','installed-cpr','LUCAS');
+ const unknown=row('u','installed-ventilator','Unidentified model');
+ const result=radar(z,c,unknown);
+ assert.deepEqual(result.equipment.map(e=>e.vendorId).sort(),['stryker','zoll']);
+ assert.equal(result.signals.filter(s=>s.kind==='competitor-equipment').length,1);
+ const conflict=row('v','installed-monitor','LIFEPAK 15','another-inventory');
+ assert.deepEqual(radar(z,c,conflict).equipment.map(e=>e.vendorId),['stryker']);
+ const blocked=row('b','installed-cpr','LUCAS');
+ blocked.decisions.push(event(blocked,'withdrawn','incorrect-value'));
+ assert.equal(radar(blocked).equipment.length,0);
+});

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import type { Agency } from '../types';
 import { reconcileSharedEvidence } from '../services/sharedEvidenceReconciliation';
+import { ReviewedEquipmentMap } from './ReviewedEquipmentMap';
 import { SharedOpportunityRadar } from './SharedOpportunityRadar';
 import { EvidenceGovernancePanel } from './EvidenceGovernancePanel';
 import { SharedEvidenceReview } from './SharedEvidenceReview';
@@ -11,7 +12,7 @@ import { evidenceEnabled, evidenceRole, listSharedEvidence, openEvidenceSession,
 const control = 'block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const message = (e: unknown) => e instanceof Error ? e.message : 'The request could not be confirmed.';
 
-export function SharedEvidenceWorkspace({ agencies }: { agencies: Agency[] }) {
+export function SharedEvidenceWorkspace({ agencies, view='research', onOpenAgency }: { agencies: Agency[]; view?:'research'|'map'; onOpenAgency?:(a:Agency)=>void }) {
   const [session, setSession] = useState<EvidenceSession>();
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
@@ -32,19 +33,19 @@ export function SharedEvidenceWorkspace({ agencies }: { agencies: Agency[] }) {
     try { await signOut(session.auth); } catch (e) { setError(message(e)); } finally { setBusy(false); }
   }
   return <section className="pi-surface p-4 min-w-0 space-y-3" aria-label="ATLAS shared evidence">
-    <h2 className="font-semibold">ATLAS shared evidence</h2>
+    <h2 className="font-semibold">{view==='map'?'ATLAS reviewed intelligence map':'ATLAS shared evidence'}</h2>
     <p className="text-sm">A controlled team library for public, dated agency documents. Local evidence remains local until explicitly published. Shared entries are user-reported observations, not independently verified facts.</p>
     {!evidenceEnabled ? <p role="status" className="text-sm">Not enabled. An administrator must configure a separate Firebase project, deploy the evidence-only rules and grant workspace membership. No shared data is read or written.</p> :
       !session ? <button type="button" className="workspace-button" onClick={() => { try { setSession(openEvidenceSession()); } catch (e) { setError(message(e)); } }}>Open shared workspace</button> :
       !ready ? <p role="status">Checking sign-in…</p> :
       !user ? <button type="button" className="workspace-button" disabled={busy} onClick={() => void login()}>Sign in with Google</button> :
       <><div className="flex flex-wrap items-center gap-2"><span className="text-sm break-all">{user.email ?? 'Signed-in member'}</span><button type="button" className="workspace-button" disabled={busy} onClick={() => void logout()}>Sign out</button></div>
-      {!busy && <MemberWorkspace key={user.uid} session={session} user={user} agencies={agencies}/>}</>}
+      {!busy && <MemberWorkspace key={user.uid} session={session} user={user} agencies={agencies} view={view} onOpenAgency={onOpenAgency}/>}</>}
     {error && <p role="alert" className="text-sm break-words">{error}</p>}
   </section>;
 }
 
-function MemberWorkspace({ session, user, agencies }: { session: EvidenceSession; user: User; agencies: Agency[] }) {
+function MemberWorkspace({ session, user, agencies, view, onOpenAgency }: { session: EvidenceSession; user: User; agencies: Agency[]; view:'research'|'map'; onOpenAgency?:(a:Agency)=>void }) {
   const [role, setRole] = useState<EvidenceRole>();
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -62,6 +63,7 @@ function MemberWorkspace({ session, user, agencies }: { session: EvidenceSession
   }, [eligible, search]);
   const agency = eligible.find(a => a.id === selected);
   if (!role) return <div className="space-y-2"><p role="status" className="text-sm">{error || 'Checking workspace membership…'}</p>{error && <button className="workspace-button" type="button" onClick={() => setRetry(n => n+1)}>Retry membership check</button>}</div>;
+  if(view==='map')return <ReviewedEquipmentMap session={session} user={user} agencies={agencies} onOpenAgency={onOpenAgency}/>;
   return <div className="space-y-3">
     <p className="text-sm">Workspace access: <strong>{role}</strong>. Only uniquely identified source-native accounts are eligible. Add a registry account first if it is missing.</p>
     <label className="block text-sm">Find an account<input className={control} value={search} onChange={e => { setSearch(e.target.value); setSelected(''); }} placeholder="Name, state, or registry ID"/></label>

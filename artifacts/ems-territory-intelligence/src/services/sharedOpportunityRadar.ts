@@ -12,8 +12,9 @@ export type ReviewedEvidenceRow = {
 export type ReviewedSignal = {
  kind:OpportunityKind; evidence:SharedEvidence; approval:EvidenceDecision; date?:string; nextAction:string;
 };
+export type ReviewedEquipmentObservation = { evidence:SharedEvidence; approval:EvidenceDecision; family:'monitors'|'cpr'|'ventilators'|'software'; vendorId:string; vendorName:string };
 export type ReviewedRadarResult = {
- complete:boolean; reason?:string; checked:number; approved:number; withheld:number; signals:ReviewedSignal[];
+ complete:boolean; reason?:string; checked:number; approved:number; withheld:number; signals:ReviewedSignal[]; equipment:ReviewedEquipmentObservation[];
 };
 type CheckedRow = ReviewedEvidenceRow & { status:GovernanceStatus };
 const scopedKinds = new Set(['procurement-open','procurement-awarded','procurement-closed','contract-expiration','grant-awarded','capital-approved']);
@@ -24,7 +25,7 @@ function replacementMatches(a:SharedEvidence,b:SharedEvidence):boolean{
 }
 /** Shared-only, selected-account research signals. No local notes, scores, estimated fields or cloud mutations. */
 export function buildReviewedRadar(agency:Agency,rows:ReviewedEvidenceRow[],scope:{complete:boolean;withheld:number},now=Date.now()):ReviewedRadarResult{
- const fail=(reason:string):ReviewedRadarResult=>({complete:false,reason,checked:rows.length,approved:0,withheld:rows.length,signals:[]});
+ const fail=(reason:string):ReviewedRadarResult=>({complete:false,reason,checked:rows.length,approved:0,withheld:rows.length,signals:[],equipment:[]});
  const key=sharedAgencyKey(agency);
  if(!key||!scope.complete||scope.withheld||rows.length>=50)return fail('A complete, valid first-page server read of fewer than 50 published records is required.');
  const byId=new Map<string,CheckedRow>();
@@ -64,6 +65,7 @@ export function buildReviewedRadar(agency:Agency,rows:ReviewedEvidenceRow[],scop
  const review=reconcileSharedEvidence({...agency,sourceFacts:[],_factReviews:[]},active.map(r=>r.evidence),{singleCompletePage:true,withheld:0},now);
  if(!review.complete)return fail('Document reconciliation is incomplete.');
  const signals:ReviewedSignal[]=[];
+ const equipment:ReviewedEquipmentObservation[]=[];
  const today=utcDay(now);
  for(const item of review.items){
   if(item.status!=='review-candidate')continue;
@@ -78,8 +80,10 @@ export function buildReviewedRadar(agency:Agency,rows:ReviewedEvidenceRow[],scop
   const sameRecord=active.filter(r=>r.evidence.sourceRecordId.trim().toLowerCase()===e.sourceRecordId.trim().toLowerCase());
   if(e.kind.startsWith('procurement-')&&sameRecord.some(r=>r.evidence.kind.startsWith('procurement-')&&r.evidence.sourceName.trim().toLowerCase()!==e.sourceName.trim().toLowerCase()))continue;
   let kind:OpportunityKind|undefined,date:string|undefined,nextAction='';
-  if(definitionFor(e.kind)?.family){
+  const family=definitionFor(e.kind)?.family;
+  if(family){
    const vendors=EQUIPMENT_VENDORS.filter(v=>v.pattern.test(e.value));
+   if(vendors.length===1)equipment.push({evidence:e,approval,family,vendorId:vendors[0].id,vendorName:vendors[0].name});
    if(vendors.length===1&&vendors[0].id!=='zoll'){kind='competitor-equipment';nextAction='Confirm the installed model, quantity and replacement cycle before treating this as a conversion opportunity.';}
   }else if(e.kind==='contract-expiration'&&e.value>=today&&Date.parse(e.value)-Date.parse(today)<=365*DAY_MS){
    kind='contract-renewal';date=e.value;nextAction='Check amendments, renewal options and the purchasing decision timeline.';
@@ -95,5 +99,5 @@ export function buildReviewedRadar(agency:Agency,rows:ReviewedEvidenceRow[],scop
   if(kind)signals.push({kind,evidence:e,approval,date,nextAction});
  }
  signals.sort((a,b)=>(a.date??'9999-12-31').localeCompare(b.date??'9999-12-31')||b.evidence.documentDate.localeCompare(a.evidence.documentDate)||a.evidence.factId.localeCompare(b.evidence.factId));
- return {complete:true,checked:rows.length,approved:checked.filter(r=>r.status==='approved').length,withheld:rows.length-signals.length,signals};
+ return {complete:true,checked:rows.length,approved:checked.filter(r=>r.status==='approved').length,withheld:rows.length-signals.length,signals,equipment};
 }

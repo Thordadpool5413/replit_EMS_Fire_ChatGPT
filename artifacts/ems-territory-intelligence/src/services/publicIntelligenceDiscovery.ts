@@ -35,7 +35,7 @@ export async function loadDiscoveryPage(q:DiscoveryQuery,signal?:AbortSignal):Pr
 }
 const nameKey=(s:string)=>s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 /** Name and state only suggest a human review. Never assign grants, dates, IDs or equipment. */
-export function buildDiscoveryMatches(agencies:Agency[],candidates:DiscoveryCandidate[]){
+export function buildDiscoveryMatches<T extends {recipient:string;state:string}>(agencies:Agency[],candidates:T[]){
  const eligible=new Set(shareableAgencies(agencies).map(a=>a.id));
  const byName=new Map<string,Agency[]>(),idCounts=new Map<string,number>();
  for(const a of agencies){

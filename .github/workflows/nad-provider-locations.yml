@@ -1,0 +1,54 @@
+name: Secondary public provider location recovery
+on:
+  push:
+    branches: [atlas/nad-location-recovery]
+    paths:
+      - 'scripts/data/recover_nad_locations.py'
+      - '.github/workflows/nad-provider-locations.yml'
+  workflow_dispatch:
+    inputs:
+      states:
+        description: "all or comma-separated state codes"
+        default: all
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: atlas-nad-provider-location-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/atlas/nad-location-recovery'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate matching rules
+        run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Recover unmatched public organization addresses
+        env:
+          ATLAS_NAD_STATES: ${{ inputs.states || 'all' }}
+        run: python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 1200
+      - name: Publish review-only data branch
+        run: |
+          set -euo pipefail
+          python3 scripts/data/backfill_provider_locations.py --verify
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git diff --cached --quiet || git commit -m "Recover exact public provider address points from USDOT NAD"
+          branch="atlas/nad-location-data-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Review branch: $branch" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps({"coverage":x["coverage"],"nadRecovery":x["nadRecovery"]},indent=2))' >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nad-provider-location-coverage
+          path: artifacts/ems-territory-intelligence/public/registry/locations/index.json
+          if-no-files-found: ignore

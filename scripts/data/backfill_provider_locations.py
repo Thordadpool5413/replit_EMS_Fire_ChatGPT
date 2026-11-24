@@ -158,6 +158,11 @@ def publish(output,manifest,entries,metadata):
   by_source[source]=dict(total=len(rows),withAddress=sum(e['address'] is not None for e in rows),statuses=dict(collections.Counter(e['status'] for e in rows)))
  index=dict(schemaVersion=1,generatedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),benchmark=BENCHMARK,vintage=VINTAGE,sourceScope='Public source identities; not a census of unique active operating departments',chunks=chunks,coverage=by_source,**metadata)
  (output/'index.json').write_bytes(compact(index));print(json.dumps(by_source,indent=2),flush=True)
+def valid_location_method(m,county):
+ if m.get('method')=='census-address-range':return 'point' not in m
+ if m.get('method')!='nad-address-point':return False
+ p=m.get('point')
+ return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and p.get('release')=='2026-09-30' and isinstance(p.get('authority'),str) and 0<len(p['authority'].strip())<=150 and not re.search(r'[\x00-\x1f\x7f]',p['authority']) and p.get('placement') in ('Structure - Rooftop','Structure - Entrance','Structure - Interior','Structure - Interior Unit Location','Property Access Point','Site Placement','Parcel - Centroid','Parcel - Other/Manual Placement') and p.get('countyFips')==county
 def verify(output,manifest,rows,fl):
  index=json.loads((output/'index.json').read_bytes())
  if index['schemaVersion']!=1 or index['benchmark']!=BENCHMARK or index['vintage']!=VINTAGE:raise ValueError('Invalid location manifest')
@@ -176,7 +181,7 @@ def verify(output,manifest,rows,fl):
    seen.add(k);counts[source]['total']+=1;counts[source]['withAddress']+=int(a is not None);counts[source][status]+=1
    if a and address(a['street'],a['city'],a['state'],a['zip'])!=a:raise ValueError('Malformed source address')
    if status=='mapped':
-    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or m['method']!='census-address-range' or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state:raise ValueError('Invalid mapped record')
+    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state:raise ValueError('Invalid mapped record')
    elif m is not None or e['countyFips']:raise ValueError('Unmatched record contains coordinates')
  if seen!=set(expected) or {c['state'] for c in index['chunks']}!=STATES or len(index['chunks'])!=51:raise ValueError('Incomplete native location coverage')
  for source,c in counts.items():

@@ -32,3 +32,11 @@ test('every directory listing receives a location outcome; no missing-ID or conf
  assert.equal(listingLocation(noId,state).status,'missing-identity');assert.equal(listingLocation(noId,state).match,null);assert.ok(listingLocation(noId,state).address);
  assert.equal(listingLocation(row,undefined).status,'source-missing');
 });
+
+test('USDOT NAD point retains authority, placement, release and county; conflicting or missing metadata fail closed',()=>{
+ const nad={...e,match:{...e.match,method:'nad-address-point',point:{objectId:42,release:'2026-09-30',authority:'Example county GIS',placement:'Structure - Rooftop',countyFips:'12009'}}};
+ const p=parseSnapshotEntry(nad,'FL',{'12009':'Brevard County'});assert.equal(p.match?.method,'nad-address-point');
+ if(p.match?.method==='nad-address-point')assert.equal(p.match.point.objectId,42);
+ assert.throws(()=>parseSnapshotEntry({...nad,match:{...nad.match,point:{...nad.match.point,countyFips:'12011'}}},'FL',{'12009':'Brevard County'}));
+ assert.throws(()=>parseSnapshotEntry({...nad,match:{...nad.match,point:{...nad.match.point,placement:'Linear Geocode'}}},'FL',{'12009':'Brevard County'}));
+});

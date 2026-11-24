@@ -128,13 +128,14 @@ export function mappedProviderLocation(a:Agency,directory:Agency[]){
  return c?.match&&loc&&addressKey(loc.address)===addressKey(c.location.address)?c.match:undefined;
 }
 export function locationStatus(a:Agency,directory:Agency[]):string{
- if(mappedProviderLocation(a,directory))return 'Mapped · approximate street location';
+ const pin=mappedProviderLocation(a,directory);
+ if(pin)return pin.method==='nad-address-point'?'Mapped · USDOT public address point':'Mapped · approximate street location';
  const loc=displayedProviderLocation(a,directory),id=nativeIdentity(a,directory);
  if(!loc)return id?'Source address not found; review required':'Provider identity or location source needs review';
  if(!isPhysicalStreet(loc.address.street))return 'Recorded mailing or nonstandard address; physical site not established';
  if(!loc.address.zip)return 'Street address recorded; ZIP not supplied';
  const raw=id&&loadedLocationState(id.stateCode)?.entries.get(registryIdentityKey(id)??'');
- if(raw?.status==='no-match')return 'Street address recorded; no exact Census match';
+ if(raw?.status==='no-match')return 'Street address recorded; no accepted public coordinate match';
  if(raw?.status==='unavailable')return 'Street address recorded; geocoder unavailable';
  if(raw?.match)return 'Address or county disagreement; map location withheld';
  if(raw?.status==='historical')return 'Historical source record; active site not established';

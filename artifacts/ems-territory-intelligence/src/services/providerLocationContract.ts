@@ -1,7 +1,12 @@
 /** Street-level public registry location and Census range match, never a verified station. */
 export type StreetAddress={street:string;city:string;state:string;zip:string};
 export type NpiAddress={npi:string;name:string;address:StreetAddress;sourceDate:string|null};
-export type AddressMatch={latitude:number;longitude:number;matchedAddress:string;method:'census-address-range'};
+const NAD_PLACEMENTS=['Structure - Rooftop','Structure - Entrance','Structure - Interior','Structure - Interior Unit Location','Property Access Point','Site Placement','Parcel - Centroid','Parcel - Other/Manual Placement'] as const;
+export type NadPoint={objectId:number;release:'2026-09-30';authority:string;placement:typeof NAD_PLACEMENTS[number];countyFips:string};
+type AddressCoordinates={latitude:number;longitude:number;matchedAddress:string};
+export type AddressMatch=AddressCoordinates&({method:'census-address-range'}|{method:'nad-address-point';point:NadPoint});
+export function addressMatchLabel(m:AddressMatch){return m.method==='nad-address-point'?'USDOT NAD address point · '+m.point.placement:'Census approximate street-range location';}
+export const NAD_SOURCE_URL='https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/Address_Points_from_National_Address_Database_view/FeatureServer/0';
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const clean=(v:unknown,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max&&!/[\u0000-\u001f\u007f]/.test(v)?v.trim():'';
 export function parseStreetAddress(v:unknown):StreetAddress|undefined{
@@ -62,6 +67,10 @@ export function matchedStreet(a:StreetAddress,matched:string):boolean{
 }
 export function validateAddressMatch(v:unknown,a:StreetAddress):AddressMatch|null{
  if(v===null)return null;
- if(!obj(v)||v.method!=='census-address-range'||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
- return {latitude:v.latitude,longitude:v.longitude,matchedAddress:v.matchedAddress,method:v.method};
+ if(!obj(v)||(v.method!=='census-address-range'&&v.method!=='nad-address-point')||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
+ const coords={latitude:v.latitude,longitude:v.longitude,matchedAddress:v.matchedAddress};
+ if(v.method==='census-address-range')return {...coords,method:v.method};
+ const p=v.point;
+ if(!obj(p)||typeof p.objectId!=='number'||!Number.isSafeInteger(p.objectId)||p.objectId<=0||p.release!=='2026-09-30'||!clean(p.authority,150)||typeof p.placement!=='string'||!NAD_PLACEMENTS.includes(p.placement as NadPoint['placement'])||typeof p.countyFips!=='string'||!/^\d{5}$/.test(p.countyFips))throw Error('Invalid NAD address point provenance.');
+ return {...coords,method:'nad-address-point',point:{objectId:p.objectId,release:p.release,authority:clean(p.authority,150),placement:p.placement as NadPoint['placement'],countyFips:p.countyFips}};
 }

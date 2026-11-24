@@ -23,7 +23,7 @@ export function parseSnapshotEntry(value:unknown,state:string,counties:Readonly<
  if(e.status==='mapped'){
   if(!address||!e.match||!/^\d{5}$/.test(e.countyFips)||!Object.hasOwn(counties,e.countyFips))throw Error('Invalid mapped location.');
   const match=validateAddressMatch(e.match,address);
-  if(!match)throw Error('Missing map match.');
+  if(!match||match.method==='nad-address-point'&&match.point.countyFips!==e.countyFips)throw Error('Missing or conflicting map match.');
   return {...e,address,match,countyName:counties[e.countyFips]};
  }
  if(e.match!==null||e.countyFips)throw Error('Unmapped record contains coordinates.');
@@ -82,7 +82,7 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  if(a&&!compatibleSourceAddress(a,e.address))return row;
  const out=[...row] as SourceDirectoryRecord;
  out[10]=e.address.street;out[4]=e.address.city;out[5]=row[5]||e.address.zip;
- if(!out[6]&&e.match&&e.countyFips){out[6]=e.countyFips;out[8]='census-address-range';}
+ if(!out[6]&&e.match&&e.countyFips){out[6]=e.countyFips;out[8]=e.match.method;}
  return out;
 }
 export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null};

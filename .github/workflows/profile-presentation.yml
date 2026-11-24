@@ -9,6 +9,10 @@ on:
       - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
+      - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
+      - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
+      - 'artifacts/api-server/src/routes/index.ts'
+      - 'scripts/test-ems-unit.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
   push:
@@ -21,6 +25,10 @@ on:
       - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
+      - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
+      - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
+      - 'artifacts/api-server/src/routes/index.ts'
+      - 'scripts/test-ems-unit.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
 permissions:
@@ -56,6 +64,7 @@ jobs:
       - run: node --test scripts/audit-production-providers.test.mjs
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
+      - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs
       - run: pnpm --dir artifacts/ems-territory-intelligence run build
       - name: Install browser for responsive profile checks

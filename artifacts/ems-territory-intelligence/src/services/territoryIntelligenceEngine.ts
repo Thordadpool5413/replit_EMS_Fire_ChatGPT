@@ -279,10 +279,10 @@ class TerritoryIntelligenceService {
   public filterByCategory(list: Agency[], categoryFilter: 'all' | 'ems' | 'fire'): Agency[] {
     if (categoryFilter === 'all') return list;
     if (categoryFilter === 'ems') {
-      return list.filter(a => (a.providerCategory ? a.providerCategory === 'ems' : !a.agencyType.toLowerCase().includes('fire')));
+      return list.filter(a => (a.providerCategory ? a.providerCategory.toLowerCase() === 'ems' : !a.agencyType.toLowerCase().includes('fire')));
     }
     if (categoryFilter === 'fire') {
-      return list.filter(a => (a.providerCategory ? a.providerCategory === 'fire' : a.agencyType.toLowerCase().includes('fire')));
+      return list.filter(a => (a.providerCategory ? a.providerCategory.toLowerCase() === 'fire' : a.agencyType.toLowerCase().includes('fire')));
     }
     return list;
   }
@@ -376,7 +376,7 @@ class TerritoryIntelligenceService {
     const coveredCitiesFire = new Set<string>();
     for (const ag of results) {
       const cLower = ag.city.toLowerCase();
-      const isFire = ag.providerCategory ? ag.providerCategory === 'fire' : ag.agencyType.toLowerCase().includes('fire');
+      const isFire = ag.providerCategory ? ag.providerCategory.toLowerCase() === 'fire' : ag.agencyType.toLowerCase().includes('fire');
       if (isFire) coveredCitiesFire.add(cLower);
       else coveredCitiesEms.add(cLower);
     }
@@ -561,7 +561,7 @@ class TerritoryIntelligenceService {
     const dummyAgency: Agency = {
       id: `territory-${sc.toLowerCase()}-${isFireBased ? 'fire' : 'ems'}-${posHash.toString(36).slice(0, 6)}`,
       name: agencyName,
-      fdid: `${sc}-${posHash.toString().slice(0, 5)}`,
+      fdid: '', // Geographic candidates have no official registry identity.
       providerCategory: isFireBased ? 'fire' : 'ems',
       agencyType: agencyType,
       jurisdictionLevel: isMunicipalCity ? 'Local' : 'County',
@@ -681,7 +681,7 @@ class TerritoryIntelligenceService {
       },
       competitorContract: {
         vendor: defibBrand.includes('Stryker') ? 'Stryker ProCare' : 'Philips Master Service',
-        contractEndDate: `202${6 + (posHash % 3)}-0${1 + (posHash % 9)}-28`,
+        contractEndDate: '', // No agency contract was observed.
         renewalWindowDays: 60 + (posHash % 90),
         annualServiceCostPerUnit: 2450,
         status: (posHash % 3 === 0) ? 'Expiring Soon (90 Days)' : 'Active Term',

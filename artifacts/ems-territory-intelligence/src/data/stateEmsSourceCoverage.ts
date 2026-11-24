@@ -1,7 +1,7 @@
 /**
  * State and territorial EMS source routes.
  *
- * A directory route is not a state license dataset. Only Florida currently has
+ * A directory route is not a state license dataset. Florida and Virginia currently have
  * an identified official provider-license search route in this application.
  */
 export type EmsJurisdictionCoverageStatus =
@@ -144,7 +144,17 @@ export const EMS_JURISDICTION_SOURCE_COVERAGE: EmsJurisdictionSourceCoverage[] =
             limitations:
               "The linked provider roster PDF has an embedded processed date of 10/23/2020 despite its 2025/08 URL path; use each MQA record's own “Data As Of” date instead. A license record does not alone prove dispatch/service boundaries, current apparatus, frontline status, leadership authority, or call volume.",
           }
-        : directoryRoute(code, name, code === "DC" ? "district" : "state"),
+        : code === "VA" ? {
+          code,name,level:"state" as const,coverageStatus:"official-license-reference" as const,
+          sourceName:"Virginia Office of EMS agency lookup",
+          sourceUrl:"https://vdhems.vdh.virginia.gov/emsapps/f?p=200%3A2",
+          directoryUrl:"https://www.vdh.virginia.gov/emergency-medical-services/",
+          sourceScope:"Virginia Office of EMS public agency search.",
+          matchKeys:["Agency name","Virginia agency/license identifier when published"],
+          periodAndFreshness:"Check the state record and its current status directly.",
+          appConnection:"Official manual lookup; no automatic statewide license ingestion.",
+          limitations:"Source presence does not verify service area, purchasing, equipment or active license without checking the actual agency record."
+        } : directoryRoute(code, name, code === "DC" ? "district" : "state"),
     ),
     ...TERRITORY_JURISDICTIONS.map(([code, name]) =>
       directoryRoute(code, name, "territory"),

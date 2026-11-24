@@ -1495,6 +1495,7 @@ export default function App() {
           <div className="workspace-view-container min-w-0 w-full">
             <NationalGeographicExplorer
               agencies={agencies}
+              onDecideSourceRecord={handleDecideAgencySourceRecord}
               directoryStatus={directoryStatus}
               weights={weights}
               initialMode={

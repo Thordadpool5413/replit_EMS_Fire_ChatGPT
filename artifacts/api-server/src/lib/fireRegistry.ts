@@ -420,11 +420,12 @@ async function queryNerisLayer(
       throw new Error(payload.error.message || "NERIS returned an error.");
     }
 
-    const page = Array.isArray(payload.features) ? payload.features : [];
+    if (!Array.isArray(payload.features)) throw new Error("NERIS response has no feature array.");
+    const page = payload.features;
+    if (features.length + page.length > MAX_STATE_FEATURES) throw new Error("NERIS state results exceeded the safe retrieval limit.");
     features.push(...page);
-    if (page.length < ARC_GIS_PAGE_SIZE || !payload.exceededTransferLimit) {
-      break;
-    }
+    if (payload.exceededTransferLimit !== true) return features;
+    if (page.length === 0) throw new Error("NERIS pagination stalled.");
     offset += page.length;
   }
 
@@ -1083,4 +1084,16 @@ export async function searchFireRegistryMatches(
     sourceStatuses,
     records: topRecords.map(({ record }) => record),
   };
+}
+
+/** Source-native state roster. No county or operating-status inference. */
+export async function listNerisDepartments(stateCode: string) {
+  if (!/^[A-Z]{2}$/.test(stateCode)) throw new Error("Invalid state code.");
+  const {data,fetchedAt}=await getNerisDepartments(stateCode);
+  const seen=new Set<string>();
+  const departments=data.filter(row=>{
+    if(seen.has(row.nerisId))return false;
+    seen.add(row.nerisId);return true;
+  });
+  return {source:"NERIS",stateCode,fetchedAt,warning:getSourceFailure(`neris:departments:${stateCode}`),departments};
 }

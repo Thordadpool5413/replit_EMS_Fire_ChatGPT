@@ -1,3 +1,4 @@
+import { agencyIdentifierLabel } from '../utils/providerRecordTrust';
 import {WorkspaceHeading} from './design/WorkspaceIcon';
 import { agencySearchScore } from '../utils/agencySearch';
 import { useSessionState } from '../hooks/useSessionState';
@@ -902,7 +903,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                             <span>{isFire ? 'Fire Department' : 'EMS Provider'}</span>
                           </span>
                           <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                          <span>FDID <span className="font-mono text-[11px]">{agency.fdid || '—'}</span></span>
+                          <span><span className="font-mono text-[11px]">{agencyIdentifierLabel(agency)}</span></span>
                           {agency.npiNumber && (
                             <>
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
@@ -1462,7 +1463,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
                               <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
                               <span>{agency.agencyType}</span>
                               <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                          <span>FDID <span className="font-mono text-[11px]">{agency.fdid || '—'}</span></span>
+                          <span><span className="font-mono text-[11px]">{agencyIdentifierLabel(agency)}</span></span>
                             </div>
                           </div>
                         </div>

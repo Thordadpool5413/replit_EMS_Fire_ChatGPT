@@ -77,6 +77,7 @@ import {
 import { AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
 
 const PredictiveLeadQueue = React.lazy(() => import('./components/PredictiveLeadQueue').then((module) => ({ default: module.PredictiveLeadQueue })));
+const ReviewedEquipmentMapEntry = React.lazy(() => import('./components/ReviewedEquipmentMapEntry').then((module) => ({ default: module.ReviewedEquipmentMapEntry })));
 const GisTerritoryHeatmap = React.lazy(() => import('./components/GisTerritoryHeatmap').then((module) => ({ default: module.GisTerritoryHeatmap })));
 const PredictiveWeightsModal = React.lazy(() => import('./components/PredictiveWeightsModal').then((module) => ({ default: module.PredictiveWeightsModal })));
 const PublicHealthcareExplorer = React.lazy(() => import('./components/PublicHealthcareExplorer').then((module) => ({ default: module.PublicHealthcareExplorer })));
@@ -1372,6 +1373,7 @@ export default function App() {
         {/* GIS Heatmap & Acuity Telemetry (Territory Workspace) */}
         {(activeTab === 'gis' || activeTab === 'map') && (
           <div className="workspace-view-container min-w-0 w-full">
+            <ReviewedEquipmentMapEntry agencies={agencies} onOpenAgency={handleOpenAgencyProfile}/>
             <GisTerritoryHeatmap
               agencies={agencies}
               weights={weights}
@@ -1408,6 +1410,7 @@ export default function App() {
         {/* Google Maps Live Explorer (Territory Workspace) */}
         {activeTab === 'google_maps' && (
           <div className="workspace-view-container min-w-0 w-full">
+            <ReviewedEquipmentMapEntry agencies={agencies} onOpenAgency={handleOpenAgencyProfile}/>
             <GoogleMapsTerritoryExplorer
               agencies={agencies}
               onSelectAgency={handleOpenAgencyProfile}

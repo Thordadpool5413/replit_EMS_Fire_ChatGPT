@@ -28,7 +28,7 @@ export async function fetchNppesLocation(npi:string,fetcher:typeof fetch=fetch){
  return parseNppesLocation(await boundedJson(await fetcher(u,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(15_000)}),'NPPES address'),npi);
 }
 export async function fetchCensusLocation(a:StreetAddress,fetcher:typeof fetch=fetch){
- if(!parseStreetAddress(a)||!isPhysicalStreet(a.street))throw Error('Street address required.');
+ if(!parseStreetAddress(a)||!a.zip||!isPhysicalStreet(a.street))throw Error('Street address required.');
  const u=new URL('https://geocoding.geo.census.gov/geocoder/locations/address');
  for(const [key,value] of Object.entries({street:geocodeStreet(a.street),city:a.city,state:a.state,zip:a.zip,benchmark:'Public_AR_Current',format:'json'}))u.searchParams.set(key,value);
  return parseCensusLocation(await boundedJson(await fetcher(u,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(15_000)}),'Census address'),a);

@@ -1,5 +1,5 @@
 import {ProviderAddressMapping} from './ProviderAddressMapping';
-import {locationOverlay,useLocationRevision,mappedProviderLocation} from '../services/providerLocation';
+import {locationOverlay,useLocationRevision} from '../services/providerLocation';
 import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {equipmentGeographyScope,matchesEquipmentFilter,equipmentMapStyle,EQUIPMENT_MAP_STYLES} from '../utils/equipmentPresence';
@@ -286,6 +286,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 }) => {
   const locationRevision=useLocationRevision();
   const agencies=useMemo(()=>originalAgencies.map(a=>locationOverlay(a,originalAgencies)),[originalAgencies,locationRevision]);
+  const mappedIds=useMemo(()=>new Set(agencies.filter((a,i)=>a!==originalAgencies[i]).map(a=>a.id)),[agencies,originalAgencies]);
   // Resolve Google Maps API Key from environment or localStorage
   const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
   const [storedKey, setStoredKey] = useState<string>(() => {
@@ -457,7 +458,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     let pool = agencies.filter((agency) => {
       if (!matchesEquipmentFilter(agency,equipmentFilter)) return false;
       // Geographic prospect centroids are not provider street locations.
-      if(isGeographicProspect(agency)&&!mappedProviderLocation(originalAgencies.find(a=>a.id===agency.id)??agency,originalAgencies))return false;
+      if(isGeographicProspect(agency)&&!mappedIds.has(agency.id))return false;
       return Number.isFinite(agency.latitude) && Math.abs(agency.latitude)<=90 &&
              Number.isFinite(agency.longitude) && Math.abs(agency.longitude)<=180 &&
              !(agency.latitude===0 && agency.longitude===0);
@@ -1375,7 +1376,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Local Stations in Scope ({filteredAgencies.length})</span>
+                  <span>Mapped accounts in scope ({filteredAgencies.length})</span>
                 </span>
                 <span className="text-xs text-slate-500">Tap to inspect &amp; open</span>
               </div>

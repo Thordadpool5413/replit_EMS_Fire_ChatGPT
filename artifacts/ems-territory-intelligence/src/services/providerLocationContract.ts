@@ -8,11 +8,11 @@ export function parseStreetAddress(v:unknown):StreetAddress|undefined{
  if(!obj(v))return undefined;
  const street=clean(v.street,160),city=clean(v.city,100),state=clean(v.state,2).toUpperCase(),rawZip=clean(v.zip,10);
  const zip=/^\d{5}(?:-?\d{4})?$/.test(rawZip)?rawZip.slice(0,5):'';
- if(!street||!city||!(/^[A-Z]{2}$/.test(state))||!zip)return undefined;
+ if(!street||!city||!(/^[A-Z]{2}$/.test(state))||rawZip&&!zip)return undefined;
  return {street,city,state,zip};
 }
 export const isPhysicalStreet=(s:string)=>/^\d+[A-Za-z]?(?:[- ]\d+[A-Za-z]?)?\s+\S/.test(s)&&!/\b(?:P\s*\.?\s*O\s*\.?\s*BOX|POST OFFICE BOX|PMB|PRIVATE MAILBOX)\b/i.test(s);
-export const addressText=(a:StreetAddress)=>a.street+', '+a.city+', '+a.state+' '+a.zip;
+export const addressText=(a:StreetAddress)=>a.street+', '+a.city+', '+[a.state,a.zip].filter(Boolean).join(' ');
 export const addressKey=(a:StreetAddress)=>JSON.stringify([a.street,a.city,a.state,a.zip].map(s=>s.toUpperCase().replace(/\s+/g,' ').trim()));
 export function validNpi(v:unknown):v is string{
  if(typeof v!=='string'||!/^\d{10}$/.test(v))return false;
@@ -29,6 +29,7 @@ const norm=(s:string)=>s.toUpperCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').
 export const geocodeStreet=(s:string)=>s.replace(/(?:,?\s+(?:STE|SUITE|UNIT|APT|FLOOR|FL|#)\s*[\w-]+.*)$/i,'').trim();
 /** Require matched structure number, street, city, state and ZIP; never accept city/ZIP fallback. */
 export function matchedStreet(a:StreetAddress,matched:string):boolean{
+ if(!a.zip)return false;
  const parts=matched.split(',').map(s=>s.trim());
  if(parts.length===4)return norm(parts[0])===norm(geocodeStreet(a.street))&&norm(parts[1])===norm(a.city)&&parts[2].toUpperCase()===a.state&&parts[3].slice(0,5)===a.zip;
  if(parts.length===3)return norm(parts[0])===norm(geocodeStreet(a.street))&&norm(parts[1])===norm(a.city)&&parts[2].toUpperCase()===a.state+' '+a.zip;

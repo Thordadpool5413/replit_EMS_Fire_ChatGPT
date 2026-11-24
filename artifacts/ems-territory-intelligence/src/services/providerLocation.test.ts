@@ -11,3 +11,7 @@ test('duplicate source identities and flagged addresses are withheld; modeled ad
  assert.equal(recordedProviderLocation({...a,_factReviews:[{fieldId:'identity.address',action:'flag'}]} as Agency,[a]),undefined);
  const generated={...a,id:'fire-fl-12009',registryIdentity:undefined,address:'123 Main Street'};assert.equal(canResearchProviderLocation(generated,[generated]),false);
 });
+
+test('source street can display without a ZIP but no ZIP is invented',()=>{
+ const b={...a,registryIdentity:{...a.registryIdentity!,postalCode:undefined}};const loc=recordedProviderLocation(b,[b]);assert.ok(loc);assert.equal(loc.address.zip,'');assert.match(decodeURIComponent(locationDirections(loc)),/123 Main Street, Example, FL/);
+});

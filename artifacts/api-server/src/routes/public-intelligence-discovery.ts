@@ -78,7 +78,7 @@ router.get('/discovery/provider-address',async(req,res)=>{
 });
 router.get('/discovery/address-location',async(req,res)=>{
  res.set('Cache-Control','no-store');const a=parseStreetAddress(req.query);
- if(!a||Object.keys(req.query).some(k=>!['street','city','state','zip'].includes(k))||!isPhysicalStreet(a.street)){res.status(400).json({error:'A complete physical street address is required.'});return;}
+ if(!a||!a.zip||Object.keys(req.query).some(k=>!['street','city','state','zip'].includes(k))||!isPhysicalStreet(a.street)){res.status(400).json({error:'A complete physical street address is required.'});return;}
  try{res.json(await streetLocation(a));}catch{req.log.warn('Street location lookup unavailable');res.status(502).json({error:'Street location service unavailable.'});}
 });
 export default router;

@@ -21,7 +21,7 @@ function identities(a:Agency):RegistryIdentity[]{
   if(!f||typeof f!=='object')continue;
   const state=String(f.stateCode??a.stateCode),name=String(f.agencyName??f.organizationName??f.officialName??'');
   if(state!==a.stateCode||!name||!norm(name))continue;
-  const common={stateCode:state,name,city:typeof f.city==='string'?f.city:a.city,postalCode:typeof f.postalCode==='string'?f.postalCode:typeof f.zipCode==='string'?f.zipCode:a.zipCode,sourceUrl:s.sourceUrl,sourceDate:s.sourceDate,retrievedAt:s.retrievedAt};
+  const common={stateCode:state,name,city:typeof f.city==='string'?f.city:undefined,postalCode:typeof f.postalCode==='string'?f.postalCode:typeof f.zipCode==='string'?f.zipCode:undefined,sourceUrl:s.sourceUrl,sourceDate:s.sourceDate,retrievedAt:s.retrievedAt};
   let id:RegistryIdentity|undefined;
   if(/USFA|NFDR/i.test(s.sourceName)&&typeof f.fdid==='string')id={...common,sourceName:'USFA NFDR',identifier:f.fdid,address:typeof f.headquartersAddress==='string'?f.headquartersAddress:undefined};
   else if(/NPPES|NPI/i.test(s.sourceName)&&typeof (f.npi??f.npiNumber)==='string')id={...common,sourceName:'NPPES',identifier:String(f.npi??f.npiNumber)};
@@ -67,8 +67,10 @@ function binding(a:Agency,id:RegistryIdentity|undefined,location:ProviderLocatio
  return JSON.stringify([a.id,a.stateCode,a.name,id,location,flagged(a)??false]);
 }
 function lookup(a:Agency,directory:Agency[]):Cached|undefined{
- const c=cache.get(a.id),id=nativeIdentity(a,directory),loc=recordedProviderLocation(a,directory);
- if(!c||c.checkedAt+60*60_000<Date.now()||c.binding!==binding(a,id,loc))return undefined;
+ const c=cache.get(a.id);
+ if(!c||c.checkedAt+60*60_000<Date.now())return undefined;
+ const id=nativeIdentity(a,directory),loc=recordedProviderLocation(a,directory);
+ if(c.binding!==binding(a,id,loc))return undefined;
  return c;
 }
 export function displayedProviderLocation(a:Agency,directory:Agency[]){return lookup(a,directory)?.location??recordedProviderLocation(a,directory);}
@@ -99,7 +101,7 @@ export async function researchProviderLocation(a:Agency,directory:Agency[],signa
  if(signal.aborted)throw Error('Location research canceled.');
  if(!loc)return undefined;
  let match=lookup(a,directory)?.match;
- if(geocode&&isPhysicalStreet(loc.address.street)&&!match&&loc.kind!=='source-reported address'){
+ if(geocode&&loc.address.zip&&isPhysicalStreet(loc.address.street)&&!match&&loc.kind!=='source-reported address'){
   const params=new URLSearchParams(loc.address);
   match=validateAddressMatch(await fetchJson('/api/discovery/address-location?'+params,signal),loc.address)??undefined;
  }

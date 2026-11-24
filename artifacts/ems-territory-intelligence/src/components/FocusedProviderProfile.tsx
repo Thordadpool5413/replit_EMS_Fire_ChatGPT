@@ -399,7 +399,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   const locationRevision = useLocationRevision();
   const agency = useMemo(() => {
     const a=ensureCompleteAgencyData(rawAgency),loc=displayedProviderLocation(rawAgency,directoryAgencies);
-    return loc?{...a,address:loc.address.street,city:loc.address.city,zipCode:loc.address.zip,googleMapsUri:locationDirections(loc),factEvidence:{...a.factEvidence,providerAddress:{reviewed:false,sourceKind:'dataset' as const,sourceName:loc.sourceName,sourceUrl:loc.sourceUrl,sourceRecordId:loc.identityKey,reportingPeriod:loc.sourceDate??undefined,geographicLevel:'agency' as const,note:loc.kind}}}:{...a,address:''};
+    return loc?{...a,address:loc.address.street,city:loc.address.city,zipCode:loc.address.zip,googleMapsUri:locationDirections(loc),factEvidence:{...a.factEvidence,providerAddress:{reviewed:false,sourceKind:'dataset' as const,sourceName:loc.sourceName,sourceUrl:loc.sourceUrl,sourceRecordId:loc.identityKey,reportingPeriod:loc.sourceDate??undefined,geographicLevel:'agency' as const,note:loc.kind}}}:{...a,address:'',googleMapsUri:undefined};
   }, [rawAgency,directoryAgencies,locationRevision]);
   const suppliers = resolveEquipmentSuppliers();
   const geographicLinks = useMemo(

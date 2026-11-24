@@ -14,6 +14,31 @@ export function parseStreetAddress(v:unknown):StreetAddress|undefined{
 export const isPhysicalStreet=(s:string)=>/^\d+[A-Za-z]?(?:[- ]\d+[A-Za-z]?)?\s+\S/.test(s)&&!/\b(?:P\s*\.?\s*O\s*\.?\s*BOX|POST OFFICE BOX|PMB|PRIVATE MAILBOX)\b/i.test(s);
 export const addressText=(a:StreetAddress)=>a.street+', '+a.city+', '+[a.state,a.zip].filter(Boolean).join(' ');
 export const addressKey=(a:StreetAddress)=>JSON.stringify([a.street,a.city,a.state,a.zip].map(s=>s.toUpperCase().replace(/\s+/g,' ').trim()));
+/** Source address equality may complete an omitted ZIP, but never replace a conflicting ZIP or unit. */
+export function compatibleSourceAddress(a:StreetAddress,b:StreetAddress):boolean{
+ const key=(s:string)=>s.toUpperCase().replace(/\s+/g,' ').trim();
+ return key(a.street)===key(b.street)&&key(a.city)===key(b.city)&&a.state===b.state&&(!a.zip||!b.zip||a.zip===b.zip);
+}
+/** Official registry lookup also supplies comma-delimited full addresses, unlike the national street-only snapshot. */
+export function parseRegistryStreet(street:unknown,city:unknown,state:string,postal:unknown):StreetAddress|undefined{
+ if(typeof street!=='string'||typeof city!=='string')return undefined;
+ const parts=street.split(',').map(s=>s.trim());
+ const tail=parts[parts.length-1]??'';
+ const zipOnly=/^\d{5}(?:-?\d{4})?$/.test(tail);
+ const statePart=zipOnly?parts[parts.length-2]:tail;
+ const suffix=/^([A-Za-z]{2})(?:\s+(\d{5}(?:-?\d{4})?))?$/.exec(statePart??'');
+ if(suffix&&parts.length>=(zipOnly?4:3)){
+  const cityIndex=parts.length-(zipOnly?3:2),reportedCity=parts[cityIndex];
+  const suffixZip=zipOnly?tail:suffix[2]??'';
+  if(suffix[1].toUpperCase()!==state||reportedCity.toUpperCase()!==city.trim().toUpperCase())return undefined;
+  const a=parseStreetAddress({street:parts.slice(0,cityIndex).join(', '),city,state,zip:suffixZip||postal});
+  if(!a)return undefined;
+  const explicit=parseStreetAddress({street:a.street,city,state,zip:postal});
+  if(explicit?.zip&&a.zip&&explicit.zip!==a.zip)return undefined;
+  return a;
+ }
+ return parseStreetAddress({street,city,state,zip:postal});
+}
 export function validNpi(v:unknown):v is string{
  if(typeof v!=='string'||!/^\d{10}$/.test(v))return false;
  return [...('80840'+v)].reverse().reduce((sum,d,i)=>{const n=Number(d)*(i%2?2:1);return sum+(n>9?n-9:n);},0)%10===0;

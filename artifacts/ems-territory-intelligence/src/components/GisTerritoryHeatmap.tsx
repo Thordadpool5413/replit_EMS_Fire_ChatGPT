@@ -1,3 +1,4 @@
+import {loadProviderLocationState,locationOverlay,useLocationRevision} from '../services/providerLocation';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {matchesEquipmentFilter,equipmentGeographyScope} from '../utils/equipmentPresence';
 /**
@@ -245,7 +246,14 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
   }, [globalCategory]);
 
   // Vendor views must reflect loaded records, including an empty or small workspace.
-  const effectiveAgencies = agencies;
+  const locationRevision=useLocationRevision();
+  React.useEffect(()=>{if(selectedState!=='all')void loadProviderLocationState(selectedState);},[selectedState]);
+  const locatedAgencies=useMemo(()=>{
+   const found=new Map<string,Agency>();
+   for(const a of agencies){const mapped=locationOverlay(a,agencies);if(mapped!==a)found.set(a.id,mapped);}
+   return found;
+  },[agencies,locationRevision]);
+  const effectiveAgencies = useMemo(()=>agencies.map(a=>locatedAgencies.get(a.id)??a),[agencies,locatedAgencies]);
 
   const nationalOhcaRateThresholds = useMemo(() => {
     const rates = effectiveAgencies
@@ -536,7 +544,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   // Use every filtered agency. KDE and hexbin aggregate the complete filtered set;
   // pins remain available when the full marker layer is too visually dense.
-  const mapRenderedAgencies = filteredAgencies;
+  const mapRenderedAgencies = useMemo(()=>filteredAgencies.flatMap(a=>{const mapped=locatedAgencies.get(a.id);return mapped?[mapped]:[];}),[filteredAgencies,locatedAgencies]);
 
   // Ranked hotspots for the active layer
   const topCardiacEpicenters = useMemo(() => {
@@ -1195,12 +1203,12 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   // Active Route Corridors for agencies selected for Field Route
   const activeRouteCorridorPoints = useMemo(() => {
-    const routeAgencies = effectiveAgencies.filter(a => a.inDayRoute);
+    const routeAgencies = [...locatedAgencies.values()].filter(a => a.inDayRoute);
     return routeAgencies.map(a => ({
       agency: a,
       ...projectCoord(a.latitude, a.longitude)
     }));
-  }, [effectiveAgencies]);
+  }, [locatedAgencies]);
 
   interface AgencyLayerVisual {
     gradientId: string;
@@ -1496,6 +1504,7 @@ export const GisTerritoryHeatmap: React.FC<GisTerritoryHeatmapProps> = ({
 
   return (
     <div className="workspace-section-grid fleet-map-workspace" data-testid="workspace-fleet-map">
+      <p className="text-xs px-2" data-testid="gis-location-coverage">{mapRenderedAgencies.length.toLocaleString()} street-mapped account records in this selection. Accounts without source-matched coordinates remain available in the directory and are not plotted as station locations.</p>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before layer, cluster and equipment filtering" onOpen={onSelectAgency}/>
       
       {/* Top GIS Header */}

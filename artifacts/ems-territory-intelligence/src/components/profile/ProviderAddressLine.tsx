@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {MapPin,Navigation} from 'lucide-react';
 import type {Agency} from '../../types';
 import {addressText,isPhysicalStreet} from '../../services/providerLocationContract';
-import {canResearchProviderLocation,displayedProviderLocation,mappedProviderLocation,researchProviderLocation,locationDirections,useLocationRevision,loadProviderLocationState} from '../../services/providerLocation';
+import {canResearchProviderLocation,displayedProviderLocation,mappedProviderLocation,researchProviderLocation,locationDirections,useLocationRevision,loadProviderLocationState,locationStatus} from '../../services/providerLocation';
 export function ProviderAddressLine({agency,directory,onReview}:{agency:Agency;directory:Agency[];onReview:()=>void}){
  useLocationRevision();
  const loc=displayedProviderLocation(agency,directory),pin=mappedProviderLocation(agency,directory),eligible=canResearchProviderLocation(agency,directory);
@@ -19,6 +19,7 @@ export function ProviderAddressLine({agency,directory,onReview}:{agency:Agency;d
  return <div className="acp-provider-location" data-testid="provider-address-line">
   <div className="acp-loc"><MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0"/><span>{loc?addressText(loc.address):[agency.city,agency.stateCode].filter(Boolean).join(', ')||'Location not reported'}</span></div>
   <p className="acp-address-note">{loc?<><a href={loc.sourceUrl} target="_blank" rel="noreferrer">{loc.sourceName}</a> · {loc.kind}{loc.sourceDate?' · '+loc.sourceDate:''}{pin?' · Approximate street-range map location':''}</>:busy?'Checking exact public registry identity…':'Street address not established from a linked source.'}</p>
+  {loc&&<p className="acp-address-note" data-testid="provider-address-status">{locationStatus(agency,directory)}</p>}
   <div className="acp-address-actions">{physical&&<a href={locationDirections(loc)} target="_blank" rel="noreferrer" data-testid="link-header-directions"><Navigation size={14} aria-hidden="true"/>Directions</a>}{physical&&loc.address.zip&&loc.kind!=='source-reported address'&&!pin&&<button type="button" disabled={busy} onClick={()=>void run(true)}>Locate on agency map</button>}{!loc&&eligible&&!busy&&<button type="button" onClick={()=>void run(false)}>Retry address lookup</button>}{!loc&&!eligible&&<button type="button" onClick={onReview}>Review location sources</button>}</div>
   {message&&<p className="acp-address-note" role="status">{message}</p>}
  </div>;

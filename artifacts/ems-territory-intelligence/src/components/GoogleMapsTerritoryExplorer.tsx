@@ -1,6 +1,5 @@
 import {ProviderAddressMapping} from './ProviderAddressMapping';
 import {locationOverlay,useLocationRevision,loadProviderLocationState} from '../services/providerLocation';
-import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {loadedLocationState,snapshotMapRows} from '../services/nationalLocationSnapshot';
 import {PublicRegistryLocationMarkers} from './PublicRegistryLocationMarkers';
 import {registryIdentityKey} from '../services/registryAccountLink';
@@ -288,17 +287,18 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   onToggleAgencyComparison
 }) => {
   const locationRevision=useLocationRevision();
-  const [showPublicRegistry,setShowPublicRegistry]=useState(false),[publicPage,setPublicPage]=useState(0);
+  const [showPublicRegistry,setShowPublicRegistry]=useState(true),[publicPage,setPublicPage]=useState(0);
   useEffect(()=>{if(globalState!=='all')void loadProviderLocationState(globalState);setPublicPage(0);},[globalState,globalCounty,globalCity,globalCategory]);
   const publicState=loadedLocationState(globalState);
-  const publicRows=useMemo(()=>{
-   const existing=new Set(originalAgencies.flatMap(a=>a.registryIdentity?[registryIdentityKey(a.registryIdentity)]:[]).filter(Boolean));
-   return snapshotMapRows(publicState,{county:globalCounty,city:globalCity,category:globalCategory}).filter(e=>!existing.has(e.key));
-  },[publicState,globalCounty,globalCity,globalCategory,originalAgencies]);
-  const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/150)-1));
-  const publicPins=showPublicRegistry?publicRows.slice(publicCurrent*150,(publicCurrent+1)*150):[];
   const agencies=useMemo(()=>originalAgencies.map(a=>locationOverlay(a,originalAgencies)),[originalAgencies,locationRevision]);
   const mappedIds=useMemo(()=>new Set(agencies.filter((a,i)=>a!==originalAgencies[i]).map(a=>a.id)),[agencies,originalAgencies]);
+  const publicRows=useMemo(()=>{
+   const existing=new Set(originalAgencies.flatMap(a=>mappedIds.has(a.id)&&a.registryIdentity?[registryIdentityKey(a.registryIdentity)]:[]).filter(Boolean));
+   return snapshotMapRows(publicState,{county:globalCounty,city:globalCity,category:globalCategory}).filter(e=>!existing.has(e.key));
+  },[publicState,globalCounty,globalCity,globalCategory,originalAgencies,mappedIds]);
+  const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/150)-1));
+  const publicPins=useMemo(()=>showPublicRegistry?publicRows.slice(publicCurrent*150,(publicCurrent+1)*150):[],[showPublicRegistry,publicRows,publicCurrent]);
+
   // Resolve Google Maps API Key from environment or localStorage
   const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
   const [storedKey, setStoredKey] = useState<string>(() => {
@@ -470,7 +470,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     let pool = agencies.filter((agency) => {
       if (!matchesEquipmentFilter(agency,equipmentFilter)) return false;
       // Geographic prospect centroids are not provider street locations.
-      if(isGeographicProspect(agency)&&!mappedIds.has(agency.id))return false;
+      if(!mappedIds.has(agency.id))return false;
       return Number.isFinite(agency.latitude) && Math.abs(agency.latitude)<=90 &&
              Number.isFinite(agency.longitude) && Math.abs(agency.longitude)<=180 &&
              !(agency.latitude===0 && agency.longitude===0);
@@ -544,6 +544,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     searchQuery,
     minPulseIqScore,
     maxPulseIqScore,
+    mappedIds,
   ]);
 
   // Compute map center and zoom
@@ -553,7 +554,10 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     }
     if (activeAccount) {
       const mapped=agencies.find(a=>a.id===activeAccount.id);
-      if(mapped&&Number.isFinite(mapped.latitude)&&Number.isFinite(mapped.longitude)&&(!isGeographicProspect(mapped)||mappedIds.has(mapped.id)))return {lat:mapped.latitude,lng:mapped.longitude};
+      if(mapped&&Number.isFinite(mapped.latitude)&&Number.isFinite(mapped.longitude)&&mappedIds.has(mapped.id))return {lat:mapped.latitude,lng:mapped.longitude};
+    }
+    if (filteredAgencies.length === 0 && publicPins.length > 0 && !isNearMeActive) {
+      return {lat:publicPins.reduce((sum,p)=>sum+(p.match?.latitude??0),0)/publicPins.length,lng:publicPins.reduce((sum,p)=>sum+(p.match?.longitude??0),0)/publicPins.length};
     }
     if (filteredAgencies.length > 0) {
       const avgLat = filteredAgencies.reduce((acc, a) => acc + a.latitude, 0) / filteredAgencies.length;
@@ -562,7 +566,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
     }
     // Default territory centroid (e.g. Illinois or Midwest)
     return { lat: 40.0, lng: -89.0 };
-  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies,agencies,mappedIds]);
+  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies,agencies,mappedIds,publicPins]);
 
   const mapZoom = useMemo(() => {
     if (isNearMeActive) {

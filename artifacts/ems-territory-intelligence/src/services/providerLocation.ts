@@ -4,7 +4,7 @@ import {loadSourceDirectoryState} from './nationalSourceDirectory';
 import {snapshotRegistryIdentity} from './registryAccountLink';
 import {loadFloridaRoster,floridaRegistryIdentity} from './floridaEmsRoster';
 import {isGeographicProspect} from '../utils/providerRecordTrust';
-import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,addressText,isPhysicalStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
+import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,addressText,isPhysicalStreet,compatibleSourceAddress,parseRegistryStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {useSyncExternalStore} from 'react';
 import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,snapshotSourceUrl} from './nationalLocationSnapshot';
 
@@ -24,15 +24,22 @@ function identities(a:Agency):RegistryIdentity[]{
   if(state!==a.stateCode||!name||!norm(name))continue;
   const common={stateCode:state,name,city:typeof f.city==='string'?f.city:undefined,postalCode:typeof f.postalCode==='string'?f.postalCode:typeof f.zipCode==='string'?f.zipCode:undefined,sourceUrl:s.sourceUrl,sourceDate:s.sourceDate,retrievedAt:s.retrievedAt};
   let id:RegistryIdentity|undefined;
-  if(/USFA|NFDR/i.test(s.sourceName)&&typeof f.fdid==='string')id={...common,sourceName:'USFA NFDR',identifier:f.fdid,address:typeof f.headquartersAddress==='string'?f.headquartersAddress:undefined};
-  else if(/NPPES|NPI/i.test(s.sourceName)&&typeof (f.npi??f.npiNumber)==='string')id={...common,sourceName:'NPPES',identifier:String(f.npi??f.npiNumber)};
+  if(/USFA|NFDR/i.test(s.sourceName)&&typeof f.fdid==='string'&&[f.fdid,state+':'+f.fdid,'usfa:'+state+':'+f.fdid,state+'-'+f.fdid].includes(s.sourceRecordId))id={...common,sourceName:'USFA NFDR',identifier:f.fdid,address:typeof f.headquartersAddress==='string'?f.headquartersAddress:undefined};
+  else if(/NPPES|NPI/i.test(s.sourceName)&&typeof (f.npi??f.npiNumber)==='string'&&s.sourceRecordId===String(f.npi??f.npiNumber))id={...common,sourceName:'NPPES',identifier:String(f.npi??f.npiNumber)};
+  else if(s.sourceName==='NERIS'&&typeof f.nerisId==='string'&&s.sourceRecordId===f.nerisId)id={...common,sourceName:'NERIS',identifier:f.nerisId,address:typeof f.headquartersAddress==='string'?f.headquartersAddress:undefined};
+  else if(s.sourceName==='State EMS'&&state==='FL'&&f.identifierKind==='license'&&typeof f.stateAgencyId==='string'&&/^\d{1,12}$/.test(f.stateAgencyId)&&s.sourceRecordId==='FL:'+f.stateAgencyId&&s.sourceUrl==='https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf'&&(!f.headquartersState||f.headquartersState==='FL')){
+   // Older reviewed links lack the complete license metadata. They may retrieve an exact
+   // active source record from the bundled roster, never use the incomplete link as address evidence.
+   id={...common,sourceName:'State EMS',identifierKind:'license',identifier:f.stateAgencyId,headquartersState:'FL'};
+   list.push(id);continue;
+  }
   // Do not promote a merely associated NPI address to an operating station. Use its explicit practice location label.
   if(id&&canCreateRegistryAccount(id))list.push(id);
  }
  return list;
 }
 function fromIdentity(id:RegistryIdentity):ProviderLocation|undefined{
- const address=parseStreetAddress({street:id.address,city:id.city,state:id.stateCode,zip:id.postalCode});
+ const address=parseRegistryStreet(id.address,id.city,id.stateCode,id.postalCode);
  const key=registryIdentityKey(id);if(!address||!key)return undefined;
  return {address,identityKey:key,sourceName:id.sourceAuthority||id.sourceName,sourceUrl:id.sourceUrl,sourceDate:id.sourceDate,kind:id.sourceName==='NPPES'?'registered practice location':id.sourceName==='State EMS'?'recorded license address':'registry headquarters'};
 }
@@ -60,8 +67,8 @@ function nativeIdentity(a:Agency,directory:Agency[]):RegistryIdentity|undefined{
  if(index.ids.get(a.id)!==1||owners.length!==1||owners[0]!==a.id)return undefined;
  // Direct registry identity wins over a confirmed duplicate association; never merge differing addresses.
  const locations=ids.flatMap(i=>{const l=fromIdentity(i);return l?[l]:[];});
- if(new Set(locations.map(l=>addressKey(l.address))).size>1)return undefined;
- return ids.find(i=>fromIdentity(i))??ids[0];
+ if(locations.some((l,i)=>locations.slice(i+1).some(other=>!compatibleSourceAddress(l.address,other.address))))return undefined;
+ return ids.find(i=>fromIdentity(i)?.address.zip)??ids.find(i=>fromIdentity(i))??ids[0];
 }
 export function recordedProviderLocation(a:Agency,directory:Agency[]):ProviderLocation|undefined{
  const id=nativeIdentity(a,directory);
@@ -113,12 +120,25 @@ function snapshotLocation(a:Agency,directory:Agency[]):ProviderLocation|undefine
  const e=snapshotFor(a,directory);if(!e?.address)return undefined;
  return {address:e.address,identityKey:e.key,sourceName:e.source==='NPPES'?'CMS NPPES':e.source==='USFA'?'USFA NFDR':'Florida Department of Health',sourceUrl:snapshotSourceUrl(e),sourceDate:e.sourceDate,kind:e.source==='USFA'?'registry headquarters':e.source==='NPPES'?'registered practice location':'recorded license address'};
 }
-export function displayedProviderLocation(a:Agency,directory:Agency[]){return recordedProviderLocation(a,directory)??snapshotLocation(a,directory)??lookup(a,directory)?.location;}
+export function displayedProviderLocation(a:Agency,directory:Agency[]){return snapshotLocation(a,directory)??recordedProviderLocation(a,directory)??lookup(a,directory)?.location;}
 export function mappedProviderLocation(a:Agency,directory:Agency[]){
  const e=snapshotFor(a,directory);
- if(e?.match&&(!e.sourceCounty||e.sourceCounty===e.countyFips)&&(!a.countyFips||a.countyFips===e.countyFips))return e.match;
+ if(e?.match){if((e.sourceCounty&&e.sourceCounty!==e.countyFips)||(a.countyFips&&a.countyFips!==e.countyFips))return undefined;return e.match;}
  const c=lookup(a,directory),loc=displayedProviderLocation(a,directory);
  return c?.match&&loc&&addressKey(loc.address)===addressKey(c.location.address)?c.match:undefined;
+}
+export function locationStatus(a:Agency,directory:Agency[]):string{
+ if(mappedProviderLocation(a,directory))return 'Mapped · approximate street location';
+ const loc=displayedProviderLocation(a,directory),id=nativeIdentity(a,directory);
+ if(!loc)return id?'Source address not found; review required':'Provider identity or location source needs review';
+ if(!isPhysicalStreet(loc.address.street))return 'Recorded mailing or nonstandard address; physical site not established';
+ if(!loc.address.zip)return 'Street address recorded; ZIP not supplied';
+ const raw=id&&loadedLocationState(id.stateCode)?.entries.get(registryIdentityKey(id)??'');
+ if(raw?.status==='no-match')return 'Street address recorded; no exact Census match';
+ if(raw?.status==='unavailable')return 'Street address recorded; geocoder unavailable';
+ if(raw?.match)return 'Address or county disagreement; map location withheld';
+ if(raw?.status==='historical')return 'Historical source record; active site not established';
+ return 'Street address recorded; map location not established';
 }
 export function canResearchProviderLocation(a:Agency,directory:Agency[]){return !!nativeIdentity(a,directory)||!!recordedProviderLocation(a,directory);}
 async function fetchJson(url:string,signal:AbortSignal){

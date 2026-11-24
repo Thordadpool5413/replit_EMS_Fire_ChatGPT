@@ -1,4 +1,4 @@
-import {addressKey,parseStreetAddress,validateAddressMatch,type StreetAddress,type AddressMatch} from './providerLocationContract';
+import {compatibleSourceAddress,parseStreetAddress,isPhysicalStreet,validateAddressMatch,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {loadSourceDirectoryManifest,type SourceDirectoryRecord} from './nationalSourceDirectory';
 import {registryIdentityKey,snapshotRegistryIdentity,type RegistryIdentity} from './registryAccountLink';
 
@@ -69,7 +69,7 @@ export async function loadNationalLocationState(state:string):Promise<LocationSt
 export function matchingSnapshotLocation(id:RegistryIdentity,known?:StreetAddress):SnapshotLocation|undefined{
  const key=registryIdentityKey(id);if(!key)return undefined;
  const e=loaded.get(id.stateCode)?.entries.get(key);
- if(!e||!e.address||e.status==='historical'||e.status==='review'||nameKey(e.name)!==nameKey(id.name)||known&&addressKey(known)!==addressKey(e.address))return undefined;
+ if(!e||!e.address||e.status==='historical'||e.status==='review'||nameKey(e.name)!==nameKey(id.name)||known&&!compatibleSourceAddress(known,e.address))return undefined;
  return e;
 }
 /** Enrich only the source directory view; preserve original source-county relationships and raw records. */
@@ -79,12 +79,31 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  const e=key&&locations?.entries.get(key);
  if(!id||!e||!e.address||e.status==='review'||e.status==='historical'||nameKey(e.name)!==nameKey(row[2])||e.state!==row[3])return row;
  const a=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]});
- if(a&&addressKey(a)!==addressKey(e.address))return row;
+ if(a&&!compatibleSourceAddress(a,e.address))return row;
  const out=[...row] as SourceDirectoryRecord;
  out[10]=e.address.street;out[4]=e.address.city;out[5]=row[5]||e.address.zip;
  if(!out[6]&&e.match&&e.countyFips){out[6]=e.countyFips;out[8]='census-address-range';}
  return out;
 }
+export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null};
+export function listingLocation(row:SourceDirectoryRecord,locations:LocationState|undefined):ListingLocation{
+ const id=snapshotRegistryIdentity(row),key=id&&registryIdentityKey(id);
+ const address=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]})??null;
+ if(row[9])return {address,status:'historical',match:null};
+ if(!key)return {address,status:'missing-identity',match:null};
+ const e=locations?.entries.get(key);
+ if(!e)return {address,status:address?'not-checked':'source-missing',match:null};
+ if(e.state!==row[3]||nameKey(e.name)!==nameKey(row[2])||address&&e.address&&!compatibleSourceAddress(address,e.address))return {address,status:'review',match:null};
+ if(e.status==='historical'||e.status==='review')return {address:address??e.address,status:e.status,match:null};
+ const loc=e.address??address;
+ if(!loc)return {address:null,status:'source-missing',match:null};
+ if(!isPhysicalStreet(loc.street)||!loc.zip)return {address:loc,status:'not-eligible',match:null};
+ if(e.match&&(e.sourceCounty&&e.sourceCounty!==e.countyFips||row[6]&&row[6]!==e.countyFips))return {address:loc,status:'review',match:null};
+ return {address:loc,status:e.status,match:e.match};
+}
+export const LISTING_LOCATION_LABELS:Record<ListingLocation['status'],string>={
+ mapped:'Mapped street address', 'missing-identity':'Registry ID not reported; location association needs review', 'source-missing':'Street address not reported', 'not-eligible':'Mailing/nonstandard address or ZIP missing; no street pin', historical:'Historical source record', review:'Source or county disagreement; review required', pending:'Address recovered; coordinate match pending', unavailable:'Geocoder unavailable; retry required', 'no-match':'No exact street match; research required', 'not-checked':'Address recorded; coordinates not checked',
+};
 export function snapshotSourceUrl(e:SnapshotLocation){
  return e.source==='NPPES'?'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4):e.source==='USFA'?'https://apps.usfa.fema.gov/registry/search':'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf';
 }

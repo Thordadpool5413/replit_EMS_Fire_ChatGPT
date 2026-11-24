@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SAM_ENDPOINT,SAM_STATES,samDeadlineStatus,samWindow,parseSamQuery,validateSamPage,type SamQuery} from './samDiscoveryContract';
+import {SAM_ENDPOINT,SAM_STATES,samDeadlineStatus,samPostedDay,samDeadlineValue,samWindow,parseSamQuery,validateSamPage,type SamQuery} from './samDiscoveryContract';
 import {authorizedSamGateway,readSamConfig,samRequest,normalizeSamDiscovery,fetchSamDiscovery,createSamDiscoveryService} from './samSolicitationDiscovery';
 const now=Date.parse('2026-11-24T12:00:00Z'),q:SamQuery={state:'FL',topic:'defibrillator',noticeType:'o',days:90,offset:0};
 const key='fixture_key_not_a_secret_1234',gateway='fixture_gateway_not_a_secret_1234567890';
@@ -71,4 +71,16 @@ test('upstream 429 stops uncached requests for the UTC day',async()=>{
  let calls=0;
  const s=createSamDiscoveryService({apiKey:key,gatewayToken:gateway,dailyLimit:8},async()=>{calls++;return new Response('limit',{status:429});},()=>now);
  await assert.rejects(s(q),/budget reached/);await assert.rejects(s({...q,topic:'monitor'}),/budget reached/);assert.equal(calls,1);
+});
+
+test('calendar guards accept valid day and timestamp inputs without unsafe type assertions',()=>{
+ assert.equal(samPostedDay('2026-11-24'),'2026-11-24');
+ assert.equal(samPostedDay('2026-11-24 13:15:00'),'2026-11-24');
+ assert.equal(samPostedDay('2026-02-29 13:15:00'),null);
+ assert.equal(samPostedDay(20261124),null);
+ assert.equal(samDeadlineValue('2026-11-24'),'2026-11-24');
+ assert.equal(samDeadlineValue('2026-11-24T13:15:00-05:00'),'2026-11-24T13:15:00-05:00');
+ assert.equal(samDeadlineValue('2026-11-24T25:15:00'),null);
+ assert.equal(samDeadlineValue('2026-02-31T13:15:00Z'),null);
+ assert.equal(samDeadlineValue(null),null);
 });

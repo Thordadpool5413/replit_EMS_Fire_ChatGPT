@@ -17,14 +17,16 @@ const optional=(v:unknown,n:number)=>v===null||text(v,n);
 const integer=(v:unknown):number|undefined=>typeof v==='number'&&Number.isSafeInteger(v)?v:typeof v==='string'&&/^\d{1,3}$/.test(v)?Number(v):undefined;
 export const samDay=(v:unknown):v is string=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
 export function samPostedDay(v:unknown):string|null{
- if(typeof v!=='string')return null;
+ // Test the date guard before narrowing to string; a failed calendar check does not mean a timestamp is not a string.
  if(samDay(v))return v;
+ if(typeof v!=='string')return null;
  if(/^\d{4}-\d{2}-\d{2}[ T](?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?$/.test(v)&&samDay(v.slice(0,10)))return v.slice(0,10);
  return null;
 }
 export function samDeadlineValue(v:unknown):string|null{
- if(typeof v!=='string')return null;
+ // Test the date guard before narrowing to string; a failed calendar check does not mean a timestamp is not a string.
  if(samDay(v))return v;
+ if(typeof v!=='string')return null;
  if(!/^\d{4}-\d{2}-\d{2}[ T](?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:0\d|1[0-4]):?[0-5]\d)?$/.test(v)||!samDay(v.slice(0,10)))return null;
  return v;
 }

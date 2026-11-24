@@ -63,13 +63,13 @@ export function normalizeFemaDiscovery(payload:unknown,q:DiscoveryQuery,now=Date
  const more=raw.length>DISCOVERY_PAGE_SIZE;
  return {schemaVersion:1,source:'openfema-afg',query:q,sourceUrl,documentationUrl:FEMA_DISCOVERY_DOCS,fetchedAt:new Date(now).toISOString(),sourceRows,withheld:Math.max(invalid,withheld),duplicates,nextOffset:more&&q.offset<MAX_OFFSET?q.offset+DISCOVERY_PAGE_SIZE:null,scopeCapped:more&&q.offset===MAX_OFFSET,candidates};
 }
-async function boundedJson(response:Response):Promise<unknown>{
- if(!response.ok)throw Error('OpenFEMA returned HTTP '+response.status+'.');
- if(!/application\/(?:[\w.+-]*\+)?json/i.test(response.headers.get('content-type')??''))throw Error('OpenFEMA did not return JSON.');
- if(Number(response.headers.get('content-length')??0)>MAX_BYTES||!response.body)throw Error('OpenFEMA response exceeds the size limit or is missing.');
+export async function boundedJson(response:Response,source='OpenFEMA'):Promise<unknown>{
+ if(!response.ok)throw Error(source+' returned HTTP '+response.status+'.');
+ if(!/application\/(?:[\w.+-]*\+)?json/i.test(response.headers.get('content-type')??''))throw Error(source+' did not return JSON.');
+ if(Number(response.headers.get('content-length')??0)>MAX_BYTES||!response.body)throw Error(source+' response exceeds the size limit or is missing.');
  const reader=response.body.getReader();const decoder=new TextDecoder();let bytes=0,text='';
  try{
-  while(true){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>MAX_BYTES){await reader.cancel();throw Error('OpenFEMA response exceeded the size limit.');}text+=decoder.decode(value,{stream:true});}
+  while(true){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>MAX_BYTES){await reader.cancel();throw Error(source+' response exceeded the size limit.');}text+=decoder.decode(value,{stream:true});}
   return JSON.parse(text+decoder.decode());
  }finally{reader.releaseLock();}
 }

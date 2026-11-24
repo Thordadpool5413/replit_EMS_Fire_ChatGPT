@@ -605,6 +605,8 @@ export type AgencySourceFactBasis =
   | 'calculated';
 
 export interface AgencySourceFact {
+  /** Explicit document semantics; generic source facts never imply installed equipment or open procurement. */
+  intelligence?: import('../services/documentedIntelligence').IntelligenceMetadata;
   id: string;
   fieldKey: AgencyFactEvidenceKey;
   value: string;

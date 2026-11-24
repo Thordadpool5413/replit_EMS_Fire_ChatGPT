@@ -1,3 +1,4 @@
+import {FloridaEmsRoster} from './FloridaEmsRoster';
 import { StateEmsRoster } from './StateEmsRoster';
 import type { Agency, AgencySourceRecordAssociation } from '../types';
 import { snapshotRegistryIdentity, registryIdentifierText } from '../services/registryAccountLink';
@@ -9,7 +10,7 @@ import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
 import {filterSourceDirectory,loadSourceDirectoryState,type SourceDirectoryRecord} from '../services/nationalSourceDirectory';
 export function NationalSourceDirectory({stateCode='',countyFips='',providerScope='all',city='',savedAgencies=[],onOpenSavedAgency,onDecideSourceRecord,onCreateAgency}:{stateCode?:string;countyFips?:string;providerScope?:'all'|'ems'|'fire';city?:string;savedAgencies?:Agency[];onOpenSavedAgency?:(agency:Agency)=>void;onDecideSourceRecord?:(id:string,association:AgencySourceRecordAssociation)=>void;onCreateAgency?:(a:Agency)=>void|Promise<void>}){
  const {manifest,error:manifestError,retry}=useNationalSourceDirectory();
- const[liveNeris,setLiveNeris]=useState(false);const[showOhio,setShowOhio]=useState(false);
+ const[liveNeris,setLiveNeris]=useState(false);const[showOhio,setShowOhio]=useState(false);const[showFlorida,setShowFlorida]=useState(false);
  const[state,setState]=useState(stateCode);const[query,setQuery]=useState('');const[source,setSource]=useState<'all'|'USFA'|'NPPES'>(providerScope==='ems'?'NPPES':providerScope==='fire'?'USFA':'all');const[unassigned,setUnassigned]=useState(false);const[records,setRecords]=useState<SourceDirectoryRecord[]>([]);const[busy,setBusy]=useState(false);const[error,setError]=useState('');const[page,setPage]=useState(1);const[attempt,setAttempt]=useState(0);
  useEffect(()=>{setState(stateCode);setUnassigned(false);setPage(1);},[stateCode,countyFips,city]);
  useEffect(()=>{setSource(providerScope==='ems'?'NPPES':providerScope==='fire'?'USFA':'all');setPage(1);},[providerScope]);
@@ -30,6 +31,8 @@ export function NationalSourceDirectory({stateCode='',countyFips='',providerScop
    <label className="text-sm">Source<select aria-label="Registry source" className="block border rounded p-2 bg-transparent" value={source} onChange={e=>{setSource(e.target.value as typeof source);change();}}><option value="all">Both registries</option><option value="USFA">USFA fire departments</option><option value="NPPES">NPPES ambulance organizations</option></select></label>
    <label className="text-sm flex-1">Search listings<input aria-label="Search national registry" className="block border rounded p-2 w-full bg-transparent" value={query} onChange={e=>{setQuery(e.target.value);change();}} placeholder="Agency name, city, ZIP or identifier"/></label>
   </div>
+  {state==='FL'&&providerScope!=='fire'&&<label className="block text-sm"><input type="checkbox" aria-label="Browse Florida EMS license roster" checked={showFlorida} onChange={e=>setShowFlorida(e.target.checked)}/> Browse Florida's official EMS license roster</label>}
+  {state==='FL'&&providerScope!=='fire'&&showFlorida&&<FloridaEmsRoster key={countyFips+':'+city} city={city} countyFips={countyFips} countyNames={countyNames} agencies={savedAgencies} onOpen={onOpenSavedAgency} onDecide={onDecideSourceRecord} onCreate={onCreateAgency}/>}
   {state==='OH'&&providerScope!=='fire'&&<label className="block text-sm"><input type="checkbox" aria-label="Browse Ohio state agency roster" checked={showOhio} onChange={e=>setShowOhio(e.target.checked)}/> Browse Ohio's official state agency roster</label>}
   {state==='OH'&&providerScope!=='fire'&&showOhio&&<StateEmsRoster key={city} city={city} countySelected={!!countyFips} agencies={savedAgencies} onOpen={onOpenSavedAgency} onDecide={onDecideSourceRecord} onCreate={onCreateAgency}/>}
   {state&&providerScope!=='ems'&&<label className="block text-sm"><input type="checkbox" checked={liveNeris} onChange={e=>setLiveNeris(e.target.checked)}/> Also load current NERIS department listings</label>}

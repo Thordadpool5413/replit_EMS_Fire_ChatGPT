@@ -335,7 +335,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   const [searchQuery, setSearchQuery] = useState<string>(savedMapFilters.searchQuery ?? '');
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const [colorByEquipment,setColorByEquipment]=useState(false);
-  useEffect(()=>{if(equipmentFilter.presence!=='all')setColorByEquipment(true);},[equipmentFilter]);
+  useEffect(()=>{if(equipmentFilter.presence!=='all'||equipmentFilter.evidence==='documented')setColorByEquipment(true);},[equipmentFilter]);
   const [selectedTier, setSelectedTier] = useState<string>(savedMapFilters.selectedTier ?? 'all');
   const [minPulseIqScore, setMinPulseIqScore] = useState<string>(savedMapFilters.minPulseIqScore ?? '');
   const [maxPulseIqScore, setMaxPulseIqScore] = useState<string>(savedMapFilters.maxPulseIqScore ?? '');
@@ -608,7 +608,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   return (
     <div className="workspace-view-container gmap-workspace min-w-0 w-full space-y-4" data-testid="workspace-google-map">
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
-      <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">Recorded vendor presence</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background,color:style.glyphColor}}>{style.glyph}</b>{style.label}</span>)}</div></>}</section>
+      <section className="equipment-map-legend" aria-label="Map marker colors"><label>Color agency markers by <select value={colorByEquipment?'equipment':'priority'} onChange={e=>setColorByEquipment(e.target.value==='equipment')}><option value="priority">Opportunity priority</option><option value="equipment">{equipmentFilter.evidence==='documented'?'Dated source observations':'Recorded vendor presence'}</option></select></label>{colorByEquipment&&<><div>{Object.values(EQUIPMENT_MAP_STYLES).map(style=><span key={style.glyph}><b style={{background:style.background,color:style.glyphColor}}>{style.glyph}</b>{style.label}</span>)}</div></>}</section>
       
       {/* ====================================================================
           TOP TOOLBAR / NAVIGATION STRIP
@@ -1206,7 +1206,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                     const agency = group[0];
                     const tier = agency.zollOpportunity?.priorityTier || 'Maintained Account';
                     const tierStyle = TIER_COLORS[tier] || TIER_COLORS['Maintained Account'];
-                    const vendorStyle=equipmentMapStyle(agency,equipmentFilter.family);
+                    const vendorStyle=equipmentMapStyle(agency,equipmentFilter.family,equipmentFilter.evidence);
                     const isSelected = selectedAgencyForInfo?.id === agency.id;
                     const pulseIqScore = agency.zollOpportunity?.pulseIqScore;
                     const pulseIqScoreLabel =

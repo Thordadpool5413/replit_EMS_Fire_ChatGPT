@@ -1,3 +1,5 @@
+import {isGeographicProspect} from './providerRecordTrust';
+import {hasDocumentedAgencyIdentity} from '../services/documentedIntelligence';
 import { canonicalizeAgencyCounty, normalizeCountyName } from './countyIdentity';
 import type { Agency } from '../types';
 import {
@@ -106,15 +108,16 @@ function addRecord(
   includeAgencyRecords: boolean,
 ) {
   const agencyId = agencies[0]?.id?.trim() || 'directory-id-not-stated';
-  const profile = buildCountyAgencyEquipmentRecord(agencyId, agencies, location);
+  const representative=agencies.find(a=>a.isVerifiedRecord)??agencies[0];
+  const scoped=filter.evidence==='documented'?[{...representative,sourceFacts:agencies.flatMap(a=>a.sourceFacts??[]),_factReviews:agencies.flatMap(a=>a._factReviews??[])}]:agencies;
+  const profile = buildCountyAgencyEquipmentRecord(agencyId, agencies, location,filter.evidence);
   const entries = profile.equipmentRecords;
-  const matches = agencies.flatMap((agency) => getRecordedVendorMatches(agency, filter.family));
+  const matches = scoped.flatMap((agency) => getRecordedVendorMatches(agency, filter.family,filter.evidence));
   const vendorIds = new Set(matches.map((match) => match.vendor));
   const zoll = vendorIds.has('zoll');
   const competitor = [...vendorIds].some((vendor) => vendor !== 'zoll');
 
-  const hasDetails = getRecordedEquipmentEntries(agencies[0], filter.family).length > 0
-    || agencies.slice(1).some((agency) => getRecordedEquipmentEntries(agency, filter.family).length > 0);
+  const hasDetails = scoped.some(agency=>getRecordedEquipmentEntries(agency, filter.family,filter.evidence).length > 0);
   summary.total++;
   if (!hasDetails) summary.notReported++;
   else summary[zoll && competitor ? 'mixed' : zoll ? 'zoll' : competitor ? 'competitor' : 'unknown']++;
@@ -146,7 +149,7 @@ function addRecord(
   if (profile.agencyIdentityStatus === 'verified') summary.verifiedAgencyCount++;
   else summary.unverifiedAgencyCount++;
 
-  const allInstalledEntries = entries.filter((entry) => entry.recordType === 'installed-field');
+  const allInstalledEntries = entries.filter((entry) => filter.evidence==='documented'?entry.recordType==='source-fact':entry.recordType === 'installed-field');
   const installedEntries = allInstalledEntries.filter((entry) => filter.family === 'all' || entry.family === filter.family);
   summary.equipmentRecordCount += installedEntries.length;
   summary.sourceFactRecordCount += profile.sourceFactRecordCount;
@@ -235,7 +238,7 @@ export function buildEquipmentGeography(
   let excludedPlanningRecords = 0;
   const agencyGroups = new Map<string, Agency[]>();
   agencies.forEach((agency, index) => {
-    if (agency.verificationSource?.includes('Geographic prospect generator') && !agency.isVerifiedRecord && !getRecordedEquipmentEntries(agency).length) { excludedPlanningRecords++; return; }
+    if (isGeographicProspect(agency) && (filter.evidence==='documented'?!hasDocumentedAgencyIdentity(agency):!agency.isVerifiedRecord&&!getRecordedEquipmentEntries(agency).length)) { excludedPlanningRecords++; return; }
     const id = agency.id?.trim();
     const key = id ? `id:${id}` : `unidentified-row:${index}`;
     agencyGroups.set(key, [...(agencyGroups.get(key) || []), agency]);

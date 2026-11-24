@@ -5,6 +5,7 @@ export interface RegistryIdentity {
   sourceName:'USFA NFDR'|'NPPES'|'NERIS'|'State EMS'; identifier:string; stateCode:string;
   identifierKind?:'agency-code'|'license'; sourceAuthority?:string; serviceLevel?:string|null; deactivatedAt?:string; postalCode?:string; countyName?:string;
   name:string; city?:string; countyFips?:string; address?:string;
+  headquartersState?:string;licenseIssuedAt?:string;licenseExpiresAt?:string;
   sourceUrl:string; sourceDate?:string|null; retrievedAt:string;
 }
 export function snapshotRegistryIdentity(row:SourceDirectoryRecord,sourceDate?:string):RegistryIdentity|undefined {
@@ -45,7 +46,7 @@ export function createReviewedRegistryAssociation(identity:RegistryIdentity,agen
   if(agency.registryIdentity?.sourceName===identity.sourceName&&registryIdentityKey(agency.registryIdentity)!==registryIdentityKey(identity))throw Error('Account already has a different native identity in this registry.');
   if(agency.sourceRecordAssociations?.some(s=>s.decision==='confirmed'&&s.sourceName===identity.sourceName&&!findRegistryIdentityAccounts(identity,[{...agency,registryIdentity:undefined,sourceRecordAssociations:[s]}]).length))throw Error('Account already has a different confirmed identity in this registry. Review that association first.');
   const sourceRecordId=identity.sourceName==='USFA NFDR'||identity.sourceName==='State EMS'?identity.stateCode+':'+identity.identifier:identity.identifier;
-  return {id:identity.sourceName+':'+sourceRecordId,sourceName:identity.sourceName,sourceRecordId,sourceUrl:identity.sourceUrl,decision:'confirmed',matchBasis:basis.trim(),sourceDate:identity.sourceDate,retrievedAt:identity.retrievedAt,decidedAt:new Date().toISOString(),sourceFields:{agencyName:identity.name,stateCode:identity.stateCode,city:identity.city??'',countyFips:identity.countyFips??'',headquartersAddress:identity.address??'',...(identity.sourceName==='USFA NFDR'?{fdid:identity.identifier}:identity.sourceName==='NERIS'?{nerisId:identity.identifier}:identity.sourceName==='State EMS'?{stateAgencyId:identity.identifier,identifierKind:identity.identifierKind??'agency-code'}:{npi:identity.identifier})}};
+  return {id:identity.sourceName+':'+sourceRecordId,sourceName:identity.sourceName,sourceRecordId,sourceUrl:identity.sourceUrl,decision:'confirmed',matchBasis:basis.trim(),sourceDate:identity.sourceDate,retrievedAt:identity.retrievedAt,decidedAt:new Date().toISOString(),sourceFields:{agencyName:identity.name,stateCode:identity.stateCode,city:identity.city??'',countyFips:identity.countyFips??'',headquartersAddress:identity.address??'',...(identity.sourceName==='USFA NFDR'?{fdid:identity.identifier}:identity.sourceName==='NERIS'?{nerisId:identity.identifier}:identity.sourceName==='State EMS'?{stateAgencyId:identity.identifier,identifierKind:identity.identifierKind??'agency-code',...(identity.licenseIssuedAt?{licenseIssuedAt:identity.licenseIssuedAt}:{}),...(identity.licenseExpiresAt?{licenseExpiresAt:identity.licenseExpiresAt}:{}),...(identity.headquartersState?{headquartersState:identity.headquartersState}:{})}:{npi:identity.identifier})}};
 }
 
 /** Source namespace and record grain: NPI and NERIS are national, FDID and state EMS codes are state-scoped. */
@@ -77,7 +78,8 @@ export function canCreateRegistryAccount(identity:RegistryIdentity):boolean{
   if(identity.sourceName==='USFA NFDR')return u.hostname==='apps.usfa.fema.gov';
   if(identity.sourceName==='NPPES')return u.hostname==='npiregistry.cms.hhs.gov'&&validNpiChecksum(identity.identifier);
   if(identity.sourceName==='NERIS')return u.hostname==='www.usfa.fema.gov'||u.hostname==='services5.arcgis.com';
-  return identity.stateCode==='OH'&&u.hostname==='ems.ohio.gov';
+  if(identity.stateCode==='FL')return identity.identifierKind==='license'&&/^\d{1,12}$/.test(identity.identifier)&&identity.headquartersState==='FL'&&u.href==='https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf'&&['AIR/I','AIR/IR','AIR/IP','AIR/P','ALS/T','ALS/N','BLS/T','BLS/N'].includes(identity.serviceLevel??'')&&[identity.licenseIssuedAt,identity.licenseExpiresAt,identity.sourceDate].every(d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d))&&new Date(d).toISOString().slice(0,10)===d)&&identity.licenseIssuedAt!<=identity.sourceDate!&&identity.licenseExpiresAt!>=identity.sourceDate!;
+  return identity.stateCode==='OH'&&identity.identifierKind==='agency-code'&&u.hostname==='ems.ohio.gov';
  }catch{return false}
 }
 export function findRegistryAccountCandidates(identity:RegistryIdentity,agencies:Agency[]):Agency[]{
@@ -87,6 +89,7 @@ export function findRegistryAccountCandidates(identity:RegistryIdentity,agencies
   if(identity.sourceName==='NPPES'&&a.npiNumber===id)return true;
   if(a.stateCode?.toUpperCase()!==identity.stateCode)return false;
   if(identity.sourceName==='USFA NFDR'&&a.fdid?.toUpperCase()===id)return true;
+  if(identity.sourceName==='State EMS'&&identity.identifierKind==='license'&&a.stateLicenseNumber?.toUpperCase()===id)return true;
   return !!name&&norm(a.name)===name&&(!city||!norm(a.city)||norm(a.city)===city);
  });
 }

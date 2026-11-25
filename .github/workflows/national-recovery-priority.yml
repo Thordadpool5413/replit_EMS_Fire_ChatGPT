@@ -1,0 +1,40 @@
+name: National recovery prioritization and California acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/plan_national_recovery.py'
+      - 'scripts/data/stage_california_la_addresses.py'
+      - 'scripts/data/test_national_recovery.py'
+      - '.github/workflows/national-recovery-priority.yml'
+  push:
+    branches: [atlas/phase9-0a-national-recovery-priority]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  priority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_national_recovery.py
+      - run: python3 scripts/data/plan_national_recovery.py --output generated-artifacts/recovery-priority
+      - uses: actions/upload-artifact@v4
+        with:
+          name: national-recovery-queue
+          path: generated-artifacts/recovery-priority/
+          if-no-files-found: error
+  acquire:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: priority
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_california_la_addresses.py --output generated-artifacts/california-la-address-review
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: california-la-address-review
+          path: generated-artifacts/california-la-address-review/
+          if-no-files-found: ignore

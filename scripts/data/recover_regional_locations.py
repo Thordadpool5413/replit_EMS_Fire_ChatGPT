@@ -249,7 +249,7 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
  if not hits:return None,'no-match'
  if len({(cf,m['latitude'],m['longitude']) for cf,m in hits})!=1:return None,'ambiguous'
  return min(hits,key=lambda x:x[1]['point']['objectId']),'mapped'
-def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=request):
+def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=request,checkpoint=None):
  d=SOURCES[source];version,zips=metadata(source,fetch)
  county_domain=version.get('countyDomain',{})
  if source=='nj-addresspoints' and (len({next(iter(counties[('NJ',county_key(name))])) for name in county_domain.values() if len(counties.get(('NJ',county_key(name)),set()))==1})!=21):raise ValueError('NJ county domain does not reconcile to Census county identities')
@@ -270,6 +270,16 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
   if zips and a['zip'] not in zips:stats['outside_published_zip_domain']+=1;continue
   groups[(a['zip'],normal_street(base_street(a['street'])) if source=='tx-stratmap' else a['street'],normal_street(a['city']) if source=='tx-stratmap' else a['city'])].append(e)
  values=[groups[k] for k in sorted(groups)]
+ if checkpoint is not None:
+  checkpoint.bind(source,version,checked)
+  remaining=[]
+  for group in values:
+   pending=[]
+   for e in group:
+    if checkpoint.defer(e):stats['deferred_recent_no_match']+=1
+    else:pending.append(e)
+   if pending:remaining.append(pending)
+  values=remaining
  batch_size=16 if source=='tx-stratmap' else 8
  for i in range(0,len(values),batch_size):
   batch=values[i:i+batch_size]
@@ -281,11 +291,13 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
   for group in batch:
    for e in group:
     found,status=resolve(source,e,rows,counties,checked,county_domain);stats[status]+=1
+    if checkpoint is not None:checkpoint.record(e,status)
     if found:out[e['key']]=found
     if status in ('review','ambiguous'):review.add(e['key'])
   if requests%10==0:print(source,requests,dict(stats),flush=True)
   time.sleep(delay)
  if metadata(source,fetch)[0]!=version:raise ValueError('Regional source metadata changed during query')
+ if checkpoint is not None:checkpoint.finish()
  return out,review,dict(stats,requests=requests,metadata=version)
 def combine(entries,candidates,review):
  # A county/source conflict or multiple different points is not resolved by arbitrary precedence.

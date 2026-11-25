@@ -1,5 +1,6 @@
 /** Read-only source listings. Never coerce registry organizations into Agency metrics. */
 export interface SourceDirectoryCounts {usfa:number;nppes:number;assigned:number;unassigned:number;countiesWithRecords:number;countyCount:number}
+export interface CountySourceListingCounts { total: number; usfa: number; nppes: number }
 export interface SourceDirectoryManifest {
  schemaVersion:1;totalRecords:number;statesAndDcRecords:number;otherJurisdictionRecords:number;countiesWithRecords:number;unassignedRecords:number;scope:string;
  sources:Record<'USFA'|'NPPES',{url?:string;sourceUrl?:string;retrievedAt?:string;reportingPeriod?:string;limitation:string;accepted:number}>;
@@ -42,4 +43,22 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
 export function filterSourceDirectory(records:SourceDirectoryRecord[],scope:{source?:'all'|'USFA'|'NPPES';countyFips?:string;query?:string;unassignedOnly?:boolean}):SourceDirectoryRecord[]{
  const words=(scope.query??'').toLocaleLowerCase().split(/\s+/).filter(Boolean);
  return records.filter(r=>(!scope.source||scope.source==='all'||r[1]===scope.source)&&(!scope.countyFips||r[6]===scope.countyFips)&&(!scope.unassignedOnly||!r[6])&&words.every(w=>[r[0],r[2],r[4],r[5],r[7],r[10]].join(' ').toLocaleLowerCase().includes(w)));
+}
+/** Count source rows only when their county FIPS belongs to the loaded county-equivalent directory.
+ * Rows from USFA and NPPES remain separate registry listings; this is not a unique-agency count.
+ */
+export function countSourceListingsByCounty(
+ records:SourceDirectoryRecord[],
+ validCountyFips:ReadonlySet<string>,
+):Map<string,CountySourceListingCounts>{
+ const result=new Map<string,CountySourceListingCounts>();
+ for(const row of records){
+  const fips=row[6];
+  if(!/^\d{5}$/.test(fips)||!validCountyFips.has(fips))continue;
+  const counts=result.get(fips)??{total:0,usfa:0,nppes:0};
+  counts.total+=1;
+  counts[row[1]==='USFA'?'usfa':'nppes']+=1;
+  result.set(fips,counts);
+ }
+ return result;
 }

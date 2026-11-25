@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
+import type { CountySourceListingCounts } from '../services/nationalSourceDirectory';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import { formatCoordinates } from '../utils/countyPresentation';
@@ -27,6 +28,8 @@ interface CountyDirectoryCardProps {
   nriSourceUrl?: string;
   nriLoading: boolean;
   nriError: boolean;
+  registryListings?: CountySourceListingCounts;
+  registryStatus?: 'idle' | 'loading' | 'ready' | 'unavailable';
   onInspectCounty: () => void;
 }
 
@@ -44,7 +47,7 @@ const ALL_FIGURE_KEYS: CountyFigureSourceKey[] = [
  * -> FEMA natural-hazard line -> geography -> citations.
  */
 export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
-  county: c, nri, nriSourceUrl, nriLoading, nriError, onInspectCounty,
+  county: c, nri, nriSourceUrl, nriLoading, nriError, registryListings, registryStatus = 'idle', onInspectCounty,
 }) => {
   const values = c as unknown as Record<string, unknown>;
   const riskColor = nri?.riskRating ? FEMA_NRI_RATING_COLORS[nri.riskRating] : undefined;
@@ -134,6 +137,26 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           ) : (
             <span className="cb-risk-chip cb-risk-chip--none" data-testid={`text-fema-nri-rating-${c.countyFips}`}>No county-equivalent record</span>
           )}
+        </p>
+
+        <p className="cb-registry" data-testid={`text-registry-listings-${c.countyFips}`}>
+          <Database className="cfs-ico" aria-hidden="true" />
+          <span className="cb-registry-label">Public registry listings</span>
+          {registryStatus === 'loading' ? (
+            <span role="status">Loading county assignments…</span>
+          ) : registryStatus === 'unavailable' ? (
+            <span role="status">Listing counts unavailable</span>
+          ) : registryStatus === 'ready' ? (
+            <>
+              <strong>{registryListings?.total ?? 0}</strong>
+              <span className="cb-registry-detail">
+                {registryListings ? `USFA ${registryListings.usfa} · NPPES ${registryListings.nppes}` : 'No listings assigned to this county in the loaded snapshot'}
+              </span>
+            </>
+          ) : (
+            <span>County data loads when a state is selected</span>
+          )}
+          <span className="cb-registry-note">source rows, not unique operating agencies</span>
         </p>
 
         {acs && (

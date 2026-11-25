@@ -1219,8 +1219,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <HomeDirectoryStatus
           status={directoryLoad}
           visibleAgencyCount={agencies.length}
+          publicListingCount={sourceDirectory?.statesAndDcRecords}
           onRetry={onRetryDirectory}
-          onBrowseDirectory={() => onNavigateTab('states_directory')}
+          onBrowseDirectory={() => setRegistryOpen(true)}
         />
 
       </section>

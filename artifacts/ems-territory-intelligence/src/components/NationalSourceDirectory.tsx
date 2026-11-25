@@ -26,7 +26,7 @@ export function NationalSourceDirectory({stateCode='',countyFips='',providerScop
  const coverage=getEmsJurisdictionSourceCoverage(state);
  const counts=manifest?.byState[state];const countyNames=useMemo(()=>new Map(Object.entries(manifest?.countyNames??{})),[manifest]);
  const change=()=>setPage(1);
- return <section className="pi-surface p-4 space-y-3" aria-label="National source directory">
+  return <section id="territory-public-source-directory" className="pi-surface p-4 space-y-3 scroll-mt-20" aria-label="National source directory">
   <h3 className="font-semibold">Public registry listings</h3><p className="text-sm">Source-native organization records, separate from saved or geographic prospect accounts. Registry presence does not establish active service, licensure, or equipment.</p>
   {manifest&&<p className="text-sm">{manifest.statesAndDcRecords.toLocaleString()} source listings across all 50 states and D.C. · {manifest.countiesWithRecords.toLocaleString()} of 3,144 counties with assigned records. {manifest.otherJurisdictionRecords.toLocaleString()} additional listings outside that geography. Listings can overlap across sources and are not a count of unique operating agencies.</p>}
   <p className="text-sm">USFA fire registry snapshot retrieved {manifest?.sources.USFA.retrievedAt??'date unavailable'} (registry updates retired). NPPES ambulance taxonomy snapshot: {manifest?.sources.NPPES.reportingPeriod??'date unavailable'}. These registry listings are separate from equipment records.</p>

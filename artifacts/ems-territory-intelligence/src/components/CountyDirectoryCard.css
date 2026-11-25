@@ -53,6 +53,15 @@
 .county-brief .cb-risk-chip--none { --cb-risk: #b6c1cf; font-weight: 600; color: var(--pi-text-secondary); }
 .county-brief .cb-risk-meta strong { color: var(--pi-text-primary); font-weight: 650; }
 .county-brief .cb-risk-status { font-size: var(--geo-label); }
+.county-brief .cb-registry {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .4rem;
+  min-width: 0; color: var(--pi-text-secondary); font-size: 11px; line-height: 1.3;
+}
+.county-brief .cb-registry .cfs-ico { flex: none; color: #0f766e; }
+.county-brief .cb-registry-label { font-weight: 650; color: var(--pi-text-primary); }
+.county-brief .cb-registry strong { color: var(--pi-text-primary); font-variant-numeric: tabular-nums; }
+.county-brief .cb-registry-detail { font-variant-numeric: tabular-nums; }
+.county-brief .cb-registry-note { color: var(--pi-text-tertiary, #64748b); font-size: 10px; }
 
 /* Geography and places */
 .county-brief .cb-geo { display: grid; gap: .25rem; padding-top: .4rem; border-top: 1px solid var(--geo-hair); font-size: 13.5px; }

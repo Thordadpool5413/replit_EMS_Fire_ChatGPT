@@ -27,7 +27,7 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+ * Returns public agency profiles in ID order. Anonymous reads omit field notes, follow-up tasks, source-review overlays, and contact notes; authorized workspace members can read them. Requests are bounded and can be filtered to a state.
  * @summary Read a stable page of agency records
  */
 export const listAgencyRecordsQueryStateCodeRegExp = new RegExp('^[A-Za-z]{2}$');
@@ -54,6 +54,7 @@ export const ListAgencyRecordsResponse = zod.object({
 
 
 /**
+ * Public reads omit field notes, follow-up tasks, source-review overlays, and contact notes. Authorized workspace members can read those fields.
  * @summary Read one agency record
  */
 export const getAgencyRecordPathAgencyIdMax = 300;
@@ -72,6 +73,7 @@ export const GetAgencyRecordResponse = zod.object({
 
 
 /**
+ * Requires an authenticated agency-workspace editor.
  * @summary Save an agency record with revision protection
  */
 export const updateAgencyRecordPathAgencyIdMax = 300;
@@ -99,7 +101,7 @@ export const UpdateAgencyRecordResponse = zod.object({
 
 
 /**
- * A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+ * Requires an authenticated agency-workspace editor. A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
  * @summary Apply an idempotent offline mutation
  */
 export const commitAgencyMutationPathAgencyIdMax = 300;
@@ -130,6 +132,7 @@ export const CommitAgencyMutationResponse = zod.object({
 
 
 /**
+ * Requires an authenticated agency-workspace editor.
  * @summary Create missing agency records without overwriting existing ones
  */
 export const createAgencyRecordsBodyRecordsMax = 25;

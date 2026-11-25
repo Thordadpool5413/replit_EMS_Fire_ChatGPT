@@ -62,3 +62,21 @@ test('late national pages preserve newer live revisions and partial equipment fi
   assert.equal(merged.installedFleet.defibBrand,'LIFEPAK 15');
   assert.equal(merged.installedFleet.mechanicalCPR,'AutoPulse');
 });
+
+test('public directory refresh preserves browser-local field and contact notes', () => {
+  const current = {
+    ...record('public-note-preservation', 1),
+    fieldNotes: [{ id: 'local-field-note', notes: 'keep local note' }],
+    followUpTasks: [{ id: 'local-follow-up', notes: 'keep local task' }],
+    keyContacts: [{ id: 'contact-1', name: 'Agency contact', notes: 'keep contact note' }],
+  } as Agency;
+  const publicResponse = {
+    ...record('public-note-preservation', 2),
+    keyContacts: [{ id: 'contact-1', name: 'Agency contact' }],
+  } as Agency;
+
+  const merged = mergeDirectoryAgency(current, publicResponse);
+  assert.deepEqual(merged.fieldNotes, current.fieldNotes);
+  assert.deepEqual(merged.followUpTasks, current.followUpTasks);
+  assert.equal(merged.keyContacts[0].notes, 'keep contact note');
+});

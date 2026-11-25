@@ -5,13 +5,18 @@ export interface RegistryIdentity {
   sourceName:'USFA NFDR'|'NPPES'|'NERIS'|'State EMS'; identifier:string; stateCode:string;
   identifierKind?:'agency-code'|'license'; sourceAuthority?:string; serviceLevel?:string|null; deactivatedAt?:string; postalCode?:string; countyName?:string;
   name:string; city?:string; countyFips?:string; address?:string;
+  sourceCounty?:string; countyAssignmentBasis?:string;
   headquartersState?:string;licenseIssuedAt?:string;licenseExpiresAt?:string;
   sourceUrl:string; sourceDate?:string|null; retrievedAt:string;
 }
-export function snapshotRegistryIdentity(row:SourceDirectoryRecord,sourceDate?:string):RegistryIdentity|undefined {
+/** Keep the source's county evidence, but do not attach a derived county when location review conflicts. */
+export function withholdReviewedRegistryCounty(identity:RegistryIdentity,withhold:boolean):RegistryIdentity {
+  return withhold?{...identity,countyFips:undefined,countyName:undefined}:identity;
+}
+export function snapshotRegistryIdentity(row:SourceDirectoryRecord,sourceDate?:string,retrievedAt?:string):RegistryIdentity|undefined {
   const identifier=row[1]==='USFA'?row[0].split(':').slice(2).join(':'):row[0].slice('nppes:'.length);
   if(!identifier||row[1]==='USFA'&&/^location-/i.test(identifier))return undefined;
-  return {sourceName:row[1]==='USFA'?'USFA NFDR':'NPPES',identifier,stateCode:row[3],name:row[2],city:row[4],countyFips:row[6],address:row[10],sourceUrl:row[1]==='USFA'?'https://apps.usfa.fema.gov/registry/search':row[11],postalCode:row[5],deactivatedAt:row[9]||undefined,sourceDate:sourceDate??null,retrievedAt:sourceDate&&/^\d{4}-\d{2}-\d{2}$/.test(sourceDate)?sourceDate:new Date().toISOString()};
+  return {sourceName:row[1]==='USFA'?'USFA NFDR':'NPPES',identifier,stateCode:row[3],name:row[2],city:row[4],countyFips:row[6],address:row[10],sourceCounty:row[7]||undefined,countyAssignmentBasis:row[8]||undefined,sourceUrl:row[1]==='USFA'?'https://apps.usfa.fema.gov/registry/search':row[11],postalCode:row[5],deactivatedAt:row[9]||undefined,sourceDate:sourceDate??null,retrievedAt:retrievedAt??(sourceDate&&/^\d{4}-\d{2}-\d{2}$/.test(sourceDate)?sourceDate:new Date().toISOString())};
 }
 export function registryIdentifierText(row: SourceDirectoryRecord): string {
   const identity=snapshotRegistryIdentity(row);

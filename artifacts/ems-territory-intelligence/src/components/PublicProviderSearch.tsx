@@ -4,7 +4,7 @@ import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
 import {searchPublicProviders,type PublicSearchScope,type PublicSearchResult} from '../services/publicProviderSearch';
 import {listingLocation,enrichRegistryRow,loadNationalLocationState,LISTING_LOCATION_LABELS,type LocationState} from '../services/nationalLocationSnapshot';
 import {addressText,isPhysicalStreet,addressMatchLabel} from '../services/providerLocationContract';
-import {snapshotRegistryIdentity,registryIdentifierText} from '../services/registryAccountLink';
+import {snapshotRegistryIdentity,registryIdentifierText,withholdReviewedRegistryCounty} from '../services/registryAccountLink';
 import {RegistryAccountReview} from './RegistryAccountReview';
 const empty:PublicSearchResult={records:[],failedStates:[],locationUnavailable:false,statesSearched:0};
 export function PublicProviderSearch({scope,countyUnresolved=false,agencies,onState,onOpen,onCreate,onDecide}:{scope:PublicSearchScope;countyUnresolved?:boolean;agencies:Agency[];onState:(state:string)=>void;onOpen:(a:Agency)=>void;onCreate?:(a:Agency)=>void|Promise<void>;onDecide?:(id:string,a:AgencySourceRecordAssociation)=>void}){
@@ -44,7 +44,8 @@ export function PublicProviderSearch({scope,countyUnresolved=false,agencies,onSt
   {!busy&&ready&&result.records.length===0&&!incomplete&&!error&&manifest&&!blocked&&<p className="text-sm">No matching listing in the searched snapshot. Review the search and geography; absence does not establish that a provider does not exist.</p>}
   <ul className="space-y-2">{visible.map(raw=>{
    const stateLocations=locations[raw[3]],row=enrichRegistryRow(raw,stateLocations),loc=listingLocation(raw,stateLocations);
-   const identity=snapshotRegistryIdentity(row,row[1]==='USFA'?manifest?.sources.USFA.retrievedAt:manifest?.sources.NPPES.reportingPeriod);
+    const rawIdentity=snapshotRegistryIdentity(row,row[1]==='USFA'?manifest?.sources.USFA.retrievedAt:manifest?.sources.NPPES.reportingPeriod,row[1]==='USFA'?manifest?.sources.USFA.retrievedAt:manifest?.sources.NPPES.stagedAt);
+    const identity=rawIdentity&&withholdReviewedRegistryCounty(rawIdentity,loc.status==='review'||loc.status==='historical');
    const sourceUrl=row[1]==='USFA'?'https://apps.usfa.fema.gov/registry/search':row[11];
    return <li key={raw[0]} className="border rounded-lg p-3 space-y-1 min-w-0 break-words" data-testid="public-provider-result">
     <strong className="block">{row[2]}</strong>

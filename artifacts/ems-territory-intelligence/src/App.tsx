@@ -170,6 +170,7 @@ export default function App() {
     strictCloudOnlyMode,
     toggleStrictCloudOnlyMode,
     hydrateBatchToCloud,
+    importReviewedAgencyProfiles,
     updateStageInCloud,
     toggleRouteInCloud,
     toggleBookmarkInCloud,
@@ -1305,7 +1306,7 @@ export default function App() {
         <React.Suspense fallback={<WorkspaceLoadingState />}>
         <ErrorBoundary key={activeTab} onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
-        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub territoryAlerts={territoryAlerts} quarantinedProviders={quarantinedProviders} kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} />}
+        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub territoryAlerts={territoryAlerts} quarantinedProviders={quarantinedProviders} kind={activeTab} agencies={agencies} directoryStatus={nationalDirectoryStatus} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} onImportAgencyProfiles={importReviewedAgencyProfiles} />}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
             <ErrorBoundary fallback={<HomeMapFailureFallback onBrowseDirectory={() => handleNavigateTab('states_directory')} />}>

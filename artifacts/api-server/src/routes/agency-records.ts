@@ -8,10 +8,14 @@ import {
 } from "@workspace/api-zod";
 import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/db";
 
-import { agencyWorkspaceRole, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
+import { agencyWorkspaceRole, canReadAgencyWorkspaceFields, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
+import { publicAgencyProfilePayload } from "../lib/publicAgencyProfile";
 
 const router: IRouter = Router();
-router.use("/agencies", requireAgencyWorkspace);
+router.use("/agencies", (_req, res, next) => {
+  res.set("Cache-Control", "private, no-store");
+  next();
+});
 const statePattern = /^[A-Z]{2}$/;
 const MAX_PAGE_SIZE = 500;
 const MAX_BATCH_SIZE = 25;
@@ -24,12 +28,21 @@ function responseRecord(id: string, revision: number, payload: Record<string, un
   return { id, revision, agency: { ...payload, id, _revision: revision } };
 }
 
+function publicProfileRecord(id: string, revision: number, payload: Record<string, unknown>) {
+  return responseRecord(id, revision, publicAgencyProfilePayload(payload));
+}
+
 function requestError(res: Response, status: number, code: string, message: string) {
   res.status(status).json({ error: { code, message } });
 }
 
 function logFailure(req: Request, error: unknown, operation: string) {
   req.log?.error({ err: error, operation }, "Agency record request failed");
+}
+
+function routeAgencyId(req: Request): string {
+  const value = req.params.agencyId;
+  return Array.isArray(value) ? value[0] ?? "" : value;
 }
 
 router.get("/agencies/access", (req, res) => {
@@ -67,8 +80,11 @@ router.get("/agencies", async (req, res) => {
       .limit(requestedLimit + 1);
     const hasMore = rows.length > requestedLimit;
     const page = rows.slice(0, requestedLimit);
+    const canReadPrivateFields = canReadAgencyWorkspaceFields(req);
     return res.json({
-      records: page.map((row) => responseRecord(row.id, row.revision, row.payload)),
+      records: page.map((row) => canReadPrivateFields
+        ? responseRecord(row.id, row.revision, row.payload)
+        : publicProfileRecord(row.id, row.revision, row.payload)),
       nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
     });
   } catch (error) {
@@ -78,23 +94,27 @@ router.get("/agencies", async (req, res) => {
 });
 
 router.get("/agencies/:agencyId", async (req, res) => {
+  const agencyId = routeAgencyId(req);
   try {
     const [row] = await db
       .select()
       .from(agencyRecordsTable)
-      .where(eq(agencyRecordsTable.id, req.params.agencyId))
+      .where(eq(agencyRecordsTable.id, agencyId))
       .limit(1);
     if (!row) return requestError(res, 404, "not_found", "Agency record not found.");
-    return res.json(responseRecord(row.id, row.revision, row.payload));
+    return res.json(canReadAgencyWorkspaceFields(req)
+      ? responseRecord(row.id, row.revision, row.payload)
+      : publicProfileRecord(row.id, row.revision, row.payload));
   } catch (error) {
     logFailure(req, error, "read");
     return requestError(res, 503, "database_unavailable", "Agency records are temporarily unavailable.");
   }
 });
 
-router.put("/agencies/:agencyId", async (req, res) => {
+router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
+  const agencyId = routeAgencyId(req);
   const body = UpdateAgencyRecordBody.safeParse(req.body);
-  if (!body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== req.params.agencyId) {
+  if (!agencyId || !body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== agencyId) {
     return requestError(res, 400, "invalid_record", "The agency update is invalid.");
   }
 
@@ -102,11 +122,11 @@ router.put("/agencies/:agencyId", async (req, res) => {
 
   try {
     const result = await db.transaction(async (tx) => {
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${req.params.agencyId}, 0))`);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${agencyId}, 0))`);
       const [current] = await tx
         .select()
         .from(agencyRecordsTable)
-        .where(eq(agencyRecordsTable.id, req.params.agencyId))
+        .where(eq(agencyRecordsTable.id, agencyId))
         .limit(1);
       const revision = current?.revision ?? 0;
       if (revision !== body.data.expectedRevision) return { conflict: true as const, revision };
@@ -119,7 +139,7 @@ router.put("/agencies/:agencyId", async (req, res) => {
         : null;
       await tx
         .insert(agencyRecordsTable)
-        .values({ id: req.params.agencyId, stateCode, payload, revision: nextRevision })
+        .values({ id: agencyId, stateCode, payload, revision: nextRevision })
         .onConflictDoUpdate({
           target: agencyRecordsTable.id,
           set: { stateCode, payload, revision: nextRevision, updatedAt: new Date() },
@@ -132,16 +152,17 @@ router.put("/agencies/:agencyId", async (req, res) => {
         currentRevision: result.revision,
       });
     }
-    return res.json(responseRecord(req.params.agencyId, result.revision, result.payload));
+    return res.json(responseRecord(agencyId, result.revision, result.payload));
   } catch (error) {
     logFailure(req, error, "update");
     return requestError(res, 503, "database_unavailable", "The agency record could not be saved.");
   }
 });
 
-router.post("/agencies/:agencyId/mutations", async (req, res) => {
+router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req, res) => {
+  const agencyId = routeAgencyId(req);
   const body = CommitAgencyMutationBody.safeParse(req.body);
-  if (!body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== req.params.agencyId) {
+  if (!agencyId || !body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== agencyId) {
     return requestError(res, 400, "invalid_mutation", "The queued agency change is invalid.");
   }
 
@@ -157,16 +178,16 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
         .from(agencyMutationReceiptsTable)
         .where(eq(agencyMutationReceiptsTable.mutationId, body.data.mutationId))
         .limit(1);
-      if (receipt && receipt.agencyId !== req.params.agencyId) {
+      if (receipt && receipt.agencyId !== agencyId) {
         return { conflict: true as const, revision: receipt.revision };
       }
 
-      // The mutation-ID lock is held until commit. A second receipt lookup is redundant.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${req.params.agencyId}, 0))`);
+      // The mutation-ID lock serializes receipt replay; the agency lock serializes edits to one profile.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${agencyId}, 0))`);
       const [current] = await tx
         .select()
         .from(agencyRecordsTable)
-        .where(eq(agencyRecordsTable.id, req.params.agencyId))
+        .where(eq(agencyRecordsTable.id, agencyId))
         .limit(1);
       if (receipt) {
         // Never acknowledge a missing or regressed canonical record.
@@ -184,14 +205,14 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
         : null;
       await tx
         .insert(agencyRecordsTable)
-        .values({ id: req.params.agencyId, stateCode, payload, revision: nextRevision })
+        .values({ id: agencyId, stateCode, payload, revision: nextRevision })
         .onConflictDoUpdate({
           target: agencyRecordsTable.id,
           set: { stateCode, payload, revision: nextRevision, updatedAt: new Date() },
         });
       await tx.insert(agencyMutationReceiptsTable).values({
         mutationId: body.data.mutationId,
-        agencyId: req.params.agencyId,
+        agencyId,
         revision: nextRevision,
       });
       return { conflict: false as const, revision: nextRevision, recordRevision: nextRevision, payload };
@@ -203,14 +224,14 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
       });
     }
     // Top-level revision is the immutable mutation receipt; embedded revision labels the current record.
-    return res.json({ ...responseRecord(req.params.agencyId, result.recordRevision, result.payload), revision: result.revision });
+    return res.json({ ...responseRecord(agencyId, result.recordRevision, result.payload), revision: result.revision });
   } catch (error) {
     logFailure(req, error, "mutation");
     return requestError(res, 503, "database_unavailable", "The queued agency change could not be confirmed.");
   }
 });
 
-router.post("/agencies/batch-create", async (req, res) => {
+router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) => {
   const body = CreateAgencyRecordsBody.safeParse(req.body);
   if (!body.success) return requestError(res, 400, "invalid_batch", "The agency batch is invalid.");
   if (body.data.records.length > MAX_BATCH_SIZE || body.data.records.some((record) => !hasAgencyId(record))) {

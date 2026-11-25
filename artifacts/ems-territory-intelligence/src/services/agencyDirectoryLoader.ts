@@ -59,9 +59,16 @@ export function createAgencyDirectoryLoader(fetchPage: (cursor?: string) => Prom
 /** A late national page must not replace a newer state subscription revision. */
 export function mergeDirectoryAgency(existing: Agency | undefined, incoming: Agency): Agency {
   if (existing?.isCloudPersisted && (existing._revision ?? 0) > (incoming._revision ?? 0)) return existing;
+  const existingContactNotes = new Map((existing?.keyContacts ?? []).map((contact) => [contact.id, contact.notes]));
   return {
     ...existing,
     ...incoming,
+    fieldNotes: incoming.fieldNotes ?? existing?.fieldNotes ?? [],
+    followUpTasks: incoming.followUpTasks ?? existing?.followUpTasks,
+    keyContacts: incoming.keyContacts?.map((contact) => ({
+      ...contact,
+      notes: contact.notes ?? existingContactNotes.get(contact.id),
+    })) ?? existing?.keyContacts,
     installedFleet: { ...existing?.installedFleet, ...incoming.installedFleet },
     fleet: incoming.fleet ? { ...existing?.fleet, ...incoming.fleet } : existing?.fleet,
     factEvidence: { ...existing?.factEvidence, ...incoming.factEvidence },

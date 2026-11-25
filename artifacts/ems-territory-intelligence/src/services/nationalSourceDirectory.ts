@@ -3,7 +3,7 @@ export interface SourceDirectoryCounts {usfa:number;nppes:number;assigned:number
 export interface CountySourceListingCounts { total: number; usfa: number; nppes: number }
 export interface SourceDirectoryManifest {
  schemaVersion:1;totalRecords:number;statesAndDcRecords:number;otherJurisdictionRecords:number;countiesWithRecords:number;unassignedRecords:number;scope:string;
- sources:Record<'USFA'|'NPPES',{url?:string;sourceUrl?:string;retrievedAt?:string;reportingPeriod?:string;limitation:string;accepted:number}>;
+  sources:Record<'USFA'|'NPPES',{url?:string;sourceUrl?:string;retrievedAt?:string;stagedAt?:string;reportingPeriod?:string;limitation:string;accepted:number}>;
  stateNames:Record<string,string>;countyNames:Record<string,string>;byState:Record<string,SourceDirectoryCounts>;chunks:{state:string;file:string;count:number;sha256:string}[];
 }
 export type SourceDirectoryRecord = [id:string,source:'USFA'|'NPPES',name:string,stateCode:string,city:string,postalCode:string,countyFips:string,sourceCounty:string,countyBasis:string,deactivatedAt:string,address:string,sourceLink:string];

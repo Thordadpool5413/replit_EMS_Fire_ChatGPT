@@ -65,5 +65,14 @@ test("station equipment is private, immutable, independently reviewed and statio
   assert.equal(map.body.facilities[0].coordinates,null);
   assert.deepEqual(map.body.observations,[{stationId,family:"monitors",maker:"zoll",observedOn:"2025-01-01"}]);
   assert.equal((await req(mapRoot.replace(parentId,"OTHER"),"eq-viewer")).status,404);
+  const lifecycle=mapRoot.replace("equipment-map","equipment-lifecycle");
+  assert.equal((await req(lifecycle)).status,401);
+  assert.equal((await req(lifecycle,"eq-outsider")).status,403);
+  const before=await req(lifecycle,"eq-viewer");assert.equal(before.status,200);assert.equal(before.body.observations.length,0);
+  assert.equal((await req(root+"/"+inventoryId+"/review","eq-reviewer",decision)).status,200);
+  const after=await req(lifecycle,"eq-viewer");assert.equal(after.status,200);assert.equal(after.body.observations.length,1);
+  assert.equal(after.body.observations[0].serviceEnd,"2027-01-01");assert.equal(after.body.observations[0].acquiredOn,"2024-01-01");
+  assert.equal(after.body.observations[0].stationId,stationId);assert.equal(after.body.observations[0].authorUid,undefined);
+  assert.equal((await req(lifecycle.replace(parentId,"OTHER"),"eq-viewer")).status,404);
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await pool.end();}
 });

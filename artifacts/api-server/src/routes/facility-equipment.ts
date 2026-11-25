@@ -18,7 +18,7 @@ const canonical=(v:unknown)=>JSON.stringify(Object.entries(object(v)).sort(([a],
 export function makeFacilityEquipmentRouter(loadFacilities=listDepartmentFacilities):IRouter{
  const router:IRouter=Router();
  // A bounded read-only sample. Geometry comes from the current station source, not equipment observations or HQ.
- router.get("/agencies/:agencyId/facilities/:parentId/equipment-map",requireAgencyWorkspace,async(req,res)=>{
+ router.get(["/agencies/:agencyId/facilities/:parentId/equipment-map","/agencies/:agencyId/facilities/:parentId/equipment-lifecycle"],requireAgencyWorkspace,async(req,res)=>{
   const {agencyId,parentId}=req.params;
   if(typeof agencyId!=="string"||!agencyId.trim()||agencyId.length>300||typeof parentId!=="string"||!nativeId.test(parentId)){res.status(400).json({error:"Invalid department identity."});return;}
   try{
@@ -34,6 +34,16 @@ export function makeFacilityEquipmentRouter(loadFacilities=listDepartmentFacilit
    const facilities=source.facilities.filter(f=>f.source==="NERIS"&&f.sourceRecordId&&nativeId.test(f.sourceRecordId));
    const ids=new Set(facilities.map(f=>f.sourceRecordId));
    if(ids.size!==facilities.length||facilities.length!==source.facilities.length){res.status(409).json({error:"Station identity ambiguous; map sample withheld."});return;}
+   const lifecycle=req.path.endsWith("/equipment-lifecycle");
+   if(lifecycle){
+    const observations=rows.flatMap(r=>{
+     const o=parseObservation(r.observation);
+     if(!o||!r.reviewerUid||r.authorUid===r.reviewerUid||!r.reviewedAt||!r.reviewNote||!ids.has(r.stationId))return [];
+     if(!o.acquiredOn&&!o.warrantyEnd&&!o.serviceEnd)return [];
+     return [{stationId:r.stationId,submissionId:r.submissionId,family:o.family,maker:o.maker,model:o.model,apparatus:o.apparatus,observedOn:o.observedOn,basis:o.basis,sourceUrl:o.sourceUrl,acquiredOn:o.acquiredOn,warrantyEnd:o.warrantyEnd,serviceEnd:o.serviceEnd}];
+    });
+    res.json({agencyId,parentId,stations:facilities.map(f=>({id:f.sourceRecordId,name:f.name,stateCode:f.stateCode})),observations,acceptedRowsChecked:rows.length,checkedAt:new Date().toISOString()});return;
+   }
    const observations=rows.flatMap(r=>{
     const o=parseObservation(r.observation);
     if(!o||!r.reviewerUid||r.authorUid===r.reviewerUid||!r.reviewedAt||!r.reviewNote||!ids.has(r.stationId))return [];

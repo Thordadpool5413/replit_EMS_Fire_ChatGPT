@@ -1,0 +1,41 @@
+name: Regional government address point recovery
+on:
+  push:
+    branches: [atlas/regional-address-recovery]
+    paths:
+      - 'scripts/data/recover_regional_locations.py'
+      - 'scripts/data/regional_point_contract.py'
+      - 'scripts/data/test_recover_regional_locations.py'
+      - '.github/workflows/regional-address-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-regional-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/atlas/regional-address-recovery'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate regional source contract and matching rules
+        run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Query official address points for unresolved provider streets
+        run: python3 scripts/data/recover_regional_locations.py --max-requests 100
+      - name: Publish review-only candidate
+        run: |
+          set -euo pipefail
+          python3 scripts/data/backfill_provider_locations.py --verify
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git commit -m "Recover exact regional official address points"
+          git push origin "HEAD:refs/heads/atlas/regional-location-data-${GITHUB_RUN_ID}"
+          echo "Review branch: atlas/regional-location-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps(x["regionalRecovery"],indent=2))' >> "$GITHUB_STEP_SUMMARY"

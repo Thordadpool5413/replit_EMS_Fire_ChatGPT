@@ -21,3 +21,14 @@ No export has been supplied and no legacy records have been imported yet. The sa
 ## Verification still required
 
 Automated tests cover input validation, duplicate/conflict handling, append-only decisions, revision checks, identity mapping safeguards, and Replit API behavior. Before enabling the workspace for users, verify Replit Auth on the deployed host, establish and review authorized workspace memberships, validate role boundaries with test accounts, and confirm the Replit database contains the expected migrated records. None of those checks has been represented as production-complete here.
+
+## ATLAS capabilities retained from upstream
+
+- **Evidence review and reconciliation:** Compare published source observations with typed local evidence without promoting the result to agency records, maps, scores, or claims of verified coverage. Incomplete pages, conflicting reads, invalid review history, and unavailable requests fail closed.
+- **Review governance:** Keep publication and review roles separate. Decisions are append-only; reviewers cannot approve their own evidence. Challenges, withdrawals, and supersession block older evidence. Corrections use a new observation and an explicitly reviewed replacement chain.
+- **Shared opportunity and equipment research:** Reviewed signals remain a bounded, short-lived research sample. The equipment view distinguishes ZOLL, other makers, mixed observations, no eligible observation, unavailable review, and not checked. It does not claim fleet ownership, nationwide market share, or complete county coverage.
+- **Public funding and procurement discovery:** Keep source pages, retrieval time, record scope, and uncertainty visible. A discovered award is not available funding, installed equipment, or agency intent; ambiguous and unavailable results are not treated as negative findings.
+- **Provider location and directory recovery:** Preserve source listings separately from saved agency records. A location is mapped only from a compatible, source-backed identity and address match; uncertain, conflicting, historical, or missing addresses remain unassigned rather than receiving guessed coordinates or county assignments. Public registry search remains available independently of saved-account requests.
+- **End-user validation:** Imported and source-derived facts remain research references until the end user reviews the individual fact and its source. Missing information remains unknown; completing a task or seeing a registry listing does not validate agency information.
+
+These notes retain the applicable upstream Phase 5 behavior while replacing its obsolete cloud provisioning instructions with the Replit access and storage model above. The complete upstream text remains available in Git history.

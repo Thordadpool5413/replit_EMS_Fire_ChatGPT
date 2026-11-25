@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {FEED_SCOPE_IDS,FEED_LIMIT,feedSourceUrl,feedKey,possibleGrantOverlap,validateDiscoveryFeed,feedIsStale,type FeedCandidate,type FeedScope} from './recurringDiscoveryContract';
-import {reconcileDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
+import {FEED_SCOPE_IDS,FEED_LIMIT,feedSourceUrl,feedKey,possibleGrantOverlap,validateDiscoveryFeed,feedIsStale,feedSourceHealth,type FeedCandidate,type FeedScope} from './recurringDiscoveryContract';
+import {reconcileDiscoveryFeed,collectWithRetry,publishableDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
 const now=Date.parse('2026-11-24T12:00:00Z'),day=86_400_000;
 const fema=(id='f1',changes:Partial<FeedCandidate>={}):FeedCandidate=>({source:'openfema-afg',nativeId:id,recordNumber:'AWARD-1',organization:'Example Fire Department',state:'FL',kind:'grant',title:'Assistance to Firefighters Grant',amount:0,fiscalYear:2025,publishedDay:null,periodStart:null,periodEnd:null,deadlineLocal:null,vendor:null,sourceUrl:feedSourceUrl('openfema-afg',id),...changes});
 const nyc=(id='123',changes:Partial<FeedCandidate>={}):FeedCandidate=>({source:'nyc-city-record',nativeId:id,recordNumber:'PIN-1',organization:'Example City',state:'NY',kind:'municipal-solicitation',title:'Defibrillator and mechanical CPR purchase',amount:null,fiscalYear:null,publishedDay:'2026-11-20',periodStart:null,periodEnd:null,deadlineLocal:'2026-12-01T14:00:00',vendor:null,sourceUrl:feedSourceUrl('nyc-city-record',id),...changes});
@@ -73,4 +73,29 @@ test('legacy v1 feed migrates with history intact and new scopes without a basel
  assert.throws(()=>reconcileDiscoveryFeed(upgraded,all(outcome('chicago-software',[chicago])),now+day));
  const c=reconcileDiscoveryFeed(b,all(outcome('chicago-cardiac',[],'unavailable')),now+2*day);
  assert.equal(c.items.find(i=>i.candidate.source==='chicago-contracts')?.lastSeen,b.runAt);
+});
+
+test('bounded retry recovers unavailable scopes without retrying partial or empty pages',async()=>{
+ let calls=0,delays=0;
+ const result=await collectWithRetry('fema-fl',async id=>{calls++;return calls===1?outcome(id,[],'unavailable'):outcome(id,[fema()]);},async()=>{delays++;});
+ assert.equal(result.status,'ok');assert.equal(calls,2);assert.equal(delays,1);
+ for(const status of ['ok','partial'] as const){
+  calls=0;delays=0;
+  await collectWithRetry('fema-fl',async id=>{calls++;return outcome(id,[],status);},async()=>{delays++;});
+  assert.equal(calls,1);assert.equal(delays,0);
+ }
+ calls=0;const failed=await collectWithRetry('fema-fl',async()=>{calls++;throw Error('unavailable');},async()=>{});
+ assert.equal(calls,2);assert.equal(failed.status,'unavailable');
+});
+test('all-source outage cannot publish or age out a good snapshot; partial outage retains source-specific freshness',()=>{
+ const a=publishableDiscoveryFeed(undefined,all(outcome('fema-fl',[fema()])),now);
+ const failed=FEED_SCOPE_IDS.map(id=>outcome(id,[],'unavailable'));
+ assert.throws(()=>publishableDiscoveryFeed(a,failed,now+91*day),/All configured sources unavailable/);
+ assert.throws(()=>publishableDiscoveryFeed(undefined,failed,now),/All configured sources unavailable/);
+ const b=publishableDiscoveryFeed(a,all(outcome('fema-fl',[],'unavailable')),now+3*day);
+ const health=feedSourceHealth(b,now+3*day);
+ assert.equal(health.stale,1);assert.equal(health.unavailable,1);assert.equal(health.recent,14);
+ assert.equal(health.scopes.find(s=>s.id==='fema-fl')?.lastSuccess,a.runAt);
+ assert.equal(b.items[0].lastSeen,a.runAt);
+ assert.equal(feedIsStale(b,now+3*day),false);
 });

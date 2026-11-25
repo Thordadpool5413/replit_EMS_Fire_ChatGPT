@@ -34,3 +34,19 @@ export function reconcileDiscoveryFeed(previous:DiscoveryFeed|undefined,results:
  const kept=ordered.slice(0,FEED_LIMIT);
  return validateDiscoveryFeed({schemaVersion:2,runAt,scopes,items:kept,evicted:items.size-kept.length,conflictingIds:conflicts.size},now);
 }
+
+/** At most one retry for an unavailable scope. Do not retry valid partial/empty responses. */
+export async function collectWithRetry(id:FeedScope,collect:(id:FeedScope)=>Promise<ScopeResult>,retryDelay:()=>Promise<void>):Promise<ScopeResult>{
+ const unavailable=():ScopeResult=>({id,status:'unavailable',sourceRows:0,withheld:0,hasMore:false,candidates:[]});
+ async function attempt(){try{const result=await collect(id);return result.id===id?result:unavailable();}catch{return unavailable();}}
+ const first=await attempt();
+ if(first.status!=='unavailable')return first;
+ await retryDelay();
+ return attempt();
+}
+/** Complete source outages must not publish a new timestamp or evict the last good snapshot. */
+export function publishableDiscoveryFeed(previous:DiscoveryFeed|undefined,results:ScopeResult[],now=Date.now()){
+ const next=reconcileDiscoveryFeed(previous,results,now);
+ if(next.scopes.every(s=>s.status==='unavailable'))throw Error('All configured sources unavailable; retain previously published snapshot.');
+ return next;
+}

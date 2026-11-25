@@ -3,7 +3,7 @@ import {FEDERAL_STATES,FEDERAL_TOPICS,type FederalTopic,type FederalPage} from '
 import type {MunicipalPage,MunicipalTopic} from './municipalDiscoveryContract';
 import type {DiscoveryPage} from './publicIntelligenceDiscovery';
 import {sharedAgencyKey} from './sharedEvidence';
-import {canCreateRegistryAccount} from './registryAccountLink';
+import {registryClaimIndex,canCreateRegistryAccount} from './registryAccountLink';
 import {equipmentObservationFacts,definitionFor} from './documentedIntelligence';
 import {buildDiscoveryMatches} from './publicIntelligenceDiscovery';
 export const NATIONAL_TOPICS={defibrillator:FEDERAL_TOPICS.defibrillator,resuscitation:FEDERAL_TOPICS.resuscitation,ventilator:FEDERAL_TOPICS.ventilator,ambulance:FEDERAL_TOPICS.ambulance,epcr:FEDERAL_TOPICS.epcr} as const;
@@ -74,7 +74,7 @@ export function municipalResearch(p:MunicipalPage):ResearchScope{
 }
 /** Directory identity counts are not unique agencies, active licenses, or equipment coverage. */
 export function loadedResearchCoverage(agencies:Agency[],now=Date.now()){
- const ids=new Map<string,number>(),keys=new Map<string,number>();
+ const ids=new Map<string,number>(),keys=new Map<string,number>(),claims=registryClaimIndex(agencies);
  for(const a of agencies){if(a.id)ids.set(a.id,(ids.get(a.id)??0)+1);const key=sharedAgencyKey(a);if(key)keys.set(key,(keys.get(key)??0)+1);}
  const states=new Map(NATIONAL_STATES.map(s=>[s,{loaded:0,eligible:0,excluded:0,documented:{monitors:0,cpr:0,ventilators:0,software:0}}]));
  const eligible:Agency[]=[];
@@ -82,7 +82,7 @@ export function loadedResearchCoverage(agencies:Agency[],now=Date.now()){
   const state=states.get(a.stateCode);if(!state)continue;
   state.loaded++;
   const key=sharedAgencyKey(a),identity=a.registryIdentity;
-  if(!key||!identity||keys.get(key)!==1||ids.get(a.id)!==1||!canCreateRegistryAccount(identity)||identity.headquartersState&&identity.headquartersState!==a.stateCode){state.excluded++;continue;}
+  if(!key||!identity||keys.get(key)!==1||claims.counts.get(key)!==1||claims.byAccount.get(a)?.invalid.length||claims.byAccount.get(a)?.conflicts.length||ids.get(a.id)!==1||!canCreateRegistryAccount(identity)||identity.headquartersState&&identity.headquartersState!==a.stateCode){state.excluded++;continue;}
   state.eligible++;eligible.push(a);
   const families=new Set(equipmentObservationFacts(a,now).map(f=>definitionFor(f.intelligence.kind)?.family));
   for(const family of ['monitors','cpr','ventilators','software'] as const)if(families.has(family))state.documented[family]++;

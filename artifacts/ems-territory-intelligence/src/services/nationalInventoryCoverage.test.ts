@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import type {Agency} from '../types';
+import {createIntelligenceFact} from './documentedIntelligence';
+import {buildInventoryCoverage,INVENTORY_KINDS} from './nationalInventoryCoverage';
+const now=Date.parse('2026-11-25T12:00:00Z');
+const a={id:'registry-FDID-FL-12345',name:'Fixture Fire',stateCode:'FL',registryIdentity:{sourceName:'USFA NFDR',identifier:'12345',stateCode:'FL',name:'Fixture Fire',sourceUrl:'https://apps.usfa.fema.gov/registry/search',retrievedAt:'2026-11-20'}} as Agency;
+const fact=(kind:typeof INVENTORY_KINDS[number],value:string,id:string,date='2026-11-01',source='City inventory')=>createIntelligenceFact(a,{kind,value,sourceName:source,sourceRecordId:id,sourceUrl:'https://example.gov/inventory/'+id,documentDate:date},id,now);
+test('six distinct categories distinguish unknown, old, conflicting and dated local manufacturer observations',()=>{
+ const sourceFacts=[fact('installed-monitor','LIFEPAK 15','monitor'),fact('installed-cpr','LUCAS 3','old','2023-01-01'),fact('installed-ventilator','Model A','vent'),fact('installed-epcr','ImageTrend','epcr'),fact('installed-epcr','ESO ePCR','other','2026-11-01','Other inventory')];
+ const r=buildInventoryCoverage([{...a,sourceFacts}],'FL',now);
+ assert.equal(r.eligible,1);assert.equal(r.rows.length,6);
+ assert.equal(r.counts['installed-monitor'].documented,1);
+ assert.equal(r.counts['installed-cpr'].historical,1);
+ assert.equal(r.counts['installed-ventilator']['manufacturer-review'],1);
+ assert.equal(r.counts['installed-epcr']['review-required'],1);
+ assert.equal(r.counts['installed-cad']['not-documented'],1);
+ assert.equal(r.counts['installed-billing']['not-documented'],1);
+ assert.equal(r.rows.find(x=>x.kind==='installed-monitor')?.makers[0],'Stryker / Physio-Control');
+ for(const k of INVENTORY_KINDS)assert.equal(Object.values(r.counts[k]).reduce((n,v)=>n+v,0),r.eligible);
+});
+test('duplicate identities, invalid typed evidence and commercial product mentions never become inventory',()=>{
+ const f=fact('installed-monitor','ZOLL X Series','monitor');
+ const invalid={...f,sourceUrl:'http://example.gov'};
+ assert.equal(buildInventoryCoverage([a,{...a,id:'other'}],'FL',now).eligible,0);
+ assert.equal(buildInventoryCoverage([{...a,sourceFacts:[invalid]}],'FL',now).counts['installed-monitor']['review-required'],1);
+ const grant=createIntelligenceFact(a,{kind:'grant-awarded',value:'ZOLL X Series',sourceName:'City',sourceRecordId:'grant',sourceUrl:'https://example.gov/grant',documentDate:'2026-11-01'},'grant',now);
+ assert.equal(buildInventoryCoverage([{...a,sourceFacts:[grant]}],'FL',now).counts['installed-monitor']['not-documented'],1);
+ assert.equal(buildInventoryCoverage([a],'GA',now).eligible,0);
+});

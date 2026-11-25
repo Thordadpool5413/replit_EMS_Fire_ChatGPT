@@ -89,7 +89,7 @@ import { ReviewedPreCallPlanner } from './profile/ReviewedPreCallPlanner';
 import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
-import { displayedProviderLocation,useLocationRevision,locationDirections } from '../services/providerLocation';
+import { displayedProviderLocation,useLocationRevision,locationDirections,providerAddressReview } from '../services/providerLocation';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
@@ -101,6 +101,7 @@ import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
 import { FactReviewPanel } from './profile/FactReviewPanel';
+import { ADDRESS_CANDIDATE_FIELD } from '../services/addressCandidateValidation';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
 import {
   formatCurrency,
@@ -1074,7 +1075,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
-            <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}}/>
+            <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}} onReviewCandidate={()=>{setRequestedReviewField(ADDRESS_CANDIDATE_FIELD);navigateProfileSection('evidence');}}/>
             <div className="acp-contact-row" aria-label="Agency contact actions">
               {agency.headquartersPhone && (
                 <a href={`tel:${agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Main phone</a>
@@ -2839,7 +2840,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
                 {activeSection === 'evidence' && (
           <section className="acp-fact-review" aria-label="Fact review" data-testid="section-fact-review">
-            <FactReviewPanel key={agency.id} agency={agency} requestedFieldId={requestedReviewField} />
+            <FactReviewPanel key={agency.id+':'+(requestedReviewField??'default')} agency={agency} requestedFieldId={requestedReviewField} addressCandidate={providerAddressReview(rawAgency,directoryAgencies)} />
           </section>
         )}
 

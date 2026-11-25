@@ -25,6 +25,7 @@ globalThis.fetch=async url=>{assert(String(url).endsWith('data/us-counties-bound
 const {territoryEngine}=await import(${JSON.stringify(path.join(app,'src/services/territoryIntelligenceEngine.ts'))});
 const {nationalProviderDb}=await import(${JSON.stringify(path.join(app,'src/services/nationalProviderDatabase.ts'))});
 const {countyBoundaryHierarchy}=await import(${JSON.stringify(path.join(app,'src/services/countyBoundaryHierarchyService.ts'))});
+const {canonicalizeAgencyCounty}=await import(${JSON.stringify(path.join(app,'src/utils/countyIdentity.ts'))});
 const hierarchy=countyBoundaryHierarchy.getHierarchy();assert.equal(hierarchy.totalCounties,3144);assert.equal(hierarchy.totalStates,51);
 let projected=0;
 for(const state of hierarchy.statesList){
@@ -36,16 +37,18 @@ for(const state of hierarchy.statesList){
  assert(polygons.every(p=>p.svgPath&&!/NaN|Infinity/.test(p.svgPath)),state.stateCode+' invalid projection');projected+=polygons.length;
 }
 assert.equal(projected,3144);
-const ct=nationalProviderDb.getProviders({state:'CT',county:'Capitol Planning Region'});assert(ct.some(a=>a.city==='Hartford'),'Hartford profile missing from current region');
-const ny=nationalProviderDb.getProviders({state:'NY',county:'New York County'});assert(ny.some(a=>a.countyFips==='36061'),'New York alias did not resolve');
+const ct=nationalProviderDb.getProviders({state:'CT',county:'Capitol Planning Region'});assert.equal(ct.length,0,'Legacy illustrative profiles must not appear as saved agency records');
+const hartford=canonicalizeAgencyCounty({stateCode:'CT',city:'Hartford',county:'Hartford County',countyFips:'09003'});assert.equal(hartford.county,'Capitol Planning Region');assert.equal(hartford.countyFips,'09110');
+const newYork=canonicalizeAgencyCounty({stateCode:'NY',county:'New York (Manhattan) County',countyFips:'36061'});assert.equal(newYork.county,'New York County');assert.equal(newYork.countyFips,'36061');
 assert.equal(territoryEngine.resolveOrSynthesizeAgency('CT','Hartford County','Unknown Town'),undefined,'Legacy county must not select a first region');
 assert.equal(territoryEngine.resolveOrSynthesizeAgency('CT','Western Connecticut Planning Region','Danbury'),undefined,'Missing regional metrics must not create synthetic operational inputs');
 assert(!nationalProviderDb.getInitialBaselineAgencies().some(a=>a.stateCode==='CT'&&a.verificationSource?.includes('Geographic prospect generator')));
 assert.equal(territoryEngine.getCountyRecord('AK','Anchorage Borough')?.countyName,'Anchorage Municipality');
 const {lookupZipCode,NATIONAL_ZIP_CITY_REGISTRY}=await import(${JSON.stringify(path.join(app,'src/data/nationalZipCityRegistry.ts'))});
 assert.equal(lookupZipCode('06199'),undefined,'Unknown ZIP must not choose the first county');
-assert(NATIONAL_ZIP_CITY_REGISTRY.filter(r=>r.stateCode==='CT').every(r=>/^091[1-9]0$/.test(r.fipsCounty)),'Curated Connecticut ZIP locations must resolve to current regions');
-console.log(JSON.stringify({status:'PASS',states:51,projectedCounties:projected,connecticutProfiles:ct.length,newYorkProfiles:ny.length,legacyCountyFallback:'unresolved',networkRequests:'none'}));
+const ctLocations=NATIONAL_ZIP_CITY_REGISTRY.filter(r=>r.stateCode==='CT');assert(ctLocations.length>0);
+for(const location of ctLocations){const region=canonicalizeAgencyCounty({stateCode:'CT',city:location.city,county:location.county,countyFips:location.fipsCounty});assert(/^091[1-9]0$/.test(region.countyFips),'ZIP '+location.zipCode+' did not resolve through its exact town to a current region');}
+console.log(JSON.stringify({status:'PASS',states:51,projectedCounties:projected,connecticutProfiles:ct.length,connecticutZipLocations:ctLocations.length,newYorkCanonicalCounty:newYork.county,legacyCountyFallback:'unresolved',networkRequests:'none'}));
 `;
  await build({stdin:{contents:source,resolveDir:app,loader:'ts'},bundle:true,platform:'node',format:'esm',outfile:path.join(temp,'check.mjs'),define:{'import.meta.env.BASE_URL':JSON.stringify('/')},plugins:[{name:'bundled-county-bytes',setup(b){b.onLoad({filter:/allCountiesDatabase\.ts$/},()=>({contents:'export const ALL_NATIONWIDE_COUNTIES = '+data+';',loader:'ts'}));}}]});
  const result=spawnSync(process.execPath,[path.join(temp,'check.mjs')],{stdio:'inherit'});process.exitCode=result.status??1;

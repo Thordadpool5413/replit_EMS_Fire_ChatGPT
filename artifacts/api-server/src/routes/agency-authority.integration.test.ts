@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
 import express from 'express';
-import {authorityIdentity,parseAuthority} from '../lib/agencyAuthority';
+import {authorityIdentity,parseAuthority,summarizeAuthorityCoverage} from '../lib/agencyAuthority';
 const agency={id:'ci-authority',name:'Fixture Agency',stateCode:'FL'};
 const observation={name:'Fixture official',title:'Fixture chief',organization:'Fixture Agency',role:'final-approval',scope:'Specific fixture purchase',observedOn:'2025-01-01',basis:'official-document',sourceUrl:'https://example.gov/fixture',description:'Fixture evidence only'};
 test('authority requires dated explicit scope, never inferred titles',()=>{
@@ -47,4 +47,15 @@ test('private authority claims are immutable, independently reviewed and identit
   const changed=await req(root,'authority-viewer');assert.equal(changed.body.rows.length,0);assert.equal(changed.body.withheld,1);
   assert.equal((await req(review,'authority-reviewer',decision)).status,409);
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await pool.end();}
+});
+
+test('authority coverage collapses repeat claims and withholds contradictory same-day titles',()=>{
+ const recent={...observation,observedOn:'2026-11-01'};
+ const row={observation:recent,decision:'accepted',authorUid:'author',reviewerUid:'reviewer',reviewNote:'Checked',reviewedAt:new Date('2026-11-02')};
+ const result=summarizeAuthorityCoverage([row,row,{...row,observation:{...recent,role:'budget'}}],'2026-11-25');
+ assert.equal(result.recentReviewed,2);assert.equal(result.duplicateClaims,1);assert.deepEqual(result.roles,['budget','final-approval']);
+ const conflict=summarizeAuthorityCoverage([row,{...row,observation:{...recent,title:'Different title'}}],'2026-11-25');
+ assert.equal(conflict.recentReviewed,0);assert.equal(conflict.conflictingClaims,2);
+ assert.equal(summarizeAuthorityCoverage([{...row,reviewerUid:'author'}],'2026-11-25').recentReviewed,0);
+ assert.equal(summarizeAuthorityCoverage(Array(101).fill(row),'2026-11-25').complete,false);
 });

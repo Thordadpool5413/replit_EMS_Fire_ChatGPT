@@ -60,7 +60,7 @@ export function buildPublicTerritoryAlerts(input:unknown,now=Date.now()):{status
  const overlap=possibleGrantOverlap(feed.items);
  const alerts:PublicAlert[]=feed.items.filter(i=>i.lastSeen===feed.runAt&&i.lastChanged===feed.runAt&&i.event!=='baseline').map(i=>{
   const c=i.candidate;
-  const kind=c.kind==='grant'?'Grant record':c.kind==='federal-contract-award'?'Federal supplier award':'Municipal procurement notice';
+  const kind=c.kind==='grant'?'Grant record':c.kind==='federal-contract-award'?'Federal supplier award':c.kind==='chicago-contract-revision'?'Chicago contract revision':'Municipal procurement notice';
   return {key:JSON.stringify(['public',feedKey(c),i.lastChanged]),type:'public',urgency:'research',state:c.state,date:i.lastChanged.slice(0,10),title:kind+(i.event==='changed'?' changed in source sample':' new to monitored sample'),detail:'Public research only. Not an assigned provider, verified open solicitation, available funding or confirmed buying intent.',item:i,overlap:overlap.has(feedKey(c))};
  });
  return {status:'ready',alerts:alerts.sort(compare),feed};

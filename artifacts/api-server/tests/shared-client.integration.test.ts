@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import type {Agency} from '../../../ems-territory-intelligence/src/types';
-import {readSharedDeal,saveSharedDeal} from '../../../ems-territory-intelligence/src/services/sharedPipeline';
-import {buildLeadershipReview} from '../../../ems-territory-intelligence/src/services/leadershipReview';
-import {buildTerritoryAnalytics} from '../../../ems-territory-intelligence/src/services/territoryAnalytics';
-import {EMPTY_DEAL, type DealInput} from '../../../ems-territory-intelligence/src/services/workingPipeline';
-import {commandSelection,currentCommandSample} from '../../../ems-territory-intelligence/src/services/commandSession';
+import type {Agency} from '../../ems-territory-intelligence/src/types';
+import {readSharedDeal,saveSharedDeal} from '../../ems-territory-intelligence/src/services/sharedPipeline';
+import {buildLeadershipReview} from '../../ems-territory-intelligence/src/services/leadershipReview';
+import {buildTerritoryAnalytics} from '../../ems-territory-intelligence/src/services/territoryAnalytics';
+import {EMPTY_DEAL, type DealInput} from '../../ems-territory-intelligence/src/services/workingPipeline';
+import {commandSelection,currentCommandSample} from '../../ems-territory-intelligence/src/services/commandSession';
 
 test('production API mounting, cookie sessions and actual shared-pipeline client integrate with analytics',async()=>{
  assert.equal(process.env.ATLAS_EVIDENCE_CI,'1');
@@ -20,7 +20,7 @@ test('production API mounting, cookie sessions and actual shared-pipeline client
  process.env.ATLAS_AGENCY_VIEWER_IDS='e2e-viewer';
  const {db,pool,sessionsTable,agencyRecordsTable}=await import('@workspace/db');
  const {eq}=await import('drizzle-orm');
- const {default:app}=await import('../app');
+ const {default:app}=await import('../src/app');
  const server=app.listen(0,'127.0.0.1');
  try{
   await once(server,'listening');const addr=server.address();assert(addr&&typeof addr!=='string');

@@ -1,0 +1,64 @@
+name: Retain reviewed coordinate evidence
+on:
+  push:
+    branches: [atlas/phase8-0w-retain-coordinate-evidence]
+  pull_request:
+    paths:
+      - 'scripts/data/evidence/review-coordinates/**'
+      - 'scripts/data/retain_review_coordinates.py'
+      - '.github/workflows/retain-review-coordinates.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify retained release or test reconstruction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if test -d scripts/data/evidence/review-coordinates/2026-11-25; then
+            python3 scripts/data/retain_review_coordinates.py --verify
+          else
+            mkdir -p /tmp/review-archives
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15063203117/zip" > /tmp/review-archives/VA.zip
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064441705/zip" > /tmp/review-archives/MN.zip
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064855858/zip" > /tmp/review-archives/WI.zip
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064303088/zip" > /tmp/review-archives/MI.zip
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064969235/zip" > /tmp/review-archives/provenance.zip
+            python3 scripts/data/retain_review_coordinates.py --archives /tmp/review-archives
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retained-coordinate-evidence
+          path: scripts/data/evidence/review-coordinates/2026-11-25/
+          if-no-files-found: error
+  stage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/atlas/phase8-0w-retain-coordinate-evidence'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: retained-coordinate-evidence
+          path: scripts/data/evidence/review-coordinates/2026-11-25/
+      - run: python3 scripts/data/retain_review_coordinates.py --verify
+      - name: Stage verified original bytes on isolated candidate branch
+        run: |
+          branch="atlas/retained-coordinate-evidence-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/review-coordinates/2026-11-25/
+          git diff --cached --stat
+          git commit -m "Retain verified original coordinate acquisition evidence"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Retention candidate: $branch"

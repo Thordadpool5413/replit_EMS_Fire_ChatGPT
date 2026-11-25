@@ -253,12 +253,6 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     return matches.length===1?matches[0].countyFips:undefined;
   },[selectedState,selectedCounty]);
 
-  // Available cities based on selected state & county from nationwide territory engine (100% full coverage)
-  const availableCities = useMemo(() => {
-    if (selectedState === 'all') return [];
-    return territoryEngine.getCitiesForState(selectedState, selectedCounty !== 'all' ? selectedCounty : undefined);
-  }, [selectedState, selectedCounty]);
-
   const all50StatesList = useMemo(() => {
     return Object.values(ALL_50_STATES_SUMMARIES).sort((a, b) => a.state.localeCompare(b.state));
   }, []);
@@ -277,10 +271,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
           'all'
         );
       } else if (selectedCounty !== 'all') {
-        basePool = territoryEngine.getAgenciesForCountyAndCities(
+        basePool = territoryEngine.getAgenciesForCounty(
           selectedState,
           selectedCounty,
-          availableCities,
           agencies,
           'all'
         );
@@ -315,7 +308,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
       return true;
     });
-  }, [agencies, debouncedSearchTerm, selectedState, selectedCounty, selectedCity, zipFilter, selectedJurisdiction, selectedProduct, selectedStage, selectedType, availableCounties, availableCities]);
+  }, [agencies, debouncedSearchTerm, selectedState, selectedCounty, selectedCity, zipFilter, selectedJurisdiction, selectedProduct, selectedStage, selectedType, availableCounties]);
 
   const emsCount = useMemo(() => {
     let count = 0;

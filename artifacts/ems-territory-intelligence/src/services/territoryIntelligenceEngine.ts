@@ -1,5 +1,6 @@
 import { activeProviderRecords } from '../utils/providerRecordTrust';
-import { normalizeCountyName, matchesAgencyCounty } from '../utils/countyIdentity';
+import { normalizeCountyName } from '../utils/countyIdentity';
+import { filterSavedAgencyRecordsForJurisdiction } from '../utils/countyAgencySelection';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -320,10 +321,7 @@ class TerritoryIntelligenceService {
     const resultsMap = new Map<string, Agency>();
     for (const a of dbMatched) resultsMap.set(a.id, a);
 
-    for (const a of existingAgencies) {
-      if (a.stateCode !== sc) continue;
-      if (cleanCounty && !matchesAgencyCounty(a, cleanCounty)) continue;
-      if (cleanCity && a.city.toLowerCase().trim() !== cleanCity.toLowerCase().trim()) continue;
+    for (const a of filterSavedAgencyRecordsForJurisdiction(existingAgencies, sc, cleanCounty, cleanCity)) {
       resultsMap.set(a.id, a);
     }
 

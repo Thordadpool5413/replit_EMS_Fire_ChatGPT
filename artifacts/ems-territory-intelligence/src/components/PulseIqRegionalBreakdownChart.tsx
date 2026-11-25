@@ -191,10 +191,9 @@ export const PulseIqRegionalBreakdownChart: React.FC<PulseIqRegionalBreakdownCha
         : (categoryAgencies.find(a => a.county.toLowerCase().includes(cleanTargetCounty))?.stateCode || 'GA');
 
       // Get full agency and municipal jurisdiction roster for this county
-      const countyAgencies = territoryEngine.getAgenciesForCountyAndCities(
+      const countyAgencies = territoryEngine.getAgenciesForCounty(
         targetState,
         normalizedCounty,
-        [],
         categoryAgencies,
         categoryFilter
       );

@@ -26,6 +26,10 @@ function sameOriginRequest(req: Parameters<RequestHandler>[0]): boolean {
   } catch { return false; }
 }
 
+export function canReadAgencyWorkspaceFields(req: Parameters<RequestHandler>[0]): boolean {
+  return sameOriginRequest(req) && req.isAuthenticated() && Boolean(agencyWorkspaceRole(req.user.id));
+}
+
 export const requireAgencyWorkspace: RequestHandler = (req, res, next) => {
   res.set("Cache-Control", "private, no-store");
   if (!sameOriginRequest(req)) {

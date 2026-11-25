@@ -75,6 +75,7 @@ import {
 import { validateNpiCheckDigit } from '../services/npiVerificationService';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
+import { PrivateCoordinateMap } from './profile/PrivateCoordinateMap';
 import { saveAgencyProfileReviewedAt } from '../services/agencyProfileReviewStore';
 import { ClinicalMeasures } from './profile/ClinicalMeasures';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
@@ -1076,6 +1077,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
             <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}} onReviewCandidate={()=>{setRequestedReviewField(ADDRESS_CANDIDATE_FIELD);navigateProfileSection('evidence');}}/>
+            {(()=>{const c=providerAddressReview(rawAgency,directoryAgencies);return c&&c.countyVerified&&!c.sharedSourcePoint?<PrivateCoordinateMap key={rawAgency.id+':'+c.sourceIdentityKey+':'+c.snapshotGeneratedAt} agencyId={rawAgency.id} candidate={c}/>:null;})()}
             <div className="acp-contact-row" aria-label="Agency contact actions">
               {agency.headquartersPhone && (
                 <a href={`tel:${agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Main phone</a>

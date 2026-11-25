@@ -1662,7 +1662,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           {activeSection === 'deal_story' && (
             <div className="profile-deal-workspace" data-testid="profile-deal-story">
               <PreCallPlanner key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources}/>
-              <ReviewedPreCallPlanner key={'reviewed:'+rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources}/>
+              <ReviewedPreCallPlanner key={'reviewed:'+rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources} onCreateTask={onCreateFollowUp}/>
               <DealDiscoveryWorkspace agency={agency} onCreateTask={onCreateFollowUp}/>
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>

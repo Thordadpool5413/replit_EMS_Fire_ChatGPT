@@ -11,7 +11,7 @@ type Role=typeof AUTHORITY_ROLES[number];
 export type AuthorityCoverage={agencyId:string;name:string;stateCode:string;complete:boolean;recentReviewed:number;roles:Role[];checkedAt:string};
 export type ReviewedCallSample={agencyId:string;started:number;documents?:{rows:ReviewedEvidenceRow[];checkedAt:string};station?:LifecycleSample;authority?:AuthorityCoverage};
 type Topic=OpportunityKind|'equipment'|'discovery';
-export type CallCandidate={key:string;label:string;kind:Topic;focus?:ProviderEquipmentKind;context:string;sourceUrl:string;scope:'department'|'station'};
+export type CallCandidate={key:string;label:string;kind:Topic;focus?:ProviderEquipmentKind;context:string;sourceUrl:string;scope:'department'|'station';date?:string};
 const fresh=(s:string,now:number)=>Number.isFinite(Date.parse(s))&&Date.parse(s)<=now&&now-Date.parse(s)<300000;
 const recent=(date:string,today:string,days:number)=>validIsoDay(date)&&date<=today&&Date.parse(today)-Date.parse(date)<=days*DAY_MS;
 const focusFor=(kind:string):ProviderEquipmentKind|undefined=>{
@@ -41,7 +41,7 @@ export function buildReviewedCallContext(agency:Agency,directory:Agency[],sample
     const e=s.evidence;
     if(s.kind==='competitor-equipment'||!safe(e)||!recent(e.documentDate,today,365))continue;
     if((s.kind==='open-procurement'||s.kind==='contract-renewal')&&(!validIsoDay(s.date)||s.date<today||Date.parse(s.date)-Date.parse(today)>365*DAY_MS))continue;
-    candidates.push({key:'document:'+e.factId,label:s.kind.replaceAll('-',' ')+' · '+e.sourceRecordId,kind:s.kind,context:'Reviewed department document '+e.documentDate+' reports: '+e.value+(s.date?' · Published date '+s.date:'')+'. Confirm current scope, amendments and status.',sourceUrl:e.sourceUrl,scope:'department'});
+    candidates.push({key:'document:'+e.factId,label:s.kind.replaceAll('-',' ')+' · '+e.sourceRecordId,kind:s.kind,context:'Reviewed department document '+e.documentDate+' reports: '+e.value+(s.date?' · Published date '+s.date:'')+'. Confirm current scope, amendments and status.',sourceUrl:e.sourceUrl,scope:'department',date:s.date});
    }
    for(const item of r.equipment){const e=item.evidence,focus=focusFor(e.kind);if(!focus||!safe(e)||!recent(e.documentDate,today,730))continue;
     candidates.push({key:'equipment:'+e.factId,label:'Equipment document · '+e.value,kind:'equipment',focus,context:'Reviewed department equipment observation '+e.documentDate+' reports: '+e.value+'. This does not establish current deployment, quantity or purchase intent.',sourceUrl:e.sourceUrl,scope:'department'});

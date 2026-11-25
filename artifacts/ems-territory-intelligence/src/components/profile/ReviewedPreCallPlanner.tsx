@@ -1,17 +1,18 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
-import type {Agency} from '../../types';
+import type {Agency,FieldNote} from '../../types';
+import {NextResearchActions} from './NextResearchActions';
 import {providerIdentityReady} from '../../services/providerCompetitiveProfile';
 import {facilityParents} from '../../services/departmentFacilities';
 import {sharedAgencyKey} from '../../services/sharedEvidence';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../../services/sharedEvidenceReplit';
 import {buildReviewedCallContext,buildReviewedCallBrief,type ReviewedCallSample,type AuthorityCoverage} from '../../services/reviewedPreCallPlanning';
 import type {LifecycleSample} from '../../services/lifecycleTimeline';
-export function ReviewedPreCallPlanner({agency,directory,onOpenSources}:{agency:Agency;directory:Agency[];onOpenSources:()=>void}){
+export function ReviewedPreCallPlanner({agency,directory,onOpenSources,onCreateTask}:{agency:Agency;directory:Agency[];onOpenSources:()=>void;onCreateTask:(id:string,task:FieldNote)=>Promise<void>}){
  const {user}=useAuth();
- return user?<PrivatePlanner key={user.id+':'+agency.id} agency={agency} directory={directory} onOpenSources={onOpenSources}/>:null;
+ return user?<PrivatePlanner key={user.id+':'+agency.id} agency={agency} directory={directory} onOpenSources={onOpenSources} onCreateTask={onCreateTask}/>:null;
 }
-function PrivatePlanner({agency,directory,onOpenSources}:{agency:Agency;directory:Agency[];onOpenSources:()=>void}){
+function PrivatePlanner({agency,directory,onOpenSources,onCreateTask}:{agency:Agency;directory:Agency[];onOpenSources:()=>void;onCreateTask:(id:string,task:FieldNote)=>Promise<void>}){
  const {user}=useAuth();
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[selected,setSelected]=useState(''),[sample,setSample]=useState<{identity:string;data:ReviewedCallSample}>(),[copy,setCopy]=useState<'idle'|'copied'|'manual'>('idle');
  const request=useRef<AbortController|undefined>(undefined);
@@ -52,6 +53,7 @@ function PrivatePlanner({agency,directory,onOpenSources}:{agency:Agency;director
    {!ready&&<p>Resolve provider identity before loading reviewed evidence.</p>}{message&&<p role="status">{message}</p>}
    {current&&<>
     <p className="text-xs">Department documents: {context.documentsChecked?'checked':'not available or incomplete'} · Station equipment: {context.stationsChecked?'checked':'not available or incomplete'} · Authority: {context.authorityChecked?'checked':'not available or incomplete'}. Sample expires after five minutes.</p>
+    <NextResearchActions key={current.started+':'+identity} agency={agency} directory={directory} sample={current} onSelect={id=>{setSelected(id);setCopy('idle');}} onCreateTask={onCreateTask}/>
     <label className="pcp-focus-label">Primary conversation evidence<select className="pcp-select" value={selected} onChange={e=>{setSelected(e.target.value);setCopy('idle');}}><option value="">Discovery only (no source selected)</option>{context.candidates.map(c=><option key={c.key} value={c.key}>{c.scope} · {c.label}</option>)}</select></label>
     <p className="break-words">{brief.context}</p>{candidate?.sourceUrl&&<a className="pcp-link break-all" href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer">Submitted evidence source</a>}
     <h4>Call objective</h4><p>{p.objective}</p>

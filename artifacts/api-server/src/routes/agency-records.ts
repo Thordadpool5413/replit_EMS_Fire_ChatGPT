@@ -10,6 +10,7 @@ import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/
 
 import { agencyWorkspaceRole, canReadAgencyWorkspaceFields, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
 import { publicAgencyProfilePayload } from "../lib/publicAgencyProfile";
+import { AddressReviewError, reconcileAddressReviews } from "../lib/addressReviewReconciliation";
 
 const router: IRouter = Router();
 router.use("/agencies", (_req, res, next) => {
@@ -132,7 +133,8 @@ router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
       if (revision !== body.data.expectedRevision) return { conflict: true as const, revision };
 
       const nextRevision = revision + 1;
-      const payload: Record<string, unknown> = { ...body.data.agency, _revision: nextRevision, _updatedAt: new Date().toISOString() };
+      const now = new Date().toISOString();
+      const payload: Record<string, unknown> = { ...reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now), _revision: nextRevision, _updatedAt: now };
       const stateValue = payload.stateCode;
       const stateCode = typeof stateValue === "string" && statePattern.test(stateValue.toUpperCase())
         ? stateValue.toUpperCase()
@@ -154,6 +156,7 @@ router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
     }
     return res.json(responseRecord(agencyId, result.revision, result.payload));
   } catch (error) {
+    if (error instanceof AddressReviewError) return requestError(res, 422, "invalid_address_review", error.message);
     logFailure(req, error, "update");
     return requestError(res, 503, "database_unavailable", "The agency record could not be saved.");
   }
@@ -198,7 +201,8 @@ router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req,
       if (revision !== body.data.expectedRevision) return { conflict: true as const, revision };
 
       const nextRevision = revision + 1;
-      const payload: Record<string, unknown> = { ...body.data.agency, _revision: nextRevision, _updatedAt: new Date().toISOString() };
+      const now = new Date().toISOString();
+      const payload: Record<string, unknown> = { ...reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now), _revision: nextRevision, _updatedAt: now };
       const stateValue = payload.stateCode;
       const stateCode = typeof stateValue === "string" && statePattern.test(stateValue.toUpperCase())
         ? stateValue.toUpperCase()
@@ -226,6 +230,7 @@ router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req,
     // Top-level revision is the immutable mutation receipt; embedded revision labels the current record.
     return res.json({ ...responseRecord(agencyId, result.recordRevision, result.payload), revision: result.revision });
   } catch (error) {
+    if (error instanceof AddressReviewError) return requestError(res, 422, "invalid_address_review", error.message);
     logFailure(req, error, "mutation");
     return requestError(res, 503, "database_unavailable", "The queued agency change could not be confirmed.");
   }
@@ -252,7 +257,7 @@ router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) =
       const stateCode = typeof agency.stateCode === "string" && statePattern.test(agency.stateCode.toUpperCase())
         ? agency.stateCode.toUpperCase()
         : null;
-      return { id: agency.id, stateCode, payload: { ...agency, _revision: 1, _updatedAt: updatedAt }, revision: 1 };
+      return { id: agency.id, stateCode, payload: { ...reconcileAddressReviews(undefined, agency, req.user!.id, updatedAt), _revision: 1, _updatedAt: updatedAt }, revision: 1 };
     });
     const inserted = await db.insert(agencyRecordsTable).values(values)
       .onConflictDoNothing().returning({ id: agencyRecordsTable.id });
@@ -260,6 +265,7 @@ router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) =
     const createdIds = records.filter(record => insertedIds.has(record.id)).map(record => record.id);
     return res.json({ createdIds });
   } catch (error) {
+    if (error instanceof AddressReviewError) return requestError(res, 422, "invalid_address_review", error.message);
     logFailure(req, error, "batch-create");
     return requestError(res, 503, "database_unavailable", "The agency batch could not be saved.");
   }

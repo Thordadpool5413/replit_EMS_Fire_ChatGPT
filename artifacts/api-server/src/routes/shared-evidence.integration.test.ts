@@ -40,12 +40,13 @@ test("Replit evidence API enforces membership, independent review, and immutable
       sourceRecordId: "fixture-1", sourceUrl: "https://example.gov/records/1",
       documentDate: enteredAt.slice(0, 10), dueDate: "", enteredAt,
     };
-    async function request(path: string, user?: string, body?: unknown) {
+    async function request(path: string, user?: string, body?: unknown, headers?: Record<string,string>) {
       const response = await fetch(base + path, {
         method: body === undefined ? "GET" : "POST",
-        headers: { "Content-Type": "application/json", ...(user ? { Authorization: "Bearer ci-" + user } : {}) },
+        headers: { "Content-Type": "application/json", ...(user ? { Authorization: "Bearer ci-" + user } : {}), ...headers },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
+      assert.match(response.headers.get("cache-control") ?? "", /private, no-store/);
       return { status: response.status, body: await response.json() };
     }
     const root = `/evidence/workspaces/${workspaceId}`;
@@ -57,6 +58,9 @@ test("Replit evidence API enforces membership, independent review, and immutable
     assert.equal((await request(root + "/role", "outsider")).status, 403);
     assert.equal((await request("/evidence/workspaces/another-workspace/role", "editor")).status, 403);
     assert.equal((await request(root + "/role", "viewer")).body.role, "viewer");
+    assert.equal((await request(root + "/role", "viewer", undefined, { Origin: "https://other.example", "Sec-Fetch-Site": "cross-site" })).status, 403);
+    assert.equal((await request("/evidence", "editor", publish, { Origin: "https://other.example", "X-Forwarded-Host": "other.example" })).status, 403);
+    assert.equal((await request(root + "/role", "viewer", undefined, { Origin: base, "Sec-Fetch-Site": "same-origin" })).status, 200);
     assert.equal((await request("/evidence", undefined, publish)).status, 401);
     assert.equal((await request("/evidence", "viewer", publish)).status, 403);
     assert.equal((await request("/evidence", "reviewer", publish)).status, 403);

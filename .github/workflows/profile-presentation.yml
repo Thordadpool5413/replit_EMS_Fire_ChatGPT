@@ -22,6 +22,9 @@ on:
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
+      - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/check_additive_location_release.py'
+      - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
       - 'scripts/data/recover_nad_bulk_locations.py'
       - 'scripts/data/checked_zip_member.py'
@@ -75,6 +78,9 @@ on:
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
+      - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/check_additive_location_release.py'
+      - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
       - 'scripts/data/recover_nad_bulk_locations.py'
       - 'scripts/data/checked_zip_member.py'
@@ -144,6 +150,18 @@ jobs:
           else
             echo 'No generated location snapshot in this revision.'
           fi
+      - name: Generate nationwide mapping gap report
+        run: |
+          if test -f artifacts/ems-territory-intelligence/public/registry/locations/index.json; then
+            python3 scripts/data/audit_location_gaps.py --json generated-artifacts/location-recovery/gaps.json --markdown generated-artifacts/location-recovery/gaps.md
+            cat generated-artifacts/location-recovery/gaps.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Keep mapping coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-location-gaps
+          path: generated-artifacts/location-recovery/
+          if-no-files-found: ignore
       - run: node scripts/test-ems-unit.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build

@@ -8,7 +8,7 @@ import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,ad
 import {useSyncExternalStore} from 'react';
 import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,snapshotSourceUrl} from './nationalLocationSnapshot';
 
-import {virginiaAddressReviewCandidate} from './virginiaAddressReview';
+import {multiStateAddressReviewCandidate} from './multiStateAddressReview';
 
 export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'};
 const norm=(s:unknown)=>typeof s==='string'?s.normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim():'';
@@ -131,12 +131,12 @@ export function mappedProviderLocation(a:Agency,directory:Agency[]){
 }
 /** Review-only source point; never used by mappedProviderLocation or locationOverlay. */
 export function providerAddressReview(a:Agency,directory:Agency[]){
- if(a.stateCode!=='VA'||flagged(a)||mappedProviderLocation(a,directory))return;
+ if(!['VA','MN','WI','MI'].includes(a.stateCode)||flagged(a)||mappedProviderLocation(a,directory))return;
  const id=a.registryIdentity;
  if(!id||!canCreateRegistryAccount(id)||id.stateCode!==a.stateCode)return;
  const key=registryIdentityKey(id),e=snapshotFor(a,directory),loc=displayedProviderLocation(a,directory);
  if(!key||e?.key!==key||loc?.identityKey!==key||norm(a.name)!==norm(e.name))return;
- const candidate=virginiaAddressReviewCandidate(e,loadedLocationState('VA')?.generatedAt,loc.address,a.countyFips);
+ const candidate=multiStateAddressReviewCandidate(e,loadedLocationState(a.stateCode)?.generatedAt,loc.address,a.countyFips);
  if(!candidate)return;
  const owners=directory.filter(row=>row.id===a.id);
  if(owners.length!==1||registryIdentityKey(owners[0].registryIdentity??{} as RegistryIdentity)!==key)return;

@@ -1,0 +1,25 @@
+name: Retained coordinate evidence integrity
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/evidence/review-coordinate-provenance-2026-11-25.json'
+      - 'scripts/data/verify_retained_coordinate_evidence.py'
+      - 'scripts/data/test_retained_coordinate_evidence.py'
+      - '.github/workflows/retained-coordinate-evidence.yml'
+  push:
+    branches: [main, atlas/phase8-0w-permanent-coordinate-evidence]
+    paths:
+      - 'scripts/data/evidence/review-coordinate-provenance-2026-11-25.json'
+      - 'scripts/data/verify_retained_coordinate_evidence.py'
+      - 'scripts/data/test_retained_coordinate_evidence.py'
+      - '.github/workflows/retained-coordinate-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_retained_coordinate_evidence.py
+      - run: python3 scripts/data/verify_retained_coordinate_evidence.py

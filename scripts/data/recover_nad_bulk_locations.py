@@ -32,7 +32,10 @@ def scan(archive,entries,counties,states=STATES,minimum_member_bytes=1_000_000):
   if member.file_size>70_000_000_000 or member.flag_bits&1:raise ValueError('Archive exceeds bounded scan or is encrypted')
   with z.open(member) as raw,io.TextIOWrapper(raw,encoding='utf-8-sig',newline='') as stream:
    first=stream.readline(65536)
-   formats=[(d,next(csv.reader([first],delimiter=d,strict=True))) for d in (',','\t','|')]
+   formats=[]
+   for d in (',','\t','|'):
+    try:formats.append((d,next(csv.reader([first],delimiter=d,strict=True))))
+    except csv.Error:continue
    valid=[(d,h) for d,h in formats if set(FIELDS)<=set(h) and len(set(h))==len(h)]
    if len(valid)!=1:raise ValueError('NAD table header differs from official schema')
    delimiter,header=valid[0];col={f:header.index(f) for f in FIELDS}

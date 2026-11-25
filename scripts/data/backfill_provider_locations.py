@@ -187,12 +187,18 @@ def verify(output,manifest,rows,fl):
    seen.add(k);counts[source]['total']+=1;counts[source]['withAddress']+=int(a is not None);counts[source][status]+=1
    if a and address(a['street'],a['city'],a['state'],a['zip'])!=a:raise ValueError('Malformed source address')
    if status=='mapped':
-    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']:raise ValueError('Invalid mapped record')
+    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or (m.get('method') in ('ny-sam-address-point','ohio-lbrs-address-point','nad-address-point') and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']):raise ValueError('Invalid mapped record')
    elif m is not None or e['countyFips']:raise ValueError('Unmatched record contains coordinates')
  if seen!=set(expected) or {c['state'] for c in index['chunks']}!=STATES or len(index['chunks'])!=51:raise ValueError('Incomplete native location coverage')
  for source,c in counts.items():
   declared=index['coverage'][source]
   if c['total']!=declared['total'] or c['withAddress']!=declared['withAddress'] or {k:v for k,v in c.items() if k not in ('total','withAddress')}!=declared['statuses']:raise ValueError('Coverage totals mismatch')
+ # Older Census range matches can disagree with the source registry county. The app
+ # already withholds these pins. Retain their evidence, but report them separately.
+ conflicts=0
+ for ch in index['chunks']:
+  conflicts+=sum(1 for e in json.loads((output/ch['file']).read_bytes()) if e['status']=='mapped' and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips'])
+ print('Location snapshot: county conflicts withheld from map =',conflicts,flush=True)
  print('PASS location identity, hash, coordinate and coverage verification',len(seen))
 def main():
  p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path);p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');p.add_argument('--geocode',action='store_true');p.add_argument('--verify',action='store_true');p.add_argument('--batch-size',type=int,default=4000);args=p.parse_args()

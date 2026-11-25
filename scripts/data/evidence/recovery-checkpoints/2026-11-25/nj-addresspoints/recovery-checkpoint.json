@@ -1,0 +1,1408 @@
+{
+  "schemaVersion": 1,
+  "source": "nj-addresspoints",
+  "metadataSha256": "e349c88c1b5ecac02024db568638e55c4da36ca412a9a838e1bbe5b8870974f6",
+  "completeMetadataCheck": true,
+  "rows": {
+    "NPI:1396756292": {
+      "fingerprint": "a2c460bee1dc85e355dd211b40a02ef6b23f6b9b64aab18320a3f18024aa963a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1891832333": {
+      "fingerprint": "bc0f43c2e16f0ec7b35719a739cca5fa8a8608c9ce6f6ade6cb10c69cf3b8cf9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1548354046": {
+      "fingerprint": "9bb5e7d9a10943541c5aec1774289f61ce8f01bd4a0d73ab0ae0a4429f0de2d6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1275936957": {
+      "fingerprint": "c3b7d9027cc0b2ff118f1ea71f9a53dc1dcb80437c236607c9b2aa7e6b2860e4",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1386905529": {
+      "fingerprint": "75d0ac016d4340fa9065a9636b3191c82ab1a91e2f868ecdf730e2084d2891c4",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1093122830": {
+      "fingerprint": "351aac5a497d0e945cf8a9df08c9e0f34fb0e6d267738fcc9a9aa0f419428c82",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1720146020": {
+      "fingerprint": "25b3431f541551d0e0418cfbfb8dc7a8fb78df91dec4a6d9a8a5cc619f46dec8",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1689832529": {
+      "fingerprint": "0c9345d6488f0d96510b56c40034ac149c575a3851628e68612eddcf6c360c67",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1538383823": {
+      "fingerprint": "b1d7c1ec44b9fac1b8336efaebbf5a693addaf4fbfae336caccff1a403cac250",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:07050": {
+      "fingerprint": "f191ec606ae8f0b37f06c04d52c9a95763e31862dd05fcf910cf04192ba51582",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1578895439": {
+      "fingerprint": "46c67bfa1cc03a8aa9d6deda74d335a39d0af0672e3ce90443c2eaf920885583",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1962481101": {
+      "fingerprint": "bdf03f99d9d47fbc2c5a0fd0b512efe2d22577dca795b7f9df0e964bc93da5f7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1962498063": {
+      "fingerprint": "936d3ad5c299bd78f25518d307488c275d3dea5758d2e17e60e03ae5ef9a0ca8",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1073374732": {
+      "fingerprint": "75941c4be4fb04222285663833cb75e406867e9dc0e9aedc667b2e8ce38ebfb3",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1427569102": {
+      "fingerprint": "bb2b47eb5e5cb9b7aa0b821ce7e1389ab488f1a662302ea2eb65a2e80b48e955",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1215073051": {
+      "fingerprint": "46c9c70eea57f229a56b61fc6166e694251b38026c7f6b68eb9bc7e6ea0da9de",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02900": {
+      "fingerprint": "ef58d2b570f47a5f8b9c013e3c1fce1dee903fd18d0eb629a1c19ebf6d69b2ca",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1801408059": {
+      "fingerprint": "3d7d3e6fa300565adfdc065608324ee13e5a449e0759f2e8030ea2e076b7b6aa",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02690": {
+      "fingerprint": "9811f8d6ade24b4602b4d5bc7f62cd58bdb81b2e3c7ca5e881a60845a154ffaa",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1841341013": {
+      "fingerprint": "a01a383c419271698e690093d88100ee66e932c85313481d6e791dda876f213a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:09002": {
+      "fingerprint": "10f5f3dee39661154298a3c7cdaa8c0b8efee9b64cdb1540525b6edf6e87c074",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1033459771": {
+      "fingerprint": "38e8c51fa6a6b7814d95e6b1ee5d0450362e51428aa3ef355c0e7d59e367ea07",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1588602197": {
+      "fingerprint": "d24a05c433ab3e883b7f56909fb4ca579c59b08d7956992ac89f09555be4fb3d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1831964642": {
+      "fingerprint": "be8500189a70e56aae548e1a0c7094ab324380261dcebdb472f4af1dac55a5a5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1114704293": {
+      "fingerprint": "604eb9d73795b1a2b246d89657d16dbef51a3b5e5f13dd1377742545080d605f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1720400807": {
+      "fingerprint": "4105198d8ac56b3fd5d3b14d18095d42d0254f9d0cf33b90aaa2444f529afb04",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1730558719": {
+      "fingerprint": "b59e3edbef72613489505551f9ef07fe01a560204e71db4c8ca05cefd4528610",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1205548849": {
+      "fingerprint": "b485e0a28170ee5090789cae79695cc5bd661a4356d44a27c6037f5a9acf4e22",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1982834875": {
+      "fingerprint": "2245b895088c96e6457128b8f2d5c1f4656b3d6db74d1f26458c95aed6bc562a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1720411978": {
+      "fingerprint": "4f67c3f11a499491dc18bc9cdb0a63c0b452261d84ae1af419a44cd0c24bf861",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:07090": {
+      "fingerprint": "eeaf5895d374d2bcde30d09cd3efcbd7fb7cbf39ce7e15796c5c1f4f80d0958d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1366435745": {
+      "fingerprint": "37c4c558c48e9651ad494877705bdd1506dbefad2f25d408078e35b6a9aa4130",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1992052385": {
+      "fingerprint": "68fe8f6f6a75b2cfced36de0d821b20fc29d922a5f0d632dafc4d216a98d5711",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1871738021": {
+      "fingerprint": "62c94bfec2f8cecff59e0bc397ddf1683d5ecc54fb3361a5055297f228ed0de7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1902232275": {
+      "fingerprint": "0183809fde7b65146ce7c49256a196958986623c8ca3792193040f3ca8e520db",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1023842481": {
+      "fingerprint": "a00b28a34f6f5927f38f079623fbfe7f910d1cbc216e18da484e98602f2f92ff",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1336439710": {
+      "fingerprint": "2f786700f15a244ea759d78d3419c3f07282c7ee9c4a3e8c1b371a868f56d4e5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1447503321": {
+      "fingerprint": "ebd7b012fc381d04922cfb34e4b84100aef4abea537dcb0ff56ae0c746c74788",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02010": {
+      "fingerprint": "d81d52e88c68b471eeb66f8d7c788db295af0e3bebd7d7c49b3719af673c817a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1881007144": {
+      "fingerprint": "dfbe7ddb681781decfaca5a375fac9cc981a43af539741819f1b682fd0f5a72d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1659201671": {
+      "fingerprint": "e094c87dac4f58c36c418322bcf82046c958c28b3ddaee7b897b84a31ef4923c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1568821890": {
+      "fingerprint": "c961732cf28b4c0c1fa08650b289a011eb0b6df989107bb1df66d38942f7dcf6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19223": {
+      "fingerprint": "62cea2055684520902277f0c172dd7aac1a2ad9a13ab4cd1fc5705bc141b38ee",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14356": {
+      "fingerprint": "2c7c55df982d539a695dc7f67b5a533ad549dfda77f4c9bd39c6abd43fcfd1da",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:16152": {
+      "fingerprint": "242457c6c0446051cb37803c3916789b73980a641d1b564963d10beb24b147fe",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1578336244": {
+      "fingerprint": "71259b19061ec3c0a8761e5f6be6902130088746ee1c13fc24f21eb5f15ba011",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1821496316": {
+      "fingerprint": "084e30a9fa8f62c4f5d3353401a27f29228c598a46cbfd5b1ae5d32beda0c11b",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1750151106": {
+      "fingerprint": "98d04f54b672500043c3b40974a1a043e07663315f2e495bbb9bfbe01bfbe749",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19212": {
+      "fingerprint": "1a67360f81338aa7849132d45285d2dffb0f78a4c8c0f4427deae120bd236a76",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1659139996": {
+      "fingerprint": "b33bee9a73e8a06379826f5d73bf9f5c1ec471abace68748e4aa07fbfc008160",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19221": {
+      "fingerprint": "e6edf60c55d4b4235c689c5da4cca270da2434ddf21d5e6e4809d4ccdbb06c7d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1336487461": {
+      "fingerprint": "4ca6660dd9315555ad7906bbcee9323e43ae62d31706368aa6f45fd3011a6690",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1235541251": {
+      "fingerprint": "e916c0750a20b40c798513624a5e3cc496adae1dbcb21df6d4f6e470747db8e4",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1184802597": {
+      "fingerprint": "3f246843b0df32b55fcd6ee8b96f8fc46736241daadf53a3be16c84f87a0e362",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02440": {
+      "fingerprint": "185b38ba3ae528626bcd29d97f9fc08415f9f23bc44e960aa8b3f85a6f02c7cd",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1265656805": {
+      "fingerprint": "e80ba20f2a16beb5acf620e5a15aeec18fac921ff1f996c0ffa285d3394e1b04",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02460": {
+      "fingerprint": "3a9cae381143c1527b6fc57a5188cbd667651bfa96d4ea18de8a486fe5813a02",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02540": {
+      "fingerprint": "7d652433ada4cc81a800ad336c9db5aced2d313c8015d71e2a52f22652c9f0fc",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:02530": {
+      "fingerprint": "dbe306a951b8824b88d0d74b7fd006f486ce5bd1c775562b46dc715da39c347a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13130": {
+      "fingerprint": "e1260099a507721ce6f422ed89be0ca842b457eae7c9a115b1c03b36abeda276",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13192": {
+      "fingerprint": "b484c37f96cc09d4372c82fe5a96b22c190dda5a048bd275f65ad92d6ad70fe2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1659562668": {
+      "fingerprint": "f29e6353670d3e8cacc6be99d646f467887a0e37f56b702f784d28c4322d677f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13060": {
+      "fingerprint": "1b6bc95b51f195c82914877033eb94a1e24712e9d78ef5d072f95b1ff8d4529c",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13470": {
+      "fingerprint": "419c58796a1d22dbb5742b61dbe5577d1a9357c8794431c311afb8b3c72489d2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1144801036": {
+      "fingerprint": "1846a072b786e47481b0cc869c51c9a9d2865b8169c749548964d9c5c13fb0a4",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13070": {
+      "fingerprint": "63e887a518f7208381d772da78f6f770a8a1753f49d4204f0ce8c676f738e1f4",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13040": {
+      "fingerprint": "3a68913acdfeec52fece8f7b194a22e64cddeabbc7ba2b44ae0a723a91002721",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1295801991": {
+      "fingerprint": "2f0659fc29aa1659541b70080d8eff892f62c874e31627a33b91c37685d8ae93",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1215182472": {
+      "fingerprint": "e24be52852931efb32e1ebf5e394d0a069644a5c96bcaf773cb4031b01a4b3d5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13193": {
+      "fingerprint": "aa319814def73206d650f55906808555a52ead3d27d067a0e2e7a97cc77a96c8",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13181": {
+      "fingerprint": "b016f08cb3bf9c6989804effe1c36477202fcb15fd07c27432ccced5cbda2e97",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12209": {
+      "fingerprint": "44b5e34127ab01afc2377dd3f3573e81ed8d78f40832120f073c2a1989a5173d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13282": {
+      "fingerprint": "b1b40a1b671ddbe7365ad738f49eb2562468f195f2f397cb6091b0bacab30268",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13035": {
+      "fingerprint": "7ef1d480019ea898c522e1def8a09bc3f7cd6a9341d6c7df93f09cc926f11c1d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1326498643": {
+      "fingerprint": "06a1603c71a42720d2f534cfffd40ad37db5529c1bc72abe74b2556cf07e4db5",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1407802440": {
+      "fingerprint": "6846ff39c52029d1b1d1cedaae7919820fc9e8e453874d3023bd1ededce8bc93",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1073595781": {
+      "fingerprint": "9030a55be9a1df730dfdb6960d1894aaab82f02c221185ab8883e2fefe485aa1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13430": {
+      "fingerprint": "e8c52f6ad9c20f7f1186c6e06db970357b841c6c16c0eacabe22f6808e650976",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13490": {
+      "fingerprint": "428de961e3d604d970255c95594864b6d0ac5243daa04a111f73c751866ca219",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14200": {
+      "fingerprint": "a3149dc756f33bbd350655e85863a294d3194479051a123dbb575518fb8ad579",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21010": {
+      "fingerprint": "7e1b65d4d14b041593810aa9912bb473731f8e48566ad4ff94cf1db8098a0c8f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1225577620": {
+      "fingerprint": "87f0df3d3e6ebe27015035bae935c01496724b425e8510ed8b529a33c7250428",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19191": {
+      "fingerprint": "1f9a9385f2facd2d78cc32517aa91d7dc1e529a7d8c7ddfb4586c60207ee2516",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19033": {
+      "fingerprint": "e178c6a1dac2c7348ef7fee68caae0b2e8600f0ea6d236492d2f13f3567ac84f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19031": {
+      "fingerprint": "89a235515a66c5d9a7d77a05d982beade8ffc84837843300637fd252ade0e814",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21130": {
+      "fingerprint": "1d3556b0c8c8fa39b1e7dd2fd4e02cc2c969906483c76972201e434c11d777d1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19080": {
+      "fingerprint": "35454afbafa8215b1ef2341d4ffe9e5e07d707d8b2fc839775ab0b3ff40153b7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21081": {
+      "fingerprint": "bf46a65b17d58d95a906f810e70d877f6bbd49ec4e5999cf8bc9545fdcfb3fc6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21082": {
+      "fingerprint": "fc238c67ec1e6d4e1963f73ed09a8792653ef93ca73546dbf74e4367d91d2b7d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21110": {
+      "fingerprint": "d4788c48d09f6c0a4163c44cb05424e3c1c73d273ab232259ce6057caa163f46",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19130": {
+      "fingerprint": "c9f27a377883c0731bac01a4c1d01a8c4da9e8439833b1809b155c7b408b61a0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14140": {
+      "fingerprint": "cf05bbf0f53094aa6c8cc6ed35ac02a1d2e8cba9ac3a91b62d07dc1dfd60b067",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14034": {
+      "fingerprint": "5763b363f5b3161bf7be6a50b502c1423b41de3e01747f713dc8675665d3cdec",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:19154": {
+      "fingerprint": "9520c606dba6c5729e5b85b278547a3a97296bde025d0b125af262cf5eb34226",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1205224805": {
+      "fingerprint": "f93bcab445c97e6fdda4d2d697db68491833ae6c54fdb389f4ff755843f41bd5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1518342377": {
+      "fingerprint": "4562899a2151eb336bd903fe981625cc1df7c48ff30247945d558e11bd07df1e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18030": {
+      "fingerprint": "352473a9028a28115f0640a3ec70ed3c9e476165d6fd0133228ff7cb978b48f2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14190": {
+      "fingerprint": "fe0e85947f7114b890d0d1854cc5b316b4b062ee3c07da0910470d87f12885bb",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14910": {
+      "fingerprint": "149dab741e4a29da1d95c25384934c2bda79fbca4da08e860cb7b298c21b208f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14040": {
+      "fingerprint": "3680db806e77bf46719c85c7f359fac6291ff10bee3865a04be8a0cd813ff718",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14060": {
+      "fingerprint": "bbafa8bddf65ced6c48d79cfeb0716ddcf1289e689909b166f0ab36bb2da993e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18010": {
+      "fingerprint": "cbdab07fd403150d33ed980e5cea0aec4be56a51adf27a1ad7673135b7828340",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18021": {
+      "fingerprint": "e61033da72b4ef3611335a89bedaf0b46f5febaeb2ebadecbaab0932d0a5e475",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1689111981": {
+      "fingerprint": "86310ef893413d15bb2386df6896b70699e90cb08fe58cf6f3d381bda32d6b5a",
+      "status": "review",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14220": {
+      "fingerprint": "3b6e67e6369633265f4db49513cd32bab9f7d9f75d889c60f6166af89a2bc2c9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1477410660": {
+      "fingerprint": "86fbe0d51e4d5968ed673f904b512d62c3c0f16d6e25f761938bd20aee436428",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:14122": {
+      "fingerprint": "848d31b16ef8e65144306ed9d2b841dbee68cf19ef3821ad88e06faa6a3407be",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1396570909": {
+      "fingerprint": "b3aceb04c41e601d523521d1e801af75058c966ecacbe5293ba819d7a78275d9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15048": {
+      "fingerprint": "26022fcc3f96a4e2b8e6b855ba61b71869aec184ac608df0b55f67b2197fe868",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15012": {
+      "fingerprint": "dbe6ac2ec318a311c890c84f43ade2747a24815c9b68966f004eb5effa40939c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15049": {
+      "fingerprint": "992ec380b37f80315a3dd5df665290160620374e3f760a583b67411d46bc8b7e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1174657316": {
+      "fingerprint": "ac7938cfa98dc07420d9b7b8473cf6abe81e0b861cce95a7a5e6c09630350c5a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1013497056": {
+      "fingerprint": "96da8dc1c9e8c7b0cfbd17a2eba6267263d0f395a825470aac0ed7c547d48296",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03290": {
+      "fingerprint": "aac3614b0496811edf4e1ba965866453e39dee998bf0b43568be4bead59d3e31",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17052": {
+      "fingerprint": "6b705084442c191ae95ab7be48eeb22f202c63bf8e6605ec6d5d2b27b8d2f4fc",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08232": {
+      "fingerprint": "b42c8981969445b786c98e6a2a5b2760b9f25639c795c3093bb90d0a97722743",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:04681": {
+      "fingerprint": "ee54d93fe5d434f19adc8c2cc8db2e701bc6dea19e085a415a842dd72fc71fb3",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08026": {
+      "fingerprint": "52b4ace3fc79d5567dd4d2398f85e1324eca91331af58e9e166f08e991e5fb42",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:04081": {
+      "fingerprint": "39c730de791d06c829248bd34ed503405dcb8c872b9cf191b20f6e41b6a76e1d",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1043342355": {
+      "fingerprint": "5b06f3864e3557d25faeeb697b59ead8f529ce7385091e32bf26b09c6f31c73e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:04021": {
+      "fingerprint": "24b40ff265efa1db36d07fd7d1d664bc3c99378a260f8549bac476a6bad0b343",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03391": {
+      "fingerprint": "e9b1f4cc661226bb493acb2eed898967c2b7c2f60d9cc9b287cbbb55ad07c3cf",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1699769000": {
+      "fingerprint": "8e8488255f1d396bf5d5b929d97d39d86553beaaf4af7c6371713428d4e9c017",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1932408051": {
+      "fingerprint": "58eb30af12f36c410a73fc8ff57d685c55d372485c8df0fb179d3fa9ba975280",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1780465609": {
+      "fingerprint": "6c0b0994df93968a69dbfa2a0c0100fed224481f9be5bd816e1f59cc268f9fb3",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17040": {
+      "fingerprint": "dbe1b207e54b6c7dfa7de38111a16635c9831141101dfc4d3d6c22ace2e79492",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03211": {
+      "fingerprint": "304875edd5ebf4ee82c91c1559189392f8af57eeef772c05ae1c9c97a25f7ab4",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:04272": {
+      "fingerprint": "25319ecbf37d7cbeb6b984669680e9a4be3339528a9116d8cd93a1e9b152955c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1003131087": {
+      "fingerprint": "f4007c74fa20c37764faaff2034df042b87e144c61e6455d003b32fc69ad96a9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03161": {
+      "fingerprint": "67836e65cad0cbfdc303079d93395b145fe9fcd276367671a7ae7b2c0f1ef0fd",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03371": {
+      "fingerprint": "7a420bb98aa49a6be4b68ab7d39dc109300c445b25495b23375b1de6483e89af",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:04040": {
+      "fingerprint": "6a3a294785151e7c2edeb62279b8df540c7640cb0ad4441cd6d89b50b7809467",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:00300": {
+      "fingerprint": "1a261899b8a1c861b09190736d1788a04e90999631a2f83746062527239069ea",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17051": {
+      "fingerprint": "935dbad3027e6f6c7acd41761b08a67db2ad2693ccc7e2f10f73eef5dfa9f7b0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17110": {
+      "fingerprint": "63aba6e7ff48d270522f8706f6d564ed8918889cd8a1be09bb749bb2a19edf45",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03701": {
+      "fingerprint": "e85577f43e003c28bbc695e273be71756e475510726d6fdc700989690caa7443",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17060": {
+      "fingerprint": "2949f5e6a55a54f0279d0c928063a1ecffc41598e3f6e08053bb60a197773748",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17072": {
+      "fingerprint": "954111a396a33b92e4115e21deb7caba3d451a59c5e7f1710631ea11158b690a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08060": {
+      "fingerprint": "74dbb5a13dd4bede7d17c77fb202581adbe7aa2fc1fe15560960f6d8cd0834e6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08061": {
+      "fingerprint": "ea2317e34c7235a17bb929d92232c2dc26af881ae62cc7eb6ae180aa961a052f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15071": {
+      "fingerprint": "e4452646196a128389fdca098b3f5d8eef91fdb353869705b5300e46906e4f19",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1083820435": {
+      "fingerprint": "467f4b21731d9ae8e092aca43ce23170d082e1b8f68cd8d06a3756f3321a1256",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01114": {
+      "fingerprint": "8c175e8dc03f02abd2a751c518b5d987000c9d01f65c5491ffef9051d1906e2a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05074": {
+      "fingerprint": "eb023ff36f4986b9e4c3d1983fabe4953a378d56d49cc6defd3c824085283456",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1467432526": {
+      "fingerprint": "b5cef6e953dd73cc488d4772f06d84549eb7d9cb9e0ad71f23211e1693ea356e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01112": {
+      "fingerprint": "b3119cf379423f4b574c742d8a99cd027d9b62e784ffea9785f2f66bff45c061",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05162": {
+      "fingerprint": "db04983e88737295e2d422f0398f6de4a076b400ad713ee37c5882fdbb40e6c0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03451": {
+      "fingerprint": "7520e16bf29eddd1c5ec63116c050540c686494e622a965fa3973101fa374421",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03452": {
+      "fingerprint": "5e993ffd9cf82dca3f6d29e227fac0456d558bc9260ecdb53047b37381a4fe2a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01115": {
+      "fingerprint": "6116dda20240554ea206c823ea20232be6218317e70a2b03abba87047e97452f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01171": {
+      "fingerprint": "dff5d15d98a7b245f5a91eae839f21e2b73169652d09614f128d39e7436490f7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05073": {
+      "fingerprint": "8bfb9fa479581ced7ca4c1c26f88a26eb2173d0736d93e72c9b4db60df7e91cf",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05017": {
+      "fingerprint": "afc3ba58c467f4ea934c73124bf78395a4fe6ca3a2f401316568bf6a2040e7c6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05019": {
+      "fingerprint": "6c47accc8359f19904eec0eced6fffb68eb22552278d6b674a1bb0d8a01dc355",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1760713911": {
+      "fingerprint": "4e3f4d2d6d45b20a1e58101dbb13fe74f49c501728a21c6bb0880233b8d09346",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01901": {
+      "fingerprint": "c309316eda4181a2de8c4f7226cedfb4e3641d2198533b1e60ba70452cbcf3da",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01024": {
+      "fingerprint": "8d04df6ada5be7216a7e7629a8a2f91d7c757ceaff0ce055cd03e4fc00f093c7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01113": {
+      "fingerprint": "fcc410674c85cbf8faf176873f3b6cb32eda28c78bd56c444291f10f9ea2ec22",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05072": {
+      "fingerprint": "16685d9dbffb3cceaec0e655e6635c940bb31deb496122a76f2c1c6404eccc2a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05010": {
+      "fingerprint": "7bf57d5f80548580958405a964264648ff26c1ec6583a74cdf70c31bf4731ac0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05009": {
+      "fingerprint": "e5dfc62c1d4b0e8018f72eea26a18d2b52d8e2fa1ceef478b338e08a3bcbba04",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1427054345": {
+      "fingerprint": "753e504bee278bd6c3df896860605789486bf8493315a01fd6a96306edcdf354",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05164": {
+      "fingerprint": "cf8bc62d5cc7269646f44b4818e4089f3dccfebeecdc4903feb5f6d13356b789",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1811977432": {
+      "fingerprint": "4e201175c7095c10300398273aa4b45414753a23c30984677609eaf5abf5fa55",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1649474586": {
+      "fingerprint": "b7447fcf7016ef9fe94c3e058b91a0547e0f070898a76637b0e7777b3dd3bf16",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:05161": {
+      "fingerprint": "a87649a9876c9b64a614eedb1e0dcae8131981456ffccaca55df470af6ba09be",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1013305986": {
+      "fingerprint": "e2d3516cdc30893eba13efb9d84b108f6664244af95ba9f4667938557ea8c0e2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1093353245": {
+      "fingerprint": "b009f172a3eaaedb25a856b7c0319fc49aed1a823648a07efbc0af5a51d024a6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1033149851": {
+      "fingerprint": "83daf442182497d087b9ff9a847bbcd78ffbb4b7e53156e028bd5f9a2e5186a7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06150": {
+      "fingerprint": "74dad0252689763a468a83fbe4a6a82964432035a4e19bd01e64e33760f9a200",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06330": {
+      "fingerprint": "ecb98af7f5e4505533fab929ef0879df7634c5f6c964d2da561fdb53fa78a6f5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06310": {
+      "fingerprint": "39f0ce1a6c3e070bab3f7bb2bed5662cc7a5b2851f013b8ddd87311da9666574",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06180": {
+      "fingerprint": "eaf57d1d640bb088d6217f4e1214d2cb3f45e7830ca709b83b3509cd5a1ef215",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1174514913": {
+      "fingerprint": "d6bf28ede1fcc166df6565b2769159c70d2d34dacb6e3e442b22c5354a6c28d0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1669463402": {
+      "fingerprint": "2d235e6ef26965b77b6662875aec5133ce4c35c5804121be73af6101951b9fd7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08431": {
+      "fingerprint": "1f61ff19412cd8c0ee341ba9ed98b0d1262883bb1ad1cfeb1aea21b4e7cf4310",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:08433": {
+      "fingerprint": "b650248ee068431287a30e8a35a807fdddaad261a2d3703794d3458c661c876f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1427195817": {
+      "fingerprint": "3a2c71810035665c7f8d5c40647a9a7ac8813c57fae5667bed8c581629a76582",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1235118464": {
+      "fingerprint": "cd20dee50335288a6f09b939bd4941d91dffc5ef071d9243e04b7d619dbca08f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01123": {
+      "fingerprint": "cfb85cf8160c46ce712cdf7dc5604b90021395a44ba7cdea7e682f79cf1e977c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06230": {
+      "fingerprint": "12efdb725bc3bdb5ff248b12f6e95f03719c8e805929ece2e782385c94a0f7da",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:17102": {
+      "fingerprint": "7d8099823ed33cc43a196a8ebf69a38e834fdc8324ca7e97ad1579c8fac2a3d2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06270": {
+      "fingerprint": "a8b4b3d3496d7ec89525ea7b27de6c6e916381da45f1362b09caa6b577f81eaf",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01051": {
+      "fingerprint": "e21c3f2a1b4817f6537d716261c334159a7d876531805b80d94a4882deb83fae",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1750680450": {
+      "fingerprint": "129b36b09ba79d8a142b1fe8e3a1c2166cefa6ea2d34b5427bf9bdc31f5d38c9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06290": {
+      "fingerprint": "2472f98eb0a41b67fbda5271fda67df93ece696e71c5080367d456cffda8b669",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06350": {
+      "fingerprint": "c2ec31ffe4cba1428595f14eb17a4b6a4c91b9bb2cab519e7b87027f550c27db",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01052": {
+      "fingerprint": "6e29a6fd46e04c826d7abbc3511d16b062f07fa986699e4e731a43acbfa757f9",
+      "status": "review",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:06011": {
+      "fingerprint": "a7bab6de71d155f8238f40ed73f2748a2bc82063ecc961a9449f9b8af8a7258c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:01151": {
+      "fingerprint": "36c783da86284c43d31fbdaab12d9bf7522e84419ac40d78dbe532dfa156b0a3",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1609855840": {
+      "fingerprint": "780e02d032579bf7f10128732d35702ceab904a90b88c219b1f1f5f58521b5d0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:13020": {
+      "fingerprint": "1313010406b74b5ec5d74efdaf0f7d9837adccab9fd2ae8a0ee7e97d20fdb3a0",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18130": {
+      "fingerprint": "6f686f64dd52b3b6ea0e4ae707a3614223ee1fdefef6aec80d7c7041395470b6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03381": {
+      "fingerprint": "444e5c7e2c99d559cb36a247c2ac6fee0e87138ac5e38267c8a7ab193a8cf6c1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03262": {
+      "fingerprint": "79380094aebc866ecc7c14b103b37bb655a32a7f70fa267a48f2f29ab79150af",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:11042": {
+      "fingerprint": "b4dddbb073c6edecaa157f8a1cf02d91b8146e5088cad0fa0b7644d5b1cbd3ef",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1457627986": {
+      "fingerprint": "db50a65c4b1a2dfff75fcd13df1357af0103e0d67943d8f913b22c86da2f031b",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10260": {
+      "fingerprint": "9bf8fa1987a7dbcbe32c47f81e1fb0af3365bd47ca0e0bc349215a6817429101",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18087": {
+      "fingerprint": "8e40a31c56b2e028be24608c7ba986942017c8ff24142bc3be55896b7a6da8c1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10470": {
+      "fingerprint": "c61735710e1334c3ef401bd2e47dc8ee79ee3ea87431130103cfd9d9c2a9423a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18131": {
+      "fingerprint": "3fac62219d148b84b1f6f27a96bf0f9a6151cabc18e0010e48d7d343de9f5686",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:11053": {
+      "fingerprint": "e7e4f4d0ee6938a5d2bb57a8b85d803c9d1abf6b7053806b553f5eebbac749c8",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1144628736": {
+      "fingerprint": "f248a4a32e2ae5649aa237da156c169d892b3c673c1e11f8fa0ceb44a64c5eb6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:11034": {
+      "fingerprint": "a4c57cca32d6ea904daf702d19a925d0373aeb4301c0a7ab249eee947f4b0d56",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:03383": {
+      "fingerprint": "a03e096382246e02af56027eabf062fef702eaa156c3f48c698e7d73dbdfb9a6",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1376748137": {
+      "fingerprint": "e81b3ec014455e8766a26fe55ad7b6ed8188695df90d58d0c49acee85583baa1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1447239686": {
+      "fingerprint": "1e5a88dafd8b064c20b4d00dd4b9181beb6fca4d5ffc005b57589cb8ac4d68db",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:11040": {
+      "fingerprint": "ad9513d9659afe7f1cc0f711d4ab315113d23f48ca0a404ae1a8749907c867fd",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:11019": {
+      "fingerprint": "b97d7ad18baa531d7514c182bec34213dce37983375d0f42b8f5be8a8e288b35",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1598000648": {
+      "fingerprint": "fd7d07df684a8b66ab0ebf57d9461a3ea91095d23872c9e04d2ffc609f94a525",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1083969596": {
+      "fingerprint": "ef88ce2b3d0105fe4d55013b493a5ef5a108d601d8e04b4c8a8f74f77c8a9bc4",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1780242487": {
+      "fingerprint": "40d4fc1df78f2b7991454b84677d4f095258ae598ed2dd150b9e0b182717d896",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15020": {
+      "fingerprint": "fce6b1dbca8f80a573db51f6d0d13d1526182bdcdf3ecb98432dcd8b21aa60ad",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1346640299": {
+      "fingerprint": "5266a8e26b3e405f99e8cde4cedfe19dddbb63c2c46d07fa536c1c4e007ed353",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15021": {
+      "fingerprint": "197b7d525f4a6cf5487506f31913d1d7fdb6ae4bab26e68d92f110a8ee002af1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1720090491": {
+      "fingerprint": "2c891b66b8b77e6c652c46be05a83b44b81109388c0c2b92261b7b7882719699",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15059": {
+      "fingerprint": "ba1da7b447f13a69756c6de55847e4caa58923a6e6086cb31ae53f82d43e289f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:ND003": {
+      "fingerprint": "f77a59bcf8be75782e0c55202867402ad5dfe69f034065c4b36ec05db32301c5",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15040": {
+      "fingerprint": "4bb98b25b127f2c1acbf552dce5600487e31ae299216f5e78126c8b1877e646e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15045": {
+      "fingerprint": "3939246b587f6ea112787269076e2a4f58cc57baf57809cfdf02aee34c652953",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:15025": {
+      "fingerprint": "0b30a5dc8d97a78838f08b3cc3b848fff05e995adc3b6956c0d6772df5089768",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1306070024": {
+      "fingerprint": "46ac6174216f2d2c5d62c09659179880b6116b1431b4b81b94a6ca1a76ad101c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10160": {
+      "fingerprint": "be2d4c63b9f3e6339fba070694f6d30dfe36627c6141dade977c182b6a820b8c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1891385514": {
+      "fingerprint": "60531fad8e3694c4291cf781a52e60cf1175e253c27216a0b508f34ca39314cd",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1295715357": {
+      "fingerprint": "7534c88d47f341b0c50fa31c23d4f85da47c368ab7d6be3b56560312a8c6cd40",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12042": {
+      "fingerprint": "24ee9b59df8aa8caa60fde37dea895a2844adf6a6079bab598f8f87116241a84",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1568852507": {
+      "fingerprint": "4ebd587edcd58b81c8aedc3a029a01f87a6472a280a0383a6480033a16a11480",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1295962819": {
+      "fingerprint": "48e1371aa4d05cff0c5fb1ff955be98aec896d3dbc946a64a186fc36ce50e1f1",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1518362508": {
+      "fingerprint": "c13857662a6f1329720f60c398de7e116602c193e6281538dd135ebbf42554d2",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1609144484": {
+      "fingerprint": "7098de9028cb7648de5f28b976bdafa410c3535ac35b43876c5bcb520cdbc459",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1568531770": {
+      "fingerprint": "f9bb3c2d9421f398540bd2d1d1a510768ea0900145c2b383ac36be54cbf9bafd",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10120": {
+      "fingerprint": "90a2fa4fba670599a8346d7e688aabe5a9ae706bcaba64ca5ccbd70c3f98d89a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1730182627": {
+      "fingerprint": "c166e42afb56448f49e68b55bf56296e242fa4230ad2108374bb97c0b836d5c9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1275703548": {
+      "fingerprint": "c4db912114ca926f7ea678006d1b648e358380cc7de5bb94805b30c7fe9d6e4c",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18102": {
+      "fingerprint": "9420af084ec3909e40348565dda4c8c0e11d4dd347c0b297af8dfe5620390362",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10150": {
+      "fingerprint": "9dac433ecffb2badc22413b547d3a6be9d71ce3c134eb9609ce18c60ba4b486a",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1619027984": {
+      "fingerprint": "62d083a25b9d44db88f234f1277ce8eb678d3eaf23f602309d4de3aab9492c30",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1346229572": {
+      "fingerprint": "8f995ec5bf8f9ad10fd91e7683df369dc0088ec02fea882d4341bf8c4e0fdb53",
+      "status": "ambiguous",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1720068885": {
+      "fingerprint": "e971dd4c18eb3382cf49e195d13596263cf626a117bc0b94b7ddddd806899ee9",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1467827972": {
+      "fingerprint": "c5794ae3c9140e3876cec83e6c02ada02013f42ab7a98b2c25ba39f3dc757d19",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12409": {
+      "fingerprint": "6014e6b03871bad634fd008dde6929841bde9d6058b87225acf534dfd0250cdf",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1689660797": {
+      "fingerprint": "bb822dc9da3ee3f4dc599e17702e7a57af9f8fadadb5a0e7508a4ea8ad6220ba",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1326175191": {
+      "fingerprint": "9cdfeb38e702c5d91246eca2733ed682326c2f63c5bdf1671716533913631936",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12725": {
+      "fingerprint": "d7689b21dca8946bbe3785cfecf80e2fa620183b39cb14e56e05bad521369fad",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18083": {
+      "fingerprint": "2b3240ceea2a3da9e32bae4487be6885492a363aa6a0d4a996777571fa4cdb5e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18080": {
+      "fingerprint": "da359979852b0d8e35f6830e01985ebbb4a6166bb2ed69c52dbf35a28c06c717",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:18051": {
+      "fingerprint": "2b30e9a2450505cb267b47dbfe2ab14322ab93409982624c1dcc0e9eb019d45f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1013999085": {
+      "fingerprint": "a85984d1566a5b151ccc0b3a09fe1d9f785270a7f1718efc25fe3b5d99e4b0ec",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12200": {
+      "fingerprint": "188d0a8141751b57f9e90b20808e32a019bdd5f24e95a3a5b3fc8d96af8c494f",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:21072": {
+      "fingerprint": "b60f7f66c0e606b4dc8c13b82229a91f33058340fc734e72bf2cb3e325031e0e",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:10310": {
+      "fingerprint": "ef2dd2e60dd77fc310ad95fe280f2a1cb72de94beb033af8e2d39690246ba445",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "NPI:1366791618": {
+      "fingerprint": "7fc53eba3c0ce69af27af689f013411c3c155103dfbb242dab056ba83273ceb7",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    },
+    "FDID:NJ:12015": {
+      "fingerprint": "346d7cad663fd5947752c0131a43a7276b8cba504cf461f11212522fcb22de51",
+      "status": "no-match",
+      "checkedAt": "2026-11-25"
+    }
+  },
+  "locationManifestSha256": "a471cbfe9d8bdd817b7b2f2bdb56d23a33b6bf97d95e6b3795797a44186c5f9c",
+  "publication": "review-only",
+  "acquisitionStatus": "completed",
+  "counts": {
+    "unsupported": 11,
+    "no-match": 244,
+    "ambiguous": 7,
+    "review": 2,
+    "requests": 31,
+    "metadata": {
+      "serviceItemId": "5051f228c9074aa7b4116f835893c9fa",
+      "name": "Addr_addressPoint",
+      "copyrightText": "-NJ Office of Information Technology, Office of GIS (NJOGIS); \n-Monmouth County Sheriff's Office; \n-Morris County Department of Information Technology-Geographic Information Systems Section (MCGIS); \n-Sussex County; \n-Montgomery Township Engineering Department",
+      "fields": [
+        [
+          "OBJECTID",
+          "esriFieldTypeOID"
+        ],
+        [
+          "ADD_NUMBER",
+          "esriFieldTypeInteger"
+        ],
+        [
+          "FULLADDR",
+          "esriFieldTypeString"
+        ],
+        [
+          "POST_CODE",
+          "esriFieldTypeString"
+        ],
+        [
+          "POST_COMM",
+          "esriFieldTypeString"
+        ],
+        [
+          "STATE",
+          "esriFieldTypeString"
+        ],
+        [
+          "COUNTY",
+          "esriFieldTypeString"
+        ],
+        [
+          "COUNTRY",
+          "esriFieldTypeString"
+        ],
+        [
+          "SUBTYPE",
+          "esriFieldTypeInteger"
+        ],
+        [
+          "PRIMARYPT",
+          "esriFieldTypeString"
+        ],
+        [
+          "STATUS",
+          "esriFieldTypeString"
+        ],
+        [
+          "BUILDING",
+          "esriFieldTypeString"
+        ],
+        [
+          "FLOOR",
+          "esriFieldTypeString"
+        ],
+        [
+          "UNIT",
+          "esriFieldTypeString"
+        ],
+        [
+          "ROOM",
+          "esriFieldTypeString"
+        ],
+        [
+          "SEAT",
+          "esriFieldTypeString"
+        ],
+        [
+          "PLACEMENT",
+          "esriFieldTypeString"
+        ],
+        [
+          "DATEUPDATE",
+          "esriFieldTypeDate"
+        ],
+        [
+          "EFFECTIVE",
+          "esriFieldTypeDate"
+        ],
+        [
+          "EXPIRE",
+          "esriFieldTypeDate"
+        ]
+      ],
+      "lastEditDate": 1790182499875,
+      "zipCodes": [],
+      "countyDomain": {
+        "882270": "Atlantic County",
+        "882271": "Bergen County",
+        "882272": "Burlington County",
+        "882273": "Camden County",
+        "882274": "Cape May County",
+        "882275": "Cumberland County",
+        "882276": "Essex County",
+        "882277": "Gloucester County",
+        "882278": "Hudson County",
+        "882228": "Hunterdon County",
+        "882229": "Mercer County",
+        "882230": "Middlesex County",
+        "882910": "Monmouth County",
+        "882231": "Morris County",
+        "882279": "Ocean County",
+        "882232": "Passaic County",
+        "882233": "Salem County",
+        "882234": "Somerset County",
+        "882236": "Sussex County",
+        "882235": "Union County",
+        "882237": "Warren County"
+      }
+    }
+  },
+  "candidateKeys": [],
+  "reviewKeys": [
+    "FDID:NJ:01052",
+    "FDID:NJ:13040",
+    "FDID:NJ:13060",
+    "FDID:NJ:13070",
+    "FDID:NJ:13130",
+    "NPI:1144801036",
+    "NPI:1326498643",
+    "NPI:1346229572",
+    "NPI:1689111981"
+  ],
+  "candidates": []
+}

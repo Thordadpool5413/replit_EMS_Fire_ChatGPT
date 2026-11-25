@@ -3,7 +3,7 @@ import {and,desc,eq,isNull} from 'drizzle-orm';
 import {db,agencyRecordsTable,agencyAuthorityTable as observations} from '@workspace/db';
 import {requireAgencyWorkspace,agencyWorkspaceRole} from '../middlewares/agencyWorkspaceAccess';
 import {object,parseDecision,uuid} from '../lib/facilityEquipment';
-import {authorityIdentity,parseAuthority} from '../lib/agencyAuthority';
+import {authorityIdentity,parseAuthority,summarizeAuthorityCoverage} from '../lib/agencyAuthority';
 const router:IRouter=Router(),path='/agencies/:agencyId/authority';
 const valid=(v:unknown):v is string=>typeof v==='string'&&!!v.trim()&&v.length<=300;
 const canonical=(v:unknown)=>JSON.stringify(Object.entries(object(v)).sort(([a],[b])=>a.localeCompare(b)));
@@ -14,9 +14,8 @@ router.get([path,path+'-coverage'],requireAgencyWorkspace,async(req,res)=>{
   const identity=a&&authorityIdentity(a.payload);if(!identity){res.status(404).json({error:'Save a non-modeled account before recording authority.'});return;}
   if(req.path.endsWith('-coverage')){
    const rows=await db.select().from(observations).where(and(eq(observations.agencyId,id),eq(observations.identityKey,identity))).limit(101);
-   const today=new Date().toISOString().slice(0,10);
-   const accepted=rows.filter(r=>{const o=parseAuthority(r.observation,today);return !!o&&r.decision==='accepted'&&!!r.reviewerUid&&r.reviewerUid!==r.authorUid&&!!r.reviewNote&&!!r.reviewedAt&&Date.parse(today)-Date.parse(o.observedOn)<=365*86400000;});
-   res.json({agencyId:id,name:a.payload.name,stateCode:a.stateCode,complete:rows.length<=100,recentReviewed:rows.length<=100?accepted.length:0,roles:rows.length<=100?[...new Set(accepted.flatMap(r=>{const o=parseAuthority(r.observation,today);return o?[o.role]:[];}))].sort():[],checkedAt:new Date().toISOString()});return;
+   const coverage=summarizeAuthorityCoverage(rows);
+   res.json({agencyId:id,name:a.payload.name,stateCode:a.stateCode,...coverage,checkedAt:new Date().toISOString()});return;
   }
   const rows=await db.select().from(observations).where(eq(observations.agencyId,id)).orderBy(desc(observations.createdAt),desc(observations.submissionId)).limit(101);
   const uid=req.isAuthenticated()?req.user.id:'',editor=agencyWorkspaceRole(uid)==='editor';

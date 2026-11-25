@@ -245,7 +245,7 @@ function ensureCompleteAgencyData(raw: Agency): Agency {
           email: c.email || '',
           phone: c.phone || '',
           officialWebsite: c.officialWebsite || '',
-          headquartersAddress: c.headquartersAddress || raw.address,
+          headquartersAddress: c.headquartersAddress || '',
           isVerifiedOfficial: Boolean(
             c.isVerifiedOfficial &&
             hasAgencyFactEvidence(raw, 'agencyLeadership') &&

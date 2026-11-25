@@ -1,0 +1,33 @@
+name: Source-specific recovery checkpoints
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/recover_regional_locations.py'
+      - 'scripts/data/recovery_checkpoint.py'
+      - 'scripts/data/run_recovery_checkpoint.py'
+      - 'scripts/data/test_recovery_checkpoint.py'
+      - '.github/workflows/recovery-checkpoints.yml'
+  push:
+    branches: [atlas/phase9-0b-recovery-checkpoints]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/run_recovery_checkpoint.py --source nc-addressnc --max-requests 120 --output generated-artifacts/recovery-checkpoint
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nc-recovery-checkpoint
+          path: generated-artifacts/recovery-checkpoint/
+          if-no-files-found: error

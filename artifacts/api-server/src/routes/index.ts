@@ -7,6 +7,7 @@ import territoryRouter from "./territory";
 import nriCountyContextRouter from "./nri-county-context";
 import agencyRecordsRouter from "./agency-records";
 import facilityNotesRouter from "./facility-notes";
+import facilityEquipmentRouter from "./facility-equipment";
 import sharedEvidenceRouter from "./shared-evidence";
 import authRouter from "./auth";
 
@@ -19,6 +20,7 @@ router.use(emsRegistryRouter);
 router.use(territoryRouter);
 router.use(nriCountyContextRouter);
 router.use(facilityNotesRouter);
+router.use(facilityEquipmentRouter);
 router.use(agencyRecordsRouter);
 router.use(sharedEvidenceRouter);
 router.use(authRouter);

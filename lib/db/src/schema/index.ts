@@ -143,3 +143,23 @@ export const facilityNotesTable = pgTable("facility_notes", {
   primaryKey({ columns: [t.agencyId, t.parentId, t.stationId, t.submissionId] }),
   index("facility_notes_lookup_idx").on(t.agencyId, t.parentId, t.stationId, t.createdAt),
 ]);
+
+
+/** Dated station equipment observations; a separate reviewer may make one terminal decision. */
+export const facilityEquipmentTable = pgTable("facility_equipment_observations", {
+  agencyId: text("agency_id").notNull().references(() => agencyRecordsTable.id),
+  parentId: text("parent_id").notNull(),
+  stationId: text("station_id").notNull(),
+  submissionId: text("submission_id").notNull(),
+  observation: jsonb("observation").$type<JsonRecord>().notNull(),
+  sourceSnapshot: jsonb("source_snapshot").$type<JsonRecord>().notNull(),
+  authorUid: text("author_uid").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  decision: text("decision"),
+  reviewNote: text("review_note"),
+  reviewerUid: text("reviewer_uid"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+}, (t) => [
+  primaryKey({ columns: [t.agencyId,t.parentId,t.stationId,t.submissionId] }),
+  index("facility_equipment_lookup_idx").on(t.agencyId,t.parentId,t.stationId,t.createdAt),
+]);

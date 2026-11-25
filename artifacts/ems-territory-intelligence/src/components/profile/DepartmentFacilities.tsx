@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import {MapPin,ExternalLink} from 'lucide-react';
 import type {Agency} from '../../types';
 import {FacilityFieldNotes} from './FacilityFieldNotes';
+import {FacilityEquipment} from './FacilityEquipment';
 import {FacilitySourceMap} from './FacilitySourceMap';
 import {facilityParents,facilityDirections,type FacilityParent,type FacilityResult} from '../../services/departmentFacilities';
 function SourceFacilities({parent,agencyId}:{parent:FacilityParent;agencyId:string}){
@@ -36,7 +37,7 @@ function SourceFacilities({parent,agencyId}:{parent:FacilityParent;agencyId:stri
        <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 underline"><ExternalLink className="h-3 w-3"/>Source</a>
        {link&&<a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 underline"><MapPin className="h-3 w-3"/>Open address</a>}
       </div>
-      {f.source==='NERIS'&&f.sourceRecordId&&<FacilityFieldNotes agencyId={agencyId} parentId={parent.identifier} stationId={f.sourceRecordId}/>}
+      {f.source==='NERIS'&&f.sourceRecordId&&<><FacilityFieldNotes agencyId={agencyId} parentId={parent.identifier} stationId={f.sourceRecordId}/><FacilityEquipment agencyId={agencyId} parentId={parent.identifier} stationId={f.sourceRecordId}/></>}
      </li>;
     })}</ul>
    </>}

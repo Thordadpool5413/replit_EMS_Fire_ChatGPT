@@ -248,3 +248,6 @@ jobs:
 
       - name: Verify private station observations
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-notes.integration.test.ts
+
+      - name: Verify station equipment evidence and independent review
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-equipment.integration.test.ts

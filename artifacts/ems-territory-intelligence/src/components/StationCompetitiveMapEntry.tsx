@@ -4,6 +4,7 @@ import type {Agency} from '../types';
 import {facilityParents} from '../services/departmentFacilities';
 import {classifyStationSample,STATION_STYLES,type StationSample} from '../services/stationCompetitiveMap';
 import {FacilitySourceMap} from './profile/FacilitySourceMap';
+import {StationOpportunityQueue} from './StationOpportunityQueue';
 const control='block w-full min-w-0 rounded border bg-transparent p-2 text-base';
 const LIMIT=5;
 export function StationCompetitiveMapEntry({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){
@@ -72,6 +73,7 @@ function StationCompetitiveMap({agencies,onOpenAgency}:{agencies:Agency[];onOpen
     <div className="grid grid-cols-2 gap-2">{Object.entries(STATION_STYLES).map(([k,v])=><div key={k} className="border rounded p-2"><span style={{color:v.color}}>{v.label}</span><p className="font-semibold tabular-nums">{result.counts[k as keyof typeof result.counts]}</p></div>)}</div>
     <p>{result.mixedDepartments} sampled parent departments have both types of reviewed observations across their sampled stations. Older evidence is excluded by the age filter. Unknown does not mean absent.</p>
     <FacilitySourceMap facilities={facilities} styles={styles}/>
+    <StationOpportunityQueue key={current.started+":"+current.scope} agencies={agencies} samples={current.rows} family={family} days={days} started={current.started} onOpenAgency={onOpenAgency}/>
     <p>{visible.filter(r=>!r.facility.coordinates).length} visible stations have no source coordinates. Actual station state is shown below; county is not inferred from department headquarters.</p>
     <ul className="divide-y">{visible.map(r=><li className="py-2 break-words" key={r.facility.sourceRecordId}><p className="font-semibold">{r.facility.name??'Station name not reported'} · {r.facility.stateCode}</p><p>{STATION_STYLES[r.presence].label} · {r.observations} dated observations · {r.older} older excluded{r.latest?' · latest '+r.latest:''}</p><p className="text-xs">Station {r.facility.sourceRecordId} · End-user validation required</p><button type="button" className="workspace-button min-h-11" onClick={()=>{const a=chosen.find(c=>c.agency.id===r.agencyId);if(a)onOpenAgency(a.agency);}}>Open parent profile</button></li>)}</ul>
    </>}

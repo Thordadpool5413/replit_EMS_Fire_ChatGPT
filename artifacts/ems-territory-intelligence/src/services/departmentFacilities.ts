@@ -1,6 +1,6 @@
 import type {Agency} from '../types';
 import {parseRegistryStreet,isPhysicalStreet,addressText} from './providerLocationContract';
-import {canCreateRegistryAccount,registryIdentityKey} from './registryAccountLink';
+import {canCreateRegistryAccount,registryIdentityKey,confirmedRegistryKey} from './registryAccountLink';
 export type FacilityParent={source:'USFA NFDR'|'NERIS';stateCode:string;identifier:string};
 export type Facility={source:FacilityParent['source'];sourceRecordId:string|null;name:string|null;address:string|null;city:string|null;stateCode:string;postalCode:string|null;coordinates:{latitude:number;longitude:number}|null;sourceUrl:string;exportDate:string|null;endUserValidationRequired:true};
 export type FacilityResult={parent:FacilityParent;facilities:Facility[];withheld:number;reportedStationCount:number|null;retrievedAt:string;warning:string|null};
@@ -12,21 +12,22 @@ export function facilityParents(agency:Agency):FacilityParent[]{
   if(source==='NERIS'&&!/^[-A-Z0-9]{1,14}$/.test(id))return;
   if(!out.some(p=>p.source===source&&p.identifier===id))out.push({source,stateCode,identifier:id});
  };
+ const blocked=new Set<FacilityParent['source']>();
  const direct=agency.registryIdentity;
- if(direct&&canCreateRegistryAccount(direct)&&registryIdentityKey(direct)&&(direct.sourceName==='USFA NFDR'||direct.sourceName==='NERIS'))add(direct.sourceName,direct.identifier,direct.stateCode);
+ if(direct&&(direct.sourceName==='USFA NFDR'||direct.sourceName==='NERIS')){
+  if(canCreateRegistryAccount(direct)&&registryIdentityKey(direct)&&direct.stateCode===agency.stateCode)add(direct.sourceName,direct.identifier,direct.stateCode);
+  else blocked.add(direct.sourceName);
+ }
  for(const s of agency.sourceRecordAssociations??[]){
   if(s.decision!=='confirmed'||(s.sourceName!=='USFA NFDR'&&s.sourceName!=='NERIS'))continue;
-  const fields=s.sourceFields;
-  if(!fields||fields.stateCode!==agency.stateCode)continue;
-  try{
-   const url=new URL(s.sourceUrl);
-   if(url.protocol!=='https:'||url.username||url.password||!(s.sourceName==='NERIS'?['services5.arcgis.com','www.usfa.fema.gov']:['apps.usfa.fema.gov']).includes(url.hostname))continue;
-   if(s.sourceName==='NERIS'&&fields.nerisId===s.sourceRecordId)add(s.sourceName,s.sourceRecordId,agency.stateCode);
-   if(s.sourceName==='USFA NFDR'&&typeof fields.fdid==='string'&&s.sourceRecordId===agency.stateCode+':'+fields.fdid)add(s.sourceName,fields.fdid,agency.stateCode);
-  }catch{continue;}
+  const key=confirmedRegistryKey(s,agency.stateCode);
+  if(!key){blocked.add(s.sourceName);continue;}
+  const prefix=s.sourceName==='NERIS'?'NERIS:':'FDID:'+agency.stateCode+':';
+  if(!key.startsWith(prefix)){blocked.add(s.sourceName);continue;}
+  add(s.sourceName,key.slice(prefix.length),agency.stateCode);
  }
- // Multiple IDs in one source are a relationship conflict, not a union of stations.
- return out.filter(p=>out.filter(other=>other.source===p.source).length===1);
+ // Do not silently fall back to a valid parent when a confirmed claim in its source is malformed.
+ return out.filter(p=>!blocked.has(p.source)&&out.filter(other=>other.source===p.source).length===1);
 }
 export function facilityDirections(f:Facility):string|undefined{
  const a=parseRegistryStreet(f.address,f.city,f.stateCode,f.postalCode);

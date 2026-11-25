@@ -33,3 +33,14 @@ test('facility coverage preserves cross-state rows and withholds ambiguous paylo
  assert.equal(facilityDirections({...f,address:'123 Private Mailbox 4'}),undefined);
  assert.equal(facilityDirections({...f,address:'123 Main St, Other, GA 30001'}),undefined);
 });
+
+test('malformed confirmed department association cannot authorize or silently fall back to station lookup',()=>{
+ const base={stateCode:'FL',name:'Fixture',registryIdentity:{sourceName:'NERIS',identifier:'FDTEST123',stateCode:'FL',name:'Fixture',sourceUrl:'https://www.usfa.fema.gov/neris/public/',retrievedAt:'2026-11-25'}} as Agency;
+ const claim={id:'neris:FDTEST123',sourceName:'NERIS',sourceRecordId:'FDTEST123',decision:'confirmed',sourceFields:{stateCode:'FL',nerisId:'FDTEST123'},matchBasis:'Fixture review',decidedAt:'2026-11-25',sourceUrl:'https://www.usfa.fema.gov/neris/public/'} as NonNullable<Agency['sourceRecordAssociations']>[number];
+ assert.equal(facilityParents({...base,registryIdentity:undefined,sourceRecordAssociations:[claim]}).length,1);
+ for(const bad of [{...claim,matchBasis:''},{...claim,decidedAt:'invalid'},{...claim,sourceUrl:'https://www.usfa.fema.gov:444/neris/public/'},{...claim,sourceFields:{stateCode:'GA',nerisId:'FDTEST123'}}]){
+  assert.deepEqual(facilityParents({...base,registryIdentity:undefined,sourceRecordAssociations:[bad]}),[]);
+  assert.deepEqual(facilityParents({...base,sourceRecordAssociations:[bad]}),[]);
+ }
+ assert.equal(facilityParents({...base,sourceRecordAssociations:[{...claim,decision:'rejected'}]}).length,1);
+});

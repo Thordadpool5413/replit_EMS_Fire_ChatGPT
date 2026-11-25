@@ -128,3 +128,18 @@ export const sharedEvidenceDecisionsTable = pgTable(
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.agencyKey, table.factId, table.action] })],
 );
+
+/** Append-only private field observations; never replace public facility evidence. */
+export const facilityNotesTable = pgTable("facility_notes", {
+  agencyId: text("agency_id").notNull().references(() => agencyRecordsTable.id),
+  parentId: text("parent_id").notNull(),
+  stationId: text("station_id").notNull(),
+  submissionId: text("submission_id").notNull(),
+  note: text("note").notNull(),
+  authorUid: text("author_uid").notNull(),
+  sourceSnapshot: jsonb("source_snapshot").$type<JsonRecord>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.agencyId, t.parentId, t.stationId, t.submissionId] }),
+  index("facility_notes_lookup_idx").on(t.agencyId, t.parentId, t.stationId, t.createdAt),
+]);

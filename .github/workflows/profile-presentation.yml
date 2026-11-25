@@ -245,3 +245,6 @@ jobs:
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/shared-evidence.integration.test.ts
       - name: Verify saved agency access and revision protection
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-records.integration.test.ts
+
+      - name: Verify private station observations
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-notes.integration.test.ts

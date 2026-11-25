@@ -6,7 +6,6 @@ on:
       - 'scripts/check-profile-*.mjs'
       - 'scripts/check-mobile-*.mjs'
       - 'scripts/check-national-registry-integrity.mjs'
-      - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
       - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
@@ -42,7 +41,14 @@ on:
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
       - '.github/workflows/atlas-recurring-discovery.yml'
       - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
-      - 'artifacts/api-server/src/routes/index.ts'
+      - 'artifacts/api-server/src/**'
+      - 'artifacts/api-server/package.json'
+      - 'lib/db/**'
+      - 'lib/replit-auth-web/**'
+      - 'scripts/src/replitImportFormat.ts'
+      - 'scripts/src/import-replit-records*.ts'
+      - 'scripts/package.json'
+      - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
@@ -53,7 +59,6 @@ on:
       - 'scripts/check-profile-*.mjs'
       - 'scripts/check-mobile-*.mjs'
       - 'scripts/check-national-registry-integrity.mjs'
-      - 'scripts/audit-production-providers*.mjs'
       - 'artifacts/api-server/src/lib/fireRegistry.ts'
       - 'artifacts/api-server/src/routes/fire-registry.ts'
       - 'artifacts/api-server/src/lib/publicIntelligenceDiscovery*'
@@ -89,7 +94,14 @@ on:
       - 'artifacts/api-server/src/lib/recurringDiscovery*'
       - '.github/workflows/atlas-recurring-discovery.yml'
       - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
-      - 'artifacts/api-server/src/routes/index.ts'
+      - 'artifacts/api-server/src/**'
+      - 'artifacts/api-server/package.json'
+      - 'lib/db/**'
+      - 'lib/replit-auth-web/**'
+      - 'scripts/src/replitImportFormat.ts'
+      - 'scripts/src/import-replit-records*.ts'
+      - 'scripts/package.json'
+      - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
@@ -123,7 +135,7 @@ jobs:
       - run: node scripts/check-national-registry-integrity.mjs
       - run: node scripts/check-ems-source-coverage.mjs
       - run: node --test scripts/refresh-ohio-state-ems.test.mjs
-      - run: node --test scripts/audit-production-providers.test.mjs
+      - run: pnpm --filter @workspace/scripts run test:replit-migration
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Verify bundled public location snapshot if present
         run: |
@@ -175,23 +187,34 @@ jobs:
     timeout-minutes: 12
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: atlas_ci
+          POSTGRES_PASSWORD: atlas_ci_local_only
+          POSTGRES_DB: atlas_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atlas_ci -d atlas_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://atlas_ci:atlas_ci_local_only@127.0.0.1:5432/atlas_ci
+      ATLAS_EVIDENCE_CI: '1'
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - name: Run isolated Firestore rule tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          TEST_DIR=$(mktemp -d)
-          cp security/atlas-evidence.firestore.rules security/atlas-evidence.rules.test.mjs "$TEST_DIR/"
-          cp security/atlas-evidence.emulator.json "$TEST_DIR/firebase.json"
-          cd "$TEST_DIR"
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund --save-exact firebase@13.0.0 @firebase/rules-unit-testing@6.0.0 firebase-tools@15.36.0
-          CI=true ./node_modules/.bin/firebase emulators:exec --only firestore --project demo-atlas-evidence --config firebase.json 'node --test atlas-evidence.rules.test.mjs'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Provision disposable test schema
+        run: pnpm --filter @workspace/db run push-force
+      - name: Verify Replit evidence authorization and immutability
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/shared-evidence.integration.test.ts

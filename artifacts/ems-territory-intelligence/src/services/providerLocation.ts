@@ -1,5 +1,5 @@
 import type {Agency} from '../types';
-import {canCreateRegistryAccount,registryIdentityKey,type RegistryIdentity} from './registryAccountLink';
+import {canCreateRegistryAccount,registryIdentityKey,registryClaimIndex,type RegistryIdentity} from './registryAccountLink';
 import {loadSourceDirectoryState} from './nationalSourceDirectory';
 import {snapshotRegistryIdentity} from './registryAccountLink';
 import {loadFloridaRoster,floridaRegistryIdentity} from './floridaEmsRoster';
@@ -7,6 +7,8 @@ import {isGeographicProspect} from '../utils/providerRecordTrust';
 import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,addressText,isPhysicalStreet,compatibleSourceAddress,parseRegistryStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {useSyncExternalStore} from 'react';
 import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,snapshotSourceUrl} from './nationalLocationSnapshot';
+
+import {virginiaAddressReviewCandidate} from './virginiaAddressReview';
 
 export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'};
 const norm=(s:unknown)=>typeof s==='string'?s.normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim():'';
@@ -126,6 +128,21 @@ export function mappedProviderLocation(a:Agency,directory:Agency[]){
  if(e?.match){if((e.sourceCounty&&e.sourceCounty!==e.countyFips)||(a.countyFips&&a.countyFips!==e.countyFips))return undefined;return e.match;}
  const c=lookup(a,directory),loc=displayedProviderLocation(a,directory);
  return c?.match&&loc&&addressKey(loc.address)===addressKey(c.location.address)?c.match:undefined;
+}
+/** Review-only source point; never used by mappedProviderLocation or locationOverlay. */
+export function providerAddressReview(a:Agency,directory:Agency[]){
+ if(a.stateCode!=='VA'||flagged(a)||mappedProviderLocation(a,directory))return;
+ const id=a.registryIdentity;
+ if(!id||!canCreateRegistryAccount(id)||id.stateCode!==a.stateCode)return;
+ const key=registryIdentityKey(id),e=snapshotFor(a,directory),loc=displayedProviderLocation(a,directory);
+ if(!key||e?.key!==key||loc?.identityKey!==key||norm(a.name)!==norm(e.name))return;
+ const candidate=virginiaAddressReviewCandidate(e,loadedLocationState('VA')?.generatedAt,loc.address,a.countyFips);
+ if(!candidate)return;
+ const owners=directory.filter(row=>row.id===a.id);
+ if(owners.length!==1||registryIdentityKey(owners[0].registryIdentity??{} as RegistryIdentity)!==key)return;
+ const claims=registryClaimIndex(directory),own=claims.byAccount.get(owners[0]);
+ if(!own||own.invalid.length||own.conflicts.length||own.keys.some(k=>claims.counts.get(k)!==1))return;
+ return candidate;
 }
 export function locationStatus(a:Agency,directory:Agency[]):string{
  const pin=mappedProviderLocation(a,directory);

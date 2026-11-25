@@ -16,7 +16,7 @@ router.get([path,path+'-coverage'],requireAgencyWorkspace,async(req,res)=>{
    const rows=await db.select().from(observations).where(and(eq(observations.agencyId,id),eq(observations.identityKey,identity))).limit(101);
    const today=new Date().toISOString().slice(0,10);
    const accepted=rows.filter(r=>{const o=parseAuthority(r.observation,today);return !!o&&r.decision==='accepted'&&!!r.reviewerUid&&r.reviewerUid!==r.authorUid&&!!r.reviewNote&&!!r.reviewedAt&&Date.parse(today)-Date.parse(o.observedOn)<=365*86400000;});
-   res.json({agencyId:id,name:a.payload.name,stateCode:a.stateCode,complete:rows.length<=100,recentReviewed:rows.length<=100?accepted.length:0,checkedAt:new Date().toISOString()});return;
+   res.json({agencyId:id,name:a.payload.name,stateCode:a.stateCode,complete:rows.length<=100,recentReviewed:rows.length<=100?accepted.length:0,roles:rows.length<=100?[...new Set(accepted.flatMap(r=>{const o=parseAuthority(r.observation,today);return o?[o.role]:[];}))].sort():[],checkedAt:new Date().toISOString()});return;
   }
   const rows=await db.select().from(observations).where(eq(observations.agencyId,id)).orderBy(desc(observations.createdAt),desc(observations.submissionId)).limit(101);
   const uid=req.isAuthenticated()?req.user.id:'',editor=agencyWorkspaceRole(uid)==='editor';

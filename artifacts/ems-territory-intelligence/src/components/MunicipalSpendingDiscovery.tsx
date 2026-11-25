@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {ExternalLink,Landmark} from 'lucide-react';
 import {MUNICIPAL_SOURCE,MUNICIPAL_TOPICS,MUNICIPAL_DOCS,MUNICIPAL_PORTAL,municipalDeadline,type MunicipalQuery,type MunicipalPage,type MunicipalTopic,type MunicipalNoticeKind} from '../services/municipalDiscoveryContract';
 import {loadMunicipalDiscovery} from '../services/municipalSpendingDiscovery';
+import {LocalProcurementResearch} from './LocalProcurementResearch';
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const kinds:Record<MunicipalNoticeKind,string>={solicitation:'Published solicitation',award:'Published award', 'intent-to-award':'Intent to award (not final)',other:'Other procurement notice'};
 const deadlines={'not-applicable':'Not a solicitation','not-stated':'Deadline not supplied',elapsed:'Published deadline date passed',today:'Published deadline today — verify time', 'future-unconfirmed':'Future published deadline — status unconfirmed'};
@@ -58,5 +59,6 @@ export function MunicipalSpendingDiscovery(){
    {result.scopeCapped&&<p className="text-sm">500-row browsing cap reached. Narrow the publication window or topic.</p>}
   </>}
   <p className="text-xs"><a className="underline" href={MUNICIPAL_PORTAL} target="_blank" rel="noreferrer">Official City Record portal</a> · No automatic account association, opportunity approval, alerts or database writes. Other municipal jurisdictions, budgets and contracts require separate connectors.</p>
+  <LocalProcurementResearch/>
  </section>;
 }

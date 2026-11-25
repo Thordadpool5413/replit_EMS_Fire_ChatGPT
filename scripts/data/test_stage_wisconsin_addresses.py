@@ -17,12 +17,16 @@ class WisconsinTest(unittest.TestCase):
         for field,value in [('County','Other'),('Placement','Geocoding'),('Unit_Value','7'),('Unit_PreType','Suite'),('Exception','review'),('FullStNm','OTHER ST')]:
             bad={**row,'attributes':{**a,field:value}}
             self.assertIsNone(review(e,features({**payload,'features':[bad]},names),counties,'2026-11-25')[0])
+        for field,value,reason in [('County','Other','county_not_unique'),('Placement','Geocoding','placement_not_allowlisted'),('Unit_Value','7','subaddress_or_exception')]:
+            detail={};bad={**row,'attributes':{**a,field:value}};hit,status=review(e,features({**payload,'features':[bad]},names),counties,'2026-11-25',detail)
+            self.assertIsNone(hit);self.assertIn(reason,detail['reasons']);self.assertEqual(detail['exactObjectIds'],[1]);self.assertEqual(detail['status'],status)
+        detail={};review(e,[],counties,'2026-11-25',detail);self.assertEqual(detail['reasons'],['no_exact_address'])
         with self.assertRaises(ValueError):layer_url({**item,'url':'https://example.com/FeatureServer'})
         with self.assertRaises(ValueError):schema({**layer,'serviceItemId':'other'})
         with self.assertRaises(ValueError):features({**payload,'features':[row,row]},names)
         with tempfile.TemporaryDirectory() as td:
             report=acquire([e],counties,'2026-11-25',pathlib.Path(td),fetch=lambda url,p: item if 'sharing/rest' in url else payload if url.endswith('/query') else layer,delay=0)
-            self.assertEqual(report['counts'],{'candidate':1});self.assertEqual(report['publication'],'review-only')
+            self.assertEqual(report['counts'],{'candidate':1});self.assertEqual(report['publication'],'review-only');self.assertEqual(report['diagnostics'][0]['exactObjectIds'],[1]);self.assertEqual(report['reasonCounts'],{})
 
     def test_unit_field_aliases_fail_closed(self):
         fields=[{'name':k,'type':v} for k,v in {**FIELDS,'OBJECTID':'esriFieldTypeOID'}.items() if k!='Unit']

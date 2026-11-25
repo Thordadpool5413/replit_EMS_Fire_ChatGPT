@@ -76,51 +76,68 @@ def date(v):
     if v is None:return None
     if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('Invalid date')
     return datetime.datetime.fromtimestamp(v/1000,datetime.timezone.utc).date().isoformat()
-def review(e,rows,counties,checked):
-    a=e['address'];hits=[];conflict=False
+def review(e,rows,counties,checked,diagnostic=None):
+    a=e['address'];hits=[];conflict=False;reasons=set();object_ids=set()
     for v,g in rows:
         if v['State']!='WI' or v['Country']!='US' or v['Post_Code']!=a['zip'] or v['Add_Number']!=number(a):continue
         if not isinstance(v['FullStNm'],str) or not isinstance(v['Post_Comm'],str):continue
         matched=f"{v['Add_Number']} {v['FullStNm']}, {v['Post_Comm']}, WI, {a['zip']}"
         if not match_address(a,matched):continue
-        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc','Structure','Exception','MilePost')) or v.get('UnitType') not in (None,''):continue
+        object_ids.add(v['oid'])
+        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc','Structure','Exception','MilePost')) or v.get('UnitType') not in (None,''):
+            reasons.add('subaddress_or_exception');continue
         county=v['County'];fips=counties.get(('WI',county_key(county)),set()) if isinstance(county,str) else set()
-        if len(fips)!=1 or e.get('sourceCounty') and e['sourceCounty'] not in fips:conflict=True;continue
+        if len(fips)!=1:
+            reasons.add('county_not_unique');conflict=True;continue
+        if e.get('sourceCounty') and e['sourceCounty'] not in fips:
+            reasons.add('county_conflict');conflict=True;continue
         try:
             effective,expire,updated=(date(v[k]) for k in DATE_FIELDS)
-            if effective and effective>checked or expire and expire<=checked or updated and updated>checked:conflict=True;continue
-        except (ValueError,OverflowError,OSError):conflict=True;continue
+            if effective and effective>checked or expire and expire<=checked or updated and updated>checked:
+                reasons.add('date_outside_validity');conflict=True;continue
+        except (ValueError,OverflowError,OSError):
+            reasons.add('invalid_date');conflict=True;continue
         lat,lon=g.get('y'),g.get('x');placement=v['Placement']
-        if type(lat) not in (int,float) or type(lon) not in (int,float) or not math.isfinite(lat) or not math.isfinite(lon) or not 42.4<=lat<=47.1 or not -93<=lon<=-86.2:conflict=True;continue
-        if not isinstance(placement,str) or placement not in ('Structure','Site','PropertyAccess','Property Access','Parcel'):conflict=True;continue
+        if type(lat) not in (int,float) or type(lon) not in (int,float) or not math.isfinite(lat) or not math.isfinite(lon) or not 42.4<=lat<=47.1 or not -93<=lon<=-86.2:
+            reasons.add('invalid_coordinates');conflict=True;continue
+        if not isinstance(placement,str) or placement not in ('Structure','Site','PropertyAccess','Property Access','Parcel'):
+            reasons.add('placement_not_allowlisted');conflict=True;continue
         hits.append({'sourceKey':e['key'],'objectId':v['oid'],'matchedAddress':matched,'countyFips':next(iter(fips)),'latitude':lat,'longitude':lon,'placementAsReported':placement,'recordUpdatedAt':updated,'endUserValidationRequired':True})
-    if conflict or len(hits)>1:return None,'review'
-    return (hits[0],'candidate') if hits else (None,'noMatch')
+    if len(hits)>1:reasons.add('multiple_eligible_points')
+    status='review' if conflict or len(hits)>1 else 'candidate' if hits else 'noMatch'
+    if diagnostic is not None:
+        diagnostic.update({'sourceKey':e['key'],'status':status,'reasons':sorted(reasons or ({'no_exact_address'} if status=='noMatch' else set())),'exactObjectIds':sorted(object_ids),'eligiblePointCount':len(hits)})
+    return (hits[0] if status=='candidate' else None),status
 def acquire(entries,counties,checked,out,fetch=request,max_requests=120,delay=1):
     out.mkdir(parents=True,exist_ok=True)
     url=layer_url(fetch(ITEM_URL,{'f':'json'}));layer=fetch(url,{'f':'json'})
     (out/'wisconsin-schema-review.json').write_text(json.dumps({'sourceUrl':url,'itemId':ITEM,'layerId':layer.get('id'),'serviceItemId':layer.get('serviceItemId'),'fields':[{k:f.get(k) for k in ('name','type','alias','domain')} for f in layer.get('fields',[])]},indent=2)+'\n')
-    names=schema(layer);groups=collections.defaultdict(list);stats=collections.Counter();hits=[];requests=0;errors=0
+    names=schema(layer);groups=collections.defaultdict(list);stats=collections.Counter();hits=[];diagnostics=[];requests=0;errors=0
     for e in entries:
         if e['state']!='WI' or e['status'] not in ('no-match','unavailable'):continue
         a=e['address']
-        if not number(a) or not re.fullmatch(r'\d{5}',a['zip']):stats['unsupported']+=1;continue
+        if not number(a) or not re.fullmatch(r'\d{5}',a['zip']):
+            stats['unsupported']+=1;diagnostics.append({'sourceKey':e['key'],'status':'unsupported','reasons':['unsupported_address_format'],'exactObjectIds':[],'eligiblePointCount':0});continue
         groups[(a['street'],a['city'],a['zip'])].append(e)
     batches=[groups[k] for k in sorted(groups)]
     for i in range(0,len(batches),8):
         batch=batches[i:i+8]
-        if requests>=max_requests or errors>=3:stats['notAttempted']+=sum(map(len,batch));continue
+        if requests>=max_requests or errors>=3:
+            stats['notAttempted']+=sum(map(len,batch));diagnostics.extend({'sourceKey':e['key'],'status':'notAttempted','reasons':['request_budget_or_error_limit'],'exactObjectIds':[],'eligiblePointCount':0} for group in batch for e in group);continue
         requests+=1
         try:rows=features(fetch(url+'/query',query([g[0]['address'] for g in batch],names)),names);errors=0
-        except (OSError,ValueError,TypeError,KeyError,TimeoutError):errors+=1;stats['unavailable']+=sum(map(len,batch));continue
+        except (OSError,ValueError,TypeError,KeyError,TimeoutError):
+            errors+=1;stats['unavailable']+=sum(map(len,batch));diagnostics.extend({'sourceKey':e['key'],'status':'unavailable','reasons':['source_request_or_response_failure'],'exactObjectIds':[],'eligiblePointCount':0} for group in batch for e in group);continue
         for group in batch:
             for e in group:
-                hit,status=review(e,rows,counties,checked);stats[status]+=1
+                detail={};hit,status=review(e,rows,counties,checked,detail);stats[status]+=1;diagnostics.append(detail)
                 if hit:hits.append(hit)
         time.sleep(delay)
     after=fetch(url,{'f':'json'})
     if schema(after)!=names or (layer.get('editingInfo') or {}).get('lastEditDate')!=(after.get('editingInfo') or {}).get('lastEditDate') or layer_url(fetch(ITEM_URL,{'f':'json'}))!=url:raise ValueError('Source changed during acquisition')
-    return {'schemaVersion':1,'sourceUrl':url,'sourceItemId':ITEM,'sourcePortal':PORTAL,'checkedAt':checked,'sourceLastEditDate':(layer.get('editingInfo') or {}).get('lastEditDate'),'counts':dict(stats),'requests':requests,'candidates':sorted(hits,key=lambda h:h['sourceKey']),'publication':'review-only','limitations':'Incomplete statewide address dataset; no provider operation or station identity verified.'}
+    if collections.Counter(d['status'] for d in diagnostics)!=stats or len({d['sourceKey'] for d in diagnostics})!=len(diagnostics):raise ValueError('Diagnostic accounting mismatch')
+    reason_counts=collections.Counter(reason for d in diagnostics if d['status']!='candidate' for reason in d['reasons'])
+    return {'schemaVersion':2,'diagnostics':sorted(diagnostics,key=lambda d:d['sourceKey']),'reasonCounts':dict(sorted(reason_counts.items())),'sourceUrl':url,'sourceItemId':ITEM,'sourcePortal':PORTAL,'checkedAt':checked,'sourceLastEditDate':(layer.get('editingInfo') or {}).get('lastEditDate'),'counts':dict(stats),'requests':requests,'candidates':sorted(hits,key=lambda h:h['sourceKey']),'publication':'review-only','limitations':'Incomplete statewide address dataset; no provider operation or station identity verified.'}
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--max-requests',type=int,default=120);args=p.parse_args()
     if not 1<=args.max_requests<=120:raise ValueError('Invalid request budget')
@@ -131,6 +148,6 @@ def main():
     report=acquire(entries,counties,datetime.datetime.now(datetime.timezone.utc).date().isoformat(),args.output,max_requests=args.max_requests)
     report['locationManifestSha256']=sha(raw)
     (args.output/'wisconsin-address-review.json').write_text(json.dumps(report,indent=2)+'\n')
-    print('Wisconsin address review:',json.dumps({'counts':report['counts'],'requests':report['requests']}))
+    print('Wisconsin address review:',json.dumps({'counts':report['counts'],'requests':report['requests'],'reasonCounts':report['reasonCounts']}))
     if report['counts'].get('unavailable') or report['counts'].get('notAttempted'):raise ValueError('Incomplete acquisition; partial review artifact only')
 if __name__=='__main__':main()

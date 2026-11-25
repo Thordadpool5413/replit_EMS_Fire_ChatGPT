@@ -52,6 +52,20 @@ class RegionalTests(unittest.TestCase):
    for field,value in [('County','Unknown'),('Country','CA'),('Unit','3'),('Placement','Geocoding'),('Address','124 MAIN ST')]:
     bad=copy.deepcopy(f);bad['attributes'][field]=value
     self.assertIsNone(resolve(source,e,[bad],counties,CHECKED)[0],field)
+ def test_stratmap_statewide_exact_address_unknown_placement(self):
+  from recover_regional_locations import stratmap_date
+  counties=county_index([{'USPS':'TX','NAME':'Travis County','GEOID':'48453'},{'USPS':'TX','NAME':'Williamson County','GEOID':'48491'}])
+  e=dict(key='tx-stratmap-fixture',state='TX',status='no-match',sourceCounty='48453',countyFips='',match=None,address={'street':'123 Main Street','city':'Austin','state':'TX','zip':'78701'})
+  f=dict(attributes=dict(objectid=7,dateupdate='2026-01-01',add_number='123',full_addr='123 MAIN ST',building=None,floor=None,unit=None,post_comm='AUSTIN',post_code='78701',state='TX',country='US',county='Travis County',fips=48453,source='fixture authority',date_acq=None),geometry=dict(x=-97.74,y=30.27))
+  hit,status=resolve('tx-stratmap',e,[f],counties,CHECKED)
+  self.assertEqual(status,'mapped');self.assertEqual(hit[0],'48453');self.assertEqual(hit[1]['point']['placement'],'Placement not reported');self.assertTrue(valid_regional_point(hit[1],'48453'))
+  self.assertEqual(stratmap_date('2026-01-01T12:00:00Z'),'2026-01-01');self.assertIsNone(stratmap_date('01/02/2026'))
+  self.assertIn("add_number='123'",query('tx-stratmap',[e['address']]*16)['where'])
+  for field,value in [('fips',48491),('county','Williamson County'),('source',''),('unit','7'),('post_code','78702'),('state','OK'),('full_addr','124 Main Street'),('country','CA')]:
+   bad=copy.deepcopy(f);bad['attributes'][field]=value
+   self.assertIsNone(resolve('tx-stratmap',e,[bad],counties,CHECKED)[0],field)
+  bad=copy.deepcopy(f);bad['attributes']['objectid']=8;bad['geometry']['x']=-97.75
+  self.assertEqual(resolve('tx-stratmap',e,[f,bad],counties,CHECKED)[1],'ambiguous')
  def test_preserve_and_withhold(self):
   e=example();hit,_=resolve('nc-addressnc',e,[nc()],C,CHECKED)
   f=nc();f['attributes']['objectid']=11;f['geometry']['x']=-79.41

@@ -1,7 +1,7 @@
 name: Regional government address point recovery
 on:
   push:
-    branches: [atlas/regional-address-recovery, atlas/regional-address-recovery-v2, atlas/regional-address-recovery-v3]
+    branches: [atlas/regional-address-recovery, atlas/regional-address-recovery-v2, atlas/regional-address-recovery-v3, atlas/regional-address-recovery-v4]
     paths:
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   recover:
-    if: github.ref == 'refs/heads/atlas/regional-address-recovery' || github.ref == 'refs/heads/atlas/regional-address-recovery-v2' || github.ref == 'refs/heads/atlas/regional-address-recovery-v3'
+    if: github.ref == 'refs/heads/atlas/regional-address-recovery' || github.ref == 'refs/heads/atlas/regional-address-recovery-v2' || github.ref == 'refs/heads/atlas/regional-address-recovery-v3' || github.ref == 'refs/heads/atlas/regional-address-recovery-v4'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     permissions:
@@ -31,7 +31,9 @@ jobs:
         run: cp -a artifacts/ems-territory-intelligence/public/registry/locations "$RUNNER_TEMP/base-locations"
       - name: Query official address points for unresolved provider streets
         run: |
-          if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v3" ]; then
+          if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v4" ]; then
+            python3 scripts/data/recover_regional_locations.py --source tx-stratmap --max-requests 120 --allow-empty
+          elif [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v3" ]; then
             python3 scripts/data/recover_regional_locations.py --source tx-prosper --source pa-cumberland --max-requests 100 --allow-empty
           elif [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v2" ]; then
             python3 scripts/data/recover_regional_locations.py --source nj-addresspoints --max-requests 100 --allow-empty

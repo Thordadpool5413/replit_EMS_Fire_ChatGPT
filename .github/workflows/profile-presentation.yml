@@ -24,6 +24,8 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_national_quality.py'
+      - 'scripts/data/test_audit_national_quality.py'
       - 'scripts/data/audit_facility_reconciliation.py'
       - 'scripts/data/test_facility_reconciliation.py'
       - 'scripts/data/facility_research_candidates.json'
@@ -88,6 +90,8 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_national_quality.py'
+      - 'scripts/data/test_audit_national_quality.py'
       - 'scripts/data/audit_facility_reconciliation.py'
       - 'scripts/data/test_facility_reconciliation.py'
       - 'scripts/data/facility_research_candidates.json'
@@ -172,6 +176,8 @@ jobs:
             python3 scripts/data/audit_location_gaps.py --json generated-artifacts/location-recovery/gaps.json --markdown generated-artifacts/location-recovery/gaps.md
             cat generated-artifacts/location-recovery/gaps.md >> "$GITHUB_STEP_SUMMARY"
             python3 scripts/data/audit_facility_reconciliation.py --output generated-artifacts/location-recovery/facility-review.json
+            python3 scripts/data/audit_national_quality.py --output generated-artifacts/location-recovery
+            cat generated-artifacts/location-recovery/national-quality.md >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Keep mapping coverage report
         uses: actions/upload-artifact@v4

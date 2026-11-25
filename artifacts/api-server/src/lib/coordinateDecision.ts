@@ -30,6 +30,22 @@ function currentIdentity(p:Row):string|undefined{
  }catch{return undefined;}
  return undefined;
 }
+/** Current private map preview only. Re-run acceptance gates without mutating the journal.
+ * A withdrawn, stale, inconsistent or tampered decision cannot produce a preview. */
+export function currentCoordinatePreview(p:Row,now:string){
+ const h=history(p);let active:Row|undefined;
+ for(const entry of h){
+  if(entry.publicationEligible!==false)return undefined;
+  if(entry.action==='accept'){if(active)return undefined;active=entry;}
+  else{if(!active||entry.targetDecisionId!==active.id||entry.sourceKey!==active.sourceKey)return undefined;active=undefined;}
+ }
+ if(!active||typeof active.sourceKey!=='string'||typeof active.actor!=='string'||!nonblank(active.id,100)||!nonblank(active.decidedAt,80)||!Number.isFinite(Date.parse(active.decidedAt))||Date.parse(active.decidedAt)>Date.parse(now))return undefined;
+ try{
+  const checked=coordinateDecision({...p,[COORDINATE_DECISION_FIELD]:[]},{id:active.id,action:'accept',sourceKey:active.sourceKey,reviewId:active.reviewId,reason:active.reason,supportingUrl:active.supportingUrl,placementAttestation:active.placementAttestation},active.actor,now).entry;
+  for(const key of ['sourceKey','reviewId','objectId','matchedAddress','latitude','longitude','countyFips','sourceUrl','artifactSha256','snapshotGeneratedAt','placementAsReported','requestSignature'])if(checked[key]!==active[key])return undefined;
+  return {decisionId:active.id,sourceKey:active.sourceKey,matchedAddress:String(checked.matchedAddress),latitude:Number(checked.latitude),longitude:Number(checked.longitude),snapshotGeneratedAt:String(checked.snapshotGeneratedAt),publicationEligible:false as const};
+ }catch(e){if(e instanceof CoordinateDecisionError)return undefined;throw e;}
+}
 export function coordinateDecision(p:Row,request:unknown,actor:string,now:string):{payload:Row;entry:Row;replay:boolean}{
  const b=obj(request),h=history(p),last=h.at(-1);
  if(!nonblank(b.id,100)||!nonblank(actor,300)||!Number.isFinite(Date.parse(now))||!['accept','rollback'].includes(String(b.action))||!nonblank(b.reason,4000))throw new CoordinateDecisionError('Explicit decision ID, action and verification basis required.');

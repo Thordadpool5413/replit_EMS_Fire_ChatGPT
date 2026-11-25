@@ -11,7 +11,7 @@ import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/
 import { agencyWorkspaceRole, canReadAgencyWorkspaceFields, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
 import { publicAgencyProfilePayload } from "../lib/publicAgencyProfile";
 import { AddressReviewError, reconcileAddressReviews } from "../lib/addressReviewReconciliation";
-import { coordinateDecision, CoordinateDecisionError, preserveCoordinateDecisions } from "../lib/coordinateDecision";
+import { coordinateDecision, CoordinateDecisionError, preserveCoordinateDecisions, currentCoordinatePreview } from "../lib/coordinateDecision";
 
 const router: IRouter = Router();
 router.use("/agencies", (_req, res, next) => {
@@ -300,6 +300,26 @@ router.post("/agencies/:agencyId/coordinate-decisions", requireAgencyWorkspace, 
  }catch(error){
   if(error instanceof CoordinateDecisionError)return requestError(res,422,"coordinate_decision_blocked",error.message);
   logFailure(req,error,"coordinate-decision");return requestError(res,503,"database_unavailable","Coordinate decision could not be recorded.");
+ }
+});
+// A fresh private read is required on every map opening. Do not write or expose public pins.
+router.get("/agencies/:agencyId/coordinate-map", requireAgencyWorkspace, async(req,res)=>{
+ const agencyId=routeAgencyId(req);
+ try{
+  const [row]=await db.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
+  if(!row||isQuarantined(row.payload))return requestError(res,404,"not_found","Provider account unavailable.");
+  const point=currentCoordinatePreview(row.payload,new Date().toISOString());
+  if(!point)return requestError(res,422,"coordinate_preview_blocked","No current accepted coordinate evidence. Review or rollback may have changed the record.");
+  if(req.query.open==="1"){
+   if(req.query.decisionId!==point.decisionId||req.query.sourceKey!==point.sourceKey)return requestError(res,409,"coordinate_preview_changed","The accepted evidence changed. Return to the profile and refresh.");
+   const url=new URL("https://www.google.com/maps/search/");
+   url.searchParams.set("api","1");url.searchParams.set("query",point.latitude+","+point.longitude);
+   res.set("Referrer-Policy","no-referrer");res.redirect(302,url.toString());return;
+  }
+  res.json({agencyId,revision:row.revision,...point});
+ }catch(error){
+  if(error instanceof CoordinateDecisionError)return requestError(res,422,"coordinate_preview_blocked",error.message);
+  logFailure(req,error,"coordinate-map");return requestError(res,503,"database_unavailable","Current coordinate preview unavailable.");
  }
 });
 export default router;

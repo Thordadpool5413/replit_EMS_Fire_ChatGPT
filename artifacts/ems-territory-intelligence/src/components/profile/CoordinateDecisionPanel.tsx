@@ -34,6 +34,7 @@ export function CoordinateDecisionPanel({agencyId,candidate}:{agencyId:string;ca
    if(fresh.revision!==decision.expectedRevision)throw Error('Provider record changed. Refresh and review again.');
    if(decision.action==='accept'&&coordinateAcceptanceReview(candidate,fresh,loadFactReviews(agencyId))!==decision.reviewId)throw Error('Current acknowledged confirmation required.');
    await saveCoordinateDecision(agencyId,decision);
+   window.dispatchEvent(new CustomEvent('ems-coordinate-decision-changed',{detail:{agencyId}}));
    if(live.current){setMessage(action==='accept'?'Coordinate evidence accepted by the server. No public map pin was published.':'Rollback acknowledged. Original evidence remains in history.');setBasis('');setUrl('');setAttested(false);}
   }catch(e){if(live.current)setMessage((e instanceof Error?e.message:'Decision not acknowledged.')+' Check current server history before retrying.');}
   finally{if(live.current){setSnapshot(undefined);setRevision(n=>n+1);setBusy(false);}submitting.current=false;}

@@ -145,7 +145,17 @@ export const EMS_JURISDICTION_SOURCE_COVERAGE: EmsJurisdictionSourceCoverage[] =
             limitations:
               "Report snapshots can be stale or served in different versions. Address county is not a service boundary. License dates do not establish contract dates, apparatus, or active operations. Out-of-state headquarters are browse-only.",
           }
-        : code === "VA" ? {
+        : code === "TX" ? {
+          code,name,level:"state" as const,coverageStatus:"official-license-reference" as const,
+          sourceName:"Texas Department of State Health Services EMS provider rosters",
+          sourceUrl:"https://www.dshs.texas.gov/sites/default/files/CP-EMSTraumaSystems/compliance/docs/emsproviderroster.xlsx",
+          directoryUrl:"https://www.dshs.texas.gov/dshs-ems-trauma-systems/open-records-requests",
+          sourceScope:"Monthly organization-level EMS provider agency roster.",
+          matchKeys:["Texas-issued provider license identifier","Organization name and reported address"],
+          periodAndFreshness:"Verify the downloaded edition and individual status with DSHS.",
+          appConnection:"Official source link and review-only acquisition pipeline; no Texas records published in app yet.",
+          limitations:"Reported address is not necessarily a physical station; no inferred service level, FDID, NPI or equipment."
+        } : code === "VA" ? {
           code,name,level:"state" as const,coverageStatus:"official-license-reference" as const,
           sourceName:"Virginia Office of EMS agency lookup",
           sourceUrl:"https://vdhems.vdh.virginia.gov/emsapps/f?p=200%3A2",

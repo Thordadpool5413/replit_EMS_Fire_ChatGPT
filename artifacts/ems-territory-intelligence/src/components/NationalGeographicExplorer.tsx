@@ -1,6 +1,9 @@
 import type { AgencySourceRecordAssociation } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect } from '../utils/providerRecordTrust';
 import { NationalSourceDirectory } from './NationalSourceDirectory';
+import { useNationalSourceDirectory } from '../hooks/useNationalSourceDirectory';
+import { countSourceListingsByCounty, loadSourceDirectoryState, type CountySourceListingCounts } from '../services/nationalSourceDirectory';
+import { enrichRegistryRow, loadNationalLocationState } from '../services/nationalLocationSnapshot';
 import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
 /**
  * @license
@@ -87,7 +90,7 @@ import { agencySearchScore } from '../utils/agencySearch';
 const STATE_MAP_PALETTE = ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#059669'] as const;
 const DIRECTORY_SESSION_KEY = 'ems-territory-directory-state-v1';
 type AcsMapLayer = 'acs-population' | 'acs-age65-share' | 'acs-poverty-rate' | 'acs-county-income-median';
-type StateMapLayer = 'agency-records' | 'fema-loss' | AcsMapLayer;
+type StateMapLayer = 'registry-listings' | 'agency-records' | 'fema-loss' | AcsMapLayer;
 const ACS_LAYER_MEASURE: Record<AcsMapLayer, keyof Pick<AcsStateRollup, 'population' | 'population65PlusShare' | 'povertyRate' | 'medianCountyHouseholdIncome'>> = {
   'acs-population': 'population',
   'acs-age65-share': 'population65PlusShare',
@@ -139,7 +142,7 @@ const defaultDirectorySessionState: DirectorySessionState = {
   countyFilter: '',
   region: 'All',
   sort: 'pulseIq',
-  mapLayer: 'agency-records',
+  mapLayer: 'registry-listings',
 };
 
 function readDirectorySessionState(): DirectorySessionState {
@@ -156,9 +159,9 @@ function readDirectorySessionState(): DirectorySessionState {
       sort: ['pulseIq', 'fleetAge', 'value'].includes(stored.sort || '')
         ? stored.sort as DirectorySessionState['sort']
         : 'pulseIq',
-      mapLayer: ['agency-records', 'fema-loss', 'acs-population', 'acs-age65-share', 'acs-poverty-rate', 'acs-county-income-median'].includes(stored.mapLayer || '')
+      mapLayer: ['registry-listings', 'agency-records', 'fema-loss', 'acs-population', 'acs-age65-share', 'acs-poverty-rate', 'acs-county-income-median'].includes(stored.mapLayer || '')
         ? stored.mapLayer as DirectorySessionState['mapLayer']
-        : 'agency-records',
+        : 'registry-listings',
     };
   } catch {
     return defaultDirectorySessionState;
@@ -263,6 +266,33 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const [showCityPillsDrawer, setShowCityPillsDrawer] = useState<boolean>(false);
   const [providerSortBy, setProviderSortBy] = useState<DirectorySessionState['sort']>(savedDirectoryState.sort);
   const [stateMapLayer, setStateMapLayer] = useState<DirectorySessionState['mapLayer']>(savedDirectoryState.mapLayer);
+  const { manifest: sourceDirectoryManifest, error: sourceDirectoryError } = useNationalSourceDirectory();
+  const [countySourceListingCounts, setCountySourceListingCounts] = useState<Map<string, CountySourceListingCounts>>(() => new Map());
+  const [countySourceListingStatus, setCountySourceListingStatus] = useState<'idle' | 'loading' | 'ready' | 'unavailable'>('idle');
+
+  React.useEffect(() => {
+    if (selectedStateCode === 'all') {
+      setCountySourceListingCounts(new Map());
+      setCountySourceListingStatus('idle');
+      return;
+    }
+    let active = true;
+    setCountySourceListingCounts(new Map());
+    setCountySourceListingStatus('loading');
+    Promise.all([
+      loadSourceDirectoryState(selectedStateCode),
+      loadNationalLocationState(selectedStateCode),
+    ]).then(([records, locationState]) => {
+      if (!active) return;
+      const countyFips = new Set<string>(NATIONAL_COUNTIES_DIRECTORY.map((county) => county.countyFips));
+      const enriched = records.map((record) => enrichRegistryRow(record, locationState));
+      setCountySourceListingCounts(countSourceListingsByCounty(enriched, countyFips));
+      setCountySourceListingStatus('ready');
+    }).catch(() => {
+      if (active) setCountySourceListingStatus('unavailable');
+    });
+    return () => { active = false; };
+  }, [selectedStateCode]);
 
   React.useEffect(() => {
     try {
@@ -596,10 +626,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               const summary = getAcsMapCoverage(rollup, stateMapLayer);
               return summary?.complete && summary.value != null ? [{ code, value: summary.value }] : [];
             })
-        : Object.keys(ALL_50_STATES_SUMMARIES).map((code) => ({
-          code,
-          value: stateAgencyCounts.get(code) ?? 0,
-        }));
+        : stateMapLayer === 'registry-listings'
+          ? Object.keys(ALL_50_STATES_SUMMARIES).flatMap((code) => {
+            const counts = sourceDirectoryManifest?.byState[code];
+            return counts ? [{ code, value: counts.usfa + counts.nppes }] : [];
+          })
+          : Object.keys(ALL_50_STATES_SUMMARIES).map((code) => ({
+              code,
+              value: stateAgencyCounts.get(code) ?? 0,
+            }));
     selectedValues.sort((a, b) => a.value - b.value);
     const colors = new Map<string, string>();
     selectedValues.forEach((item, index) => {
@@ -607,7 +642,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       colors.set(item.code, STATE_MAP_PALETTE[bucket]);
     });
     return colors;
-  }, [stateMapLayer, stateNriSummaryByCode, stateAgencyCounts, stateAcsRollupsByCode]);
+  }, [stateMapLayer, stateNriSummaryByCode, stateAgencyCounts, stateAcsRollupsByCode, sourceDirectoryManifest]);
 
   // Available cities for selected state & county with rich metadata across all 50 states
   const availableCities = useMemo(() => {
@@ -1264,7 +1299,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       onChange={(event) => setStateMapLayer(event.target.value as StateMapLayer)}
                     className="min-h-11 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-2 text-base font-semibold text-slate-800 sm:w-auto sm:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   >
-                    <option value="agency-records">Agency records in this app</option>
+                    <option value="registry-listings">Public registry listings</option>
+                    <option value="agency-records">Saved agency profiles in this app</option>
                       <option value="fema-loss">FEMA county expected annual loss</option>
                       <option value="acs-population">ACS population · county sum</option>
                       <option value="acs-age65-share">ACS residents age 65+ (%)</option>
@@ -1272,6 +1308,13 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       <option value="acs-county-income-median">Median of county incomes (not state median)</option>
                   </select>
                 </div>
+                {stateMapLayer === 'registry-listings' && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400" role="status">
+                    {sourceDirectoryManifest
+                      ? `${sourceDirectoryManifest.statesAndDcRecords.toLocaleString()} USFA + NPPES source listings · not a unique-agency count`
+                      : sourceDirectoryError ? 'Public registry index unavailable' : 'Loading public registry totals…'}
+                  </span>
+                )}
                 {stateMapLayer === 'fema-loss' && (
                   <span className="text-[10px] text-slate-500 dark:text-slate-400" role="status">
                     {nriNationalQuery.isLoading
@@ -1330,7 +1373,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                       ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
                       : isAcsMapLayer(stateMapLayer)
                         ? acsSummary?.complete && acsSummary.value != null
-                        : true;
+                        : stateMapLayer === 'registry-listings'
+                          ? Boolean(sourceDirectoryManifest?.byState[st.code])
+                          : true;
                     const fillColor = !isInRegion
                       ? '#F1F5F9'
                       : hasMapValue
@@ -1378,11 +1423,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           ? nriSummary?.coverageComplete && nriSummary.totalExpectedAnnualLoss != null
                             ? `State context only: sum of county-equivalent NRI expected annual loss ($${nriSummary.totalExpectedAnnualLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}); native source scope is county FIPS; reporting period not stated; ${nriSummary.availableRecords}/${nriSummary.sourceRecordCount} source records; FEMA NRI data vintage ${nriSummary.sourceVersion}`
                             : `State total not shown; ${nriSummary?.availableRecords ?? 0}/${nriSummary?.sourceRecordCount ?? 0} NRI county-equivalent records with values${nriSummary?.duplicateFips ? ' · duplicate FIPS' : ''}${nriSummary?.invalidFips ? ' · malformed FIPS' : ''}${nriSummary?.mixedSourceVersions ? ' · mixed FEMA NRI vintages' : ''}${nriSummary?.unstatedSourceVersion ? ' · FEMA NRI vintage not stated for every county' : ''}`
-                          : isAcsMapLayer(stateMapLayer)
+                           : isAcsMapLayer(stateMapLayer)
                             ? acsSummary?.complete && acsSummary.value != null
                               ? `${formatAcsMapValue(stateMapLayer, acsSummary.value)} · ${acsSummary.availableCount}/${acsSummary.expectedCount} county-equivalents · ${ACS_COUNTY_SOURCE.reportingPeriod} ACS`
                               : `State value not mapped; ${acsSummary?.availableCount ?? 0}/${acsSummary?.expectedCount ?? 0} county-equivalents have this measure`
-                            : `${stateAgencyCounts.get(st.code) ?? 0} app agency records; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
+                             : stateMapLayer === 'registry-listings'
+                               ? (() => {
+                                 const counts = sourceDirectoryManifest?.byState[st.code];
+                                 return counts
+                                   ? `${(counts.usfa + counts.nppes).toLocaleString()} source listings (${counts.usfa.toLocaleString()} USFA + ${counts.nppes.toLocaleString()} NPPES); records may overlap and are not unique operating agencies`
+                                   : 'Public registry data unavailable';
+                               })()
+                               : `${stateAgencyCounts.get(st.code) ?? 0} saved agency profiles; not a census of operating departments`} · Click to inspect ${countyCount} ${countyScopeLabel}`}</title>
                       </path>
                     );
                   })}
@@ -1554,10 +1606,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                               <span className="ml-1 text-[10px] text-slate-500">(not the state’s household-income median)</span>
                             )}
                           </span>
+                        ) : stateMapLayer === 'registry-listings' ? (
+                          <span className="text-slate-700 dark:text-slate-300">
+                            Public source listings:{' '}
+                            {(() => {
+                              const counts = sourceDirectoryManifest?.byState[hSt.code];
+                              return counts
+                                ? <><strong className="font-semibold">{(counts.usfa + counts.nppes).toLocaleString()}</strong><span className="ml-1 text-[10px] text-slate-500">USFA {counts.usfa.toLocaleString()} · NPPES {counts.nppes.toLocaleString()} · county assignments in {counts.countiesWithRecords}/{counts.countyCount}; source rows can overlap</span></>
+                                : <strong className="font-semibold">{sourceDirectoryError ? 'Unavailable' : 'Loading'}</strong>;
+                            })()}
+                          </span>
                         ) : (
                           <span className="text-slate-700 dark:text-slate-300">
-                            App agency records: <strong className="font-semibold">{stateAgencyCounts.get(hSt.code) ?? 0}</strong>
-                            <span className="ml-1 text-[10px] text-slate-500">(directory entries; not a count of all operating agencies)</span>
+                            Saved agency profiles: <strong className="font-semibold">{stateAgencyCounts.get(hSt.code) ?? 0}</strong>
+                            <span className="ml-1 text-[10px] text-slate-500">(not a census of operating departments)</span>
                           </span>
                         )}
                         {isAcsMapLayer(stateMapLayer) && (
@@ -1632,7 +1694,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           ? 'Lower to higher state sum of county expected annual loss'
                           : isAcsMapLayer(stateMapLayer)
                             ? `${ACS_LAYER_LABEL[stateMapLayer]} · quintiles use states with complete county coverage`
-                            : 'Lower to higher app agency-record count'}
+                            : stateMapLayer === 'registry-listings'
+                              ? 'Lower to higher USFA + NPPES source listings · listings may overlap'
+                              : 'Lower to higher saved agency-profile count'}
                       </span>
                       {(stateMapLayer === 'fema-loss' || isAcsMapLayer(stateMapLayer)) && (
                         <span className="flex items-center gap-1.5">
@@ -1869,6 +1933,18 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
         </div>
       )}
 
+      {activeFocusLevel === 'states' && (
+        <div className="mt-4">
+          <NationalSourceDirectory
+            providerScope={agencyCategoryFilter}
+            savedAgencies={agencies}
+            onOpenSavedAgency={onSelectAgency}
+            onDecideSourceRecord={onDecideSourceRecord}
+            onCreateAgency={onAddAgency}
+          />
+        </div>
+      )}
+
       {/* ---------------------------------------------------------------------
           LEVEL 2: COUNTIES IN SELECTED STATE (SINGLE FOCUSED VIEW)
          --------------------------------------------------------------------- */}
@@ -2002,6 +2078,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                     nriSourceUrl={safeAgencyWebsiteUrl(countyNri?.sourceUrl)}
                     nriLoading={selectedStateNriQuery.isLoading}
                     nriError={selectedStateNriQuery.isError}
+                    registryListings={countySourceListingCounts.get(c.countyFips)}
+                    registryStatus={countySourceListingStatus}
                     onInspectCounty={() => {
                       setSelectedCountyName(c.countyName);
                       setSelectedCityName('all');
@@ -2312,9 +2390,16 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           )}
 
           {/* Source-native discovery, separate from saved or modeled records. */}
-          {selectedStateCode !== 'all' && (
-            <NationalSourceDirectory stateCode={selectedStateCode} countyFips={selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''} providerScope={agencyCategoryFilter} city={selectedCityName === 'all' ? '' : selectedCityName} savedAgencies={agencies} onOpenSavedAgency={onSelectAgency} onDecideSourceRecord={onDecideSourceRecord} onCreateAgency={onAddAgency} />
-          )}
+          <NationalSourceDirectory
+            stateCode={selectedStateCode === 'all' ? '' : selectedStateCode}
+            countyFips={selectedStateCode !== 'all' && selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''}
+            providerScope={agencyCategoryFilter}
+            city={selectedCityName === 'all' ? '' : selectedCityName}
+            savedAgencies={agencies}
+            onOpenSavedAgency={onSelectAgency}
+            onDecideSourceRecord={onDecideSourceRecord}
+            onCreateAgency={onAddAgency}
+          />
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">
             <div>
@@ -2356,8 +2441,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </>
               ) : agencies.length === 0 ? (
                 <>
-                  <strong>No agency records are saved in this directory.</strong>
-                  <span>This means there are no saved records to display; it does not establish that no agencies operate here.</span>
+                  <strong>No saved agency profiles are in this directory yet.</strong>
+                  <span>Public USFA and NPPES registry listings are browsable separately above. Review a source listing before creating a saved profile; registry presence does not confirm current operations.</span>
                 </>
               ) : debouncedZipQuery.trim() ? (
                 <>
@@ -2376,6 +2461,15 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </>
               )}
               <div className="territory-empty-actions">
+                {agencies.length === 0 && (
+                  <button
+                    type="button"
+                    className="workspace-button"
+                    onClick={() => document.getElementById('territory-public-source-directory')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    Browse public registry listings
+                  </button>
+                )}
                 {debouncedZipQuery.trim() && (
                   <button type="button" className="workspace-button" onClick={() => { setZipSearchQuery(''); setAgencyPage(1); }}>Clear search</button>
                 )}

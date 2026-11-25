@@ -142,10 +142,10 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
       setAuditScanTimestamp(now);
       dataSanitizationService.recordAuditEvent(
         'SANITIZE_PASS',
-        `Executed in-memory NPI audit scan. Checked ${npiAuditReport.validCheckDigits} valid check digits, identified ${npiAuditReport.validMismatchedEntities} entity mismatches, and flagged ${npiAuditReport.totalFlaggedForManualReview} records. 0 production Firestore mutations executed.`,
+        `Executed in-memory NPI audit scan. Checked ${npiAuditReport.validCheckDigits} valid check digits, identified ${npiAuditReport.validMismatchedEntities} entity mismatches, and flagged ${npiAuditReport.totalFlaggedForManualReview} records. No production data was changed.`,
         npiAuditReport.totalInspected,
         0,
-        report.firestoreSyncedCount
+        report.replitSyncedCount
       );
       setRefreshTick((t) => t + 1);
       setIsScanningNpi(false);
@@ -161,7 +161,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
   };
 
   const handleSyncSingleRow = async (agency: Agency) => {
-    const approved = window.confirm(`Write “${agency.name}” to the configured Firestore database? This is an external cloud write and cannot be undone here. No existing cloud records will be deleted.`);
+    const approved = window.confirm(`Save “${agency.name}” to the Replit backend? This updates the shared agency record. Existing records are protected by revision checks.`);
     if (!approved) return;
     setSyncingRowId(agency.id);
     try {
@@ -173,7 +173,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
   };
 
   const handleHydrateBatch = async () => {
-    const approved = window.confirm('Write up to 35 local agency records to the configured Firestore database? This is an external cloud write. No existing cloud records will be deleted.');
+    const approved = window.confirm('Save up to 25 eligible agency records to the Replit backend? Existing records will not be overwritten.');
     if (!approved) return;
     await onHydrateBatchToCloud(25);
     setRefreshTick((t) => t + 1);
@@ -181,8 +181,8 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
 
   const getTierLabel = (tier: DataProvenanceTier) => {
     switch (tier) {
-      case 'firestore_cloud_synced':
-        return 'Firestore Cloud Synced';
+      case 'replit_backend_synced':
+        return 'Replit Backend Synced';
       case 'live_federal_registry':
         return 'Live Federal NPI Registry';
       case 'public_federal_baseline':
@@ -205,7 +205,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>
               <span aria-hidden="true">·</span>
               <span className="font-mono text-[11px]">
-                DB: {report.cloudDatabaseId}
+                Storage: {report.backendLabel}
               </span>
               <span aria-hidden="true">·</span>
               <span>
@@ -214,7 +214,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </div>
 
             <h1 className="workspace-tool-title text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight"><WorkspaceIcon name="data_health" badge/>
-              Data Health, Cloud Synchronization &amp; Source Transparency
+              Data Health, Replit Synchronization &amp; Source Transparency
             </h1>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -231,12 +231,12 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               className="min-h-[40px] px-4 py-2 rounded-lg text-xs font-semibold bg-[#0F172A] dark:bg-sky-600 hover:bg-slate-800 dark:hover:bg-sky-500 text-white transition-colors flex items-center gap-2 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <CloudUpload className={`w-3.5 h-3.5 ${isSyncing ? 'animate-bounce' : ''}`} />
-              <span>{isSyncing ? 'Synchronizing with Firestore...' : 'Review & Sync Selected Batch'}</span>
+              <span>{isSyncing ? 'Synchronizing with Replit...' : 'Review & Sync Selected Batch'}</span>
             </button>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-          <span>Batch sync is limited to 25 explicitly saved source-native accounts. Geographic prospects are excluded; county selection never writes to Firestore.</span>
+          <span>Batch sync is limited to 25 explicitly saved source-native accounts. Geographic prospects are excluded; county selection never writes records.</span>
           <span>API health: {healthQuery.isLoading ? 'checking…' : healthQuery.isError ? 'unavailable' : healthQuery.data?.status || 'response received'}</span>
           {healthQuery.isError && <span role="status">Health endpoint unavailable; local data remains available.</span>}
         </div>
@@ -251,7 +251,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>{' '}
               <span className="text-slate-600 dark:text-slate-400">
                 {strictCloudOnlyMode
-                  ? 'Strict Firestore Cloud-Only (Exclusively displaying records persisted in Google Cloud Firestore)'
+                  ? 'Replit-only (Exclusively displaying records stored in the Replit backend)'
                   : 'Cloud, imported records, and generated prospects (all require user validation)'}
               </span>
             </div>
@@ -278,7 +278,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Strict Firestore Cloud-Only ({report.firestoreSyncedCount})
+              Replit Backend Only ({report.replitSyncedCount})
             </button>
           </div>
         </div>
@@ -286,16 +286,16 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
 
       {/* 2. 4-COLUMN DATA HEALTH & PROVENANCE KPI GRID */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Firestore Cloud Synced */}
+        {/* KPI 1: Replit Backend Synced */}
         <div className="bg-white dark:bg-slate-900 border border-[#E5E4DF] dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Firestore Cloud Synced</span>
+              <span>Replit Backend Synced</span>
               <Cloud className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-semibold tabular-nums text-[#0F172A] dark:text-white">
-                {report.firestoreSyncedCount.toLocaleString()}
+                {report.replitSyncedCount.toLocaleString()}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                 / {report.totalActiveRecords.toLocaleString()} records ({report.cloudCoveragePct}%)
@@ -401,7 +401,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Mathematical checks of 10-digit National Provider Identifiers using the CMS 80840-prefixed Luhn algorithm. Mismatched individual clinician NPIs are kept separate from fire/EMS operating entities without deleting prospective territory data or mutating production Firestore.
+              Mathematical checks of 10-digit National Provider Identifiers using the CMS 80840-prefixed Luhn algorithm. Mismatched individual clinician NPIs are kept separate from fire/EMS operating entities without deleting prospective territory data or changing stored records.
             </p>
           </div>
 
@@ -476,7 +476,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
 
           <div className="bg-white dark:bg-slate-900 p-5">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Production Firestore Guard</span>
+              <span>Replit Data Guard</span>
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -488,7 +488,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </span>
             </div>
             <div className="mt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">
-              DB: ai-studio-nicksemsfireterr-26354b36-e812-4fee-8cf9-2df9f9c26acf
+              Replit-managed PostgreSQL
             </div>
           </div>
         </div>
@@ -690,19 +690,19 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-              {/* Row 1: Live Cloud Firestore */}
+              {/* Row 1: Replit-managed agency storage */}
               <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                 <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-white">
                   1. Live Synchronized Cloud Data
                 </td>
                 <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                  Google Cloud Firestore (agencies &amp; field_notes)
+                  Replit PostgreSQL (agency records and field notes)
                 </td>
                 <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                   Pipeline stages, user-logged field visit notes, day routes, bookmarks &amp; hydrated agency records
                 </td>
                 <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
-                  {report.firestoreSyncedCount.toLocaleString()} records
+                  {report.replitSyncedCount.toLocaleString()} records
                 </td>
               </tr>
 
@@ -782,7 +782,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               Record-by-Record Data Provenance &amp; Cloud Sync Inspector
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Inspect each record’s source tier and sync state. A separate confirmed action is required before any agency is written to Firestore.
+              Inspect each record’s source tier and sync state. A separate confirmed action is required before an agency is saved to the Replit backend.
             </p>
           </div>
 
@@ -804,7 +804,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
               {(
                 [
                   { id: 'all', label: 'All records' },
-                  { id: 'firestore_cloud_synced', label: 'Firestore Synced' },
+                  { id: 'replit_backend_synced', label: 'Replit Synced' },
                   { id: 'live_federal_registry', label: 'Federal NPI' },
                   { id: 'public_federal_baseline', label: 'Imported' },
                   { id: 'generated_prospect', label: 'Generated prospects' }
@@ -842,7 +842,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filteredAgencies.slice(0, 75).map((agency) => {
                 const tier = dataSanitizationService.classifyProvenanceTier(agency);
-                const isCloud = tier === 'firestore_cloud_synced';
+                const isCloud = tier === 'replit_backend_synced';
                 const sb = agency.zollOpportunity.scoreBreakdown;
                 const notesCount = agency.fieldNotes?.length || 0;
 
@@ -927,7 +927,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                       {isCloud ? (
                         <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold text-[11px]">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>In Firestore</span>
+                          <span>In Replit storage</span>
                         </span>
                       ) : (
                         <button
@@ -955,7 +955,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="font-semibold text-slate-200">
-              LIVE SANITIZATION &amp; FIRESTORE PROVENANCE AUDIT LOG
+              LIVE SANITIZATION &amp; REPLIT STORAGE AUDIT LOG
             </span>
           </div>
           <span>{report.auditEvents.length} recorded audit events</span>
@@ -1083,7 +1083,7 @@ export const DataHealthDashboard: React.FC<DataHealthDashboardProps> = ({
                 </div>
                 <p className="mt-1.5">{inspectingConflict.details}</p>
                 <p className="mt-2 text-slate-600 dark:text-slate-400 text-[11px]">
-                  <strong>Non-Destructive Invariant:</strong> The platform decouples this NPI candidate from the agency&apos;s factual fields (equipment, clinical metrics, and Medicare denial benchmarks). The prospective agency record is preserved in your territory pipeline without deleting user notes, contacts, or routes, and zero mutations were sent to production Firestore.
+                  <strong>Non-Destructive Invariant:</strong> The platform decouples this NPI candidate from the agency&apos;s factual fields (equipment, clinical metrics, and Medicare denial benchmarks). The prospective agency record is preserved in your territory pipeline without deleting user notes, contacts, or routes; this scan made no database changes.
                 </p>
               </div>
             </div>

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-25",
+  "records": [
+    {
+      "key": "FDID:MN:45101",
+      "name": "Alvarado Fire and Rescue",
+      "state": "MN",
+      "countyFips": "27089",
+      "decision": "needs-review",
+      "reason": "Historical agency-specific address listing; original PDF page image could not be retrieved. Do not publish as a confirmed facility.",
+      "sources": [
+        {
+          "authority": "Minnesota Department of Natural Resources",
+          "url": "https://files.dnr.state.mn.us/forestry/wildfire/training/mn-iqs-user-guide-fire-departments.pdf",
+          "note": "2024 guide, printed page 18, lists a secondary street address for FD Alvarado Vol."
+        },
+        {
+          "authority": "City of Alvarado",
+          "url": "https://alvarado.municipalimpact.com/sanitation-and-recycling",
+          "note": "City describes a separate fire hall near city hall; does not give a numbered fire hall address."
+        }
+      ],
+      "candidateAddress": {
+        "street": "165 Marshal St",
+        "city": "Alvarado",
+        "state": "MN",
+        "zip": "56710"
+      }
+    },
+    {
+      "key": "FDID:NE:19004",
+      "name": "Humboldt Volunteer Fire Department",
+      "state": "NE",
+      "countyFips": "31147",
+      "decision": "conflict-withheld",
+      "reason": "2023 broadband inventory associates an address with the fire department, but the city website identifies the same address as a medical clinic. No fire location or coordinates accepted.",
+      "sources": [
+        {
+          "authority": "Nebraska Broadband Office",
+          "url": "https://broadband.nebraska.gov/media/vfmfalrm/final-nebraska-five-year-action-plan.pdf",
+          "note": "Historical public safety inventory, printed page 181; PDF page image could not be retrieved."
+        },
+        {
+          "authority": "City of Humboldt",
+          "url": "https://www.ci.humboldt.ne.us/community.asp",
+          "note": "Identifies 1128 Grand Avenue as Humboldt Family Medicine."
+        }
+      ],
+      "candidateAddress": {
+        "street": "1128 Grand Avenue",
+        "city": "Humboldt",
+        "state": "NE",
+        "zip": "68376"
+      }
+    }
+  ]
+}

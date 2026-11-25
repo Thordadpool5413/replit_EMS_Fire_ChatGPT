@@ -49,11 +49,11 @@ const base=()=> (import.meta.env?.BASE_URL??'/')+'registry/locations/';
 async function manifest(){
  if(!manifestPromise)manifestPromise=(async()=>{
   const response=await fetch(base()+'index.json',{cache:'no-cache',signal:AbortSignal.timeout(15000)});
-  if(!response.ok)return undefined;
+  if(!response.ok)throw Error('Location index unavailable.');
   const data=await response.json() as LocationManifest;
   if(data.schemaVersion!==1||data.benchmark!=='Public_AR_Current'||data.vintage!=='Current_Current'||!Number.isFinite(Date.parse(data.generatedAt))||!Array.isArray(data.chunks)||data.chunks.length!==51||new Set(data.chunks.map(c=>c.state)).size!==51||data.chunks.some(c=>!statePattern.test(c.state)||c.file!==c.state+'.json'||!Number.isSafeInteger(c.count)||c.count<0||c.count>15000||!hashPattern.test(c.sha256)||!hashPattern.test(c.registrySha256))||!['processed','unavailable'].includes(data.nppesArchive?.status))throw Error('Location index invalid.');
   return data;
- })().catch(()=>undefined);
+ })().catch(()=>{manifestPromise=undefined;return undefined;});
  return manifestPromise;
 }
 export function loadedLocationState(state:string){return loaded.get(state);}

@@ -44,7 +44,7 @@ for (const record of countyRecords) {
 }
 
 console.log(JSON.stringify({
-  scope: 'Bundled source files only; excludes browser imports, Firestore records, and private billing systems.',
+  scope: 'Bundled source files only; excludes browser imports, Replit-backed agency records, and private billing systems.',
   scalarCaveat: 'Literal occurrences are not unique provider counts, source-backed rates, or current runtime values.',
   sourceFiles,
   nationwide: {

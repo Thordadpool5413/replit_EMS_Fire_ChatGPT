@@ -46,7 +46,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { WorkspaceLoadingState } from './components/WorkspaceLoadingState';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeMapFailureFallback } from './components/HomeMapFallbacks';
-import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
+import { useAgencyRecords } from './hooks/useAgencyRecords';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
 import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
 import {
@@ -77,6 +77,7 @@ import {
 } from './navigation/workspaceNavigation';
 import { AlertCircle, Globe, ListOrdered, Scale, Car, X, Siren, Flame, LayoutDashboard, Sliders, ShieldCheck } from 'lucide-react';
 
+const ReviewedAccountPriorityQueue = React.lazy(() => import('./components/ReviewedAccountPriorityQueue').then(module => ({default:module.ReviewedAccountPriorityQueue})));
 const PredictiveLeadQueue = React.lazy(() => import('./components/PredictiveLeadQueue').then((module) => ({ default: module.PredictiveLeadQueue })));
 const ReviewedEquipmentMapEntry = React.lazy(() => import('./components/ReviewedEquipmentMapEntry').then((module) => ({ default: module.ReviewedEquipmentMapEntry })));
 const GisTerritoryHeatmap = React.lazy(() => import('./components/GisTerritoryHeatmap').then((module) => ({ default: module.GisTerritoryHeatmap })));
@@ -157,7 +158,7 @@ export default function App() {
   const [globalCategory, setGlobalCategory] = useState<ProviderScope>(initialTerritoryUrl.category);
   const [activeAccount, setActiveAccount] = useState<Agency | null>(null);
 
-  // Real-time synchronization hook connected to Firebase Firestore cloud backend
+  // Agency synchronization uses the Replit API with local recovery for offline edits.
   const {
     agencies,
     directoryStatus,
@@ -180,7 +181,7 @@ export default function App() {
     setAgenciesState,
     syncPendingChanges,
     quarantinedProviders
-  } = useFirestoreAgencies({
+  } = useAgencyRecords({
     globalState,
     globalCounty,
     onToast: showToast
@@ -1345,10 +1346,13 @@ export default function App() {
         {/* Predictive Lead Queue (Accounts Workspace) */}
         {activeTab === 'queue' && (
           <div className="workspace-view-container min-w-0 w-full">
-            <section className="pi-surface p-3 mb-3 text-sm"><p>Saved accounts only. Public registry listings are available for end-user validation and account creation; missing agencies are not generated.</p><button className="workspace-button min-h-11" onClick={()=>handleNavigateTab('settings')}>Browse public registry sources</button></section>
+            <section className="pi-surface p-3 mb-3 text-sm"><p>Search public registry listings and saved accounts together. Source listings are separate from saved work and require end-user validation.</p></section>
+            <ReviewedAccountPriorityQueue agencies={agencies} onOpenAgency={handleOpenAgencyProfile}/>
             <PredictiveLeadQueue
               agencies={agencies}
               directoryStatus={directoryStatus}
+              onRetryDirectory={retryNationalDirectory}
+              onDecideSourceRecord={handleDecideAgencySourceRecord}
               onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onToggleRoute={handleToggleRoute}

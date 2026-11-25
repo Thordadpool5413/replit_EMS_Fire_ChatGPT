@@ -4,6 +4,7 @@ import {reconcileDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
 import {fetchFemaDiscovery} from './publicIntelligenceDiscovery';
 import {fetchFederalDiscovery} from './federalSpendingDiscovery';
 import {fetchMunicipalDiscovery} from './municipalSpendingDiscovery';
+import {fetchChicagoDiscovery} from './chicagoDiscovery';
 import type {MunicipalTopic} from './municipalDiscoveryContract';
 const maxBytes=2_000_000;
 const empty={fiscalYear:null,publishedDay:null,periodStart:null,periodEnd:null,deadlineLocal:null,vendor:null};
@@ -15,17 +16,24 @@ async function collect(id:FeedScope,now:number):Promise<ScopeResult>{
   if(id==='fema-fl'){
    const p=await fetchFemaDiscovery({state:'FL',fromYear:Math.max(2010,year-2),offset:0},fetch,now);
    candidates=p.candidates.map(c=>({...empty,source:'openfema-afg',nativeId:c.id,recordNumber:c.awardNumber,organization:c.recipient,state:c.state,kind:'grant',title:c.program,amount:c.awardAmount,fiscalYear:c.fiscalYear,sourceUrl:feedSourceUrl('openfema-afg',c.id)}));
-   sourceRows=p.sourceRows;withheld=p.withheld;hasMore=p.nextOffset!==null||p.scopeCapped;
+   sourceRows=p.sourceRows;withheld=p.withheld+p.duplicates;hasMore=p.nextOffset!==null||p.scopeCapped;
   }else if(id==='federal-fl-grants'||id==='federal-fl-defibrillator'){
    const p=await fetchFederalDiscovery({state:'FL',fromYear:Math.max(2010,year-2),topic:id==='federal-fl-grants'?'grants':'defibrillator',page:1},fetch,now);
    // Do not republish free-form award descriptions. Retain organization and native award identity only.
    candidates=p.candidates.map(c=>({...empty,source:'usaspending',nativeId:c.id,recordNumber:c.awardNumber,organization:c.recipient,state:c.state,kind:c.kind==='grant'?'grant':'federal-contract-award',title:c.kind==='grant'?'Federal assistance award':'Federal contract award',amount:c.awardAmount,periodStart:c.startDate,periodEnd:c.endDate,sourceUrl:feedSourceUrl('usaspending',c.id)}));
-   sourceRows=p.sourceRows;withheld=p.withheld;hasMore=p.nextPage!==null||p.scopeCapped;warning=p.warnings>0;
+   sourceRows=p.sourceRows;withheld=p.withheld+p.duplicates;hasMore=p.nextPage!==null||p.scopeCapped;warning=p.warnings>0;
+  }else if(id.startsWith('chicago-')){
+   const topic=id.slice(8) as MunicipalTopic;
+   const p=await fetchChicagoDiscovery({topic,days:365,page:1},fetch,now);
+   // Withhold rows lacking a named department or exceeding the public feed's title limit.
+   // Revision identity is retained; approval date is not a bid deadline or expiration.
+   candidates=p.records.flatMap(n=>n.department&&n.description.length<=500?[{...empty,source:'chicago-contracts' as const,nativeId:n.key,recordNumber:n.contractNumber,organization:n.department,state:'IL',kind:'chicago-contract-revision' as const,title:n.description,amount:n.amount,publishedDay:n.approvalDay,periodStart:n.startDay,periodEnd:n.endDay,vendor:n.vendor,sourceUrl:feedSourceUrl('chicago-contracts',n.key)}]:[]);
+   sourceRows=p.sourceRows;withheld=sourceRows-candidates.length;hasMore=p.nextPage!==null||p.scopeCapped;
   }else{
    const topic=id.slice(4) as MunicipalTopic;
    const p=await fetchMunicipalDiscovery({source:'nyc-city-record',topic,days:90,page:1},fetch,now);
    candidates=p.notices.map(n=>({...empty,source:'nyc-city-record',nativeId:n.id,recordNumber:n.pin,organization:n.issuingAgency,state:'NY',kind:municipalKinds[n.kind] as FeedKind,title:n.title,amount:n.contractAmount,publishedDay:n.publishedDate,deadlineLocal:n.dueLocal,vendor:n.vendor,sourceUrl:feedSourceUrl('nyc-city-record',n.id)}));
-   sourceRows=p.sourceRows;withheld=p.withheld;hasMore=p.nextPage!==null||p.scopeCapped;
+   sourceRows=p.sourceRows;withheld=p.withheld+p.duplicates;hasMore=p.nextPage!==null||p.scopeCapped;
   }
   // A warning-bearing federal response is not a reliable discovery baseline.
   if(warning)return {id,status:'unavailable',sourceRows:0,withheld:0,hasMore:false,candidates:[]};

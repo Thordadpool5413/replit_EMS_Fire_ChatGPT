@@ -338,7 +338,7 @@ test("the local-only boundary is explicit and no claim-summary API is exposed", 
     "utf8",
   );
   assert.match(panelSource, /Workspace sharing is disabled for now/);
-  assert.match(panelSource, /Firestore access rules are not available here to verify/);
+  assert.match(panelSource, /This app does not require sign-in/);
 
   const routesDirectory = new URL("../../../api-server/src/routes/", import.meta.url);
   const routeFiles = (await readdir(routesDirectory)).filter((file) =>

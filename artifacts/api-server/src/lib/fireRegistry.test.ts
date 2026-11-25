@@ -27,3 +27,15 @@ test('NERIS state roster retrieves all flagged pages and retains source-native I
  try{const roster=await listNerisDepartments('XY');assert.equal(calls,2);assert.equal(roster.source,'NERIS');assert.deepEqual(roster.departments.map(d=>d.nerisId),['FD001','FD002']);assert.equal(roster.warning,null);assert.equal((await listNerisDepartments('XY')).departments.length,2);assert.equal(calls,2);await assert.rejects(listNerisDepartments("X'"),/Invalid state/);}
  finally{globalThis.fetch=realFetch;}
 });
+
+test('station identity, parent relationship and coordinate provenance remain separate',async()=>{
+ const {validFacilityParent,parseNerisFacility}=await import('./fireRegistry');
+ const parent={source:'NERIS' as const,stateCode:'FL',identifier:'FD12345678'};
+ assert.equal(validFacilityParent(parent),true);
+ assert.equal(validFacilityParent({...parent,identifier:"FD' OR 1=1"}),false);
+ const feature={attributes:{neris_id:'ST123456789012',department_neris_id:parent.identifier,station_name:'CI fixture',state:'GA',address_line_1:'123 Main St',city:'Example',zip_code:'30001'},geometry:{x:-84,y:33}};
+ const result=parseNerisFacility(feature,parent);
+ assert.equal(result?.stateCode,'GA');assert.equal(result?.sourceRecordId,'ST123456789012');assert.equal(result?.endUserValidationRequired,true);
+ assert.equal(parseNerisFacility({...feature,attributes:{...feature.attributes,department_neris_id:'OTHER'}},parent),null);
+ assert.equal(parseNerisFacility({...feature,geometry:{x:500,y:33}},parent)?.coordinates,null);
+});

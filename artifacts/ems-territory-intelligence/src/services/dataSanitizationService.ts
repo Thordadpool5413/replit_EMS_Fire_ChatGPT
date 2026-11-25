@@ -83,7 +83,7 @@ const BLOCKED_EMAIL_DOMAINS = [
 ];
 
 export type DataProvenanceTier =
-  | 'firestore_cloud_synced'
+  | 'replit_backend_synced'
   | 'live_federal_registry'
   | 'public_federal_baseline' | 'generated_prospect';
 
@@ -99,7 +99,7 @@ export interface SanitizationAuditEvent {
 
 export interface DataHealthReport {
   totalActiveRecords: number;
-  firestoreSyncedCount: number;
+  replitSyncedCount: number;
   liveFederalNpiCount: number;
   publicBaselineCount: number;
   cloudCoveragePct: number;
@@ -108,7 +108,7 @@ export interface DataHealthReport {
   mockNotesStrippedTotal: number;
   unverifiedContactsScrubbedTotal: number;
   pulseIqVerifiedTotal: number;
-  cloudDatabaseId: string;
+  backendLabel: string;
   isCloudConnected: boolean;
   strictCloudOnlyMode: boolean;
   lastSanitizedAt: string;
@@ -329,7 +329,7 @@ export function executeStoredNpiAudit(agencies: Agency[] = []): StoredNpiAuditRe
       }
 
       items.push({
-        source: 'src/hooks/useFirestoreAgencies.ts',
+        source: 'src/hooks/useAgencyRecords.ts',
         recordId: agency.id,
         entityName: agency.name,
         npi: agency.npiNumber,
@@ -602,7 +602,7 @@ class DataSanitizationService {
       Boolean(agency._updatedAt) ||
       this.cloudSyncedAgencyIds.has(agency.id)
     ) {
-      return 'firestore_cloud_synced';
+      return 'replit_backend_synced';
     }
 
     if (
@@ -617,7 +617,7 @@ class DataSanitizationService {
   }
 
   /**
-   * Registers agency IDs confirmed present in the live Firestore collection snapshot.
+   * Registers agency IDs confirmed present in the Replit backend directory.
    */
   public registerCloudSyncedIds(ids: string[]): void {
     for (const id of ids) {
@@ -641,7 +641,7 @@ class DataSanitizationService {
     this.recordAuditEvent(
       'STRICT_MODE_TOGGLE',
       enabled
-        ? 'Enabled Strict Firestore Cloud-Only Filter: UI restricted exclusively to records confirmed in Cloud Firestore.'
+        ? 'Enabled Replit-only Filter: UI restricted exclusively to records confirmed in the Replit backend.'
         : 'Standard Verified Mode: Displaying all sanitized cloud-synchronized and verified public registry records.',
       this.cloudSyncedAgencyIds.size,
       0,
@@ -737,7 +737,7 @@ class DataSanitizationService {
       dataProvenanceTier: isGeographicProspect(agency)
         ? 'generated_prospect'
         : isCloud
-        ? 'firestore_cloud_synced'
+        ? 'replit_backend_synced'
         : agency.isVerifiedRecord
           ? 'live_federal_registry'
           : 'public_federal_baseline'
@@ -781,7 +781,7 @@ class DataSanitizationService {
           isCloudPersisted: mergedIsCloud,
           ...(syncedAt ? { _syncedAt: syncedAt } : {}),
           ...(updatedAt ? { _updatedAt: updatedAt } : {}),
-          dataProvenanceTier: mergedIsCloud ? 'firestore_cloud_synced' : clean.dataProvenanceTier
+          dataProvenanceTier: mergedIsCloud ? 'replit_backend_synced' : clean.dataProvenanceTier
         });
       }
     }
@@ -833,9 +833,9 @@ class DataSanitizationService {
   public getDataHealthReport(
     agencies: Agency[],
     isCloudConnected: boolean,
-    cloudDatabaseId: string = 'ai-studio-nicksemsfireterr-26354b36-e812-4fee-8cf9-2df9f9c26acf'
+    backendLabel: string = 'Replit-managed PostgreSQL'
   ): DataHealthReport {
-    let firestoreSyncedCount = 0;
+    let replitSyncedCount = 0;
     let liveFederalNpiCount = 0;
     let publicBaselineCount = 0;
     let mockDetected = 0;
@@ -847,17 +847,17 @@ class DataSanitizationService {
       }
 
       const tier = this.classifyProvenanceTier(agency);
-      if (tier === 'firestore_cloud_synced') {
-        firestoreSyncedCount++;
+      if (tier === 'replit_backend_synced') {
+        replitSyncedCount++;
       } else if (tier === 'live_federal_registry') {
         liveFederalNpiCount++;
       } else {
         publicBaselineCount++;
       }
 
-      // Also count live NPI enrichment even if already synced to Firestore
+      // Also count live NPI enrichment when the record is already in Replit storage.
       if (
-        tier === 'firestore_cloud_synced' &&
+        tier === 'replit_backend_synced' &&
         (agency.isVerifiedRecord)
       ) {
         liveFederalNpiCount++;
@@ -865,7 +865,7 @@ class DataSanitizationService {
     }
 
     const totalActive = agencies.length;
-    const effectiveCloudCount = Math.max(firestoreSyncedCount, Math.min(totalActive, this.cloudSyncedAgencyIds.size));
+    const effectiveCloudCount = Math.max(replitSyncedCount, Math.min(totalActive, this.cloudSyncedAgencyIds.size));
     const cloudCoveragePct = totalActive > 0
       ? Math.min(100, Math.round((effectiveCloudCount / totalActive) * 100))
       : 100;
@@ -876,7 +876,7 @@ class DataSanitizationService {
 
     return {
       totalActiveRecords: totalActive,
-      firestoreSyncedCount: effectiveCloudCount,
+      replitSyncedCount: effectiveCloudCount,
       liveFederalNpiCount,
       publicBaselineCount: Math.max(0, totalActive - effectiveCloudCount),
       cloudCoveragePct,
@@ -885,7 +885,7 @@ class DataSanitizationService {
       mockNotesStrippedTotal: this.mockNotesStrippedCount,
       unverifiedContactsScrubbedTotal: this.unverifiedContactsScrubbedCount,
       pulseIqVerifiedTotal: Math.max(this.pulseIqVerifiedCount, totalActive),
-      cloudDatabaseId,
+      backendLabel,
       isCloudConnected,
       strictCloudOnlyMode: this.strictCloudOnlyMode,
       lastSanitizedAt: this.lastSanitizedAt,

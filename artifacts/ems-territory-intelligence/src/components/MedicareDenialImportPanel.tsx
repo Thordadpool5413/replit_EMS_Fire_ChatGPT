@@ -164,7 +164,7 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
       setDataset(nextDataset);
       setRows([]);
       setFileName('');
-      setNotice('Imported and saved in this browser only. No file or claims summary was sent to Firestore.');
+      setNotice('Imported and saved in this browser only. No file or claims summary was sent to the Replit backend.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'The import could not be saved.');
     } finally {
@@ -247,13 +247,12 @@ export const MedicareDenialImportPanel: React.FC<{ agencies?: Agency[] }> = ({ a
         <div className="border-t border-amber-300/70 pt-2 dark:border-amber-800/70">
           <p className="font-semibold">Workspace sharing is disabled for now.</p>
           <p>
-            This app has no authenticated workspace identity, and its Firestore access rules are not available here to verify.
-            Publishing imports to a shared endpoint could expose them outside the intended workspace, so this flow does not upload or
-            fetch claim summaries from Firestore or the API server.
+            This app does not require sign-in, and this import is not part of the shared agency record API.
+            Sending claims summaries to shared storage could expose them beyond the intended audience, so this flow does not upload or
+            fetch claim summaries from Replit or another server.
           </p>
           <p className="mt-1">
-            For safe sharing, keep this local-only, or later enable a verified workspace-only access rule or sign-in before adding
-            shared storage. No sign-in has been added.
+            Keep these claim summaries in this browser unless a separate access-controlled sharing flow is approved.
           </p>
         </div>
       </div>

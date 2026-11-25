@@ -32,5 +32,5 @@ export function reconcileDiscoveryFeed(previous:DiscoveryFeed|undefined,results:
  }
  const ordered=[...items.values()].filter(i=>now-Date.parse(i.lastSeen)<=FEED_RETAIN_DAYS*86_400_000).sort((a,b)=>b.lastSeen.localeCompare(a.lastSeen)||b.lastChanged.localeCompare(a.lastChanged)||feedKey(a.candidate).localeCompare(feedKey(b.candidate)));
  const kept=ordered.slice(0,FEED_LIMIT);
- return validateDiscoveryFeed({schemaVersion:1,runAt,scopes,items:kept,evicted:items.size-kept.length,conflictingIds:conflicts.size},now);
+ return validateDiscoveryFeed({schemaVersion:2,runAt,scopes,items:kept,evicted:items.size-kept.length,conflictingIds:conflicts.size},now);
 }

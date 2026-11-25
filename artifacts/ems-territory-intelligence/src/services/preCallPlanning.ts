@@ -174,3 +174,10 @@ export function formatPreCallPlan(plan:CallPlan):string{
  const p=plan.points,e=plan.source;
  return ['ATLAS | Pre-call research brief',plan.accountName+' · '+plan.stateCode,'Prepared '+plan.asOf+' UTC | '+plan.topic,plan.context,'Internal preparation only. Local records are not independently verified; validate before use.','Objective: '+p.objective,'Before contact: '+plan.preparation,'Suggested opening: '+p.opening,'Three qualifying questions:',...p.questions.map((q,i)=>(i+1)+'. '+q),'Roles to confirm: '+p.role,'Possible objection (hypothetical): '+p.objection,'Suggested response: '+p.response,'Proposed commitment: '+p.commitment,...(plan.reviewNote?[plan.reviewNote]:[]),...(e?['Original source: '+e.sourceName+' · '+e.sourceRecordId+' · '+e.documentDate,e.sourceUrl]:[])].join('\n');
 }
+
+/** Shared coaching templates, without importing local document claims into a reviewed brief. */
+export function reviewedCallPoints(kind:PrioritySignal['kind']|'equipment'|'discovery',focus?:ProviderEquipmentKind):TalkingPoints{
+ if(kind==='equipment'||kind==='competitor-equipment')return focus?equipment[focus]:discovery;
+ if(kind==='discovery')return discovery;
+ return purchasing[kind]??discovery;
+}

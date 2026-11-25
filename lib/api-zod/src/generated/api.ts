@@ -27,6 +27,281 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+ * @summary Read a stable page of agency records
+ */
+export const listAgencyRecordsQueryStateCodeRegExp = new RegExp('^[A-Za-z]{2}$');
+export const listAgencyRecordsQueryAfterMax = 300;
+
+export const listAgencyRecordsQueryLimitMax = 500;
+
+
+
+export const ListAgencyRecordsQueryParams = zod.object({
+  "stateCode": zod.coerce.string().regex(listAgencyRecordsQueryStateCodeRegExp).optional(),
+  "after": zod.coerce.string().max(listAgencyRecordsQueryAfterMax).optional(),
+  "limit": zod.coerce.number().int().min(1).max(listAgencyRecordsQueryLimitMax).optional()
+})
+
+export const ListAgencyRecordsResponse = zod.object({
+  "records": zod.array(zod.object({
+  "id": zod.string(),
+  "revision": zod.number().int(),
+  "agency": zod.record(zod.string(), zod.unknown())
+})),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
+ * @summary Read one agency record
+ */
+export const getAgencyRecordPathAgencyIdMax = 300;
+
+
+
+export const GetAgencyRecordParams = zod.object({
+  "agencyId": zod.coerce.string().max(getAgencyRecordPathAgencyIdMax)
+})
+
+export const GetAgencyRecordResponse = zod.object({
+  "id": zod.string(),
+  "revision": zod.number().int(),
+  "agency": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * @summary Save an agency record with revision protection
+ */
+export const updateAgencyRecordPathAgencyIdMax = 300;
+
+
+
+export const UpdateAgencyRecordParams = zod.object({
+  "agencyId": zod.coerce.string().max(updateAgencyRecordPathAgencyIdMax)
+})
+
+export const updateAgencyRecordBodyExpectedRevisionMin = 0;
+
+
+
+export const UpdateAgencyRecordBody = zod.object({
+  "expectedRevision": zod.number().int().min(updateAgencyRecordBodyExpectedRevisionMin),
+  "agency": zod.record(zod.string(), zod.unknown())
+})
+
+export const UpdateAgencyRecordResponse = zod.object({
+  "id": zod.string(),
+  "revision": zod.number().int(),
+  "agency": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+ * @summary Apply an idempotent offline mutation
+ */
+export const commitAgencyMutationPathAgencyIdMax = 300;
+
+
+
+export const CommitAgencyMutationParams = zod.object({
+  "agencyId": zod.coerce.string().max(commitAgencyMutationPathAgencyIdMax)
+})
+
+export const commitAgencyMutationBodyMutationIdMax = 300;
+
+export const commitAgencyMutationBodyExpectedRevisionMin = 0;
+
+
+
+export const CommitAgencyMutationBody = zod.object({
+  "mutationId": zod.string().max(commitAgencyMutationBodyMutationIdMax),
+  "expectedRevision": zod.number().int().min(commitAgencyMutationBodyExpectedRevisionMin),
+  "agency": zod.record(zod.string(), zod.unknown())
+})
+
+export const CommitAgencyMutationResponse = zod.object({
+  "id": zod.string(),
+  "revision": zod.number().int(),
+  "agency": zod.record(zod.string(), zod.unknown())
+})
+
+
+/**
+ * @summary Create missing agency records without overwriting existing ones
+ */
+export const createAgencyRecordsBodyRecordsMax = 25;
+
+
+
+export const CreateAgencyRecordsBody = zod.object({
+  "records": zod.array(zod.record(zod.string(), zod.unknown())).max(createAgencyRecordsBodyRecordsMax)
+})
+
+export const CreateAgencyRecordsResponse = zod.object({
+  "createdIds": zod.array(zod.string())
+})
+
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Resolve the signed-in user's workspace role
+ */
+export const getEvidenceWorkspaceRolePathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+
+
+export const GetEvidenceWorkspaceRoleParams = zod.object({
+  "workspaceId": zod.coerce.string().regex(getEvidenceWorkspaceRolePathWorkspaceIdRegExp)
+})
+
+export const GetEvidenceWorkspaceRoleResponse = zod.object({
+  "role": zod.enum(['viewer', 'editor', 'reviewer'])
+})
+
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Read a bounded page of published evidence
+ */
+export const listReviewedEvidencePathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const listReviewedEvidencePathAgencyKeyMax = 120;
+
+
+
+export const ListReviewedEvidenceParams = zod.object({
+  "workspaceId": zod.coerce.string().regex(listReviewedEvidencePathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(listReviewedEvidencePathAgencyKeyMax)
+})
+
+export const listReviewedEvidenceHeaderXAfterMax = 100;
+
+
+
+export const ListReviewedEvidenceHeader = zod.object({
+  "X-After": zod.string().max(listReviewedEvidenceHeaderXAfterMax).optional()
+})
+
+export const ListReviewedEvidenceResponse = zod.object({
+  "records": zod.array(zod.object({
+  "evidence": zod.record(zod.string(), zod.unknown()),
+  "authorUid": zod.string(),
+  "authorIdentityMapped": zod.boolean(),
+  "publishedAt": zod.coerce.date()
+})),
+  "withheld": zod.number().int(),
+  "next": zod.string().nullable()
+})
+
+
+/**
+ * Requires a valid Replit Auth session and editor membership.
+ * @summary Publish a new public-source observation
+ */
+export const PublishReviewedEvidenceBody = zod.object({
+  "workspaceId": zod.string(),
+  "evidence": zod.record(zod.string(), zod.unknown())
+})
+
+export const PublishReviewedEvidenceResponse = zod.object({
+  "result": zod.enum(['created', 'exists'])
+})
+
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Read immutable review decisions for an evidence item
+ */
+export const listReviewedEvidenceDecisionsPathFactIdMax = 100;
+
+export const listReviewedEvidenceDecisionsPathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const listReviewedEvidenceDecisionsPathAgencyKeyMax = 120;
+
+
+
+export const ListReviewedEvidenceDecisionsParams = zod.object({
+  "factId": zod.coerce.string().max(listReviewedEvidenceDecisionsPathFactIdMax),
+  "workspaceId": zod.coerce.string().regex(listReviewedEvidenceDecisionsPathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(listReviewedEvidenceDecisionsPathAgencyKeyMax)
+})
+
+export const ListReviewedEvidenceDecisionsResponse = zod.object({
+  "decisions": zod.array(zod.object({
+  "action": zod.string(),
+  "reason": zod.string(),
+  "replacementId": zod.string(),
+  "factId": zod.string(),
+  "reviewerUid": zod.string(),
+  "reviewerIdentityMapped": zod.boolean(),
+  "reviewedAt": zod.coerce.date()
+})),
+  "invalid": zod.number().int(),
+  "status": zod.enum(['pending', 'approved', 'challenged', 'withdrawn', 'superseded', 'unavailable'])
+})
+
+
+/**
+ * Requires a valid Replit Auth session and reviewer membership.
+ * @summary Add an immutable reviewer decision
+ */
+export const createReviewedEvidenceDecisionPathFactIdMax = 100;
+
+export const createReviewedEvidenceDecisionPathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const createReviewedEvidenceDecisionPathAgencyKeyMax = 120;
+
+
+
+export const CreateReviewedEvidenceDecisionParams = zod.object({
+  "factId": zod.coerce.string().max(createReviewedEvidenceDecisionPathFactIdMax),
+  "workspaceId": zod.coerce.string().regex(createReviewedEvidenceDecisionPathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(createReviewedEvidenceDecisionPathAgencyKeyMax)
+})
+
+export const CreateReviewedEvidenceDecisionBody = zod.object({
+  "workspaceId": zod.string(),
+  "agencyKey": zod.string(),
+  "draft": zod.record(zod.string(), zod.unknown())
+})
+
+export const CreateReviewedEvidenceDecisionResponse = zod.object({
+  "result": zod.enum(['created', 'exists'])
+})
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().email().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start browser OIDC login
+ */
+export const BeginBrowserLoginResponse = zod.void()
+
+
+/**
+ * @summary Complete browser OIDC login
+ */
+export const HandleBrowserLoginCallbackResponse = zod.void()
+
+
+/**
+ * @summary Clear the browser session and end OIDC session
+ */
+export const LogoutBrowserSessionResponse = zod.void()
+
+
+/**
  * @summary Search public FEMA AFG grant records
  */
 export const getAfgGrantsQueryRecipientNameMax = 180;

@@ -11,6 +11,7 @@ export type HomeDirectoryNotice = {
 export function resolveHomeDirectoryNotice(
   status: DirectoryLoadStatus | undefined,
   visibleAgencyCount: number,
+  publicListingCount?: number,
 ): HomeDirectoryNotice | null {
   if (!status) return null;
 
@@ -46,8 +47,10 @@ export function resolveHomeDirectoryNotice(
         }
       : {
           kind: 'empty',
-          title: 'No agency records are available yet',
-          description: 'The directory finished loading and returned zero records. Map boundaries and county data are separate.',
+          title: 'No saved agency profiles are available yet',
+          description: publicListingCount
+            ? `${publicListingCount.toLocaleString()} public USFA and NPPES registry listings are available to browse by state. These source listings are separate from saved agency profiles and do not confirm current operations.`
+            : 'The saved agency-profile directory finished loading and returned zero records. Browse public registry listings separately; they are not saved profiles.',
           loaded: 0,
         };
   }
@@ -60,6 +63,7 @@ interface HomeDirectoryStatusProps {
   visibleAgencyCount: number;
   onRetry?: () => void;
   onBrowseDirectory: () => void;
+  publicListingCount?: number;
 }
 
 export function HomeDirectoryStatus({
@@ -67,8 +71,9 @@ export function HomeDirectoryStatus({
   visibleAgencyCount,
   onRetry,
   onBrowseDirectory,
+  publicListingCount,
 }: HomeDirectoryStatusProps) {
-  const notice = resolveHomeDirectoryNotice(status, visibleAgencyCount);
+  const notice = resolveHomeDirectoryNotice(status, visibleAgencyCount, publicListingCount);
   if (!notice) return null;
 
   return (
@@ -88,7 +93,9 @@ export function HomeDirectoryStatus({
       )}
       {notice.kind !== 'loading' && (
         <button type="button" className="workspace-text-button min-h-11" onClick={onBrowseDirectory}>
-          Open agency directory
+          {notice.kind === 'empty' && publicListingCount
+            ? 'Browse public registry listings'
+            : 'Open agency directory'}
         </button>
       )}
     </div>

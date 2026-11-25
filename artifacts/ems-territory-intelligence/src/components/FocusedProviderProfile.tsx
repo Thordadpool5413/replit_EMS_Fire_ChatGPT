@@ -85,15 +85,20 @@ import { AgencyCompareButton } from './AgencyCompareButton';
 import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
 import { PreCallPlanner } from './profile/PreCallPlanner';
+import { ReviewedPreCallPlanner } from './profile/ReviewedPreCallPlanner';
 import { ProviderAddressLine } from './profile/ProviderAddressLine';
+import { DepartmentFacilities } from './profile/DepartmentFacilities';
+import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections } from '../services/providerLocation';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
 import { ProfileDetail } from './profile/ProfileDetail';
 import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
+import { AgencyAuthorityEvidence } from './profile/AgencyAuthorityEvidence';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
+import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
 import { FactReviewPanel } from './profile/FactReviewPanel';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
@@ -1626,6 +1631,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </ProfileCommandOverview>
           )}
 
+          {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
+          {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}
+
           {activeSection !== 'overview' && (
             <header className="acp-section-intro" data-section={activeSection} data-testid="profile-section-intro">
               {(() => {
@@ -1654,6 +1662,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           {activeSection === 'deal_story' && (
             <div className="profile-deal-workspace" data-testid="profile-deal-story">
               <PreCallPlanner key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources}/>
+              <ReviewedPreCallPlanner key={'reviewed:'+rawAgency.id} agency={rawAgency} directory={directoryAgencies} onOpenSources={openProfileSources} onCreateTask={onCreateFollowUp}/>
               <DealDiscoveryWorkspace agency={agency} onCreateTask={onCreateFollowUp}/>
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>
@@ -1667,7 +1676,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
-          {showSection('leadership') && <DecisionMakerDirectory agency={agency} />}
+          {showSection('leadership') && <><DecisionMakerDirectory agency={agency} /><AgencyAuthorityEvidence key={rawAgency.id} agencyId={rawAgency.id}/></>}
 
           {showSection('battlecard') && (<ProfileDetail testId="detail-battlecard" icon={Scale} tone="navy" kind="reference" title="Head-to-head comparison" summary={`Recorded incumbent ${agency.installedFleet.defibBrand} vs. benchmark alternative · manufacturer claims, not agency outcomes`}>
           {/* 2. Competitive Battlecard & Head-to-Head Spec Matrix Section */}
@@ -2079,7 +2088,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
-                {showSection('suppliers') && <ProcurementTimeline agency={agency} />}
+                {showSection('suppliers') && <><ProcurementTimeline agency={agency} /><ReviewedLifecycleTimeline agency={rawAgency} directory={directoryAgencies}/></>}
         {showSection('suppliers') && (<ProfileDetail testId="detail-suppliers" icon={PackageCheck} tone="teal" kind="reported" title="Supplier, contract & procurement audit records" summary="Supplier records, procurement document IDs and incumbent-versus-alternative matrix. Brand is not supplier.">
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
           {showSection('suppliers') &&

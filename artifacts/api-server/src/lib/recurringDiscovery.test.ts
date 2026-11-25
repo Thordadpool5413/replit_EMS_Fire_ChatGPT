@@ -55,3 +55,22 @@ test('malformed history, foreign URLs, wrong scope, duplicates, unexpected field
  assert.throws(()=>reconcileDiscoveryFeed(undefined,all(outcome('nyc-ventilation',[nyc()])),now));
  assert.equal(readFileSync(new URL('./recurringDiscoveryContract.ts',import.meta.url),'utf8'),readFileSync(new URL('../../../ems-territory-intelligence/src/services/recurringDiscoveryContract.ts',import.meta.url),'utf8'));
 });
+
+test('legacy v1 feed migrates with history intact and new scopes without a baseline',()=>{
+ const a=reconcileDiscoveryFeed(undefined,all(outcome('fema-fl',[fema()])),now);
+ const legacy={...a,schemaVersion:1,scopes:a.scopes.filter(s=>!s.id.startsWith('chicago-')&&s.id!=='nyc-software')};
+ const upgraded=validateDiscoveryFeed(legacy,now);
+ assert.equal(upgraded.schemaVersion,2);assert.deepEqual(upgraded.items,a.items);
+ assert.equal(upgraded.scopes.length,15);assert.equal(upgraded.scopes.find(s=>s.id==='chicago-cardiac')?.lastSuccess,null);
+ assert.throws(()=>validateDiscoveryFeed({...legacy,scopes:a.scopes},now));
+ const id=JSON.stringify(['PO123','2']);
+ const chicago:FeedCandidate={source:'chicago-contracts',nativeId:id,recordNumber:'PO123',organization:'Fixture department',state:'IL',kind:'chicago-contract-revision',title:'Defibrillator equipment',amount:-50,fiscalYear:null,publishedDay:'2026-11-20',periodStart:null,periodEnd:null,deadlineLocal:null,vendor:null,sourceUrl:feedSourceUrl('chicago-contracts',id)};
+ const b=reconcileDiscoveryFeed(upgraded,all(outcome('chicago-cardiac',[chicago])),now+day);
+ assert.equal(b.items.find(i=>i.candidate.source==='chicago-contracts')?.event,'baseline');
+ assert.equal(b.items.find(i=>i.candidate.source==='openfema-afg')?.lastSeen,a.runAt);
+ assert.throws(()=>reconcileDiscoveryFeed(upgraded,all(outcome('chicago-cardiac',[{...chicago,kind:'municipal-solicitation'}])),now+day));
+ assert.throws(()=>reconcileDiscoveryFeed(upgraded,all(outcome('chicago-cardiac',[{...chicago,recordNumber:'wrong'}])),now+day));
+ assert.throws(()=>reconcileDiscoveryFeed(upgraded,all(outcome('chicago-software',[chicago])),now+day));
+ const c=reconcileDiscoveryFeed(b,all(outcome('chicago-cardiac',[],'unavailable')),now+2*day);
+ assert.equal(c.items.find(i=>i.candidate.source==='chicago-contracts')?.lastSeen,b.runAt);
+});

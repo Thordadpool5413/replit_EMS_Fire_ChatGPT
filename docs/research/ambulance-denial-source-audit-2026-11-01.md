@@ -38,7 +38,7 @@ Reproduce with `node scripts/audit-ambulance-denial-inputs.mjs`.
 | API server routes | Identity/registry/geographic-context endpoints; no live claims-denial ingestion route found | An NPPES identity response does not contain Medicare claim-denial outcomes. |
 | Aggregate import service | Validated NPI × pickup-county counts with report metadata and completeness attestations | A functioning calculation/input path, not an already-populated public data source. |
 
-Paths above are relative to `artifacts/ems-territory-intelligence/`. This inspection does **not** read the user's private browser localStorage, imported reports, or saved Firestore records. Do not infer those stores are empty from the bundled audit.
+Paths above are relative to `artifacts/ems-territory-intelligence/`. This inspection does **not** read the user's private browser localStorage, imported reports, or Replit-backed agency records. Do not infer those stores are empty from the bundled audit.
 
 ## Source assessment
 

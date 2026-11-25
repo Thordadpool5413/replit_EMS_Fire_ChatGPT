@@ -12,7 +12,7 @@ test('known geographic identity survives a verification label change; generated 
  assert.equal(isGeneratedFdid('VA-00103',agency),false);assert.equal(agencyIdentifierLabel({...cleaned,fdid:'00103',isFdidVerified:true}),'FDID 00103');
 });
 test('fallback generator and old contract never become facts when cloud synced',()=>{
- const legacy={...agency,id:'territory-va-fire-abc123',fdid:'VA-51001',verificationSource:'Firestore Cloud Synced'};
+ const legacy={...agency,id:'territory-va-fire-abc123',fdid:'VA-51001',verificationSource:'Replit Backend Synced'};
  assert.equal(isGeographicProspect(legacy),true);assert.equal(isGeneratedFdid(legacy.fdid,legacy),true);assert.equal(hasAgencyFactData(legacy,'defibrillatorBiomedicalFleet'),false);assert.equal(hasAgencyContractEvidence(legacy),false);
  const safe=withoutUnsubstantiatedProspectContract(legacy,false);assert.equal(safe.competitorContract.contractEndDate,'');assert.equal(legacy.competitorContract.contractEndDate,'2028-03-28');assert.deepEqual(safe.fieldNotes,legacy.fieldNotes);
 });

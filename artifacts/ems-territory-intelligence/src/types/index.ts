@@ -446,7 +446,7 @@ export interface Agency {
   officialWebsite?: string;
   googleMapsUri?: string;
   mapSearchUri?: string;
-  verificationSource?: 'Federal CMS NPI Registry' | 'USFA & Municipal Registry' | 'Google Maps Verified' | 'Firestore Cloud Synced' | string;
+  verificationSource?: 'Federal CMS NPI Registry' | 'USFA & Municipal Registry' | 'Google Maps Verified' | 'Replit Backend Synced' | string;
   isVerifiedRecord?: boolean;
   lastVerifiedAt?: string;
   verificationAttempt?: {
@@ -460,7 +460,7 @@ export interface Agency {
   _updatedAt?: string;
   _revision?: number;
   isCloudPersisted?: boolean;
-  dataProvenanceTier?: 'firestore_cloud_synced' | 'live_federal_registry' | 'public_federal_baseline' | 'generated_prospect';
+  dataProvenanceTier?: 'replit_backend_synced' | 'live_federal_registry' | 'public_federal_baseline' | 'generated_prospect';
   operatingRelationship?: 'DIRECT_OPERATING_AGENCY' | 'PARENT_MUNICIPALITY' | 'CONTRACTED_PROVIDER' | 'UNRELATED_ENTITY' | 'UNRESOLVED' | string;
   operatingRelationshipSummary?: string;
   registryEntityConfirmed?: boolean;

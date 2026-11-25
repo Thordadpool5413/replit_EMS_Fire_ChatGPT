@@ -751,3 +751,14 @@
     min-height: 44px !important;
   }
 }
+
+/* The mobile map metric control must retain a full touch target even when the rail reflows. */
+@media (max-width: 767px) {
+  .home-territory-map-screen-v2 #home-map-options[data-mobile-open="true"] #home-state-map-metric {
+    box-sizing: border-box !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    flex-shrink: 0 !important;
+    font-size: 16px !important;
+  }
+}

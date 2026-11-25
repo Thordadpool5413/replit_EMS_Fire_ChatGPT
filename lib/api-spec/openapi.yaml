@@ -14,6 +14,12 @@ tags:
     description: Public-data lookups for EMS and fire territories
   - name: research
     description: Gemini-backed territory research
+  - name: workspace-records
+    description: Shared agency and workspace records stored by the Replit backend
+  - name: reviewed-evidence
+    description: Role-gated, public-source evidence stored by the Replit backend
+  - name: Auth
+    description: Browser and mobile Replit authentication endpoints
 paths:
   /:
     get:
@@ -41,6 +47,314 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /agencies:
+    get:
+      operationId: listAgencyRecords
+      tags: [workspace-records]
+      summary: Read a stable page of agency records
+      description: Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+      parameters:
+        - in: query
+          name: stateCode
+          schema:
+            type: string
+            pattern: "^[A-Za-z]{2}$"
+        - in: query
+          name: after
+          schema:
+            type: string
+            maxLength: 300
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: One bounded page of shared agency records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecordPage"
+        "503":
+          description: Replit database is unavailable
+  /agencies/{agencyId}:
+    get:
+      operationId: getAgencyRecord
+      tags: [workspace-records]
+      summary: Read one agency record
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      responses:
+        "200":
+          description: Agency record and revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecord"
+        "404":
+          description: Agency record not found
+    put:
+      operationId: updateAgencyRecord
+      tags: [workspace-records]
+      summary: Save an agency record with revision protection
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyRecordUpdate"
+      responses:
+        "200":
+          description: Updated record and new revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecord"
+        "409":
+          description: The record changed since the supplied revision
+  /agencies/{agencyId}/mutations:
+    post:
+      operationId: commitAgencyMutation
+      tags: [workspace-records]
+      summary: Apply an idempotent offline mutation
+      description: A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyMutationInput"
+      responses:
+        "200":
+          description: Mutation receipt and committed agency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyMutationResponse"
+        "409":
+          description: The record changed since the queued mutation was created
+  /agencies/batch-create:
+    post:
+      operationId: createAgencyRecords
+      tags: [workspace-records]
+      summary: Create missing agency records without overwriting existing ones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyBatchCreateInput"
+      responses:
+        "200":
+          description: IDs that were created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyBatchCreateResponse"
+  /evidence/workspaces/{workspaceId}/role:
+    get:
+      operationId: getEvidenceWorkspaceRole
+      tags: [reviewed-evidence]
+      summary: Resolve the signed-in user's workspace role
+      description: Requires a valid Replit Auth session and existing workspace membership.
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+      responses:
+        "200":
+          description: Membership role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceRoleResponse"
+        "401":
+          description: A verified sign-in is required
+        "403":
+          description: Workspace membership is not granted
+  /evidence/workspaces/{workspaceId}/agencies/{agencyKey}:
+    get:
+      operationId: listReviewedEvidence
+      tags: [reviewed-evidence]
+      summary: Read a bounded page of published evidence
+      description: Requires a valid Replit Auth session and existing workspace membership.
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: path
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+        - in: header
+          name: X-After
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: Public-source evidence and cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidencePage"
+  /evidence:
+    post:
+      operationId: publishReviewedEvidence
+      tags: [reviewed-evidence]
+      summary: Publish a new public-source observation
+      description: Requires a valid Replit Auth session and editor membership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishReviewedEvidenceInput"
+      responses:
+        "200":
+          description: Created, or the identical immutable record already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
+        "409":
+          description: The immutable record ID conflicts with different evidence
+  /evidence/workspaces/{workspaceId}/agencies/{agencyKey}/facts/{factId}/decisions:
+    get:
+      operationId: listReviewedEvidenceDecisions
+      tags: [reviewed-evidence]
+      summary: Read immutable review decisions for an evidence item
+      description: Requires a valid Replit Auth session and existing workspace membership.
+      parameters:
+        - in: path
+          name: factId
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: path
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        "200":
+          description: Review decision history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceDecisionsResponse"
+    post:
+      operationId: createReviewedEvidenceDecision
+      tags: [reviewed-evidence]
+      summary: Add an immutable reviewer decision
+      description: Requires a valid Replit Auth session and reviewer membership.
+      parameters:
+        - in: path
+          name: factId
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: path
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordEvidenceDecisionInput"
+      responses:
+        "200":
+          description: Decision created or identical decision already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
+        "409":
+          description: A different immutable decision already exists
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Auth status resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start browser OIDC login
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete browser OIDC login
+      responses:
+        "302":
+          description: Redirect to the validated return path or login
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the browser session and end OIDC session
+      responses:
+        "302":
+          description: Redirect to the OIDC end-session endpoint
   /fema/afg-grants:
     get:
       operationId: getAfgGrants
@@ -228,6 +542,194 @@ paths:
           description: Maps-grounded research is unavailable
 components:
   schemas:
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, "null"]
+          format: email
+        firstName:
+          type: [string, "null"]
+        lastName:
+          type: [string, "null"]
+        profileImageUrl:
+          type: [string, "null"]
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    AgencyRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        agency:
+          type: object
+          additionalProperties: true
+      required: [id, revision, agency]
+    AgencyRecordPage:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgencyRecord"
+        nextCursor:
+          type: [string, "null"]
+      required: [records, nextCursor]
+    AgencyRecordUpdate:
+      type: object
+      properties:
+        expectedRevision:
+          type: integer
+          minimum: 0
+        agency:
+          type: object
+          additionalProperties: true
+      required: [expectedRevision, agency]
+    AgencyMutationInput:
+      type: object
+      properties:
+        mutationId:
+          type: string
+          maxLength: 300
+        expectedRevision:
+          type: integer
+          minimum: 0
+        agency:
+          type: object
+          additionalProperties: true
+      required: [mutationId, expectedRevision, agency]
+    AgencyMutationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        agency:
+          type: object
+          additionalProperties: true
+      required: [id, revision, agency]
+    AgencyBatchCreateInput:
+      type: object
+      properties:
+        records:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+            additionalProperties: true
+      required: [records]
+    AgencyBatchCreateResponse:
+      type: object
+      properties:
+        createdIds:
+          type: array
+          items:
+            type: string
+      required: [createdIds]
+    EvidenceRoleResponse:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [viewer, editor, reviewer]
+      required: [role]
+    ReviewedEvidence:
+      type: object
+      properties:
+        evidence:
+          type: object
+          additionalProperties: true
+        authorUid:
+          type: string
+        authorIdentityMapped:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+      required: [evidence, authorUid, authorIdentityMapped, publishedAt]
+    ReviewedEvidencePage:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewedEvidence"
+        withheld:
+          type: integer
+        next:
+          type: [string, "null"]
+      required: [records, withheld, next]
+    PublishReviewedEvidenceInput:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        evidence:
+          type: object
+          additionalProperties: true
+      required: [workspaceId, evidence]
+    RecordEvidenceDecisionInput:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        agencyKey:
+          type: string
+        draft:
+          type: object
+          additionalProperties: true
+      required: [workspaceId, agencyKey, draft]
+    EvidenceDecision:
+      type: object
+      properties:
+        action:
+          type: string
+        reason:
+          type: string
+        replacementId:
+          type: string
+        factId:
+          type: string
+        reviewerUid:
+          type: string
+        reviewerIdentityMapped:
+          type: boolean
+        reviewedAt:
+          type: string
+          format: date-time
+      required: [action, reason, replacementId, factId, reviewerUid, reviewerIdentityMapped, reviewedAt]
+    EvidenceDecisionsResponse:
+      type: object
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceDecision"
+        invalid:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, challenged, withdrawn, superseded, unavailable]
+      required: [decisions, invalid, status]
+    ReviewedEvidenceWriteResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          enum: [created, exists]
+      required: [result]
     HealthStatus:
       type: object
       properties:

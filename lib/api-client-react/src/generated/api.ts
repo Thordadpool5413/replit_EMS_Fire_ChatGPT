@@ -21,18 +21,33 @@ import type {
 
 import type {
   AfgGrantsResponse,
+  AgencyBatchCreateInput,
+  AgencyBatchCreateResponse,
+  AgencyMutationInput,
+  AgencyMutationResponse,
+  AgencyRecord,
+  AgencyRecordPage,
+  AgencyRecordUpdate,
+  AuthUserEnvelope,
   EmsRegistryMatchesResponse,
+  EvidenceDecisionsResponse,
+  EvidenceRoleResponse,
   FireRegistryMatchesResponse,
   GetAfgGrantsParams,
   GetEmsRegistryMatchesParams,
   GetFireRegistryMatchesParams,
   GetNriCountyContextParams,
   HealthStatus,
+  ListAgencyRecordsParams,
   NriCountyContextResponse,
   PlacesResearchInput,
   PlacesResearchResponse,
   ProviderVerificationInput,
   ProviderVerificationResponse,
+  PublishReviewedEvidenceInput,
+  RecordEvidenceDecisionInput,
+  ReviewedEvidencePage,
+  ReviewedEvidenceWriteResponse,
   TerritoryResearchInput,
   TerritoryResearchResponse
 } from './api.schemas';
@@ -208,6 +223,1175 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAgencyRecordsUrl = (params?: ListAgencyRecordsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agencies?${stringifiedParams}` : `/api/agencies`
+}
+
+/**
+ * Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+ * @summary Read a stable page of agency records
+ */
+export const listAgencyRecords = async (params?: ListAgencyRecordsParams, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecordPage> => {
+
+  return customFetch<AgencyRecordPage>(getListAgencyRecordsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgencyRecordsQueryKey = (params?: ListAgencyRecordsParams,) => {
+    return [
+    `/api/agencies`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAgencyRecordsQueryOptions = <TData = Awaited<ReturnType<typeof listAgencyRecords>>, TError = ErrorType<void>>(params?: ListAgencyRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgencyRecordsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgencyRecords>>> = ({ signal }) => listAgencyRecords(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgencyRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgencyRecords>>>
+export type ListAgencyRecordsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read a stable page of agency records
+ */
+
+export function useListAgencyRecords<TData = Awaited<ReturnType<typeof listAgencyRecords>>, TError = ErrorType<void>>(
+ params?: ListAgencyRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgencyRecordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAgencyRecordUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}`
+}
+
+/**
+ * @summary Read one agency record
+ */
+export const getAgencyRecord = async (agencyId: string, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecord> => {
+
+  return customFetch<AgencyRecord>(getGetAgencyRecordUrl(agencyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgencyRecordQueryKey = (agencyId: string,) => {
+    return [
+    `/api/agencies/${agencyId}`
+    ] as const;
+    }
+
+
+export const getGetAgencyRecordQueryOptions = <TData = Awaited<ReturnType<typeof getAgencyRecord>>, TError = ErrorType<void>>(agencyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgencyRecordQueryKey(agencyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgencyRecord>>> = ({ signal }) => getAgencyRecord(agencyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: agencyId !== null && agencyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgencyRecordQueryResult = NonNullable<Awaited<ReturnType<typeof getAgencyRecord>>>
+export type GetAgencyRecordQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read one agency record
+ */
+
+export function useGetAgencyRecord<TData = Awaited<ReturnType<typeof getAgencyRecord>>, TError = ErrorType<void>>(
+ agencyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgencyRecordQueryOptions(agencyId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAgencyRecordUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}`
+}
+
+/**
+ * @summary Save an agency record with revision protection
+ */
+export const updateAgencyRecord = async (agencyId: string,
+    agencyRecordUpdate: AgencyRecordUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyRecord>(getUpdateAgencyRecordUrl(agencyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyRecordUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAgencyRecordMutationKey = () => ['updateAgencyRecord'] as const;
+
+export const getUpdateAgencyRecordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAgencyRecordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAgencyRecord>>, UpdateAgencyRecordMutationVariables> = (props) => {
+          const {agencyId,data} = props ?? {};
+
+          return  updateAgencyRecord(agencyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAgencyRecordMutationResult = NonNullable<Awaited<ReturnType<typeof updateAgencyRecord>>>
+    export type UpdateAgencyRecordMutationBody = BodyType<AgencyRecordUpdate>
+    export type UpdateAgencyRecordMutationError = ErrorType<void>
+    export type UpdateAgencyRecordMutationVariables = {agencyId: string;data: BodyType<AgencyRecordUpdate>}
+
+    /**
+ * @summary Save an agency record with revision protection
+ */
+export const useUpdateAgencyRecord = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAgencyRecord>>,
+        TError,
+        UpdateAgencyRecordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAgencyRecordMutationOptions(options));
+    }
+
+export const getCommitAgencyMutationUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/mutations`
+}
+
+/**
+ * A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+ * @summary Apply an idempotent offline mutation
+ */
+export const commitAgencyMutation = async (agencyId: string,
+    agencyMutationInput: AgencyMutationInput, options?: Parameters<typeof customFetch>[1]): Promise<AgencyMutationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyMutationResponse>(getCommitAgencyMutationUrl(agencyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyMutationInput)
+  }
+);}
+
+
+
+
+
+export const getCommitAgencyMutationMutationKey = () => ['commitAgencyMutation'] as const;
+
+export const getCommitAgencyMutationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext> => {
+
+const mutationKey = getCommitAgencyMutationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitAgencyMutation>>, CommitAgencyMutationMutationVariables> = (props) => {
+          const {agencyId,data} = props ?? {};
+
+          return  commitAgencyMutation(agencyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitAgencyMutationMutationResult = NonNullable<Awaited<ReturnType<typeof commitAgencyMutation>>>
+    export type CommitAgencyMutationMutationBody = BodyType<AgencyMutationInput>
+    export type CommitAgencyMutationMutationError = ErrorType<void>
+    export type CommitAgencyMutationMutationVariables = {agencyId: string;data: BodyType<AgencyMutationInput>}
+
+    /**
+ * @summary Apply an idempotent offline mutation
+ */
+export const useCommitAgencyMutation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitAgencyMutation>>,
+        TError,
+        CommitAgencyMutationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCommitAgencyMutationMutationOptions(options));
+    }
+
+export const getCreateAgencyRecordsUrl = () => {
+
+
+
+
+  return `/api/agencies/batch-create`
+}
+
+/**
+ * @summary Create missing agency records without overwriting existing ones
+ */
+export const createAgencyRecords = async (agencyBatchCreateInput: AgencyBatchCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<AgencyBatchCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyBatchCreateResponse>(getCreateAgencyRecordsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyBatchCreateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAgencyRecordsMutationKey = () => ['createAgencyRecords'] as const;
+
+export const getCreateAgencyRecordsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext> => {
+
+const mutationKey = getCreateAgencyRecordsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgencyRecords>>, CreateAgencyRecordsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAgencyRecords(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgencyRecordsMutationResult = NonNullable<Awaited<ReturnType<typeof createAgencyRecords>>>
+    export type CreateAgencyRecordsMutationBody = BodyType<AgencyBatchCreateInput>
+    export type CreateAgencyRecordsMutationError = ErrorType<unknown>
+    export type CreateAgencyRecordsMutationVariables = {data: BodyType<AgencyBatchCreateInput>}
+
+    /**
+ * @summary Create missing agency records without overwriting existing ones
+ */
+export const useCreateAgencyRecords = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgencyRecords>>,
+        TError,
+        CreateAgencyRecordsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAgencyRecordsMutationOptions(options));
+    }
+
+export const getGetEvidenceWorkspaceRoleUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/evidence/workspaces/${workspaceId}/role`
+}
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Resolve the signed-in user's workspace role
+ */
+export const getEvidenceWorkspaceRole = async (workspaceId: string, options?: Parameters<typeof customFetch>[1]): Promise<EvidenceRoleResponse> => {
+
+  return customFetch<EvidenceRoleResponse>(getGetEvidenceWorkspaceRoleUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEvidenceWorkspaceRoleQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/evidence/workspaces/${workspaceId}/role`
+    ] as const;
+    }
+
+
+export const getGetEvidenceWorkspaceRoleQueryOptions = <TData = Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError = ErrorType<void>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEvidenceWorkspaceRoleQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>> = ({ signal }) => getEvidenceWorkspaceRole(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEvidenceWorkspaceRoleQueryResult = NonNullable<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>>
+export type GetEvidenceWorkspaceRoleQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve the signed-in user's workspace role
+ */
+
+export function useGetEvidenceWorkspaceRole<TData = Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError = ErrorType<void>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEvidenceWorkspaceRoleQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListReviewedEvidenceUrl = (workspaceId: string,
+    agencyKey: string,) => {
+
+
+
+
+  return `/api/evidence/workspaces/${workspaceId}/agencies/${agencyKey}`
+}
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Read a bounded page of published evidence
+ */
+export const listReviewedEvidence = async (workspaceId: string,
+    agencyKey: string, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidencePage> => {
+
+  return customFetch<ReviewedEvidencePage>(getListReviewedEvidenceUrl(workspaceId,agencyKey),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewedEvidenceQueryKey = (workspaceId: string,
+    agencyKey: string,) => {
+    return [
+    `/api/evidence/workspaces/${workspaceId}/agencies/${agencyKey}`
+    ] as const;
+    }
+
+
+export const getListReviewedEvidenceQueryOptions = <TData = Awaited<ReturnType<typeof listReviewedEvidence>>, TError = ErrorType<unknown>>(workspaceId: string,
+    agencyKey: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewedEvidenceQueryKey(workspaceId,agencyKey);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewedEvidence>>> = ({ signal }) => listReviewedEvidence(workspaceId,agencyKey, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined && agencyKey !== null && agencyKey !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewedEvidenceQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewedEvidence>>>
+export type ListReviewedEvidenceQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read a bounded page of published evidence
+ */
+
+export function useListReviewedEvidence<TData = Awaited<ReturnType<typeof listReviewedEvidence>>, TError = ErrorType<unknown>>(
+ workspaceId: string,
+    agencyKey: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewedEvidenceQueryOptions(workspaceId,agencyKey,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPublishReviewedEvidenceUrl = () => {
+
+
+
+
+  return `/api/evidence`
+}
+
+/**
+ * Requires a valid Replit Auth session and editor membership.
+ * @summary Publish a new public-source observation
+ */
+export const publishReviewedEvidence = async (publishReviewedEvidenceInput: PublishReviewedEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidenceWriteResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReviewedEvidenceWriteResponse>(getPublishReviewedEvidenceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(publishReviewedEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getPublishReviewedEvidenceMutationKey = () => ['publishReviewedEvidence'] as const;
+
+export const getPublishReviewedEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getPublishReviewedEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishReviewedEvidence>>, PublishReviewedEvidenceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  publishReviewedEvidence(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishReviewedEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof publishReviewedEvidence>>>
+    export type PublishReviewedEvidenceMutationBody = BodyType<PublishReviewedEvidenceInput>
+    export type PublishReviewedEvidenceMutationError = ErrorType<void>
+    export type PublishReviewedEvidenceMutationVariables = {data: BodyType<PublishReviewedEvidenceInput>}
+
+    /**
+ * @summary Publish a new public-source observation
+ */
+export const usePublishReviewedEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishReviewedEvidence>>,
+        TError,
+        PublishReviewedEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPublishReviewedEvidenceMutationOptions(options));
+    }
+
+export const getListReviewedEvidenceDecisionsUrl = (workspaceId: string,
+    agencyKey: string,
+    factId: string,) => {
+
+
+
+
+  return `/api/evidence/workspaces/${workspaceId}/agencies/${agencyKey}/facts/${factId}/decisions`
+}
+
+/**
+ * Requires a valid Replit Auth session and existing workspace membership.
+ * @summary Read immutable review decisions for an evidence item
+ */
+export const listReviewedEvidenceDecisions = async (workspaceId: string,
+    agencyKey: string,
+    factId: string, options?: Parameters<typeof customFetch>[1]): Promise<EvidenceDecisionsResponse> => {
+
+  return customFetch<EvidenceDecisionsResponse>(getListReviewedEvidenceDecisionsUrl(workspaceId,agencyKey,factId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewedEvidenceDecisionsQueryKey = (workspaceId: string,
+    agencyKey: string,
+    factId: string,) => {
+    return [
+    `/api/evidence/workspaces/${workspaceId}/agencies/${agencyKey}/facts/${factId}/decisions`
+    ] as const;
+    }
+
+
+export const getListReviewedEvidenceDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError = ErrorType<unknown>>(workspaceId: string,
+    agencyKey: string,
+    factId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewedEvidenceDecisionsQueryKey(workspaceId,agencyKey,factId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>> = ({ signal }) => listReviewedEvidenceDecisions(workspaceId,agencyKey,factId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined && agencyKey !== null && agencyKey !== undefined && factId !== null && factId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewedEvidenceDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>>
+export type ListReviewedEvidenceDecisionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read immutable review decisions for an evidence item
+ */
+
+export function useListReviewedEvidenceDecisions<TData = Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError = ErrorType<unknown>>(
+ workspaceId: string,
+    agencyKey: string,
+    factId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewedEvidenceDecisionsQueryOptions(workspaceId,agencyKey,factId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateReviewedEvidenceDecisionUrl = (workspaceId: string,
+    agencyKey: string,
+    factId: string,) => {
+
+
+
+
+  return `/api/evidence/workspaces/${workspaceId}/agencies/${agencyKey}/facts/${factId}/decisions`
+}
+
+/**
+ * Requires a valid Replit Auth session and reviewer membership.
+ * @summary Add an immutable reviewer decision
+ */
+export const createReviewedEvidenceDecision = async (workspaceId: string,
+    agencyKey: string,
+    factId: string,
+    recordEvidenceDecisionInput: RecordEvidenceDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidenceWriteResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReviewedEvidenceWriteResponse>(getCreateReviewedEvidenceDecisionUrl(workspaceId,agencyKey,factId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recordEvidenceDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateReviewedEvidenceDecisionMutationKey = () => ['createReviewedEvidenceDecision'] as const;
+
+export const getCreateReviewedEvidenceDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext> => {
+
+const mutationKey = getCreateReviewedEvidenceDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, CreateReviewedEvidenceDecisionMutationVariables> = (props) => {
+          const {workspaceId,agencyKey,factId,data} = props ?? {};
+
+          return  createReviewedEvidenceDecision(workspaceId,agencyKey,factId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewedEvidenceDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>>
+    export type CreateReviewedEvidenceDecisionMutationBody = BodyType<RecordEvidenceDecisionInput>
+    export type CreateReviewedEvidenceDecisionMutationError = ErrorType<void>
+    export type CreateReviewedEvidenceDecisionMutationVariables = {workspaceId: string;agencyKey: string;factId: string;data: BodyType<RecordEvidenceDecisionInput>}
+
+    /**
+ * @summary Add an immutable reviewer decision
+ */
+export const useCreateReviewedEvidenceDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReviewedEvidenceDecision>>,
+        TError,
+        CreateReviewedEvidenceDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateReviewedEvidenceDecisionMutationOptions(options));
+    }
+
+export const getGetCurrentAuthUserUrl = () => {
+
+
+
+
+  return `/api/auth/user`
+}
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const getCurrentAuthUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthUserEnvelope> => {
+
+  return customFetch<AuthUserEnvelope>(getGetCurrentAuthUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentAuthUserQueryKey = () => {
+    return [
+    `/api/auth/user`
+    ] as const;
+    }
+
+
+export const getGetCurrentAuthUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentAuthUser>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentAuthUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAuthUser>>> = ({ signal }) => getCurrentAuthUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentAuthUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentAuthUser>>>
+export type GetCurrentAuthUserQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+
+export function useGetCurrentAuthUser<TData = Awaited<ReturnType<typeof getCurrentAuthUser>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentAuthUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getBeginBrowserLoginUrl = () => {
+
+
+
+
+  return `/api/login`
+}
+
+/**
+ * @summary Start browser OIDC login
+ */
+export const beginBrowserLogin = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getBeginBrowserLoginUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginBrowserLoginQueryKey = () => {
+    return [
+    `/api/login`
+    ] as const;
+    }
+
+
+export const getBeginBrowserLoginQueryOptions = <TData = Awaited<ReturnType<typeof beginBrowserLogin>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBeginBrowserLoginQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof beginBrowserLogin>>> = ({ signal }) => beginBrowserLogin({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type BeginBrowserLoginQueryResult = NonNullable<Awaited<ReturnType<typeof beginBrowserLogin>>>
+export type BeginBrowserLoginQueryError = ErrorType<void>
+
+
+/**
+ * @summary Start browser OIDC login
+ */
+
+export function useBeginBrowserLogin<TData = Awaited<ReturnType<typeof beginBrowserLogin>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getBeginBrowserLoginQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getHandleBrowserLoginCallbackUrl = () => {
+
+
+
+
+  return `/api/callback`
+}
+
+/**
+ * @summary Complete browser OIDC login
+ */
+export const handleBrowserLoginCallback = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getHandleBrowserLoginCallbackUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getHandleBrowserLoginCallbackQueryKey = () => {
+    return [
+    `/api/callback`
+    ] as const;
+    }
+
+
+export const getHandleBrowserLoginCallbackQueryOptions = <TData = Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getHandleBrowserLoginCallbackQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof handleBrowserLoginCallback>>> = ({ signal }) => handleBrowserLoginCallback({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type HandleBrowserLoginCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof handleBrowserLoginCallback>>>
+export type HandleBrowserLoginCallbackQueryError = ErrorType<void>
+
+
+/**
+ * @summary Complete browser OIDC login
+ */
+
+export function useHandleBrowserLoginCallback<TData = Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getHandleBrowserLoginCallbackQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLogoutBrowserSessionUrl = () => {
+
+
+
+
+  return `/api/logout`
+}
+
+/**
+ * @summary Clear the browser session and end OIDC session
+ */
+export const logoutBrowserSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getLogoutBrowserSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutBrowserSessionQueryKey = () => {
+    return [
+    `/api/logout`
+    ] as const;
+    }
+
+
+export const getLogoutBrowserSessionQueryOptions = <TData = Awaited<ReturnType<typeof logoutBrowserSession>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLogoutBrowserSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof logoutBrowserSession>>> = ({ signal }) => logoutBrowserSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type LogoutBrowserSessionQueryResult = NonNullable<Awaited<ReturnType<typeof logoutBrowserSession>>>
+export type LogoutBrowserSessionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Clear the browser session and end OIDC session
+ */
+
+export function useLogoutBrowserSession<TData = Awaited<ReturnType<typeof logoutBrowserSession>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getLogoutBrowserSessionQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

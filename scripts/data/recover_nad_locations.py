@@ -96,7 +96,8 @@ def resolve_point(a,features,counties,source_county=''):
  if len(locations)!=1:return None,'ambiguous'
  cf,m=min(exact,key=lambda t:t[1]['point']['objectId'])
  return (m,cf),'mapped'
-def recover(entries,counties,states,max_requests,delay=1.25,request=json_request):
+def recover(entries,counties,states,max_requests,delay=1.25,request=json_request,batch_size=8):
+ if not 1<=batch_size<=8:raise ValueError('Invalid NAD batch size')
  groups=collections.defaultdict(list);stats=collections.Counter()
  for e in entries:
   if e['state'] not in states or e['status'] not in ('no-match','unavailable'):continue
@@ -107,8 +108,8 @@ def recover(entries,counties,states,max_requests,delay=1.25,request=json_request
  consecutive_errors=0;requests=0
  for state in sorted(by_state):
   values=sorted(by_state[state],key=lambda g:(g[0]['address']['zip'],g[0]['address']['street']))
-  for start in range(0,len(values),8):
-   batch=values[start:start+8]
+  for start in range(0,len(values),batch_size):
+   batch=values[start:start+batch_size]
    if requests>=max_requests or consecutive_errors>=3:stats['not_attempted']+=sum(len(g) for g in batch);continue
    addresses=[g[0]['address'] for g in batch]
    requests+=1
@@ -128,9 +129,9 @@ def recover(entries,counties,states,max_requests,delay=1.25,request=json_request
   print('NAD',state,'cumulative',dict(stats),'requests',requests,flush=True)
  return dict(stats,requests=requests)
 def main():
- p=argparse.ArgumentParser();p.add_argument('--states',default='all');p.add_argument('--max-requests',type=int,default=1200);p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--states',default='all');p.add_argument('--max-requests',type=int,default=1200);p.add_argument('--batch-size',type=int,default=8);p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');args=p.parse_args()
  states=STATES if args.states=='all' else set(args.states.split(','))
- if not states or not states<=STATES or not 1<=args.max_requests<=1200:raise ValueError('Invalid NAD scope')
+ if not states or not states<=STATES or not 1<=args.max_requests<=1200 or not 1<=args.batch_size<=8:raise ValueError('Invalid NAD scope')
  manifest,rows=read_registry();fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes())
  verify(args.output,manifest,rows,fl)
  index=json.loads((args.output/'index.json').read_bytes())
@@ -139,12 +140,15 @@ def main():
  before={e['key']:json.dumps(e,sort_keys=True) for e in entries if e['status']=='mapped'}
  counties=county_index(json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_text())['counties'])
  version=verify_service()
- stats=recover(entries,counties,states,args.max_requests)
+ stats=recover(entries,counties,states,args.max_requests,batch_size=args.batch_size)
+ if stats.get('requests',0) and stats.get('unavailable',0) and not sum(stats.get(k,0) for k in ('mapped','no-match','review','ambiguous')):raise ValueError('All NAD queries unavailable; no successful recovery; snapshot untouched')
  if verify_service()!=version:raise ValueError('NAD source changed during processing; no data published')
  if any(json.dumps(e,sort_keys=True)!=before[e['key']] for e in entries if e['key'] in before):raise ValueError('Existing mapped record changed')
  metadata={k:v for k,v in index.items() if k not in ('schemaVersion','generatedAt','benchmark','vintage','sourceScope','chunks','coverage','nadRecovery')}
  metadata['nadRecovery']=dict(sourceUrl=LAYER,release=RELEASE,scope=sorted(states),results=stats,previousMapped=len(before),newMapped=sum(e['status']=='mapped' for e in entries)-len(before))
- publish(args.output,manifest,entries,metadata);verify(args.output,manifest,rows,fl)
  print('NAD recovery summary',json.dumps(metadata['nadRecovery']),flush=True)
- if stats.get('requests',0) and stats.get('unavailable',0) and not sum(stats.get(k,0) for k in ('mapped','no-match','review','ambiguous')):raise ValueError('All NAD queries unavailable; no successful recovery')
+ if not metadata['nadRecovery']['newMapped']:
+  print('No additional validated NAD points; snapshot untouched.',flush=True)
+  return
+ publish(args.output,manifest,entries,metadata);verify(args.output,manifest,rows,fl)
 if __name__=='__main__':main()

@@ -1,11 +1,11 @@
 import React,{useEffect,useState} from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUser } from '@workspace/replit-auth-web';
 import type { Agency } from '../types';
 import { buildReviewedRadar,type ReviewedRadarResult } from '../services/sharedOpportunityRadar';
-import { loadReviewedRadarRows,type EvidenceSession } from '../services/sharedEvidenceFirebase';
+import { loadReviewedRadarRows,type EvidenceSession } from '../services/sharedEvidenceReplit';
 import { OPPORTUNITY_LABELS } from '../services/opportunityRadar';
 import { sharedAgencyKey } from '../services/sharedEvidence';
-export function SharedOpportunityRadar({session,user,agency}:{session:EvidenceSession;user:User;agency:Agency}){
+export function SharedOpportunityRadar({session,user,agency}:{session:EvidenceSession;user:AuthUser;agency:Agency}){
  const [result,setResult]=useState<{review:ReviewedRadarResult;checkedAt:string}>();
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');

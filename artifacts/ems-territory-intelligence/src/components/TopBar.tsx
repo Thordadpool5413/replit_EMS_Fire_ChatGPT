@@ -41,6 +41,7 @@ import {
 } from '../navigation/workspaceNavigation';
 import type { ThemeMode } from '../types/theme';
 import { ThemeModeSelect } from './ThemeModeSelect';
+import { AgencyWorkspaceAccess } from './AgencyWorkspaceAccess';
 
 interface TopBarProps {
   activeTab: string;
@@ -330,6 +331,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   Help &amp; sources
                 </div>
                 <div className="space-y-0.5 px-2">
+                  <AgencyWorkspaceAccess />
                   {onToggleGuide && (
                     <button
                       type="button"
@@ -520,6 +522,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#53657B] dark:text-slate-400">
                     Workspace tools
                   </div>
+                  <div className="px-2"><AgencyWorkspaceAccess /></div>
                   <div className="px-2 pt-1.5 space-y-0.5">
                     {openChatbot && (
                       <button

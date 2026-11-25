@@ -5,6 +5,7 @@ No remote address queries, no nationwide address extraction, no unrelated rows r
 import argparse,collections,csv,io,json,math,pathlib,re,zipfile
 from backfill_provider_locations import ROOT,PUBLIC,STATES,base_street,normal_street,physical,read_registry,publish,verify,digest_file,zip5
 from recover_nad_locations import county_index,resolve_point
+from checked_zip_member import open_checked_member
 DOWNLOAD='https://data.transportation.gov/api/views/fc2s-wawr/files/596a301b-d548-4589-8c63-6b6a8dc34f30?download=true&filename=TXT.zip'
 CATALOG='https://data.transportation.gov/d/fc2s-wawr'
 RELEASE='2026-09-30'
@@ -30,7 +31,7 @@ def scan(archive,entries,counties,states=STATES,minimum_member_bytes=1_000_000):
   if len(candidates)!=1:raise ValueError('Expected one NAD address table in ZIP')
   member=candidates[0]
   if member.file_size>70_000_000_000 or member.flag_bits&1:raise ValueError('Archive exceeds bounded scan or is encrypted')
-  with z.open(member) as raw,io.TextIOWrapper(raw,encoding='utf-8-sig',newline='') as stream:
+  with open_checked_member(archive,z,member) as raw,io.TextIOWrapper(raw,encoding='utf-8-sig',newline='') as stream:
    first=stream.readline(65536)
    formats=[]
    for d in (',','\t','|'):
@@ -63,7 +64,7 @@ def scan(archive,entries,counties,states=STATES,minimum_member_bytes=1_000_000):
     if len(hits[k])>=250:
      overflow.add(k);hits.pop(k,None);seen.pop(k,None);continue
     hits[k].append(dict(attributes=record,geometry=dict(x=x,y=y)))
-  # Read the full member to EOF; zipfile CRC is checked on stream completion.
+  # Read the full member to EOF; checked decoder verifies size, CRC and process status before applying any candidate.
  for k,group in grouped.items():
   for e in group:
    if k in overflow:stats['ambiguous']+=1;continue

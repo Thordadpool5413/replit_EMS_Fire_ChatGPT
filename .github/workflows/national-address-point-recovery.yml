@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/data/recover_ny_locations.py'
       - 'scripts/data/recover_nad_bulk_locations.py'
+      - 'scripts/data/checked_zip_member.py'
+      - 'scripts/data/test_checked_zip_member.py'
       - '.github/workflows/national-address-point-recovery.yml'
   workflow_dispatch:
 permissions:
@@ -48,6 +50,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Ensure streaming ZIP decoder is available
+        run: |
+          set -euo pipefail
+          if ! command -v 7zz >/dev/null && ! command -v 7z >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y p7zip-full
+          fi
+          command -v 7zz || command -v 7z
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Download pinned USDOT public release r24
         shell: bash

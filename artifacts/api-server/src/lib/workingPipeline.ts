@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {authorityIdentity} from './agencyAuthority';
 import {validNpi} from './providerLocationContract';
 export const STAGES=['research','qualified','evaluation','procurement','won','closed'] as const;
@@ -30,7 +31,7 @@ export function pipelineIdentity(p:Record<string,unknown>){
  if(source==='NERIS'&&['www.usfa.fema.gov','services5.arcgis.com'].includes(u.hostname))key='NERIS:'+id;
  if(source==='State EMS'&&state==='OH'&&r.identifierKind==='agency-code'&&u.hostname==='ems.ohio.gov'&&['Paramedic','AEMT','EMT','EMR'].includes(String(r.serviceLevel)))key='STATE-EMS:OH:agency-code:'+id;
  if(source==='State EMS'&&state==='FL'&&r.identifierKind==='license'&&/^\d{1,12}$/.test(id)&&r.headquartersState==='FL'&&u.href==='https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf'&&['AIR/I','AIR/IR','AIR/IP','AIR/P','ALS/T','ALS/N','BLS/T','BLS/N'].includes(String(r.serviceLevel))&&day(r.licenseIssuedAt)&&day(r.licenseExpiresAt)&&day(r.sourceDate)&&r.licenseIssuedAt<=r.sourceDate&&r.licenseExpiresAt>=r.sourceDate)key='STATE-EMS:FL:license:'+id;
- return key?{key,binding,source:String(source),id,state,kind:typeof r.identifierKind==='string'?r.identifierKind:''}:undefined;
+ return key?{key,binding:createHash('sha256').update(JSON.stringify([binding,r.name,r.sourceUrl,key])).digest('hex'),source:String(source),id,state,kind:typeof r.identifierKind==='string'?r.identifierKind:''}:undefined;
 }
 export function parsePipelineWrite(v:unknown){
  const p=obj(v),input=parsePipelineInput(p.input);

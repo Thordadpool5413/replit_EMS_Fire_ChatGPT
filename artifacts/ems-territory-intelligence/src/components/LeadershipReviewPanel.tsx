@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useState} from 'react';
 import type {Agency} from '../types';
 import type {ReviewedSample} from '../services/reviewedAccountPriorities';
 import {buildLeadershipReview,REASON_LABELS,REASON_VIEWS,type ReviewReason} from '../services/leadershipReview';

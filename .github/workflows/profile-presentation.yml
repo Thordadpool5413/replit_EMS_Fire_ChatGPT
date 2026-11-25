@@ -257,3 +257,6 @@ jobs:
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-equipment.integration.test.ts
       - name: Verify private decision authority evidence
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-authority.integration.test.ts
+
+      - name: Verify shared working pipeline persistence and permissions
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/working-pipeline.integration.test.ts

@@ -14,6 +14,8 @@ tags:
     description: Public-data lookups for EMS and fire territories
   - name: research
     description: Gemini-backed territory research
+  - name: workspace-records
+    description: Shared agency and workspace records stored by the Replit backend
 paths:
   /:
     get:
@@ -41,6 +43,131 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /agencies:
+    get:
+      operationId: listAgencyRecords
+      tags: [workspace-records]
+      summary: Read a stable page of agency records
+      description: Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+      parameters:
+        - in: query
+          name: stateCode
+          schema:
+            type: string
+            pattern: "^[A-Za-z]{2}$"
+        - in: query
+          name: after
+          schema:
+            type: string
+            maxLength: 300
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: One bounded page of shared agency records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecordPage"
+        "503":
+          description: Replit database is unavailable
+  /agencies/{agencyId}:
+    get:
+      operationId: getAgencyRecord
+      tags: [workspace-records]
+      summary: Read one agency record
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      responses:
+        "200":
+          description: Agency record and revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecord"
+        "404":
+          description: Agency record not found
+    put:
+      operationId: updateAgencyRecord
+      tags: [workspace-records]
+      summary: Save an agency record with revision protection
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyRecordUpdate"
+      responses:
+        "200":
+          description: Updated record and new revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyRecord"
+        "409":
+          description: The record changed since the supplied revision
+  /agencies/{agencyId}/mutations:
+    post:
+      operationId: commitAgencyMutation
+      tags: [workspace-records]
+      summary: Apply an idempotent offline mutation
+      description: A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+      parameters:
+        - in: path
+          name: agencyId
+          required: true
+          schema:
+            type: string
+            maxLength: 300
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyMutationInput"
+      responses:
+        "200":
+          description: Mutation receipt and committed agency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyMutationResponse"
+        "409":
+          description: The record changed since the queued mutation was created
+  /agencies/batch-create:
+    post:
+      operationId: createAgencyRecords
+      tags: [workspace-records]
+      summary: Create missing agency records without overwriting existing ones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyBatchCreateInput"
+      responses:
+        "200":
+          description: IDs that were created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyBatchCreateResponse"
   /fema/afg-grants:
     get:
       operationId: getAfgGrants
@@ -228,6 +355,79 @@ paths:
           description: Maps-grounded research is unavailable
 components:
   schemas:
+    AgencyRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        agency:
+          type: object
+          additionalProperties: true
+      required: [id, revision, agency]
+    AgencyRecordPage:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgencyRecord"
+        nextCursor:
+          type: [string, "null"]
+      required: [records, nextCursor]
+    AgencyRecordUpdate:
+      type: object
+      properties:
+        expectedRevision:
+          type: integer
+          minimum: 0
+        agency:
+          type: object
+          additionalProperties: true
+      required: [expectedRevision, agency]
+    AgencyMutationInput:
+      type: object
+      properties:
+        mutationId:
+          type: string
+          maxLength: 300
+        expectedRevision:
+          type: integer
+          minimum: 0
+        agency:
+          type: object
+          additionalProperties: true
+      required: [mutationId, expectedRevision, agency]
+    AgencyMutationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        agency:
+          type: object
+          additionalProperties: true
+      required: [id, revision, agency]
+    AgencyBatchCreateInput:
+      type: object
+      properties:
+        records:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+            additionalProperties: true
+      required: [records]
+    AgencyBatchCreateResponse:
+      type: object
+      properties:
+        createdIds:
+          type: array
+          items:
+            type: string
+      required: [createdIds]
     HealthStatus:
       type: object
       properties:

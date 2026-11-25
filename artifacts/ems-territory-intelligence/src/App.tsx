@@ -46,7 +46,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { WorkspaceLoadingState } from './components/WorkspaceLoadingState';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeMapFailureFallback } from './components/HomeMapFallbacks';
-import { useFirestoreAgencies } from './hooks/useFirestoreAgencies';
+import { useAgencyRecords } from './hooks/useFirestoreAgencies';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
 import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
 import {
@@ -157,7 +157,7 @@ export default function App() {
   const [globalCategory, setGlobalCategory] = useState<ProviderScope>(initialTerritoryUrl.category);
   const [activeAccount, setActiveAccount] = useState<Agency | null>(null);
 
-  // Real-time synchronization hook connected to Firebase Firestore cloud backend
+  // Agency synchronization uses the Replit API with local recovery for offline edits.
   const {
     agencies,
     directoryStatus,
@@ -180,7 +180,7 @@ export default function App() {
     setAgenciesState,
     syncPendingChanges,
     quarantinedProviders
-  } = useFirestoreAgencies({
+  } = useAgencyRecords({
     globalState,
     globalCounty,
     onToast: showToast

@@ -5,6 +5,139 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AgencyRecordAgency = { [key: string]: unknown };
+
+export interface AgencyRecord {
+  id: string;
+  revision: number;
+  agency: AgencyRecordAgency;
+}
+
+export interface AgencyRecordPage {
+  records: AgencyRecord[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type AgencyRecordUpdateAgency = { [key: string]: unknown };
+
+export interface AgencyRecordUpdate {
+  /** @minimum 0 */
+  expectedRevision: number;
+  agency: AgencyRecordUpdateAgency;
+}
+
+export type AgencyMutationInputAgency = { [key: string]: unknown };
+
+export interface AgencyMutationInput {
+  /** @maxLength 300 */
+  mutationId: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  agency: AgencyMutationInputAgency;
+}
+
+export type AgencyMutationResponseAgency = { [key: string]: unknown };
+
+export interface AgencyMutationResponse {
+  id: string;
+  revision: number;
+  agency: AgencyMutationResponseAgency;
+}
+
+export type AgencyBatchCreateInputRecordsItem = { [key: string]: unknown };
+
+export interface AgencyBatchCreateInput {
+  /** @maxItems 25 */
+  records: AgencyBatchCreateInputRecordsItem[];
+}
+
+export interface AgencyBatchCreateResponse {
+  createdIds: string[];
+}
+
+export type EvidenceRoleResponseRole = typeof EvidenceRoleResponseRole[keyof typeof EvidenceRoleResponseRole];
+
+
+export const EvidenceRoleResponseRole = {
+  viewer: 'viewer',
+  editor: 'editor',
+  reviewer: 'reviewer',
+} as const;
+
+export interface EvidenceRoleResponse {
+  role: EvidenceRoleResponseRole;
+}
+
+export type ReviewedEvidenceEvidence = { [key: string]: unknown };
+
+export interface ReviewedEvidence {
+  evidence: ReviewedEvidenceEvidence;
+  authorUid: string;
+  publishedAt: string;
+}
+
+export interface ReviewedEvidencePage {
+  records: ReviewedEvidence[];
+  withheld: number;
+  /** @nullable */
+  next: string | null;
+}
+
+export type PublishReviewedEvidenceInputEvidence = { [key: string]: unknown };
+
+export interface PublishReviewedEvidenceInput {
+  workspaceId: string;
+  evidence: PublishReviewedEvidenceInputEvidence;
+}
+
+export type RecordEvidenceDecisionInputDraft = { [key: string]: unknown };
+
+export interface RecordEvidenceDecisionInput {
+  workspaceId: string;
+  agencyKey: string;
+  draft: RecordEvidenceDecisionInputDraft;
+}
+
+export interface EvidenceDecision {
+  action: string;
+  reason: string;
+  replacementId: string;
+  factId: string;
+  reviewerUid: string;
+  reviewedAt: string;
+}
+
+export type EvidenceDecisionsResponseStatus = typeof EvidenceDecisionsResponseStatus[keyof typeof EvidenceDecisionsResponseStatus];
+
+
+export const EvidenceDecisionsResponseStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  challenged: 'challenged',
+  withdrawn: 'withdrawn',
+  superseded: 'superseded',
+  unavailable: 'unavailable',
+} as const;
+
+export interface EvidenceDecisionsResponse {
+  decisions: EvidenceDecision[];
+  invalid: number;
+  status: EvidenceDecisionsResponseStatus;
+}
+
+export type ReviewedEvidenceWriteResponseResult = typeof ReviewedEvidenceWriteResponseResult[keyof typeof ReviewedEvidenceWriteResponseResult];
+
+
+export const ReviewedEvidenceWriteResponseResult = {
+  created: 'created',
+  exists: 'exists',
+} as const;
+
+export interface ReviewedEvidenceWriteResponse {
+  result: ReviewedEvidenceWriteResponseResult;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -372,6 +505,60 @@ export interface PlacesResearchResponse {
   text: string;
   mapsLinks: PlacesResearchResponseMapsLinksItem[];
 }
+
+/**
+ * Verified Google/Firebase sign-in ID token, sent as a bearer token.
+ */
+export type EvidenceBearerTokenParameter = string;
+
+export type ListAgencyRecordsParams = {
+/**
+ * @pattern ^[A-Za-z]{2}$
+ */
+stateCode?: string;
+/**
+ * @maxLength 300
+ */
+after?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type GetEvidenceWorkspaceRoleParams = {
+/**
+ * @pattern ^[A-Za-z0-9_-]{1,64}$
+ */
+workspaceId: string;
+};
+
+export type ListReviewedEvidenceParams = {
+/**
+ * @pattern ^[A-Za-z0-9_-]{1,64}$
+ */
+workspaceId: string;
+/**
+ * @maxLength 120
+ */
+agencyKey: string;
+/**
+ * @maxLength 100
+ */
+after?: string;
+};
+
+export type ListReviewedEvidenceDecisionsParams = {
+/**
+ * @pattern ^[A-Za-z0-9_-]{1,64}$
+ */
+workspaceId: string;
+/**
+ * @maxLength 120
+ */
+agencyKey: string;
+};
 
 export type GetAfgGrantsParams = {
 stateCode?: string;

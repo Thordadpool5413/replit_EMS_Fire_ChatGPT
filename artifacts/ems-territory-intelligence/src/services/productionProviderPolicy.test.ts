@@ -12,8 +12,8 @@ test('production directory initializes without importing legacy provider fixture
 });
 test('legacy origin remains quarantined after synchronization and source linking',()=>{
  const real={id:'registry-NPI-1234567893',verificationSource:'Source-native registry listing',stateCode:'FL',agencyType:'EMS',city:'Example',county:'Brevard County',countyFips:'12009'} as Agency;
- const seed={...real,id:'zoll-agency-fl-old',dataProvenanceTier:'firestore_cloud_synced'} as Agency;
- const modeled={...real,id:'fire-fl-12009-example',dataProvenanceTier:'firestore_cloud_synced'} as Agency;
+ const seed={...real,id:'zoll-agency-fl-old',dataProvenanceTier:'replit_backend_synced'} as Agency;
+ const modeled={...real,id:'fire-fl-12009-example',dataProvenanceTier:'replit_backend_synced'} as Agency;
  assert.equal(isLegacyProviderRecord(seed),true);assert.equal(isLegacyProviderRecord(modeled),true);
  assert.deepEqual(activeProviderRecords([seed,real,modeled]),[real]);
 });

@@ -35,7 +35,7 @@ export interface DerivedProcurementOpportunity {
   stateCode: string;
   npiNumber: string;
   fdid: string;
-  sourceProvenance: 'Firestore Cloud Verified' | 'Live Federal Registry (CMS NPPES / OpenFEMA)' | 'USFA & Municipal Contract Horizon';
+  sourceProvenance: 'Replit Backend Verified' | 'Live Federal Registry (CMS NPPES / OpenFEMA)' | 'USFA & Municipal Contract Horizon';
   scopeCategory: 'Monitor-Defibrillators (ALS)' | 'Mechanical CPR Systems' | 'Transport Ventilators' | 'ePCR & CAD Telemetry Software';
   incumbentSystem: string;
   fleetAgeYears: number;
@@ -105,7 +105,7 @@ export function computeNationwideStateAggregations(
     const stateName = list[0]?.state || stateCode;
     const region = STATE_REGION_MAP[stateCode] || 'South';
     const totalAgencies = list.length;
-    const cloudSyncedAgencies = list.filter(a => a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced').length;
+    const cloudSyncedAgencies = list.filter(a => a.isCloudPersisted || a.dataProvenanceTier === 'replit_backend_synced').length;
     const medicareClaimsRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareClaimsVolume));
     const billedVolumeRecords = list.filter(a => hasReportedValue(a.cmsData?.medicareBilledAnnual));
     const denialMetrics = list
@@ -171,7 +171,7 @@ export function computeNationwideStateAggregations(
       afgAwardAmountDataCount: afgAwardAmountRecords.length,
       provenanceLabel:
         cloudSyncedAgencies > 0
-          ? `Firestore Cloud (${cloudSyncedAgencies}/${totalAgencies}) + Federal Baseline`
+          ? `Replit backend (${cloudSyncedAgencies}/${totalAgencies}) + Federal Baseline`
           : 'Verified USFA / CMS NPPES Baseline'
     });
   }
@@ -210,8 +210,8 @@ export function deriveProcurementOpportunitiesFromAgencies(agencies: Agency[]): 
         : 'Sourcewell #041823-ZOL or HGACBuy #EE08-24';
 
       const sourceProvenance: DerivedProcurementOpportunity['sourceProvenance'] =
-        a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced'
-          ? 'Firestore Cloud Verified'
+        a.isCloudPersisted || a.dataProvenanceTier === 'replit_backend_synced'
+          ? 'Replit Backend Verified'
           : a.dataProvenanceTier === 'live_federal_registry'
             ? 'Live Federal Registry (CMS NPPES / OpenFEMA)'
             : 'USFA & Municipal Contract Horizon';
@@ -282,8 +282,8 @@ export function deriveFleetTelemetryFromAgencies(agencies: Agency[]): DerivedFle
         replacementUrgencyScore: urgency,
         estimatedFiveYearTcoSavings,
         provenanceTier:
-          a.isCloudPersisted || a.dataProvenanceTier === 'firestore_cloud_synced'
-            ? 'Firestore Cloud Synced'
+          a.isCloudPersisted || a.dataProvenanceTier === 'replit_backend_synced'
+            ? 'Replit Backend Synced'
             : a.dataProvenanceTier === 'live_federal_registry'
               ? 'Live Federal Registry'
               : 'Public Federal Baseline'

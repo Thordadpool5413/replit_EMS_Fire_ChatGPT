@@ -16,6 +16,8 @@ tags:
     description: Gemini-backed territory research
   - name: workspace-records
     description: Shared agency and workspace records stored by the Replit backend
+  - name: reviewed-evidence
+    description: Role-gated, public-source evidence stored by the Replit backend
 paths:
   /:
     get:
@@ -168,6 +170,141 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgencyBatchCreateResponse"
+  /evidence/role:
+    get:
+      operationId: getEvidenceWorkspaceRole
+      tags: [reviewed-evidence]
+      summary: Resolve the signed-in user's workspace role
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - $ref: "#/components/parameters/EvidenceBearerToken"
+      responses:
+        "200":
+          description: Membership role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceRoleResponse"
+        "401":
+          description: A verified sign-in is required
+        "403":
+          description: Workspace membership is not granted
+  /evidence:
+    get:
+      operationId: listReviewedEvidence
+      tags: [reviewed-evidence]
+      summary: Read a bounded page of published evidence
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: query
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+        - in: query
+          name: after
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/EvidenceBearerToken"
+      responses:
+        "200":
+          description: Public-source evidence and cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidencePage"
+    post:
+      operationId: publishReviewedEvidence
+      tags: [reviewed-evidence]
+      summary: Publish a new public-source observation
+      parameters:
+        - $ref: "#/components/parameters/EvidenceBearerToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishReviewedEvidenceInput"
+      responses:
+        "200":
+          description: Created, or the identical immutable record already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
+        "409":
+          description: The immutable record ID conflicts with different evidence
+  /evidence/{factId}/decisions:
+    get:
+      operationId: listReviewedEvidenceDecisions
+      tags: [reviewed-evidence]
+      summary: Read immutable review decisions for an evidence item
+      parameters:
+        - in: path
+          name: factId
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: query
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
+        - $ref: "#/components/parameters/EvidenceBearerToken"
+      responses:
+        "200":
+          description: Review decision history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceDecisionsResponse"
+    post:
+      operationId: createReviewedEvidenceDecision
+      tags: [reviewed-evidence]
+      summary: Add an immutable reviewer decision
+      parameters:
+        - in: path
+          name: factId
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/EvidenceBearerToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordEvidenceDecisionInput"
+      responses:
+        "200":
+          description: Decision created or identical decision already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
+        "409":
+          description: A different immutable decision already exists
   /fema/afg-grants:
     get:
       operationId: getAfgGrants
@@ -354,6 +491,14 @@ paths:
         "503":
           description: Maps-grounded research is unavailable
 components:
+  parameters:
+    EvidenceBearerToken:
+      name: Authorization
+      in: header
+      required: true
+      description: Verified Google/Firebase sign-in ID token, sent as a bearer token.
+      schema:
+        type: string
   schemas:
     AgencyRecord:
       type: object
@@ -428,6 +573,94 @@ components:
           items:
             type: string
       required: [createdIds]
+    EvidenceRoleResponse:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [viewer, editor, reviewer]
+      required: [role]
+    ReviewedEvidence:
+      type: object
+      properties:
+        evidence:
+          type: object
+          additionalProperties: true
+        authorUid:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+      required: [evidence, authorUid, publishedAt]
+    ReviewedEvidencePage:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewedEvidence"
+        withheld:
+          type: integer
+        next:
+          type: [string, "null"]
+      required: [records, withheld, next]
+    PublishReviewedEvidenceInput:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        evidence:
+          type: object
+          additionalProperties: true
+      required: [workspaceId, evidence]
+    RecordEvidenceDecisionInput:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        agencyKey:
+          type: string
+        draft:
+          type: object
+          additionalProperties: true
+      required: [workspaceId, agencyKey, draft]
+    EvidenceDecision:
+      type: object
+      properties:
+        action:
+          type: string
+        reason:
+          type: string
+        replacementId:
+          type: string
+        factId:
+          type: string
+        reviewerUid:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+      required: [action, reason, replacementId, factId, reviewerUid, reviewedAt]
+    EvidenceDecisionsResponse:
+      type: object
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceDecision"
+        invalid:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, challenged, withdrawn, superseded, unavailable]
+      required: [decisions, invalid, status]
+    ReviewedEvidenceWriteResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          enum: [created, exists]
+      required: [result]
     HealthStatus:
       type: object
       properties:

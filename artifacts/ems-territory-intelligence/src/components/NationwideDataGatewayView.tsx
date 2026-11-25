@@ -181,7 +181,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-50 dark:bg-blue-950/60 text-[#1E3A8A] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                LIVE FIRESTORE &amp; FEDERAL REGISTRY AGGREGATION
+                LIVE REPLIT BACKEND &amp; FEDERAL REGISTRY AGGREGATION
               </span>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
                 CMS NPPES v2.1 · OPENFEMA AFG v2 · USFA · NEMSIS v3.5.0 · CMS GADCS
@@ -290,7 +290,7 @@ export const NationwideDataGatewayView: React.FC<NationwideDataGatewayViewProps>
                 {agencies.length.toLocaleString()}
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">
-                {totalCloudSynced.toLocaleString()} synced in Firestore Cloud
+                {totalCloudSynced.toLocaleString()} synced in Replit storage
               </div>
             </div>
 

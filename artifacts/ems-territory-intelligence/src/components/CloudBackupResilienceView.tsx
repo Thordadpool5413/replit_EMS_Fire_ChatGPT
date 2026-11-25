@@ -63,11 +63,10 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
   showToast
 }) => {
   const [currentUser] = useState({
-    name: 'Nicholas Lynch',
-    email: 'nicholas.lynch@spartan-coaching-schools.org',
-    role: 'Territory Operations Executive',
-    tenant: 'ZOLL-NORTHAMERICA-ENTERPRISE-01',
-    firebaseProjectId: 'ai-studio-nicksemsfireterr-26354b36-e812-4fee-8cf9-2df9f9c26acf'
+    name: 'Workspace user',
+    email: '',
+    role: 'Local browser backup',
+    tenant: 'Replit workspace'
   });
 
   const [snapshots, setSnapshots] = useState<CloudSnapshot[]>(() => {
@@ -99,9 +98,9 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
     {
       id: 'init-log',
       timestamp: new Date().toLocaleTimeString(),
-      step: 'FIREBASE_CONNECTION',
+      step: 'REPLIT_BACKEND',
       status: 'pass',
-      detail: `Local workspace initialized with ${agencies.length} agency records. No Firestore write was performed.`
+      detail: `Local workspace initialized with ${agencies.length} agency records. No database write was performed.`
     }
   ]);
 
@@ -302,7 +301,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
       isRestored: s.snapshotId === snap.snapshotId
     })));
 
-    addLog('LOCAL_SNAPSHOT_RESTORED', 'pass', `Restored ${snap.recordCount} local agency records from ${snap.version}. No Firestore write was performed.`);
+    addLog('LOCAL_SNAPSHOT_RESTORED', 'pass', `Restored ${snap.recordCount} local agency records from ${snap.version}. No backend write was performed.`);
   };
 
   const handleCopyChecksum = (hash: string) => {
@@ -333,7 +332,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
         </div>}
       </section>
       
-      {/* Top Banner & Cloud Database Connectivity */}
+      {/* Top Banner & Replit Backend Context */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -350,7 +349,7 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
               Local Backup & State Archive Center
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-              Browser-local snapshots with integrity digests and JSON export. These actions do not write to Firestore; external cloud writes require a separate confirmed action in Data Health.
+              Browser-local snapshots with integrity digests and JSON export. Restore changes this browser only; agency edits are saved separately through the Replit backend.
             </p>
           </div>
 
@@ -375,28 +374,28 @@ export const CloudBackupResilienceView: React.FC<CloudBackupResilienceViewProps>
           </div>
         </div>
 
-        {/* Database Connection & Authenticated Operator Strip */}
+        {/* Backend and access model */}
         <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-1">
               <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Cloud Firestore Database</span>
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Primary data source</span>
             </div>
             <div className="font-mono text-slate-900 dark:text-slate-100 text-[11px] truncate">
-              {currentUser.firebaseProjectId}
+              Replit-managed PostgreSQL
             </div>
             <div className="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Cloud writes are opt-in in Data Health
+              <CheckCircle2 className="w-3 h-3" /> Agency records use the Replit API
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Authenticated Executive</span>
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Access model</span>
             </div>
-            <div className="font-bold text-slate-900 dark:text-slate-100">{currentUser.name}</div>
-            <div className="font-mono text-slate-500 dark:text-slate-400 text-[11px] truncate">{currentUser.email}</div>
+            <div className="font-bold text-slate-900 dark:text-slate-100">No application sign-in</div>
+            <div className="font-mono text-slate-500 dark:text-slate-400 text-[11px] truncate">Current agency access behavior retained</div>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">

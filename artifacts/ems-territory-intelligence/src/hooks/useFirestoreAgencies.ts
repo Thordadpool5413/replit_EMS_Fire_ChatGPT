@@ -5,7 +5,7 @@ import { withWorkspaceLock } from '../services/workspaceLock';
 import { applyAgencyReviews, stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
 import { FACT_REVIEW_STORAGE_KEY, type FactReviewEntry } from '../services/factReviewStore';
 import { applyAgencyMutation } from '../services/agencyMutation';
-import { commitAgencyMutation } from '../utils/firebase';
+import { commitAgencyMutation } from '../utils/replitAgencyApi';
 import { loadStoredOutbox, saveOutbox, createOutboxItem } from '../utils/syncStore';
 /**
  * @license
@@ -14,12 +14,12 @@ import { loadStoredOutbox, saveOutbox, createOutboxItem } from '../utils/syncSto
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Agency, LeadStage, FieldNote } from '../types';
-import { 
-  saveAgencyToFirestore, 
-  subscribeToFirestoreAgencies, 
-  batchSyncAgenciesToFirestore,
+import {
+  saveAgencyToReplit,
+  subscribeToReplitAgencies,
+  batchSyncAgenciesToReplit,
   fetchAgencyDirectoryPage,
-} from '../utils/firebase';
+} from '../utils/replitAgencyApi';
 import { saveAgencies, loadStoredAgencies } from '../utils/syncStore';
 import { territoryEngine } from '../services/territoryIntelligenceEngine';
 import { dataSanitizationService } from '../services/dataSanitizationService';
@@ -30,13 +30,13 @@ import {
 
 const nationalDirectory = createAgencyDirectoryLoader(fetchAgencyDirectoryPage);
 
-interface UseFirestoreAgenciesOptions {
+interface UseAgencyRecordsOptions {
   globalState?: string;
   globalCounty?: string;
   onToast?: (message: string, type?: 'success' | 'info' | 'warn' | 'error') => void;
 }
 
-export interface UseFirestoreAgenciesResult {
+export interface UseAgencyRecordsResult {
   agencies: Agency[];
   quarantinedProviders: Agency[];
   directoryStatus: {
@@ -64,15 +64,15 @@ export interface UseFirestoreAgenciesResult {
 }
 
 /**
- * Data-fetching, read-only Firestore subscription, and local sanitization hook
+ * Data-fetching, Replit-backed agency synchronization, and local sanitization hook
  * across all 3,144 nationwide counties. Ensures zero mock/test records or synthetic notes
  * ever reach the UI.
  */
-export function useFirestoreAgencies({
+export function useAgencyRecords({
   globalState = 'all',
   globalCounty = 'all',
   onToast
-}: UseFirestoreAgenciesOptions = {}): UseFirestoreAgenciesResult {
+}: UseAgencyRecordsOptions = {}): UseAgencyRecordsResult {
   const [allSanitizedAgencies, setAllSanitizedAgencies] = useState<Agency[]>(() =>
     dataSanitizationService.sanitizeAgenciesList(loadStoredAgencies(), undefined, false)
   );
@@ -83,7 +83,7 @@ export function useFirestoreAgencies({
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [cloudSyncCount, setCloudSyncCount] = useState<number>(0);
   const [nationalDirectoryStatus, setNationalDirectoryStatus] = useState<DirectoryLoadStatus>({ status: 'loading', loaded: 0 });
-  const [stateDirectoryStatus, setDirectoryStatus] = useState<UseFirestoreAgenciesResult['directoryStatus']>({
+  const [stateDirectoryStatus, setDirectoryStatus] = useState<UseAgencyRecordsResult['directoryStatus']>({
     stateCode: 'all',
     status: 'ready',
   });
@@ -93,12 +93,12 @@ export function useFirestoreAgencies({
   const mergeCloudAgencies = useCallback((rawCloudAgencies: Agency[]) => {
     if (rawCloudAgencies.length > 0) {
       const localSourceData = loadAgencySourceRecordData();
-      // Strip any mock or test-generated records coming from Firestore
+      // Keep only actual, sanitized agency records returned by the Replit API.
       const validCloudAgencies = dataSanitizationService.sanitizeAgenciesList(
         rawCloudAgencies.map(ca => ({
           ...ca,
           isCloudPersisted: true,
-          dataProvenanceTier: 'firestore_cloud_synced' as const
+          dataProvenanceTier: 'replit_backend_synced' as const
         })),
         undefined,
         false
@@ -139,7 +139,7 @@ export function useFirestoreAgencies({
     }
   }, []);
 
-  // Read all existing cloud records once, independently of the selected territory.
+  // Read all backend records once, independently of the selected territory.
   useEffect(() => {
     const unsubscribe = nationalDirectory.subscribe((page, progress) => {
       mergeCloudAgencies(page);
@@ -156,7 +156,7 @@ export function useFirestoreAgencies({
     ? { stateCode: 'all', status: nationalDirectoryStatus.status }
     : stateDirectoryStatus;
 
-  // Keep only the selected state live; national pages above are not re-read on navigation.
+  // Refresh only the selected state periodically; national pages remain session-cached.
   useEffect(() => {
     const stateCode = globalState.trim().toUpperCase() || 'ALL';
     if (stateCode === 'ALL') {
@@ -167,7 +167,7 @@ export function useFirestoreAgencies({
     let unsubscribe: (() => void) | undefined;
 
     try {
-      unsubscribe = subscribeToFirestoreAgencies((rawCloudAgencies) => {
+      unsubscribe = subscribeToReplitAgencies((rawCloudAgencies) => {
         setDirectoryStatus({ stateCode, status: 'ready' });
         setIsCloudConnected(true);
         mergeCloudAgencies(rawCloudAgencies);
@@ -176,7 +176,7 @@ export function useFirestoreAgencies({
         setDirectoryStatus({ stateCode, status: 'unavailable' });
       });
     } catch (err) {
-      console.warn('Real-time Firestore listener offline fallback:', err);
+      console.warn('Replit agency refresh could not start:', err);
       setDirectoryStatus({ stateCode, status: 'unavailable' });
     }
 
@@ -194,14 +194,14 @@ export function useFirestoreAgencies({
     if (onToast) {
       onToast(
         enabled
-          ? 'Strict Cloud-Only Mode Enabled: Showing exclusively Firestore-persisted records.'
+          ? 'Replit-only Mode Enabled: Showing exclusively backend-persisted records.'
           : 'Verified Hybrid Mode Enabled: Showing all sanitized cloud and verified public registry records.',
         'info'
       );
     }
   }, [onToast]);
 
-  // Batch hydrate unsynced active agencies into Firestore
+  // Batch create eligible records that do not yet exist in the Replit backend.
   const hydrateBatchToCloud = useCallback(async (maxRecords: number = 25): Promise<number> => {
     const unsynced = allSanitizedAgencies.filter(
       a => canBulkHydrateAgency(a) && !a.isCloudPersisted && !dataSanitizationService.isAgencyCloudSynced(a.id)
@@ -216,17 +216,17 @@ export function useFirestoreAgencies({
         ...a,
         _syncedAt: nowIso,
         isCloudPersisted: true,
-        dataProvenanceTier: 'firestore_cloud_synced' as const
+        dataProvenanceTier: 'replit_backend_synced' as const
       }));
 
-      const ids = await batchSyncAgenciesToFirestore(stampedBatch, maxRecords);
+      const ids = await batchSyncAgenciesToReplit(stampedBatch, maxRecords);
       const count = ids.length;
       dataSanitizationService.registerCloudSyncedIds(ids);
       setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
 
       dataSanitizationService.recordAuditEvent(
         'CLOUD_HYDRATE',
-        `Synchronized ${count} source-native registry accounts to Google Cloud Firestore (${dataSanitizationService.getCloudSyncedIdsCount()} total in cloud).`,
+        `Saved ${count} source-native registry accounts to the Replit backend (${dataSanitizationService.getCloudSyncedIdsCount()} total).`,
         stampedBatch.length,
         0,
         dataSanitizationService.getCloudSyncedIdsCount()
@@ -240,7 +240,7 @@ export function useFirestoreAgencies({
                 ...a,
                 _syncedAt: nowIso,
                 isCloudPersisted: true,
-                dataProvenanceTier: 'firestore_cloud_synced' as const
+                dataProvenanceTier: 'replit_backend_synced' as const
               }
             : a
         );
@@ -249,7 +249,7 @@ export function useFirestoreAgencies({
       });
 
       if (onToast) {
-        onToast(`Synchronized ${count} agency records to Cloud Firestore!`, 'success');
+        onToast(`Saved ${count} agency records to the Replit backend.`, 'success');
       }
       return count;
     } catch (err) {
@@ -263,30 +263,30 @@ export function useFirestoreAgencies({
     }
   }, [allSanitizedAgencies, onToast]);
 
-  // 4. Update single agency in Firestore + local optimistic update
+  // Save a complete agency record with revision protection.
   const updateAgencyInCloud = useCallback(async (agency: Agency) => {
     if(isLegacyProviderRecord(agency))throw Error('Legacy modeled provider is quarantined; reconcile against a public registry before editing.');
     const cleanAgency = dataSanitizationService.sanitizeAgency({
       ...agency,
       _updatedAt: new Date().toISOString(),
       isCloudPersisted: true,
-      dataProvenanceTier: 'firestore_cloud_synced'
+      dataProvenanceTier: 'replit_backend_synced'
     });
     if (!cleanAgency) return;
 
     try {
       setIsSyncing(true);
-      await saveAgencyToFirestore(cleanAgency);
+      const saved = await saveAgencyToReplit(cleanAgency);
       dataSanitizationService.registerCloudSyncedIds([cleanAgency.id]);
       setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
       setAllSanitizedAgencies(prev => {
-        const next = prev.map(a => a.id === cleanAgency.id ? cleanAgency : a);
+        const next = prev.map(a => a.id === cleanAgency.id ? saved : a);
         saveAgencies(next);
         return next;
       });
     } catch (err) {
       console.warn('Cloud write buffered offline:', err);
-      if (onToast) onToast('Firestore write failed. The local record is unchanged and remains available.', 'error');
+      if (onToast) onToast('Replit backend save failed. The local record remains available for recovery.', 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -464,9 +464,8 @@ export function useFirestoreAgencies({
 }
 
 /**
- * Read-only accessor to inspect agencies loaded and sanitized by useFirestoreAgencies
- * without mutating Firestore production data.
+ * Read-only accessor to inspect the locally cached and sanitized agency records.
  */
-export function getInitialFirestoreAgenciesDataset(): Agency[] {
+export function getInitialAgencyRecordsDataset(): Agency[] {
   return activeProviderRecords(dataSanitizationService.sanitizeAgenciesList(loadStoredAgencies(), undefined, false));
 }

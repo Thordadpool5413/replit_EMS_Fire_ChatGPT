@@ -21,18 +21,35 @@ import type {
 
 import type {
   AfgGrantsResponse,
+  AgencyBatchCreateInput,
+  AgencyBatchCreateResponse,
+  AgencyMutationInput,
+  AgencyMutationResponse,
+  AgencyRecord,
+  AgencyRecordPage,
+  AgencyRecordUpdate,
   EmsRegistryMatchesResponse,
+  EvidenceDecisionsResponse,
+  EvidenceRoleResponse,
   FireRegistryMatchesResponse,
   GetAfgGrantsParams,
   GetEmsRegistryMatchesParams,
+  GetEvidenceWorkspaceRoleParams,
   GetFireRegistryMatchesParams,
   GetNriCountyContextParams,
   HealthStatus,
+  ListAgencyRecordsParams,
+  ListReviewedEvidenceDecisionsParams,
+  ListReviewedEvidenceParams,
   NriCountyContextResponse,
   PlacesResearchInput,
   PlacesResearchResponse,
   ProviderVerificationInput,
   ProviderVerificationResponse,
+  PublishReviewedEvidenceInput,
+  RecordEvidenceDecisionInput,
+  ReviewedEvidencePage,
+  ReviewedEvidenceWriteResponse,
   TerritoryResearchInput,
   TerritoryResearchResponse
 } from './api.schemas';
@@ -219,6 +236,869 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getListAgencyRecordsUrl = (params?: ListAgencyRecordsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agencies?${stringifiedParams}` : `/api/agencies`
+}
+
+/**
+ * Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+ * @summary Read a stable page of agency records
+ */
+export const listAgencyRecords = async (params?: ListAgencyRecordsParams, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecordPage> => {
+
+  return customFetch<AgencyRecordPage>(getListAgencyRecordsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgencyRecordsQueryKey = (params?: ListAgencyRecordsParams,) => {
+    return [
+    `/api/agencies`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAgencyRecordsQueryOptions = <TData = Awaited<ReturnType<typeof listAgencyRecords>>, TError = ErrorType<void>>(params?: ListAgencyRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgencyRecordsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgencyRecords>>> = ({ signal }) => listAgencyRecords(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgencyRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgencyRecords>>>
+export type ListAgencyRecordsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read a stable page of agency records
+ */
+
+export function useListAgencyRecords<TData = Awaited<ReturnType<typeof listAgencyRecords>>, TError = ErrorType<void>>(
+ params?: ListAgencyRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgencyRecordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAgencyRecordUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}`
+}
+
+/**
+ * @summary Read one agency record
+ */
+export const getAgencyRecord = async (agencyId: string, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecord> => {
+
+  return customFetch<AgencyRecord>(getGetAgencyRecordUrl(agencyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgencyRecordQueryKey = (agencyId: string,) => {
+    return [
+    `/api/agencies/${agencyId}`
+    ] as const;
+    }
+
+
+export const getGetAgencyRecordQueryOptions = <TData = Awaited<ReturnType<typeof getAgencyRecord>>, TError = ErrorType<void>>(agencyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgencyRecordQueryKey(agencyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgencyRecord>>> = ({ signal }) => getAgencyRecord(agencyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: agencyId !== null && agencyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgencyRecordQueryResult = NonNullable<Awaited<ReturnType<typeof getAgencyRecord>>>
+export type GetAgencyRecordQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read one agency record
+ */
+
+export function useGetAgencyRecord<TData = Awaited<ReturnType<typeof getAgencyRecord>>, TError = ErrorType<void>>(
+ agencyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyRecord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgencyRecordQueryOptions(agencyId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAgencyRecordUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}`
+}
+
+/**
+ * @summary Save an agency record with revision protection
+ */
+export const updateAgencyRecord = async (agencyId: string,
+    agencyRecordUpdate: AgencyRecordUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyRecord>(getUpdateAgencyRecordUrl(agencyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyRecordUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAgencyRecordMutationKey = () => ['updateAgencyRecord'] as const;
+
+export const getUpdateAgencyRecordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAgencyRecordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAgencyRecord>>, UpdateAgencyRecordMutationVariables> = (props) => {
+          const {agencyId,data} = props ?? {};
+
+          return  updateAgencyRecord(agencyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAgencyRecordMutationResult = NonNullable<Awaited<ReturnType<typeof updateAgencyRecord>>>
+    export type UpdateAgencyRecordMutationBody = BodyType<AgencyRecordUpdate>
+    export type UpdateAgencyRecordMutationError = ErrorType<void>
+    export type UpdateAgencyRecordMutationVariables = {agencyId: string;data: BodyType<AgencyRecordUpdate>}
+
+    /**
+ * @summary Save an agency record with revision protection
+ */
+export const useUpdateAgencyRecord = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgencyRecord>>, TError,UpdateAgencyRecordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAgencyRecord>>,
+        TError,
+        UpdateAgencyRecordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAgencyRecordMutationOptions(options));
+    }
+
+export const getCommitAgencyMutationUrl = (agencyId: string,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/mutations`
+}
+
+/**
+ * A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+ * @summary Apply an idempotent offline mutation
+ */
+export const commitAgencyMutation = async (agencyId: string,
+    agencyMutationInput: AgencyMutationInput, options?: Parameters<typeof customFetch>[1]): Promise<AgencyMutationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyMutationResponse>(getCommitAgencyMutationUrl(agencyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyMutationInput)
+  }
+);}
+
+
+
+
+
+export const getCommitAgencyMutationMutationKey = () => ['commitAgencyMutation'] as const;
+
+export const getCommitAgencyMutationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext> => {
+
+const mutationKey = getCommitAgencyMutationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitAgencyMutation>>, CommitAgencyMutationMutationVariables> = (props) => {
+          const {agencyId,data} = props ?? {};
+
+          return  commitAgencyMutation(agencyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitAgencyMutationMutationResult = NonNullable<Awaited<ReturnType<typeof commitAgencyMutation>>>
+    export type CommitAgencyMutationMutationBody = BodyType<AgencyMutationInput>
+    export type CommitAgencyMutationMutationError = ErrorType<void>
+    export type CommitAgencyMutationMutationVariables = {agencyId: string;data: BodyType<AgencyMutationInput>}
+
+    /**
+ * @summary Apply an idempotent offline mutation
+ */
+export const useCommitAgencyMutation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitAgencyMutation>>, TError,CommitAgencyMutationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitAgencyMutation>>,
+        TError,
+        CommitAgencyMutationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCommitAgencyMutationMutationOptions(options));
+    }
+
+export const getCreateAgencyRecordsUrl = () => {
+
+
+
+
+  return `/api/agencies/batch-create`
+}
+
+/**
+ * @summary Create missing agency records without overwriting existing ones
+ */
+export const createAgencyRecords = async (agencyBatchCreateInput: AgencyBatchCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<AgencyBatchCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgencyBatchCreateResponse>(getCreateAgencyRecordsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agencyBatchCreateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAgencyRecordsMutationKey = () => ['createAgencyRecords'] as const;
+
+export const getCreateAgencyRecordsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext> => {
+
+const mutationKey = getCreateAgencyRecordsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgencyRecords>>, CreateAgencyRecordsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAgencyRecords(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgencyRecordsMutationResult = NonNullable<Awaited<ReturnType<typeof createAgencyRecords>>>
+    export type CreateAgencyRecordsMutationBody = BodyType<AgencyBatchCreateInput>
+    export type CreateAgencyRecordsMutationError = ErrorType<unknown>
+    export type CreateAgencyRecordsMutationVariables = {data: BodyType<AgencyBatchCreateInput>}
+
+    /**
+ * @summary Create missing agency records without overwriting existing ones
+ */
+export const useCreateAgencyRecords = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgencyRecords>>,
+        TError,
+        CreateAgencyRecordsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAgencyRecordsMutationOptions(options));
+    }
+
+export const getGetEvidenceWorkspaceRoleUrl = (params: GetEvidenceWorkspaceRoleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/evidence/role?${stringifiedParams}` : `/api/evidence/role`
+}
+
+/**
+ * @summary Resolve the signed-in user's workspace role
+ */
+export const getEvidenceWorkspaceRole = async (params: GetEvidenceWorkspaceRoleParams, options?: Parameters<typeof customFetch>[1]): Promise<EvidenceRoleResponse> => {
+
+  return customFetch<EvidenceRoleResponse>(getGetEvidenceWorkspaceRoleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEvidenceWorkspaceRoleQueryKey = (params?: GetEvidenceWorkspaceRoleParams,) => {
+    return [
+    `/api/evidence/role`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEvidenceWorkspaceRoleQueryOptions = <TData = Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError = ErrorType<void>>(params: GetEvidenceWorkspaceRoleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEvidenceWorkspaceRoleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>> = ({ signal }) => getEvidenceWorkspaceRole(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEvidenceWorkspaceRoleQueryResult = NonNullable<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>>
+export type GetEvidenceWorkspaceRoleQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve the signed-in user's workspace role
+ */
+
+export function useGetEvidenceWorkspaceRole<TData = Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError = ErrorType<void>>(
+ params: GetEvidenceWorkspaceRoleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvidenceWorkspaceRole>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEvidenceWorkspaceRoleQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListReviewedEvidenceUrl = (params: ListReviewedEvidenceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/evidence?${stringifiedParams}` : `/api/evidence`
+}
+
+/**
+ * @summary Read a bounded page of published evidence
+ */
+export const listReviewedEvidence = async (params: ListReviewedEvidenceParams, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidencePage> => {
+
+  return customFetch<ReviewedEvidencePage>(getListReviewedEvidenceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewedEvidenceQueryKey = (params?: ListReviewedEvidenceParams,) => {
+    return [
+    `/api/evidence`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListReviewedEvidenceQueryOptions = <TData = Awaited<ReturnType<typeof listReviewedEvidence>>, TError = ErrorType<unknown>>(params: ListReviewedEvidenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewedEvidenceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewedEvidence>>> = ({ signal }) => listReviewedEvidence(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewedEvidenceQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewedEvidence>>>
+export type ListReviewedEvidenceQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read a bounded page of published evidence
+ */
+
+export function useListReviewedEvidence<TData = Awaited<ReturnType<typeof listReviewedEvidence>>, TError = ErrorType<unknown>>(
+ params: ListReviewedEvidenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewedEvidenceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPublishReviewedEvidenceUrl = () => {
+
+
+
+
+  return `/api/evidence`
+}
+
+/**
+ * @summary Publish a new public-source observation
+ */
+export const publishReviewedEvidence = async (publishReviewedEvidenceInput: PublishReviewedEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidenceWriteResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReviewedEvidenceWriteResponse>(getPublishReviewedEvidenceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(publishReviewedEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getPublishReviewedEvidenceMutationKey = () => ['publishReviewedEvidence'] as const;
+
+export const getPublishReviewedEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getPublishReviewedEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishReviewedEvidence>>, PublishReviewedEvidenceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  publishReviewedEvidence(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishReviewedEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof publishReviewedEvidence>>>
+    export type PublishReviewedEvidenceMutationBody = BodyType<PublishReviewedEvidenceInput>
+    export type PublishReviewedEvidenceMutationError = ErrorType<void>
+    export type PublishReviewedEvidenceMutationVariables = {data: BodyType<PublishReviewedEvidenceInput>}
+
+    /**
+ * @summary Publish a new public-source observation
+ */
+export const usePublishReviewedEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishReviewedEvidence>>, TError,PublishReviewedEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishReviewedEvidence>>,
+        TError,
+        PublishReviewedEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPublishReviewedEvidenceMutationOptions(options));
+    }
+
+export const getListReviewedEvidenceDecisionsUrl = (factId: string,
+    params: ListReviewedEvidenceDecisionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/evidence/${factId}/decisions?${stringifiedParams}` : `/api/evidence/${factId}/decisions`
+}
+
+/**
+ * @summary Read immutable review decisions for an evidence item
+ */
+export const listReviewedEvidenceDecisions = async (factId: string,
+    params: ListReviewedEvidenceDecisionsParams, options?: Parameters<typeof customFetch>[1]): Promise<EvidenceDecisionsResponse> => {
+
+  return customFetch<EvidenceDecisionsResponse>(getListReviewedEvidenceDecisionsUrl(factId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewedEvidenceDecisionsQueryKey = (factId: string,
+    params?: ListReviewedEvidenceDecisionsParams,) => {
+    return [
+    `/api/evidence/${factId}/decisions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListReviewedEvidenceDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError = ErrorType<unknown>>(factId: string,
+    params: ListReviewedEvidenceDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewedEvidenceDecisionsQueryKey(factId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>> = ({ signal }) => listReviewedEvidenceDecisions(factId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: factId !== null && factId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewedEvidenceDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>>
+export type ListReviewedEvidenceDecisionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read immutable review decisions for an evidence item
+ */
+
+export function useListReviewedEvidenceDecisions<TData = Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError = ErrorType<unknown>>(
+ factId: string,
+    params: ListReviewedEvidenceDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewedEvidenceDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewedEvidenceDecisionsQueryOptions(factId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateReviewedEvidenceDecisionUrl = (factId: string,) => {
+
+
+
+
+  return `/api/evidence/${factId}/decisions`
+}
+
+/**
+ * @summary Add an immutable reviewer decision
+ */
+export const createReviewedEvidenceDecision = async (factId: string,
+    recordEvidenceDecisionInput: RecordEvidenceDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ReviewedEvidenceWriteResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReviewedEvidenceWriteResponse>(getCreateReviewedEvidenceDecisionUrl(factId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recordEvidenceDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateReviewedEvidenceDecisionMutationKey = () => ['createReviewedEvidenceDecision'] as const;
+
+export const getCreateReviewedEvidenceDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext> => {
+
+const mutationKey = getCreateReviewedEvidenceDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, CreateReviewedEvidenceDecisionMutationVariables> = (props) => {
+          const {factId,data} = props ?? {};
+
+          return  createReviewedEvidenceDecision(factId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewedEvidenceDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>>
+    export type CreateReviewedEvidenceDecisionMutationBody = BodyType<RecordEvidenceDecisionInput>
+    export type CreateReviewedEvidenceDecisionMutationError = ErrorType<void>
+    export type CreateReviewedEvidenceDecisionMutationVariables = {factId: string;data: BodyType<RecordEvidenceDecisionInput>}
+
+    /**
+ * @summary Add an immutable reviewer decision
+ */
+export const useCreateReviewedEvidenceDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewedEvidenceDecision>>, TError,CreateReviewedEvidenceDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReviewedEvidenceDecision>>,
+        TError,
+        CreateReviewedEvidenceDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateReviewedEvidenceDecisionMutationOptions(options));
+    }
 
 export const getGetAfgGrantsUrl = (params?: GetAfgGrantsParams,) => {
   const normalizedParams = new URLSearchParams();

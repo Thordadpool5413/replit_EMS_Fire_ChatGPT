@@ -5,6 +5,7 @@ import fireRegistryRouter from "./fire-registry";
 import emsRegistryRouter from "./ems-registry";
 import territoryRouter from "./territory";
 import nriCountyContextRouter from "./nri-county-context";
+import agencyRecordsRouter from "./agency-records";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(fireRegistryRouter);
 router.use(emsRegistryRouter);
 router.use(territoryRouter);
 router.use(nriCountyContextRouter);
+router.use(agencyRecordsRouter);
 
 export default router;

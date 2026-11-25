@@ -59,3 +59,47 @@ export const importedLegacyRecordsTable = pgTable(
   },
   (table) => [primaryKey({ columns: [table.collectionName, table.documentPath] })],
 );
+
+/** Role assignments used only by the reviewed public-evidence workspace. */
+export const workspaceMembershipsTable = pgTable(
+  "workspace_memberships",
+  {
+    workspaceId: text("workspace_id").notNull(),
+    userId: text("user_id").notNull(),
+    role: text("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.workspaceId, table.userId] })],
+);
+
+/** Evidence is public-source-only and kept separate from private agency profiles. */
+export const sharedEvidenceRecordsTable = pgTable(
+  "shared_evidence_records",
+  {
+    workspaceId: text("workspace_id").notNull(),
+    agencyKey: text("agency_key").notNull(),
+    factId: text("fact_id").notNull(),
+    payload: jsonb("payload").$type<JsonRecord>().notNull(),
+    authorUid: text("author_uid").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.agencyKey, table.factId] }),
+    index("shared_evidence_workspace_agency_idx").on(table.workspaceId, table.agencyKey, table.factId),
+  ],
+);
+
+/** Review decisions are immutable, one per action, evidence item, and workspace. */
+export const sharedEvidenceDecisionsTable = pgTable(
+  "shared_evidence_decisions",
+  {
+    workspaceId: text("workspace_id").notNull(),
+    agencyKey: text("agency_key").notNull(),
+    factId: text("fact_id").notNull(),
+    action: text("action").notNull(),
+    payload: jsonb("payload").$type<JsonRecord>().notNull(),
+    reviewerUid: text("reviewer_uid").notNull(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.workspaceId, table.agencyKey, table.factId, table.action] })],
+);

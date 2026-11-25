@@ -19,3 +19,18 @@ class TexasStageTest(unittest.TestCase):
    p=pathlib.Path(td)/'fixture.xlsx';w=Workbook();s=w.active
    s.append(['License Number','Provider Name']);s.append([123,'CI fixture']);w.save(p)
    with self.assertRaises(ValueError):stage(p,pathlib.Path(td)/'review',1)
+ def test_explicit_excel_identifier_format_and_roster_kind(self):
+  with tempfile.TemporaryDirectory() as td:
+   p=pathlib.Path(td)/'fixture.xlsx';out=pathlib.Path(td)/'review';w=Workbook();s=w.active
+   s.append(['Registration Number','First Responder Organization Name','Mailing Address','Status'])
+   s.append([123,'Fixture FRO','PO Box 1','Active']);s['A2'].number_format='00000';w.save(p)
+   r=stage(p,out,1,kind='first-responder')
+   self.assertEqual(r['records'][0]['identifier'],'00123')
+   self.assertEqual(r['identifierKind'],'registration')
+   self.assertEqual(r['rosterKind'],'first-responder')
+   self.assertEqual(r['addressColumn'],'mailing address')
+   self.assertTrue((out/'TX-first-responder-candidate.json').exists())
+   self.assertNotIn('latitude',r['records'][0])
+   self.assertTrue(r['records'][0]['endUserValidationRequired'])
+   s['A2'].number_format='General';w.save(p)
+   with self.assertRaises(ValueError):stage(p,out,1,kind='first-responder')

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "sourceUrl": "https://dsfmportal.dcr.virginia.gov/server/rest/services/CivilReference/Civil_Reference_Layers/MapServer/1",
+  "sourceItemId": "08368f90d6b648f0b9e6d1671300dbb6",
+  "workflowRunId": 45701937810,
+  "workflowArtifactId": 15063203117,
+  "artifactSha256": "2833e523dc415fd7a74d019b1b22b800ed3160f68a5711fd62323d65f823485f",
+  "locationManifestSha256": "a471cbfe9d8bdd817b7b2f2bdb56d23a33b6bf97d95e6b3795797a44186c5f9c",
+  "snapshotGeneratedAt": "2026-11-25T19:32:48.173523+00:00",
+  "checkedAt": "2026-11-25",
+  "publication": "review-only",
+  "candidates": [
+    {
+      "sourceKey": "FDID:VA:08520",
+      "objectId": 1332133,
+      "matchedAddress": "16000 THEME PARK WAY, DOSWELL, VA, 23047",
+      "countyFips": "51085",
+      "latitude": 37.84044575998573,
+      "longitude": -77.44666556788216,
+      "recordUpdatedAt": "2026-09-03",
+      "pointType": null,
+      "captureMethod": null,
+      "statusAsReported": null,
+      "endUserValidationRequired": true,
+      "registryName": "Kings Dominion",
+      "registryAddress": {
+        "street": "16000 Theme Park WAY",
+        "city": "Doswell",
+        "state": "VA",
+        "zip": "23047"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "51085"
+    },
+    {
+      "sourceKey": "NPI:1043084510",
+      "objectId": 3431660,
+      "matchedAddress": "13000 HARBOR CENTER DR, WOODBRIDGE, VA, 22192",
+      "countyFips": "51153",
+      "latitude": 38.673262476185776,
+      "longitude": -77.25526298636909,
+      "recordUpdatedAt": "2026-08-03",
+      "pointType": null,
+      "captureMethod": null,
+      "statusAsReported": null,
+      "endUserValidationRequired": true,
+      "registryName": "DREAM CARE TRANSPORTATION LLC",
+      "registryAddress": {
+        "street": "13000 HARBOR CENTER DR STE 362",
+        "city": "WOODBRIDGE",
+        "state": "VA",
+        "zip": "22192"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": ""
+    },
+    {
+      "sourceKey": "NPI:1194066209",
+      "objectId": 1951122,
+      "matchedAddress": "9998 WAKEMAN DR, MANASSAS, VA, 20110",
+      "countyFips": "51683",
+      "latitude": 38.7279968508148,
+      "longitude": -77.51321744194507,
+      "recordUpdatedAt": "2026-08-07",
+      "pointType": null,
+      "captureMethod": null,
+      "statusAsReported": null,
+      "endUserValidationRequired": true,
+      "registryName": "PHI HEALTH, LLC",
+      "registryAddress": {
+        "street": "9998 WAKEMAN DR",
+        "city": "MANASSAS",
+        "state": "VA",
+        "zip": "20110"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": ""
+    },
+    {
+      "sourceKey": "NPI:1720409246",
+      "objectId": 68825,
+      "matchedAddress": "109 CARICO RDG, COEBURN, VA, 24230",
+      "countyFips": "51051",
+      "latitude": 36.995284819413946,
+      "longitude": -82.39047352068228,
+      "recordUpdatedAt": "2026-07-16",
+      "pointType": null,
+      "captureMethod": null,
+      "statusAsReported": null,
+      "endUserValidationRequired": true,
+      "registryName": "SANDY RIDGE RESCUE SQUAD",
+      "registryAddress": {
+        "street": "109 CARICO RDG",
+        "city": "COEBURN",
+        "state": "VA",
+        "zip": "24230"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": ""
+    }
+  ]
+}

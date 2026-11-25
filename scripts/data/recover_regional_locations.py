@@ -10,9 +10,10 @@ FIELDS={
  'fl-pinellas':('OBJECTID','ADDRNUM','FULLADDR','POSTCODE','MAILINGCITY','UNITID','UNITTYPE','POINTTYPE','STATUS','BLDGADDRCLASS','LAST_EDITED_DATE'),
  'nj-addresspoints':('OBJECTID','ADD_NUMBER','FULLADDR','POST_CODE','POST_COMM','STATE','COUNTY','COUNTRY','SUBTYPE','PRIMARYPT','STATUS','BUILDING','FLOOR','UNIT','ROOM','SEAT','PLACEMENT','DATEUPDATE','EFFECTIVE','EXPIRE'),
  'tx-prosper':('OBJECTID','Add_Number','Address','Post_Comm','Post_Code','County','State','Country','Building','Wing','Floor','Unit','Room','Stru_Priority','Placement','GC_Exception','DateUpdate','Effective','Expire'),
- 'pa-cumberland':('OBJECTID','Add_Number','Address','Post_Comm','Post_Code','County','State','Country','Building','Floor','Unit','Room','Seat','Placement','DiscrpAgID','DateUpdate','Effective','Expire')}
-QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE'),'tx-prosper':('Add_Number','Post_Code'),'pa-cumberland':('Add_Number','Post_Code')}
-NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)'),'tx-prosper':('Address Points','Town of Prosper'),'pa-cumberland':('Address Point','')}
+ 'pa-cumberland':('OBJECTID','Add_Number','Address','Post_Comm','Post_Code','County','State','Country','Building','Floor','Unit','Room','Seat','Placement','DiscrpAgID','DateUpdate','Effective','Expire'),
+ 'tx-stratmap':('objectid','dateupdate','add_number','full_addr','building','floor','unit','post_comm','post_code','state','country','county','fips','source','date_acq')}
+QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE'),'tx-prosper':('Add_Number','Post_Code'),'pa-cumberland':('Add_Number','Post_Code'),'tx-stratmap':('add_number','post_code')}
+NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)'),'tx-prosper':('Address Points','Town of Prosper'),'pa-cumberland':('Address Point',''),'tx-stratmap':('StratMap Address Points 48 Most Recent','')}
 def request(source,params,query=False):
  u=SOURCES[source]['url']+('/query' if query else '')+'?'+urllib.parse.urlencode(params)
  if len(u)>3800:raise ValueError('Regional query exceeds URL budget')
@@ -27,6 +28,8 @@ def metadata(source,fetch=request):
  name,authority=NAMES[source]
  if obj.get('name')!=name or authority not in obj.get('copyrightText','') or obj.get('geometryType')!='esriGeometryPoint' or not set(FIELDS[source])<=set(f.get('name') for f in obj.get('fields',[])):raise ValueError('Regional service schema or authority changed')
  fields={f['name']:f for f in obj['fields']}
+ if source=='tx-stratmap':
+  if obj.get('serviceItemId')!='2685d5c62657428583b688f140cb7021' or fields['add_number'].get('type')!='esriFieldTypeString' or fields['fips'].get('type') not in ('esriFieldTypeBigInteger','esriFieldTypeInteger') or fields['dateupdate'].get('type')!='esriFieldTypeString':raise ValueError('Texas StratMap source identity or schema changed')
  if source=='pa-cumberland':
   county_codes=(fields['County'].get('domain') or {}).get('codedValues',[])
   if not any(v.get('code')=='Cumberland County' and v.get('name')=='Cumberland County' for v in county_codes):raise ValueError('Cumberland source county domain changed')
@@ -35,7 +38,7 @@ def metadata(source,fetch=request):
  domain=zipfield.get('domain') or {}
  zips={v['code'] for v in domain.get('codedValues',[]) if isinstance(v.get('code'),str) and re.fullmatch(r'\d{5}',v['code'])}
  # Some enterprise layers expose no global edit date. Preserve observed date and actual record date instead.
- marker={'name':name,'copyrightText':obj['copyrightText'],'fields':[(k,fields[k].get('type')) for k in FIELDS[source]],'lastEditDate':(obj.get('editingInfo') or {}).get('lastEditDate'),'zipCodes':sorted(zips)}
+ marker={'serviceItemId':obj.get('serviceItemId'),'name':name,'copyrightText':obj['copyrightText'],'fields':[(k,fields[k].get('type')) for k in FIELDS[source]],'lastEditDate':(obj.get('editingInfo') or {}).get('lastEditDate'),'zipCodes':sorted(zips)}
  if source=='nj-addresspoints':
   county_domain=(fields['COUNTY'].get('domain') or {}).get('codedValues',[])
   codes={v['code']:v['name'] for v in county_domain if isinstance(v.get('code'),str) and isinstance(v.get('name'),str)}
@@ -48,9 +51,12 @@ def number(a):
  m=re.match(r'^(\d{1,6}[A-Za-z]?)\s+\S',base_street(a['street']))
  return m.group(1).upper() if m else None
 def query(source,addresses):
- if not 1<=len(addresses)<=8 or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
+ if not 1<=len(addresses)<=(16 if source=='tx-stratmap' else 8) or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
  house,zipfield=QUERY_KEYS[source]
- if source in ('tx-prosper','pa-cumberland'):
+ if source=='tx-stratmap':
+  clauses=sorted({f"({house}={sql(number(a))} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="state='TX' AND country='US' AND ("+' OR '.join(clauses)+')'
+ elif source in ('tx-prosper','pa-cumberland'):
   clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
   where="State="+sql(SOURCES[source]['state'])+" AND Country='US' AND ("+' OR '.join(clauses)+')'
  elif source=='nj-addresspoints':
@@ -77,6 +83,14 @@ def date_value(v):
  if v in (None,''):return None
  if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('Invalid source record date')
  return datetime.datetime.fromtimestamp(v/1000,datetime.timezone.utc).date().isoformat()
+def stratmap_date(value):
+ # The published update field is text. Preserve only an unambiguous ISO date.
+ if not isinstance(value,str):return None
+ m=re.fullmatch(r'(\d{4}-\d{2}-\d{2})(?:[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)?',value.strip())
+ if not m:return None
+ try:return datetime.date.fromisoformat(m.group(1)).isoformat()
+ except ValueError:return None
+
 def resolve(source,e,rows,counties,checked,county_domain=None):
  d=SOURCES[source];a=e['address'];hits=[];bad=False
  for f in rows:
@@ -86,6 +100,11 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    if v.get('state')!='NC':continue
    if any(v.get(k) not in (None,'') for k in ('unit','building','floor')):continue
    placement=v.get('placement');date=v.get('dateupdate')
+  elif source=='tx-stratmap':
+   if v.get('state')!='TX' or v.get('country')!='US':continue
+   if any(v.get(k) not in (None,'') for k in ('building','floor','unit')):continue
+   street,city,postal=v.get('full_addr'),v.get('post_comm'),v.get('post_code')
+   placement='Placement not reported';date=v.get('dateupdate')
   elif source in ('tx-prosper','pa-cumberland'):
    if v.get('State')!=d['state'] or v.get('Country')!='US':continue
    if any(v.get(k) not in (None,'') for k in ('Building','Wing','Floor','Unit','Room','Seat')):continue
@@ -136,8 +155,14 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    allowed={'48085','48121'} if source=='tx-prosper' else {'42041'}
    if len(fips)!=1 or not fips<=allowed:bad=True;continue
    cf=next(iter(fips))
+  if source=='tx-stratmap':
+   # County FIPS and county name must independently reconcile to the same Census county.
+   fips=counties.get(('TX',county_key(v.get('county') or '')),set())
+   raw=v.get('fips')
+   if type(raw) is not int or len(fips)!=1 or str(raw) not in fips or not isinstance(v.get('source'),str) or not v['source'].strip():bad=True;continue
+   cf=str(raw)
   if e['sourceCounty'] and cf!=e['sourceCounty']:bad=True;continue
-  try:updated=date_value(date)
+  try:updated=stratmap_date(date) if source=='tx-stratmap' else date_value(date)
   except (ValueError,OverflowError,OSError):bad=True;continue
   match=dict(latitude=g.get('y'),longitude=g.get('x'),matchedAddress=matched,method='regional-address-point',point=dict(source=source,objectId=v[FIELDS[source][0]],checkedAt=checked,recordUpdatedAt=updated,placement=placement,countyFips=cf))
   if not valid_regional_point(match,cf):bad=True;continue
@@ -160,10 +185,11 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
   a=e['address']
   if not number(a):stats['unsupported']+=1;continue
   if zips and a['zip'] not in zips:stats['outside_published_zip_domain']+=1;continue
-  groups[(a['zip'],a['street'],a['city'])].append(e)
+  groups[(a['zip'],normal_street(base_street(a['street'])) if source=='tx-stratmap' else a['street'],normal_street(a['city']) if source=='tx-stratmap' else a['city'])].append(e)
  values=[groups[k] for k in sorted(groups)]
- for i in range(0,len(values),8):
-  batch=values[i:i+8]
+ batch_size=16 if source=='tx-stratmap' else 8
+ for i in range(0,len(values),batch_size):
+  batch=values[i:i+batch_size]
   if requests>=max_requests or errors>=3:stats['not_attempted']+=sum(map(len,batch));continue
   requests+=1
   try:rows=features(source,fetch(source,query(source,[g[0]['address'] for g in batch]),True));errors=0

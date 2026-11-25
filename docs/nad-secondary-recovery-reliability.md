@@ -1,0 +1,5 @@
+# Secondary NAD recovery reliability
+
+The older live NAD query run 45512764686 failed after three government API read timeouts. No successful matches were available from that run. The later pinned USDOT r24 bulk scan completed successfully in 45523929639, scanned 99,226,272 source rows and produced 922 candidate matches. Main's combinedRecovery manifest preserves that report and the reconciled release (699 selected NAD points, 246 NY points). The historic failed run remains part of GitHub history; do not delete or re-run a stale snapshot to disguise it.
+
+The v2 targeted recovery branch starts from current main, avoids repeating the already-completed nationwide Census pass, and queries at most 30 single-address batches in the requested states. A total source outage fails before snapshot publication. Zero new validated points leave the snapshot untouched; any actual new points must pass the additive gate before a review-only branch is pushed. No production changes. Upstream availability remains outside our control.

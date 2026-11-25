@@ -1,9 +1,11 @@
 name: Secondary public provider location recovery
 on:
   push:
-    branches: [atlas/nad-location-recovery]
+    branches: [atlas/nad-location-recovery, atlas/nad-location-recovery-v2]
     paths:
       - 'scripts/data/recover_nad_locations.py'
+      - 'scripts/data/test_recover_nad_locations.py'
+      - 'scripts/data/check_additive_location_release.py'
       - '.github/workflows/nad-provider-locations.yml'
       - 'scripts/data/recover_census_locations.py'
       - 'scripts/data/test_recover_census_locations.py'
@@ -20,7 +22,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   recover:
-    if: github.ref == 'refs/heads/atlas/nad-location-recovery'
+    if: github.ref == 'refs/heads/atlas/nad-location-recovery' || github.ref == 'refs/heads/atlas/nad-location-recovery-v2'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -32,6 +34,7 @@ jobs:
       - name: Validate matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Retry normalized physical addresses nationwide
+        if: github.ref_name != 'atlas/nad-location-recovery-v2'
         id: census
         continue-on-error: true
         run: python3 scripts/data/recover_census_locations.py
@@ -45,12 +48,19 @@ jobs:
           git diff --cached --quiet || git commit -m "Recover exact component matches from normalized Census retry"
           git push origin "HEAD:refs/heads/atlas/census-retry-data-${GITHUB_RUN_ID}"
           echo "Census review branch: atlas/census-retry-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve verified base before NAD retry
+        run: cp -a artifacts/ems-territory-intelligence/public/registry/locations "$RUNNER_TEMP/nad-base"
       - name: Recover unmatched public organization addresses
         id: nad
         continue-on-error: true
         env:
           ATLAS_NAD_STATES: ${{ inputs.states || 'FL,OH' }}
-        run: python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 100
+        run: |
+          if [ "$GITHUB_REF_NAME" = "atlas/nad-location-recovery-v2" ]; then
+            python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 30 --batch-size 1
+          else
+            python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 100
+          fi
       - name: Publish review-only data branch
         if: steps.nad.outcome == 'success'
         run: |
@@ -59,7 +69,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- artifacts/ems-territory-intelligence/public/registry/locations
-          git diff --cached --quiet || git commit -m "Recover exact public provider address points from USDOT NAD"
+          if git diff --cached --quiet; then
+            echo "NAD query completed; no additional validated points. No candidate published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 scripts/data/check_additive_location_release.py --base "$RUNNER_TEMP/nad-base" --candidate artifacts/ems-territory-intelligence/public/registry/locations
+          git commit -m "Recover exact public provider address points from USDOT NAD"
           branch="atlas/nad-location-data-${GITHUB_RUN_ID}"
           git push origin "HEAD:refs/heads/$branch"
           echo "Review branch: $branch" >> "$GITHUB_STEP_SUMMARY"

@@ -30,7 +30,7 @@ export function makeFacilityNotesRouter(loadFacilities= listDepartmentFacilities
   const path="/agencies/:agencyId/facilities/:parentId/:stationId/notes";
   router.get(path,requireAgencyWorkspace,async(req,res)=>{
     const {agencyId,parentId,stationId}=req.params;
-    if(!nativeId.test(parentId)||!nativeId.test(stationId)||agencyId.length>300){res.status(400).json({error:"Invalid facility identity."});return;}
+    if(typeof agencyId!=="string"||!agencyId.trim()||agencyId.length>300||typeof parentId!=="string"||typeof stationId!=="string"||!nativeId.test(parentId)||!nativeId.test(stationId)){res.status(400).json({error:"Invalid facility identity."});return;}
     try{
       const [a]=await db.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
       if(!a||!linkedNerisParent(a.payload,parentId)){res.status(404).json({error:"Save and link the exact department before using facility notes."});return;}
@@ -41,7 +41,7 @@ export function makeFacilityNotesRouter(loadFacilities= listDepartmentFacilities
   router.post(path,requireAgencyWorkspace,async(req,res)=>{
     const {agencyId,parentId,stationId}=req.params;
     const body=object(req.body),submissionId=body.submissionId,note=typeof body.note==="string"?body.note.trim():"";
-    if(!nativeId.test(parentId)||!nativeId.test(stationId)||agencyId.length>300||typeof submissionId!=="string"||!noteId.test(submissionId)||!note||note.length>4000){res.status(400).json({error:"Invalid facility note."});return;}
+    if(typeof agencyId!=="string"||!agencyId.trim()||agencyId.length>300||typeof parentId!=="string"||typeof stationId!=="string"||!nativeId.test(parentId)||!nativeId.test(stationId)||typeof submissionId!=="string"||!noteId.test(submissionId)||!note||note.length>4000){res.status(400).json({error:"Invalid facility note."});return;}
     if(!req.isAuthenticated()){res.status(401).json({error:"Sign in required."});return;}
     const authorUid=req.user.id;
     const key=and(eq(facilityNotesTable.agencyId,agencyId),eq(facilityNotesTable.parentId,parentId),eq(facilityNotesTable.stationId,stationId),eq(facilityNotesTable.submissionId,submissionId));

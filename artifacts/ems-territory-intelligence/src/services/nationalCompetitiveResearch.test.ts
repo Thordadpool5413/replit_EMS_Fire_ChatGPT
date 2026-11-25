@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {Agency} from '../types';
 import {createIntelligenceFact} from './documentedIntelligence';
-import {NATIONAL_STATES,productMentions,researchMentions,loadedResearchCoverage,assessNationalCandidates,unavailableScope,federalResearch,type ResearchCandidate,type StateResearch,type ResearchScope} from './nationalCompetitiveResearch';
+import {NATIONAL_STATES,productMentions,researchMentions,loadedResearchCoverage,assessNationalCandidates,unavailableScope,federalResearch,chicagoResearch,commercialResearchStatus,type ResearchCandidate,type StateResearch,type ResearchScope} from './nationalCompetitiveResearch';
 import type {FederalPage} from './federalDiscoveryContract';
 const now=Date.parse('2026-11-24T12:00:00Z');
 const agency={id:'registry-FDID-FL-12345',name:'Example Fire Department',stateCode:'FL',registryIdentity:{sourceName:'USFA NFDR',identifier:'12345',stateCode:'FL',name:'Example Fire Department',sourceUrl:'https://apps.usfa.fema.gov/registry/search',retrievedAt:'2026-11-20'}} as Agency;
@@ -47,4 +47,23 @@ test('unavailable and out-of-scope data cannot generate research candidates',()=
  assert.equal(r.rows.length,0);
  const page={query:{topic:'grants'},fetchedAt:new Date(now).toISOString(),sourceRows:1,withheld:0,duplicates:0,nextPage:null,scopeCapped:false,warnings:1,candidates:[{id:'ASST_NON_1',awardNumber:'A1',recipient:agency.name,state:'FL',description:null,awardAmount:10,startDate:null,endDate:null,sourceUrl:'https://www.usaspending.gov/award/ASST_NON_1'}]} as FederalPage;
  const s=federalResearch(page);assert.equal(s.status,'partial');assert.equal(s.candidates.length,0);
+});
+
+test('Chicago revisions remain independent source rows, never recipient matches or aggregated awards',()=>{
+ const p={fetchedAt:new Date(now).toISOString(),sourceRows:2,withheld:0,duplicates:0,nextPage:null,scopeCapped:false,records:[
+ {key:'["PO-1","0"]',contractNumber:'PO-1',revision:'0',description:'LIFEPAK 15',department:'Fixture Fire',vendor:'Fixture supplier',amount:100,approvalDay:'2026-11-01',startDay:null,endDay:'2027-01-01',sourceUrl:'https://data.cityofchicago.org/resource/rsxa-ify5.json?fixture=1'},
+ {key:'["PO-1","1"]',contractNumber:'PO-1',revision:'1',description:'LIFEPAK 15',department:'Fixture Fire',vendor:'Fixture supplier',amount:-20,approvalDay:'2026-11-02',startDay:null,endDay:null,sourceUrl:'https://data.cityofchicago.org/resource/rsxa-ify5.json?fixture=2'}]} as unknown as import('./chicagoDiscoveryContract').ChicagoPage;
+ const result=chicagoResearch(p);assert.equal(result.candidates.length,2);
+ const r=assessNationalCandidates([agency],{...research(result),state:'IL'},now);
+ assert.equal(r.rows.length,2);assert.ok(r.rows.every(x=>!x.account&&commercialResearchStatus(x.candidate,now)==='contract'));
+ assert.deepEqual(r.rows.map(x=>x.candidate.amount),[100,-20]);assert.match(r.rows[1].candidate.amountNote!,/Negative modification/);
+});
+test('notice lifecycle labels never turn an award or intent into a solicitation',()=>{
+ const notice={...grant,source:'municipal',role:'notice-issuer',state:'NY'} as ResearchCandidate;
+ assert.equal(commercialResearchStatus({...notice,sourceType:'Award',deadlineLocal:'2027-01-01T12:00:00'},now),'award');
+ assert.equal(commercialResearchStatus({...notice,sourceType:'Intent to Award'},now),'intent');
+ assert.equal(commercialResearchStatus({...notice,sourceType:'Solicitation',deadlineLocal:'2026-11-23T12:00:00'},now),'deadline-elapsed');
+ assert.equal(commercialResearchStatus({...notice,sourceType:'Solicitation',deadlineLocal:'2026-11-24T12:00:00'},now),'deadline-today');
+ assert.equal(commercialResearchStatus({...notice,sourceType:'Solicitation',deadlineLocal:null},now),'solicitation');
+ assert.equal(commercialResearchStatus(supplier,now),'supplier');assert.equal(commercialResearchStatus(grant,now),'funding');
 });

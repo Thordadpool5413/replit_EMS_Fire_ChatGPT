@@ -86,6 +86,7 @@ import { PlanningValueDisclosure } from './PlanningValueDisclosure';
 import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyIntelligenceBrief';
 import { PreCallPlanner } from './profile/PreCallPlanner';
 import { ProviderAddressLine } from './profile/ProviderAddressLine';
+import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { displayedProviderLocation,useLocationRevision,locationDirections } from '../services/providerLocation';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
@@ -1625,6 +1626,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <ProfileAttentionSummary key={agency.id} agency={agency} onNavigate={navigateProfileSection} />
             </ProfileCommandOverview>
           )}
+
+          {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}
 
           {activeSection !== 'overview' && (
             <header className="acp-section-intro" data-section={activeSection} data-testid="profile-section-intro">

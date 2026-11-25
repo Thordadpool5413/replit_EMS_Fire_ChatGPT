@@ -3,7 +3,7 @@ import {
   GetFireRegistryMatchesQueryParams,
   GetFireRegistryMatchesResponse,
 } from "@workspace/api-zod";
-import { searchFireRegistryMatches, listNerisDepartments } from "../lib/fireRegistry";
+import { searchFireRegistryMatches, listNerisDepartments, listDepartmentFacilities, validFacilityParent, type FacilityParent } from "../lib/fireRegistry";
 
 const router: IRouter = Router();
 
@@ -54,6 +54,17 @@ router.get("/fire-registry/directory", async (req: Request, res: Response): Prom
   if(!/^[A-Z]{2}$/.test(stateCode)){res.status(400).json({error:"A two-letter state code is required."});return;}
   try {res.json(await listNerisDepartments(stateCode));}
   catch(error){req.log.warn({err:error,stateCode},"NERIS directory unavailable");res.status(502).json({error:"NERIS state directory is temporarily unavailable."});}
+});
+
+router.get("/fire-registry/facilities", async (req: Request, res: Response): Promise<void> => {
+  const {source,stateCode,identifier}=req.query;
+  if((source!=="NERIS"&&source!=="USFA NFDR")||typeof stateCode!=="string"||typeof identifier!=="string"){
+    res.status(400).json({error:"Exact public department identity required."});return;
+  }
+  const parent:FacilityParent={source,stateCode,identifier};
+  if(!validFacilityParent(parent)){res.status(400).json({error:"Invalid public department identity."});return;}
+  try{res.json(await listDepartmentFacilities(parent));}
+  catch(error){req.log.warn({err:error,stateCode},"Public facility lookup unavailable");res.status(502).json({error:"Public department facilities could not be retrieved."});}
 });
 
 export default router;

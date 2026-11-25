@@ -1,0 +1,7 @@
+# Phase 6.2D — high-volume priorities, first regional batch
+
+The CI audit of the prior release identifies TX 1,359 unmatched records (1,271 distinct addresses), PA 748 (695 distinct), IL 557, OH 541, AL 493. Nationally 30,144 raw mapped, 30,006 usable without source-county conflict, 138 withheld, 14,066 recoverable records and 13,026 distinct address targets. These are source identities, not unique active departments.
+
+This batch adds the Town of Prosper and Cumberland County official address services. These are local coverage only, not statewide coverage. Source metadata and exact street, postal community, ZIP, county, supported placement and dates are required; reject geocoding-only points, ambiguous matches and subaddresses. Texas county scope Collin/Denton; PA Cumberland only. The official Texas Geographic Information Office statewide DataHub (https://gio.texas.gov/stratmap/address-points.html) provides county-level downloads for a future broader ingest; no statewide adapter is claimed here. The PA NG911 program is documented at https://www.pa.gov/agencies/pema/911-program/gis. No new provider records or coordinates asserted before recovery and review.
+
+The v3 recovery job copies its base snapshot and runs the additive release gate before creating a candidate branch. Before integration, compare with current main separately; the job does not push production data or main. No production database mutations. Replit is the application backend; end-user confirmation remains required.

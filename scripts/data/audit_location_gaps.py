@@ -40,7 +40,7 @@ def summarize(entries):
     for state,c in states.items():
         r=row(state,c);r['distinctAddressTargets']=len(targets[state])
         r['configuredSources']=[k for k,v in SOURCES.items() if v['state']==state]
-        r['statewideSourceConfigured']=any(v['state']==state and not v['county'] for v in SOURCES.values())
+        r['statewideSourceConfigured']=any(v['state']==state and not v['county'] and v['label']!='Town of Prosper GIS' for v in SOURCES.values())
         ranked.append(r)
     ranked.sort(key=lambda r:(-r['recoverable'],r['id']))
     totals=collections.Counter()

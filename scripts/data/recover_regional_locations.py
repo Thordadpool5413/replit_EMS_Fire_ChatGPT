@@ -8,9 +8,11 @@ FIELDS={
  'nc-addressnc':('objectid','add_number','st_address','post_code','post_comm','state','statefips','county','countyfips','unit','building','floor','placement','dateupdate','effective','expire','gc_exception'),
  'fl-hillsborough':('OBJECTID','ADDRNUM','FULLADDR','ZIP','POSTALCOMM','UNITID','UNITTYPE','POINTTYPE','STATUS','LASTUPDATE'),
  'fl-pinellas':('OBJECTID','ADDRNUM','FULLADDR','POSTCODE','MAILINGCITY','UNITID','UNITTYPE','POINTTYPE','STATUS','BLDGADDRCLASS','LAST_EDITED_DATE'),
- 'nj-addresspoints':('OBJECTID','ADD_NUMBER','FULLADDR','POST_CODE','POST_COMM','STATE','COUNTY','COUNTRY','SUBTYPE','PRIMARYPT','STATUS','BUILDING','FLOOR','UNIT','ROOM','SEAT','PLACEMENT','DATEUPDATE','EFFECTIVE','EXPIRE')}
-QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE')}
-NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)')}
+ 'nj-addresspoints':('OBJECTID','ADD_NUMBER','FULLADDR','POST_CODE','POST_COMM','STATE','COUNTY','COUNTRY','SUBTYPE','PRIMARYPT','STATUS','BUILDING','FLOOR','UNIT','ROOM','SEAT','PLACEMENT','DATEUPDATE','EFFECTIVE','EXPIRE'),
+ 'tx-prosper':('OBJECTID','Add_Number','Address','Post_Comm','Post_Code','County','State','Country','Building','Wing','Floor','Unit','Room','Stru_Priority','Placement','GC_Exception','DateUpdate','Effective','Expire'),
+ 'pa-cumberland':('OBJECTID','Add_Number','Address','Post_Comm','Post_Code','County','State','Country','Building','Floor','Unit','Room','Seat','Placement','DiscrpAgID','DateUpdate','Effective','Expire')}
+QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE'),'tx-prosper':('Add_Number','Post_Code'),'pa-cumberland':('Add_Number','Post_Code')}
+NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)'),'tx-prosper':('Address Points','Town of Prosper'),'pa-cumberland':('Address Point','')}
 def request(source,params,query=False):
  u=SOURCES[source]['url']+('/query' if query else '')+'?'+urllib.parse.urlencode(params)
  if len(u)>3800:raise ValueError('Regional query exceeds URL budget')
@@ -25,6 +27,10 @@ def metadata(source,fetch=request):
  name,authority=NAMES[source]
  if obj.get('name')!=name or authority not in obj.get('copyrightText','') or obj.get('geometryType')!='esriGeometryPoint' or not set(FIELDS[source])<=set(f.get('name') for f in obj.get('fields',[])):raise ValueError('Regional service schema or authority changed')
  fields={f['name']:f for f in obj['fields']}
+ if source=='pa-cumberland':
+  county_codes=(fields['County'].get('domain') or {}).get('codedValues',[])
+  if not any(v.get('code')=='Cumberland County' and v.get('name')=='Cumberland County' for v in county_codes):raise ValueError('Cumberland source county domain changed')
+ if source in ('tx-prosper','pa-cumberland') and fields['Add_Number'].get('type')!='esriFieldTypeInteger':raise ValueError('Unexpected regional house number field')
  zipfield=fields[QUERY_KEYS[source][1]]
  domain=zipfield.get('domain') or {}
  zips={v['code'] for v in domain.get('codedValues',[]) if isinstance(v.get('code'),str) and re.fullmatch(r'\d{5}',v['code'])}
@@ -44,7 +50,10 @@ def number(a):
 def query(source,addresses):
  if not 1<=len(addresses)<=8 or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
  house,zipfield=QUERY_KEYS[source]
- if source=='nj-addresspoints':
+ if source in ('tx-prosper','pa-cumberland'):
+  clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="State="+sql(SOURCES[source]['state'])+" AND Country='US' AND ("+' OR '.join(clauses)+')'
+ elif source=='nj-addresspoints':
   clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
   where="STATE='NJ' AND COUNTRY='US' AND SUBTYPE=1210 AND PRIMARYPT='Y' AND STATUS='A' AND ("+' OR '.join(clauses)+')'
  else:
@@ -77,6 +86,13 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    if v.get('state')!='NC':continue
    if any(v.get(k) not in (None,'') for k in ('unit','building','floor')):continue
    placement=v.get('placement');date=v.get('dateupdate')
+  elif source in ('tx-prosper','pa-cumberland'):
+   if v.get('State')!=d['state'] or v.get('Country')!='US':continue
+   if any(v.get(k) not in (None,'') for k in ('Building','Wing','Floor','Unit','Room','Seat')):continue
+   if source=='tx-prosper' and (v.get('Stru_Priority')!='Primary' or v.get('GC_Exception') not in (None,'')):continue
+   if source=='pa-cumberland' and v.get('DiscrpAgID')!='cumberland.state.pa.us':continue
+   street,city,postal=v.get('Address'),v.get('Post_Comm'),v.get('Post_Code')
+   placement=v.get('Placement');date=v.get('DateUpdate')
   elif source=='nj-addresspoints':
    if v.get('STATE')!='NJ' or v.get('COUNTRY')!='US' or v.get('SUBTYPE')!=1210 or v.get('PRIMARYPT')!='Y' or v.get('STATUS')!='A':continue
    if any(v.get(k) not in (None,'') for k in ('BUILDING','FLOOR','UNIT','ROOM','SEAT')):continue
@@ -111,6 +127,15 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    fips=counties.get(('NJ',county_key(name)),set()) if name else set()
    if len(fips)!=1:bad=True;continue
    cf=next(iter(fips))
+  if source in ('tx-prosper','pa-cumberland'):
+   try:
+    effective,expires=date_value(v.get('Effective')),date_value(v.get('Expire'))
+    if effective and effective>checked or expires and expires<=checked:continue
+   except (ValueError,OverflowError,OSError):bad=True;continue
+   fips=counties.get((d['state'],county_key(v.get('County') or '')),set())
+   allowed={'48085','48121'} if source=='tx-prosper' else {'42041'}
+   if len(fips)!=1 or not fips<=allowed:bad=True;continue
+   cf=next(iter(fips))
   if e['sourceCounty'] and cf!=e['sourceCounty']:bad=True;continue
   try:updated=date_value(date)
   except (ValueError,OverflowError,OSError):bad=True;continue
@@ -129,6 +154,9 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
  for e in entries:
   if e['state']!=d['state'] or e['status'] not in ('no-match','unavailable'):continue
   if d['county'] and e['sourceCounty'] and d['county']!=e['sourceCounty']:continue
+  if source=='tx-prosper' and e['sourceCounty'] and e['sourceCounty'] not in ('48085','48121'):continue
+  if source=='tx-prosper' and e['address'] and not e['sourceCounty'] and e['address']['city'].strip().lower() not in ('prosper','celina','frisco','mckinney','little elm','aubrey'):continue
+  if source=='pa-cumberland' and not e['sourceCounty'] and e['address'] and not e['address']['zip'].startswith(('170','172')):continue
   a=e['address']
   if not number(a):stats['unsupported']+=1;continue
   if zips and a['zip'] not in zips:stats['outside_published_zip_domain']+=1;continue

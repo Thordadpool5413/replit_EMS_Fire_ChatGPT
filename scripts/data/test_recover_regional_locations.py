@@ -41,6 +41,17 @@ class RegionalTests(unittest.TestCase):
    self.assertIsNone(resolve('nj-addresspoints',e,[bad],counties,CHECKED,domain)[0],field)
   bad=copy.deepcopy(f);bad['attributes']['OBJECTID']=7;bad['geometry']['x']=-74.76
   self.assertEqual(resolve('nj-addresspoints',e,[f,bad],counties,CHECKED,domain)[1],'ambiguous')
+ def test_tx_pa_regional_sources(self):
+  counties=county_index([{'USPS':'TX','NAME':'Collin County','GEOID':'48085'},{'USPS':'TX','NAME':'Denton County','GEOID':'48121'},{'USPS':'PA','NAME':'Cumberland County','GEOID':'42041'}])
+  for source,state,county,name,city,zip_code,x,y in [('tx-prosper','TX','48085','Collin County','Prosper','75078',-96.8,33.2),('pa-cumberland','PA','42041','Cumberland County','Carlisle','17013',-77.2,40.2)]:
+   e=dict(key='fixture',state=state,status='no-match',sourceCounty=county,countyFips='',match=None,address={'street':'123 Main Street','city':city,'state':state,'zip':zip_code})
+   f=dict(attributes=dict(OBJECTID=5,Add_Number=123,Address='123 MAIN ST',Post_Comm=city,Post_Code=zip_code,County=name,State=state,Country='US',Building=None,Wing=None,Floor=None,Unit=None,Room=None,Seat=None,Stru_Priority='Primary',GC_Exception=None,DiscrpAgID='cumberland.state.pa.us',Placement='Structure',DateUpdate=None,Effective=None,Expire=None),geometry=dict(x=x,y=y))
+   hit,status=resolve(source,e,[f],counties,CHECKED)
+   self.assertEqual(status,'mapped');self.assertEqual(hit[0],county);self.assertTrue(valid_regional_point(hit[1],county))
+   self.assertIn('Add_Number=123',query(source,[e['address']])['where'])
+   for field,value in [('County','Unknown'),('Country','CA'),('Unit','3'),('Placement','Geocoding'),('Address','124 MAIN ST')]:
+    bad=copy.deepcopy(f);bad['attributes'][field]=value
+    self.assertIsNone(resolve(source,e,[bad],counties,CHECKED)[0],field)
  def test_preserve_and_withhold(self):
   e=example();hit,_=resolve('nc-addressnc',e,[nc()],C,CHECKED)
   f=nc();f['attributes']['objectid']=11;f['geometry']['x']=-79.41

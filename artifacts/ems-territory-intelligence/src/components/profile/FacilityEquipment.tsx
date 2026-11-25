@@ -1,4 +1,4 @@
-import {useRef,useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 const families={monitors:'Monitor / defibrillator',cpr:'Mechanical CPR',ventilators:'Transport ventilator',software:'Software'} as const;
 const makers={zoll:'ZOLL',stryker:'Stryker / Physio-Control',philips:'Philips',hamilton:'Hamilton Medical',weinmann:'WEINMANN',draeger:'Dräger',medtronic:'Medtronic',mindray:'Mindray',schiller:'SCHILLER','nihon-kohden':'Nihon Kohden',eso:'ESO',imagetrend:'ImageTrend',other:'Other (unclassified)',unknown:'Unknown'} as const;

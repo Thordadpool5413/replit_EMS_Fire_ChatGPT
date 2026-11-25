@@ -1,4 +1,4 @@
-import {useRef,useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 type Note={submissionId:string;note:string;createdAt:string};
 type Notes={notes:Note[];more:boolean;canWrite:boolean};

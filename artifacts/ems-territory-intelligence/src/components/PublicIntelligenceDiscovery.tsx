@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Search,ExternalLink} from 'lucide-react';
 import type { Agency } from '../types';
+import {NationalEnrichmentResearch} from './NationalEnrichmentResearch';
 import {buildDiscoveryMatches,DISCOVERY_STATES,loadDiscoveryPage,type DiscoveryPage,type DiscoveryQuery} from '../services/publicIntelligenceDiscovery';
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const labels={ 'name-match':'Possible name match — verify identity',ambiguous:'Ambiguous identity — investigate',unmatched:'No exact loaded name match'} as const;
@@ -65,6 +66,6 @@ export function PublicIntelligenceDiscovery({agencies,onOpen}:{agencies:Agency[]
    <div className="flex flex-wrap gap-2"><button className="workspace-button" disabled={busy||!result.query.offset} onClick={()=>void run(Math.max(0,result.query.offset-50))}>Previous source page</button><button className="workspace-button" disabled={busy||result.nextOffset===null} onClick={()=>void run(result.nextOffset??0)}>Next source page</button></div>
    {result.scopeCapped&&<p className="text-sm">The 1,000-row browsing limit was reached. Choose a narrower fiscal-year range; this is not complete coverage.</p>}
   </>}
-  <p className="text-xs">Planned source adapters: federal spending, municipal procurement, budgets, contracts and equipment inventories. Not connected by this release.</p>
+  <NationalEnrichmentResearch agencies={agencies} onOpen={onOpen}/>
  </section>;
 }

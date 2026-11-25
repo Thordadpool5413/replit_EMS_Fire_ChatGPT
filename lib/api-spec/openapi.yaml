@@ -52,7 +52,7 @@ paths:
       operationId: listAgencyRecords
       tags: [workspace-records]
       summary: Read a stable page of agency records
-      description: Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+      description: Returns public agency profiles in ID order. Anonymous reads omit field notes, follow-up tasks, source-review overlays, and contact notes; authorized workspace members can read them. Requests are bounded and can be filtered to a state.
       parameters:
         - in: query
           name: stateCode
@@ -84,6 +84,7 @@ paths:
       operationId: getAgencyRecord
       tags: [workspace-records]
       summary: Read one agency record
+      description: Public reads omit field notes, follow-up tasks, source-review overlays, and contact notes. Authorized workspace members can read those fields.
       parameters:
         - in: path
           name: agencyId
@@ -104,6 +105,7 @@ paths:
       operationId: updateAgencyRecord
       tags: [workspace-records]
       summary: Save an agency record with revision protection
+      description: Requires an authenticated agency-workspace editor.
       parameters:
         - in: path
           name: agencyId
@@ -126,12 +128,16 @@ paths:
                 $ref: "#/components/schemas/AgencyRecord"
         "409":
           description: The record changed since the supplied revision
+        "401":
+          description: Replit sign-in is required
+        "403":
+          description: Agency-workspace editor access is required
   /agencies/{agencyId}/mutations:
     post:
       operationId: commitAgencyMutation
       tags: [workspace-records]
       summary: Apply an idempotent offline mutation
-      description: A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+      description: Requires an authenticated agency-workspace editor. A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
       parameters:
         - in: path
           name: agencyId
@@ -154,11 +160,16 @@ paths:
                 $ref: "#/components/schemas/AgencyMutationResponse"
         "409":
           description: The record changed since the queued mutation was created
+        "401":
+          description: Replit sign-in is required
+        "403":
+          description: Agency-workspace editor access is required
   /agencies/batch-create:
     post:
       operationId: createAgencyRecords
       tags: [workspace-records]
       summary: Create missing agency records without overwriting existing ones
+      description: Requires an authenticated agency-workspace editor.
       requestBody:
         required: true
         content:
@@ -172,6 +183,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgencyBatchCreateResponse"
+        "401":
+          description: Replit sign-in is required
+        "403":
+          description: Agency-workspace editor access is required
   /evidence/workspaces/{workspaceId}/role:
     get:
       operationId: getEvidenceWorkspaceRole

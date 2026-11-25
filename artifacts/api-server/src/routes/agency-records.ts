@@ -11,7 +11,10 @@ import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/
 import { agencyWorkspaceRole, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
 
 const router: IRouter = Router();
-router.use("/agencies", requireAgencyWorkspace);
+router.use("/agencies", (_req, res, next) => {
+  res.set("Cache-Control", "private, no-store");
+  next();
+});
 const statePattern = /^[A-Z]{2}$/;
 const MAX_PAGE_SIZE = 500;
 const MAX_BATCH_SIZE = 25;
@@ -22,6 +25,33 @@ function hasAgencyId(value: Record<string, unknown>): value is Record<string, un
 
 function responseRecord(id: string, revision: number, payload: Record<string, unknown>) {
   return { id, revision, agency: { ...payload, id, _revision: revision } };
+}
+
+function publicProfileRecord(id: string, revision: number, payload: Record<string, unknown>) {
+  const publicPayload = { ...payload };
+  for (const key of [
+    "fieldNotes",
+    "followUpTasks",
+    "sourceRecordAssociations",
+    "sourceFacts",
+    "_factReviews",
+    "_reviewOriginalValues",
+  ]) {
+    delete publicPayload[key];
+  }
+  if (Array.isArray(publicPayload.keyContacts)) {
+    publicPayload.keyContacts = publicPayload.keyContacts.map((contact) => {
+      if (!contact || typeof contact !== "object" || Array.isArray(contact)) return contact;
+      const publicContact = { ...(contact as Record<string, unknown>) };
+      delete publicContact.notes;
+      return publicContact;
+    });
+  }
+  return responseRecord(id, revision, publicPayload);
+}
+
+function canReadWorkspaceFields(req: Request): boolean {
+  return req.isAuthenticated() && Boolean(agencyWorkspaceRole(req.user.id));
 }
 
 function requestError(res: Response, status: number, code: string, message: string) {
@@ -67,8 +97,11 @@ router.get("/agencies", async (req, res) => {
       .limit(requestedLimit + 1);
     const hasMore = rows.length > requestedLimit;
     const page = rows.slice(0, requestedLimit);
+    const canReadPrivateFields = canReadWorkspaceFields(req);
     return res.json({
-      records: page.map((row) => responseRecord(row.id, row.revision, row.payload)),
+      records: page.map((row) => canReadPrivateFields
+        ? responseRecord(row.id, row.revision, row.payload)
+        : publicProfileRecord(row.id, row.revision, row.payload)),
       nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
     });
   } catch (error) {
@@ -85,14 +118,16 @@ router.get("/agencies/:agencyId", async (req, res) => {
       .where(eq(agencyRecordsTable.id, req.params.agencyId))
       .limit(1);
     if (!row) return requestError(res, 404, "not_found", "Agency record not found.");
-    return res.json(responseRecord(row.id, row.revision, row.payload));
+    return res.json(canReadWorkspaceFields(req)
+      ? responseRecord(row.id, row.revision, row.payload)
+      : publicProfileRecord(row.id, row.revision, row.payload));
   } catch (error) {
     logFailure(req, error, "read");
     return requestError(res, 503, "database_unavailable", "Agency records are temporarily unavailable.");
   }
 });
 
-router.put("/agencies/:agencyId", async (req, res) => {
+router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
   const body = UpdateAgencyRecordBody.safeParse(req.body);
   if (!body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== req.params.agencyId) {
     return requestError(res, 400, "invalid_record", "The agency update is invalid.");
@@ -139,7 +174,7 @@ router.put("/agencies/:agencyId", async (req, res) => {
   }
 });
 
-router.post("/agencies/:agencyId/mutations", async (req, res) => {
+router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req, res) => {
   const body = CommitAgencyMutationBody.safeParse(req.body);
   if (!body.success || !hasAgencyId(body.data.agency) || body.data.agency.id !== req.params.agencyId) {
     return requestError(res, 400, "invalid_mutation", "The queued agency change is invalid.");
@@ -225,7 +260,7 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
   }
 });
 
-router.post("/agencies/batch-create", async (req, res) => {
+router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) => {
   const body = CreateAgencyRecordsBody.safeParse(req.body);
   if (!body.success) return requestError(res, 400, "invalid_batch", "The agency batch is invalid.");
   if (body.data.records.length > MAX_BATCH_SIZE || body.data.records.some((record) => !hasAgencyId(record))) {

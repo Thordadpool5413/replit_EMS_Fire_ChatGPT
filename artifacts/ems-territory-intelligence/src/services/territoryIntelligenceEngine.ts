@@ -332,13 +332,10 @@ class TerritoryIntelligenceService {
     return this.filterByCategory(results, categoryFilter);
   }
 
-  /**
-   * Get complete dual EMS + Fire coverage for a county AND all of its incorporated municipal cities.
-   */
-  public getAgenciesForCountyAndCities(
+  /** Include every saved county-matched account, including rural locations absent from place directories. */
+  public getAgenciesForCounty(
     stateCode: string,
     countyName: string,
-    cities: string[] = [],
     existingAgencies: Agency[] = [],
     categoryFilter: 'all' | 'ems' | 'fire' = 'all'
   ): Agency[] {
@@ -347,10 +344,7 @@ class TerritoryIntelligenceService {
       return this.getAgenciesForState(sc, existingAgencies, categoryFilter);
     }
 
-    const records=this.getAgenciesForJurisdiction(sc, countyName, undefined, existingAgencies, categoryFilter);
-    if(!cities.length)return records;
-    const requested=new Set(cities.map(city=>city.trim().toLowerCase()));
-    return records.filter(a=>requested.has(a.city.trim().toLowerCase()));
+    return this.getAgenciesForJurisdiction(sc, countyName, undefined, existingAgencies, categoryFilter);
   }
 
   public getZipCodesForLocation(stateCode: string, countyName?: string): string[] {

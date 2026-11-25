@@ -251,7 +251,7 @@ export const getListAgencyRecordsUrl = (params?: ListAgencyRecordsParams,) => {
 }
 
 /**
- * Returns Replit-stored agency records in ID order. Requests are bounded and can be filtered to a state.
+ * Returns public agency profiles in ID order. Anonymous reads omit field notes, follow-up tasks, source-review overlays, and contact notes; authorized workspace members can read them. Requests are bounded and can be filtered to a state.
  * @summary Read a stable page of agency records
  */
 export const listAgencyRecords = async (params?: ListAgencyRecordsParams, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecordPage> => {
@@ -329,6 +329,7 @@ export const getGetAgencyRecordUrl = (agencyId: string,) => {
 }
 
 /**
+ * Public reads omit field notes, follow-up tasks, source-review overlays, and contact notes. Authorized workspace members can read those fields.
  * @summary Read one agency record
  */
 export const getAgencyRecord = async (agencyId: string, options?: Parameters<typeof customFetch>[1]): Promise<AgencyRecord> => {
@@ -406,6 +407,7 @@ export const getUpdateAgencyRecordUrl = (agencyId: string,) => {
 }
 
 /**
+ * Requires an authenticated agency-workspace editor.
  * @summary Save an agency record with revision protection
  */
 export const updateAgencyRecord = async (agencyId: string,
@@ -495,7 +497,7 @@ export const getCommitAgencyMutationUrl = (agencyId: string,) => {
 }
 
 /**
- * A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+ * Requires an authenticated agency-workspace editor. A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
  * @summary Apply an idempotent offline mutation
  */
 export const commitAgencyMutation = async (agencyId: string,
@@ -585,6 +587,7 @@ export const getCreateAgencyRecordsUrl = () => {
 }
 
 /**
+ * Requires an authenticated agency-workspace editor.
  * @summary Create missing agency records without overwriting existing ones
  */
 export const createAgencyRecords = async (agencyBatchCreateInput: AgencyBatchCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<AgencyBatchCreateResponse> => {
@@ -618,7 +621,7 @@ return customFetch<AgencyBatchCreateResponse>(getCreateAgencyRecordsUrl(),
 
 export const getCreateAgencyRecordsMutationKey = () => ['createAgencyRecords'] as const;
 
-export const getCreateAgencyRecordsMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateAgencyRecordsMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext> => {
 
@@ -647,13 +650,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateAgencyRecordsMutationResult = NonNullable<Awaited<ReturnType<typeof createAgencyRecords>>>
     export type CreateAgencyRecordsMutationBody = BodyType<AgencyBatchCreateInput>
-    export type CreateAgencyRecordsMutationError = ErrorType<unknown>
+    export type CreateAgencyRecordsMutationError = ErrorType<void>
     export type CreateAgencyRecordsMutationVariables = {data: BodyType<AgencyBatchCreateInput>}
 
     /**
  * @summary Create missing agency records without overwriting existing ones
  */
-export const useCreateAgencyRecords = <TError = ErrorType<unknown>,
+export const useCreateAgencyRecords = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyRecords>>, TError,CreateAgencyRecordsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createAgencyRecords>>,

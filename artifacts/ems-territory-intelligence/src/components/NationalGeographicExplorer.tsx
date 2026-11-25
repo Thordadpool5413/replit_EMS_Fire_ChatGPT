@@ -748,10 +748,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           'all'
         );
       } else if (selectedCountyName !== 'all') {
-        list = territoryEngine.getAgenciesForCountyAndCities(
+        list = territoryEngine.getAgenciesForCounty(
           selectedStateCode,
           selectedCountyName,
-          availableCities.map(c => c.city),
           agencies,
           'all'
         );
@@ -761,13 +760,20 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     } else {
       // National view (or if county/city was selected directly from national list)
       if (selectedCountyName !== 'all' && activeCountyRecord?.stateCode) {
-        list = territoryEngine.getAgenciesForCountyAndCities(
-          activeCountyRecord.stateCode,
-          selectedCountyName,
-          selectedCityName !== 'all' ? [selectedCityName] : undefined,
-          agencies,
-          'all'
-        );
+        list = selectedCityName !== 'all'
+          ? territoryEngine.getAgenciesForJurisdiction(
+              activeCountyRecord.stateCode,
+              selectedCountyName,
+              selectedCityName,
+              agencies,
+              'all'
+            )
+          : territoryEngine.getAgenciesForCounty(
+              activeCountyRecord.stateCode,
+              selectedCountyName,
+              agencies,
+              'all'
+            );
       } else {
         list = agencies;
       }

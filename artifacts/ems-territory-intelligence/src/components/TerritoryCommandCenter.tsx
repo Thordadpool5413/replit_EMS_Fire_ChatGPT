@@ -9,26 +9,23 @@ const resolve=(a:Agency,directory:Agency[])=>({location:displayedProviderLocatio
 export function TerritoryCommandSummary({agencies,selected,samples,onView,onOpenAgency,view}:{agencies:Agency[];selected:string[];samples:ReviewedSample[];onView:(v:CommandView)=>void;onOpenAgency:(a:Agency)=>void;view:CommandView}){
  useLocationRevision();
  const r=buildTerritoryCommand(agencies,selected,samples,resolve,localDay());
+ const shortcuts:{label:string;view:CommandView}[]=[{label:'Territory analytics',view:'analytics'},{label:'Field coaching',view:'coaching'},{label:'Leadership review',view:'leadership'},{label:'Working sales pipeline',view:'pipeline'},{label:'Account activity',view:'activity'},{label:'Field execution plan',view:'plan'}];
  const tiles:{label:string;value:number;view:CommandView;detail:string}[]=[
-  {label:'Territory analytics',value:r.eligible,view:'analytics',detail:'Compare recorded activity windows and current workflow coverage'},
-  {label:'Field coaching',value:r.eligible,view:'coaching',detail:'Prepare measurable account-specific coaching commitments'},
-  {label:'Leadership account review',value:r.eligible,view:'leadership',detail:'Review selected account execution and evidence gaps'},
   {label:'Priority accounts',value:r.priorities.length,view:'priorities',detail:r.urgent+' with near deadlines to verify now'},
   {label:'Dated purchasing',value:r.deadlines,view:'commercial',detail:'Accounts with reviewed dates within 90 days'},
   {label:'Funding research',value:r.funding,view:'commercial',detail:'Accounts with eligible funding documents'},
   {label:'Competitive research',value:r.competitive,view:'competitive',detail:'Accounts with reviewed competitor observations'},
   {label:'Mapped research',value:r.mapped,view:'geography',detail:r.groups+' multi-account proximity groups'},
   {label:'Coverage gaps',value:r.selected-r.checked,view:'coverage',detail:'Selected accounts without a complete document sample'},
-  {label:'Working sales pipeline',value:r.eligible,view:'pipeline',detail:'Review eligible accounts and user-confirmed working records'},
-  {label:'Account activity coverage',value:r.eligible,view:'activity',detail:'Review recorded contacts and coverage gaps'},
-  {label:'Field execution plan',value:r.eligible,view:'plan',detail:'Eligible selected accounts for internal planning'},
   {label:'Open follow-ups',value:r.tasks.length,view:'followups',detail:r.overdue+' overdue · '+r.today+' today'}
  ];
  return <section className="space-y-3 min-w-0" aria-label="Selected territory command center">
   <header><h3 className="font-semibold">Territory command center</h3><p className="text-xs">{r.selected} selected · {r.eligible} unique source-native accounts · {r.checked} complete reviewed document samples. This is not a state or territory census.</p></header>
   {r.invalidScope&&<p role="status">Invalid selection; refresh account scope.</p>}
   {view==='overview'&&<>
-   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{tiles.map(t=><button type="button" className="rounded-lg border p-3 text-left min-w-0 min-h-24 flex flex-col gap-1" key={t.label} onClick={()=>onView(t.view)}><span className="text-xs font-medium break-words">{t.label}</span><strong className="text-2xl tabular-nums">{t.value}</strong><span className="text-xs break-words">{t.detail}</span></button>)}</div>
+   <div className="research-metric-grid">{tiles.map(t=><button type="button" className="research-metric" key={t.label} onClick={()=>onView(t.view)}><span className="text-xs font-medium break-words">{t.label}</span><strong>{t.value}</strong><span className="text-xs break-words">{t.detail}</span></button>)}</div>
+   <h4 className="font-semibold">Workspaces</h4>
+   <div className="research-shortcuts">{shortcuts.map(t=><button key={t.view} type="button" onClick={()=>onView(t.view)}>{t.label}</button>)}</div>
    <p className="text-xs">Counts are accounts except follow-ups, which are local task records. Categories may overlap; never add them into a pipeline total. Location gaps: {r.locationGaps}. Ambiguous commercial signals withheld: {r.ambiguous}.</p>
    <h4 className="font-semibold">Start with these accounts</h4>
    {!r.priorities.length&&<p>No eligible reviewed priority signals in this sample. Research gaps remain.</p>}

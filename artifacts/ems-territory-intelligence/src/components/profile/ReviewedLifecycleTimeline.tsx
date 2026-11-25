@@ -60,7 +60,7 @@ function PrivateLifecycle({agency,directory}:{agency:Agency;directory:Agency[]})
  const station=active?acceptedLifecycleSample(agency,directory,active.station,active.started):undefined;
  const events=active?buildLifecycleTimeline(station,active.signals,today):[];
  const rows=events.filter(e=>filter==='all'||lifecycleWindow(e,today,days)===filter),current=Math.min(page,Math.max(1,Math.ceil(rows.length/10)));
- return <section className="pi-surface p-3 space-y-2 min-w-0" aria-label="Reviewed contract and equipment lifecycle">
+ return <section className="pi-surface research-workspace p-3 space-y-2 min-w-0" aria-label="Reviewed contract and equipment lifecycle">
   <button type="button" className="workspace-button min-h-11" aria-expanded={open} onClick={()=>{if(open)clear();setOpen(!open);}}>{open?'Close reviewed lifecycle':'Open reviewed lifecycle timeline'}</button>
   {open&&<div className="space-y-3 text-sm">
    <p>Review documented dates by department or station. No assumed replacement cycles, auto-renewal dates, current coverage or purchase intent. Different observations may describe different equipment.</p>

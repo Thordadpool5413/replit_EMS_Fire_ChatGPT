@@ -5,7 +5,8 @@ import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} 
 import {MAX_REVIEW_ACCOUNTS,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
 import {TerritoryCommandSummary,CommandFollowUps} from './TerritoryCommandCenter';
 import {commandSelection,currentCommandSample,REVIEW_TTL_MS} from '../services/commandSession';
-import {COMMAND_VIEWS,type CommandView} from '../services/territoryCommand';
+import {CommandNavigation} from './CommandNavigation';
+import {type CommandView} from '../services/territoryCommand';
 import {TerritoryAnalyticsPanel} from './TerritoryAnalyticsPanel';
 import {FieldCoachingPanel} from './FieldCoachingPanel';
 import {LeadershipReviewPanel} from './LeadershipReviewPanel';
@@ -53,7 +54,7 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
   finally{if(token.current===request)setBusy(false);}
  }
  const ranked=sample?buildReviewedAccountPriorities(agencies,selected,sample.samples,Date.now(),kind):undefined;
- return <section className="pi-surface p-3 space-y-2 min-w-0" aria-label="Reviewed account research priorities">
+ return <section className="pi-surface research-workspace p-3 space-y-2 min-w-0" aria-label="Reviewed account research priorities">
   <button className="workspace-button min-h-11" type="button" aria-expanded={open} onClick={()=>{if(open)clear();setOpen(!open);}}>{open?'Close territory command center':'Open territory command center'}</button>
   {open&&<div className="space-y-3 text-sm">
    <p>Compare up to {MAX_REVIEW_ACCOUNTS} selected accounts using independently reviewed public documents. This research order is separate from PulseIQ estimates, private notes and station observations; it is not win probability or revenue.</p>
@@ -67,8 +68,8 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
    </>}
    {message&&<p role="status">{message}</p>}
    {ranked&&sample&&<>
+    <CommandNavigation view={view} onView={setView}/>
     <TerritoryCommandSummary agencies={agencies} selected={selected} samples={sample.samples} view={view} onView={setView} onOpenAgency={onOpenAgency}/>
-    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v==='activity'?'Account activity':v==='competitive'?'Competitive':v==='pipeline'?'Sales pipeline':v==='leadership'?'Leadership':v==='coaching'?'Coaching':v==='analytics'?'Analytics':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
     {view==='priorities'&&<>
     <p>{ranked.checked}/{selected.length} accounts with complete reviewed samples · {ranked.ranked.length} prioritized. Five-minute sample; refresh before acting.</p>
     <label>Signal type<select className={control} value={kind} onChange={e=>setKind(e.target.value as typeof kind)}><option value="all">All eligible signals</option>{Object.entries(OPPORTUNITY_LABELS).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>

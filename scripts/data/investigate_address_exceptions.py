@@ -6,7 +6,9 @@ from compile_review_coordinates import read_archive
 from stage_wisconsin_addresses import request
 import stage_pennsylvania_bucks_addresses as bucks
 import stage_california_la_addresses as la
+import stage_illinois_cook_addresses as cook
 SOURCES={
+ 'IL':(cook,15065944682,'5be0bfdd6bb7f05fb2525a2b967afbe6bae641465bf184f14fd4ec148c9d0f35','illinois-cook-address-review.json',8,'subaddress_or_exception',cook.SUB),
  'PA':(bucks,15067681034,'de88ea9ad4d7155ce749386f89c2504203a97926c717ca9f5baf77b2613ec7bb','pennsylvania-bucks-address-review.json',9,'subaddress_or_exception',('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc','Mile_Post','gc_excepti')),
  'CA':(la,15067002763,'6ad38f7ff8f2c9f4faaeb68be7a9761c71a0f2709c4afce414a935aed5806146','california-la-address-review.json',6,'subaddress_or_complex_number',('NumPrefix','NumberSuffix','NumSuffix','BldgID','BldgType','BldgName','FlrType','FlrName','UnitType','UnitName')),
 }
@@ -27,7 +29,7 @@ def investigate(state,report,entries,checked,fetch=request,delay=1):
     for target in sorted(targets,key=lambda t:t['sourceKey']):
         key=target['sourceKey'];oid=target['exactObjectIds'][0];e=by_key.get(key)
         if not e or e['state']!=state or e['status'] not in ('no-match','unavailable') or e['match'] is not None or not mod.number(e['address']):raise ValueError('Registry target changed: '+key)
-        if state=='PA' and e.get('sourceCounty')!='42017' or state=='CA' and e.get('sourceCounty') not in ('06037','',None):raise ValueError('Registry county scope changed')
+        if state=='IL' and e.get('sourceCounty')!='17031' or state=='PA' and e.get('sourceCounty')!='42017' or state=='CA' and e.get('sourceCounty') not in ('06037','',None):raise ValueError('Registry county scope changed')
         params=mod.query([e['address']]);cache_key=json.dumps(params,sort_keys=True)
         if cache_key not in cache:
             cache[cache_key]=mod.features(fetch(mod.LAYER+'/query',params));time.sleep(delay)

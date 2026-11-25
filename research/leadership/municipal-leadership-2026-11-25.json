@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-11-25",
+  "scope": "Manually reviewed public municipal professional leadership directory observations, not a current-employment guarantee, private contact directory, native provider linkage or delegated authority.",
+  "notes": [
+    "Orlando's current department and mayor directories both report Shannon Teamer as interim chief; earlier appointment announcement is not used as the current role.",
+    "Department main or chief office numbers remain separate from individual contact fields.",
+    "Only explicitly published professional contact channels included. No inferred contact fields."
+  ],
+  "groups": [
+    {
+      "organization": "Orlando Fire Department",
+      "state": "FL",
+      "city": "Orlando",
+      "officialDirectory": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+      "departmentPhone": "407.246.3473",
+      "departmentPhoneSource": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+      "registryIdentity": null,
+      "associationStatus": "needs-native-identity-review",
+      "contacts": [
+        {
+          "name": "Shannon Teamer",
+          "title": "Interim Orlando Fire Chief",
+          "sourceUrl": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+          "professionalEmail": "shannon.teamer@orlando.gov",
+          "professionalPhone": "407.246.3125",
+          "corroborationUrl": "https://www.orlando.gov/Our-Government/Mayor-City-Council/Buddy-Dyer/Mayors-Office-Contacts",
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Jackson Maddox",
+          "title": "Deputy Chief, Administration Bureau",
+          "sourceUrl": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+          "professionalEmail": "jackson.maddox@orlando.gov",
+          "professionalPhone": "407.246.3401",
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Corey Philman",
+          "title": "Deputy Chief, Support Services Bureau",
+          "sourceUrl": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+          "professionalEmail": "corey.philman@orlando.gov",
+          "professionalPhone": "407.246.4005",
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Robert \"Bryan\" Pearce",
+          "title": "Deputy Chief, Operations Bureau",
+          "sourceUrl": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+          "professionalEmail": "bryan.pearce@orlando.gov",
+          "professionalPhone": "407.246.2898",
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Marvin Francis",
+          "title": "Deputy Chief, Planning Bureau",
+          "sourceUrl": "https://www.orlando.gov/Our-Government/Departments-Offices/Orlando-Fire-Department",
+          "professionalEmail": "marvin.francis@orlando.gov",
+          "professionalPhone": "407.246.3144",
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        }
+      ]
+    },
+    {
+      "organization": "Tampa Fire Rescue",
+      "state": "FL",
+      "city": "Tampa",
+      "officialDirectory": "https://www.tampa.gov/fire-rescue/about-us/administration",
+      "departmentPhone": "813-274-7011",
+      "departmentPhoneSource": "https://www.tampa.gov/departments/fire-rescue",
+      "registryIdentity": null,
+      "associationStatus": "needs-native-identity-review",
+      "contacts": [
+        {
+          "name": "Barbara Tripp",
+          "title": "Fire Chief",
+          "sourceUrl": "https://www.tampa.gov/departments/fire-rescue",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Todd Alt",
+          "title": "Assistant Chief of Operations",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Milt Jenkins",
+          "title": "Assistant Chief of Administration",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Christopher Shipp",
+          "title": "Rescue Division Chief",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Robert Collins",
+          "title": "Special Operations Division Chief",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Jim Billotte",
+          "title": "Airport Division Chief",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Austin Murphy",
+          "title": "Training Division Chief",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Andrell Miller",
+          "title": "Fire Marshal",
+          "sourceUrl": "https://www.tampa.gov/fire-rescue/about-us/administration",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        }
+      ]
+    },
+    {
+      "organization": "Houston Fire Department",
+      "state": "TX",
+      "city": "Houston",
+      "officialDirectory": "https://www.houstontx.gov/fire/divisions/index.html",
+      "departmentPhone": "832.394.6700",
+      "departmentPhoneSource": "https://www.houstontx.gov/fire/divisions/firechief.html",
+      "registryIdentity": null,
+      "associationStatus": "needs-native-identity-review",
+      "contacts": [
+        {
+          "name": "Thomas Muñoz",
+          "title": "Fire Chief",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/firechief.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Marion Spann",
+          "title": "Executive Assistant Chief, Organizational Support",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Alfredo Martinez",
+          "title": "Executive Assistant Chief, Strategic Operations",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Edward Llewellyn",
+          "title": "Executive Assistant Chief, Emergency Operations",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Richard Galvan",
+          "title": "Assistant Chief, Integrated Risk Management",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Byron Robinson",
+          "title": "Assistant Chief, Fire Marshal",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Russell Fritsch",
+          "title": "Assistant Chief, Resource Management",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Joe Trevino",
+          "title": "Assistant Chief, Special Investigations",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "James Campbell",
+          "title": "Assistant Chief, Operations",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Matthew White",
+          "title": "Assistant Chief, Emergency Medical Services",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Justin Cegielski",
+          "title": "Assistant Chief, Human Resources",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Michael Brown",
+          "title": "Assistant Chief, Professional Development",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        },
+        {
+          "name": "Jesus Villasana",
+          "title": "Assistant Chief, Planning",
+          "sourceUrl": "https://www.houstontx.gov/fire/divisions/index.html",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        }
+      ]
+    },
+    {
+      "organization": "Philadelphia Fire Department",
+      "state": "PA",
+      "city": "Philadelphia",
+      "officialDirectory": "https://www.phila.gov/departments/philadelphia-fire-department/",
+      "departmentPhone": "(215) 686-1300",
+      "departmentPhoneSource": "https://www.phila.gov/departments/philadelphia-fire-department/",
+      "registryIdentity": null,
+      "associationStatus": "needs-native-identity-review",
+      "contacts": [
+        {
+          "name": "Jeffrey Thompson",
+          "title": "Fire Commissioner",
+          "sourceUrl": "https://www.phila.gov/departments/philadelphia-fire-department/",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        }
+      ]
+    },
+    {
+      "organization": "Dallas Fire-Rescue",
+      "state": "TX",
+      "city": "Dallas",
+      "officialDirectory": "https://dallascityhall.com/departments/fire-rescue/Pages/administration-bureau.aspx",
+      "departmentPhone": null,
+      "departmentPhoneSource": null,
+      "registryIdentity": null,
+      "associationStatus": "needs-native-identity-review",
+      "contacts": [
+        {
+          "name": "Justin Ball",
+          "title": "Fire Chief",
+          "sourceUrl": "https://dallascityhall.com/departments/fire-rescue/Pages/administration-bureau.aspx",
+          "professionalEmail": null,
+          "professionalPhone": null,
+          "corroborationUrl": null,
+          "authority": "not-established",
+          "endUserValidationRequired": true
+        }
+      ]
+    }
+  ]
+}

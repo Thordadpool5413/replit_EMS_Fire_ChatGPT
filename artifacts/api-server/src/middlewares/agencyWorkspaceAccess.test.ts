@@ -10,6 +10,11 @@ function runAccessCheck(options: {
   const result: { status?: number; body?: unknown; next: boolean } = { next: false };
   const req = {
     method: options.method,
+    headers: {
+      origin: options.headers?.origin,
+      host: options.headers?.host,
+      "sec-fetch-site": options.headers?.["sec-fetch-site"],
+    },
     user: options.userId ? { id: options.userId } : undefined,
     isAuthenticated: () => Boolean(options.userId),
     get: (name: string) => options.headers?.[name.toLowerCase()],
@@ -62,12 +67,12 @@ test("private profile fields require a same-origin authorized reader", () => {
   assert.equal(canReadAgencyWorkspaceFields({
     isAuthenticated: () => true,
     user: { id: "agency-viewer" },
-    get: (name: string) => sameOrigin[name as keyof typeof sameOrigin],
+    headers: sameOrigin,
   } as never), true);
   assert.equal(canReadAgencyWorkspaceFields({
     isAuthenticated: () => true,
     user: { id: "agency-viewer" },
-    get: (name: string) => name === "origin" ? "https://other.example" : "cross-site",
+    headers: { origin: "https://other.example", "sec-fetch-site": "cross-site", host: "app.example" },
   } as never), false);
 
   delete process.env.ATLAS_AGENCY_VIEWER_IDS;

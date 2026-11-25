@@ -13,7 +13,7 @@ export function buildAgencyIdentityIndex(agencies:Agency[]) {
   if(!generated){
    if(/^\d{10}$/.test(a.npiNumber??''))add(`NPI:${a.npiNumber}`,'Recorded identifier; association needs review');
    if(a.fdid?.trim()&&a.stateCode&&!isGeneratedFdid(a.fdid,a))add(`FDID:${a.stateCode.toUpperCase()}:${a.fdid.trim().toUpperCase()}`,'Recorded identifier; association needs review');
-   if(a.stateLicenseNumber?.trim()&&a.stateCode)add(`LICENSE:${a.stateCode.toUpperCase()}:${a.stateLicenseNumber.trim().toUpperCase()}`,'Recorded identifier; association needs review');
+   if(a.stateLicenseNumber?.trim()&&a.stateCode)add(`STATE-EMS:${a.stateCode.toUpperCase()}:license:${a.stateLicenseNumber.trim().toUpperCase()}`,'Recorded identifier; association needs review');
   }
   for(const association of a.sourceRecordAssociations??[]){
    if(association.decision!=='confirmed')continue;

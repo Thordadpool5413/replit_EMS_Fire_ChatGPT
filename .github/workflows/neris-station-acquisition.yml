@@ -1,0 +1,35 @@
+name: NERIS station acquisition
+on:
+  push:
+    branches: [atlas/phase8-0c-station-acquisition]
+    paths:
+      - 'scripts/data/stage_neris_stations.py'
+      - 'scripts/data/test_stage_neris_stations.py'
+      - '.github/workflows/neris-station-acquisition.yml'
+  pull_request:
+    paths:
+      - 'scripts/data/stage_neris_stations.py'
+      - 'scripts/data/test_stage_neris_stations.py'
+      - '.github/workflows/neris-station-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: neris-station-acquisition-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_neris_stations.py
+      - name: Retrieve official NERIS station candidates
+        if: github.ref == 'refs/heads/atlas/phase8-0c-station-acquisition'
+        run: python3 scripts/data/stage_neris_stations.py --states FL,TX,PA --output generated-artifacts/neris-station-review
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref == 'refs/heads/atlas/phase8-0c-station-acquisition'
+        with:
+          name: neris-station-review
+          path: generated-artifacts/neris-station-review/
+          if-no-files-found: ignore

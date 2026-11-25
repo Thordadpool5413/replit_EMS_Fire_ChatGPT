@@ -10,6 +10,7 @@ import facilityNotesRouter from "./facility-notes";
 import facilityEquipmentRouter from "./facility-equipment";
 import authorityRouter from "./agency-authority";
 import sharedEvidenceRouter from "./shared-evidence";
+import workingPipelineRouter from "./working-pipeline";
 import authRouter from "./auth";
 
 const router: IRouter = Router();
@@ -23,6 +24,7 @@ router.use(nriCountyContextRouter);
 router.use(facilityNotesRouter);
 router.use(facilityEquipmentRouter);
 router.use(authorityRouter);
+router.use(workingPipelineRouter);
 router.use(agencyRecordsRouter);
 router.use(sharedEvidenceRouter);
 router.use(authRouter);

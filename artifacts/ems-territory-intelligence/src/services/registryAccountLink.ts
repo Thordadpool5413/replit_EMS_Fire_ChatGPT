@@ -23,20 +23,57 @@ export function registryIdentifierText(row: SourceDirectoryRecord): string {
   if(row[1]==='USFA')return identity?'FDID '+identity.identifier+' ('+row[3]+')':'FDID not reported';
   return 'NPI '+row[0].slice('nppes:'.length);
 }
+/** Registry claims must agree in namespace, state, source field and record ID.
+ * A confirmed decision is not proof of a valid identifier. Legacy claims remain review candidates. */
+export function confirmedRegistryKey(s:AgencySourceRecordAssociation,state:string):string|undefined{
+ if(s.decision!=='confirmed'||s.sourceFields?.stateCode!==state||!s.matchBasis?.trim()||!Number.isFinite(Date.parse(s.decidedAt)))return;
+ const fields=s.sourceFields,source=s.sourceName,record=s.sourceRecordId;
+ let id:unknown,kind:RegistryIdentity['identifierKind'];
+ try{
+  const u=new URL(s.sourceUrl);if(u.protocol!=='https:'||u.username||u.password||u.port)return;
+  if(source==='USFA NFDR'&&u.hostname==='apps.usfa.fema.gov'){id=fields.fdid;if(record!==state+':'+id)return;}
+  else if(source==='NPPES'&&u.hostname==='npiregistry.cms.hhs.gov'){id=fields.npi;if(record!==id||typeof id!=='string'||!validNpiChecksum(id))return;}
+  else if(source==='NERIS'&&['services5.arcgis.com','www.usfa.fema.gov'].includes(u.hostname)){id=fields.nerisId;if(record!==id||typeof id!=='string'||!/^[-A-Z0-9]{1,14}$/.test(id.toUpperCase()))return;}
+  else if(source==='State EMS'&&((state==='OH'&&u.hostname==='ems.ohio.gov'&&fields.identifierKind==='agency-code')||(state==='FL'&&u.href==='https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf'&&fields.identifierKind==='license'))){id=fields.stateAgencyId;kind=fields.identifierKind as RegistryIdentity['identifierKind'];if(record!==state+':'+id||state==='FL'&&(typeof id!=='string'||!/^\d{1,12}$/.test(id)||fields.headquartersState!=='FL'))return;}
+  else return;
+ }catch{return;}
+ if(typeof id!=='string')return;
+ return registryIdentityKey({sourceName:source as RegistryIdentity['sourceName'],identifier:id,stateCode:state,identifierKind:kind} as RegistryIdentity);
+}
+export function registryClaims(a:Agency){
+ const native=a.registryIdentity&&registryIdentityKey(a.registryIdentity);
+ const keys=new Set<string>();if(native)keys.add(native);
+ const invalid:string[]=[];
+ for(const s of a.sourceRecordAssociations??[]){
+  if(s.decision!=='confirmed'||!['USFA NFDR','NPPES','NERIS','State EMS'].includes(s.sourceName))continue;
+  const key=confirmedRegistryKey(s,a.stateCode);
+  if(key)keys.add(key);else invalid.push(s.id);
+ }
+ const groups=new Map<string,string[]>();
+ for(const key of keys){const family=key.split(':')[0],rows=groups.get(family)??[];rows.push(key);groups.set(family,rows);}
+ return {keys:[...keys],invalid,conflicts:[...groups.values()].filter(rows=>rows.length>1)};
+}
 export function findRegistryIdentityAccounts(identity:RegistryIdentity,agencies:Agency[]):Agency[]{
-  const {identifier:id,stateCode:state,sourceName}=identity;
-  const key=registryIdentityKey(identity);
-  const national=sourceName==='NPPES'||sourceName==='NERIS';
-  return agencies.filter(a=>(key&&a.registryIdentity&&registryIdentityKey(a.registryIdentity)===key)||((national||a.stateCode?.toUpperCase()===state)&&(a.sourceRecordAssociations??[]).some(s=>{
-    if(s.decision!=='confirmed'||(!national&&s.sourceFields?.stateCode&&String(s.sourceFields.stateCode).toUpperCase()!==state))return false;
-    if(sourceName==='NPPES')return /NPPES|NPI/i.test(s.sourceName)&&s.sourceRecordId===id;
-    if(sourceName==='NERIS')return /^NERIS$/i.test(s.sourceName)&&s.sourceRecordId===id;
-    if(sourceName==='State EMS')return s.sourceName==='State EMS'&&s.sourceRecordId===state+':'+id&&s.sourceFields?.identifierKind===identity.identifierKind;
-    if(!/USFA|NFDR/i.test(s.sourceName))return false;
-    const value=s.sourceRecordId.replace(/^usfa:/i,'');
-    if(value.includes(':')&&value.split(':')[0].toUpperCase()!==state)return false;
-    return value===id||value===state+':'+id||value===state+'-'+id||s.sourceFields?.fdid===id;
-  })));
+ const key=registryIdentityKey(identity);if(!key)return [];
+ return agencies.filter(a=>registryClaims(a).keys.includes(key));
+}
+/** Conservative collision check: malformed links are review candidates, never confirmed matches. */
+export function possibleRegistryClaim(identity:RegistryIdentity,a:Agency):boolean{
+ const id=identity.identifier.trim().toUpperCase(),state=identity.stateCode,source=identity.sourceName;
+ if(source!=='NPPES'&&source!=='NERIS'&&a.stateCode!==state)return false;
+ return (a.sourceRecordAssociations??[]).some(s=>{
+  if(s.decision!=='confirmed')return false;
+  const name=s.sourceName.toUpperCase(),record=s.sourceRecordId.trim().toUpperCase(),fields=s.sourceFields??{};
+  if(source==='USFA NFDR'&&!/USFA|NFDR/.test(name)||source==='NPPES'&&!/NPPES|NPI/.test(name)||source==='NERIS'&&name!=='NERIS'||source==='State EMS'&&name!=='STATE EMS')return false;
+  if(source==='State EMS'&&fields.identifierKind&&fields.identifierKind!==identity.identifierKind)return false;
+  const field=source==='USFA NFDR'?fields.fdid:source==='NPPES'?fields.npi:source==='NERIS'?fields.nerisId:fields.stateAgencyId;
+  return typeof field==='string'&&field.trim().toUpperCase()===id||[id,state+':'+id,'USFA:'+state+':'+id,state+'-'+id].includes(record);
+ });
+}
+export function registryClaimIndex(agencies:Agency[]){
+ const counts=new Map<string,number>(),byAccount=new Map<Agency,ReturnType<typeof registryClaims>>();
+ for(const a of agencies){const c=registryClaims(a);byAccount.set(a,c);for(const key of c.keys)counts.set(key,(counts.get(key)??0)+1);}
+ return {counts,byAccount};
 }
 export function findLinkedRegistryAgency(row:SourceDirectoryRecord,agencies:Agency[]):Agency|undefined{
   const identity=snapshotRegistryIdentity(row);
@@ -46,8 +83,8 @@ export function findLinkedRegistryAgency(row:SourceDirectoryRecord,agencies:Agen
 /** Manual review only. Link identity evidence without mutating account ID or operational facts. */
 export function createReviewedRegistryAssociation(identity:RegistryIdentity,agency:Agency,basis:string,agencies:Agency[]):AgencySourceRecordAssociation{
   if(agency.stateCode?.toUpperCase()!==identity.stateCode)throw Error('Account state does not match source record.');
-  if(!basis.trim()||!identity.identifier||/^location-/i.test(identity.identifier))throw Error('A native identifier and match evidence are required.');
-  if(findRegistryIdentityAccounts(identity,agencies).some(a=>a.id!==agency.id))throw Error('This source record is linked to another saved account. Review the conflict first.');
+  if(!canCreateRegistryAccount(identity)||!basis.trim()||!identity.identifier||/^location-/i.test(identity.identifier))throw Error('A native identifier and match evidence are required.');
+  if(agencies.filter(a=>a.id===agency.id).length>1||agencies.some(a=>a.id!==agency.id&&(findRegistryIdentityAccounts(identity,[a]).length>0||possibleRegistryClaim(identity,a))))throw Error('This source record is linked to another saved account. Review the conflict first.');
   if(agency.registryIdentity?.sourceName===identity.sourceName&&registryIdentityKey(agency.registryIdentity)!==registryIdentityKey(identity))throw Error('Account already has a different native identity in this registry.');
   if(agency.sourceRecordAssociations?.some(s=>s.decision==='confirmed'&&s.sourceName===identity.sourceName&&!findRegistryIdentityAccounts(identity,[{...agency,registryIdentity:undefined,sourceRecordAssociations:[s]}]).length))throw Error('Account already has a different confirmed identity in this registry. Review that association first.');
   const sourceRecordId=identity.sourceName==='USFA NFDR'||identity.sourceName==='State EMS'?identity.stateCode+':'+identity.identifier:identity.identifier;
@@ -59,7 +96,7 @@ export function registryIdentityKey(identity:RegistryIdentity):string|undefined{
  const id=identity.identifier?.trim().toUpperCase(),state=identity.stateCode?.toUpperCase();
  if(!id||!state||!/^[-A-Z0-9.]{1,80}$/.test(id)||/^LOCATION-/i.test(id)||!(/^[A-Z]{2}$/.test(state)))return undefined;
  if(identity.sourceName==='NPPES')return /^\d{10}$/.test(id)?'NPI:'+id:undefined;
- if(identity.sourceName==='NERIS')return 'NERIS:'+id;
+ if(identity.sourceName==='NERIS')return /^[-A-Z0-9]{1,14}$/.test(id)?'NERIS:'+id:undefined;
  if(identity.sourceName==='USFA NFDR')return /^(?:[A-Z]{2}-(?:FD|EMS)-\d{5})/i.test(id)?undefined:'FDID:'+state+':'+id;
  if(identity.sourceName==='State EMS'&&['agency-code','license'].includes(identity.identifierKind??''))return 'STATE-EMS:'+state+':'+identity.identifierKind+':'+id;
  return undefined;
@@ -91,6 +128,7 @@ export function findRegistryAccountCandidates(identity:RegistryIdentity,agencies
  const norm=(v:string|undefined)=>(v??'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g,'');
  const name=norm(identity.name),city=norm(identity.city),id=identity.identifier.toUpperCase();
  return agencies.filter(a=>{
+  if(possibleRegistryClaim(identity,a))return true;
   if(identity.sourceName==='NPPES'&&a.npiNumber===id)return true;
   if(a.stateCode?.toUpperCase()!==identity.stateCode)return false;
   if(identity.sourceName==='USFA NFDR'&&a.fdid?.toUpperCase()===id)return true;

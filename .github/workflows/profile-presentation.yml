@@ -24,6 +24,8 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_national_quality.py'
+      - 'scripts/data/test_audit_national_quality.py'
       - 'scripts/data/audit_facility_reconciliation.py'
       - 'scripts/data/test_facility_reconciliation.py'
       - 'scripts/data/facility_research_candidates.json'
@@ -48,6 +50,7 @@ on:
       - '.github/workflows/atlas-recurring-discovery.yml'
       - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
       - 'artifacts/api-server/src/**'
+      - 'artifacts/api-server/tests/**'
       - 'artifacts/api-server/package.json'
       - 'lib/db/**'
       - 'lib/replit-auth-web/**'
@@ -56,6 +59,10 @@ on:
       - 'scripts/package.json'
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
+      - 'scripts/pwa-worker.test.mjs'
+      - 'scripts/check-release-config.mjs'
+      - 'scripts/check-release-config.test.mjs'
+      - 'scripts/post-merge.sh'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
   push:
@@ -83,6 +90,8 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_national_quality.py'
+      - 'scripts/data/test_audit_national_quality.py'
       - 'scripts/data/audit_facility_reconciliation.py'
       - 'scripts/data/test_facility_reconciliation.py'
       - 'scripts/data/facility_research_candidates.json'
@@ -107,6 +116,7 @@ on:
       - '.github/workflows/atlas-recurring-discovery.yml'
       - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
       - 'artifacts/api-server/src/**'
+      - 'artifacts/api-server/tests/**'
       - 'artifacts/api-server/package.json'
       - 'lib/db/**'
       - 'lib/replit-auth-web/**'
@@ -115,6 +125,10 @@ on:
       - 'scripts/package.json'
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
+      - 'scripts/pwa-worker.test.mjs'
+      - 'scripts/check-release-config.mjs'
+      - 'scripts/check-release-config.test.mjs'
+      - 'scripts/post-merge.sh'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
 permissions:
@@ -162,6 +176,8 @@ jobs:
             python3 scripts/data/audit_location_gaps.py --json generated-artifacts/location-recovery/gaps.json --markdown generated-artifacts/location-recovery/gaps.md
             cat generated-artifacts/location-recovery/gaps.md >> "$GITHUB_STEP_SUMMARY"
             python3 scripts/data/audit_facility_reconciliation.py --output generated-artifacts/location-recovery/facility-review.json
+            python3 scripts/data/audit_national_quality.py --output generated-artifacts/location-recovery
+            cat generated-artifacts/location-recovery/national-quality.md >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Keep mapping coverage report
         uses: actions/upload-artifact@v4
@@ -170,6 +186,10 @@ jobs:
           path: generated-artifacts/location-recovery/
           if-no-files-found: ignore
       - run: node scripts/test-ems-unit.mjs
+      - name: Verify PWA cache and offline safety
+        run: node --test scripts/pwa-worker.test.mjs
+      - name: Verify release configuration checks
+        run: node --test scripts/check-release-config.test.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs
@@ -253,3 +273,12 @@ jobs:
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-equipment.integration.test.ts
       - name: Verify private decision authority evidence
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-authority.integration.test.ts
+
+      - name: Verify shared working pipeline persistence and permissions
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/working-pipeline.integration.test.ts
+
+      - name: Verify cookie-authenticated application and shared client integration
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/tests/shared-client.integration.test.ts
+
+      - name: Verify readiness probe failure and timeout handling
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/releaseReadiness.test.ts

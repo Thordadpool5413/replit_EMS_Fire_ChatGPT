@@ -54,3 +54,13 @@ test('public grant results remain candidates for this unique account only, never
  assert.equal(providerGrantCandidates(a,[a],[{...scope,candidates:[{...candidate,role:'supplier'}]}],checkedAt,now).length,0);
  assert.equal(a.sourceFacts,undefined);
 });
+
+test('all reviewed registry keys must be unique, not just the primary identity',()=>{
+ const association={id:'neris:FDTEST123',sourceName:'NERIS',sourceRecordId:'FDTEST123',sourceFields:{stateCode:'FL',nerisId:'FDTEST123'},decision:'confirmed',matchBasis:'Fixture association',decidedAt:'2026-11-20',sourceUrl:'https://www.usfa.fema.gov/neris/public/'} as NonNullable<Agency['sourceRecordAssociations']>[number];
+ const first={...a,sourceRecordAssociations:[association]};
+ const second={...a,id:'registry-FDID-FL-54321',registryIdentity:{...a.registryIdentity!,identifier:'54321'},sourceRecordAssociations:[association]};
+ assert.equal(providerIdentityReady(first,[first]),true);
+ assert.equal(providerIdentityReady(first,[first,second]),false);
+ assert.equal(providerIdentityReady(second,[first,second]),false);
+ assert.equal(providerIdentityReady({...a,registryIdentity:{...a.registryIdentity!,stateCode:'GA'}},[{...a,registryIdentity:{...a.registryIdentity!,stateCode:'GA'}}]),false);
+});

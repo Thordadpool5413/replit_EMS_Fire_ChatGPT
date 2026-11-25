@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import { allowedBrowserOrigin } from "./middlewares/browserOrigin";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -28,7 +29,10 @@ app.use(
     },
   }),
 );
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors((req, callback) => {
+  const origin = req.headers.origin;
+  callback(null, { credentials: true, origin: allowedBrowserOrigin(origin, req.headers.host) ? origin : false });
+}));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

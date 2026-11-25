@@ -1,10 +1,15 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
-import type {Agency} from '../types';
+import type {Agency,FieldNote} from '../types';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../services/sharedEvidenceReplit';
-import {MAX_REVIEW_ACCOUNTS,eligiblePriorityAccounts,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
+import {MAX_REVIEW_ACCOUNTS,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
 import {TerritoryCommandSummary,CommandFollowUps} from './TerritoryCommandCenter';
-import {COMMAND_VIEWS,type CommandView} from '../services/territoryCommand';
+import {commandSelection,currentCommandSample,REVIEW_TTL_MS} from '../services/commandSession';
+import {CommandNavigation} from './CommandNavigation';
+import {type CommandView} from '../services/territoryCommand';
+import {TerritoryAnalyticsPanel} from './TerritoryAnalyticsPanel';
+import {FieldCoachingPanel} from './FieldCoachingPanel';
+import {LeadershipReviewPanel} from './LeadershipReviewPanel';
 import {WorkingPipelinePanel} from './WorkingPipelinePanel';
 import {CompetitiveDisplacementPanel} from './CompetitiveDisplacementPanel';
 import {AccountCoveragePanel} from './AccountCoveragePanel';
@@ -16,24 +21,23 @@ import {OPPORTUNITY_LABELS,type OpportunityKind} from '../services/opportunityRa
 const bands:Record<Band,string>={'verify-now':'Verify now','verify-soon':'Verify soon','plan-research':'Plan research',explore:'Explore account'};
 const gapLabels={'identity-excluded':'Identity conflict or inactive record',unavailable:'Review unavailable, incomplete or expired','no-signal':'No eligible reviewed signals',filtered:'Outside selected signal filter'};
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
-export function ReviewedAccountPriorityQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){
- const {user}=useAuth();return user&&evidenceEnabled?<PrivateQueue key={user.id} agencies={agencies} onOpenAgency={onOpenAgency}/>:null;
+export function ReviewedAccountPriorityQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void;onCreateTask?:(id:string,task:FieldNote)=>Promise<void>}){
+ const {user}=useAuth();return user&&evidenceEnabled?<PrivateQueue key={user.id} agencies={agencies} onOpenAgency={onOpenAgency} onCreateTask={onCreateTask}/>:null;
 }
-function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){
+function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void;onCreateTask?:(id:string,task:FieldNote)=>Promise<void>}){
  const {user}=useAuth();
  const [open,setOpen]=useState(false),[state,setState]=useState(''),[search,setSearch]=useState(''),[selected,setSelected]=useState<string[]>([]),[kind,setKind]=useState<OpportunityKind|'all'>('all'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[result,setResult]=useState<{samples:ReviewedSample[];started:number;scope:string}>();
  const [view,setView]=useState<CommandView>('overview');
  const token=useRef(0);
- const eligible=useMemo(()=>eligiblePriorityAccounts(agencies),[agencies]),states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort(),inState=eligible.filter(a=>a.agency.stateCode===state);
- const chosen=inState.filter(a=>selected.includes(a.agency.id)),scope=JSON.stringify(chosen.map(a=>[a.agency.id,a.identityKey,a.agency.name]).sort());
- const sample=result?.scope===scope&&chosen.length===selected.length?result:undefined;
+ const selection=useMemo(()=>commandSelection(agencies,state,selected),[agencies,state,selected]),{eligible,inState,chosen,scope}=selection,states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort();
+ const sample=currentCommandSample(result,selection,typeof navigator!=='undefined'&&navigator.onLine);
  function clear(){token.current++;setView('overview');setResult(undefined);setMessage('');setBusy(false);}
  useEffect(()=>{clear();},[scope]);
  useEffect(()=>{const offline=()=>{clear();setMessage('Connection lost. Refresh when online.');};window.addEventListener('offline',offline);return()=>{token.current++;window.removeEventListener('offline',offline);};},[]);
- useEffect(()=>{if(!sample)return;const timer=window.setTimeout(()=>{clear();setMessage('Sample expired. Refresh before acting.');},Math.max(0,sample.started+300000-Date.now()));return()=>window.clearTimeout(timer);},[sample]);
+ useEffect(()=>{if(!result)return;const expire=()=>{if(Date.now()-result.started>=REVIEW_TTL_MS||Date.now()<result.started||!navigator.onLine){clear();setMessage('Sample expired or connection lost. Refresh before acting.');}};const timer=window.setTimeout(expire,Math.max(0,result.started+REVIEW_TTL_MS-Date.now()));window.addEventListener('focus',expire);document.addEventListener('visibilitychange',expire);return()=>{window.clearTimeout(timer);window.removeEventListener('focus',expire);document.removeEventListener('visibilitychange',expire);};},[result]);
  function toggle(id:string){clear();setSelected(prev=>prev.includes(id)?prev.filter(v=>v!==id):prev.length<MAX_REVIEW_ACCOUNTS?[...prev,id]:prev);}
  async function check(){
-  if(!user||busy||!chosen.length||chosen.length!==selected.length)return;
+  if(!user||busy||!selection.valid||!navigator.onLine)return;
   clear();const request=++token.current,started=Date.now(),samples:ReviewedSample[]=[];setBusy(true);
   try{
    const session=openEvidenceSession();await evidenceRole(session,user);
@@ -44,13 +48,13 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
    }
    await evidenceRole(session,user);
    if(token.current!==request)return;
-   if(!navigator.onLine||Date.now()-started>=300000)throw Error('Sample expired or connection lost. Select fewer accounts and refresh.');
+   if(!navigator.onLine||Date.now()-started>=REVIEW_TTL_MS)throw Error('Sample expired or connection lost. Select fewer accounts and refresh.');
    setResult({samples,started,scope});setMessage('');
   }catch(e){if(token.current===request){setResult(undefined);setMessage(e instanceof Error?e.message:'Reviewed evidence unavailable.');}}
   finally{if(token.current===request)setBusy(false);}
  }
  const ranked=sample?buildReviewedAccountPriorities(agencies,selected,sample.samples,Date.now(),kind):undefined;
- return <section className="pi-surface p-3 space-y-2 min-w-0" aria-label="Reviewed account research priorities">
+ return <section className="pi-surface research-workspace p-3 space-y-2 min-w-0" aria-label="Reviewed account research priorities">
   <button className="workspace-button min-h-11" type="button" aria-expanded={open} onClick={()=>{if(open)clear();setOpen(!open);}}>{open?'Close territory command center':'Open territory command center'}</button>
   {open&&<div className="space-y-3 text-sm">
    <p>Compare up to {MAX_REVIEW_ACCOUNTS} selected accounts using independently reviewed public documents. This research order is separate from PulseIQ estimates, private notes and station observations; it is not win probability or revenue.</p>
@@ -60,12 +64,12 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
     <p>{selected.length}/{MAX_REVIEW_ACCOUNTS} selected · {inState.length} eligible loaded accounts, not total state coverage.</p>
     <div className="flex flex-wrap gap-2">{chosen.map(({agency})=><button className="workspace-button min-h-11 break-words" key={agency.id} type="button" disabled={busy} onClick={()=>toggle(agency.id)}>Remove {agency.name}</button>)}</div>
     <div className="max-h-48 overflow-auto border rounded p-2">{inState.filter(a=>(a.agency.name+' '+a.identityKey).toLowerCase().includes(search.toLowerCase())).slice(0,30).map(({agency,identityKey})=><label key={agency.id} className="flex min-h-11 items-center gap-2 break-words"><input type="checkbox" checked={selected.includes(agency.id)} disabled={busy||(!selected.includes(agency.id)&&selected.length>=MAX_REVIEW_ACCOUNTS)} onChange={()=>toggle(agency.id)}/><span>{agency.name} · {identityKey}</span></label>)}</div>
-    <button className="workspace-button min-h-11" type="button" disabled={busy||!chosen.length||chosen.length!==selected.length} onClick={()=>void check()}>{busy?'Checking reviewed evidence…':'Compare selected accounts'}</button>
+    <button className="workspace-button min-h-11" type="button" disabled={busy||!selection.valid} onClick={()=>void check()}>{busy?'Checking reviewed evidence…':'Compare selected accounts'}</button>
    </>}
    {message&&<p role="status">{message}</p>}
    {ranked&&sample&&<>
+    <CommandNavigation view={view} onView={setView}/>
     <TerritoryCommandSummary agencies={agencies} selected={selected} samples={sample.samples} view={view} onView={setView} onOpenAgency={onOpenAgency}/>
-    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v==='activity'?'Account activity':v==='competitive'?'Competitive':v==='pipeline'?'Sales pipeline':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
     {view==='priorities'&&<>
     <p>{ranked.checked}/{selected.length} accounts with complete reviewed samples · {ranked.ranked.length} prioritized. Five-minute sample; refresh before acting.</p>
     <label>Signal type<select className={control} value={kind} onChange={e=>setKind(e.target.value as typeof kind)}><option value="all">All eligible signals</option>{Object.entries(OPPORTUNITY_LABELS).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
@@ -77,6 +81,9 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
     {view==='coverage'&&<SelectedIntelligenceCoverage agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     {view==='commercial'&&<CommercialOpportunityQueue key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     <div hidden={view!=='plan'}><FieldExecutionPlanner key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency}/></div>
+    {view==='analytics'&&user&&<TerritoryAnalyticsPanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onView={setView}/>}
+    {view==='coaching'&&user&&<FieldCoachingPanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onView={setView} onCreateTask={onCreateTask}/>}
+    {view==='leadership'&&user&&<LeadershipReviewPanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onView={setView}/>}
     {view==='pipeline'&&user&&<WorkingPipelinePanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}
     {view==='competitive'&&<CompetitiveDisplacementPanel key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}
     {view==='activity'&&<AccountCoveragePanel key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}

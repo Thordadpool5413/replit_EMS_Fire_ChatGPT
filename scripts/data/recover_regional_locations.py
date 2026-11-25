@@ -15,6 +15,12 @@ FIELDS={
 QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE'),'tx-prosper':('Add_Number','Post_Code'),'pa-cumberland':('Add_Number','Post_Code'),'tx-stratmap':('add_number','post_code')}
 NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)'),'tx-prosper':('Address Points','Town of Prosper'),'pa-cumberland':('Address Point',''),'tx-stratmap':('StratMap Address Points 48 Most Recent','')}
 
+FIELDS['in-data-harvest']=('objectid','add_number','addnum_pre','addnum_suf','st_premod','st_predir','st_pretyp','st_presep','st_name','st_postyp','st_posdir','st_posmod','post_comm','post_code','state','country','county','county_fips','building','floor','unit_type','unit_id','room','seat','addtl_loc','placement','dateupdate','effective','expire')
+QUERY_KEYS['in-data-harvest']=('add_number','post_code')
+NAMES['in-data-harvest']=('Address Points of Indiana 2025','Indiana GIS Data Harvest Program')
+FIELDS['ga-fulton']=('OBJECTID','StNumber','Label','City','PrefCity','State','Zip','PtType','Status','PreAddrNum','AddNum_Suf','StrNumberHi','UnitLow','UnitHigh','UnitActual','Building','Floor','Unit','CreateDate')
+QUERY_KEYS['ga-fulton']=('StNumber','Zip')
+NAMES['ga-fulton']=('Address Points','')
 COUNTY_ADAPTERS=json.loads("{\"il-peoria\":{\"name\":\"E_911_Addresses\",\"authority\":\"Peoria County\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"Fulladdr\",\"integer\":true,\"date\":\"DateUpdate\",\"placement\":\"Placement\",\"sub\":[\"Unit\",\"Addtl_Loc\"],\"lifecycle\":true},\"il-lake\":{\"name\":\"Address Points\",\"authority\":\"\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"FULLADDR\",\"integer\":true,\"date\":\"DateUpdate\",\"placement\":\"Placement\",\"sub\":[\"Building\",\"Floor\",\"Unit\",\"Room\",\"Seat\",\"Addtl_Loc\"],\"lifecycle\":true,\"status\":\"STATUS\"},\"pa-northampton\":{\"name\":\"Address Pts\",\"authority\":\"\",\"house\":\"AddrNum\",\"postal\":\"Zip\",\"city\":\"PostalCity\",\"street\":\"FullAddr\",\"integer\":false,\"date\":\"DateUpdate\",\"placement\":null,\"sub\":[\"UnitType\",\"Unit\",\"Building\",\"Floor\"],\"lifecycle\":true},\"al-baldwin\":{\"name\":\"Address Pts\",\"authority\":\"\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"Full_Address\",\"integer\":true,\"date\":\"last_edited_date\",\"placement\":\"Placement\",\"sub\":[\"Building\",\"Floor\",\"Unit\",\"Room\",\"Seat\",\"Addtl_Loc\"],\"lifecycle\":false}}")
 for key,adapter in COUNTY_ADAPTERS.items():
  fields=['OBJECTID','State','Country','County',adapter['house'],adapter['postal'],adapter['city'],adapter['street'],adapter['date'],*adapter['sub']]
@@ -41,6 +47,8 @@ def metadata(source,fetch=request):
   expected='esriFieldTypeInteger' if adapter['integer'] else 'esriFieldTypeString'
   if fields[adapter['house']].get('type')!=expected:raise ValueError('County address number schema changed')
   if source=='al-baldwin' and obj.get('serviceItemId')!='2f0c8ddaa17f47fa9bbbbddce45e59cf':raise ValueError('Baldwin service identity changed')
+ if source=='ga-fulton' and (obj.get('serviceItemId')!='b30f7e20983943c1ae7dbd4571bd8c12' or fields['StNumber'].get('type')!='esriFieldTypeInteger'):raise ValueError('Fulton source identity or schema changed')
+ if source=='in-data-harvest' and (obj.get('serviceItemId')!='6f1c3ecf948746de9a3729f7e43a001d' or fields['add_number'].get('type')!='esriFieldTypeInteger'):raise ValueError('Indiana source identity or schema changed')
  if source=='tx-stratmap':
   if obj.get('serviceItemId')!='2685d5c62657428583b688f140cb7021' or fields['add_number'].get('type')!='esriFieldTypeString' or fields['fips'].get('type') not in ('esriFieldTypeBigInteger','esriFieldTypeInteger') or fields['dateupdate'].get('type')!='esriFieldTypeString':raise ValueError('Texas StratMap source identity or schema changed')
  if source=='pa-cumberland':
@@ -71,6 +79,12 @@ def query(source,addresses):
   def house_value(a):return str(int(re.match(r'\d+',number(a)).group())) if adapter['integer'] else sql(number(a))
   clauses=sorted({f"({house}={house_value(a)} AND {zipfield}={sql(a['zip'])})" for a in addresses})
   where="State="+sql(SOURCES[source]['state'])+" AND Country='US' AND ("+' OR '.join(clauses)+')'
+ elif source=='ga-fulton':
+  clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="State='GA' AND PtType='Main Address' AND Status='Active' AND ("+' OR '.join(clauses)+')'
+ elif source=='in-data-harvest':
+  clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="state='IN' AND country='US' AND ("+' OR '.join(clauses)+')'
  elif source=='tx-stratmap':
   clauses=sorted({f"({house}={sql(number(a))} AND {zipfield}={sql(a['zip'])})" for a in addresses})
   where="state='TX' AND country='US' AND ("+' OR '.join(clauses)+')'
@@ -117,6 +131,27 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    street,city,postal=v.get('st_address'),v.get('post_comm'),v.get('post_code')
    if v.get('state')!='NC':continue
    if any(v.get(k) not in (None,'') for k in ('unit','building','floor')):continue
+   placement=v.get('placement');date=v.get('dateupdate')
+  elif source=='ga-fulton':
+   if v.get('State')!='GA' or v.get('PtType')!='Main Address' or v.get('Status')!='Active':continue
+   if any(v.get(k) not in (None,'') for k in ('PreAddrNum','AddNum_Suf','StrNumberHi','UnitLow','UnitHigh','UnitActual','Building','Floor','Unit')):continue
+   if type(v.get('StNumber')) is not int or not isinstance(v.get('Label'),str):continue
+   street,postal=v['Label'],v.get('Zip')
+   city=next((c for c in (v.get('City'),v.get('PrefCity')) if isinstance(c,str) and normal_street(c)==normal_street(a['city'])),None)
+   # Creation is not a record-update date. Check it for impossible future values but do not mislabel it.
+   try:
+    created=date_value(v.get('CreateDate'))
+    if created and created>checked:continue
+   except (ValueError,OverflowError,OSError):continue
+   placement='Main address (placement not reported)';date=None
+  elif source=='in-data-harvest':
+   if v.get('state')!='IN' or v.get('country')!='US':continue
+   if any(v.get(k) not in (None,'') for k in ('building','floor','unit_type','unit_id','room','seat','addtl_loc','addnum_pre','addnum_suf')):continue
+   if type(v.get('add_number')) is not int or not isinstance(v.get('st_name'),str) or not v['st_name'].strip():continue
+   parts=[v.get(k) for k in ('st_premod','st_predir','st_pretyp','st_presep','st_name','st_postyp','st_posdir','st_posmod')]
+   if any(x is not None and not isinstance(x,str) for x in parts):continue
+   street=' '.join([str(v['add_number']),*(x.strip() for x in parts if x and x.strip())])
+   city,postal=v.get('post_comm'),v.get('post_code')
    placement=v.get('placement');date=v.get('dateupdate')
   elif source in COUNTY_ADAPTERS:
    adapter=COUNTY_ADAPTERS[source]
@@ -190,6 +225,14 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
      effective,expires=date_value(v.get('Effective')),date_value(v.get('Expire'))
      if effective and effective>checked or expires and expires<=checked:continue
     except (ValueError,OverflowError,OSError):bad=True;continue
+  if source=='in-data-harvest':
+   fips=counties.get(('IN',county_key(v.get('county') or '')),set())
+   if len(fips)!=1 or v.get('county_fips') not in fips:bad=True;continue
+   cf=v['county_fips']
+   try:
+    effective,expires=date_value(v.get('effective')),date_value(v.get('expire'))
+    if effective and effective>checked or expires and expires<=checked:continue
+   except (ValueError,OverflowError,OSError):bad=True;continue
   if source=='tx-stratmap':
    # County FIPS and county name must independently reconcile to the same Census county.
    fips=counties.get(('TX',county_key(v.get('county') or '')),set())
@@ -214,6 +257,7 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
  for e in entries:
   if e['state']!=d['state'] or e['status'] not in ('no-match','unavailable'):continue
   if d['county'] and e['sourceCounty'] and d['county']!=e['sourceCounty']:continue
+  if source=='ga-fulton' and not e['sourceCounty'] and e['address'] and not e['address']['zip'].startswith(('300','302','303')):continue
   if source in COUNTY_ADAPTERS and not e['sourceCounty'] and e['address']:
    # Postal prefixes are a query-budget prefilter, never evidence of county identity.
    prefixes={'il-peoria':('615','616'),'il-lake':('600',),'pa-northampton':('180','181','183'),'al-baldwin':('365',)}

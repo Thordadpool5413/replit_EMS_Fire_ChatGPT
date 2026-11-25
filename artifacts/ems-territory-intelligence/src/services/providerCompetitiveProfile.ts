@@ -1,5 +1,5 @@
 import type {Agency} from '../types';
-import {canCreateRegistryAccount} from './registryAccountLink';
+import {canCreateRegistryAccount,registryClaimIndex} from './registryAccountLink';
 import {sharedAgencyKey} from './sharedEvidence';
 import {reconcileSharedEvidence,type EvidenceReviewItem} from './sharedEvidenceReconciliation';
 import {INTELLIGENCE_DEFINITIONS,definitionFor,normalizedValue,utcDay,type IntelligenceKind} from './documentedIntelligence';
@@ -17,7 +17,9 @@ const questions:Record<ProviderEquipmentKind,string>={
 };
 export function providerIdentityReady(agency:Agency,directory:Agency[]):boolean{
  const identity=agency.registryIdentity,key=sharedAgencyKey(agency);
- if(!agency.id||!key||!identity||!canCreateRegistryAccount(identity)||identity.headquartersState&&identity.headquartersState!==agency.stateCode)return false;
+ if(!agency.id||!key||!identity||!canCreateRegistryAccount(identity)||identity.stateCode!==agency.stateCode||identity.headquartersState&&identity.headquartersState!==agency.stateCode)return false;
+ const claims=registryClaimIndex(directory),own=claims.byAccount.get(directory.find(a=>a.id===agency.id)!);
+ if(!own||!own.keys.includes(key)||own.keys.some(k=>claims.counts.get(k)!==1)||own.conflicts.length||own.invalid.length)return false;
  const byId=directory.filter(a=>a.id===agency.id),byKey=directory.filter(a=>sharedAgencyKey(a)===key);
  return byId.length===1&&byKey.length===1&&byId[0]===byKey[0]&&byId[0].stateCode===agency.stateCode&&normalizedValue(byId[0].name)===normalizedValue(agency.name)&&normalizedValue(byId[0].registryIdentity?.name??'')===normalizedValue(identity.name);
 }

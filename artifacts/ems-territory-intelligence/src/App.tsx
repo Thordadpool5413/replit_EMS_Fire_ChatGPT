@@ -1348,7 +1348,7 @@ export default function App() {
         {activeTab === 'queue' && (
           <div className="workspace-view-container min-w-0 w-full">
             <section className="pi-surface p-3 mb-3 text-sm"><p>Search public registry listings and saved accounts together. Source listings are separate from saved work and require end-user validation.</p></section>
-            <ReviewedAccountPriorityQueue agencies={agencies} onOpenAgency={handleOpenAgencyProfile}/>
+            <ReviewedAccountPriorityQueue agencies={agencies} onOpenAgency={handleOpenAgencyProfile} onCreateTask={createFollowUp}/>
             <PredictiveLeadQueue
               agencies={agencies}
               directoryStatus={directoryStatus}

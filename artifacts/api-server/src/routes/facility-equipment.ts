@@ -26,7 +26,7 @@ export function makeFacilityEquipmentRouter(loadFacilities=listDepartmentFacilit
    const parent=a&&linkedNerisParent(a.payload,parentId);
    if(!parent){res.status(404).json({error:"Save and link the exact department first."});return;}
    const source=await loadFacilities(parent);
-   if(source.warning||source.withheld||source.facilities.length>1000){res.status(409).json({error:"Incomplete or unavailable station source; map sample withheld."});return;}
+   if(source.warning||source.withheld||source.parent.source!==parent.source||source.parent.identifier!==parent.identifier||source.parent.stateCode!==parent.stateCode||source.facilities.length>1000){res.status(409).json({error:"Incomplete or unavailable station source; map sample withheld."});return;}
    const rows=await db.select().from(equipment).where(and(eq(equipment.agencyId,agencyId),eq(equipment.parentId,parentId),eq(equipment.decision,"accepted"))).limit(2001);
    if(rows.length>2000){res.status(409).json({error:"Equipment sample exceeds safe limit; narrow scope."});return;}
    const [current]=await db.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
@@ -74,7 +74,7 @@ export function makeFacilityEquipmentRouter(loadFacilities=listDepartmentFacilit
    const [prior]=await db.select().from(equipment).where(key(s,id)).limit(1);
    if(prior){if(prior.authorUid!==uid||canonical(prior.observation)!==canonical(observation)){res.status(409).json({error:"Submission content conflicts."});return;}res.json(prior);return;}
    const source=await loadFacilities(parent),matches=source.facilities.filter(f=>f.source==="NERIS"&&f.sourceRecordId===s.stationId);
-   if(source.warning||matches.length!==1){res.status(409).json({error:"Current station relationship unavailable."});return;}
+   if(source.warning||source.withheld||source.parent.source!==parent.source||source.parent.identifier!==parent.identifier||source.parent.stateCode!==parent.stateCode||matches.length!==1){res.status(409).json({error:"Current station relationship unavailable."});return;}
    const row=await db.transaction(async tx=>{
     const [current]=await tx.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,s.agencyId)).for("update");
     if(!current||!linkedNerisParent(current.payload,s.parentId)||current.stateCode!==parent.stateCode)return undefined;

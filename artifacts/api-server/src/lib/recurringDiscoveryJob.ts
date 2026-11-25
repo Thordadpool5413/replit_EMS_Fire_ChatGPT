@@ -1,6 +1,6 @@
 import {readFile,writeFile,stat} from 'node:fs/promises';
 import {FEED_SCOPE_IDS,feedSourceUrl,validateDiscoveryFeed,type FeedCandidate,type FeedScope,type FeedKind,type DiscoveryFeed} from './recurringDiscoveryContract';
-import {reconcileDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
+import {collectWithRetry,publishableDiscoveryFeed,type ScopeResult} from './recurringDiscovery';
 import {fetchFemaDiscovery} from './publicIntelligenceDiscovery';
 import {fetchFederalDiscovery} from './federalSpendingDiscovery';
 import {fetchMunicipalDiscovery} from './municipalSpendingDiscovery';
@@ -52,11 +52,13 @@ async function main(){
   previous=validateDiscoveryFeed(JSON.parse(await readFile(previousPath,'utf8')));
  }
  const now=Date.now(),results:ScopeResult[]=[];
+ // Retry budget is globally bounded to five failed scopes; remaining failures are reported honestly.
+ let retries=0;
  for(const id of FEED_SCOPE_IDS){
-  const result=await collect(id,now);results.push(result);
+  const result=retries<5?await collectWithRetry(id,scope=>collect(scope,now),async()=>{retries++;await new Promise(resolve=>setTimeout(resolve,1500));}):await collect(id,now);results.push(result);
   console.log(id+': '+result.status+'; '+result.candidates.length+' candidates');
  }
- const next=reconcileDiscoveryFeed(previous,results,now);
+ const next=publishableDiscoveryFeed(previous,results,now);
  const json=JSON.stringify(next)+'\n';
  if(Buffer.byteLength(json)>maxBytes)throw Error('New feed exceeds size limit.');
  await writeFile(outputPath,json,{flag:'wx',mode:0o600});

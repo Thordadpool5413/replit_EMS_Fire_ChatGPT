@@ -13,6 +13,8 @@ import {
   type SessionData,
 } from "../lib/auth";
 
+import { privateBrowserBoundary } from "../middlewares/browserOrigin";
+
 const router: IRouter = Router();
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
@@ -88,6 +90,7 @@ router.get("/auth/user", (req, res) => {
 });
 
 router.get("/login", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
   try {
     const config = await getOidcConfig();
     const callbackUrl = `${getOrigin(req)}/api/callback`;
@@ -117,13 +120,14 @@ router.get("/login", async (req, res) => {
 
 // OIDC providers can add callback parameters not represented in the API schema.
 router.get("/callback", async (req, res) => {
+  res.set("Cache-Control", "private, no-store");
   try {
     const config = await getOidcConfig();
     const callbackUrl = `${getOrigin(req)}/api/callback`;
     const codeVerifier = req.cookies?.code_verifier;
     const nonce = req.cookies?.nonce;
     const expectedState = req.cookies?.state;
-    if (!codeVerifier || !expectedState) {
+    if (typeof codeVerifier !== "string" || !codeVerifier || typeof nonce !== "string" || !nonce || typeof expectedState !== "string" || !expectedState) {
       res.redirect("/api/login");
       return;
     }
@@ -173,13 +177,19 @@ router.get("/callback", async (req, res) => {
   }
 });
 
-router.get("/logout", async (req, res) => {
+router.get("/logout", privateBrowserBoundary, async (req, res) => {
+  // Local session revocation must not depend on the identity provider being available.
+  try {
+    await clearSession(res, getSessionId(req));
+  } catch (error) {
+    req.log?.error(safeErrorMetadata(error), "Local session revocation failed");
+    res.status(503).json({ error: "Sign-out could not be confirmed. Retry when the session store is available." });
+    return;
+  }
   try {
     const config = await getOidcConfig();
     const origin = getOrigin(req);
     const returnTo = safeReturnTo(req.query.returnTo);
-    const sid = getSessionId(req);
-    await clearSession(res, sid);
     const endSessionUrl = oidc.buildEndSessionUrl(config, {
       client_id: process.env.REPL_ID!,
       post_logout_redirect_uri: new URL(returnTo, `${origin}/`).href,

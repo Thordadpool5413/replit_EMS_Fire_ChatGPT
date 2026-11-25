@@ -137,7 +137,7 @@ paths:
       operationId: commitAgencyMutation
       tags: [workspace-records]
       summary: Apply an idempotent offline mutation
-      description: Requires an authenticated agency-workspace editor. A repeated mutation ID returns its original revision; stale revisions are rejected without overwriting newer data.
+      description: Requires an authenticated agency-workspace editor. A repeated mutation ID returns its original receipt revision and current agency payload with its own _revision; stale new mutations are rejected without overwriting newer data.
       parameters:
         - in: path
           name: agencyId

@@ -457,3 +457,31 @@
   .equipment-filter-disclosure small { display: block; font-size: .75rem; color: var(--pi-text-secondary); }
   .equipment-filter-disclosure .equipment-map-filter { border: 0; border-top: 1px solid var(--pi-border); border-radius: 0; }
 }
+
+
+/* Shared responsive research surfaces, using the existing palette. */
+.research-workspace { min-inline-size:0; max-inline-size:100%; color:var(--pi-text-primary); overflow-wrap:anywhere; }
+.research-workspace :is(section, article, fieldset, form, label, details, nav, ul, ol) { min-inline-size:0; max-inline-size:100%; }
+.research-workspace :is(button, summary, a) { overflow-wrap:anywhere; }
+.research-workspace :is(button, select, input, textarea, summary, a):focus-visible { outline:2px solid var(--pi-action); outline-offset:2px; }
+.research-workspace :is(select, textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])) { max-inline-size:100%; min-inline-size:0; border-color:var(--pi-border-strong); background-color:var(--pi-surface-bg); color:var(--pi-text-primary); }
+.research-workspace .workspace-button { max-inline-size:100%; white-space:normal; line-height:1.35; }
+.research-navigation { display:flex; align-items:end; flex-wrap:wrap; gap:.5rem; padding:.65rem; border:1px solid var(--pi-border); border-radius:.65rem; background:var(--pi-surface-subtle); }
+.research-navigation-field { flex:1 1 13rem; min-inline-size:0; }
+.research-navigation-field label { display:block; margin-block-end:.25rem; color:var(--pi-text-secondary); font-size:.75rem; font-weight:650; }
+.research-navigation-field select { display:block; inline-size:100%; min-block-size:44px; padding:.5rem .65rem; border:1px solid var(--pi-border-strong); border-radius:.45rem; font-size:1rem; }
+.research-overview-link { min-block-size:44px; }
+.research-metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr)); gap:.5rem; }
+.research-metric { display:flex; flex-direction:column; align-items:flex-start; gap:.25rem; min-inline-size:0; min-block-size:5.25rem; padding:.65rem; text-align:start; border:1px solid var(--pi-border); border-radius:.6rem; background:var(--pi-surface-bg); color:var(--pi-text-primary); }
+.research-metric:hover { border-color:var(--pi-border-strong); background:var(--pi-surface-subtle); }
+.research-metric strong { font-size:1.35rem; line-height:1.15; font-variant-numeric:tabular-nums; }
+.research-metric span { font-size:.75rem; line-height:1.4; }
+.research-metric span:last-child { color:var(--pi-text-secondary); }
+.research-shortcuts { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr)); gap:.5rem; }
+.research-shortcuts button { text-align:start; min-block-size:44px; padding:.55rem .65rem; border:1px solid var(--pi-border); border-radius:.5rem; color:var(--pi-action-ink); background:var(--pi-surface-bg); }
+.research-shortcuts button:hover { background:var(--pi-action-subtle); }
+@media (max-width:767px), (pointer:coarse) {
+ .research-workspace :is(select, textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])) { font-size:16px; min-block-size:44px; }
+ .research-workspace :is(button, summary) { min-block-size:44px; touch-action:manipulation; }
+ .research-workspace label:has(> input[type="checkbox"]), .research-workspace label:has(> input[type="radio"]) { min-block-size:44px; }
+}

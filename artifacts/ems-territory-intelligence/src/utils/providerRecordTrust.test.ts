@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Agency } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect, isGeneratedFdid, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from './providerRecordTrust';
 import { hasAgencyContractEvidence, hasAgencyFactData } from '../data/agencyFactEvidence';
-import { findLinkedRegistryAgency, registryIdentifierText, snapshotRegistryIdentity,createReviewedRegistryAssociation } from '../services/registryAccountLink';
+import { findLinkedRegistryAgency, findRegistryAccountCandidates, registryIdentifierText, snapshotRegistryIdentity,createReviewedRegistryAssociation } from '../services/registryAccountLink';
 import type { SourceDirectoryRecord } from '../services/nationalSourceDirectory';
 const agency = {id:'fire-va-51001-chincoteague',stateCode:'VA',agencyType:'Volunteer Fire',fdid:'VA-FD-51001-CHI',isFdidVerified:true,verificationSource:'Federal CMS NPI Registry',competitorContract:{contractEndDate:'2028-03-28',vendor:'Synthetic'},fieldNotes:[{id:'keep'}],factEvidence:{},installedFleet:{defibBrand:'Illustrative'}} as unknown as Agency;
 test('known geographic identity survives a verification label change; generated ID is quarantined',()=>{
@@ -20,7 +20,7 @@ test('registry namespaces preserve leading zeroes and link only uniquely confirm
  const row=['usfa:VA:00103','USFA','Chincoteague Volunteer Fire Company','VA','Chincoteague','23336','51001','Accomack','source-county','','5052 Deep Hole RD',''] as SourceDirectoryRecord;
  assert.equal(registryIdentifierText(row),'FDID 00103 (VA)');assert.equal(findLinkedRegistryAgency(row,[agency]),undefined);
  const linked={...agency,sourceRecordAssociations:[{sourceName:'USFA NFDR',sourceRecordId:'00103',decision:'confirmed',sourceFields:{fdid:'00103'}}]} as unknown as Agency;
- assert.equal(findLinkedRegistryAgency(row,[linked]),linked);assert.equal(findLinkedRegistryAgency(row,[linked,{...linked,id:'another'}]),undefined);assert.equal(findLinkedRegistryAgency(row,[{...linked,stateCode:'TX'}]),undefined);
+ assert.equal(findLinkedRegistryAgency(row,[linked]),undefined);assert.equal(findRegistryAccountCandidates(snapshotRegistryIdentity(row)!,[linked]).length,1);assert.equal(findLinkedRegistryAgency(row,[linked,{...linked,id:'another'}]),undefined);assert.equal(findLinkedRegistryAgency(row,[{...linked,stateCode:'TX'}]),undefined);
 });
 test('mapped contract evidence requires valid date and does not allow a modeled logic source',()=>{
  const mapped={...agency,factEvidence:{maintenanceContracts:{sourceName:'Town procurement',sourceRecordId:'contract-7',sourceUrl:'https://example.gov/contracts/7',sourceKind:'link',reviewed:false}}} as Agency;
@@ -31,7 +31,7 @@ test('mapped contract evidence requires valid date and does not allow a modeled 
 
 test('blank USFA FDIDs stay missing and state-prefixed confirmed IDs link correctly',()=>{
  const row=['usfa:VA:00103','USFA','Chincoteague Volunteer Fire Company','VA','Chincoteague','23336','51001','Accomack','source-county','','',''] as SourceDirectoryRecord;
- const linked={...agency,sourceRecordAssociations:[{sourceName:'USFA NFDR',sourceRecordId:'VA:00103',decision:'confirmed',sourceFields:{fdid:'00103',stateCode:'VA'}}]} as unknown as Agency;
+ const linked={...agency,sourceRecordAssociations:[{sourceName:'USFA NFDR',sourceRecordId:'VA:00103',decision:'confirmed',sourceUrl:'https://apps.usfa.fema.gov/registry/search',matchBasis:'Fixture review',decidedAt:'2026-11-25',sourceFields:{fdid:'00103',stateCode:'VA'}}]} as unknown as Agency;
  assert.equal(findLinkedRegistryAgency(row,[linked]),linked);
  const missing=[...row] as SourceDirectoryRecord;missing[0]='usfa:VA:location-1234567890abcdef1234';
  assert.equal(registryIdentifierText(missing),'FDID not reported');

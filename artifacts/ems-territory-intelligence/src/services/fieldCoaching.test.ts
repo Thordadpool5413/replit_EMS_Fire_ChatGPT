@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import type {Agency} from '../types';
+import {sharedAgencyKey,toSharedEvidence} from './sharedEvidence';
+import {createIntelligenceFact} from './documentedIntelligence';
+import type {ReviewedSample} from './reviewedAccountPriorities';
+import type {ResolveLocation} from './geographicResearch';
+import {buildCoachingReview,coachingPrompt,makeCoachingTask,coachingDraftError,type CoachingDraft} from './fieldCoaching';
+const today='2026-11-25',now=Date.parse(today+'T12:00:00Z');
+const agency=(id:string)=>({id,name:'Fixture '+id,stateCode:'FL',registryIdentity:{sourceName:'USFA NFDR',identifier:id,stateCode:'FL',name:'Fixture '+id,sourceUrl:'https://apps.usfa.fema.gov/registry/search',retrievedAt:'2026-11-20'}} as Agency);
+const a=agency('12345'),b=agency('23456'),key=sharedAgencyKey(a)!;
+const resolve:ResolveLocation=()=>({location:undefined,match:undefined});
+const f=createIntelligenceFact(a,{kind:'installed-monitor',value:'Stryker LIFEPAK 15',sourceName:'Fixture City',sourceRecordId:'fixture',sourceUrl:'https://example.gov/inventory',documentDate:'2026-11-01'},'fixture',now-86400000);
+const sample:ReviewedSample={agencyId:a.id,identityKey:key,checkedAt:new Date(now).toISOString(),rows:[{evidence:toSharedEvidence(a,f,now),authorUid:'editor',publishedAt:'2026-11-24T13:00:00Z',invalid:0,decisions:[{factId:f.id,action:'approved',reason:'source-checked',replacementId:'',reviewerUid:'reviewer',reviewedAt:'2026-11-24T14:00:00Z'}]}]};
+const run=(selected=[a.id],samples=[sample],time=now)=>buildCoachingReview([a,b],selected,samples,[],resolve,today,now,time);
+const draft:CoachingDraft={agencyId:a.id,identityKey:key,topic:'pre-call',action:'Verify current workflow',measure:'Record one supported need or gap',owner:'Internal owner',dueDate:'2026-12-01'};
+test('only scoped evidence yields product-specific coaching; unknown remains discovery',()=>{
+ const r=run();assert.equal(r.rows.length,1);assert.equal(r.rows[0].agency.id,a.id);
+ assert.match(coachingPrompt(r.rows[0],'pre-call')!.objective,/monitor/i);
+ assert.equal(coachingPrompt(r.rows[0],'deadline'),undefined);
+ const missing=run([b.id],[]).rows[0];assert.ok(missing.topics.includes('document-gap'));assert.doesNotMatch(coachingPrompt(missing,'pre-call')!.objective,/monitor/i);
+ assert.equal(run([a.id,a.id]).active,false);assert.equal(run([a.id],[sample],now+300000).rows.length,0);
+});
+test('explicit commitment creates a standalone task only, with measurable action and deadline',()=>{
+ const row=run().rows[0],t=makeCoachingTask(row,draft,true,'test-id',today,now,now);
+ assert.equal(t.taskOnly,true);assert.equal(t.meetingType,'Standalone task');assert.equal(t.notes,'');assert.equal(t.owner,draft.owner);assert.equal(t.dueDate,draft.dueDate);assert.match(t.nextAction,/Success measure: Record one supported need or gap/);
+ assert.throws(()=>makeCoachingTask(row,draft,false,'test-id',today,now,now));
+ assert.throws(()=>makeCoachingTask(row,{...draft,identityKey:'foreign'},true,'test-id',today,now,now));
+ assert.throws(()=>makeCoachingTask(row,{...draft,topic:'deadline'},true,'test-id',today,now,now));
+ assert.throws(()=>makeCoachingTask(row,draft,true,'test-id',today,now,now+300000));
+ assert.ok(coachingDraftError({...draft,measure:' '},today));assert.ok(coachingDraftError({...draft,dueDate:'2026-02-30'},today));assert.ok(coachingDraftError({...draft,dueDate:'2026-11-24'},today));assert.ok(coachingDraftError({...draft,dueDate:'2028-01-01'},today));
+});

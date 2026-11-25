@@ -7,7 +7,10 @@ import {
   db,
 } from "@workspace/db";
 
+import { privateBrowserBoundary } from "../middlewares/browserOrigin";
+
 const router: IRouter = Router();
+router.use("/evidence", privateBrowserBoundary);
 const workspaceIdPattern = /^[A-Za-z0-9_-]{1,64}$/;
 const agencyKeyPattern = /^(?:NPI:\d{10}|NERIS:[A-Z0-9.-]{1,80}|FDID:[A-Z]{2}:[A-Z0-9.-]{1,80}|STATE-EMS:[A-Z]{2}:(?:agency-code|license):[A-Z0-9.-]{1,80})$/;
 const factIdPattern = /^[A-Za-z0-9_-]{1,100}$/;

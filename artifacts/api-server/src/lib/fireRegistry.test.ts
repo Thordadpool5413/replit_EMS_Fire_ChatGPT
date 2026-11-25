@@ -39,3 +39,15 @@ test('station identity, parent relationship and coordinate provenance remain sep
  assert.equal(parseNerisFacility({...feature,attributes:{...feature.attributes,department_neris_id:'OTHER'}},parent),null);
  assert.equal(parseNerisFacility({...feature,geometry:{x:500,y:33}},parent)?.coordinates,null);
 });
+
+test('raw station IDs are counted before filtering invalid or foreign rows',async()=>{
+ const {reconcileNerisFacilities}=await import('./fireRegistry');
+ const parent={source:'NERIS' as const,stateCode:'FL',identifier:'FD12345678'};
+ const row={attributes:{neris_id:'ST123456789012',department_neris_id:parent.identifier,state:'GA',station_name:'CI fixture'},geometry:{x:-84,y:33}};
+ for(const duplicate of [{...row,attributes:{...row.attributes,state:'XX'}},{...row,attributes:{...row.attributes,department_neris_id:'OTHER'}},{...row,attributes:{...row.attributes,neris_id:'st123456789012'}}]){
+  const result=reconcileNerisFacilities([row,duplicate],parent,true);assert.equal(result.facilities.length,0);assert.equal(result.withheld,2);
+ }
+ assert.equal(reconcileNerisFacilities([row],parent,true).facilities[0].stateCode,'GA');
+ assert.equal(reconcileNerisFacilities([row],parent,false).facilities[0].coordinates,null);
+ assert.equal(reconcileNerisFacilities([{...row,attributes:{...row.attributes,neris_id:parent.identifier}}],parent,true).withheld,1);
+});

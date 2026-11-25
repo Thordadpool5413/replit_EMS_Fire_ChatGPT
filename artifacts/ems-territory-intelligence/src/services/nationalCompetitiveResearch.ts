@@ -1,18 +1,19 @@
 import type {Agency} from '../types';
 import {FEDERAL_STATES,FEDERAL_TOPICS,type FederalTopic,type FederalPage} from './federalDiscoveryContract';
-import type {MunicipalPage,MunicipalTopic} from './municipalDiscoveryContract';
+import {municipalKind,nycDay,type MunicipalPage,type MunicipalTopic} from './municipalDiscoveryContract';
+import {chicagoAmountNote,type ChicagoPage} from './chicagoDiscoveryContract';
 import type {DiscoveryPage} from './publicIntelligenceDiscovery';
 import {sharedAgencyKey} from './sharedEvidence';
-import {canCreateRegistryAccount} from './registryAccountLink';
+import {registryClaimIndex,canCreateRegistryAccount} from './registryAccountLink';
 import {equipmentObservationFacts,definitionFor} from './documentedIntelligence';
 import {buildDiscoveryMatches} from './publicIntelligenceDiscovery';
 export const NATIONAL_TOPICS={defibrillator:FEDERAL_TOPICS.defibrillator,resuscitation:FEDERAL_TOPICS.resuscitation,ventilator:FEDERAL_TOPICS.ventilator,ambulance:FEDERAL_TOPICS.ambulance,epcr:FEDERAL_TOPICS.epcr} as const;
 export type NationalTopic=Exclude<FederalTopic,'grants'>;
 export const NYC_TOPIC:Record<NationalTopic,MunicipalTopic>={defibrillator:'cardiac',resuscitation:'cpr',ventilator:'ventilation',ambulance:'ambulance',epcr:'software'};
 export const NATIONAL_STATES=FEDERAL_STATES;
-export type ResearchSource='fema'|'federal-grants'|'federal-contracts'|'municipal';
-export const RESEARCH_SOURCES:Record<ResearchSource,string>={fema:'OpenFEMA assistance', 'federal-grants':'USAspending assistance','federal-contracts':'USAspending supplier awards',municipal:'NYC procurement notices'};
-export type ResearchCandidate={key:string;source:ResearchSource;nativeId:string;number:string|null;organization:string;state:string;role:'grant-recipient'|'supplier'|'notice-issuer';title:string;description:string|null;vendor:string|null;amount:number|null;fiscalYear:number|null;publishedDay:string|null;periodStart:string|null;periodEnd:string|null;deadlineLocal:string|null;sourceUrl:string;sourceType:string};
+export type ResearchSource='fema'|'federal-grants'|'federal-contracts'|'municipal'|'chicago';
+export const RESEARCH_SOURCES:Record<ResearchSource,string>={fema:'OpenFEMA assistance', 'federal-grants':'USAspending assistance','federal-contracts':'USAspending supplier awards',municipal:'NYC procurement notices',chicago:'Chicago purchase orders and revisions'};
+export type ResearchCandidate={key:string;source:ResearchSource;nativeId:string;number:string|null;organization:string;state:string;role:'grant-recipient'|'supplier'|'notice-issuer'|'contracting-department';title:string;description:string|null;vendor:string|null;amount:number|null;fiscalYear:number|null;publishedDay:string|null;periodStart:string|null;periodEnd:string|null;deadlineLocal:string|null;sourceUrl:string;sourceType:string;contractRevision?:string|null;amountNote?:string};
 export type ResearchScope={source:ResearchSource;status:'retrieved'|'partial'|'unavailable'|'not-covered';fetchedAt:string|null;sourceRows:number;withheld:number;duplicates:number;hasMore:boolean;candidates:ResearchCandidate[]};
 export type StateResearch={state:string;topic:NationalTopic;fromYear:number;checkedAt:string;scopes:ResearchScope[]};
 type Mention={brand:string;family:'monitors'|'cpr'|'ventilators'|'software'|'unspecified';term:string};
@@ -72,9 +73,30 @@ export function federalResearch(p:FederalPage):ResearchScope{
 export function municipalResearch(p:MunicipalPage):ResearchScope{
  return retrieved('municipal',p,hasMore(p.nextPage,p.scopeCapped),p.notices.map(n=>({...blank,key:'nyc-city-record:'+n.id,source:'municipal',nativeId:n.id,number:n.pin,organization:n.issuingAgency,state:'NY',role:'notice-issuer',title:n.title,vendor:n.vendor,amount:n.contractAmount,publishedDay:n.publishedDate,deadlineLocal:n.dueLocal,sourceType:n.noticeType,sourceUrl:n.sourceUrl})));
 }
+/** Preserve purchase-order revisions; never aggregate them into a total or infer a current agreement. */
+export function chicagoResearch(p:ChicagoPage):ResearchScope{
+ return retrieved('chicago',p,hasMore(p.nextPage,p.scopeCapped),p.records.map(r=>({...blank,key:'chicago:'+r.key,source:'chicago',nativeId:r.key,number:r.contractNumber,organization:r.department??'Department not reported',state:'IL',role:'contracting-department',title:r.description,vendor:r.vendor,amount:r.amount,publishedDay:r.approvalDay,periodStart:r.startDay,periodEnd:r.endDay,sourceType:'Purchase order / revision',sourceUrl:r.sourceUrl,contractRevision:r.revision,amountNote:chicagoAmountNote(r)})));
+}
+export const COMMERCIAL_RESEARCH_LABELS={solicitation:'Solicitation · verify status','deadline-elapsed':'Published deadline elapsed','deadline-today':'Published deadline today · verify time','intent':'Intent to award · not final','award':'Award history','supplier':'Supplier award · end user unconfirmed','funding':'Assistance award · balance unknown','contract':'Purchase order / revision · verify terms','other':'Other published notice'} as const;
+export type CommercialResearchStatus=keyof typeof COMMERCIAL_RESEARCH_LABELS;
+export function commercialResearchStatus(c:ResearchCandidate,now=Date.now()):CommercialResearchStatus{
+ if(c.source==='chicago')return 'contract';
+ if(c.role==='grant-recipient')return 'funding';
+ if(c.role==='supplier')return 'supplier';
+ if(c.source==='municipal'){
+  const kind=municipalKind(c.sourceType);
+  if(kind==='award')return 'award';
+  if(kind==='intent-to-award')return 'intent';
+  if(kind==='solicitation'){
+   const day=c.deadlineLocal?.slice(0,10),today=nycDay(now);
+   return day&&day<today?'deadline-elapsed':day===today?'deadline-today':'solicitation';
+  }
+ }
+ return 'other';
+}
 /** Directory identity counts are not unique agencies, active licenses, or equipment coverage. */
 export function loadedResearchCoverage(agencies:Agency[],now=Date.now()){
- const ids=new Map<string,number>(),keys=new Map<string,number>();
+ const ids=new Map<string,number>(),keys=new Map<string,number>(),claims=registryClaimIndex(agencies);
  for(const a of agencies){if(a.id)ids.set(a.id,(ids.get(a.id)??0)+1);const key=sharedAgencyKey(a);if(key)keys.set(key,(keys.get(key)??0)+1);}
  const states=new Map(NATIONAL_STATES.map(s=>[s,{loaded:0,eligible:0,excluded:0,documented:{monitors:0,cpr:0,ventilators:0,software:0}}]));
  const eligible:Agency[]=[];
@@ -82,7 +104,7 @@ export function loadedResearchCoverage(agencies:Agency[],now=Date.now()){
   const state=states.get(a.stateCode);if(!state)continue;
   state.loaded++;
   const key=sharedAgencyKey(a),identity=a.registryIdentity;
-  if(!key||!identity||keys.get(key)!==1||ids.get(a.id)!==1||!canCreateRegistryAccount(identity)||identity.headquartersState&&identity.headquartersState!==a.stateCode){state.excluded++;continue;}
+  if(!key||!identity||keys.get(key)!==1||claims.counts.get(key)!==1||claims.byAccount.get(a)?.invalid.length||claims.byAccount.get(a)?.conflicts.length||ids.get(a.id)!==1||!canCreateRegistryAccount(identity)||identity.headquartersState&&identity.headquartersState!==a.stateCode){state.excluded++;continue;}
   state.eligible++;eligible.push(a);
   const families=new Set(equipmentObservationFacts(a,now).map(f=>definitionFor(f.intelligence.kind)?.family));
   for(const family of ['monitors','cpr','ventilators','software'] as const)if(families.has(family))state.documented[family]++;

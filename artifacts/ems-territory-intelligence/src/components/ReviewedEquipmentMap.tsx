@@ -1,9 +1,9 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUser } from '@workspace/replit-auth-web';
 import type { Agency } from '../types';
 import type { EquipmentFamily } from '../utils/equipmentPresence';
 import { sharedAgencyKey } from '../services/sharedEvidence';
-import { loadReviewedRadarRows,evidenceRole,type EvidenceSession } from '../services/sharedEvidenceFirebase';
+import { loadReviewedRadarRows,evidenceRole,type EvidenceSession } from '../services/sharedEvidenceReplit';
 import { buildReviewedRadar } from '../services/sharedOpportunityRadar';
 import { buildReviewedEquipmentGeography,reviewedMapAccounts,reviewedMapIdentity,REVIEWED_MAP_SAMPLE_LIMIT,REVIEWED_MAP_COLORS,REVIEWED_MAP_LABELS,type ReviewedMapAccount,type CountyReference } from '../services/reviewedEquipmentMap';
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
@@ -11,7 +11,7 @@ type Boundary={countyFips:string;countyName:string;stateCode:string;svgPath:stri
 type BoundaryView={state:string;paths:Boundary[];refs:CountyReference[]};
 type Snapshot={rows:ReviewedMapAccount[];checkedAt:string;scope:string};
 const errorText=(e:unknown)=>e instanceof Error?e.message:'Server check failed.';
-export function ReviewedEquipmentMap({session,user,agencies,onOpenAgency}:{session:EvidenceSession;user:User;agencies:Agency[];onOpenAgency?:(a:Agency)=>void}){
+export function ReviewedEquipmentMap({session,user,agencies,onOpenAgency}:{session:EvidenceSession;user:AuthUser;agencies:Agency[];onOpenAgency?:(a:Agency)=>void}){
  const eligible=useMemo(()=>reviewedMapAccounts(agencies),[agencies]);
  const states=useMemo(()=>[...new Set(eligible.map(a=>a.stateCode))].sort(),[eligible]);
  const [state,setState]=useState('');

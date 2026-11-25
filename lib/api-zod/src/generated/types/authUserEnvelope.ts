@@ -5,10 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AuthUser } from './authUser';
 
-export type GetEvidenceWorkspaceRoleParams = {
-/**
- * @pattern ^[A-Za-z0-9_-]{1,64}$
- */
-workspaceId: string;
-};
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}

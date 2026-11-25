@@ -10,5 +10,6 @@ import type { ReviewedEvidenceEvidence } from './reviewedEvidenceEvidence';
 export interface ReviewedEvidence {
   evidence: ReviewedEvidenceEvidence;
   authorUid: string;
+  authorIdentityMapped: boolean;
   publishedAt: Date;
 }

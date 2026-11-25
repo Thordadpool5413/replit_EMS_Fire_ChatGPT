@@ -146,17 +146,14 @@ export const CreateAgencyRecordsResponse = zod.object({
 
 
 /**
+ * Requires a valid Replit Auth session and existing workspace membership.
  * @summary Resolve the signed-in user's workspace role
  */
-export const getEvidenceWorkspaceRoleQueryWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const getEvidenceWorkspaceRolePathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
 
 
-export const GetEvidenceWorkspaceRoleQueryParams = zod.object({
-  "workspaceId": zod.coerce.string().regex(getEvidenceWorkspaceRoleQueryWorkspaceIdRegExp)
-})
-
-export const GetEvidenceWorkspaceRoleHeader = zod.object({
-  "Authorization": zod.string().describe('Verified Google/Firebase sign-in ID token, sent as a bearer token.')
+export const GetEvidenceWorkspaceRoleParams = zod.object({
+  "workspaceId": zod.coerce.string().regex(getEvidenceWorkspaceRolePathWorkspaceIdRegExp)
 })
 
 export const GetEvidenceWorkspaceRoleResponse = zod.object({
@@ -165,29 +162,32 @@ export const GetEvidenceWorkspaceRoleResponse = zod.object({
 
 
 /**
+ * Requires a valid Replit Auth session and existing workspace membership.
  * @summary Read a bounded page of published evidence
  */
-export const listReviewedEvidenceQueryWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
-export const listReviewedEvidenceQueryAgencyKeyMax = 120;
-
-export const listReviewedEvidenceQueryAfterMax = 100;
+export const listReviewedEvidencePathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const listReviewedEvidencePathAgencyKeyMax = 120;
 
 
 
-export const ListReviewedEvidenceQueryParams = zod.object({
-  "workspaceId": zod.coerce.string().regex(listReviewedEvidenceQueryWorkspaceIdRegExp),
-  "agencyKey": zod.coerce.string().max(listReviewedEvidenceQueryAgencyKeyMax),
-  "after": zod.coerce.string().max(listReviewedEvidenceQueryAfterMax).optional()
+export const ListReviewedEvidenceParams = zod.object({
+  "workspaceId": zod.coerce.string().regex(listReviewedEvidencePathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(listReviewedEvidencePathAgencyKeyMax)
 })
 
+export const listReviewedEvidenceHeaderXAfterMax = 100;
+
+
+
 export const ListReviewedEvidenceHeader = zod.object({
-  "Authorization": zod.string().describe('Verified Google/Firebase sign-in ID token, sent as a bearer token.')
+  "X-After": zod.string().max(listReviewedEvidenceHeaderXAfterMax).optional()
 })
 
 export const ListReviewedEvidenceResponse = zod.object({
   "records": zod.array(zod.object({
   "evidence": zod.record(zod.string(), zod.unknown()),
   "authorUid": zod.string(),
+  "authorIdentityMapped": zod.boolean(),
   "publishedAt": zod.coerce.date()
 })),
   "withheld": zod.number().int(),
@@ -196,12 +196,9 @@ export const ListReviewedEvidenceResponse = zod.object({
 
 
 /**
+ * Requires a valid Replit Auth session and editor membership.
  * @summary Publish a new public-source observation
  */
-export const PublishReviewedEvidenceHeader = zod.object({
-  "Authorization": zod.string().describe('Verified Google/Firebase sign-in ID token, sent as a bearer token.')
-})
-
 export const PublishReviewedEvidenceBody = zod.object({
   "workspaceId": zod.string(),
   "evidence": zod.record(zod.string(), zod.unknown())
@@ -213,28 +210,20 @@ export const PublishReviewedEvidenceResponse = zod.object({
 
 
 /**
+ * Requires a valid Replit Auth session and existing workspace membership.
  * @summary Read immutable review decisions for an evidence item
  */
 export const listReviewedEvidenceDecisionsPathFactIdMax = 100;
 
+export const listReviewedEvidenceDecisionsPathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const listReviewedEvidenceDecisionsPathAgencyKeyMax = 120;
+
 
 
 export const ListReviewedEvidenceDecisionsParams = zod.object({
-  "factId": zod.coerce.string().max(listReviewedEvidenceDecisionsPathFactIdMax)
-})
-
-export const listReviewedEvidenceDecisionsQueryWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
-export const listReviewedEvidenceDecisionsQueryAgencyKeyMax = 120;
-
-
-
-export const ListReviewedEvidenceDecisionsQueryParams = zod.object({
-  "workspaceId": zod.coerce.string().regex(listReviewedEvidenceDecisionsQueryWorkspaceIdRegExp),
-  "agencyKey": zod.coerce.string().max(listReviewedEvidenceDecisionsQueryAgencyKeyMax)
-})
-
-export const ListReviewedEvidenceDecisionsHeader = zod.object({
-  "Authorization": zod.string().describe('Verified Google/Firebase sign-in ID token, sent as a bearer token.')
+  "factId": zod.coerce.string().max(listReviewedEvidenceDecisionsPathFactIdMax),
+  "workspaceId": zod.coerce.string().regex(listReviewedEvidenceDecisionsPathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(listReviewedEvidenceDecisionsPathAgencyKeyMax)
 })
 
 export const ListReviewedEvidenceDecisionsResponse = zod.object({
@@ -244,6 +233,7 @@ export const ListReviewedEvidenceDecisionsResponse = zod.object({
   "replacementId": zod.string(),
   "factId": zod.string(),
   "reviewerUid": zod.string(),
+  "reviewerIdentityMapped": zod.boolean(),
   "reviewedAt": zod.coerce.date()
 })),
   "invalid": zod.number().int(),
@@ -252,18 +242,20 @@ export const ListReviewedEvidenceDecisionsResponse = zod.object({
 
 
 /**
+ * Requires a valid Replit Auth session and reviewer membership.
  * @summary Add an immutable reviewer decision
  */
 export const createReviewedEvidenceDecisionPathFactIdMax = 100;
 
+export const createReviewedEvidenceDecisionPathWorkspaceIdRegExp = new RegExp('^[A-Za-z0-9_-]{1,64}$');
+export const createReviewedEvidenceDecisionPathAgencyKeyMax = 120;
+
 
 
 export const CreateReviewedEvidenceDecisionParams = zod.object({
-  "factId": zod.coerce.string().max(createReviewedEvidenceDecisionPathFactIdMax)
-})
-
-export const CreateReviewedEvidenceDecisionHeader = zod.object({
-  "Authorization": zod.string().describe('Verified Google/Firebase sign-in ID token, sent as a bearer token.')
+  "factId": zod.coerce.string().max(createReviewedEvidenceDecisionPathFactIdMax),
+  "workspaceId": zod.coerce.string().regex(createReviewedEvidenceDecisionPathWorkspaceIdRegExp),
+  "agencyKey": zod.coerce.string().max(createReviewedEvidenceDecisionPathAgencyKeyMax)
 })
 
 export const CreateReviewedEvidenceDecisionBody = zod.object({
@@ -275,6 +267,38 @@ export const CreateReviewedEvidenceDecisionBody = zod.object({
 export const CreateReviewedEvidenceDecisionResponse = zod.object({
   "result": zod.enum(['created', 'exists'])
 })
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().email().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start browser OIDC login
+ */
+export const BeginBrowserLoginResponse = zod.void()
+
+
+/**
+ * @summary Complete browser OIDC login
+ */
+export const HandleBrowserLoginCallbackResponse = zod.void()
+
+
+/**
+ * @summary Clear the browser session and end OIDC session
+ */
+export const LogoutBrowserSessionResponse = zod.void()
 
 
 /**

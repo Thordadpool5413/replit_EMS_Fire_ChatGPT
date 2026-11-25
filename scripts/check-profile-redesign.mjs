@@ -26,7 +26,7 @@ try {
   await cdp.send('Runtime.enable');
   // Use bundled public fixtures only; profile UI checks must never contact cloud records.
   await cdp.send('Network.enable');
-  await cdp.send('Network.setBlockedURLs', { urls: ['*googleapis.com*', '*firebaseio.com*', '*firebaseapp.com*', '*replit.app*'] });
+  await cdp.send('Network.setBlockedURLs', { urls: ['*replit.app*'] });
   // Fixtures are isolated to QA's temporary browser and loopback origin, never production.
   const testOrigin=new URL(base).origin;
   assert.ok(['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname),'Synthetic QA fixtures require loopback preview');

@@ -18,6 +18,8 @@ tags:
     description: Shared agency and workspace records stored by the Replit backend
   - name: reviewed-evidence
     description: Role-gated, public-source evidence stored by the Replit backend
+  - name: Auth
+    description: Browser and mobile Replit authentication endpoints
 paths:
   /:
     get:
@@ -170,19 +172,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgencyBatchCreateResponse"
-  /evidence/role:
+  /evidence/workspaces/{workspaceId}/role:
     get:
       operationId: getEvidenceWorkspaceRole
       tags: [reviewed-evidence]
       summary: Resolve the signed-in user's workspace role
+      description: Requires a valid Replit Auth session and existing workspace membership.
       parameters:
-        - in: query
+        - in: path
           name: workspaceId
           required: true
           schema:
             type: string
             pattern: "^[A-Za-z0-9_-]{1,64}$"
-        - $ref: "#/components/parameters/EvidenceBearerToken"
       responses:
         "200":
           description: Membership role
@@ -194,30 +196,30 @@ paths:
           description: A verified sign-in is required
         "403":
           description: Workspace membership is not granted
-  /evidence:
+  /evidence/workspaces/{workspaceId}/agencies/{agencyKey}:
     get:
       operationId: listReviewedEvidence
       tags: [reviewed-evidence]
       summary: Read a bounded page of published evidence
+      description: Requires a valid Replit Auth session and existing workspace membership.
       parameters:
-        - in: query
+        - in: path
           name: workspaceId
           required: true
           schema:
             type: string
             pattern: "^[A-Za-z0-9_-]{1,64}$"
-        - in: query
+        - in: path
           name: agencyKey
           required: true
           schema:
             type: string
             maxLength: 120
-        - in: query
-          name: after
+        - in: header
+          name: X-After
           schema:
             type: string
             maxLength: 100
-        - $ref: "#/components/parameters/EvidenceBearerToken"
       responses:
         "200":
           description: Public-source evidence and cursor
@@ -225,12 +227,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReviewedEvidencePage"
+  /evidence:
     post:
       operationId: publishReviewedEvidence
       tags: [reviewed-evidence]
       summary: Publish a new public-source observation
-      parameters:
-        - $ref: "#/components/parameters/EvidenceBearerToken"
+      description: Requires a valid Replit Auth session and editor membership.
       requestBody:
         required: true
         content:
@@ -246,11 +248,12 @@ paths:
                 $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
         "409":
           description: The immutable record ID conflicts with different evidence
-  /evidence/{factId}/decisions:
+  /evidence/workspaces/{workspaceId}/agencies/{agencyKey}/facts/{factId}/decisions:
     get:
       operationId: listReviewedEvidenceDecisions
       tags: [reviewed-evidence]
       summary: Read immutable review decisions for an evidence item
+      description: Requires a valid Replit Auth session and existing workspace membership.
       parameters:
         - in: path
           name: factId
@@ -258,19 +261,18 @@ paths:
           schema:
             type: string
             maxLength: 100
-        - in: query
+        - in: path
           name: workspaceId
           required: true
           schema:
             type: string
             pattern: "^[A-Za-z0-9_-]{1,64}$"
-        - in: query
+        - in: path
           name: agencyKey
           required: true
           schema:
             type: string
             maxLength: 120
-        - $ref: "#/components/parameters/EvidenceBearerToken"
       responses:
         "200":
           description: Review decision history
@@ -282,6 +284,7 @@ paths:
       operationId: createReviewedEvidenceDecision
       tags: [reviewed-evidence]
       summary: Add an immutable reviewer decision
+      description: Requires a valid Replit Auth session and reviewer membership.
       parameters:
         - in: path
           name: factId
@@ -289,7 +292,18 @@ paths:
           schema:
             type: string
             maxLength: 100
-        - $ref: "#/components/parameters/EvidenceBearerToken"
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{1,64}$"
+        - in: path
+          name: agencyKey
+          required: true
+          schema:
+            type: string
+            maxLength: 120
       requestBody:
         required: true
         content:
@@ -305,6 +319,42 @@ paths:
                 $ref: "#/components/schemas/ReviewedEvidenceWriteResponse"
         "409":
           description: A different immutable decision already exists
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Auth status resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start browser OIDC login
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete browser OIDC login
+      responses:
+        "302":
+          description: Redirect to the validated return path or login
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the browser session and end OIDC session
+      responses:
+        "302":
+          description: Redirect to the OIDC end-session endpoint
   /fema/afg-grants:
     get:
       operationId: getAfgGrants
@@ -491,15 +541,30 @@ paths:
         "503":
           description: Maps-grounded research is unavailable
 components:
-  parameters:
-    EvidenceBearerToken:
-      name: Authorization
-      in: header
-      required: true
-      description: Verified Google/Firebase sign-in ID token, sent as a bearer token.
-      schema:
-        type: string
   schemas:
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, "null"]
+          format: email
+        firstName:
+          type: [string, "null"]
+        lastName:
+          type: [string, "null"]
+        profileImageUrl:
+          type: [string, "null"]
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
     AgencyRecord:
       type: object
       properties:
@@ -588,10 +653,12 @@ components:
           additionalProperties: true
         authorUid:
           type: string
+        authorIdentityMapped:
+          type: boolean
         publishedAt:
           type: string
           format: date-time
-      required: [evidence, authorUid, publishedAt]
+      required: [evidence, authorUid, authorIdentityMapped, publishedAt]
     ReviewedEvidencePage:
       type: object
       properties:
@@ -637,10 +704,12 @@ components:
           type: string
         reviewerUid:
           type: string
+        reviewerIdentityMapped:
+          type: boolean
         reviewedAt:
           type: string
           format: date-time
-      required: [action, reason, replacementId, factId, reviewerUid, reviewedAt]
+      required: [action, reason, replacementId, factId, reviewerUid, reviewerIdentityMapped, reviewedAt]
     EvidenceDecisionsResponse:
       type: object
       properties:

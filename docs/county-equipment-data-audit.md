@@ -5,8 +5,7 @@ Repository data-path review. Runtime cloud audit results are excluded from this 
 | Existing source | What it contains | What can be rolled up |
 | --- | --- | --- |
 | Frontend county catalog | 3,144 county equivalents, FIPS, state, places, demographics and activity figures | County/state geographic coverage; compatible sourced counts and weighted metrics |
-| Firestore `counties` collection | Runtime county documents, when available | Inspect the source schema before using it as installed inventory |
-| Firestore `agencies` collection | Runtime agency profiles | County-assigned recorded products and manufacturer references |
+| Replit `agency_records` | Runtime agency profiles | County-assigned recorded products and manufacturer references |
 | Bundled named profiles plus cloud profiles | Deduplicated directory IDs with county assignments | Recorded-profile penetration, not a statewide census |
 | USFA / NERIS backend adapters | Department identity, county/address, stations and general units | Agency identity and location; these responses do not contain monitor/CPR manufacturer inventory |
 | NPPES snapshot / backend adapter | Ambulance taxonomy organizations and provider identity | Candidate organization directory, not installed equipment |

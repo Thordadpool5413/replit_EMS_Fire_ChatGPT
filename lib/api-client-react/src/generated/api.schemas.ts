@@ -5,6 +5,22 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
 export type AgencyRecordAgency = { [key: string]: unknown };
 
 export interface AgencyRecord {
@@ -74,6 +90,7 @@ export type ReviewedEvidenceEvidence = { [key: string]: unknown };
 export interface ReviewedEvidence {
   evidence: ReviewedEvidenceEvidence;
   authorUid: string;
+  authorIdentityMapped: boolean;
   publishedAt: string;
 }
 
@@ -105,6 +122,7 @@ export interface EvidenceDecision {
   replacementId: string;
   factId: string;
   reviewerUid: string;
+  reviewerIdentityMapped: boolean;
   reviewedAt: string;
 }
 
@@ -506,11 +524,6 @@ export interface PlacesResearchResponse {
   mapsLinks: PlacesResearchResponseMapsLinksItem[];
 }
 
-/**
- * Verified Google/Firebase sign-in ID token, sent as a bearer token.
- */
-export type EvidenceBearerTokenParameter = string;
-
 export type ListAgencyRecordsParams = {
 /**
  * @pattern ^[A-Za-z]{2}$
@@ -525,39 +538,6 @@ after?: string;
  * @maximum 500
  */
 limit?: number;
-};
-
-export type GetEvidenceWorkspaceRoleParams = {
-/**
- * @pattern ^[A-Za-z0-9_-]{1,64}$
- */
-workspaceId: string;
-};
-
-export type ListReviewedEvidenceParams = {
-/**
- * @pattern ^[A-Za-z0-9_-]{1,64}$
- */
-workspaceId: string;
-/**
- * @maxLength 120
- */
-agencyKey: string;
-/**
- * @maxLength 100
- */
-after?: string;
-};
-
-export type ListReviewedEvidenceDecisionsParams = {
-/**
- * @pattern ^[A-Za-z0-9_-]{1,64}$
- */
-workspaceId: string;
-/**
- * @maxLength 120
- */
-agencyKey: string;
 };
 
 export type GetAfgGrantsParams = {

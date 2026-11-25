@@ -1,6 +1,6 @@
 import React,{useState} from 'react';
 import type { Agency } from '../types';
-import { evidenceEnabled } from '../services/sharedEvidenceFirebase';
+import { evidenceEnabled } from '../services/sharedEvidenceReplit';
 import { SharedEvidenceWorkspace } from './SharedEvidenceWorkspace';
 /** Explicit opt-in view, separate from the existing map's persistent filter and agency state. */
 export function ReviewedEquipmentMapEntry({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){

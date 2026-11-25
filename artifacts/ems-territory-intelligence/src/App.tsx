@@ -46,7 +46,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { WorkspaceLoadingState } from './components/WorkspaceLoadingState';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeMapFailureFallback } from './components/HomeMapFallbacks';
-import { useAgencyRecords } from './hooks/useFirestoreAgencies';
+import { useAgencyRecords } from './hooks/useAgencyRecords';
 import { ALL_50_STATES_SUMMARIES } from './data/nationalGeographicData';
 import { TerritoryContextBreadcrumb } from './components/TerritoryContextBreadcrumb';
 import {

@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -6,9 +8,30 @@ import {
   primaryKey,
   text,
   timestamp,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 export type JsonRecord = Record<string, unknown>;
+
+export const sessionsTable = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+export const usersTable = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
 
 /** Canonical shared agency records served by the Replit API. */
 export const agencyRecordsTable = pgTable(
@@ -81,6 +104,7 @@ export const sharedEvidenceRecordsTable = pgTable(
     factId: text("fact_id").notNull(),
     payload: jsonb("payload").$type<JsonRecord>().notNull(),
     authorUid: text("author_uid").notNull(),
+    authorIdentityMapped: boolean("author_identity_mapped").notNull().default(true),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -99,6 +123,7 @@ export const sharedEvidenceDecisionsTable = pgTable(
     action: text("action").notNull(),
     payload: jsonb("payload").$type<JsonRecord>().notNull(),
     reviewerUid: text("reviewer_uid").notNull(),
+    reviewerIdentityMapped: boolean("reviewer_identity_mapped").notNull().default(true),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.agencyKey, table.factId, table.action] })],

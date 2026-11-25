@@ -12,9 +12,9 @@ Validation includes a test that indexes every county in the bundled national cou
 
 ## Existing-data loading repair
 
-A fresh national view now reads the existing Firestore agency collection in stable document-ID pages of 500. One shared loader serves the app session, so selecting states/counties or remounting a map does not restart the national scan. The selected state retains its live subscription. Partial reads retain existing records, display loading/unavailable status, and offer retry from the failed page; successful reads of the real agency collection determine connectivity instead of an unrelated test document. These reads perform no cloud writes.
+A fresh national view now reads the Replit agency API in stable, cursor-based pages. One shared loader serves the app session, so selecting states/counties or remounting a map does not restart the national scan. Partial reads retain existing records, display loading/unavailable status, and offer retry from the failed page. Connectivity reflects successful reads from the actual agency endpoint.
 
-Cloud and bundled records feed the same agency state used by national, county, location and fleet views. Late national pages cannot overwrite a newer cloud revision. Nested equipment fields, local source attachments, pending changes and fact-review overlays are retained by the reconciliation path. Firestore document IDs supply agency identities when loading.
+Replit-backed and bundled records feed the same agency state used by national, county, location and fleet views. Late national pages cannot overwrite a newer backend revision. Nested equipment fields, local source attachments, pending changes and fact-review overlays are retained by the reconciliation path. Agency IDs are preserved by the Replit API.
 
 Recorded equipment recognition now includes the existing alternate `fleet.currentDefibVendor`, `currentCprDevice`, `currentVentilator`, `currentEpcrVendor`, and `currentCadVendor` fields alongside `installedFleet`. Identical product strings do not duplicate breakdown rows. Generated fields remain excluded unless mapped evidence exists; end users still confirm current use. The imported-directory adapter no longer inserts a CentralSquare CAD supplier where none was provided.
 

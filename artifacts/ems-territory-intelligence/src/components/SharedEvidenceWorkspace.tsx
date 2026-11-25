@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
+import { useAuth, type AuthUser } from '@workspace/replit-auth-web';
 import type { Agency } from '../types';
 import { reconcileSharedEvidence } from '../services/sharedEvidenceReconciliation';
 import { ReviewedEquipmentMap } from './ReviewedEquipmentMap';
@@ -8,44 +8,28 @@ import { EvidenceGovernancePanel } from './EvidenceGovernancePanel';
 import { SharedEvidenceReview } from './SharedEvidenceReview';
 import { INTELLIGENCE_DEFINITIONS } from '../services/documentedIntelligence';
 import { shareableAgencies, sharedAgencyKey, toSharedEvidence, type SharedEvidence } from '../services/sharedEvidence';
-import { evidenceEnabled, evidenceRole, listSharedEvidence, openEvidenceSession, publishSharedEvidence, type EvidenceSession, type EvidenceRole, type PublishedEvidence } from '../services/sharedEvidenceFirebase';
+import { evidenceEnabled, evidenceRole, listSharedEvidence, openEvidenceSession, publishSharedEvidence, type EvidenceSession, type EvidenceRole, type PublishedEvidence } from '../services/sharedEvidenceReplit';
 const control = 'block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const message = (e: unknown) => e instanceof Error ? e.message : 'The request could not be confirmed.';
 
 export function SharedEvidenceWorkspace({ agencies, view='research', onOpenAgency }: { agencies: Agency[]; view?:'research'|'map'; onOpenAgency?:(a:Agency)=>void }) {
   const [session, setSession] = useState<EvidenceSession>();
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { user, isLoading, isAuthenticated, login, logout } = useAuth();
   const [error, setError] = useState('');
-  useEffect(() => {
-    if (!session) return;
-    return onAuthStateChanged(session.auth, next => { setUser(next); setReady(true); }, () => { setUser(null); setReady(true); setError('Authentication could not be checked.'); });
-  }, [session]);
-  async function login() {
-    if (!session) return;
-    setBusy(true); setError('');
-    try { await signInWithPopup(session.auth, new GoogleAuthProvider()); } catch (e) { setError(message(e)); } finally { setBusy(false); }
-  }
-  async function logout() {
-    if (!session) return;
-    setBusy(true); setError('');
-    try { await signOut(session.auth); } catch (e) { setError(message(e)); } finally { setBusy(false); }
-  }
   return <section className="pi-surface p-4 min-w-0 space-y-3" aria-label="ATLAS shared evidence">
     <h2 className="font-semibold">{view==='map'?'ATLAS reviewed intelligence map':'ATLAS shared evidence'}</h2>
     <p className="text-sm">A controlled team library for public, dated agency documents. Local evidence remains local until explicitly published. Shared entries are user-reported observations, not independently verified facts.</p>
-    {!evidenceEnabled ? <p role="status" className="text-sm">Not enabled. An administrator must configure a separate Firebase project, deploy the evidence-only rules and grant workspace membership. No shared data is read or written.</p> :
+    {!evidenceEnabled ? <p role="status" className="text-sm">Not enabled. An administrator must configure verified sign-in and grant workspace membership in Replit. No shared data is read or written.</p> :
       !session ? <button type="button" className="workspace-button" onClick={() => { try { setSession(openEvidenceSession()); } catch (e) { setError(message(e)); } }}>Open shared workspace</button> :
-      !ready ? <p role="status">Checking sign-in…</p> :
-      !user ? <button type="button" className="workspace-button" disabled={busy} onClick={() => void login()}>Sign in with Google</button> :
-      <><div className="flex flex-wrap items-center gap-2"><span className="text-sm break-all">{user.email ?? 'Signed-in member'}</span><button type="button" className="workspace-button" disabled={busy} onClick={() => void logout()}>Sign out</button></div>
-      {!busy && <MemberWorkspace key={user.uid} session={session} user={user} agencies={agencies} view={view} onOpenAgency={onOpenAgency}/>}</>}
+      isLoading ? <p role="status">Checking sign-in…</p> :
+      !isAuthenticated || !user ? <button type="button" className="workspace-button" onClick={login}>Sign in</button> :
+      <><div className="flex flex-wrap items-center gap-2"><span className="text-sm break-all">{user.email ?? 'Signed-in member'}</span><button type="button" className="workspace-button" onClick={logout}>Sign out</button></div>
+      <MemberWorkspace key={user.id} session={session} user={user} agencies={agencies} view={view} onOpenAgency={onOpenAgency}/></>}
     {error && <p role="alert" className="text-sm break-words">{error}</p>}
   </section>;
 }
 
-function MemberWorkspace({ session, user, agencies, view, onOpenAgency }: { session: EvidenceSession; user: User; agencies: Agency[]; view:'research'|'map'; onOpenAgency?:(a:Agency)=>void }) {
+function MemberWorkspace({ session, user, agencies, view, onOpenAgency }: { session: EvidenceSession; user: AuthUser; agencies: Agency[]; view:'research'|'map'; onOpenAgency?:(a:Agency)=>void }) {
   const [role, setRole] = useState<EvidenceRole>();
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -72,7 +56,7 @@ function MemberWorkspace({ session, user, agencies, view, onOpenAgency }: { sess
   </div>;
 }
 
-function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSession; user: User; role: EvidenceRole; agency: Agency }) {
+function AgencyEvidence({ session, user, role, agency }: { session: EvidenceSession; user: AuthUser; role: EvidenceRole; agency: Agency }) {
   const key = sharedAgencyKey(agency)!;
   const local = useMemo(() => (agency.sourceFacts ?? []).flatMap(f => { try { return [toSharedEvidence(agency, f)]; } catch { return []; } }), [agency]);
   const [factId, setFactId] = useState('');

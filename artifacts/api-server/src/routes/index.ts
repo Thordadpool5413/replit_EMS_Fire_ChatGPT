@@ -6,6 +6,8 @@ import emsRegistryRouter from "./ems-registry";
 import territoryRouter from "./territory";
 import nriCountyContextRouter from "./nri-county-context";
 import agencyRecordsRouter from "./agency-records";
+import sharedEvidenceRouter from "./shared-evidence";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
@@ -16,5 +18,7 @@ router.use(emsRegistryRouter);
 router.use(territoryRouter);
 router.use(nriCountyContextRouter);
 router.use(agencyRecordsRouter);
+router.use(sharedEvidenceRouter);
+router.use(authRouter);
 
 export default router;

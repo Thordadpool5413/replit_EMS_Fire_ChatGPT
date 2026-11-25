@@ -26,7 +26,7 @@ try {
   await cdp.send('Runtime.enable');
   // Use bundled public fixtures only; profile UI checks must never contact cloud records.
   await cdp.send('Network.enable');
-  await cdp.send('Network.setBlockedURLs', { urls: ['*googleapis.com*', '*firebaseio.com*', '*firebaseapp.com*', '*replit.app*'] });
+  await cdp.send('Network.setBlockedURLs', { urls: ['*replit.app*'] });
   const ev = expression => evaluate(cdp, expression);
   for (const [width,height] of [[320,568],[390,660],[430,740],[667,375],[1366,768]]) {
     const phone=width<768;

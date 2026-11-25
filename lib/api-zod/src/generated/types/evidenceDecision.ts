@@ -12,5 +12,6 @@ export interface EvidenceDecision {
   replacementId: string;
   factId: string;
   reviewerUid: string;
+  reviewerIdentityMapped: boolean;
   reviewedAt: Date;
 }

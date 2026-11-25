@@ -8,6 +8,8 @@ In the current app, use **Data & system → Backup & recovery → Export workspa
 
 Place the export in the workspace without committing it. The importer accepts the app's `ems-workspace` version 1 backup and a versioned `ems-record-export` file.
 
+The versioned collection export may also include `workspace_memberships` (or `workspace_members`), `shared_evidence_records` (or `evidence`), and `shared_evidence_decisions` (or `decisions`). Valid public evidence and immutable review history are moved into separate Replit tables. A workspace role is activated only when the export supplies an explicit Replit user ID (or marks that ID as a Replit identity); old sign-in IDs are never assumed to match. Evidence and reviewer identities without an explicit Replit mapping are retained but marked unmapped, which blocks approval until an administrator confirms the mapping. The original exported rows are archived as well. Invalid rows and conflicting Replit records are preserved for review rather than activated or overwritten.
+
 ## Review before import
 
 Run the dry-run first. It validates the file and prints record counts only:

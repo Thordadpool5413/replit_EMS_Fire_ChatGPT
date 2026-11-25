@@ -9,7 +9,12 @@ export const DECISION_REASONS = {
 export type DecisionAction = keyof typeof DECISION_REASONS;
 export const DECISION_ACTIONS = Object.keys(DECISION_REASONS) as DecisionAction[];
 export type DecisionDraft = { action: DecisionAction; reason: string; replacementId: string };
-export type EvidenceDecision = DecisionDraft & { factId: string; reviewerUid: string; reviewedAt: string };
+export type EvidenceDecision = DecisionDraft & {
+  factId: string;
+  reviewerUid: string;
+  reviewerIdentityMapped?: boolean;
+  reviewedAt: string;
+};
 export type GovernanceStatus = 'pending' | DecisionAction | 'unavailable';
 const idPattern = /^[A-Za-z0-9_-]{1,100}$/;
 function obj(x:unknown): x is Record<string,unknown> { return !!x && typeof x === 'object' && !Array.isArray(x); }

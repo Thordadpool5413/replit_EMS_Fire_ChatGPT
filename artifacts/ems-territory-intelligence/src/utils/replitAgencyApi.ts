@@ -22,6 +22,12 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** A private read; public/redacted or malformed responses do not establish acknowledgment. */
+export async function fetchAgencyReviewAcknowledgments(agencyId:string,signal?:AbortSignal):Promise<unknown[]|null>{
+ const row=await apiRequest<AgencyResponse>(`/agencies/${encodeURIComponent(agencyId)}`,{signal});
+ if(row.id!==agencyId||row.agency?.id!==agencyId||!Number.isSafeInteger(row.revision)||row.revision<1)return null;
+ return Array.isArray(row.agency._factReviews)?row.agency._factReviews:null;
+}
 function encodeCursor(cursor?: string) {
   return cursor ? `&after=${encodeURIComponent(cursor)}` : "";
 }

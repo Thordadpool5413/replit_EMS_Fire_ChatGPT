@@ -3,7 +3,9 @@ import {MapPin,Navigation} from 'lucide-react';
 import type {Agency} from '../../types';
 import {addressText,isPhysicalStreet,addressMatchLabel,addressPointSource} from '../../services/providerLocationContract';
 import {canResearchProviderLocation,displayedProviderLocation,mappedProviderLocation,researchProviderLocation,locationDirections,useLocationRevision,loadProviderLocationState,locationStatus,providerAddressReview} from '../../services/providerLocation';
-import {candidateReviewLabel} from '../../services/addressCandidateValidation';
+import {candidateReviewLabel,candidateReviewSource} from '../../services/addressCandidateValidation';
+import {addressReviewAcknowledgment,ADDRESS_ACK_LABEL,coordinatePublicationGate} from '../../services/addressReviewAcknowledgment';
+import {fetchAgencyReviewAcknowledgments} from '../../utils/replitAgencyApi';
 import {loadFactReviews} from '../../services/factReviewStore';
 export function ProviderAddressLine({agency,directory,onReview,onReviewCandidate}:{agency:Agency;directory:Agency[];onReview:()=>void;onReviewCandidate?:()=>void}){
  useLocationRevision();
@@ -20,12 +22,28 @@ export function ProviderAddressLine({agency,directory,onReview,onReviewCandidate
  const physical=loc&&isPhysicalStreet(loc.address.street),pointSource=pin&&addressPointSource(pin),candidate=providerAddressReview(agency,directory);
  const [reviewRevision,setReviewRevision]=useState(0);
  useEffect(()=>{const update=()=>setReviewRevision(n=>n+1);window.addEventListener('ems-reviews-changed',update);window.addEventListener('storage',update);return()=>{window.removeEventListener('ems-reviews-changed',update);window.removeEventListener('storage',update);};},[]);
+ const candidateKey=candidate?candidateReviewSource(candidate).sourceRecordId:undefined;
+ const [serverReview,setServerReview]=useState<{key:string;agencyId:string;revision:number;rows:unknown[]|null}>();
+ useEffect(()=>{
+  if(!candidateKey)return;
+  const controller=new AbortController();
+  void fetchAgencyReviewAcknowledgments(agency.id,controller.signal).then(rows=>{
+   if(!controller.signal.aborted)setServerReview({key:candidateKey,agencyId:agency.id,revision:reviewRevision,rows});
+  }).catch(()=>{if(!controller.signal.aborted)setServerReview({key:candidateKey,agencyId:agency.id,revision:reviewRevision,rows:null});});
+  return()=>controller.abort();
+ },[agency.id,candidateKey,reviewRevision]);
+ const ack=candidate?(()=>{try{
+  const local=loadFactReviews(agency.id);
+  const rows=serverReview&&serverReview.key===candidateKey&&serverReview.agencyId===agency.id&&serverReview.revision===reviewRevision?serverReview.rows:undefined;
+  return addressReviewAcknowledgment(candidate,agency.id,local,rows);
+ }catch{return 'unavailable' as const;}})():'not-checked' as const;
+ const publication=candidate?coordinatePublicationGate(candidate,ack):undefined;
  const candidateStatus=React.useMemo(()=>{if(!candidate)return '';try{return candidateReviewLabel(candidate,[...new Map([...(agency._factReviews??[]),...loadFactReviews(agency.id)].map(e=>[e.id,e])).values()]);}catch{return 'Review history unavailable · not verified';}},[candidate,agency._factReviews,agency.id,reviewRevision]);
  return <div className="acp-provider-location" data-testid="provider-address-line">
   <div className="acp-loc"><MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0"/><span>{loc?addressText(loc.address):[agency.city,agency.stateCode].filter(Boolean).join(', ')||'Location not reported'}</span></div>
   <p className="acp-address-note">{loc?<><a href={loc.sourceUrl} target="_blank" rel="noreferrer">{loc.sourceName}</a> · {loc.kind}{loc.sourceDate?' · '+loc.sourceDate:''}{pin&&<> · {addressMatchLabel(pin)}{pointSource&&<> · <a href={pointSource.url} target="_blank" rel="noreferrer">{pointSource.label}</a></>}</>}</>:busy?'Checking exact public registry identity…':'Street address not established from a linked source.'}</p>
   {loc&&<p className="acp-address-note" data-testid="provider-address-status">{locationStatus(agency,directory)} · Source-reported; validate before visiting.</p>}
-  {candidate&&<div data-testid="provider-address-review-candidate" className="acp-address-note break-words"><strong>Potential GIS address match · review required</strong><p>{candidate.matchedAddress}</p><p>{candidate.sourceLabel} · checked {candidate.checkedAt}. {candidate.placementAsReported?`Source placement code: ${candidate.placementAsReported}; meaning requires review.`:'Point placement not reported.'} {!candidate.countyVerified&&'County not independently verified. '} Not a verified station or map pin. Any suite is not verified by the base address point.</p>{candidate.sharedSourcePoint&&<p>Multiple registry records reference this same source point; provider identities are not merged.</p>}<a href={candidate.sourceUrl} target="_blank" rel="noreferrer">View government address-point record</a><p data-testid="gis-address-review-status">{candidateStatus}</p>{onReviewCandidate&&<button type="button" className="workspace-button min-h-11" onClick={onReviewCandidate}>Review GIS address evidence</button>}</div>}
+  {candidate&&<div data-testid="provider-address-review-candidate" className="acp-address-note break-words"><strong>Potential GIS address match · review required</strong><p>{candidate.matchedAddress}</p><p>{candidate.sourceLabel} · checked {candidate.checkedAt}. {candidate.placementAsReported?`Source placement code: ${candidate.placementAsReported}; meaning requires review.`:'Point placement not reported.'} {!candidate.countyVerified&&'County not independently verified. '} Not a verified station or map pin. Any suite is not verified by the base address point.</p>{candidate.sharedSourcePoint&&<p>Multiple registry records reference this same source point; provider identities are not merged.</p>}<a href={candidate.sourceUrl} target="_blank" rel="noreferrer">View government address-point record</a><p data-testid="gis-address-review-status">{candidateStatus}</p><p data-testid="gis-address-server-status" role="status">{ADDRESS_ACK_LABEL[ack]}</p><button type="button" className="workspace-button min-h-11" onClick={()=>setReviewRevision(n=>n+1)}>Check server review status</button>{publication&&<details><summary>Why this location is not published</summary><ul>{publication.reasons.map(reason=><li key={reason}>{reason}</li>)}</ul></details>{onReviewCandidate&&<button type="button" className="workspace-button min-h-11" onClick={onReviewCandidate}>Review GIS address evidence</button>}</div>}
   <div className="acp-address-actions">{physical&&<a href={locationDirections(loc)} target="_blank" rel="noreferrer" data-testid="link-header-directions"><Navigation size={14} aria-hidden="true"/>Directions</a>}{physical&&loc.address.zip&&loc.kind!=='source-reported address'&&!pin&&<button type="button" disabled={busy} onClick={()=>void run(true)}>Locate on agency map</button>}{!loc&&eligible&&!busy&&<button type="button" onClick={()=>void run(false)}>Retry address lookup</button>}{(loc||!eligible)&&<button type="button" onClick={onReview}>Review address</button>}</div>
   {message&&<p className="acp-address-note" role="status">{message}</p>}
  </div>;

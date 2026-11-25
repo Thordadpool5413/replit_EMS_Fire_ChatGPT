@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {addressReviewAcknowledgment,coordinatePublicationGate} from './addressReviewAcknowledgment';
+import {ADDRESS_CANDIDATE_FIELD,candidateReviewSource} from './addressCandidateValidation';
+import type {ProfileAddressReview} from './multiStateAddressReview';
+import type {FactReviewEntry} from './factReviewStore';
+const c:ProfileAddressReview={sourceIdentityKey:'FDID:VA:fixture',snapshotGeneratedAt:'2026-11-25T00:00:00Z',objectId:1,matchedAddress:'123 Main Street, Example, VA, 22030',sourceLabel:'Fixture',sourceUrl:'https://example.org/query?objectIds=1',checkedAt:'2026-11-25',placementAsReported:null,recordUpdatedAt:null,countyVerified:true,sharedSourcePoint:false,endUserValidationRequired:true};
+const src=candidateReviewSource(c);
+const e:FactReviewEntry={id:'one',agencyId:'a',fieldId:ADDRESS_CANDIDATE_FIELD,action:'confirm',originalValue:c.matchedAddress,previousValue:c.matchedAddress,reviewer:'Fixture',method:'Document',note:'Independent basis',sourceName:src.sourceName,sourceUrl:src.sourceUrl,sourceKind:src.sourceKind,sourcePeriod:src.reportingPeriod,sourceRecordId:src.sourceRecordId,reviewedAt:'2026-11-25T12:00:00Z'};
+const ack={...e,acknowledgedBy:'editor',acknowledgedAt:'2026-11-25T12:01:00Z'};
+test('only current canonical server decision can establish acknowledgment, never a cached local stamp',()=>{
+ assert.equal(addressReviewAcknowledgment(c,'a',[ack],undefined),'not-checked');
+ assert.equal(addressReviewAcknowledgment(c,'a',[ack],null),'unavailable');
+ assert.equal(addressReviewAcknowledgment(c,'a',[e],[]),'awaiting-acknowledgment');
+ assert.equal(addressReviewAcknowledgment(c,'a',[e],[e]),'awaiting-acknowledgment');
+ assert.equal(addressReviewAcknowledgment(c,'a',[e],[ack]),'server-confirmed');
+ assert.equal(addressReviewAcknowledgment(c,'a',[],[{...ack,action:'flag'}]),'server-flagged');
+ assert.equal(addressReviewAcknowledgment(c,'a',[{...e,id:'two',action:'flag',reviewedAt:'2026-11-25T12:02:00Z'}],[ack]),'awaiting-acknowledgment');
+ assert.equal(addressReviewAcknowledgment(c,'a',[{...e,note:'different'}],[ack]),'stale-or-conflicting');
+ assert.equal(addressReviewAcknowledgment({...c,objectId:2},'a',[e],[ack]),'stale-or-conflicting');
+ assert.equal(addressReviewAcknowledgment(c,'other',[],[ack]),'stale-or-conflicting');
+ assert.equal(addressReviewAcknowledgment(c,'a',[],[ack,ack]),'stale-or-conflicting');
+ assert.equal(coordinatePublicationGate(c,'server-confirmed').eligible,false);
+ assert.ok(coordinatePublicationGate(c,'server-confirmed').reasons.includes('point placement not established'));
+ assert.equal(coordinatePublicationGate({...c,placementAsReported:'Structure'},'server-confirmed').eligible,false);
+});

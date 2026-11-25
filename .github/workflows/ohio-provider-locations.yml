@@ -1,0 +1,39 @@
+name: Ohio official provider address point recovery
+on:
+  push:
+    branches: [atlas/ohio-state-address-recovery]
+    paths:
+      - 'scripts/data/recover_ohio_locations.py'
+      - '.github/workflows/ohio-provider-locations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-ohio-location-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/atlas/ohio-state-address-recovery'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate recovery rules
+        run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Recover Ohio public address points
+        run: python3 scripts/data/recover_ohio_locations.py --max-requests 100
+      - name: Publish review-only output
+        run: |
+          set -euo pipefail
+          python3 scripts/data/backfill_provider_locations.py --verify
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git commit -m "Recover exact Ohio LBRS provider address points"
+          git push origin "HEAD:refs/heads/atlas/ohio-location-data-${GITHUB_RUN_ID}"
+          echo "Review branch: atlas/ohio-location-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps(x["ohioLbrsRecovery"],indent=2))' >> "$GITHUB_STEP_SUMMARY"

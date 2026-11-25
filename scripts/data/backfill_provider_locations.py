@@ -160,6 +160,9 @@ def publish(output,manifest,entries,metadata):
  (output/'index.json').write_bytes(compact(index));print(json.dumps(by_source,indent=2),flush=True)
 def valid_location_method(m,county):
  if m.get('method')=='census-address-range':return 'point' not in m
+ if m.get('method')=='ohio-lbrs-address-point':
+  p=m.get('point')
+  return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and isinstance(p.get('sourceDate'),str) and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['sourceDate'])) and p.get('countyFips')==county and county.startswith('39') and 38.3<=m.get('latitude',0)<=42.1 and -85<=m.get('longitude',0)<=-80.4
  if m.get('method')!='nad-address-point':return False
  p=m.get('point')
  return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and p.get('release')=='2026-09-30' and isinstance(p.get('authority'),str) and 0<len(p['authority'].strip())<=150 and not re.search(r'[\x00-\x1f\x7f]',p['authority']) and p.get('placement') in ('Structure - Rooftop','Structure - Entrance','Structure - Interior','Structure - Interior Unit Location','Property Access Point','Site Placement','Parcel - Centroid','Parcel - Other/Manual Placement') and p.get('countyFips')==county

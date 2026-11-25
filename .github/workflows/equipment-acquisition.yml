@@ -1,0 +1,38 @@
+name: Equipment procurement evidence acquisition
+on:
+  push:
+    branches: [atlas/phase8-0d-equipment-acquisition]
+    paths:
+      - 'artifacts/api-server/tests/equipmentAcquisition*.ts'
+      - '.github/workflows/equipment-acquisition.yml'
+  pull_request:
+    paths:
+      - 'artifacts/api-server/tests/equipmentAcquisition*.ts'
+      - '.github/workflows/equipment-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir scripts exec tsx --test ../artifacts/api-server/tests/equipmentAcquisition.test.ts
+      - name: Acquire public equipment-related procurement records
+        if: github.ref == 'refs/heads/atlas/phase8-0d-equipment-acquisition'
+        run: pnpm --dir scripts exec tsx ../artifacts/api-server/tests/equipmentAcquisitionJob.ts ../generated-artifacts/equipment-review
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref == 'refs/heads/atlas/phase8-0d-equipment-acquisition'
+        with:
+          name: equipment-review
+          path: generated-artifacts/equipment-review/
+          if-no-files-found: ignore

@@ -58,3 +58,10 @@ test('official source recovery fills only exact missing fire identities, with di
  assert.equal(snapshotMapRows(state,{county:'all',city:'all',category:'fire'}).length,0);
  const wrong=[...row] as SourceDirectoryRecord;wrong[6]='36031';assert.equal(listingLocation(wrong,state).status,'review');
 });
+
+test('Ohio LBRS points preserve official source attribution and refuse out-of-state or mismatched county coordinates',()=>{
+ const oh={...e,state:'OH',address:{street:'29 W Third ST',city:'Manchester',state:'OH',zip:'45144'},countyFips:'39001',match:{latitude:38.7,longitude:-83.6,matchedAddress:'29 W THIRD STREET, MANCHESTER, OH, 45144',method:'ohio-lbrs-address-point',point:{objectId:7,sourceDate:'2025-06-24',countyFips:'39001'}}};
+ assert.equal(parseSnapshotEntry(oh,'OH',{'39001':'Adams County'}).match?.method,'ohio-lbrs-address-point');
+ assert.throws(()=>parseSnapshotEntry({...oh,match:{...oh.match,longitude:-90}},'OH',{'39001':'Adams County'}));
+ assert.throws(()=>parseSnapshotEntry({...oh,match:{...oh.match,point:{...oh.match.point,countyFips:'39015'}}},'OH',{'39001':'Adams County'}));
+});

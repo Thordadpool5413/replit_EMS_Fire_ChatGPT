@@ -48,6 +48,22 @@
       "sourceUrl": "https://www.conversecountywy.gov/272/Douglas-Volunteer-Fire-Department",
       "checkedAt": "2026-11-24",
       "note": "County fire department page explicitly labels this physical address."
+    },
+    {
+      "key": "FDID:NC:06201",
+      "name": "Troy Fire Department",
+      "state": "NC",
+      "countyFips": "37123",
+      "address": {
+        "street": "610 N Main St",
+        "city": "Troy",
+        "state": "NC",
+        "zip": "27371"
+      },
+      "authority": "Montgomery County Emergency Services",
+      "sourceUrl": "https://www.montgomerycountync.gov/departments/emergency-services/area-fire-departments",
+      "checkedAt": "2026-11-24",
+      "note": "County emergency services directory explicitly lists the department at this street address. The engineering firm's public project listing corroborates the fire department building. State fire marshal contact record lists a different address; this is a department location, not an assertion about administrative mail or sole headquarters."
     }
   ],
   "unresolved": [
@@ -66,14 +82,6 @@
       "countyFips": "17031",
       "status": "needs-official-address",
       "note": "Do not substitute parent facility address for brigade/department without direct evidence."
-    },
-    {
-      "key": "FDID:NC:06201",
-      "name": "Troy Fire Department",
-      "state": "NC",
-      "countyFips": "37123",
-      "status": "needs-official-address",
-      "note": "Conflicting department addresses in public directories; require a current agency-specific physical address before adoption."
     },
     {
       "key": "FDID:GA:12503",

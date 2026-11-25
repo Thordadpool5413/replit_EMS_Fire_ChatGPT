@@ -26,7 +26,7 @@ export function parseSnapshotEntry(value:unknown,state:string,counties:Readonly<
  if(e.status==='mapped'){
   if(!address||!e.match||!/^\d{5}$/.test(e.countyFips)||!Object.hasOwn(counties,e.countyFips))throw Error('Invalid mapped location.');
   const match=validateAddressMatch(e.match,address);
-  if(!match||match.method==='nad-address-point'&&match.point.countyFips!==e.countyFips)throw Error('Missing or conflicting map match.');
+  if(!match||match.method!=='census-address-range'&&match.point.countyFips!==e.countyFips)throw Error('Missing or conflicting map match.');
   return {...e,address,match,countyName:counties[e.countyFips]};
  }
  if(e.match!==null||e.countyFips)throw Error('Unmapped record contains coordinates.');

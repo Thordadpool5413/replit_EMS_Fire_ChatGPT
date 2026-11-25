@@ -24,6 +24,7 @@ function rank(s:ReviewedSignal,today:string):RankedSignal|undefined{
  }
  if(s.kind==='capital-approved'||s.kind==='grant-award')return age<=365?{signal:s,band:'plan-research'}:undefined;
  if(s.kind==='awarded-procurement'||s.kind==='competitor-equipment')return age<=(s.kind==='competitor-equipment'?730:365)?{signal:s,band:'explore'}:undefined;
+ return undefined;
 }
 function compare(a:RankedSignal,b:RankedSignal){return BANDS.indexOf(a.band)-BANDS.indexOf(b.band)||(a.days??Infinity)-(b.days??Infinity)||kindOrder[a.signal.kind]-kindOrder[b.signal.kind]||b.signal.evidence.documentDate.localeCompare(a.signal.evidence.documentDate)||a.signal.evidence.factId.localeCompare(b.signal.evidence.factId);}
 export function buildReviewedAccountPriorities(agencies:Agency[],selected:string[],samples:ReviewedSample[],now=Date.now(),kind:OpportunityKind|'all'='all'){

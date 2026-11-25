@@ -1,0 +1,36 @@
+name: Texas EMS roster acquisition
+on:
+  push:
+    branches: [atlas/phase8-0b-texas-ems]
+    paths:
+      - 'scripts/data/stage_texas_ems.py'
+      - 'scripts/data/texas_ems_stage_test.py'
+      - '.github/workflows/texas-ems-acquisition.yml'
+  pull_request:
+    paths:
+      - 'scripts/data/stage_texas_ems.py'
+      - 'scripts/data/texas_ems_stage_test.py'
+      - '.github/workflows/texas-ems-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install openpyxl==3.1.5
+      - run: python -m unittest discover -s scripts/data -p texas_ems_stage_test.py
+      - name: Retrieve official roster and stage review candidate
+        if: github.ref == 'refs/heads/atlas/phase8-0b-texas-ems'
+        run: python scripts/data/stage_texas_ems.py --output generated-artifacts/texas-ems-review
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref == 'refs/heads/atlas/phase8-0b-texas-ems'
+        with:
+          name: texas-ems-review
+          path: generated-artifacts/texas-ems-review/
+          if-no-files-found: ignore

@@ -1,0 +1,32 @@
+name: Los Angeles procurement acquisition
+on:
+  push:
+    branches: [atlas/phase8-0e-la-procurement]
+    paths:
+      - 'scripts/data/stage_la_ramp_awards.py'
+      - 'scripts/data/test_stage_la_ramp_awards.py'
+      - '.github/workflows/la-procurement-acquisition.yml'
+  pull_request:
+    paths:
+      - 'scripts/data/stage_la_ramp_awards.py'
+      - 'scripts/data/test_stage_la_ramp_awards.py'
+      - '.github/workflows/la-procurement-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_la_ramp_awards.py
+      - name: Retrieve official Los Angeles regional award candidates
+        if: github.ref == 'refs/heads/atlas/phase8-0e-la-procurement'
+        run: python3 scripts/data/stage_la_ramp_awards.py --output generated-artifacts/la-procurement-review
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref == 'refs/heads/atlas/phase8-0e-la-procurement'
+        with:
+          name: la-procurement-review
+          path: generated-artifacts/la-procurement-review/
+          if-no-files-found: ignore

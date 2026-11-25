@@ -28,6 +28,19 @@ class RegionalTests(unittest.TestCase):
   pin=example('FL');pin['sourceCounty']='12103';pin['address']['zip']='33701'
   self.assertEqual(resolve('fl-pinellas',pin,[p],C,CHECKED)[1],'mapped')
   p['attributes']['POINTTYPE']='Cell Tower';self.assertIsNone(resolve('fl-pinellas',pin,[p],C,CHECKED)[0])
+ def test_new_jersey_active_primary_exact_county(self):
+  counties=county_index([{'USPS':'NJ','NAME':'Mercer County','GEOID':'34021'},{'USPS':'NJ','NAME':'Bergen County','GEOID':'34003'}])
+  domain={'mercer-fixture':'Mercer County','bergen-fixture':'Bergen County'}
+  e=dict(key='nj-test-fixture',state='NJ',status='no-match',sourceCounty='34021',countyFips='',match=None,address={'street':'123 Main Street','city':'Example','state':'NJ','zip':'08608'})
+  f=dict(attributes=dict(OBJECTID=6,ADD_NUMBER=123,FULLADDR='123 MAIN ST',POST_CODE='08608',POST_COMM='EXAMPLE',STATE='NJ',COUNTRY='US',COUNTY='mercer-fixture',SUBTYPE=1210,PRIMARYPT='Y',STATUS='A',BUILDING=None,FLOOR=None,UNIT=None,ROOM=None,SEAT=None,PLACEMENT='Structure - Rooftop',DATEUPDATE=None,EFFECTIVE=None,EXPIRE=None),geometry=dict(x=-74.75,y=40.22))
+  hit,status=resolve('nj-addresspoints',e,[f],counties,CHECKED,domain)
+  self.assertEqual(status,'mapped');self.assertEqual(hit[0],'34021');self.assertTrue(valid_regional_point(hit[1],'34021'))
+  q=query('nj-addresspoints',[e['address']])['where'];self.assertIn("ADD_NUMBER=123 AND POST_CODE='08608'",q);self.assertIn("PRIMARYPT='Y'",q)
+  for field,value in [('COUNTY','bergen-fixture'),('COUNTY','unmapped'),('STATUS','R'),('PRIMARYPT','N'),('SUBTYPE',1220),('UNIT','3'),('POST_COMM','OTHER'),('FULLADDR','124 MAIN ST'),('STATE','PA'),('PLACEMENT','Linear Geocode'),('COUNTRY','CA')]:
+   bad=copy.deepcopy(f);bad['attributes'][field]=value
+   self.assertIsNone(resolve('nj-addresspoints',e,[bad],counties,CHECKED,domain)[0],field)
+  bad=copy.deepcopy(f);bad['attributes']['OBJECTID']=7;bad['geometry']['x']=-74.76
+  self.assertEqual(resolve('nj-addresspoints',e,[f,bad],counties,CHECKED,domain)[1],'ambiguous')
  def test_preserve_and_withhold(self):
   e=example();hit,_=resolve('nc-addressnc',e,[nc()],C,CHECKED)
   f=nc();f['attributes']['objectid']=11;f['geometry']['x']=-79.41

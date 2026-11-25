@@ -1,7 +1,7 @@
 name: Regional government address point recovery
 on:
   push:
-    branches: [atlas/regional-address-recovery]
+    branches: [atlas/regional-address-recovery, atlas/regional-address-recovery-v2]
     paths:
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   recover:
-    if: github.ref == 'refs/heads/atlas/regional-address-recovery'
+    if: github.ref == 'refs/heads/atlas/regional-address-recovery' || github.ref == 'refs/heads/atlas/regional-address-recovery-v2'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     permissions:
@@ -27,7 +27,12 @@ jobs:
       - name: Validate regional source contract and matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Query official address points for unresolved provider streets
-        run: python3 scripts/data/recover_regional_locations.py --max-requests 100
+        run: |
+          if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v2" ]; then
+            python3 scripts/data/recover_regional_locations.py --source nj-addresspoints --max-requests 100 --allow-empty
+          else
+            python3 scripts/data/recover_regional_locations.py --max-requests 100
+          fi
       - name: Publish review-only candidate
         run: |
           set -euo pipefail
@@ -35,6 +40,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          if git diff --cached --quiet; then
+            echo 'No new validated address points; no candidate branch published.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           git commit -m "Recover exact regional official address points"
           git push origin "HEAD:refs/heads/atlas/regional-location-data-${GITHUB_RUN_ID}"
           echo "Review branch: atlas/regional-location-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"

@@ -7,9 +7,10 @@ from regional_point_contract import SOURCES,valid_regional_point
 FIELDS={
  'nc-addressnc':('objectid','add_number','st_address','post_code','post_comm','state','statefips','county','countyfips','unit','building','floor','placement','dateupdate','effective','expire','gc_exception'),
  'fl-hillsborough':('OBJECTID','ADDRNUM','FULLADDR','ZIP','POSTALCOMM','UNITID','UNITTYPE','POINTTYPE','STATUS','LASTUPDATE'),
- 'fl-pinellas':('OBJECTID','ADDRNUM','FULLADDR','POSTCODE','MAILINGCITY','UNITID','UNITTYPE','POINTTYPE','STATUS','BLDGADDRCLASS','LAST_EDITED_DATE')}
-QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE')}
-NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services')}
+ 'fl-pinellas':('OBJECTID','ADDRNUM','FULLADDR','POSTCODE','MAILINGCITY','UNITID','UNITTYPE','POINTTYPE','STATUS','BLDGADDRCLASS','LAST_EDITED_DATE'),
+ 'nj-addresspoints':('OBJECTID','ADD_NUMBER','FULLADDR','POST_CODE','POST_COMM','STATE','COUNTY','COUNTRY','SUBTYPE','PRIMARYPT','STATUS','BUILDING','FLOOR','UNIT','ROOM','SEAT','PLACEMENT','DATEUPDATE','EFFECTIVE','EXPIRE')}
+QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE')}
+NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)')}
 def request(source,params,query=False):
  u=SOURCES[source]['url']+('/query' if query else '')+'?'+urllib.parse.urlencode(params)
  if len(u)>3800:raise ValueError('Regional query exceeds URL budget')
@@ -29,6 +30,12 @@ def metadata(source,fetch=request):
  zips={v['code'] for v in domain.get('codedValues',[]) if isinstance(v.get('code'),str) and re.fullmatch(r'\d{5}',v['code'])}
  # Some enterprise layers expose no global edit date. Preserve observed date and actual record date instead.
  marker={'name':name,'copyrightText':obj['copyrightText'],'fields':[(k,fields[k].get('type')) for k in FIELDS[source]],'lastEditDate':(obj.get('editingInfo') or {}).get('lastEditDate'),'zipCodes':sorted(zips)}
+ if source=='nj-addresspoints':
+  county_domain=(fields['COUNTY'].get('domain') or {}).get('codedValues',[])
+  codes={v['code']:v['name'] for v in county_domain if isinstance(v.get('code'),str) and isinstance(v.get('name'),str)}
+  if len(codes)!=21 or len(set(codes.values()))!=21:raise ValueError('NJ county coded domain changed')
+  marker['countyDomain']=codes
+  if fields['ADD_NUMBER'].get('type')!='esriFieldTypeInteger':raise ValueError('NJ house number schema changed')
  return marker,zips
 def number(a):
  if not physical(a):return None
@@ -37,8 +44,13 @@ def number(a):
 def query(source,addresses):
  if not 1<=len(addresses)<=8 or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
  house,zipfield=QUERY_KEYS[source]
- clauses=sorted({f"({house}={sql(number(a))} AND {zipfield}={sql(a['zip'])})" for a in addresses})
- return dict(f='json',where=' OR '.join(clauses),outFields=','.join(FIELDS[source]),returnGeometry='true',outSR='4326',resultRecordCount='1000')
+ if source=='nj-addresspoints':
+  clauses=sorted({f"({house}={int(re.match(r'\d+',number(a)).group())} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="STATE='NJ' AND COUNTRY='US' AND SUBTYPE=1210 AND PRIMARYPT='Y' AND STATUS='A' AND ("+' OR '.join(clauses)+')'
+ else:
+  clauses=sorted({f"({house}={sql(number(a))} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where=' OR '.join(clauses)
+ return dict(f='json',where=where,outFields=','.join(FIELDS[source]),returnGeometry='true',outSR='4326',resultRecordCount='1000')
 def features(source,payload):
  rows=payload.get('features')
  if not isinstance(rows,list) or payload.get('exceededTransferLimit') or len(rows)>=1000:raise ValueError('Incomplete regional point response')
@@ -56,7 +68,7 @@ def date_value(v):
  if v in (None,''):return None
  if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('Invalid source record date')
  return datetime.datetime.fromtimestamp(v/1000,datetime.timezone.utc).date().isoformat()
-def resolve(source,e,rows,counties,checked):
+def resolve(source,e,rows,counties,checked,county_domain=None):
  d=SOURCES[source];a=e['address'];hits=[];bad=False
  for f in rows:
   v=f['attributes'];g=f['geometry'];cf=d['county']
@@ -65,6 +77,11 @@ def resolve(source,e,rows,counties,checked):
    if v.get('state')!='NC':continue
    if any(v.get(k) not in (None,'') for k in ('unit','building','floor')):continue
    placement=v.get('placement');date=v.get('dateupdate')
+  elif source=='nj-addresspoints':
+   if v.get('STATE')!='NJ' or v.get('COUNTRY')!='US' or v.get('SUBTYPE')!=1210 or v.get('PRIMARYPT')!='Y' or v.get('STATUS')!='A':continue
+   if any(v.get(k) not in (None,'') for k in ('BUILDING','FLOOR','UNIT','ROOM','SEAT')):continue
+   street,city,postal=v.get('FULLADDR'),v.get('POST_COMM'),v.get('POST_CODE')
+   placement=v.get('PLACEMENT');date=v.get('DATEUPDATE')
   else:
    street,city,postal=v.get('FULLADDR'),v.get('POSTALCOMM' if source=='fl-hillsborough' else 'MAILINGCITY'),v.get('ZIP' if source=='fl-hillsborough' else 'POSTCODE')
    if any(v.get(k) not in (None,'') for k in ('UNITID','UNITTYPE')):continue
@@ -85,6 +102,15 @@ def resolve(source,e,rows,counties,checked):
    c=v.get('countyfips')
    cf='37'+c if v.get('statefips')=='37' and isinstance(c,str) and re.fullmatch(r'\d{3}',c) else ''
    if cf not in counties.get(('NC',county_key(v.get('county') or '')),set()) or v.get('gc_exception') not in (None,''):bad=True;continue
+  if source=='nj-addresspoints':
+   try:
+    effective,expires=date_value(v.get('EFFECTIVE')),date_value(v.get('EXPIRE'))
+    if effective and effective>checked or expires and expires<=checked:continue
+   except (ValueError,OverflowError,OSError):bad=True;continue
+   name=(county_domain or {}).get(v.get('COUNTY'))
+   fips=counties.get(('NJ',county_key(name)),set()) if name else set()
+   if len(fips)!=1:bad=True;continue
+   cf=next(iter(fips))
   if e['sourceCounty'] and cf!=e['sourceCounty']:bad=True;continue
   try:updated=date_value(date)
   except (ValueError,OverflowError,OSError):bad=True;continue
@@ -96,7 +122,10 @@ def resolve(source,e,rows,counties,checked):
  if len({(cf,m['latitude'],m['longitude']) for cf,m in hits})!=1:return None,'ambiguous'
  return min(hits,key=lambda x:x[1]['point']['objectId']),'mapped'
 def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=request):
- d=SOURCES[source];version,zips=metadata(source,fetch);groups=collections.defaultdict(list);stats=collections.Counter();out={};review=set();errors=0;requests=0
+ d=SOURCES[source];version,zips=metadata(source,fetch)
+ county_domain=version.get('countyDomain',{})
+ if source=='nj-addresspoints' and (len({next(iter(counties[('NJ',county_key(name))])) for name in county_domain.values() if len(counties.get(('NJ',county_key(name)),set()))==1})!=21):raise ValueError('NJ county domain does not reconcile to Census county identities')
+ groups=collections.defaultdict(list);stats=collections.Counter();out={};review=set();errors=0;requests=0
  for e in entries:
   if e['state']!=d['state'] or e['status'] not in ('no-match','unavailable'):continue
   if d['county'] and e['sourceCounty'] and d['county']!=e['sourceCounty']:continue
@@ -114,7 +143,7 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
    errors+=1;stats['unavailable']+=sum(map(len,batch));print(source,'unavailable',type(exc).__name__,str(exc)[:150],flush=True);time.sleep(min(15,delay*2**errors));continue
   for group in batch:
    for e in group:
-    found,status=resolve(source,e,rows,counties,checked);stats[status]+=1
+    found,status=resolve(source,e,rows,counties,checked,county_domain);stats[status]+=1
     if found:out[e['key']]=found
     if status in ('review','ambiguous'):review.add(e['key'])
   if requests%10==0:print(source,requests,dict(stats),flush=True)
@@ -133,7 +162,7 @@ def combine(entries,candidates,review):
   cf,m=hits[0];e.update(status='mapped',match=m,countyFips=cf);stats['newMapped']+=1;stats[m['point']['source']]+=1
  return dict(stats),conflicts
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');p.add_argument('--max-requests',type=int,default=100);args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');p.add_argument('--max-requests',type=int,default=100);p.add_argument('--source',choices=sorted(SOURCES),action='append');p.add_argument('--allow-empty',action='store_true');args=p.parse_args()
  if not 1<=args.max_requests<=120:raise ValueError('Request limit')
  manifest,rows=read_registry();fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes());verify(args.output,manifest,rows,fl)
  idx=json.loads((args.output/'index.json').read_bytes());entries=[e for c in idx['chunks'] for e in json.loads((args.output/c['file']).read_bytes())]
@@ -141,7 +170,7 @@ def main():
  counties=county_index(json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_text())['counties'])
  checked=datetime.datetime.now(datetime.timezone.utc).date().isoformat()
  candidates={};review=set();reports={}
- for source in SOURCES:
+ for source in dict.fromkeys(args.source or SOURCES):
   try:
    found,flags,report=recover(source,entries,counties,checked,args.max_requests);candidates[source]=found;review|=flags;reports[source]=report
   except (OSError,ValueError,TypeError,KeyError,TimeoutError) as exc:
@@ -149,8 +178,13 @@ def main():
  stats,conflicts=combine(entries,candidates,review)
  if any(json.dumps(e,sort_keys=True)!=old[e['key']] for e in entries if e['key'] in old):raise ValueError('Existing mapping changed')
  print('Regional recovery summary',json.dumps(dict(results=stats,reports=reports,conflicts=conflicts)),flush=True)
- if not stats.get('newMapped'):raise ValueError('No additional validated regional locations; no data published')
+ if not stats.get('newMapped'):
+  if args.allow_empty and reports and all(not report.get('sourceUnavailable') and not report.get('unavailable') and not report.get('not_attempted') for report in reports.values()):
+   print('No additional validated locations; no files changed.',flush=True);return
+  raise ValueError('No additional validated regional locations; no data published')
  meta={k:v for k,v in idx.items() if k not in ('schemaVersion','generatedAt','benchmark','vintage','sourceScope','chunks','coverage','regionalRecovery')}
- meta['regionalRecovery']=dict(checkedAt=checked,sourceUrls={k:v['url'] for k,v in SOURCES.items()},reports=reports,results=stats,conflicts=conflicts,previousMapped=len(old),newMapped=stats['newMapped'])
+ if 'regionalRecovery' in idx:
+  meta['regionalRecoveryHistory']=[*idx.get('regionalRecoveryHistory',[]),idx['regionalRecovery']]
+ meta['regionalRecovery']=dict(checkedAt=checked,sourceUrls={k:SOURCES[k]['url'] for k in reports},reports=reports,results=stats,conflicts=conflicts,previousMapped=len(old),newMapped=stats['newMapped'])
  publish(args.output,manifest,entries,meta);verify(args.output,manifest,rows,fl)
 if __name__=='__main__':main()

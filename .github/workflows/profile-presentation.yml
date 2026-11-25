@@ -23,6 +23,9 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_facility_reconciliation.py'
+      - 'scripts/data/test_facility_reconciliation.py'
+      - 'scripts/data/facility_research_candidates.json'
       - 'scripts/data/check_additive_location_release.py'
       - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
@@ -79,6 +82,9 @@ on:
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_facility_reconciliation.py'
+      - 'scripts/data/test_facility_reconciliation.py'
+      - 'scripts/data/facility_research_candidates.json'
       - 'scripts/data/check_additive_location_release.py'
       - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
@@ -155,6 +161,7 @@ jobs:
           if test -f artifacts/ems-territory-intelligence/public/registry/locations/index.json; then
             python3 scripts/data/audit_location_gaps.py --json generated-artifacts/location-recovery/gaps.json --markdown generated-artifacts/location-recovery/gaps.md
             cat generated-artifacts/location-recovery/gaps.md >> "$GITHUB_STEP_SUMMARY"
+            python3 scripts/data/audit_facility_reconciliation.py --output generated-artifacts/location-recovery/facility-review.json
           fi
       - name: Keep mapping coverage report
         uses: actions/upload-artifact@v4

@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseCoordinateSnapshot,activeCoordinateDecision,coordinateAcceptanceReview,coordinateReceipt,validCoordinateSupportUrl,type CoordinateRequest} from './coordinateDecisionClient';
+import {candidateReviewSource,ADDRESS_CANDIDATE_FIELD} from './addressCandidateValidation';
+import type {ProfileAddressReview} from './multiStateAddressReview';
+import type {FactReviewEntry} from './factReviewStore';
+const c:ProfileAddressReview={sourceIdentityKey:'FDID:VA:fixture',snapshotGeneratedAt:'2026-11-25T00:00:00Z',objectId:1,matchedAddress:'Fixture address',sourceLabel:'Fixture',sourceUrl:'https://example.org/query?objectIds=1',checkedAt:'2026-11-25',placementAsReported:null,recordUpdatedAt:null,countyVerified:true,sharedSourcePoint:false,endUserValidationRequired:true};
+const s=candidateReviewSource(c);
+const review:FactReviewEntry={id:'r',agencyId:'a',fieldId:ADDRESS_CANDIDATE_FIELD,action:'confirm',originalValue:c.matchedAddress,previousValue:c.matchedAddress,reviewer:'Fixture',method:'Document',note:'Independent verification',sourceName:s.sourceName,sourceUrl:s.sourceUrl,sourceKind:s.sourceKind,sourcePeriod:s.reportingPeriod,sourceRecordId:s.sourceRecordId,reviewedAt:'2026-11-25T12:00:00Z'};
+const stamped={...review,acknowledgedBy:'editor',acknowledgedAt:'2026-11-25T12:01:00Z'};
+const row={id:'a',revision:2,agency:{id:'a',_factReviews:[stamped]}};
+const accept={id:'d',action:'accept',sourceKey:c.sourceIdentityKey,reviewId:'r',matchedAddress:c.matchedAddress,latitude:37,longitude:-77,actor:'editor',decidedAt:'2026-11-25T12:02:00Z',publicationEligible:false};
+const rollback={id:'rb',action:'rollback',sourceKey:c.sourceIdentityKey,targetDecisionId:'d',actor:'editor',decidedAt:'2026-11-25T12:03:00Z',publicationEligible:false};
+test('canonical review gates acceptance and rollback history is strict',()=>{
+ const snapshot=parseCoordinateSnapshot(row,'a');
+ assert.equal(coordinateAcceptanceReview(c,snapshot,[review]),'r');
+ assert.equal(coordinateAcceptanceReview({...c,sharedSourcePoint:true},snapshot,[review]),undefined);
+ assert.equal(coordinateAcceptanceReview({...c,countyVerified:false},snapshot,[review]),undefined);
+ assert.equal(coordinateAcceptanceReview(c,snapshot,[{...review,id:'later',action:'flag',reviewedAt:'2026-11-25T12:04:00Z'}]),undefined);
+ assert.equal(coordinateAcceptanceReview(c,parseCoordinateSnapshot({...row,agency:{id:'a',_factReviews:[review]}},'a'),[review]),undefined);
+ const a=parseCoordinateSnapshot({...row,agency:{...row.agency,_coordinateEvidenceDecisions:[accept]}},'a');assert.equal(activeCoordinateDecision(a)?.id,'d');assert.equal(coordinateAcceptanceReview(c,a,[review]),undefined);
+ assert.equal(activeCoordinateDecision(parseCoordinateSnapshot({...row,agency:{...row.agency,_coordinateEvidenceDecisions:[accept,rollback]}},'a')),undefined);
+ for(const h of [[rollback],[accept,accept],[{...accept,publicationEligible:true}],[{...accept,latitude:Infinity}]])assert.throws(()=>parseCoordinateSnapshot({...row,agency:{...row.agency,_coordinateEvidenceDecisions:h}},'a'));
+ assert.throws(()=>parseCoordinateSnapshot(row,'other'));
+ const request:CoordinateRequest={id:'d',action:'accept',sourceKey:c.sourceIdentityKey,reviewId:'r',reason:'Independent check',supportingUrl:'https://example.org',placementAttestation:'independently-checked-address-point',expectedRevision:2};
+ assert.equal(coordinateReceipt({revision:3,entry:accept},request).id,'d');assert.throws(()=>coordinateReceipt({revision:2,entry:accept},request));assert.throws(()=>coordinateReceipt({revision:3,entry:{...accept,id:'wrong'}},request));
+ assert.equal(validCoordinateSupportUrl('https://example.org/record'),true);assert.equal(validCoordinateSupportUrl('https://user:pass@example.org'),false);assert.equal(validCoordinateSupportUrl('http://example.org'),false);
+});

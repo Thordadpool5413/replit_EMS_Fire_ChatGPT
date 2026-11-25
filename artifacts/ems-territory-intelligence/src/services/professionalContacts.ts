@@ -15,12 +15,12 @@ export function contactRole(c:Pick<KeyContact,'role'|'title'>):ContactRole{
  return 'Role not classified';
 }
 export function professionalEmail(value:unknown):string|undefined{
- if(typeof value!=='string'||value.length>254)return;
+ if(typeof value!=='string'||value.length>254||/[\r\n\x00-\x1f\x7f]/.test(value))return;
  const v=value.trim();
  return /^[A-Za-z0-9.!#$%&'*+/=?^_\x60{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,63}$/.test(v)&&!/[?&#%\r\n]/.test(v)?v:undefined;
 }
 export function professionalPhone(value:unknown):string|undefined{
- if(typeof value!=='string'||value.length>50)return;
+ if(typeof value!=='string'||value.length>50||/[\x00-\x1f\x7f]/.test(value))return;
  const v=value.trim();
  return /^\+?[\d(). -]+(?:\s*(?:x|ext\.?)\s*\d{1,8})?$/i.test(v)&&v.replace(/\D/g,'').length>=7?v:undefined;
 }

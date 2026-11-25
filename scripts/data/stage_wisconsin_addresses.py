@@ -6,6 +6,9 @@ from recover_nad_locations import NoRedirect, county_index, county_key, sql
 ITEM='3b84690a763449988d88da14b502e008'
 ITEM_URL='https://www.arcgis.com/sharing/rest/content/items/'+ITEM
 PORTAL='https://wisconsin-oec-data-portal-wi-oec.hub.arcgis.com/datasets/wi-oec::wi-ng911-site-structure-address-points'
+LIVE_LAYER='https://services3.arcgis.com/GoOAGCoqFEhZEh7f/arcgis/rest/services/WI_NG911_Site_Structure_Address_Points_2/FeatureServer/0'
+UNIT_ALIASES=('Unit','Unit_ID','UnitID','Unit_Id','Unit_Number','UnitNumber')
+UNIT_TYPE_ALIASES=('Unit_Type','UnitType')
 TEXT_FIELDS=('AddNum_Pre','AddNum_Suf','FullStNm','Post_Comm','Post_Code','State','Country','County','Building','Floor','Unit','Room','Seat','Addtl_Loc','Placement')
 DATE_FIELDS=('Effective','Expire','DateUpdate')
 FIELDS={**{k:'esriFieldTypeString' for k in TEXT_FIELDS},**{k:'esriFieldTypeDate' for k in DATE_FIELDS},'Add_Number':'esriFieldTypeInteger'}
@@ -22,7 +25,9 @@ def layer_url(item):
     if item.get('id')!=ITEM or item.get('title')!='WI NG911 Site Structure Address Points' or item.get('type')!='Feature Service' or item.get('access')!='public':raise ValueError('Unexpected OEC catalog item')
     url=item.get('url','')
     if not re.fullmatch(r'https://services\d*\.arcgis\.com/[A-Za-z0-9]+/[Aa][Rr][Cc][Gg][Ii][Ss]/rest/services/[A-Za-z0-9_]+/FeatureServer/?',url):raise ValueError('Unexpected feature service URL')
-    return url.rstrip('/')+'/0'
+    layer=url.rstrip('/')+'/0'
+    if layer!=LIVE_LAYER:raise ValueError('Catalog item no longer resolves to the observed official layer')
+    return layer
 def schema(layer):
     if layer.get('serviceItemId')!=ITEM or layer.get('id')!=0 or layer.get('geometryType')!='esriGeometryPoint':raise ValueError('Unexpected statewide layer identity')
     by_name={}
@@ -32,9 +37,16 @@ def schema(layer):
         by_name[k]=f
     names={}
     for field,kind in FIELDS.items():
-        f=by_name.get(field.lower(),{})
+        if field=='Unit':
+            candidates=[by_name[k] for k in sorted({alias.lower() for alias in UNIT_ALIASES}) if k in by_name]
+            if len(candidates)!=1:raise ValueError('Missing or ambiguous unit identifier field; review full schema artifact')
+            f=candidates[0]
+        else:f=by_name.get(field.lower(),{})
         if f.get('type')!=kind or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')):raise ValueError('Unreviewed schema field: '+field)
         names[field]=f['name']
+    unit_types=[by_name[k] for k in {alias.lower() for alias in UNIT_TYPE_ALIASES} if k in by_name]
+    if len(unit_types)>1 or any(f.get('type')!='esriFieldTypeString' or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')) for f in unit_types):raise ValueError('Unreviewed unit type schema')
+    if unit_types:names['UnitType']=unit_types[0]['name']
     oid=layer.get('objectIdField')
     if not isinstance(oid,str) or not re.fullmatch(r'[A-Za-z0-9_]+',oid) or by_name.get(oid.lower(),{}).get('type')!='esriFieldTypeOID':raise ValueError('Missing native object ID')
     names['oid']=oid
@@ -71,7 +83,7 @@ def review(e,rows,counties,checked):
         if not isinstance(v['FullStNm'],str) or not isinstance(v['Post_Comm'],str):continue
         matched=f"{v['Add_Number']} {v['FullStNm']}, {v['Post_Comm']}, WI, {a['zip']}"
         if not match_address(a,matched):continue
-        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc')):continue
+        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc')) or v.get('UnitType') not in (None,''):continue
         county=v['County'];fips=counties.get(('WI',county_key(county)),set()) if isinstance(county,str) else set()
         if len(fips)!=1 or e.get('sourceCounty') and e['sourceCounty'] not in fips:conflict=True;continue
         try:
@@ -87,7 +99,7 @@ def review(e,rows,counties,checked):
 def acquire(entries,counties,checked,out,fetch=request,max_requests=120,delay=1):
     out.mkdir(parents=True,exist_ok=True)
     url=layer_url(fetch(ITEM_URL,{'f':'json'}));layer=fetch(url,{'f':'json'})
-    (out/'wisconsin-schema-review.json').write_text(json.dumps({'sourceUrl':url,'itemId':ITEM,'layerId':layer.get('id'),'serviceItemId':layer.get('serviceItemId'),'fields':[{k:f.get(k) for k in ('name','type','domain')} for f in layer.get('fields',[]) if f.get('name','').lower() in {k.lower() for k in FIELDS}]},indent=2)+'\n')
+    (out/'wisconsin-schema-review.json').write_text(json.dumps({'sourceUrl':url,'itemId':ITEM,'layerId':layer.get('id'),'serviceItemId':layer.get('serviceItemId'),'fields':[{k:f.get(k) for k in ('name','type','alias','domain')} for f in layer.get('fields',[])]},indent=2)+'\n')
     names=schema(layer);groups=collections.defaultdict(list);stats=collections.Counter();hits=[];requests=0;errors=0
     for e in entries:
         if e['state']!='WI' or e['status'] not in ('no-match','unavailable'):continue

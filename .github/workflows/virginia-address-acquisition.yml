@@ -1,0 +1,32 @@
+name: Virginia official address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_virginia_addresses.py'
+      - 'scripts/data/test_stage_virginia_addresses.py'
+      - '.github/workflows/virginia-address-acquisition.yml'
+  push:
+    branches: [atlas/phase8-0j-virginia-addresses]
+    paths:
+      - 'scripts/data/stage_virginia_addresses.py'
+      - 'scripts/data/test_stage_virginia_addresses.py'
+      - '.github/workflows/virginia-address-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_virginia_addresses.py
+      - name: Acquire exact public address review candidates
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python3 scripts/data/stage_virginia_addresses.py --output generated-artifacts/virginia-address-review
+      - uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        with:
+          name: virginia-address-review
+          path: generated-artifacts/virginia-address-review/
+          if-no-files-found: ignore

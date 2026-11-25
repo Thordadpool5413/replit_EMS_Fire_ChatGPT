@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseSnapshotEntry,enrichRegistryRow,snapshotMapRows,listingLocation,type LocationState} from './nationalLocationSnapshot';
+import {applyOfficialAddressEvidence,snapshotSourceUrl,parseSnapshotEntry,enrichRegistryRow,snapshotMapRows,listingLocation,type LocationState} from './nationalLocationSnapshot';
 import type {SourceDirectoryRecord} from './nationalSourceDirectory';
 const e={key:'NPI:1234567893',name:'Example EMS',state:'FL',source:'NPPES',sourceDate:'2026-11-09 monthly release',address:{street:'123 Main Street',city:'Example',state:'FL',zip:'32901'},status:'mapped',match:{latitude:28.1,longitude:-80.6,matchedAddress:'123 MAIN ST, EXAMPLE, FL, 32901',method:'census-address-range'},sourceCounty:'',countyFips:'12009'};
 const row:SourceDirectoryRecord=['nppes:1234567893','NPPES','Example EMS','FL','Example','32901','','','unassigned','','','https://npiregistry.cms.hhs.gov/provider-view/1234567893'];
@@ -31,4 +31,30 @@ test('every directory listing receives a location outcome; no missing-ID or conf
  const noId:SourceDirectoryRecord=['usfa:FL:location-0123456789abcdef0123','USFA','Example Fire','FL','Example','32901','','','unassigned','','123 Main Street',''];
  assert.equal(listingLocation(noId,state).status,'missing-identity');assert.equal(listingLocation(noId,state).match,null);assert.ok(listingLocation(noId,state).address);
  assert.equal(listingLocation(row,undefined).status,'source-missing');
+});
+
+test('USDOT NAD point retains authority, placement, release and county; conflicting or missing metadata fail closed',()=>{
+ const nad={...e,match:{...e.match,method:'nad-address-point',point:{objectId:42,release:'2026-09-30',authority:'Example county GIS',placement:'Structure - Rooftop',countyFips:'12009'}}};
+ const p=parseSnapshotEntry(nad,'FL',{'12009':'Brevard County'});assert.equal(p.match?.method,'nad-address-point');
+ if(p.match?.method==='nad-address-point')assert.equal(p.match.point.objectId,42);
+ assert.throws(()=>parseSnapshotEntry({...nad,match:{...nad.match,point:{...nad.match.point,countyFips:'12011'}}},'FL',{'12009':'Brevard County'}));
+ assert.throws(()=>parseSnapshotEntry({...nad,match:{...nad.match,point:{...nad.match.point,placement:'Linear Geocode'}}},'FL',{'12009':'Brevard County'}));
+});
+
+test('official source recovery fills only exact missing fire identities, with distinct attribution and no invented pin',()=>{
+ const raw=parseSnapshotEntry({key:'FDID:NY:15033',name:'Farnham Volunteer Fire Department',state:'NY',source:'USFA',sourceDate:'2026-11-24',address:null,status:'source-missing',match:null,sourceCounty:'36029',countyFips:''},'NY',{});
+ const p=applyOfficialAddressEvidence(raw);
+ assert.equal(p.address?.street,'526 Commercial St');assert.equal(p.status,'pending');assert.equal(p.match,null);assert.equal(raw.address,null);
+ assert.equal(snapshotSourceUrl(p),'https://www3.erie.gov/fire/fire-departmentsems-agencies');
+ assert.equal(applyOfficialAddressEvidence({...raw,name:'Different department'}).address,null);
+ assert.equal(applyOfficialAddressEvidence({...raw,sourceCounty:'36031'}).address,null);
+ assert.equal(applyOfficialAddressEvidence({...raw,status:'historical'}).address,null);
+ assert.equal(applyOfficialAddressEvidence({...raw,address:{street:'100 Other Street',city:'Farnham',state:'NY',zip:'14061'}}).address?.street,'100 Other Street');
+ const row:SourceDirectoryRecord=['usfa:NY:15033','USFA','Farnham Volunteer Fire Department','NY','Farnham','14061','36029','Erie','source-county','','',''];
+ const state:LocationState={generatedAt:'2026-11-24T00:00:00Z',entries:new Map([[p.key,p]]),nppesProcessed:true};
+ assert.equal(enrichRegistryRow(row,state)[10],'');
+ assert.equal(listingLocation(row,state).officialAddressEvidence?.authority,'Erie County Fire Safety');
+ assert.equal(listingLocation(row,state).address?.street,'526 Commercial St');assert.equal(listingLocation(row,state).match,null);
+ assert.equal(snapshotMapRows(state,{county:'all',city:'all',category:'fire'}).length,0);
+ const wrong=[...row] as SourceDirectoryRecord;wrong[6]='36031';assert.equal(listingLocation(wrong,state).status,'review');
 });

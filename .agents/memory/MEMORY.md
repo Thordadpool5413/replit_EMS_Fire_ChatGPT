@@ -31,3 +31,4 @@
 - [Equipment evidence boundaries](equipment-evidence-boundaries.md) — product brands are not contracted suppliers; inventories and illustrative credits do not establish buy-back offers.
 - [Profile verification boundaries](profile-verification-boundaries.md) — retain unconfirmed research; separate sources, individual fact reviews, corrections and original history.
 - [Mobile nearby provider discovery](mobile-nearby-provider-discovery.md) — make location-assisted EMS/fire lookup immediate on phones, with a manual fallback and clear mapped-location limits.
+- [Git safety guard](git-safety-guard.md) — back up local history and changes first; Git metadata updates in this Replit shell may require explicit authorization.

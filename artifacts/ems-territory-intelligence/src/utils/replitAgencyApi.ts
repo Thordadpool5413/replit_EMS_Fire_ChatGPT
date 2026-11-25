@@ -28,6 +28,14 @@ export async function fetchAgencyReviewAcknowledgments(agencyId:string,signal?:A
  if(row.id!==agencyId||row.agency?.id!==agencyId||!Number.isSafeInteger(row.revision)||row.revision<1)return null;
  return Array.isArray(row.agency._factReviews)?row.agency._factReviews:null;
 }
+export async function fetchCoordinateDecisionSnapshot(agencyId:string,signal?:AbortSignal){
+ const {parseCoordinateSnapshot}=await import('../services/coordinateDecisionClient');
+ return parseCoordinateSnapshot(await apiRequest<unknown>(`/agencies/${encodeURIComponent(agencyId)}`,{signal}),agencyId);
+}
+export async function saveCoordinateDecision(agencyId:string,request:import('../services/coordinateDecisionClient').CoordinateRequest){
+ const {coordinateReceipt}=await import('../services/coordinateDecisionClient');
+ return coordinateReceipt(await apiRequest<unknown>(`/agencies/${encodeURIComponent(agencyId)}/coordinate-decisions`,{method:'POST',body:JSON.stringify(request)}),request);
+}
 function encodeCursor(cursor?: string) {
   return cursor ? `&after=${encodeURIComponent(cursor)}` : "";
 }

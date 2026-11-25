@@ -1,0 +1,3 @@
+# Phase 8.0Y: provider coordinate decision controls
+
+Private disclosure uses existing workspace role, current server agency revision, exact acknowledged review, supporting HTTPS record and independent placement attestation. Editors can submit acceptance or rollback; viewers can read history. No optimistic confirmation or automatic retry. Refresh history after any response or error. Candidate absence does not prevent rollback in the four source states. No new map pins or national snapshot changes. Requires backend endpoint from PR #118; live Replit testing pending. Tests cover decision history, stale reviews, shared points and invalid receipts.

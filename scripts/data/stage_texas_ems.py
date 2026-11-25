@@ -58,7 +58,9 @@ def stage(path,out,minimum=100):
   digest=hashlib.sha256(path.read_bytes()).hexdigest()
   out.mkdir(parents=True,exist_ok=True)
   (out/'schema-review.json').write_text(json.dumps({'sha256':digest,'sheets':schema},indent=2)+'\n')
-  if len(matches)!=1:raise ValueError('Roster schema requires manual review')
+  if len(matches)!=1:
+   print('Roster schema diagnostic:',json.dumps(schema),flush=True)
+   raise ValueError('Roster schema requires manual review')
   ws,start,cols,headers=matches[0]
   records=[];seen=set()
   for cells in ws.iter_rows(min_row=start+1):

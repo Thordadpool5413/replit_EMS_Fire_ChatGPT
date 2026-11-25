@@ -10,6 +10,7 @@ export function TerritoryCommandSummary({agencies,selected,samples,onView,onOpen
  useLocationRevision();
  const r=buildTerritoryCommand(agencies,selected,samples,resolve,localDay());
  const tiles:{label:string;value:number;view:CommandView;detail:string}[]=[
+  {label:'Territory analytics',value:r.eligible,view:'analytics',detail:'Compare recorded activity windows and current workflow coverage'},
   {label:'Field coaching',value:r.eligible,view:'coaching',detail:'Prepare measurable account-specific coaching commitments'},
   {label:'Leadership account review',value:r.eligible,view:'leadership',detail:'Review selected account execution and evidence gaps'},
   {label:'Priority accounts',value:r.priorities.length,view:'priorities',detail:r.urgent+' with near deadlines to verify now'},

@@ -4,7 +4,7 @@ import {buildCommercialQueue} from './commercialOpportunityQueue';
 import {buildGeographicResearch,type ResolveLocation} from './geographicResearch';
 import {providerIdentityReady} from './providerCompetitiveProfile';
 import {validIsoDay} from './documentedIntelligence';
-export const COMMAND_VIEWS=['overview','priorities','commercial','geography','coverage','followups','plan','activity','competitive'] as const;
+export const COMMAND_VIEWS=['overview','priorities','commercial','geography','coverage','followups','plan','activity','competitive','pipeline'] as const;
 export type CommandView=typeof COMMAND_VIEWS[number];
 /** Only selected, unique source-native accounts. Task counts are local workflow, not commercial evidence. */
 export function buildTerritoryCommand(agencies:Agency[],selected:string[],samples:ReviewedSample[],resolve:ResolveLocation,today:string,now=Date.now()){

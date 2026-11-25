@@ -265,6 +265,8 @@ jobs:
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/shared-evidence.integration.test.ts
       - name: Verify authenticated GIS review reconciliation
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/addressReviewReconciliation.test.ts
+      - name: Verify private coordinate decision journal
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/coordinateDecision.test.ts
       - name: Verify saved agency access and revision protection
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-records.integration.test.ts
 

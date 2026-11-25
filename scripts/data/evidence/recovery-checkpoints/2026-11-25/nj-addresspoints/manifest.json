@@ -1,0 +1,12 @@
+{
+  "source": "nj-addresspoints",
+  "artifactId": 15066188860,
+  "artifactSha256": "f468cf2a8271c9cf181a7af7fe69257c9bde85e28be95f56551b021797cd163b",
+  "locationManifestSha256": "a471cbfe9d8bdd817b7b2f2bdb56d23a33b6bf97d95e6b3795797a44186c5f9c",
+  "metadataSha256": "e349c88c1b5ecac02024db568638e55c4da36ca412a9a838e1bbe5b8870974f6",
+  "rowCount": 253,
+  "negativeResults": 244,
+  "reviewResults": 9,
+  "publication": "review-only",
+  "reusePolicy": "Original source-version and snapshot freshness checks still required; no automatic publication"
+}

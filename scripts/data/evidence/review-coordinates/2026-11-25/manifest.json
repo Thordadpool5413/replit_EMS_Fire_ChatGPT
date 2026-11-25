@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "release": "2026-11-25",
+  "sourceCommit": "15e096a65f788182a8fb08487976547b02e34df3",
+  "publication": "review-only",
+  "archives": [
+    {
+      "filename": "MI.zip",
+      "artifactId": 15064303088,
+      "sha256": "7aef727262e1c60eb381f4a6b32280a44eb9d63ce06dfbb3bd4728db64e0e2e4",
+      "member": "michigan-midland-address-review.json"
+    },
+    {
+      "filename": "MN.zip",
+      "artifactId": 15064441705,
+      "sha256": "529269b0a69c670d4084a23029a0fcdd961868ab5e3289930ea026e1f649e7a8",
+      "member": "minnesota-address-review.json"
+    },
+    {
+      "filename": "VA.zip",
+      "artifactId": 15063203117,
+      "sha256": "2833e523dc415fd7a74d019b1b22b800ed3160f68a5711fd62323d65f823485f",
+      "member": "virginia-address-review.json"
+    },
+    {
+      "filename": "WI.zip",
+      "artifactId": 15064855858,
+      "sha256": "daeb68c05fb864848c2d2ac0195a103217061eeb19ab881cb40ba786f79e41ed",
+      "member": "wisconsin-address-review.json"
+    },
+    {
+      "filename": "provenance.zip",
+      "artifactId": 15064969235,
+      "sha256": "2b7ee049c1e09fc5b3dd90438e4ae52ea6751f6b654285ac508031758dd40090",
+      "member": "review-coordinate-provenance.json"
+    }
+  ],
+  "compiledSha256": "3a18f78b017681f387ff17cbdc51ecc4b8b14c386973056fa1de49adc7080a89",
+  "candidateCount": 72,
+  "distinctSourcePoints": 61,
+  "publicationEligible": 0
+}

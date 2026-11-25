@@ -1,6 +1,6 @@
 import copy,csv,io,pathlib,tempfile,unittest,zipfile
 from recover_ny_locations import query,resolve,recover
-from recover_nad_bulk_locations import scan,FIELDS
+from recover_nad_bulk_locations import scan,FIELDS,validate_scan_result
 from recover_nad_locations import county_index
 A={'street':'30 School RD','city':'Guilderland Center','state':'NY','zip':'12085'}
 C=county_index([{'USPS':'NY','NAME':'Albany','GEOID':'36001'},{'USPS':'NY','NAME':'Schenectady','GEOID':'36093'}])
@@ -36,4 +36,9 @@ class RecoveryTests(unittest.TestCase):
    target=record();stats=scan(archive,[target],C,minimum_member_bytes=1)
    self.assertEqual(stats['ambiguous'],1);self.assertEqual(target['status'],'no-match')
    write([row,row]);self.assertRaises(ValueError,scan,archive,[record()],C,minimum_member_bytes=1)
+ def test_complete_zero_gain_is_not_an_outage(self):
+  self.assertFalse(validate_scan_result({'rowsScanned':99226272,'no-match':100},allow_empty=True))
+  self.assertTrue(validate_scan_result({'rowsScanned':99226272,'mapped':1},allow_empty=True))
+  with self.assertRaises(ValueError):validate_scan_result({'rowsScanned':5,'mapped':1},allow_empty=True)
+  with self.assertRaises(ValueError):validate_scan_result({'rowsScanned':99226272})
 if __name__=='__main__':unittest.main()

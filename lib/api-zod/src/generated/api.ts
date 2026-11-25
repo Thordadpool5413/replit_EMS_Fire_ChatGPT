@@ -146,6 +146,144 @@ export const CreateAgencyRecordsResponse = zod.object({
 
 
 /**
+ * Returns only the authenticated user's plan and resolves its existing task and approved evidence references.
+ * @summary Read the signed-in user's plan for a day or week
+ */
+export const getFieldExecutionPlanPathStartsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetFieldExecutionPlanParams = zod.object({
+  "period": zod.enum(['day', 'week']),
+  "startsOn": zod.coerce.string().regex(getFieldExecutionPlanPathStartsOnRegExp)
+})
+
+export const getFieldExecutionPlanResponsePlanOneStartsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getFieldExecutionPlanResponsePlanOneEndsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDocumentDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDueDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetFieldExecutionPlanResponse = zod.object({
+  "plan": zod.union([zod.object({
+  "period": zod.enum(['day', 'week']),
+  "startsOn": zod.string().regex(getFieldExecutionPlanResponsePlanOneStartsOnRegExp),
+  "endsOn": zod.string().regex(getFieldExecutionPlanResponsePlanOneEndsOnRegExp),
+  "revision": zod.number().int(),
+  "updatedAt": zod.string(),
+  "entries": zod.array(zod.object({
+  "agencyId": zod.string(),
+  "evidence": zod.array(zod.object({
+  "factId": zod.string(),
+  "kind": zod.string(),
+  "value": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "documentDate": zod.string().regex(getFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDocumentDateRegExp),
+  "dueDate": zod.string().regex(getFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDueDateRegExp).nullable(),
+  "reviewedAt": zod.string()
+})),
+  "unavailableEvidenceCount": zod.number().int(),
+  "objective": zod.string(),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "dueDate": zod.string().nullable(),
+  "owner": zod.string(),
+  "priority": zod.enum(['low', 'normal', 'high']),
+  "status": zod.enum(['open', 'completed']),
+  "taskOnly": zod.boolean()
+})),
+  "unavailableTaskCount": zod.number().int()
+}))
+}),zod.null()])
+})
+
+
+/**
+ * Requires an authorized agency-workspace editor. Revisions prevent overwriting newer plans; evidence and task IDs are validated against Replit records.
+ * @summary Save a user-confirmed plan without creating or changing tasks
+ */
+export const saveFieldExecutionPlanPathStartsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const SaveFieldExecutionPlanParams = zod.object({
+  "period": zod.enum(['day', 'week']),
+  "startsOn": zod.coerce.string().regex(saveFieldExecutionPlanPathStartsOnRegExp)
+})
+
+export const saveFieldExecutionPlanBodyExpectedRevisionMin = 0;
+
+export const saveFieldExecutionPlanBodyEvidenceWorkspaceIdMax = 64;
+
+export const saveFieldExecutionPlanBodyEntriesItemAgencyIdMax = 300;
+
+export const saveFieldExecutionPlanBodyEntriesItemObjectiveMax = 500;
+
+export const saveFieldExecutionPlanBodyEntriesItemEvidenceFactIdsItemRegExp = new RegExp('^[A-Za-z0-9_-]{1,100}$');
+export const saveFieldExecutionPlanBodyEntriesItemEvidenceFactIdsMax = 3;
+
+export const saveFieldExecutionPlanBodyEntriesItemFollowUpIdsItemMax = 300;
+
+export const saveFieldExecutionPlanBodyEntriesItemFollowUpIdsMax = 20;
+
+export const saveFieldExecutionPlanBodyEntriesMax = 8;
+
+
+
+export const SaveFieldExecutionPlanBody = zod.object({
+  "expectedRevision": zod.number().int().min(saveFieldExecutionPlanBodyExpectedRevisionMin),
+  "evidenceWorkspaceId": zod.string().max(saveFieldExecutionPlanBodyEvidenceWorkspaceIdMax).nullable(),
+  "entries": zod.array(zod.object({
+  "agencyId": zod.string().min(1).max(saveFieldExecutionPlanBodyEntriesItemAgencyIdMax),
+  "objective": zod.string().min(1).max(saveFieldExecutionPlanBodyEntriesItemObjectiveMax),
+  "evidenceFactIds": zod.array(zod.string().regex(saveFieldExecutionPlanBodyEntriesItemEvidenceFactIdsItemRegExp)).max(saveFieldExecutionPlanBodyEntriesItemEvidenceFactIdsMax),
+  "followUpIds": zod.array(zod.string().min(1).max(saveFieldExecutionPlanBodyEntriesItemFollowUpIdsItemMax)).max(saveFieldExecutionPlanBodyEntriesItemFollowUpIdsMax)
+})).min(1).max(saveFieldExecutionPlanBodyEntriesMax)
+})
+
+export const saveFieldExecutionPlanResponsePlanOneStartsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const saveFieldExecutionPlanResponsePlanOneEndsOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const saveFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDocumentDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const saveFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDueDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const SaveFieldExecutionPlanResponse = zod.object({
+  "plan": zod.union([zod.object({
+  "period": zod.enum(['day', 'week']),
+  "startsOn": zod.string().regex(saveFieldExecutionPlanResponsePlanOneStartsOnRegExp),
+  "endsOn": zod.string().regex(saveFieldExecutionPlanResponsePlanOneEndsOnRegExp),
+  "revision": zod.number().int(),
+  "updatedAt": zod.string(),
+  "entries": zod.array(zod.object({
+  "agencyId": zod.string(),
+  "evidence": zod.array(zod.object({
+  "factId": zod.string(),
+  "kind": zod.string(),
+  "value": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string().url(),
+  "documentDate": zod.string().regex(saveFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDocumentDateRegExp),
+  "dueDate": zod.string().regex(saveFieldExecutionPlanResponsePlanOneEntriesItemEvidenceItemDueDateRegExp).nullable(),
+  "reviewedAt": zod.string()
+})),
+  "unavailableEvidenceCount": zod.number().int(),
+  "objective": zod.string(),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "dueDate": zod.string().nullable(),
+  "owner": zod.string(),
+  "priority": zod.enum(['low', 'normal', 'high']),
+  "status": zod.enum(['open', 'completed']),
+  "taskOnly": zod.boolean()
+})),
+  "unavailableTaskCount": zod.number().int()
+}))
+}),zod.null()])
+})
+
+
+/**
  * Requires a valid Replit Auth session and existing workspace membership.
  * @summary Resolve the signed-in user's workspace role
  */

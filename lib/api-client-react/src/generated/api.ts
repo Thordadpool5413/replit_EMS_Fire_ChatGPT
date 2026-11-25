@@ -32,6 +32,8 @@ import type {
   EmsRegistryMatchesResponse,
   EvidenceDecisionsResponse,
   EvidenceRoleResponse,
+  FieldExecutionPlanInput,
+  FieldExecutionPlanResponse,
   FireRegistryMatchesResponse,
   GetAfgGrantsParams,
   GetEmsRegistryMatchesParams,
@@ -662,6 +664,181 @@ export const useCreateAgencyRecords = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAgencyRecordsMutationOptions(options));
+    }
+
+export const getGetFieldExecutionPlanUrl = (period: 'day' | 'week',
+    startsOn: string,) => {
+
+
+
+
+  return `/api/field-execution-plans/${period}/${startsOn}`
+}
+
+/**
+ * Returns only the authenticated user's plan and resolves its existing task and approved evidence references.
+ * @summary Read the signed-in user's plan for a day or week
+ */
+export const getFieldExecutionPlan = async (period: 'day' | 'week',
+    startsOn: string, options?: Parameters<typeof customFetch>[1]): Promise<FieldExecutionPlanResponse> => {
+
+  return customFetch<FieldExecutionPlanResponse>(getGetFieldExecutionPlanUrl(period,startsOn),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFieldExecutionPlanQueryKey = (period: 'day' | 'week',
+    startsOn: string,) => {
+    return [
+    `/api/field-execution-plans/${period}/${startsOn}`
+    ] as const;
+    }
+
+
+export const getGetFieldExecutionPlanQueryOptions = <TData = Awaited<ReturnType<typeof getFieldExecutionPlan>>, TError = ErrorType<void>>(period: 'day' | 'week',
+    startsOn: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFieldExecutionPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFieldExecutionPlanQueryKey(period,startsOn);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFieldExecutionPlan>>> = ({ signal }) => getFieldExecutionPlan(period,startsOn, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: period !== null && period !== undefined && startsOn !== null && startsOn !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFieldExecutionPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFieldExecutionPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getFieldExecutionPlan>>>
+export type GetFieldExecutionPlanQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read the signed-in user's plan for a day or week
+ */
+
+export function useGetFieldExecutionPlan<TData = Awaited<ReturnType<typeof getFieldExecutionPlan>>, TError = ErrorType<void>>(
+ period: 'day' | 'week',
+    startsOn: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFieldExecutionPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFieldExecutionPlanQueryOptions(period,startsOn,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveFieldExecutionPlanUrl = (period: 'day' | 'week',
+    startsOn: string,) => {
+
+
+
+
+  return `/api/field-execution-plans/${period}/${startsOn}`
+}
+
+/**
+ * Requires an authorized agency-workspace editor. Revisions prevent overwriting newer plans; evidence and task IDs are validated against Replit records.
+ * @summary Save a user-confirmed plan without creating or changing tasks
+ */
+export const saveFieldExecutionPlan = async (period: 'day' | 'week',
+    startsOn: string,
+    fieldExecutionPlanInput: FieldExecutionPlanInput, options?: Parameters<typeof customFetch>[1]): Promise<FieldExecutionPlanResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<FieldExecutionPlanResponse>(getSaveFieldExecutionPlanUrl(period,startsOn),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fieldExecutionPlanInput)
+  }
+);}
+
+
+
+
+
+export const getSaveFieldExecutionPlanMutationKey = () => ['saveFieldExecutionPlan'] as const;
+
+export const getSaveFieldExecutionPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFieldExecutionPlan>>, TError,SaveFieldExecutionPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveFieldExecutionPlan>>, TError,SaveFieldExecutionPlanMutationVariables, TContext> => {
+
+const mutationKey = getSaveFieldExecutionPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveFieldExecutionPlan>>, SaveFieldExecutionPlanMutationVariables> = (props) => {
+          const {period,startsOn,data} = props ?? {};
+
+          return  saveFieldExecutionPlan(period,startsOn,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveFieldExecutionPlanMutationResult = NonNullable<Awaited<ReturnType<typeof saveFieldExecutionPlan>>>
+    export type SaveFieldExecutionPlanMutationBody = BodyType<FieldExecutionPlanInput>
+    export type SaveFieldExecutionPlanMutationError = ErrorType<void>
+    export type SaveFieldExecutionPlanMutationVariables = {period: 'day' | 'week';startsOn: string;data: BodyType<FieldExecutionPlanInput>}
+
+    /**
+ * @summary Save a user-confirmed plan without creating or changing tasks
+ */
+export const useSaveFieldExecutionPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFieldExecutionPlan>>, TError,SaveFieldExecutionPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveFieldExecutionPlan>>,
+        TError,
+        SaveFieldExecutionPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveFieldExecutionPlanMutationOptions(options));
     }
 
 export const getGetEvidenceWorkspaceRoleUrl = (workspaceId: string,) => {

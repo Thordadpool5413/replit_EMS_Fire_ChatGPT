@@ -72,6 +72,121 @@ export interface AgencyBatchCreateResponse {
   createdIds: string[];
 }
 
+export interface FieldExecutionPlanEntryInput {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  agencyId: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  objective: string;
+  /**
+     * @maxItems 3
+     * @items.pattern ^[A-Za-z0-9_-]{1,100}$
+     */
+  evidenceFactIds: string[];
+  /**
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  followUpIds: string[];
+}
+
+export interface FieldExecutionPlanInput {
+  /** @minimum 0 */
+  expectedRevision: number;
+  /**
+     * @maxLength 64
+     * @nullable
+     */
+  evidenceWorkspaceId: string | null;
+  /**
+     * @minItems 1
+     * @maxItems 8
+     */
+  entries: FieldExecutionPlanEntryInput[];
+}
+
+export interface FieldExecutionEvidence {
+  factId: string;
+  kind: string;
+  value: string;
+  sourceName: string;
+  sourceUrl: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  documentDate: string;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dueDate: string | null;
+  reviewedAt: string;
+}
+
+export type FieldExecutionTaskPriority = typeof FieldExecutionTaskPriority[keyof typeof FieldExecutionTaskPriority];
+
+
+export const FieldExecutionTaskPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+} as const;
+
+export type FieldExecutionTaskStatus = typeof FieldExecutionTaskStatus[keyof typeof FieldExecutionTaskStatus];
+
+
+export const FieldExecutionTaskStatus = {
+  open: 'open',
+  completed: 'completed',
+} as const;
+
+export interface FieldExecutionTask {
+  id: string;
+  action: string;
+  /** @nullable */
+  dueDate: string | null;
+  owner: string;
+  priority: FieldExecutionTaskPriority;
+  status: FieldExecutionTaskStatus;
+  taskOnly: boolean;
+}
+
+export interface FieldExecutionPlanEntry {
+  agencyId: string;
+  evidence: FieldExecutionEvidence[];
+  unavailableEvidenceCount: number;
+  objective: string;
+  tasks: FieldExecutionTask[];
+  unavailableTaskCount: number;
+}
+
+export type FieldExecutionPlanPeriod = typeof FieldExecutionPlanPeriod[keyof typeof FieldExecutionPlanPeriod];
+
+
+export const FieldExecutionPlanPeriod = {
+  day: 'day',
+  week: 'week',
+} as const;
+
+export interface FieldExecutionPlan {
+  period: FieldExecutionPlanPeriod;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  startsOn: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  endsOn: string;
+  revision: number;
+  updatedAt: string;
+  entries: FieldExecutionPlanEntry[];
+}
+
+export interface FieldExecutionPlanResponse {
+  plan: FieldExecutionPlan | null;
+}
+
 export type EvidenceRoleResponseRole = typeof EvidenceRoleResponseRole[keyof typeof EvidenceRoleResponseRole];
 
 

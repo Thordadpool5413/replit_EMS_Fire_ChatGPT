@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -10,6 +9,9 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
+import { usersTable } from "./users";
+export { usersTable } from "./users";
+export { fieldExecutionPlansTable } from "./field-execution-plans";
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -22,16 +24,6 @@ export const sessionsTable = pgTable(
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
-
-export const usersTable = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
 
 /** Canonical shared agency records served by the Replit API. */
 export const agencyRecordsTable = pgTable(

@@ -8,7 +8,7 @@ on:
       - 'scripts/data/test_recovery_checkpoint.py'
       - '.github/workflows/recovery-checkpoints.yml'
   push:
-    branches: [atlas/phase9-0b-recovery-checkpoints]
+    branches: [atlas/phase9-0b-recovery-checkpoints, atlas/phase9-0c-source-availability]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,13 +21,17 @@ jobs:
   research:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [nc-addressnc, nj-addresspoints]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - run: python3 scripts/data/run_recovery_checkpoint.py --source nc-addressnc --max-requests 120 --output generated-artifacts/recovery-checkpoint
+      - run: python3 scripts/data/run_recovery_checkpoint.py --source ${{ matrix.source }} --max-requests 120 --output generated-artifacts/recovery-checkpoint
       - uses: actions/upload-artifact@v4
         with:
-          name: nc-recovery-checkpoint
+          name: recovery-checkpoint-${{ matrix.source }}
           path: generated-artifacts/recovery-checkpoint/
           if-no-files-found: error

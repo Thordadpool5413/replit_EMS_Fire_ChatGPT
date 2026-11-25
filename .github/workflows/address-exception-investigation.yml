@@ -1,0 +1,44 @@
+name: Address exception investigation
+on:
+  push:
+    branches: [atlas/phase9-0d-address-exception-investigation]
+  pull_request:
+    paths:
+      - 'scripts/data/investigate_address_exceptions.py'
+      - 'scripts/data/test_address_exceptions.py'
+      - '.github/workflows/address-exception-investigation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_address_exceptions.py
+  investigate:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - state: PA
+            artifact: 15067681034
+          - state: CA
+            artifact: 15067002763
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve original evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/${{ matrix.artifact }}/zip" > /tmp/original.zip
+      - run: python3 scripts/data/investigate_address_exceptions.py --state ${{ matrix.state }} --archive /tmp/original.zip --output generated-artifacts/exception-review
+      - uses: actions/upload-artifact@v4
+        with:
+          name: address-exception-review-${{ matrix.state }}
+          path: generated-artifacts/exception-review/
+          if-no-files-found: error

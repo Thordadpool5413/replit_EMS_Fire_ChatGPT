@@ -5,6 +5,7 @@ import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} 
 import {MAX_REVIEW_ACCOUNTS,eligiblePriorityAccounts,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
 import {TerritoryCommandSummary,CommandFollowUps} from './TerritoryCommandCenter';
 import {COMMAND_VIEWS,type CommandView} from '../services/territoryCommand';
+import {AccountCoveragePanel} from './AccountCoveragePanel';
 import {FieldExecutionPlanner} from './FieldExecutionPlanner';
 import {GeographicOpportunityClusters} from './GeographicOpportunityClusters';
 import {CommercialOpportunityQueue} from './CommercialOpportunityQueue';
@@ -62,7 +63,7 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
    {message&&<p role="status">{message}</p>}
    {ranked&&sample&&<>
     <TerritoryCommandSummary agencies={agencies} selected={selected} samples={sample.samples} view={view} onView={setView} onOpenAgency={onOpenAgency}/>
-    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
+    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v==='activity'?'Account activity':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
     {view==='priorities'&&<>
     <p>{ranked.checked}/{selected.length} accounts with complete reviewed samples · {ranked.ranked.length} prioritized. Five-minute sample; refresh before acting.</p>
     <label>Signal type<select className={control} value={kind} onChange={e=>setKind(e.target.value as typeof kind)}><option value="all">All eligible signals</option>{Object.entries(OPPORTUNITY_LABELS).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
@@ -74,6 +75,7 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
     {view==='coverage'&&<SelectedIntelligenceCoverage agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     {view==='commercial'&&<CommercialOpportunityQueue key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     <div hidden={view!=='plan'}><FieldExecutionPlanner key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency}/></div>
+    {view==='activity'&&<AccountCoveragePanel key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}
     {view==='followups'&&<CommandFollowUps agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     <p className="text-xs">Missing reviewed signals do not establish absence of equipment, funding or opportunity. No automatic CRM stage change or provider data write.</p>
    </>}

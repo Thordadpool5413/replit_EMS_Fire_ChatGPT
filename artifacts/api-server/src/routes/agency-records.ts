@@ -8,7 +8,10 @@ import {
 } from "@workspace/api-zod";
 import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/db";
 
+import { agencyWorkspaceRole, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
+
 const router: IRouter = Router();
+router.use("/agencies", requireAgencyWorkspace);
 const statePattern = /^[A-Z]{2}$/;
 const MAX_PAGE_SIZE = 500;
 const MAX_BATCH_SIZE = 25;
@@ -27,6 +30,19 @@ function requestError(res: Response, status: number, code: string, message: stri
 
 function logFailure(req: Request, error: unknown, operation: string) {
   req.log?.error({ err: error, operation }, "Agency record request failed");
+}
+
+router.get("/agencies/access", (req, res) => {
+  if (!req.isAuthenticated()) return requestError(res, 401, "sign_in_required", "Sign in to Replit.");
+  return res.json({ role: agencyWorkspaceRole(req.user.id) });
+});
+
+function isQuarantined(record: Record<string, unknown>): boolean {
+  const id = typeof record.id === "string" ? record.id : "";
+  const source = typeof record.verificationSource === "string" ? record.verificationSource : "";
+  return /^(?:zoll-agency-|zoll-lead-|territory-[a-z]{2}-(?:ems|fire)-|(?:ems|fire)-[a-z]{2}-\d{5}(?:-|$))/i.test(id) ||
+    record.dataProvenanceTier === "generated_prospect" ||
+    /geographic prospect generator|generated geography-based prospect|Imported public-facing directory candidate|Imported account candidate/i.test(source);
 }
 
 router.get("/agencies", async (req, res) => {
@@ -82,6 +98,8 @@ router.put("/agencies/:agencyId", async (req, res) => {
     return requestError(res, 400, "invalid_record", "The agency update is invalid.");
   }
 
+  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
+
   try {
     const result = await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${req.params.agencyId}, 0))`);
@@ -127,8 +145,13 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
     return requestError(res, 400, "invalid_mutation", "The queued agency change is invalid.");
   }
 
+  if (!body.data.mutationId.trim()) return requestError(res, 400, "invalid_mutation", "A mutation ID is required.");
+  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
+
   try {
     const result = await db.transaction(async (tx) => {
+      // Serialize identical receipt IDs even when two requests target different agencies.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${body.data.mutationId}, 1))`);
       const [receipt] = await tx
         .select()
         .from(agencyMutationReceiptsTable)
@@ -209,6 +232,7 @@ router.post("/agencies/batch-create", async (req, res) => {
     return requestError(res, 400, "invalid_batch", "Every agency in the batch needs an ID.");
   }
   const records = body.data.records.filter(hasAgencyId);
+  if (records.some(isQuarantined)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
   if (new Set(records.map((record) => record.id)).size !== records.length) {
     return requestError(res, 400, "duplicate_ids", "The agency batch contains duplicate IDs.");
   }

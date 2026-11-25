@@ -11,6 +11,8 @@ type AgencyResponse = { id: string; revision: number; agency: Agency };
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...init,
+    credentials: "include",
+    cache: "no-store",
     headers: { "content-type": "application/json", ...init?.headers },
   });
   if (!response.ok) {

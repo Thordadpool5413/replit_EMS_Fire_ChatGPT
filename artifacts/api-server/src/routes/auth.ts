@@ -17,6 +17,7 @@ const router: IRouter = Router();
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 function getOrigin(req: Request): string {
+  if (process.env.ATLAS_PUBLIC_ORIGIN) return new URL(process.env.ATLAS_PUBLIC_ORIGIN).origin;
   const proto = req.headers["x-forwarded-proto"] || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
   return `${proto}://${host}`;
@@ -43,9 +44,13 @@ function setOidcCookie(res: Response, name: string, value: string) {
 }
 
 function safeReturnTo(value: unknown): string {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
+  if (typeof value !== "string" || !value.startsWith("/") || /[\\\x00-\x20]/.test(value)) return "/";
+  try {
+    const base = "https://local-return.invalid";
+    const target = new URL(value, base);
+    if (target.origin !== base || value.startsWith("//")) return "/";
+    return target.pathname + target.search + target.hash;
+  } catch { return "/"; }
 }
 
 function safeErrorMetadata(error: unknown) {
@@ -78,6 +83,7 @@ async function upsertUser(claims: Record<string, unknown>) {
 }
 
 router.get("/auth/user", (req, res) => {
+  res.set("Cache-Control", "private, no-store");
   res.json(GetCurrentAuthUserResponse.parse({ user: req.isAuthenticated() ? req.user : null }));
 });
 

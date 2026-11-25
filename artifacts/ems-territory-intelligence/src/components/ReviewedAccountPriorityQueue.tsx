@@ -1,10 +1,11 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
-import type {Agency} from '../types';
+import type {Agency,FieldNote} from '../types';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../services/sharedEvidenceReplit';
 import {MAX_REVIEW_ACCOUNTS,eligiblePriorityAccounts,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
 import {TerritoryCommandSummary,CommandFollowUps} from './TerritoryCommandCenter';
 import {COMMAND_VIEWS,type CommandView} from '../services/territoryCommand';
+import {FieldCoachingPanel} from './FieldCoachingPanel';
 import {LeadershipReviewPanel} from './LeadershipReviewPanel';
 import {WorkingPipelinePanel} from './WorkingPipelinePanel';
 import {CompetitiveDisplacementPanel} from './CompetitiveDisplacementPanel';
@@ -17,10 +18,10 @@ import {OPPORTUNITY_LABELS,type OpportunityKind} from '../services/opportunityRa
 const bands:Record<Band,string>={'verify-now':'Verify now','verify-soon':'Verify soon','plan-research':'Plan research',explore:'Explore account'};
 const gapLabels={'identity-excluded':'Identity conflict or inactive record',unavailable:'Review unavailable, incomplete or expired','no-signal':'No eligible reviewed signals',filtered:'Outside selected signal filter'};
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
-export function ReviewedAccountPriorityQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){
- const {user}=useAuth();return user&&evidenceEnabled?<PrivateQueue key={user.id} agencies={agencies} onOpenAgency={onOpenAgency}/>:null;
+export function ReviewedAccountPriorityQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void;onCreateTask?:(id:string,task:FieldNote)=>Promise<void>}){
+ const {user}=useAuth();return user&&evidenceEnabled?<PrivateQueue key={user.id} agencies={agencies} onOpenAgency={onOpenAgency} onCreateTask={onCreateTask}/>:null;
 }
-function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void}){
+function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];onOpenAgency:(a:Agency)=>void;onCreateTask?:(id:string,task:FieldNote)=>Promise<void>}){
  const {user}=useAuth();
  const [open,setOpen]=useState(false),[state,setState]=useState(''),[search,setSearch]=useState(''),[selected,setSelected]=useState<string[]>([]),[kind,setKind]=useState<OpportunityKind|'all'>('all'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[result,setResult]=useState<{samples:ReviewedSample[];started:number;scope:string}>();
  const [view,setView]=useState<CommandView>('overview');
@@ -66,7 +67,7 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
    {message&&<p role="status">{message}</p>}
    {ranked&&sample&&<>
     <TerritoryCommandSummary agencies={agencies} selected={selected} samples={sample.samples} view={view} onView={setView} onOpenAgency={onOpenAgency}/>
-    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v==='activity'?'Account activity':v==='competitive'?'Competitive':v==='pipeline'?'Sales pipeline':v==='leadership'?'Leadership':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
+    <div role="group" aria-label="Territory command views" className="grid grid-cols-2 sm:grid-cols-3 gap-2">{COMMAND_VIEWS.map(v=><button type="button" className="workspace-button min-h-11 min-w-0" key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='followups'?'Follow-ups':v==='plan'?'Field plan':v==='activity'?'Account activity':v==='competitive'?'Competitive':v==='pipeline'?'Sales pipeline':v==='leadership'?'Leadership':v==='coaching'?'Coaching':v[0].toUpperCase()+v.slice(1)}</button>)}</div>
     {view==='priorities'&&<>
     <p>{ranked.checked}/{selected.length} accounts with complete reviewed samples · {ranked.ranked.length} prioritized. Five-minute sample; refresh before acting.</p>
     <label>Signal type<select className={control} value={kind} onChange={e=>setKind(e.target.value as typeof kind)}><option value="all">All eligible signals</option>{Object.entries(OPPORTUNITY_LABELS).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
@@ -78,6 +79,7 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
     {view==='coverage'&&<SelectedIntelligenceCoverage agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     {view==='commercial'&&<CommercialOpportunityQueue key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     <div hidden={view!=='plan'}><FieldExecutionPlanner key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency}/></div>
+    {view==='coaching'&&user&&<FieldCoachingPanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onView={setView} onCreateTask={onCreateTask}/>}
     {view==='leadership'&&user&&<LeadershipReviewPanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onView={setView}/>}
     {view==='pipeline'&&user&&<WorkingPipelinePanel key={user.id+':'+sample.started+':'+sample.scope} uid={user.id} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}
     {view==='competitive'&&<CompetitiveDisplacementPanel key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} started={sample.started} onOpenAgency={onOpenAgency} onPlan={()=>setView('plan')}/>}

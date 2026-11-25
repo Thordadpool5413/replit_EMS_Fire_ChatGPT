@@ -111,3 +111,19 @@ class IndianaTests(unittest.TestCase):
    self.assertIsNone(resolve('in-data-harvest',e,[bad],counties,CHECKED)[0],field)
   bad=copy.deepcopy(f);bad['attributes']['objectid']=13;bad['geometry']['x']=-86.2
   self.assertEqual(resolve('in-data-harvest',e,[f,bad],counties,CHECKED)[1],'ambiguous')
+
+class FultonTests(unittest.TestCase):
+ def test_active_main_address_and_exact_county(self):
+  e=dict(key='fixture',state='GA',status='no-match',sourceCounty='13121',countyFips='',match=None,address={'street':'123 Main Street','city':'Atlanta','state':'GA','zip':'30303'})
+  f=dict(attributes=dict(OBJECTID=12,StNumber=123,Label='123 MAIN ST',City='Atlanta',PrefCity='Atlanta',State='GA',Zip='30303',PtType='Main Address',Status='Active',CreateDate=None),geometry=dict(x=-84.39,y=33.75))
+  hit,status=resolve('ga-fulton',e,[f],{},CHECKED)
+  self.assertEqual(status,'mapped');self.assertTrue(valid_regional_point(hit[1],'13121'))
+  self.assertIsNone(hit[1]['point']['recordUpdatedAt'])
+  self.assertIn("StNumber=123 AND Zip='30303'",query('ga-fulton',[e['address']])['where'])
+  for field,value in [('PtType','Sub Address'),('Status','Inactive'),('UnitActual','2'),('StrNumberHi','125'),('Label','124 MAIN ST'),('Zip','30304'),('State','AL'),('City','Other')]:
+   bad=copy.deepcopy(f);bad['attributes'][field]=value
+   if field=='City':bad['attributes']['PrefCity']='Other'
+   self.assertIsNone(resolve('ga-fulton',e,[bad],{},CHECKED)[0],field)
+  self.assertIsNone(resolve('ga-fulton',{**e,'sourceCounty':'13089'},[f],{},CHECKED)[0])
+  bad=copy.deepcopy(f);bad['attributes']['OBJECTID']=13;bad['geometry']['x']=-84.41
+  self.assertEqual(resolve('ga-fulton',e,[f,bad],{},CHECKED)[1],'ambiguous')

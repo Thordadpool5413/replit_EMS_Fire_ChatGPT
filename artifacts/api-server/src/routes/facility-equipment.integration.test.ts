@@ -69,10 +69,19 @@ test("station equipment is private, immutable, independently reviewed and statio
   assert.equal((await req(lifecycle)).status,401);
   assert.equal((await req(lifecycle,"eq-outsider")).status,403);
   const before=await req(lifecycle,"eq-viewer");assert.equal(before.status,200);assert.equal(before.body.observations.length,0);
+  const conversion=lifecycle.replace("equipment-lifecycle","equipment-conversion");
+  assert.equal((await req(conversion)).status,401);
+  assert.equal((await req(conversion,"eq-outsider")).status,403);
+  const conversionBefore=await req(conversion,"eq-viewer");assert.equal(conversionBefore.status,200);assert.equal(conversionBefore.body.observations.length,1);
+  assert.equal(conversionBefore.body.observations[0].submissionId,id);
+  assert.equal(conversionBefore.body.observations[0].description,undefined);
+  assert.equal(conversionBefore.body.observations[0].reviewerUid,undefined);
   assert.equal((await req(root+"/"+inventoryId+"/review","eq-reviewer",decision)).status,200);
   const after=await req(lifecycle,"eq-viewer");assert.equal(after.status,200);assert.equal(after.body.observations.length,1);
   assert.equal(after.body.observations[0].serviceEnd,"2027-01-01");assert.equal(after.body.observations[0].acquiredOn,"2024-01-01");
   assert.equal(after.body.observations[0].stationId,stationId);assert.equal(after.body.observations[0].authorUid,undefined);
   assert.equal((await req(lifecycle.replace(parentId,"OTHER"),"eq-viewer")).status,404);
+  const conversionAfter=await req(conversion,"eq-viewer");assert.equal(conversionAfter.body.observations.length,2);
+  assert.equal((await req(conversion.replace(parentId,"OTHER"),"eq-viewer")).status,404);
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await pool.end();}
 });

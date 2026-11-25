@@ -1,0 +1,37 @@
+name: Review coordinate provenance
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/compile_review_coordinates.py'
+      - 'scripts/data/test_compile_review_coordinates.py'
+      - '.github/workflows/review-coordinate-provenance.yml'
+      - 'artifacts/ems-territory-intelligence/src/data/*AddressReview.json'
+  push:
+    branches: [atlas/phase8-0v-coordinate-provenance]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_compile_review_coordinates.py
+      - name: Retrieve pinned successful acquisition archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/review-archives
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15063203117/zip" > /tmp/review-archives/VA.zip
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064441705/zip" > /tmp/review-archives/MN.zip
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064855858/zip" > /tmp/review-archives/WI.zip
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15064303088/zip" > /tmp/review-archives/MI.zip
+      - name: Verify and reconstruct coordinate evidence
+        run: python3 scripts/data/compile_review_coordinates.py --archives /tmp/review-archives --output generated-artifacts/review-coordinate-provenance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: review-coordinate-provenance
+          path: generated-artifacts/review-coordinate-provenance.json
+          if-no-files-found: error

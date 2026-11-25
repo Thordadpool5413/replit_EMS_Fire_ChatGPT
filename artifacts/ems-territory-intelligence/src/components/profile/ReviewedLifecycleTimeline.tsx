@@ -17,7 +17,7 @@ export function ReviewedLifecycleTimeline({agency,directory}:{agency:Agency;dire
 }
 function PrivateLifecycle({agency,directory}:{agency:Agency;directory:Agency[]}){
  const {user}=useAuth();
- const [open,setOpen]=useState(false),[sample,setSample]=useState<{station?:LifecycleSample;signals:ReviewedSignal[];equipment:ReviewedEquipmentObservation[];stationStatus:string;parentStatus:string;started:number}>(),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[days,setDays]=useState(90),[filter,setFilter]=useState('all'),[page,setPage]=useState(1);
+ const [open,setOpen]=useState(false),[sample,setSample]=useState<{station?:LifecycleSample;signals:ReviewedSignal[];equipment:ReviewedEquipmentObservation[];stationStatus:string;parentStatus:string;started:number;identity:string}>(),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[days,setDays]=useState(90),[filter,setFilter]=useState('all'),[page,setPage]=useState(1);
  const request=useRef<AbortController|undefined>(undefined);
  const parent=facilityParents(agency).find(p=>p.source==='NERIS'),key=sharedAgencyKey(agency);
  const ready=providerIdentityReady(agency,directory);
@@ -51,12 +51,12 @@ function PrivateLifecycle({agency,directory}:{agency:Agency;directory:Agency[]})
    }
    if(request.current!==controller||controller.signal.aborted)return;
    if(!navigator.onLine||Date.now()-started>=300000)throw Error('Sample expired or connection lost.');
-   setSample({station,signals,equipment,stationStatus,parentStatus,started});setMessage('');
+   setSample({station,signals,equipment,stationStatus,parentStatus,started,identity});setMessage('');
   }catch(e){if(request.current===controller)setMessage(e instanceof Error?e.message:'Lifecycle evidence unavailable.');}
   finally{if(request.current===controller){request.current=undefined;setBusy(false);}}
  }
  const today=new Date().toISOString().slice(0,10);
- const active=sample&&ready&&Date.now()-sample.started<300000?sample:undefined;
+ const active=sample&&ready&&sample.identity===identity&&Date.now()-sample.started<300000?sample:undefined;
  const station=active?acceptedLifecycleSample(agency,directory,active.station,active.started):undefined;
  const events=active?buildLifecycleTimeline(station,active.signals,today):[];
  const rows=events.filter(e=>filter==='all'||lifecycleWindow(e,today,days)===filter),current=Math.min(page,Math.max(1,Math.ceil(rows.length/10)));

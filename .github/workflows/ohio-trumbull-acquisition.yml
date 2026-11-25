@@ -1,0 +1,32 @@
+name: Ohio Trumbull County address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_ohio_trumbull_addresses.py'
+      - 'scripts/data/test_ohio_trumbull_addresses.py'
+      - '.github/workflows/ohio-trumbull-acquisition.yml'
+  push:
+    branches: [atlas/phase9-0i-ohio-trumbull]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_ohio_trumbull_addresses.py
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_ohio_trumbull_addresses.py --output generated-artifacts/ohio-trumbull
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ohio-trumbull-address-review
+          path: generated-artifacts/ohio-trumbull/
+          if-no-files-found: ignore

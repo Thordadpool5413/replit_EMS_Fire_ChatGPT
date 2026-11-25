@@ -1345,10 +1345,12 @@ export default function App() {
         {/* Predictive Lead Queue (Accounts Workspace) */}
         {activeTab === 'queue' && (
           <div className="workspace-view-container min-w-0 w-full">
-            <section className="pi-surface p-3 mb-3 text-sm"><p>Saved accounts only. Public registry listings are available for end-user validation and account creation; missing agencies are not generated.</p><button className="workspace-button min-h-11" onClick={()=>handleNavigateTab('settings')}>Browse public registry sources</button></section>
+            <section className="pi-surface p-3 mb-3 text-sm"><p>Search public registry listings and saved accounts together. Source listings are separate from saved work and require end-user validation.</p></section>
             <PredictiveLeadQueue
               agencies={agencies}
               directoryStatus={directoryStatus}
+              onRetryDirectory={retryNationalDirectory}
+              onDecideSourceRecord={handleDecideAgencySourceRecord}
               onSelectAgency={handleOpenAgencyProfile}
               onPreviewAgency={(a) => setPreviewAgency(a)}
               onToggleRoute={handleToggleRoute}

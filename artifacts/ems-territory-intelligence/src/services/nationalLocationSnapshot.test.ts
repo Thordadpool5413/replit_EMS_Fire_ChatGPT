@@ -76,3 +76,10 @@ test('NY SAM primary address point validates provenance and county; bulk NAD ret
  assert.equal(match?.method,'nad-address-point');
  if(match?.method==='nad-address-point')assert.equal(match.point.dataset,'bulk-r24');
 });
+
+test('regional points require allowlisted source, source geography, placement and observation date',()=>{
+ const regional={...e,match:{...e.match,method:'regional-address-point',latitude:27.97,longitude:-82.46,point:{source:'fl-hillsborough',objectId:43,checkedAt:'2026-11-24',recordUpdatedAt:null,placement:'Location',countyFips:'12057'}},countyFips:'12057'};
+ assert.equal(parseSnapshotEntry(regional,'FL',{'12057':'Hillsborough'}).match?.method,'regional-address-point');
+ for(const point of [{...regional.match.point,source:'unknown'},{...regional.match.point,countyFips:'12103'},{...regional.match.point,recordUpdatedAt:'2026-11-25'},{...regional.match.point,placement:'Unknown'}])assert.throws(()=>parseSnapshotEntry({...regional,match:{...regional.match,point}},'FL',{'12057':'Hillsborough'}));
+ assert.throws(()=>parseSnapshotEntry({...regional,match:{...regional.match,latitude:42}},'FL',{'12057':'Hillsborough'}));
+});

@@ -38,6 +38,16 @@ try {
   await waitFor(cdp,'Boolean(document.querySelector(\'input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]\'))','clean agency directory',60000);
   assert.equal(await ev('document.querySelectorAll(".agency-lead-cards-grid > div").length'),0,'No synthetic providers in clean directory');
   console.log('PASS: clean browser does not seed provider cards');
+  // The actual bundled government directory must still work with cloud domains blocked.
+  await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-search] select option[value=FL]"))','public registry index',60000);
+  await ev('(()=>{const s=document.querySelector("[aria-label=\\"Public provider state\\"]");const set=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value").set;set.call(s,"FL");s.dispatchEvent(new Event("change",{bubbles:true}))})()');
+  await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-result]"))','real Florida public records without cloud access',60000);
+  await ev('document.querySelector("[data-testid=public-provider-result] button").click()');
+  await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-profile]"))','source provider profile',60000);
+  assert.ok((await ev('document.querySelector("[data-testid=public-provider-profile]").textContent')).includes('End-user validation required'));
+  assert.equal(await ev('document.querySelectorAll(".agency-lead-cards-grid > div").length'),0,'Browsing source listings never creates saved accounts');
+  console.log('PASS: public provider directory and source profile work with legacy cloud requests blocked');
+  await ev('sessionStorage.clear()');
   const fixtures=JSON.parse(await readFile(new URL('./fixtures/profile-test-accounts.json',import.meta.url),'utf8'));
   const entries=fixtures.map(record=>[record.id,{record}]);
   await cdp.send('Page.addScriptToEvaluateOnNewDocument',{source:'if(location.origin==='+JSON.stringify(testOrigin)+')localStorage.setItem("zoll_pulseiq_custom_agencies_v8",'+JSON.stringify(JSON.stringify(entries))+');'});

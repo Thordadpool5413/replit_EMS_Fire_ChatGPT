@@ -8,9 +8,19 @@ export const NY_SAM_SOURCE_URL='https://services6.arcgis.com/EbVsqZ18sv1kVJ3k/Ar
 export const NAD_BULK_SOURCE_URL='https://data.transportation.gov/d/fc2s-wawr';
 export type OhioPoint={objectId:number;sourceDate:string;countyFips:string};
 export const OHIO_LBRS_SOURCE_URL='https://services2.arcgis.com/MlJ0G8iWUyC7jAmu/arcgis/rest/services/Statewide_LBRS_Address_Points/FeatureServer/0';
+export const REGIONAL_POINT_SOURCES={"nc-addressnc":{"url":"https://services.nconemap.gov/secure/rest/services/AddressNC/NC1Map_Addresses/FeatureServer/0","label":"North Carolina AddressNC","state":"NC","countyPrefix":"37","county":"","bounds":[-84.4,33.75,-75.35,36.6],"placements":["Structure","Other_Site","Centroid","Driveway","GPS","Plan","Survey"]},"fl-hillsborough":{"url":"https://services.arcgis.com/apTfC6SUmnNfnxuF/arcgis/rest/services/Site_Address_Point/FeatureServer/0","label":"Hillsborough County GIS","state":"FL","countyPrefix":"12","county":"12057","bounds":[-82.95,27.55,-81.95,28.25],"placements":["Driveway","Location","Master","Parcel"]},"fl-pinellas":{"url":"https://maps.pinellas.gov/gis/rest/services/PublicWebGIS/Parcels/MapServer/0","label":"Pinellas County Regional 911","state":"FL","countyPrefix":"12","county":"12103","bounds":[-83.05,27.58,-82.48,28.25],"placements":["Primary building address"]}} as const;
+export type RegionalSource=keyof typeof REGIONAL_POINT_SOURCES;
+export type RegionalPoint={source:RegionalSource;objectId:number;checkedAt:string;recordUpdatedAt:string|null;placement:string;countyFips:string};
 type AddressCoordinates={latitude:number;longitude:number;matchedAddress:string};
-export type AddressMatch=AddressCoordinates&({method:'census-address-range'}|{method:'nad-address-point';point:NadPoint}|{method:'ohio-lbrs-address-point';point:OhioPoint}|{method:'ny-sam-address-point';point:NyPoint});
-export function addressMatchLabel(m:AddressMatch){return m.method==='nad-address-point'?'USDOT NAD address point · '+m.point.placement+(m.point.dataset==='bulk-r24'?' · release r24':''):m.method==='ny-sam-address-point'?'New York SAM address point · '+m.point.placement:m.method==='ohio-lbrs-address-point'?'Ohio LBRS public address point':'Census approximate street-range location';}
+export type AddressMatch=AddressCoordinates&({method:'census-address-range'}|{method:'nad-address-point';point:NadPoint}|{method:'ohio-lbrs-address-point';point:OhioPoint}|{method:'ny-sam-address-point';point:NyPoint}|{method:'regional-address-point';point:RegionalPoint});
+export function addressMatchLabel(m:AddressMatch){return m.method==='nad-address-point'?'USDOT NAD address point · '+m.point.placement+(m.point.dataset==='bulk-r24'?' · release r24':''):m.method==='ny-sam-address-point'?'New York SAM address point · '+m.point.placement:m.method==='ohio-lbrs-address-point'?'Ohio LBRS public address point':m.method==='regional-address-point'?REGIONAL_POINT_SOURCES[m.point.source].label+' · '+m.point.placement:'Census approximate street-range location';}
+export function addressPointSource(m:AddressMatch):{url:string;label:string}|undefined{
+ if(m.method==='regional-address-point')return {url:REGIONAL_POINT_SOURCES[m.point.source].url,label:REGIONAL_POINT_SOURCES[m.point.source].label+' #'+m.point.objectId+' · checked '+m.point.checkedAt+(m.point.recordUpdatedAt?' · record updated '+m.point.recordUpdatedAt:'')};
+ if(m.method==='ny-sam-address-point')return {url:NY_SAM_SOURCE_URL,label:'New York SAM #'+m.point.objectId+' · '+m.point.sourceDate};
+ if(m.method==='ohio-lbrs-address-point')return {url:OHIO_LBRS_SOURCE_URL,label:'Ohio LBRS #'+m.point.objectId+' · '+m.point.sourceDate};
+ if(m.method==='nad-address-point')return {url:m.point.dataset==='bulk-r24'?NAD_BULK_SOURCE_URL:NAD_SOURCE_URL,label:'NAD #'+m.point.objectId+' · '+m.point.authority};
+ return undefined;
+}
 export const NAD_SOURCE_URL='https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/Address_Points_from_National_Address_Database_view/FeatureServer/0';
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const clean=(v:unknown,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max&&!/[\u0000-\u001f\u007f]/.test(v)?v.trim():'';
@@ -72,10 +82,17 @@ export function matchedStreet(a:StreetAddress,matched:string):boolean{
 }
 export function validateAddressMatch(v:unknown,a:StreetAddress):AddressMatch|null{
  if(v===null)return null;
- if(!obj(v)||(v.method!=='census-address-range'&&v.method!=='nad-address-point'&&v.method!=='ohio-lbrs-address-point'&&v.method!=='ny-sam-address-point')||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
+ if(!obj(v)||(v.method!=='census-address-range'&&v.method!=='nad-address-point'&&v.method!=='ohio-lbrs-address-point'&&v.method!=='ny-sam-address-point'&&v.method!=='regional-address-point')||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
  const coords={latitude:v.latitude,longitude:v.longitude,matchedAddress:v.matchedAddress};
  if(v.method==='census-address-range')return {...coords,method:v.method};
  const p=v.point;
+ if(v.method==='regional-address-point'){
+  if(!obj(p)||typeof p.source!=='string'||!Object.hasOwn(REGIONAL_POINT_SOURCES,p.source))throw Error('Unknown regional point source.');
+  const source=p.source as RegionalSource,def=REGIONAL_POINT_SOURCES[source],b=def.bounds;
+  const day=(x:unknown):x is string=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&Number.isFinite(Date.parse(x))&&new Date(x).toISOString().slice(0,10)===x;
+  if(a.state!==def.state||typeof p.objectId!=='number'||!Number.isSafeInteger(p.objectId)||p.objectId<=0||!day(p.checkedAt)||!(p.recordUpdatedAt===null||day(p.recordUpdatedAt)&&p.recordUpdatedAt<=p.checkedAt)||typeof p.placement!=='string'||!(def.placements as readonly string[]).includes(p.placement)||typeof p.countyFips!=='string'||!/^\d{5}$/.test(p.countyFips)||!p.countyFips.startsWith(def.countyPrefix)||def.county&&p.countyFips!==def.county||v.longitude<b[0]||v.longitude>b[2]||v.latitude<b[1]||v.latitude>b[3])throw Error('Invalid regional address-point provenance.');
+  return {...coords,method:v.method,point:{source,objectId:p.objectId,checkedAt:p.checkedAt,recordUpdatedAt:p.recordUpdatedAt as string|null,placement:p.placement,countyFips:p.countyFips}};
+ }
  if(v.method==='ny-sam-address-point'){
   if(a.state!=='NY'||!obj(p)||typeof p.objectId!=='number'||!Number.isSafeInteger(p.objectId)||p.objectId<=0||typeof p.nativeId!=='string'||!/^[-A-Za-z0-9]{1,30}$/.test(p.nativeId)||typeof p.sourceDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(p.sourceDate)||!Number.isFinite(Date.parse(p.sourceDate))||!clean(p.authority,150)||typeof p.placement!=='string'||!['Rooftop','Primary structure entrance','Driveway entrance','Parcel centroid'].includes(p.placement)||typeof p.countyFips!=='string'||!/^36\d{3}$/.test(p.countyFips)||v.latitude<40.4||v.latitude>45.2||v.longitude< -80||v.longitude> -71.7)throw Error('Invalid NYS SAM point provenance.');
   return {...coords,method:v.method,point:{objectId:p.objectId,nativeId:p.nativeId,sourceDate:p.sourceDate,authority:clean(p.authority,150),placement:p.placement as NyPoint['placement'],countyFips:p.countyFips}};

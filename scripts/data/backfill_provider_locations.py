@@ -159,6 +159,9 @@ def publish(output,manifest,entries,metadata):
  index=dict(schemaVersion=1,generatedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),benchmark=BENCHMARK,vintage=VINTAGE,sourceScope='Public source identities; not a census of unique active operating departments',chunks=chunks,coverage=by_source,**metadata)
  (output/'index.json').write_bytes(compact(index));print(json.dumps(by_source,indent=2),flush=True)
 def valid_location_method(m,county):
+ if m.get('method')=='regional-address-point':
+  from regional_point_contract import valid_regional_point
+  return valid_regional_point(m,county)
  if m.get('method')=='census-address-range':return 'point' not in m
  if m.get('method')=='ohio-lbrs-address-point':
   p=m.get('point')

@@ -1,3 +1,5 @@
+import {PublicProviderSearch} from './PublicProviderSearch';
+import type {AgencySourceRecordAssociation} from '../types';
 import { agencyIdentifierLabel } from '../utils/providerRecordTrust';
 import {WorkspaceHeading} from './design/WorkspaceIcon';
 import { agencySearchScore } from '../utils/agencySearch';
@@ -74,7 +76,9 @@ interface PredictiveLeadQueueProps {
   onUpdateStage: (agencyId: string, stage: LeadStage) => void;
   onOpenRfpGenerator?: (agency: Agency) => void;
   onOpenDataLineage?: (agency: Agency) => void;
-  onAddAgency?: (agency: Agency) => void;
+  onAddAgency?: (agency: Agency) => void|Promise<void>;
+  onRetryDirectory?:()=>Promise<void>;
+  onDecideSourceRecord?:(id:string,association:AgencySourceRecordAssociation)=>void;
   initialFilter?: { state?: string; county?: string; city?: string; zip?: string } | null;
   onClearInitialFilter?: () => void;
   globalState?: string;
@@ -110,6 +114,8 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
   onOpenRfpGenerator,
   onOpenDataLineage,
   onAddAgency,
+  onRetryDirectory,
+  onDecideSourceRecord,
   initialFilter,
   onClearInitialFilter,
   globalState,
@@ -237,6 +243,15 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
     }
     return Array.from(list).sort();
   }, [selectedState]);
+
+
+  const publicCounty=useMemo(()=>{
+    if(selectedCounty==='all')return '';
+    if(selectedState==='all')return undefined;
+    const norm=(v:string)=>v.trim().toLowerCase().replace(/\s+(county|parish|borough|planning region|census area|municipality)$/,'');
+    const matches=territoryEngine.getCountiesForState(selectedState).filter(c=>c.countyFips===selectedCounty||norm(c.countyName)===norm(selectedCounty));
+    return matches.length===1?matches[0].countyFips:undefined;
+  },[selectedState,selectedCounty]);
 
   // Available cities based on selected state & county from nationwide territory engine (100% full coverage)
   const availableCities = useMemo(() => {
@@ -1636,6 +1651,17 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
         </div>
       )}
 
+
+      <PublicProviderSearch
+        scope={{state:selectedState,countyFips:publicCounty??'',city:selectedCity==='all'?'':selectedCity,zip:zipFilter.trim(),category:selectedCategory,query:debouncedSearchTerm}}
+        countyUnresolved={selectedCounty!=='all'&&publicCounty===undefined}
+        agencies={agencies}
+        onState={state=>{setSelectedState(state);setSelectedCounty('all');setSelectedCity('all');setCurrentPage(1);}}
+        onOpen={onSelectAgency}
+        onCreate={onAddAgency}
+        onDecide={onDecideSourceRecord}
+      />
+
       {filteredAgencies.length === 0 && visibleDirectoryStatus === 'loading' && (
         <div className="workspace-data-status pi-status-info" role="status" data-testid="agency-directory-results-loading">
           <strong>Checking the requested agency records</strong>
@@ -1645,8 +1671,9 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
 
       {filteredAgencies.length === 0 && visibleDirectoryStatus === 'unavailable' && (
         <div className="workspace-data-status pi-status-warning" role="alert" data-testid="agency-directory-results-unavailable">
-          <strong>Search results are unavailable</strong>
-          <span>The record request failed, so no agencies are being reported as missing. You can broaden this local search or retry the connection.</span>
+          <strong>Saved-account synchronization is unavailable</strong>
+          <span>The public directory above does not depend on this connection. Your existing saved work is retained.</span>
+          {onRetryDirectory&&<button type="button" className="workspace-button" onClick={()=>void onRetryDirectory()}>Retry saved-account connection</button>}
           <button
             type="button"
             className="workspace-button"
@@ -1656,7 +1683,7 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
               setSelectedProduct('all'); setSelectedStage('all'); setSelectedType('all'); setCurrentPage(1);
             }}
           >
-            Search all local agencies
+            Clear saved-account geography filters
           </button>
         </div>
       )}
@@ -1666,10 +1693,10 @@ export const PredictiveLeadQueue: React.FC<PredictiveLeadQueueProps> = ({
           <Layers className="w-7 h-7 text-slate-400 mx-auto mb-2" />
           <h3 className="text-slate-900 dark:text-white font-bold text-sm">
             {searchTerm.trim()
-              ? `No agencies match “${searchTerm.trim()}”`
+              ? `No saved accounts match “${searchTerm.trim()}”`
               : selectedState !== 'all' || selectedCounty !== 'all' || selectedCity !== 'all'
-                ? 'No local agency records match this geography'
-                : 'No agencies match the active filters'}
+                ? 'No saved accounts match this geography'
+                : 'No saved accounts match the active filters'}
           </h3>
           <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
             {searchTerm.trim()

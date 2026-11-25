@@ -1,0 +1,13 @@
+"""Allowlisted public regional point provenance. No runtime URL injection."""
+import datetime,re,math,json
+SOURCES=json.loads("{\"nc-addressnc\":{\"url\":\"https://services.nconemap.gov/secure/rest/services/AddressNC/NC1Map_Addresses/FeatureServer/0\",\"label\":\"North Carolina AddressNC\",\"state\":\"NC\",\"countyPrefix\":\"37\",\"county\":\"\",\"bounds\":[-84.4,33.75,-75.35,36.6],\"placements\":[\"Structure\",\"Other_Site\",\"Centroid\",\"Driveway\",\"GPS\",\"Plan\",\"Survey\"]},\"fl-hillsborough\":{\"url\":\"https://services.arcgis.com/apTfC6SUmnNfnxuF/arcgis/rest/services/Site_Address_Point/FeatureServer/0\",\"label\":\"Hillsborough County GIS\",\"state\":\"FL\",\"countyPrefix\":\"12\",\"county\":\"12057\",\"bounds\":[-82.95,27.55,-81.95,28.25],\"placements\":[\"Driveway\",\"Location\",\"Master\",\"Parcel\"]},\"fl-pinellas\":{\"url\":\"https://maps.pinellas.gov/gis/rest/services/PublicWebGIS/Parcels/MapServer/0\",\"label\":\"Pinellas County Regional 911\",\"state\":\"FL\",\"countyPrefix\":\"12\",\"county\":\"12103\",\"bounds\":[-83.05,27.58,-82.48,28.25],\"placements\":[\"Primary building address\"]}}")
+def day(value):
+ if not isinstance(value,str):return False
+ try:return datetime.date.fromisoformat(value).isoformat()==value
+ except ValueError:return False
+def valid_regional_point(m,county):
+ p=m.get('point')
+ if not isinstance(p,dict) or not isinstance(p.get('source'),str) or p['source'] not in SOURCES:return False
+ d=SOURCES[p['source']];oid=p.get('objectId');checked=p.get('checkedAt');updated=p.get('recordUpdatedAt')
+ x,y=m.get('longitude'),m.get('latitude');b=d['bounds']
+ return type(oid) is int and 0<oid<=9007199254740991 and day(checked) and 'recordUpdatedAt' in p and (updated is None or day(updated) and updated<=checked) and p.get('placement') in d['placements'] and p.get('countyFips')==county and bool(re.fullmatch(r'\d{5}',county)) and county.startswith(d['countyPrefix']) and (not d['county'] or d['county']==county) and type(x) in (int,float) and type(y) in (int,float) and math.isfinite(x) and math.isfinite(y) and b[0]<=x<=b[2] and b[1]<=y<=b[3]

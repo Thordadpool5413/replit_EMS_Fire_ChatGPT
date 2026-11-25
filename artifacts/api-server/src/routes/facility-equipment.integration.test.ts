@@ -38,5 +38,13 @@ test("station equipment is private, immutable, independently reviewed and statio
   assert.equal((await req(review,"eq-reviewer",{...decision,decision:"rejected"})).status,409);
   const list=await req(root,"eq-viewer");assert.equal(list.body.rows.length,1);assert.equal(list.body.rows[0].decision,"accepted");assert.equal(list.body.canWrite,false);
   assert.equal((await req(root.replace(stationId,"OTHER"),"eq-viewer")).body.rows.length,0);
+  const mapRoot="/agencies/"+agencyId+"/facilities/"+parentId+"/equipment-map";
+  assert.equal((await req(mapRoot)).status,401);
+  assert.equal((await req(mapRoot,"eq-outsider")).status,403);
+  const map=await req(mapRoot,"eq-viewer");
+  assert.equal(map.status,200);assert.equal(map.body.facilities.length,1);
+  assert.equal(map.body.facilities[0].coordinates,null);
+  assert.deepEqual(map.body.observations,[{stationId,family:"monitors",maker:"zoll",observedOn:"2025-01-01"}]);
+  assert.equal((await req(mapRoot.replace(parentId,"OTHER"),"eq-viewer")).status,404);
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await pool.end();}
 });

@@ -17,6 +17,31 @@ const key=(s:Scope,id:string)=>and(where(s),eq(equipment.submissionId,id));
 const canonical=(v:unknown)=>JSON.stringify(Object.entries(object(v)).sort(([a],[b])=>a.localeCompare(b)));
 export function makeFacilityEquipmentRouter(loadFacilities=listDepartmentFacilities):IRouter{
  const router:IRouter=Router();
+ // A bounded read-only sample. Geometry comes from the current station source, not equipment observations or HQ.
+ router.get("/agencies/:agencyId/facilities/:parentId/equipment-map",requireAgencyWorkspace,async(req,res)=>{
+  const {agencyId,parentId}=req.params;
+  if(typeof agencyId!=="string"||!agencyId.trim()||agencyId.length>300||typeof parentId!=="string"||!nativeId.test(parentId)){res.status(400).json({error:"Invalid department identity."});return;}
+  try{
+   const [a]=await db.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
+   const parent=a&&linkedNerisParent(a.payload,parentId);
+   if(!parent){res.status(404).json({error:"Save and link the exact department first."});return;}
+   const source=await loadFacilities(parent);
+   if(source.warning||source.withheld||source.facilities.length>1000){res.status(409).json({error:"Incomplete or unavailable station source; map sample withheld."});return;}
+   const rows=await db.select().from(equipment).where(and(eq(equipment.agencyId,agencyId),eq(equipment.parentId,parentId),eq(equipment.decision,"accepted"))).limit(2001);
+   if(rows.length>2000){res.status(409).json({error:"Equipment sample exceeds safe limit; narrow scope."});return;}
+   const [current]=await db.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
+   if(!current||!linkedNerisParent(current.payload,parentId)||current.stateCode!==parent.stateCode){res.status(409).json({error:"Department association changed; refresh."});return;}
+   const facilities=source.facilities.filter(f=>f.source==="NERIS"&&f.sourceRecordId&&nativeId.test(f.sourceRecordId));
+   const ids=new Set(facilities.map(f=>f.sourceRecordId));
+   if(ids.size!==facilities.length||facilities.length!==source.facilities.length){res.status(409).json({error:"Station identity ambiguous; map sample withheld."});return;}
+   const observations=rows.flatMap(r=>{
+    const o=parseObservation(r.observation);
+    if(!o||!r.reviewerUid||r.authorUid===r.reviewerUid||!r.reviewedAt||!r.reviewNote||!ids.has(r.stationId))return [];
+    return [{stationId:r.stationId,family:o.family,maker:o.maker,observedOn:o.observedOn}];
+   });
+   res.json({agencyId,parentId,facilities,observations,withheldEvidence:rows.length-observations.length,checkedAt:new Date().toISOString(),sourceRetrievedAt:source.retrievedAt});
+  }catch(e){req.log?.warn({err:e},"Station competitive map unavailable");res.status(503).json({error:"Station competitive map unavailable."});}
+ });
  router.get(path,requireAgencyWorkspace,async(req,res)=>{
   const s=scope(req.params);if(!s){res.status(400).json({error:"Invalid facility identity."});return;}
   try{

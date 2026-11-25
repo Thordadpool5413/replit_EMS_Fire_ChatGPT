@@ -7,7 +7,7 @@ const normalize=(x:unknown)=>typeof x==='string'?x.normalize('NFKC').toUpperCase
 const allowed=['id','agencyId','fieldId','action','originalValue','previousValue','reviewer','method','note','supportingUrl','sourceName','sourceUrl','sourceKind','sourcePeriod','sourceRecordId','reviewedAt'];
 const stamp=['acknowledgedBy','acknowledgedAt'];
 const bySource=new Map(catalog.map(c=>[c.sourceRecordId,c]));
-function identityKey(p:RecordValue){
+function identityKey(p:RecordValue):string|undefined{
  const id=object(p.registryIdentity),state=p.stateCode;
  if(typeof state!=='string'||id.stateCode!==state||id.deactivatedAt||id.headquartersState&&id.headquartersState!==state||typeof id.identifier!=='string')return;
  const n=id.identifier.trim().toUpperCase();
@@ -16,7 +16,8 @@ function identityKey(p:RecordValue){
   if(u.protocol!=='https:'||u.username||u.password||u.port)return;
   if(id.sourceName==='USFA NFDR'&&u.hostname==='apps.usfa.fema.gov'&&/^[-A-Z0-9.]{1,80}$/.test(n))return 'FDID:'+state+':'+n;
   if(id.sourceName==='NPPES'&&u.hostname==='npiregistry.cms.hhs.gov'&&/^\d{10}$/.test(n))return 'NPI:'+n;
- }catch{return;}
+ }catch{return undefined;}
+ return undefined;
 }
 function comparable(r:RecordValue){return JSON.stringify(allowed.map(k=>r[k]??null));}
 function validNew(r:RecordValue,agency:RecordValue,actor:string,now:string){

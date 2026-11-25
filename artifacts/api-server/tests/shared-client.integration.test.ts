@@ -26,6 +26,8 @@ test('production API mounting, cookie sessions and actual shared-pipeline client
   await once(server,'listening');const addr=server.address();assert(addr&&typeof addr!=='string');
   const base='http://127.0.0.1:'+addr.port;
   process.env.ATLAS_PUBLIC_ORIGIN=base;
+  const ready=await fetch(base+'/api/readyz');assert.equal(ready.status,200);assert.equal(ready.headers.get('cache-control'),'no-store');assert.deepEqual(await ready.json(),{status:'ready'});
+  const live=await fetch(base+'/api/healthz');assert.deepEqual(await live.json(),{status:'ok'});
   const id='ci-e2e-pipeline',identityKey='FDID:FL:98372';
   const agency={id,name:'CI fixture only',stateCode:'FL',registryIdentity:{sourceName:'USFA NFDR',identifier:'98372',stateCode:'FL',name:'CI fixture only',sourceUrl:'https://apps.usfa.fema.gov/registry/search',retrievedAt:'2026-11-20'},fieldNotes:[],followUpTasks:[],zollOpportunity:{salesStage:'Target Lead'}} as unknown as Agency;
   await db.insert(agencyRecordsTable).values({id,stateCode:'FL',revision:1,payload:agency as unknown as Record<string,unknown>});

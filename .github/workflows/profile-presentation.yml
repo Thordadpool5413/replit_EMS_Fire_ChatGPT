@@ -58,6 +58,9 @@ on:
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
       - 'scripts/pwa-worker.test.mjs'
+      - 'scripts/check-release-config.mjs'
+      - 'scripts/check-release-config.test.mjs'
+      - 'scripts/post-merge.sh'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
   push:
@@ -119,6 +122,9 @@ on:
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
       - 'scripts/pwa-worker.test.mjs'
+      - 'scripts/check-release-config.mjs'
+      - 'scripts/check-release-config.test.mjs'
+      - 'scripts/post-merge.sh'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
 permissions:
@@ -176,6 +182,8 @@ jobs:
       - run: node scripts/test-ems-unit.mjs
       - name: Verify PWA cache and offline safety
         run: node --test scripts/pwa-worker.test.mjs
+      - name: Verify release configuration checks
+        run: node --test scripts/check-release-config.test.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs
@@ -265,3 +273,6 @@ jobs:
 
       - name: Verify cookie-authenticated application and shared client integration
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/tests/shared-client.integration.test.ts
+
+      - name: Verify readiness probe failure and timeout handling
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/releaseReadiness.test.ts

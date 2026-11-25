@@ -1,4 +1,5 @@
 import type {Agency} from '../types';
+import {registryClaimIndex} from './registryAccountLink';
 import {sharedAgencyKey} from './sharedEvidence';
 import {DAY_MS,validIsoDay,utcDay,normalizedValue} from './documentedIntelligence';
 import {buildReviewedRadar,type ReviewedEvidenceRow,type ReviewedSignal} from './sharedOpportunityRadar';
@@ -11,8 +12,9 @@ export type RankedSignal={signal:ReviewedSignal;band:Band;days?:number};
 const kindOrder:Record<OpportunityKind,number>={'open-procurement':0,'contract-renewal':1,'capital-approved':2,'grant-award':3,'competitor-equipment':4,'awarded-procurement':5};
 export function eligiblePriorityAccounts(agencies:Agency[]){
  const ids=new Map<string,number>(),keys=new Map<string,number>();
+ const claims=registryClaimIndex(agencies);
  for(const a of agencies){ids.set(a.id,(ids.get(a.id)??0)+1);const k=sharedAgencyKey(a);if(k)keys.set(k,(keys.get(k)??0)+1);}
- return agencies.flatMap(agency=>{const identityKey=sharedAgencyKey(agency);return agency.id&&identityKey&&ids.get(agency.id)===1&&keys.get(identityKey)===1&&!agency.registryIdentity?.deactivatedAt&&agency.dataProvenanceTier!=='generated_prospect'?[{agency,identityKey}]:[];});
+ return agencies.flatMap(agency=>{const identityKey=sharedAgencyKey(agency);return agency.id&&identityKey&&ids.get(agency.id)===1&&keys.get(identityKey)===1&&claims.counts.get(identityKey)===1&&!claims.byAccount.get(agency)?.conflicts.length&&!claims.byAccount.get(agency)?.invalid.length&&!agency.registryIdentity?.deactivatedAt&&agency.dataProvenanceTier!=='generated_prospect'?[{agency,identityKey}]:[];});
 }
 function rank(s:ReviewedSignal,today:string):RankedSignal|undefined{
  const age=(Date.parse(today)-Date.parse(s.evidence.documentDate))/DAY_MS;

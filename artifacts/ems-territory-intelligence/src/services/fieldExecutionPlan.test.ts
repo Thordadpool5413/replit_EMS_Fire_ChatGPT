@@ -5,7 +5,7 @@ import {sharedAgencyKey,toSharedEvidence} from './sharedEvidence';
 import {createIntelligenceFact} from './documentedIntelligence';
 import type {ReviewedSample} from './reviewedAccountPriorities';
 import type {ResolveLocation} from './geographicResearch';
-import {buildFieldPlan,fieldPlanDays,type FieldVisit} from './fieldExecutionPlan';
+import {buildFieldPlan,fieldPlanDays,fieldPlanText,type FieldVisit} from './fieldExecutionPlan';
 const now=Date.parse('2026-11-25T12:00:00Z'),today='2026-11-25';
 const agency=(id:string)=>({id,name:'Fixture '+id,stateCode:'FL',registryIdentity:{sourceName:'USFA NFDR',identifier:id,stateCode:'FL',name:'Fixture '+id,sourceUrl:'https://apps.usfa.fema.gov/registry/search',retrievedAt:'2026-11-20'}} as Agency);
 const a=agency('12345'),b=agency('23456'),c=agency('34567');
@@ -36,4 +36,14 @@ test('expired, duplicate, foreign and invalid drafts fail closed',()=>{
  assert.equal(buildFieldPlan(all,sel,samples,resolve,today,[visit(a)],now,now+300000).active,false);
  assert.equal(buildFieldPlan(all,[a.id,a.id],samples,resolve,today,[visit(a)],now,now).active,false);
  assert.equal(buildFieldPlan([...all,{...a,id:'duplicate'}],sel,samples,resolve,today,[visit(a)],now,now).planned.length,0);
+});
+
+test('internal copy is limited to chosen date and current scope, never includes local task notes',()=>{
+ const aa={...a,followUpTasks:[{id:'private',date:today,repName:'',meetingType:'Standalone task',notes:'private detail',nextAction:'private action',dueDate:today,taskOnly:true,followUpStatus:'open' as const}]};
+ const all=[aa,b],sel=all.map(x=>x.id),samples=all.map(sample);
+ const r=buildFieldPlan(all,sel,samples,resolve,today,[visit(aa),visit(b,'2026-11-26')],now,now);
+ const text=fieldPlanText(r,today);
+ assert.match(text,/Fixture 12345/);assert.match(text,/https:\/\/example.gov\/bid/);assert.doesNotMatch(text,/Fixture 23456|private detail|private action/);
+ assert.equal(fieldPlanText(buildFieldPlan(all,sel,samples,resolve,today,[visit(a)],now,now+300000)), '');
+ assert.equal(fieldPlanText(r,'2026-12-03'),'');
 });

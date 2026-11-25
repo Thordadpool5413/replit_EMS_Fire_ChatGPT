@@ -35,3 +35,11 @@ export function buildFieldPlan(agencies:Agency[],selected:string[],samples:Revie
  });
  return {active,days,candidates,planned,schedule,unplanned:candidates.filter(a=>!planned.some(p=>p.agency.id===a.agency.id)),withheld:visits.length-planned.length,checked:active?command.checked:0,selected:selected.length};
 }
+
+/** Export only the user's internal plan and source references, never private follow-up notes. */
+export function fieldPlanText(plan:ReturnType<typeof buildFieldPlan>,filterDay?:string):string{
+ if(!plan.active||filterDay&&!plan.days.includes(filterDay))return '';
+ const days=plan.schedule.filter(d=>(!filterDay||d.day===filterDay)&&d.rows.length);
+ if(!days.length)return '';
+ return ['ATLAS | Internal field plan draft', 'Validate source documents, addresses and authorized contact before visits. No appointments or driving route are confirmed.',...days.flatMap(d=>[d.day,...d.rows.flatMap(a=>[a.agency.name+' · '+a.agency.stateCode,'Internal objective: '+a.visit.objective,a.priority?'Reviewed document ('+a.priority.primary.signal.evidence.documentDate+'): '+a.priority.primary.signal.evidence.sourceUrl:'Discovery only; reviewed priority evidence not available.',a.location?'Source-matched address (verify): '+a.location.address+' · '+a.location.sourceUrl:'Location not accepted in geographic research; verify independently.'])]),'Review again before acting. Internal use only.'].join('\n');
+}

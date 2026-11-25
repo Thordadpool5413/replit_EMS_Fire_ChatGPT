@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import type {Agency} from '../types';
 import type {ReviewedSample} from '../services/reviewedAccountPriorities';
-import {buildFieldPlan,type FieldVisit} from '../services/fieldExecutionPlan';
+import {buildFieldPlan,fieldPlanText,type FieldVisit} from '../services/fieldExecutionPlan';
 import {displayedProviderLocation,mappedProviderLocation,useLocationRevision,loadProviderLocationState} from '../services/providerLocation';
 import {localDay} from '../utils/followUps';
 import {OPPORTUNITY_LABELS} from '../services/opportunityRadar';
@@ -9,8 +9,9 @@ const resolve=(a:Agency,directory:Agency[])=>({location:displayedProviderLocatio
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 export function FieldExecutionPlanner({agencies,selected,samples,started,onOpenAgency}:{agencies:Agency[];selected:string[];samples:ReviewedSample[];started:number;onOpenAgency:(a:Agency)=>void}){
  useLocationRevision();
- const [visits,setVisits]=useState<FieldVisit[]>([]),[account,setAccount]=useState(''),[day,setDay]=useState(localDay),[objective,setObjective]=useState(''),[confirmed,setConfirmed]=useState(false),[mode,setMode]=useState<'day'|'week'>('week'),[filterDay,setFilterDay]=useState(localDay),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
+ const [visits,setVisits]=useState<FieldVisit[]>([]),[account,setAccount]=useState(''),[day,setDay]=useState(localDay),[objective,setObjective]=useState(''),[confirmed,setConfirmed]=useState(false),[mode,setMode]=useState<'day'|'week'>('week'),[filterDay,setFilterDay]=useState(localDay),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[manualCopy,setManualCopy]=useState(false);
  const today=localDay(),r=buildFieldPlan(agencies,selected,samples,resolve,today,visits,started);
+ const draftText=fieldPlanText(r,mode==='day'?filterDay:undefined);
  const candidate=r.candidates.find(a=>a.agency.id===account);
  const existing=r.planned.find(a=>a.agency.id===account);
  const canAdd=r.active&&!!candidate&&r.days.includes(day)&&!!objective.trim()&&objective.length<=300&&confirmed;
@@ -23,6 +24,10 @@ export function FieldExecutionPlanner({agencies,selected,samples,started,onOpenA
   const v={agencyId:candidate.agency.id,identityKey:candidate.identityKey,day,objective:objective.trim()};
   setVisits(prev=>[...prev.filter(p=>p.agencyId!==v.agencyId),v]);
   setAccount('');setObjective('');setConfirmed(false);setNotice('Internal visit draft updated.');
+ }
+ async function copy(){
+  if(!navigator.onLine||Date.now()-started>=300000||!draftText)return;
+  try{await navigator.clipboard.writeText(draftText);setManualCopy(false);setNotice('Internal draft copied. Revalidate before using it.');}catch{setManualCopy(true);}
  }
  async function load(){
   setBusy(true);setNotice('');
@@ -56,6 +61,8 @@ export function FieldExecutionPlanner({agencies,selected,samples,started,onOpenA
   </div>
   <div role="group" aria-label="Plan period" className="grid grid-cols-2 gap-2">{(['day','week'] as const).map(m=><button key={m} type="button" className="workspace-button min-h-11" aria-pressed={mode===m} onClick={()=>setMode(m)}>{m==='day'?'Daily plan':'Seven-day plan'}</button>)}</div>
   {mode==='day'&&<label>Show date<select className={control} value={filterDay} onChange={e=>setFilterDay(e.target.value)}>{r.days.map(d=><option key={d}>{d}</option>)}</select></label>}
+  <button type="button" className="workspace-button min-h-11" disabled={!draftText} onClick={()=>void copy()}>Copy {mode==='day'?'daily':'seven-day'} internal draft</button>
+  {manualCopy&&draftText&&<textarea className={control} rows={6} readOnly value={draftText} aria-label="Internal field plan draft"/>}
   {r.schedule.filter(d=>mode==='week'||d.day===filterDay).map(d=><section className="rounded border p-2 space-y-1 min-w-0" key={d.day}><h5 className="font-semibold">{d.day} · {d.rows.length} planned</h5>{!d.rows.length&&<p className="text-xs">No planned visits.</p>}
    <ul className="divide-y">{d.rows.map(a=><li key={a.identityKey} className="py-2 space-y-1 break-words"><p className="font-medium">{a.agency.name}</p><p>{a.visit.objective}</p><p className="text-xs">{a.priority?'Reviewed priority '+a.priority.rank:'Discovery only'} · {a.location?'Source-matched location':'Location to verify'}</p>{a.priority&&<a className="underline" href={a.priority.primary.signal.evidence.sourceUrl} target="_blank" rel="noopener noreferrer">Reviewed source</a>}<div className="flex flex-wrap gap-2"><button type="button" className="workspace-button min-h-11" onClick={()=>select(a.agency.id)}>Edit</button><button type="button" className="workspace-button min-h-11" onClick={()=>{setVisits(prev=>prev.filter(v=>v.agencyId!==a.agency.id));if(account===a.agency.id)select('');}}>Remove</button><button type="button" className="workspace-button min-h-11" onClick={()=>onOpenAgency(a.agency)}>Open profile</button></div></li>)}</ul>
    {d.groups.map(g=><p key={g.key} className="text-xs break-words">Nearby research group: {g.accounts.map(a=>a.agency.name).join(', ')} · max {g.diameterMiles.toFixed(1)} straight-line miles</p>)}

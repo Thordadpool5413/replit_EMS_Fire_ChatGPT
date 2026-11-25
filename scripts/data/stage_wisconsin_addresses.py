@@ -7,9 +7,9 @@ ITEM='3b84690a763449988d88da14b502e008'
 ITEM_URL='https://www.arcgis.com/sharing/rest/content/items/'+ITEM
 PORTAL='https://wisconsin-oec-data-portal-wi-oec.hub.arcgis.com/datasets/wi-oec::wi-ng911-site-structure-address-points'
 LIVE_LAYER='https://services3.arcgis.com/GoOAGCoqFEhZEh7f/arcgis/rest/services/WI_NG911_Site_Structure_Address_Points_2/FeatureServer/0'
-UNIT_ALIASES=('Unit','Unit_ID','UnitID','Unit_Id','Unit_Number','UnitNumber')
-UNIT_TYPE_ALIASES=('Unit_Type','UnitType')
-TEXT_FIELDS=('AddNum_Pre','AddNum_Suf','FullStNm','Post_Comm','Post_Code','State','Country','County','Building','Floor','Unit','Room','Seat','Addtl_Loc','Placement')
+UNIT_ALIASES=('Unit_Value',)
+UNIT_TYPE_ALIASES=('Unit_PreType',)
+TEXT_FIELDS=('AddNum_Pre','AddNum_Suf','FullStNm','Post_Comm','Post_Code','State','Country','County','Building','Floor','Unit','Room','Seat','Addtl_Loc','Placement','Structure','Exception','MilePost')
 DATE_FIELDS=('Effective','Expire','DateUpdate')
 FIELDS={**{k:'esriFieldTypeString' for k in TEXT_FIELDS},**{k:'esriFieldTypeDate' for k in DATE_FIELDS},'Add_Number':'esriFieldTypeInteger'}
 def request(url,params):
@@ -45,8 +45,8 @@ def schema(layer):
         if f.get('type')!=kind or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')):raise ValueError('Unreviewed schema field: '+field)
         names[field]=f['name']
     unit_types=[by_name[k] for k in {alias.lower() for alias in UNIT_TYPE_ALIASES} if k in by_name]
-    if len(unit_types)>1 or any(f.get('type')!='esriFieldTypeString' or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')) for f in unit_types):raise ValueError('Unreviewed unit type schema')
-    if unit_types:names['UnitType']=unit_types[0]['name']
+    if len(unit_types)!=1 or any(f.get('type')!='esriFieldTypeString' or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')) for f in unit_types):raise ValueError('Unreviewed unit type schema')
+    names['UnitType']=unit_types[0]['name']
     oid=layer.get('objectIdField')
     if not isinstance(oid,str) or not re.fullmatch(r'[A-Za-z0-9_]+',oid) or by_name.get(oid.lower(),{}).get('type')!='esriFieldTypeOID':raise ValueError('Missing native object ID')
     names['oid']=oid
@@ -83,7 +83,7 @@ def review(e,rows,counties,checked):
         if not isinstance(v['FullStNm'],str) or not isinstance(v['Post_Comm'],str):continue
         matched=f"{v['Add_Number']} {v['FullStNm']}, {v['Post_Comm']}, WI, {a['zip']}"
         if not match_address(a,matched):continue
-        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc')) or v.get('UnitType') not in (None,''):continue
+        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc','Structure','Exception','MilePost')) or v.get('UnitType') not in (None,''):continue
         county=v['County'];fips=counties.get(('WI',county_key(county)),set()) if isinstance(county,str) else set()
         if len(fips)!=1 or e.get('sourceCounty') and e['sourceCounty'] not in fips:conflict=True;continue
         try:

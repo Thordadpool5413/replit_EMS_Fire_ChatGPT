@@ -87,6 +87,7 @@ import { AgencyIntelligenceBrief, getAgencyServiceMode } from './profile/AgencyI
 import { PreCallPlanner } from './profile/PreCallPlanner';
 import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
+import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections } from '../services/providerLocation';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
@@ -1629,6 +1630,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </ProfileCommandOverview>
           )}
 
+          {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
           {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}
 
           {activeSection !== 'overview' && (

@@ -1,5 +1,5 @@
 import { validateCorrection } from '../../services/agencyReviewOverlay';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCheck, ExternalLink, FileCheck2, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert, UserCheck } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
 import { appendFactReview, effectiveFactValue, fieldValidationState, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
@@ -12,7 +12,7 @@ type Fact = { id: string; label: string; value: string; sourceKey: AgencyFactEvi
 const text = (v: unknown): string => v === null || v === undefined || v === '' ? 'Not reported' : String(v);
 export function reviewableAgencyFacts(a: Agency,candidate?:ProfileAddressReview): Fact[] {
   const f = a.installedFleet;
-  return [
+  return [...[
     {id:'monitor.model',label:'Monitor / defibrillator model',value:text(f?.defibBrand),sourceKey:'defibrillatorBiomedicalFleet'},
     {id:'monitor.quantity',label:'Monitor / defibrillator quantity',value:text(f?.defibUnitsCount),sourceKey:'defibrillatorBiomedicalFleet'},
     {id:'monitor.age',label:'Monitor fleet age (years)',value:text(f?.defibAgeYears),sourceKey:'defibrillatorBiomedicalFleet'},
@@ -31,7 +31,7 @@ export function reviewableAgencyFacts(a: Agency,candidate?:ProfileAddressReview)
     {id:'operations.calls',label:'Annual calls received',value:text(a.annualCallVolume),sourceKey:'annualCallsReceived'},
     {id:'operations.transports',label:'Annual 911 transports',value:text(a.annual911Transports),sourceKey:'annualEmergencyVolume'},
     {id:'operations.stations',label:'Stations',value:text(a.stationsCount),sourceKey:'stationCount'},
-  ].map(f => ({...f, value: a._reviewOriginalValues?.[f.id] ?? f.value})).concat(candidate?[{id:ADDRESS_CANDIDATE_FIELD,label:'Government GIS address evidence (review only)',value:candidate.matchedAddress,sourceKey:'providerAddress',candidateSource:candidateReviewSource(candidate)}]:[]) as Fact[];
+  ].map(f => ({...f, value: a._reviewOriginalValues?.[f.id] ?? f.value})),...(candidate?[{id:ADDRESS_CANDIDATE_FIELD,label:'Government GIS address evidence (review only)',value:candidate.matchedAddress,sourceKey:'providerAddress',candidateSource:candidateReviewSource(candidate)}]:[])] as Fact[];
 }
 const labels: Record<FactReviewAction,string> = {review:'Review information',confirm:'Record confirmation',correct:'Correct this value',flag:'Flag a discrepancy',note:'Add note'};
 export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string;addressCandidate?:ProfileAddressReview}> = ({agency,requestedFieldId,addressCandidate}) => {
@@ -47,10 +47,11 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string;a
   const [correction,setCorrection]=useState('');
   const [supportingUrl,setSupportingUrl]=useState('');
   const [dirty,setDirty]=useState(false);
+  const draftSource=useRef<string|undefined>(undefined);
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
   useEffect(()=>{
-    setEntries([]); setLoadError(''); setDirty(false); setFieldId(facts.some(f=>f.id===requestedFieldId)?requestedFieldId!:facts[0].id);
+    setEntries([]); setLoadError(''); setDirty(false);draftSource.current=undefined; setFieldId(facts.some(f=>f.id===requestedFieldId)?requestedFieldId!:facts[0].id);
     setReviewer(''); setMethod('');setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
     try {setEntries([...new Map([...(agency._factReviews ?? []), ...loadFactReviews(agency.id)].map(e => [e.id,e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt))); } catch(e){setLoadError(e instanceof Error?e.message:'Review history is unavailable.');}
   },[agency.id]);
@@ -77,11 +78,12 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string;a
   const factState=(f:Fact)=>{const h=entries.filter(e=>e.fieldId===f.id);return fieldValidationState(f.value,effectiveFactValue(f.value,h),h,factSource(f));};
   const changeFact=(id:string)=>{
     if(dirty&&!window.confirm('Discard the unsaved review for this fact?'))return;
-    setFieldId(id);setAction('review');setDirty(false);setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
+    setFieldId(id);setAction('review');setDirty(false);draftSource.current=undefined;setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
   };
   const save=(e:React.FormEvent)=>{
     e.preventDefault();setError('');setMessage('');
     if(!selected){setError('The selected evidence is no longer current. Select another fact before saving.');return;}
+    if(candidateField&&dirty&&draftSource.current!==source?.sourceRecordId){setError('GIS evidence changed while you were reviewing it. Select the fact again and review the current source.');return;}
     if(candidateField&&(!addressCandidate||action==='correct')){setError('GIS evidence is review-only; it cannot overwrite the registry address or map coordinates.');return;}
     if(action==='confirm'&&current==='Not reported'){setError('A missing value cannot be confirmed. Record a correction and its basis first.');return;}
     if((action==='flag'||action==='note'||action==='confirm'||action==='correct')&&!note.trim()){setError('Record the basis for this review, including what you independently checked.');return;}
@@ -97,7 +99,7 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string;a
         sourceName:source?.sourceName,sourceUrl,sourceKind:source?.sourceKind,sourcePeriod:source?.reportingPeriod,sourceRecordId:source?.sourceRecordId,
         reviewedAt:new Date().toISOString(),
       });
-      setEntries([...new Map([...(agency._factReviews ?? []), ...next].map(e => [e.id,e])).values()]);setDirty(false);setNote('');setCorrection('');setSupportingUrl('');
+      setEntries([...new Map([...(agency._factReviews ?? []), ...next].map(e => [e.id,e])).values()]);setDirty(false);draftSource.current=undefined;setNote('');setCorrection('');setSupportingUrl('');
       setMessage(candidateField?'Address evidence review saved on this device and queued for synchronization. No map pin or registry address was changed.':'Saved on this device. Corrections now update the profile and calculations; imported values remain in history.');
     } catch(e){setError(e instanceof Error?e.message:'Review could not be saved.');}
   };
@@ -119,7 +121,7 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string;a
          {source&&<div className="fr-source">{source.sourceKind&&<span>Type <strong>{source.sourceKind}</strong></span>}{source.sourceName&&<span>{source.sourceName}</span>}{source.reportingPeriod&&<span>Period {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}</div>}</div><div className="fr-zone fr-zone--review"><p className="fr-zone-label"><UserCheck size={15} aria-hidden="true"/>Entry details</p><dl className="fr-values"><div><dt>Current value</dt><dd>{current}</dd></div></dl></div></div>
         {!selected&&<p role="alert" className="fr-error">Previously selected evidence is no longer available. Select a current fact.</p>}
         {candidateField&&<p className="fr-hint">Confirm only the independently checked address evidence. This does not confirm a station, suite, operating status or map pin. To correct the registry address, select Agency address instead.</p>}
-        <form onSubmit={save} onChange={()=>{setDirty(true);setMessage('');}}>
+        <form onSubmit={save} onChange={()=>{if(!dirty)draftSource.current=source?.sourceRecordId;setDirty(true);setMessage('');}}>
           <label>Review action<select value={action} onChange={e=>setAction(e.target.value as FactReviewAction)} data-testid="fact-review-action">{Object.entries(labels).filter(([id])=>!candidateField||id!=='correct').map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
           <div className="fr-form-grid"><label>Reviewer name<input required maxLength={120} value={reviewer} onChange={e=>setReviewer(e.target.value)} autoComplete="name" data-testid="fact-review-reviewer"/></label><label>Review method<input required maxLength={240} placeholder="e.g. agency phone call, document review" value={method} onChange={e=>setMethod(e.target.value)} data-testid="fact-review-method"/></label></div>
            <p className="fr-hint">Name and method are saved with this entry. Changes save on this device and queue for acknowledgment; reviewer identity is self-entered.</p>

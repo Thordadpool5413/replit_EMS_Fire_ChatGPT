@@ -6,6 +6,7 @@ export function publicAgencyProfilePayload(payload: Record<string, unknown>): Re
     "sourceRecordAssociations",
     "sourceFacts",
     "_factReviews",
+    "_coordinateEvidenceDecisions",
     "_reviewOriginalValues",
   ]) {
     delete publicPayload[key];

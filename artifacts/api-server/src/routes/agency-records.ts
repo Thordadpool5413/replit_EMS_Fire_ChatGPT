@@ -11,6 +11,7 @@ import { db, agencyMutationReceiptsTable, agencyRecordsTable } from "@workspace/
 import { agencyWorkspaceRole, canReadAgencyWorkspaceFields, requireAgencyWorkspace } from "../middlewares/agencyWorkspaceAccess";
 import { publicAgencyProfilePayload } from "../lib/publicAgencyProfile";
 import { AddressReviewError, reconcileAddressReviews } from "../lib/addressReviewReconciliation";
+import { coordinateDecision, CoordinateDecisionError, preserveCoordinateDecisions } from "../lib/coordinateDecision";
 
 const router: IRouter = Router();
 router.use("/agencies", (_req, res, next) => {
@@ -134,7 +135,7 @@ router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
 
       const nextRevision = revision + 1;
       const now = new Date().toISOString();
-      const payload: Record<string, unknown> = { ...reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now), _revision: nextRevision, _updatedAt: now };
+      const payload: Record<string, unknown> = { ...preserveCoordinateDecisions(current?.payload, reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now)), _revision: nextRevision, _updatedAt: now };
       const stateValue = payload.stateCode;
       const stateCode = typeof stateValue === "string" && statePattern.test(stateValue.toUpperCase())
         ? stateValue.toUpperCase()
@@ -202,7 +203,7 @@ router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req,
 
       const nextRevision = revision + 1;
       const now = new Date().toISOString();
-      const payload: Record<string, unknown> = { ...reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now), _revision: nextRevision, _updatedAt: now };
+      const payload: Record<string, unknown> = { ...preserveCoordinateDecisions(current?.payload, reconcileAddressReviews(current?.payload, body.data.agency, req.user!.id, now)), _revision: nextRevision, _updatedAt: now };
       const stateValue = payload.stateCode;
       const stateCode = typeof stateValue === "string" && statePattern.test(stateValue.toUpperCase())
         ? stateValue.toUpperCase()
@@ -257,7 +258,7 @@ router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) =
       const stateCode = typeof agency.stateCode === "string" && statePattern.test(agency.stateCode.toUpperCase())
         ? agency.stateCode.toUpperCase()
         : null;
-      return { id: agency.id, stateCode, payload: { ...reconcileAddressReviews(undefined, agency, req.user!.id, updatedAt), _revision: 1, _updatedAt: updatedAt }, revision: 1 };
+      return { id: agency.id, stateCode, payload: { ...preserveCoordinateDecisions(undefined, reconcileAddressReviews(undefined, agency, req.user!.id, updatedAt)), _revision: 1, _updatedAt: updatedAt }, revision: 1 };
     });
     const inserted = await db.insert(agencyRecordsTable).values(values)
       .onConflictDoNothing().returning({ id: agencyRecordsTable.id });
@@ -271,4 +272,34 @@ router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) =
   }
 });
 
+// Private, revision-checked decision journal. No public map coordinates are changed.
+router.post("/agencies/:agencyId/coordinate-decisions", requireAgencyWorkspace, async (req,res)=>{
+ const agencyId=routeAgencyId(req),{expectedRevision,...decision}=req.body??{};
+ if(!agencyId||!Number.isSafeInteger(expectedRevision)||expectedRevision<1)return requestError(res,400,"invalid_coordinate_decision","Current agency revision required.");
+ try{
+  const result=await db.transaction(async tx=>{
+   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${agencyId}, 0))`);
+   const [current]=await tx.select().from(agencyRecordsTable).where(eq(agencyRecordsTable.id,agencyId)).limit(1);
+   if(!current||isQuarantined(current.payload))return {status:404 as const};
+   const now=new Date().toISOString();
+   // Replay is safe even if a later revision exists; never overwrite it.
+   if(current.revision!==expectedRevision){
+    const history=current.payload._coordinateEvidenceDecisions;
+    if(!Array.isArray(history)||!history.some(x=>x&&typeof x==='object'&&x.id===decision.id))return {status:409 as const};
+   }
+   const applied=coordinateDecision(current.payload,decision,req.user!.id,now);
+   if(applied.replay)return {status:200 as const,revision:current.revision,entry:applied.entry};
+   if(current.revision!==expectedRevision)return {status:409 as const};
+   const revision=current.revision+1;
+   await tx.update(agencyRecordsTable).set({payload:{...applied.payload,_revision:revision,_updatedAt:now},revision,updatedAt:new Date()}).where(eq(agencyRecordsTable.id,agencyId));
+   return {status:200 as const,revision,entry:applied.entry};
+  });
+  if(result.status===404)return requestError(res,404,"not_found","Current provider account unavailable.");
+  if(result.status===409)return requestError(res,409,"revision_conflict","Refresh the current account before deciding.");
+  return res.json({revision:result.revision,entry:result.entry});
+ }catch(error){
+  if(error instanceof CoordinateDecisionError)return requestError(res,422,"coordinate_decision_blocked",error.message);
+  logFailure(req,error,"coordinate-decision");return requestError(res,503,"database_unavailable","Coordinate decision could not be recorded.");
+ }
+});
 export default router;

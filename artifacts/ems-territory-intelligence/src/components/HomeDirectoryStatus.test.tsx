@@ -40,12 +40,17 @@ test('unavailable data stays distinct and exposes retry and directory actions', 
 });
 
 test('a completed empty directory differs from zero matches in a populated directory', () => {
-  const empty = resolveHomeDirectoryNotice({ status: 'ready', loaded: 0 }, 0);
+  const empty = resolveHomeDirectoryNotice({ status: 'ready', loaded: 0 }, 0, 46669);
   const filtered = resolveHomeDirectoryNotice({ status: 'ready', loaded: 85 }, 0);
   assert.equal(empty?.kind, 'empty');
-  assert.match(empty?.description ?? '', /finished loading and returned zero records/);
+  assert.match(empty?.title ?? '', /No saved agency profiles/);
+  assert.match(empty?.description ?? '', /46,669 public USFA and NPPES registry listings/);
   assert.equal(filtered?.kind, 'filtered-empty');
   assert.match(filtered?.description ?? '', /85 agency records loaded overall/);
+  const html = renderToStaticMarkup(
+    <HomeDirectoryStatus status={{ status: 'ready', loaded: 0 }} visibleAgencyCount={0} publicListingCount={46669} onBrowseDirectory={() => {}} />,
+  );
+  assert.match(html, /Browse public registry listings/);
 });
 
 test('a populated current view does not add a misleading empty-state card', () => {

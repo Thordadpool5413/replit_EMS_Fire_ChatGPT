@@ -66,6 +66,27 @@ class RegionalTests(unittest.TestCase):
    self.assertIsNone(resolve('tx-stratmap',e,[bad],counties,CHECKED)[0],field)
   bad=copy.deepcopy(f);bad['attributes']['objectid']=8;bad['geometry']['x']=-97.75
   self.assertEqual(resolve('tx-stratmap',e,[f,bad],counties,CHECKED)[1],'ambiguous')
+ def test_multistate_county_adapters(self):
+  from recover_regional_locations import COUNTY_ADAPTERS
+  cases=[('il-peoria','IL','17143','Peoria County','Peoria','61602',-89.59,40.69,'STRUCTURE'),('il-lake','IL','17097','Lake County','Waukegan','60085',-87.85,42.36,'STRUCTURE'),('pa-northampton','PA','42095','Northampton County','Easton','18042',-75.22,40.69,'Placement not reported'),('al-baldwin','AL','01003','Baldwin County','Bay Minette','36507',-87.77,30.88,'Structure')]
+  for source,state,county,name,city,postal,x,y,placement in cases:
+   adapter=COUNTY_ADAPTERS[source]
+   counties=county_index([{'USPS':state,'NAME':name,'GEOID':county}])
+   e=dict(key='fixture',state=state,status='no-match',sourceCounty=county,countyFips='',match=None,address={'street':'123 Main Street','city':city,'state':state,'zip':postal})
+   fields=dict(OBJECTID=6,State=state,Country='US',County=name,Effective=None,Expire=None)
+   fields.update({k:None for k in adapter['sub']});fields.update({adapter['house']:123 if adapter['integer'] else '123',adapter['postal']:postal,adapter['city']:city,adapter['street']:'123 MAIN ST',adapter['date']:None})
+   if adapter['placement']:fields[adapter['placement']]=placement
+   if adapter.get('status'):fields[adapter['status']]='Active'
+   feature=dict(attributes=fields,geometry=dict(x=x,y=y))
+   hit,status=resolve(source,e,[feature],counties,CHECKED)
+   self.assertEqual(status,'mapped',source);self.assertTrue(valid_regional_point(hit[1],county))
+   self.assertIn(adapter['postal']+"='"+postal+"'",query(source,[e['address']])['where'])
+   for key,value in [('County','Unknown County'),('Country','CA'),(adapter['street'],'124 MAIN ST'),(adapter['sub'][0],'Suite 7')]:
+    bad=copy.deepcopy(feature);bad['attributes'][key]=value;self.assertIsNone(resolve(source,e,[bad],counties,CHECKED)[0],(source,key))
+   if adapter['placement']:
+    bad=copy.deepcopy(feature);bad['attributes'][adapter['placement']]='Geocoding';self.assertIsNone(resolve(source,e,[bad],counties,CHECKED)[0])
+   if adapter.get('status'):
+    bad=copy.deepcopy(feature);bad['attributes'][adapter['status']]='Retired';self.assertIsNone(resolve(source,e,[bad],counties,CHECKED)[0])
  def test_preserve_and_withhold(self):
   e=example();hit,_=resolve('nc-addressnc',e,[nc()],C,CHECKED)
   f=nc();f['attributes']['objectid']=11;f['geometry']['x']=-79.41

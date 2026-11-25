@@ -18,11 +18,15 @@ on:
       - 'scripts/data/backfill_provider_locations.py'
       - 'scripts/data/test_backfill_provider_locations.py'
       - 'scripts/data/recover_nad_locations.py'
+      - '.github/workflows/nad-provider-locations.yml'
       - 'scripts/data/recover_ny_locations.py'
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_facility_reconciliation.py'
+      - 'scripts/data/test_facility_reconciliation.py'
+      - 'scripts/data/facility_research_candidates.json'
       - 'scripts/data/check_additive_location_release.py'
       - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
@@ -37,7 +41,6 @@ on:
       - 'scripts/data/recover_census_locations.py'
       - 'scripts/data/test_recover_census_locations.py'
       - 'scripts/data/test_recover_nad_locations.py'
-      - '.github/workflows/nad-provider-locations.yml'
       - '.github/workflows/national-provider-locations.yml'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
@@ -74,11 +77,15 @@ on:
       - 'scripts/data/backfill_provider_locations.py'
       - 'scripts/data/test_backfill_provider_locations.py'
       - 'scripts/data/recover_nad_locations.py'
+      - '.github/workflows/nad-provider-locations.yml'
       - 'scripts/data/recover_ny_locations.py'
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
       - 'scripts/data/test_recover_regional_locations.py'
       - 'scripts/data/audit_location_gaps.py'
+      - 'scripts/data/audit_facility_reconciliation.py'
+      - 'scripts/data/test_facility_reconciliation.py'
+      - 'scripts/data/facility_research_candidates.json'
       - 'scripts/data/check_additive_location_release.py'
       - 'scripts/data/test_location_recovery_release.py'
       - '.github/workflows/regional-address-recovery.yml'
@@ -93,7 +100,6 @@ on:
       - 'scripts/data/recover_census_locations.py'
       - 'scripts/data/test_recover_census_locations.py'
       - 'scripts/data/test_recover_nad_locations.py'
-      - '.github/workflows/nad-provider-locations.yml'
       - '.github/workflows/national-provider-locations.yml'
       - 'scripts/build-national-source-directory.py'
       - 'artifacts/api-server/src/lib/sam*'
@@ -155,6 +161,7 @@ jobs:
           if test -f artifacts/ems-territory-intelligence/public/registry/locations/index.json; then
             python3 scripts/data/audit_location_gaps.py --json generated-artifacts/location-recovery/gaps.json --markdown generated-artifacts/location-recovery/gaps.md
             cat generated-artifacts/location-recovery/gaps.md >> "$GITHUB_STEP_SUMMARY"
+            python3 scripts/data/audit_facility_reconciliation.py --output generated-artifacts/location-recovery/facility-review.json
           fi
       - name: Keep mapping coverage report
         uses: actions/upload-artifact@v4
@@ -238,3 +245,11 @@ jobs:
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/shared-evidence.integration.test.ts
       - name: Verify saved agency access and revision protection
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-records.integration.test.ts
+
+      - name: Verify private station observations
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-notes.integration.test.ts
+
+      - name: Verify station equipment evidence and independent review
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-equipment.integration.test.ts
+      - name: Verify private decision authority evidence
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-authority.integration.test.ts

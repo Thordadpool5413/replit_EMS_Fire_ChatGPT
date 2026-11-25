@@ -52,7 +52,8 @@ type UsfaDepartment = {
 
 type UsfaStation = {
   fdid: string;
-  stateCode: string;
+  stateCode: string; // Parent department state, not station state.
+  stationState: string;
   name: string;
   address: string | null;
   city: string | null;
@@ -345,16 +346,16 @@ async function getUsfaStations(): Promise<{
     ]);
     return table.rows.flatMap((row) => {
       const fdid = csvValue(table, row, "FDID");
-      const stateCode =
-        csvValue(table, row, "HQ State").toUpperCase() ||
-        csvValue(table, row, "Station State").toUpperCase();
-      if (!fdid || !/^[A-Z]{2}$/.test(stateCode)) return [];
+      const stateCode = csvValue(table, row, "HQ State").toUpperCase();
+      const stationState = csvValue(table, row, "Station State").toUpperCase();
+      if (!fdid || !/^[A-Z]{2}$/.test(stateCode) || !/^[A-Z]{2}$/.test(stationState)) return [];
 
       const name =
         optionalText(csvValue(table, row, "Station Name")) ?? "Station record";
       return [{
         fdid,
         stateCode,
+        stationState,
         name,
         address: buildAddress([
           csvValue(table, row, "Station Addr1"),
@@ -838,7 +839,7 @@ function toUsfaStation(
     name: station.name,
     address: station.address,
     city: station.city,
-    stateCode: station.stateCode,
+    stateCode: station.stationState,
     postalCode: station.postalCode,
     unitCount: null,
     exportDate: null,
@@ -1096,4 +1097,64 @@ export async function listNerisDepartments(stateCode: string) {
     seen.add(row.nerisId);return true;
   });
   return {source:"NERIS",stateCode,fetchedAt,warning:getSourceFailure(`neris:departments:${stateCode}`),departments};
+}
+
+/** Public facilities are a separate record grain, never a saved agency or HQ replacement. */
+export type FacilityParent = {source:"USFA NFDR"|"NERIS"; stateCode:string; identifier:string};
+export type PublicFacility = {source:"USFA NFDR"|"NERIS"; sourceRecordId:string|null; name:string|null; address:string|null; city:string|null; stateCode:string; postalCode:string|null; coordinates:{latitude:number;longitude:number}|null; sourceUrl:string; exportDate:string|null; endUserValidationRequired:true};
+const US_STATES=new Set("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(" "));
+export function validFacilityParent(p:FacilityParent):boolean {
+  return US_STATES.has(p.stateCode) && (p.source==="USFA NFDR" ? /^[-A-Z0-9.]{1,80}$/.test(p.identifier)&&!/^LOCATION-|^[A-Z]{2}-(?:FD|EMS)-\d{5}/.test(p.identifier) : p.source==="NERIS" && /^[-A-Z0-9]{1,14}$/.test(p.identifier));
+}
+function sourceText(v:unknown,max=255):string|null {
+  return typeof v==="string"&&v.trim()&&v.trim().length<=max&&!/[\u0000-\u001f\u007f]/.test(v)?v.trim():null;
+}
+export function parseNerisFacility(feature:unknown,parent:FacilityParent):PublicFacility|null {
+  if(!feature||typeof feature!=="object")return null;
+  const f=feature as {attributes?:Record<string,unknown>;geometry?:{x?:unknown;y?:unknown}};
+  const a=f.attributes??{};
+  if(a.department_neris_id!==parent.identifier)return null;
+  const id=sourceText(a.neris_id,14),state=sourceText(a.state,2);
+  if(!id||!/^[-A-Z0-9]{1,14}$/.test(id)||!state||!US_STATES.has(state))return null;
+  const x=f.geometry?.x,y=f.geometry?.y;
+  const coordinates=typeof x==="number"&&typeof y==="number"&&Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x)<=180&&Math.abs(y)<=90&&(x!==0||y!==0)?{latitude:y,longitude:x}:null;
+  return {source:"NERIS",sourceRecordId:id,name:sourceText(a.station_name),address:buildAddress([sourceText(a.address_line_1),sourceText(a.address_line_2)]),city:sourceText(a.city),stateCode:state,postalCode:sourceText(a.zip_code,10),coordinates,sourceUrl:stationRecordUrl(1,"neris_id",id),exportDate:toIsoDate(a.export_date)?.toISOString()??null,endUserValidationRequired:true};
+}
+async function exactNerisFacilities(parent:FacilityParent) {
+  // Validate parent identity against the public department roster before requesting children.
+  const departments=await getNerisDepartments(parent.stateCode);
+  if(departments.data.filter(d=>d.nerisId===parent.identifier).length!==1)throw Error("Department identity unavailable or ambiguous.");
+  const url=new URL(nerisLayerUrl(1)+"/query");
+  url.searchParams.set("where","department_neris_id='"+parent.identifier+"'");
+  url.searchParams.set("outFields","OBJECTID,neris_id,station_name,address_line_1,address_line_2,city,state,zip_code,department_neris_id,export_date");
+  url.searchParams.set("returnGeometry","true");url.searchParams.set("outSR","4326");url.searchParams.set("orderByFields","OBJECTID ASC");url.searchParams.set("resultRecordCount","1000");url.searchParams.set("f","json");
+  const response=await fetch(url,{headers:{Accept:"application/json"},signal:AbortSignal.timeout(20000)});
+  if(!response.ok)throw Error("Station source unavailable.");
+  const payload=await response.json() as {error?:unknown;features?:unknown[];exceededTransferLimit?:boolean;spatialReference?:{wkid?:number;latestWkid?:number}};
+  if(payload.error||!Array.isArray(payload.features)||payload.exceededTransferLimit||payload.features.length>=1000)throw Error("Incomplete station response.");
+  const wgs84=payload.spatialReference?.wkid===4326||payload.spatialReference?.latestWkid===4326;
+  const rows=payload.features.map(feature=>parseNerisFacility(feature,parent));
+  const counts=new Map<string,number>();for(const row of rows)if(row?.sourceRecordId)counts.set(row.sourceRecordId,(counts.get(row.sourceRecordId)??0)+1);
+  const facilities=rows.flatMap(row=>row&&counts.get(row.sourceRecordId!)===1?[{...row,coordinates:wgs84?row.coordinates:null}]:[]);
+  return {facilities,withheld:rows.length-facilities.length,reportedStationCount:departments.data.find(d=>d.nerisId===parent.identifier)?.stationCount??null};
+}
+export async function listDepartmentFacilities(parent:FacilityParent) {
+  if(!validFacilityParent(parent))throw Error("Invalid department identity.");
+  if(parent.source==="NERIS"){
+    // Avoid unbounded cache keys for public arbitrary identifiers.
+    const data=await exactNerisFacilities(parent);
+    return {parent,...data,retrievedAt:new Date().toISOString(),warning:getSourceFailure(`neris:departments:${parent.stateCode}`)};
+  }
+  const [departments,stations]=await Promise.all([getUsfaDepartments(),getUsfaStations()]);
+  const matches=departments.data.filter(d=>d.stateCode===parent.stateCode&&d.fdid.toUpperCase()===parent.identifier);
+  if(matches.length!==1)throw Error("Department identity unavailable or ambiguous.");
+  const rows=stations.data.filter(s=>s.stateCode===parent.stateCode&&s.fdid.toUpperCase()===parent.identifier);
+  const seen=new Set<string>();const facilities:PublicFacility[]=[];
+  for(const s of rows){
+    if(!US_STATES.has(s.stationState))continue;
+    const key=JSON.stringify([s.name,s.address,s.city,s.stationState,s.postalCode]);
+    if(seen.has(key))continue;seen.add(key);
+    facilities.push({source:"USFA NFDR",sourceRecordId:null,name:s.name==="Station record"?null:s.name,address:s.address,city:s.city,stateCode:s.stationState,postalCode:s.postalCode,coordinates:null,sourceUrl:USFA_DOWNLOAD_PAGE,exportDate:null,endUserValidationRequired:true});
+  }
+  return {parent,facilities:facilities.slice(0,1000),withheld:rows.length-Math.min(facilities.length,1000),reportedStationCount:matches[0].stationCount,retrievedAt:stations.fetchedAt,warning:getSourceFailure("usfa:stations")??getSourceFailure("usfa:departments")};
 }

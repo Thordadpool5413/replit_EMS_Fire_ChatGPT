@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {filterSourceDirectory,loadSourceDirectoryManifest,loadSourceDirectoryState,type SourceDirectoryRecord} from './nationalSourceDirectory';
+import {countSourceListingsByCounty,filterSourceDirectory,loadSourceDirectoryManifest,loadSourceDirectoryState,type SourceDirectoryRecord} from './nationalSourceDirectory';
 const fire:SourceDirectoryRecord=['usfa:FL:123','USFA','Example Fire','FL','Miami','33101','12086','Miami-Dade','source-county','','123 Main',''];
 const npi:SourceDirectoryRecord=['nppes:1234567890','NPPES','Example Ambulance','FL','Miami','33101','','','unassigned','01/01/2025','','https://npiregistry.cms.hhs.gov/provider-view/1234567890'];
 test('county drilldown includes only established locations and exposes unassigned state listings separately',()=>{
@@ -8,6 +8,15 @@ test('county drilldown includes only established locations and exposes unassigne
  assert.deepEqual(filterSourceDirectory([fire,npi],{unassignedOnly:true}),[npi]);
  assert.deepEqual(filterSourceDirectory([fire,npi],{source:'NPPES',query:'miami ambulance'}),[npi]);
  assert.deepEqual(filterSourceDirectory([fire,npi],{query:'nonexistent'}),[]);
+});
+test('county listing rollups count source rows only for known county FIPS and preserve source breakdowns',()=>{
+ const secondFire:SourceDirectoryRecord=['usfa:FL:124','USFA','Second Fire','FL','Miami','33101','12086','Miami-Dade','source-county','','200 Main',''];
+ const secondNpi:SourceDirectoryRecord=['nppes:1234567891','NPPES','Second Ambulance','FL','Miami','33101','12086','','census-address-range','','300 Main','https://npiregistry.cms.hhs.gov/provider-view/1234567891'];
+ const unknownCounty:SourceDirectoryRecord=['usfa:FL:125','USFA','Unmatched Fire','FL','Miami','33101','99999','','source-county','','400 Main',''];
+ const counts=countSourceListingsByCounty([fire,npi,secondFire,secondNpi,unknownCounty],new Set(['12086']));
+ assert.deepEqual(counts.get('12086'),{total:3,usfa:2,nppes:1});
+ assert.equal(counts.has('99999'),false);
+ assert.equal(counts.size,1);
 });
 test('directory loader retries failed reads, verifies bytes and shares successful state requests',async()=>{
  const original=globalThis.fetch;let calls=0;let bad=true;

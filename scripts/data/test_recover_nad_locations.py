@@ -29,4 +29,13 @@ class NadTests(unittest.TestCase):
   before=copy.deepcopy(old)
   result=recover([old,new],C,{'FL'},1,0,lambda u,p:{'spatialReference':{'wkid':4326},'features':[F]})
   self.assertEqual(old,before);self.assertEqual(new['status'],'mapped');self.assertEqual(result['mapped'],1)
+ def test_bounded_single_address_retry_and_outage(self):
+  entries=[{'key':str(n),'state':'FL','status':'no-match','address':{**A,'street':str(n)+' Main Street'},'sourceCounty':'12009','match':None,'countyFips':''} for n in (123,124,125,126)]
+  before=copy.deepcopy(entries);calls=[]
+  def unavailable(url,params):
+   calls.append(params['where']);raise TimeoutError('fixture')
+  stats=recover(entries,C,{'FL'},4,0,unavailable,batch_size=1)
+  self.assertEqual(len(calls),3);self.assertTrue(all(' OR ' not in q for q in calls))
+  self.assertEqual(stats['unavailable'],3);self.assertEqual(stats['not_attempted'],1);self.assertEqual(entries,before)
+  self.assertRaises(ValueError,recover,entries,C,{'FL'},4,0,unavailable,batch_size=9)
 if __name__=='__main__':unittest.main()

@@ -1,0 +1,7 @@
+# Phase 6.2I — station field intelligence, first slice
+
+Adds an opt-in profile-level Google map using already configured Google Maps credentials and only source-reported NERIS station coordinates. No coordinate inference, parent count changes or national marker changes. USFA rows without native station IDs cannot be used as durable station-note keys.
+
+Private append-only field observations are stored in the new facility_notes Replit PostgreSQL table, with the existing saved-agency authorization middleware. Editors write, viewers read, others denied. A saved department must have one exact NERIS identity, and the current upstream station relationship must match before a new note is stored. Source snapshot, author, timestamp and idempotent submission key are retained. Notes do not change field validation status or assert equipment ownership. No patient information. Notes are online only; no local persistence or automatic upload. Current profile map is not a nationwide near-me station layer. EMS-only discovery, equipment-specific review workflow and full territory integration remain outstanding.
+
+Before rollout: back up the Replit database, review the additive table and index DDL, apply only the approved non-destructive schema change using Replit, configure authorized account IDs, then verify two-device note persistence and source map. Do not run push-force against production. CI provisions only its disposable PostgreSQL database. Production deployment and upstream results not verified by this commit.

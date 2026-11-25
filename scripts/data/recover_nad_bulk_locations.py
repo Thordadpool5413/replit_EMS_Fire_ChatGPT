@@ -74,20 +74,28 @@ def scan(archive,entries,counties,states=STATES,minimum_member_bytes=1_000_000):
     point['point']['dataset']='bulk-r24'
     e.update(status='mapped',match=point,countyFips=county)
  return dict(stats,rowsScanned=row_count,targetAddresses=len(grouped),candidateAddresses=len(hits),overflowAddresses=len(overflow))
+def validate_scan_result(stats,allow_empty=False):
+ if stats['rowsScanned']<90_000_000:raise ValueError('Bulk table incomplete or wrong release; no output published')
+ if not stats.get('mapped') and not allow_empty:raise ValueError('No additional validated bulk points')
+ return bool(stats.get('mapped'))
+
 def main():
- p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');p.add_argument('--states',default='all');args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,default=PUBLIC/'locations');p.add_argument('--states',default='all');p.add_argument('--allow-empty',action='store_true');p.add_argument('--expected-sha256');args=p.parse_args()
  states=STATES if args.states=='all' else set(args.states.split(','))
  if not states or not states<=STATES:raise ValueError('Invalid state scope')
  manifest,rows=read_registry();fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes());verify(args.output,manifest,rows,fl)
  idx=json.loads((args.output/'index.json').read_bytes());entries=[e for c in idx['chunks'] for e in json.loads((args.output/c['file']).read_bytes())]
  old={e['key']:json.dumps(e,sort_keys=True) for e in entries if e['status']=='mapped'}
  counties=county_index(json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_text())['counties'])
+ archive_sha=digest_file(args.archive)
+ if args.expected_sha256 and archive_sha!=args.expected_sha256:raise ValueError('Pinned NAD archive digest mismatch; no output published')
  stats=scan(args.archive,entries,counties,states)
- if stats['rowsScanned']<90_000_000:raise ValueError('Bulk table incomplete or wrong release; no output published')
  if any(json.dumps(e,sort_keys=True)!=old[e['key']] for e in entries if e['key'] in old):raise ValueError('Prior mapping changed')
  print('NAD bulk summary',json.dumps(stats),flush=True)
- if not stats.get('mapped'):raise ValueError('No additional validated bulk points')
+ if not validate_scan_result(stats,args.allow_empty):
+  print('Complete archive scan: no additional validated bulk points; snapshot untouched.',flush=True)
+  return
  metadata={k:v for k,v in idx.items() if k not in ('schemaVersion','generatedAt','benchmark','vintage','sourceScope','chunks','coverage','nadBulkRecovery')}
- metadata['nadBulkRecovery']=dict(sourceUrl=DOWNLOAD,catalogUrl=CATALOG,release=RELEASE,sha256=digest_file(args.archive),scope=sorted(states),results=stats,previousMapped=len(old),newMapped=stats['mapped'])
+ metadata['nadBulkRecovery']=dict(sourceUrl=DOWNLOAD,catalogUrl=CATALOG,release=RELEASE,sha256=archive_sha,scope=sorted(states),results=stats,previousMapped=len(old),newMapped=stats['mapped'])
  publish(args.output,manifest,entries,metadata);verify(args.output,manifest,rows,fl)
 if __name__=='__main__':main()

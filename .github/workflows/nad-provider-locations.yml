@@ -1,12 +1,15 @@
 name: Secondary public provider location recovery
 on:
   push:
-    branches: [atlas/nad-location-recovery]
+    branches: [atlas/nad-location-recovery, atlas/nad-location-recovery-v2]
     paths:
       - 'scripts/data/recover_nad_locations.py'
+      - 'scripts/data/recover_nad_bulk_locations.py'
+      - 'scripts/data/checked_zip_member.py'
+      - 'scripts/data/test_recover_national_points.py'
+      - 'scripts/data/test_recover_nad_locations.py'
+      - 'scripts/data/check_additive_location_release.py'
       - '.github/workflows/nad-provider-locations.yml'
-      - 'scripts/data/recover_census_locations.py'
-      - 'scripts/data/test_recover_census_locations.py'
   workflow_dispatch:
     inputs:
       states:
@@ -20,59 +23,69 @@ concurrency:
   cancel-in-progress: false
 jobs:
   recover:
-    if: github.ref == 'refs/heads/atlas/nad-location-recovery'
+    if: github.ref == 'refs/heads/atlas/nad-location-recovery' || github.ref == 'refs/heads/atlas/nad-location-recovery-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 170
     permissions:
       contents: write
+    env:
+      ATLAS_NAD_STATES: ${{ inputs.states || 'FL,OH' }}
+      NAD_R24_SHA256: efac5c350b4fefc9412b601e54f4a26e740049b251a6f9136ea5cc0f86a4ca83
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
       - name: Validate matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
-      - name: Retry normalized physical addresses nationwide
-        id: census
-        continue-on-error: true
-        run: python3 scripts/data/recover_census_locations.py
-      - name: Publish Census retry review branch
-        if: steps.census.outcome == 'success'
+      - name: Verify and preserve base
+        run: |
+          python3 scripts/data/backfill_provider_locations.py --verify
+          cp -a artifacts/ems-territory-intelligence/public/registry/locations "$RUNNER_TEMP/nad-base"
+          mkdir -p "$RUNNER_TEMP/nad-report"
+      - name: Ensure streaming ZIP decoder is available
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- artifacts/ems-territory-intelligence/public/registry/locations
-          git diff --cached --quiet || git commit -m "Recover exact component matches from normalized Census retry"
-          git push origin "HEAD:refs/heads/atlas/census-retry-data-${GITHUB_RUN_ID}"
-          echo "Census review branch: atlas/census-retry-data-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
-      - name: Recover unmatched public organization addresses
-        id: nad
-        continue-on-error: true
-        env:
-          ATLAS_NAD_STATES: ${{ inputs.states || 'FL,OH' }}
-        run: python3 scripts/data/recover_nad_locations.py --states "$ATLAS_NAD_STATES" --max-requests 100
-      - name: Publish review-only data branch
-        if: steps.nad.outcome == 'success'
+          if ! command -v 7zz >/dev/null && ! command -v 7z >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y p7zip-full
+          fi
+          command -v 7zz || command -v 7z
+      - name: Download and authenticate pinned official USDOT NAD r24
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/nad-r24.zip"
+          free=$(df -B1 --output=avail "$RUNNER_TEMP" | tail -1 | tr -d ' ')
+          limit=$(( free - 2000000000 ))
+          test "$limit" -gt 1000000000
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 3600 --max-filesize "$limit" --retry 1 --output "$archive" 'https://data.transportation.gov/api/views/fc2s-wawr/files/596a301b-d548-4589-8c63-6b6a8dc34f30?download=true&filename=TXT.zip'
+          printf '%s  %s\n' "$NAD_R24_SHA256" "$archive" | sha256sum --check
+      - name: Stream full official archive against selected unresolved addresses
+        run: |
+          set -euo pipefail
+          python3 scripts/data/recover_nad_bulk_locations.py --archive "$RUNNER_TEMP/nad-r24.zip" --states "$ATLAS_NAD_STATES" --expected-sha256 "$NAD_R24_SHA256" --allow-empty | tee "$RUNNER_TEMP/nad-report/scan.log"
+      - name: Verify and publish only additive reviewed-data candidates
         run: |
           set -euo pipefail
           python3 scripts/data/backfill_provider_locations.py --verify
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- artifacts/ems-territory-intelligence/public/registry/locations
-          git diff --cached --quiet || git commit -m "Recover exact public provider address points from USDOT NAD"
-          branch="atlas/nad-location-data-${GITHUB_RUN_ID}"
-          git push origin "HEAD:refs/heads/$branch"
-          echo "Review branch: $branch" >> "$GITHUB_STEP_SUMMARY"
-          python3 -c 'import json; x=json.load(open("artifacts/ems-territory-intelligence/public/registry/locations/index.json")); print(json.dumps({"coverage":x["coverage"],"nadRecovery":x["nadRecovery"]},indent=2))' >> "$GITHUB_STEP_SUMMARY"
-      - name: Report source failure explicitly
-        if: steps.census.outcome == 'failure' || steps.nad.outcome == 'failure'
-        run: |
-          echo 'One or more recovery sources failed. Any independently published review branch is still subject to validation.'
-          exit 1
-      - name: Retain coverage report
+          if git diff --cached --quiet; then
+            echo "Full authenticated NAD archive scan completed; zero new validated points. Snapshot unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            python3 scripts/data/check_additive_location_release.py --base "$RUNNER_TEMP/nad-base" --candidate artifacts/ems-territory-intelligence/public/registry/locations
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Recover exact public provider address points from pinned USDOT NAD archive"
+            branch="atlas/nad-location-data-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git push origin "HEAD:refs/heads/$branch"
+            echo "Review-only data branch: $branch" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          grep 'NAD bulk summary' "$RUNNER_TEMP/nad-report/scan.log" >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain coverage and scan evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nad-provider-location-coverage
-          path: artifacts/ems-territory-intelligence/public/registry/locations/index.json
-          if-no-files-found: ignore
+          path: |
+            artifacts/ems-territory-intelligence/public/registry/locations/index.json
+            ${{ runner.temp }}/nad-report/scan.log
+          if-no-files-found: warn

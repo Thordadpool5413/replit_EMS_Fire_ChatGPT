@@ -14,6 +14,14 @@ FIELDS={
  'tx-stratmap':('objectid','dateupdate','add_number','full_addr','building','floor','unit','post_comm','post_code','state','country','county','fips','source','date_acq')}
 QUERY_KEYS={'nc-addressnc':('add_number','post_code'),'fl-hillsborough':('ADDRNUM','ZIP'),'fl-pinellas':('ADDRNUM','POSTCODE'),'nj-addresspoints':('ADD_NUMBER','POST_CODE'),'tx-prosper':('Add_Number','Post_Code'),'pa-cumberland':('Add_Number','Post_Code'),'tx-stratmap':('add_number','post_code')}
 NAMES={'nc-addressnc':('AddressNC','North Carolina Counties'),'fl-hillsborough':('SiteAddressPoints','Hillsborough County'),'fl-pinellas':('Addresses','Pinellas County Safety and Emergency Services'),'nj-addresspoints':('Addr_addressPoint','NJ Office of Information Technology, Office of GIS (NJOGIS)'),'tx-prosper':('Address Points','Town of Prosper'),'pa-cumberland':('Address Point',''),'tx-stratmap':('StratMap Address Points 48 Most Recent','')}
+
+COUNTY_ADAPTERS=json.loads("{\"il-peoria\":{\"name\":\"E_911_Addresses\",\"authority\":\"Peoria County\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"Fulladdr\",\"integer\":true,\"date\":\"DateUpdate\",\"placement\":\"Placement\",\"sub\":[\"Unit\",\"Addtl_Loc\"],\"lifecycle\":true},\"il-lake\":{\"name\":\"Address Points\",\"authority\":\"\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"FULLADDR\",\"integer\":true,\"date\":\"DateUpdate\",\"placement\":\"Placement\",\"sub\":[\"Building\",\"Floor\",\"Unit\",\"Room\",\"Seat\",\"Addtl_Loc\"],\"lifecycle\":true,\"status\":\"STATUS\"},\"pa-northampton\":{\"name\":\"Address Pts\",\"authority\":\"\",\"house\":\"AddrNum\",\"postal\":\"Zip\",\"city\":\"PostalCity\",\"street\":\"FullAddr\",\"integer\":false,\"date\":\"DateUpdate\",\"placement\":null,\"sub\":[\"UnitType\",\"Unit\",\"Building\",\"Floor\"],\"lifecycle\":true},\"al-baldwin\":{\"name\":\"Address Pts\",\"authority\":\"\",\"house\":\"Add_Number\",\"postal\":\"Post_Code\",\"city\":\"Post_Comm\",\"street\":\"Full_Address\",\"integer\":true,\"date\":\"last_edited_date\",\"placement\":\"Placement\",\"sub\":[\"Building\",\"Floor\",\"Unit\",\"Room\",\"Seat\",\"Addtl_Loc\"],\"lifecycle\":false}}")
+for key,adapter in COUNTY_ADAPTERS.items():
+ fields=['OBJECTID','State','Country','County',adapter['house'],adapter['postal'],adapter['city'],adapter['street'],adapter['date'],*adapter['sub']]
+ if adapter['placement']:fields.append(adapter['placement'])
+ if adapter['lifecycle']:fields.extend(['Effective','Expire'])
+ if adapter.get('status'):fields.append(adapter['status'])
+ FIELDS[key]=tuple(dict.fromkeys(fields));QUERY_KEYS[key]=(adapter['house'],adapter['postal']);NAMES[key]=(adapter['name'],adapter['authority'])
 def request(source,params,query=False):
  u=SOURCES[source]['url']+('/query' if query else '')+'?'+urllib.parse.urlencode(params)
  if len(u)>3800:raise ValueError('Regional query exceeds URL budget')
@@ -28,6 +36,11 @@ def metadata(source,fetch=request):
  name,authority=NAMES[source]
  if obj.get('name')!=name or authority not in obj.get('copyrightText','') or obj.get('geometryType')!='esriGeometryPoint' or not set(FIELDS[source])<=set(f.get('name') for f in obj.get('fields',[])):raise ValueError('Regional service schema or authority changed')
  fields={f['name']:f for f in obj['fields']}
+ if source in COUNTY_ADAPTERS:
+  adapter=COUNTY_ADAPTERS[source]
+  expected='esriFieldTypeInteger' if adapter['integer'] else 'esriFieldTypeString'
+  if fields[adapter['house']].get('type')!=expected:raise ValueError('County address number schema changed')
+  if source=='al-baldwin' and obj.get('serviceItemId')!='2f0c8ddaa17f47fa9bbbbddce45e59cf':raise ValueError('Baldwin service identity changed')
  if source=='tx-stratmap':
   if obj.get('serviceItemId')!='2685d5c62657428583b688f140cb7021' or fields['add_number'].get('type')!='esriFieldTypeString' or fields['fips'].get('type') not in ('esriFieldTypeBigInteger','esriFieldTypeInteger') or fields['dateupdate'].get('type')!='esriFieldTypeString':raise ValueError('Texas StratMap source identity or schema changed')
  if source=='pa-cumberland':
@@ -54,6 +67,12 @@ def query(source,addresses):
  if not 1<=len(addresses)<=(16 if source=='tx-stratmap' else 8) or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
  house,zipfield=QUERY_KEYS[source]
  if source=='tx-stratmap':
+ if source in COUNTY_ADAPTERS:
+  adapter=COUNTY_ADAPTERS[source]
+  def house_value(a):return str(int(re.match(r'\d+',number(a)).group())) if adapter['integer'] else sql(number(a))
+  clauses=sorted({f"({house}={house_value(a)} AND {zipfield}={sql(a['zip'])})" for a in addresses})
+  where="State="+sql(SOURCES[source]['state'])+" AND Country='US' AND ("+' OR '.join(clauses)+')'
+ elif source=='tx-stratmap':
   clauses=sorted({f"({house}={sql(number(a))} AND {zipfield}={sql(a['zip'])})" for a in addresses})
   where="state='TX' AND country='US' AND ("+' OR '.join(clauses)+')'
  elif source in ('tx-prosper','pa-cumberland'):
@@ -100,6 +119,14 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    if v.get('state')!='NC':continue
    if any(v.get(k) not in (None,'') for k in ('unit','building','floor')):continue
    placement=v.get('placement');date=v.get('dateupdate')
+  elif source in COUNTY_ADAPTERS:
+   adapter=COUNTY_ADAPTERS[source]
+   if v.get('State')!=d['state'] or v.get('Country')!='US':continue
+   if any(v.get(k) not in (None,'') for k in adapter['sub']):continue
+   if adapter.get('status') and str(v.get(adapter['status']) or '').strip().lower() not in ('active','current'):continue
+   street,city,postal=v.get(adapter['street']),v.get(adapter['city']),v.get(adapter['postal'])
+   placement=v.get(adapter['placement']) if adapter['placement'] else 'Placement not reported'
+   date=v.get(adapter['date'])
   elif source=='tx-stratmap':
    if v.get('state')!='TX' or v.get('country')!='US':continue
    if any(v.get(k) not in (None,'') for k in ('building','floor','unit')):continue
@@ -155,6 +182,15 @@ def resolve(source,e,rows,counties,checked,county_domain=None):
    allowed={'48085','48121'} if source=='tx-prosper' else {'42041'}
    if len(fips)!=1 or not fips<=allowed:bad=True;continue
    cf=next(iter(fips))
+  if source in COUNTY_ADAPTERS:
+   adapter=COUNTY_ADAPTERS[source]
+   fips=counties.get((d['state'],county_key(v.get('County') or '')),set())
+   if fips!={d['county']}:bad=True;continue
+   if adapter['lifecycle']:
+    try:
+     effective,expires=date_value(v.get('Effective')),date_value(v.get('Expire'))
+     if effective and effective>checked or expires and expires<=checked:continue
+    except (ValueError,OverflowError,OSError):bad=True;continue
   if source=='tx-stratmap':
    # County FIPS and county name must independently reconcile to the same Census county.
    fips=counties.get(('TX',county_key(v.get('county') or '')),set())
@@ -179,6 +215,10 @@ def recover(source,entries,counties,checked,max_requests=100,delay=1.0,fetch=req
  for e in entries:
   if e['state']!=d['state'] or e['status'] not in ('no-match','unavailable'):continue
   if d['county'] and e['sourceCounty'] and d['county']!=e['sourceCounty']:continue
+  if source in COUNTY_ADAPTERS and not e['sourceCounty'] and e['address']:
+   # Postal prefixes are a query-budget prefilter, never evidence of county identity.
+   prefixes={'il-peoria':('615','616'),'il-lake':('600',),'pa-northampton':('180','181','183'),'al-baldwin':('365',)}
+   if not e['address']['zip'].startswith(prefixes[source]):continue
   if source=='tx-prosper' and e['sourceCounty'] and e['sourceCounty'] not in ('48085','48121'):continue
   if source=='tx-prosper' and e['address'] and not e['sourceCounty'] and e['address']['city'].strip().lower() not in ('prosper','celina','frisco','mckinney','little elm','aubrey'):continue
   if source=='pa-cumberland' and not e['sourceCounty'] and e['address'] and not e['address']['zip'].startswith(('170','172')):continue

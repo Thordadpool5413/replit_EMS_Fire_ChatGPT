@@ -37,6 +37,7 @@ function storage(): StorageLike {
   return window.localStorage;
 }
 function validate(entry: FactReviewEntry): boolean {
+  if(entry?.fieldId==='identity.address.gis-candidate'&&(entry.action==='correct'||!safe(entry.sourceRecordId)||!safe(entry.sourceName)||entry.sourceKind!=='dataset'||!safe(entry.sourcePeriod)||!entry.sourceUrl?.startsWith('https://')||!safeSourceUrl(entry.sourceUrl)||entry.originalValue!==entry.previousValue||(['confirm','flag'].includes(entry.action)&&!safe(entry.note))))return false;
   return safe(entry?.id) && safe(entry.agencyId) && safe(entry.fieldId) &&
     actions.includes(entry.action) && safe(entry.reviewer) && safe(entry.method) &&
     typeof entry.originalValue === 'string' && typeof entry.previousValue === 'string' &&

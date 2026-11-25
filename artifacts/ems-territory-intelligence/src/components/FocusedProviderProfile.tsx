@@ -96,6 +96,7 @@ import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
 import { AgencyAuthorityEvidence } from './profile/AgencyAuthorityEvidence';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
+import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
 import { FactReviewPanel } from './profile/FactReviewPanel';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
@@ -2083,7 +2084,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
-                {showSection('suppliers') && <ProcurementTimeline agency={agency} />}
+                {showSection('suppliers') && <><ProcurementTimeline agency={agency} /><ReviewedLifecycleTimeline agency={rawAgency} directory={directoryAgencies}/></>}
         {showSection('suppliers') && (<ProfileDetail testId="detail-suppliers" icon={PackageCheck} tone="teal" kind="reported" title="Supplier, contract & procurement audit records" summary="Supplier records, procurement document IDs and incumbent-versus-alternative matrix. Brand is not supplier.">
         {/* SECTION: ACTUAL EQUIPMENT IN USE & CURRENT VENDOR SUPPLIERS (ALL 3 MODALITIES: 1, 2, AND 3) */}
           {showSection('suppliers') &&

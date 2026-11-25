@@ -1,0 +1,3 @@
+# Phase 9.0G: Franklin County Ohio LBRS research
+
+Ohio has 541 actionable unresolved source records. This county pilot uses official Franklin County GIS LBRS Address Points (https://gis.franklincountyohio.gov/hosting/rest/services/Addressing/LBRS/FeatureServer/0; item b7d525b8ca794e90b3b43dc7829f283e). The layer includes surrounding counties, so query only registry records with county 39049 and source county FRA, verify published code semantics (6 Certified), exact postal street and ZIP, native address and object IDs, date, subaddress absence and geographic bounds. Structure code is literal evidence; placement and independent county boundaries are not established. All candidates remain review-only, not verified stations. No snapshot or Replit changes. Live CI required.

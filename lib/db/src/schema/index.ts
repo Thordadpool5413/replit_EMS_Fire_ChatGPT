@@ -163,3 +163,17 @@ export const facilityEquipmentTable = pgTable("facility_equipment_observations",
   primaryKey({ columns: [t.agencyId,t.parentId,t.stationId,t.submissionId] }),
   index("facility_equipment_lookup_idx").on(t.agencyId,t.parentId,t.stationId,t.createdAt),
 ]);
+
+/** Private dated claims about professional roles and purchasing responsibilities. */
+export const agencyAuthorityTable = pgTable("agency_authority_observations", {
+ agencyId:text("agency_id").notNull().references(()=>agencyRecordsTable.id),
+ submissionId:text("submission_id").notNull(),
+ identityKey:text("identity_key").notNull(),
+ observation:jsonb("observation").$type<JsonRecord>().notNull(),
+ authorUid:text("author_uid").notNull(),
+ createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+ decision:text("decision"),
+ reviewNote:text("review_note"),
+ reviewerUid:text("reviewer_uid"),
+ reviewedAt:timestamp("reviewed_at",{withTimezone:true}),
+},t=>[primaryKey({columns:[t.agencyId,t.submissionId]}),index("agency_authority_lookup_idx").on(t.agencyId,t.identityKey,t.createdAt)]);

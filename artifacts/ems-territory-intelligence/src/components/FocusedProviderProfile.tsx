@@ -93,6 +93,7 @@ import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
 import { ProfileDetail } from './profile/ProfileDetail';
 import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
+import { AgencyAuthorityEvidence } from './profile/AgencyAuthorityEvidence';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
@@ -1670,7 +1671,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
-          {showSection('leadership') && <DecisionMakerDirectory agency={agency} />}
+          {showSection('leadership') && <><DecisionMakerDirectory agency={agency} /><AgencyAuthorityEvidence key={rawAgency.id} agencyId={rawAgency.id}/></>}
 
           {showSection('battlecard') && (<ProfileDetail testId="detail-battlecard" icon={Scale} tone="navy" kind="reference" title="Head-to-head comparison" summary={`Recorded incumbent ${agency.installedFleet.defibBrand} vs. benchmark alternative · manufacturer claims, not agency outcomes`}>
           {/* 2. Competitive Battlecard & Head-to-Head Spec Matrix Section */}

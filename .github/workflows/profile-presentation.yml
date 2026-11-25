@@ -251,3 +251,5 @@ jobs:
 
       - name: Verify station equipment evidence and independent review
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/facility-equipment.integration.test.ts
+      - name: Verify private decision authority evidence
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/agency-authority.integration.test.ts

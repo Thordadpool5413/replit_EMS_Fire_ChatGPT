@@ -38,7 +38,8 @@ def request(source,params,query=False):
  if not isinstance(obj,dict) or 'error' in obj:raise ValueError('Regional GIS query returned an error')
  return obj
 def metadata(source,fetch=request):
- obj=fetch(source,{'f':'json'})
+ obj=fetch(source,{'f':'pjson' if source=='nc-addressnc' else 'json'})
+ if source=='nc-addressnc' and obj.get('serviceItemId')!='1bdaaf493aef40d1bd22d8b48f18a4c9':raise ValueError('AddressNC service identity changed')
  name,authority=NAMES[source]
  if obj.get('name')!=name or authority not in obj.get('copyrightText','') or obj.get('geometryType')!='esriGeometryPoint' or not set(FIELDS[source])<=set(f.get('name') for f in obj.get('fields',[])):raise ValueError('Regional service schema or authority changed')
  fields={f['name']:f for f in obj['fields']}

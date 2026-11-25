@@ -56,6 +56,7 @@ on:
       - 'scripts/package.json'
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
+      - 'scripts/pwa-worker.test.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
   push:
@@ -115,6 +116,7 @@ on:
       - 'scripts/package.json'
       - 'pnpm-lock.yaml'
       - 'scripts/test-ems-unit.mjs'
+      - 'scripts/pwa-worker.test.mjs'
       - 'security/**'
       - '.github/workflows/profile-presentation.yml'
 permissions:
@@ -170,6 +172,8 @@ jobs:
           path: generated-artifacts/location-recovery/
           if-no-files-found: ignore
       - run: node scripts/test-ems-unit.mjs
+      - name: Verify PWA cache and offline safety
+        run: node --test scripts/pwa-worker.test.mjs
       - run: pnpm run typecheck
       - run: pnpm --dir artifacts/api-server run build
       - run: node scripts/check-style-ownership.mjs

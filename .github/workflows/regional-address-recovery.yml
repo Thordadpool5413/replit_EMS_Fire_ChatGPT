@@ -1,7 +1,7 @@
 name: Regional government address point recovery
 on:
   push:
-    branches: [main, atlas/regional-address-recovery, atlas/regional-address-recovery-v2, atlas/regional-address-recovery-v3, atlas/regional-address-recovery-v4, atlas/regional-address-recovery-v5]
+    branches: [main, atlas/regional-address-recovery, atlas/regional-address-recovery-v2, atlas/regional-address-recovery-v3, atlas/regional-address-recovery-v4, atlas/regional-address-recovery-v5, atlas/regional-address-recovery-v6]
     paths:
       - 'scripts/data/recover_regional_locations.py'
       - 'scripts/data/regional_point_contract.py'
@@ -53,7 +53,7 @@ jobs:
           git archive "$BASE_SHA" "$snapshot" | tar -x -C "$RUNNER_TEMP/atlas-location-base"
           python3 scripts/data/check_additive_location_release.py --base "$RUNNER_TEMP/atlas-location-base/$snapshot" --candidate "$snapshot"
   recover:
-    if: github.ref == 'refs/heads/atlas/regional-address-recovery' || github.ref == 'refs/heads/atlas/regional-address-recovery-v2' || github.ref == 'refs/heads/atlas/regional-address-recovery-v3' || github.ref == 'refs/heads/atlas/regional-address-recovery-v4' || github.ref == 'refs/heads/atlas/regional-address-recovery-v5'
+    if: github.ref == 'refs/heads/atlas/regional-address-recovery' || github.ref == 'refs/heads/atlas/regional-address-recovery-v2' || github.ref == 'refs/heads/atlas/regional-address-recovery-v3' || github.ref == 'refs/heads/atlas/regional-address-recovery-v4' || github.ref == 'refs/heads/atlas/regional-address-recovery-v5' || github.ref == 'refs/heads/atlas/regional-address-recovery-v6'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     permissions:
@@ -69,7 +69,9 @@ jobs:
       - name: Query official address points for unresolved provider streets
         run: |
           set -euo pipefail
-          if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v5" ]; then
+          if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v6" ]; then
+            python3 scripts/data/recover_regional_locations.py --source in-data-harvest --max-requests 120 --allow-empty
+          elif [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v5" ]; then
             python3 scripts/data/recover_regional_locations.py --source il-peoria --source il-lake --source pa-northampton --source al-baldwin --max-requests 100 --allow-empty
           elif [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v4" ]; then
             python3 scripts/data/recover_regional_locations.py --source tx-stratmap --max-requests 120 --allow-empty

@@ -97,3 +97,17 @@ class RegionalTests(unittest.TestCase):
   with self.assertRaises(ValueError):features('nc-addressnc',{'features':[nc(),nc()],'spatialReference':{'wkid':4326}})
   with self.assertRaises(ValueError):features('nc-addressnc',{'features':[],'exceededTransferLimit':True})
 if __name__=='__main__':unittest.main()
+
+class IndianaTests(unittest.TestCase):
+ def test_exact_structure_and_county(self):
+  counties=county_index([{'USPS':'IN','NAME':'Marion County','GEOID':'18097'},{'USPS':'IN','NAME':'Hamilton County','GEOID':'18057'}])
+  e=dict(key='fixture',state='IN',status='no-match',sourceCounty='18097',countyFips='',match=None,address={'street':'123 Main Street','city':'Example','state':'IN','zip':'46201'})
+  f=dict(attributes=dict(objectid=12,add_number=123,st_name='MAIN',st_postyp='Street',post_comm='EXAMPLE',post_code='46201',state='IN',country='US',county='Marion County',county_fips='18097',placement='Structure',dateupdate=None,effective=None,expire=None),geometry=dict(x=-86.1,y=39.8))
+  hit,status=resolve('in-data-harvest',e,[f],counties,CHECKED)
+  self.assertEqual(status,'mapped');self.assertTrue(valid_regional_point(hit[1],'18097'))
+  self.assertIn("add_number=123 AND post_code='46201'",query('in-data-harvest',[e['address']])['where'])
+  for field,value in [('county_fips','18057'),('county','Hamilton County'),('placement','Geocoding'),('placement','Parcel'),('unit_id','2'),('addnum_suf','A'),('st_name','OTHER'),('post_comm','Other'),('country','CA'),('state','OH')]:
+   bad=copy.deepcopy(f);bad['attributes'][field]=value
+   self.assertIsNone(resolve('in-data-harvest',e,[bad],counties,CHECKED)[0],field)
+  bad=copy.deepcopy(f);bad['attributes']['objectid']=13;bad['geometry']['x']=-86.2
+  self.assertEqual(resolve('in-data-harvest',e,[f,bad],counties,CHECKED)[1],'ambiguous')

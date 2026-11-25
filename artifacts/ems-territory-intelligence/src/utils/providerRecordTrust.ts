@@ -67,3 +67,15 @@ export function requiresAgencyFieldEvidence(agency:Agency):boolean {
 export function canBulkHydrateAgency(agency:Agency):boolean {
  return !isGeographicProspect(agency)&&!!agency.registryIdentity&&canCreateRegistryAccount(agency.registryIdentity)&&registryAccountId(agency.registryIdentity)===agency.id;
 }
+
+/** Legacy synthetic and illustrative seed origins stay quarantined even after cloud sync
+ * or a source association. Linking an identity cannot turn an invented fleet into a fact. */
+export function isLegacyProviderId(id:unknown):boolean{
+ return typeof id==='string'&&(/^(?:zoll-agency-|zoll-lead-|territory-[a-z]{2}-(?:ems|fire)-|(?:ems|fire)-[a-z]{2}-\d{5}(?:-|$))/i.test(id));
+}
+export function isLegacyProviderRecord(a:Pick<Agency,'id'|'verificationSource'|'dataProvenanceTier'>):boolean{
+ return isLegacyProviderId(a.id)||isGeographicProspect(a)||/Imported public-facing directory candidate|Imported account candidate/i.test(a.verificationSource??'');
+}
+export function activeProviderRecords(agencies:Agency[]):Agency[]{
+ return agencies.filter(a=>!isLegacyProviderRecord(a));
+}

@@ -1,4 +1,4 @@
-import { canBulkHydrateAgency } from '../utils/providerRecordTrust';
+import { activeProviderRecords,isLegacyProviderRecord,isLegacyProviderId,canBulkHydrateAgency } from '../utils/providerRecordTrust';
 import { createAgencyDirectoryLoader, mergeDirectoryAgency, type DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
 import type { FollowUpChange } from '../utils/followUps';
 import { withWorkspaceLock } from '../services/workspaceLock';
@@ -38,6 +38,7 @@ interface UseFirestoreAgenciesOptions {
 
 export interface UseFirestoreAgenciesResult {
   agencies: Agency[];
+  quarantinedProviders: Agency[];
   directoryStatus: {
     stateCode: string;
     status: 'loading' | 'ready' | 'unavailable';
@@ -184,42 +185,7 @@ export function useFirestoreAgencies({
     };
   }, [globalState, mergeCloudAgencies]);
 
-  // 3. Add available jurisdiction records to the local cache only. Selecting a county
-  // must never cause a cloud write or batch synchronization.
-  useEffect(() => {
-    if (globalState !== 'all' && globalCounty !== 'all') {
-      const normGlobalCounty = globalCounty.toLowerCase().replace(/\s+(county|parish|borough|census area|municipality)$/i, '').trim();
-      const existingInCounty = allSanitizedAgencies.filter(a => {
-        if (a.stateCode !== globalState.toUpperCase()) return false;
-        const normAgencyCounty = a.county.toLowerCase().replace(/\s+(county|parish|borough|census area|municipality)$/i, '').trim();
-        return normAgencyCounty === normGlobalCounty || normAgencyCounty.includes(normGlobalCounty) || normGlobalCounty.includes(normAgencyCounty);
-      });
-
-      if (existingInCounty.length < 2) {
-        const enriched = territoryEngine.getAgenciesForCountyAndCities(
-          globalState,
-          globalCounty,
-          undefined,
-          allSanitizedAgencies,
-          'all'
-        );
-
-        const cleanEnriched = dataSanitizationService.sanitizeAgenciesList(enriched, undefined, false);
-
-        if (cleanEnriched.length > 0) {
-          setAllSanitizedAgencies((prev) => {
-            const seen = new Set(prev.map(p => p.id));
-            const toAdd = cleanEnriched.filter(e => !seen.has(e.id));
-            if (toAdd.length === 0) return prev;
-            const updated = [...toAdd, ...prev];
-            saveAgencies(updated);
-
-            return updated;
-          });
-        }
-      }
-    }
-  }, [globalState, globalCounty]);
+  // Geographic navigation is read-only. It must not manufacture or cache provider accounts.
 
   // Toggle strict cloud-only mode
   const toggleStrictCloudOnlyMode = useCallback((enabled: boolean) => {
@@ -299,6 +265,7 @@ export function useFirestoreAgencies({
 
   // 4. Update single agency in Firestore + local optimistic update
   const updateAgencyInCloud = useCallback(async (agency: Agency) => {
+    if(isLegacyProviderRecord(agency))throw Error('Legacy modeled provider is quarantined; reconcile against a public registry before editing.');
     const cleanAgency = dataSanitizationService.sanitizeAgency({
       ...agency,
       _updatedAt: new Date().toISOString(),
@@ -336,6 +303,11 @@ export function useFirestoreAgencies({
       const blocked = new Set<string>();
       for (const item of pending) {
         if (blocked.has(item.agencyId)) continue;
+        if(isLegacyProviderId(item.agencyId)||recordsRef.current.some(a=>a.id===item.agencyId&&isLegacyProviderRecord(a))||item.payload?.base&&isLegacyProviderRecord(item.payload.base)||item.payload?.agency&&isLegacyProviderRecord(item.payload.agency)){
+          const error='Legacy modeled account quarantined. Export and reconcile the saved work against an actual provider.';
+          if(item.status!=='FAILED'||item.error!==error)await withWorkspaceLock(()=>saveOutbox(loadStoredOutbox().map(i=>i.id===item.id?{...i,status:'FAILED',error}:i)));
+          blocked.add(item.agencyId);continue;
+        }
         try {
           const syncedRevision = await commitAgencyMutation(item);
           await withWorkspaceLock(() => saveOutbox(loadStoredOutbox().map(i => i.id === item.id ? { ...i, status: 'SYNCED', error: undefined, syncedRevision } : i)));
@@ -363,6 +335,7 @@ export function useFirestoreAgencies({
   // Acknowledged entries remain available for offline recovery and complete backups.
   const recordChange = useCallback(async (agencyId: string, action: import('../types').SyncOutboxItem['actionType'], payload: any) => {
     const current = recordsRef.current.find(a => a.id === agencyId);
+    if(isLegacyProviderId(agencyId)||current&&isLegacyProviderRecord(current)||payload.agency&&isLegacyProviderRecord(payload.agency))throw Error('This legacy account requires identity reconciliation; no provider change was saved.');
     const item = createOutboxItem(agencyId, current?.name ?? payload.agency?.name ?? agencyId, action, { ...payload, base: current });
     applyAgencyMutation(current, item); // Validate before the durable write.
     await withWorkspaceLock(() => saveOutbox([...loadStoredOutbox(), item]));
@@ -395,6 +368,7 @@ export function useFirestoreAgencies({
     await recordChange(id, 'UPDATE_FOLLOW_UP', { noteId: note.id, taskOnly: Boolean(note.taskOnly), changes, expected: { nextAction: note.nextAction, owner: note.owner ?? '', priority: note.priority ?? 'normal', dueDate: note.dueDate, followUpStatus: note.followUpStatus ?? 'open' } });
   }, [recordChange]);
   const addAgencyToCloud = useCallback(async (agency: Agency) => {
+    if(isLegacyProviderRecord(agency))throw Error('Synthetic or illustrative accounts cannot be created. Select an actual public registry listing.');
     const clean = dataSanitizationService.sanitizeAgency(agency);
     if (!clean) throw new Error('Agency identity is invalid. Your changes have not been saved.');
     await recordChange(agency.id, 'CREATE_AGENCY', { agency: clean });
@@ -441,15 +415,20 @@ export function useFirestoreAgencies({
       const entries: FactReviewEntry[] = JSON.parse(localStorage.getItem(FACT_REVIEW_STORAGE_KEY) ?? '[]');
       const byAgency = new Map<string, FactReviewEntry[]>();
       for (const entry of entries) byAgency.set(entry.agencyId, [...(byAgency.get(entry.agencyId) ?? []), entry]);
-      return allSanitizedAgencies.map(a => {
+      return activeProviderRecords(allSanitizedAgencies).map(a => {
         const reviews = [...new Map([...(a._factReviews ?? []), ...(byAgency.get(a.id) ?? [])].map(e => [e.id, e])).values()].sort((a,b) => a.reviewedAt.localeCompare(b.reviewedAt));
         return reviews.length ? applyAgencyReviews(a, reviews) : a;
       });
-    } catch { return allSanitizedAgencies; }
+    } catch { return activeProviderRecords(allSanitizedAgencies); }
   }, [allSanitizedAgencies, reviewVersion]);
 
   const setRawAgenciesState = useCallback<React.Dispatch<React.SetStateAction<Agency[]>>>((next) => {
-    setAllSanitizedAgencies(previous => (typeof next === 'function' ? next(previous) : next).map(stripAgencyReviewOverlay));
+    setAllSanitizedAgencies(previous => {
+      const updated=(typeof next==='function'?next(activeProviderRecords(previous)):next).map(stripAgencyReviewOverlay);
+      const byId=new Map(updated.map(a=>[a.id,a]));
+      for(const a of previous.filter(isLegacyProviderRecord))if(!byId.has(a.id))byId.set(a.id,a);
+      return [...byId.values()];
+    });
   }, []);
 
   // Filter displayed agencies if strictCloudOnlyMode is active
@@ -461,6 +440,7 @@ export function useFirestoreAgencies({
 
   return {
     agencies: visibleAgencies,
+    quarantinedProviders: allSanitizedAgencies.filter(isLegacyProviderRecord),
     directoryStatus,
     nationalDirectoryStatus,
     retryNationalDirectory: nationalDirectory.retry,
@@ -488,5 +468,5 @@ export function useFirestoreAgencies({
  * without mutating Firestore production data.
  */
 export function getInitialFirestoreAgenciesDataset(): Agency[] {
-  return dataSanitizationService.sanitizeAgenciesList(loadStoredAgencies(), undefined, false);
+  return activeProviderRecords(dataSanitizationService.sanitizeAgenciesList(loadStoredAgencies(), undefined, false));
 }

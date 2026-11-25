@@ -1,7 +1,7 @@
 /** Read-only responsive checks against a production build. Never submit profile forms. */
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -27,11 +27,17 @@ try {
   // Use bundled public fixtures only; profile UI checks must never contact cloud records.
   await cdp.send('Network.enable');
   await cdp.send('Network.setBlockedURLs', { urls: ['*googleapis.com*', '*firebaseio.com*', '*firebaseapp.com*', '*replit.app*'] });
+  // Fixtures are isolated to QA's temporary browser and loopback origin, never production.
+  const testOrigin=new URL(base).origin;
+  assert.ok(['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname),'Synthetic QA fixtures require loopback preview');
+  const fixtures=JSON.parse(await readFile(new URL('./fixtures/profile-test-accounts.json',import.meta.url),'utf8'));
+  const entries=fixtures.map(record=>[record.id,{record}]);
+  await cdp.send('Page.addScriptToEvaluateOnNewDocument',{source:'if(location.origin==='+JSON.stringify(testOrigin)+')localStorage.setItem("zoll_pulseiq_custom_agencies_v8",'+JSON.stringify(JSON.stringify(entries))+');'});
   const ev = expression => evaluate(cdp, expression);
   const cases = [
     ...[1366, 1024, 390, 320].map(width => ({ width, agency: '', topics })),
-    { width: 1366, agency: 'Miami-Dade County Fire Rescue Department', topics },
-    { width: 390, agency: 'Miami-Dade County Fire Rescue Department', topics },
+    { width: 1366, agency: 'QA Fire Department', topics },
+    { width: 390, agency: 'QA Fire Department', topics },
   ];
   for (const scenario of cases) {
     const { width } = scenario;
@@ -53,6 +59,7 @@ try {
       const shot=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
       await writeFile(path.join(output,(scenario.agency?'fire':'ems')+'-identity.png'),Buffer.from(shot.result.data,'base64'));
     }
+    assert.ok(await ev('Boolean(document.querySelector("[data-testid=provider-validation-notice]"))'),'Explicit end-user validation requirement');
     const storageBefore = await ev('JSON.stringify({...localStorage})');
     assert.equal(await ev('document.querySelector("[data-testid=profile-contact-disclosure]").open'), false, 'Repeated contacts start collapsed');
     await ev('document.querySelector("[data-testid=profile-contact-disclosure] summary").click()');

@@ -117,7 +117,7 @@ export function getAgencyFactValues(
   agency: Agency,
   key: AgencyFactEvidenceKey,
 ): unknown[] {
-  if (requiresAgencyFieldEvidence(agency) && !hasMappedFactSource(agency.factEvidence?.[key])) return [];
+  if (requiresAgencyFieldEvidence(agency) && (!hasMappedFactSource(agency.factEvidence?.[key])||agency.factEvidence?.[key]?.sourceKind==='logic')) return [];
   const facts: Record<AgencyFactEvidenceKey, unknown[]> = {
     providerAddress: [agency.address, agency.headquartersPhone, agency.officialWebsite],
     departmentRegistry: [agency.registryIdentity?.identifier, isGeneratedFdid(agency.fdid, agency) ? undefined : agency.fdid, agency.stateLicenseNumber, agency.npiNumber, agency.taxonomyCode],

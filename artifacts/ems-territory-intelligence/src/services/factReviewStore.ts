@@ -20,6 +20,8 @@ export interface FactReviewEntry {
   sourceUrl?: string;
   sourceKind?: string;
   sourcePeriod?: string;
+  /** Exact source identity captured when an end user reviews this field. */
+  sourceRecordId?: string;
   reviewedAt: string;
 }
 export const FACT_REVIEW_STORAGE_KEY = 'ems_agency_fact_reviews_v1';
@@ -75,4 +77,20 @@ export function factReviewStatus(original: string, entries: FactReviewEntry[]): 
   const latest = relevant.at(-1);
   if (!latest) return entries.length ? 'History available · review current value' : 'Needs review';
   return latest.action === 'confirm' ? 'User confirmed' : latest.action === 'correct' ? 'User correction' : 'Discrepancy flagged';
+}
+
+export type FieldValidationState='Not reported'|'End-user validation required'|'User confirmed this value'|'User-reported correction'|'Discrepancy flagged'|'Source or value changed; review required';
+export type FieldReviewSource={sourceName?:string;sourceUrl?:string;sourceKind?:string;reportingPeriod?:string;sourceRecordId?:string};
+/** Neither an imported reviewed flag nor a group-level source certifies a field.
+ * Confirmation is attributable to the exact displayed value and source revision. */
+export function fieldValidationState(original:string,current:string,entries:FactReviewEntry[],source?:FieldReviewSource):FieldValidationState{
+ const actions=entries.filter(e=>['confirm','correct','flag'].includes(e.action)).sort((a,b)=>a.reviewedAt.localeCompare(b.reviewedAt));
+ if(!actions.length)return current==='Not reported'?'Not reported':'End-user validation required';
+ const latest=actions.at(-1)!;
+ if(latest.originalValue!==original||latest.sourceName!==source?.sourceName||safeSourceUrl(latest.sourceUrl)!==safeSourceUrl(source?.sourceUrl)||latest.sourceKind!==source?.sourceKind||latest.sourcePeriod!==source?.reportingPeriod||latest.sourceRecordId!==source?.sourceRecordId)return 'Source or value changed; review required';
+ if(latest.action==='flag')return 'Discrepancy flagged';
+ if(current==='Not reported'||!latest.reviewer.trim()||!latest.method.trim()||!latest.note.trim())return 'End-user validation required';
+ if(latest.action==='confirm'&&latest.previousValue===current)return 'User confirmed this value';
+ if(latest.action==='correct'&&latest.correctedValue===current)return 'User-reported correction';
+ return 'Source or value changed; review required';
 }

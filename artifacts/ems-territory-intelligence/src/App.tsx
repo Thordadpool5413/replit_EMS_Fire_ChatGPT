@@ -179,6 +179,7 @@ export default function App() {
     updateAgencyInCloud,
     setAgenciesState,
     syncPendingChanges
+    ,quarantinedProviders
   } = useFirestoreAgencies({
     globalState,
     globalCounty,
@@ -1303,7 +1304,7 @@ export default function App() {
         <React.Suspense fallback={<WorkspaceLoadingState />}>
         <ErrorBoundary key={activeTab} onReset={handleGoHome}>
         {/* Executive Home & Guided Onboarding Hub */}
-        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub territoryAlerts={territoryAlerts} kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} />}
+        {(activeTab === 'reports' || activeTab === 'settings') && <WorkspaceHub quarantinedProviders={quarantinedProviders} territoryAlerts={territoryAlerts} kind={activeTab} agencies={agencies} navigate={handleNavigateTab} pending={outbox.length} online={isOnline} onOpenAgency={handleOpenAgencyProfile} onCreateAgency={handleAddAgency} onDecideSourceRecord={handleDecideAgencySourceRecord} />}
         {activeTab === 'home' && (
           <div className="workspace-view-container min-w-0 w-full">
             <ErrorBoundary fallback={<HomeMapFailureFallback onBrowseDirectory={() => handleNavigateTab('states_directory')} />}>
@@ -1344,6 +1345,7 @@ export default function App() {
         {/* Predictive Lead Queue (Accounts Workspace) */}
         {activeTab === 'queue' && (
           <div className="workspace-view-container min-w-0 w-full">
+            <section className="pi-surface p-3 mb-3 text-sm"><p>Saved accounts only. Public registry listings are available for end-user validation and account creation; missing agencies are not generated.</p><button className="workspace-button min-h-11" onClick={()=>handleNavigateTab('settings')}>Browse public registry sources</button></section>
             <PredictiveLeadQueue
               agencies={agencies}
               directoryStatus={directoryStatus}

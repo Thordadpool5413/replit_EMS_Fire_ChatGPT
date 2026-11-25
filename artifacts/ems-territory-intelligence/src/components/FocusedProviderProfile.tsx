@@ -1069,7 +1069,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
-            <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>
+            <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}}/>
             <div className="acp-contact-row" aria-label="Agency contact actions">
               {agency.headquartersPhone && (
                 <a href={`tel:${agency.headquartersPhone}`} data-testid="link-header-call"><Phone aria-hidden="true" className="h-3.5 w-3.5" />Main phone</a>
@@ -1617,6 +1617,9 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             aria-label={PROFILE_SECTIONS.find(tab=>tab.id===activeSection)?.label}
             tabIndex={0}
           >
+          {activeSection === 'overview' && (
+            <div className="pi-surface p-3 text-sm" data-testid="provider-validation-notice"><strong>End-user validation required</strong><p>Registry and imported records are working source information, not confirmed operating facts. Verify individual addresses, equipment, contacts, dates and volumes with the agency. Missing values are not reported.</p><button type="button" className="workspace-button min-h-11" onClick={openProfileSources}>Review individual facts and sources</button></div>
+          )}
           {activeSection === 'overview' && (
             <ProfileCommandOverview agency={agency} onReviewFact={fieldId=>{setRequestedReviewField(fieldId);navigateProfileSection('evidence');}} onNavigate={navigateProfileSection} onOpenSources={openProfileSources}>
               <ProfileAttentionSummary key={agency.id} agency={agency} onNavigate={navigateProfileSection} />

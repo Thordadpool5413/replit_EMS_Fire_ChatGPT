@@ -1,3 +1,4 @@
+import { isLegacyProviderId,isLegacyProviderRecord } from './providerRecordTrust';
 import { stripAgencyReviewOverlay } from '../services/agencyReviewOverlay';
 import { applyAgencyMutation } from '../services/agencyMutation';
 /**
@@ -75,6 +76,16 @@ export function saveAgencies(agencies: Agency[]): void {
         a.zollOpportunity.salesStage !== base?.zollOpportunity.salesStage ||
         JSON.stringify(a.fieldNotes ?? []) !== JSON.stringify(base?.fieldNotes ?? [])) entries.push([a.id, delta]);
   }
+  // Preserve archived legacy deltas (including old deltas with no full record).
+  // Removing synthetic providers from the UI must not erase the user's saved work.
+  const oldRaw=localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES);
+  if(oldRaw){
+    const prior: [string,CompactAgencyDelta][]=JSON.parse(oldRaw);
+    if(!Array.isArray(prior)||prior.some(e=>!Array.isArray(e)||typeof e[0]!=='string'||!e[1]||typeof e[1]!=='object'))throw Error('Saved agency archive cannot be read. Nothing was overwritten.');
+    const byId=new Map(entries);
+    for(const [id,delta] of prior)if(isLegacyProviderId(id)||delta.record&&isLegacyProviderRecord(delta.record))byId.set(id,delta);
+    entries.splice(0,entries.length,...byId);
+  }
   try { localStorage.setItem(STORAGE_KEY_CUSTOM_AGENCIES, JSON.stringify(entries)); }
   catch { throw new Error('Device storage is full or unavailable. Nothing was discarded. Export a backup or free space, then retry.'); }
 }
@@ -140,4 +151,24 @@ export function createOutboxItem(
     payload,
     status: 'PENDING'
   };
+}
+
+/** Explicit, browser-local recovery export. Never reintroduce archived records as real providers. */
+export function loadLegacyProviderArchive(records:Agency[]=[]){
+ const prior: [string,CompactAgencyDelta][]=JSON.parse(localStorage.getItem(STORAGE_KEY_CUSTOM_AGENCIES)??'[]');
+ if(!Array.isArray(prior)||prior.some(e=>!Array.isArray(e)||typeof e[0]!=='string'||!e[1]||typeof e[1]!=='object'))throw Error('Legacy archive could not be read.');
+ const saved=prior.filter(([id,delta])=>isLegacyProviderId(id)||Boolean(delta.record&&isLegacyProviderRecord(delta.record)));
+ const retained=records.filter(isLegacyProviderRecord);
+ const ids=new Set([...saved.map(([id])=>id),...retained.map(a=>a.id)]);
+ const legacy=(id:string)=>ids.has(id)||isLegacyProviderId(id);
+ const queued=loadStoredOutbox().filter(i=>legacy(i.agencyId)||Boolean(i.payload?.base&&isLegacyProviderRecord(i.payload.base)));
+ for(const q of queued)ids.add(q.agencyId);
+ const sourceData=loadAgencySourceRecordData();
+ const sourceRecords=Object.fromEntries(Object.entries(sourceData).filter(([id])=>legacy(id)));
+ for(const id of Object.keys(sourceRecords))ids.add(id);
+ const reviewEntries:import('../services/factReviewStore').FactReviewEntry[]=JSON.parse(localStorage.getItem('ems_agency_fact_reviews_v1')??'[]');
+ if(!Array.isArray(reviewEntries))throw Error('Review history cannot be read.');
+ const reviews=reviewEntries.filter(e=>legacy(e.agencyId));
+ for(const e of reviews)ids.add(e.agencyId);
+ return {schemaVersion:1,exportedAt:new Date().toISOString(),purpose:'Quarantined legacy records and user work. Do not import these as provider facts. Independently identify the actual agency before transferring activity.',count:ids.size,saved,retained,queued,sourceRecords,reviews};
 }

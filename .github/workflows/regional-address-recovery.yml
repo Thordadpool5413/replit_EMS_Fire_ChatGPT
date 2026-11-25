@@ -19,7 +19,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: atlas-regional-recovery
+  group: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && format('atlas-regional-validation-{0}', github.ref) || 'atlas-regional-recovery' }}
   cancel-in-progress: false
 jobs:
   validate:

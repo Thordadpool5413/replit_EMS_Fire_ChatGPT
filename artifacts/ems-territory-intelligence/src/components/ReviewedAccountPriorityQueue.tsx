@@ -1,9 +1,10 @@
-import React,{useEffect,useMemo,useRef,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 import type {Agency,FieldNote} from '../types';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../services/sharedEvidenceReplit';
-import {MAX_REVIEW_ACCOUNTS,eligiblePriorityAccounts,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
+import {MAX_REVIEW_ACCOUNTS,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
 import {TerritoryCommandSummary,CommandFollowUps} from './TerritoryCommandCenter';
+import {commandSelection,currentCommandSample,REVIEW_TTL_MS} from '../services/commandSession';
 import {COMMAND_VIEWS,type CommandView} from '../services/territoryCommand';
 import {TerritoryAnalyticsPanel} from './TerritoryAnalyticsPanel';
 import {FieldCoachingPanel} from './FieldCoachingPanel';
@@ -27,16 +28,15 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
  const [open,setOpen]=useState(false),[state,setState]=useState(''),[search,setSearch]=useState(''),[selected,setSelected]=useState<string[]>([]),[kind,setKind]=useState<OpportunityKind|'all'>('all'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[result,setResult]=useState<{samples:ReviewedSample[];started:number;scope:string}>();
  const [view,setView]=useState<CommandView>('overview');
  const token=useRef(0);
- const eligible=useMemo(()=>eligiblePriorityAccounts(agencies),[agencies]),states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort(),inState=eligible.filter(a=>a.agency.stateCode===state);
- const chosen=inState.filter(a=>selected.includes(a.agency.id)),scope=JSON.stringify(chosen.map(a=>[a.agency.id,a.identityKey,a.agency.name]).sort());
- const sample=result?.scope===scope&&chosen.length===selected.length?result:undefined;
+ const selection=commandSelection(agencies,state,selected),{eligible,inState,chosen,scope}=selection,states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort();
+ const sample=currentCommandSample(result,selection,typeof navigator!=='undefined'&&navigator.onLine);
  function clear(){token.current++;setView('overview');setResult(undefined);setMessage('');setBusy(false);}
  useEffect(()=>{clear();},[scope]);
  useEffect(()=>{const offline=()=>{clear();setMessage('Connection lost. Refresh when online.');};window.addEventListener('offline',offline);return()=>{token.current++;window.removeEventListener('offline',offline);};},[]);
- useEffect(()=>{if(!sample)return;const timer=window.setTimeout(()=>{clear();setMessage('Sample expired. Refresh before acting.');},Math.max(0,sample.started+300000-Date.now()));return()=>window.clearTimeout(timer);},[sample]);
+ useEffect(()=>{if(!result)return;const expire=()=>{if(Date.now()-result.started>=REVIEW_TTL_MS||Date.now()<result.started||!navigator.onLine){clear();setMessage('Sample expired or connection lost. Refresh before acting.');}};const timer=window.setTimeout(expire,Math.max(0,result.started+REVIEW_TTL_MS-Date.now()));window.addEventListener('focus',expire);document.addEventListener('visibilitychange',expire);return()=>{window.clearTimeout(timer);window.removeEventListener('focus',expire);document.removeEventListener('visibilitychange',expire);};},[result]);
  function toggle(id:string){clear();setSelected(prev=>prev.includes(id)?prev.filter(v=>v!==id):prev.length<MAX_REVIEW_ACCOUNTS?[...prev,id]:prev);}
  async function check(){
-  if(!user||busy||!chosen.length||chosen.length!==selected.length)return;
+  if(!user||busy||!selection.valid||!navigator.onLine)return;
   clear();const request=++token.current,started=Date.now(),samples:ReviewedSample[]=[];setBusy(true);
   try{
    const session=openEvidenceSession();await evidenceRole(session,user);
@@ -47,7 +47,7 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
    }
    await evidenceRole(session,user);
    if(token.current!==request)return;
-   if(!navigator.onLine||Date.now()-started>=300000)throw Error('Sample expired or connection lost. Select fewer accounts and refresh.');
+   if(!navigator.onLine||Date.now()-started>=REVIEW_TTL_MS)throw Error('Sample expired or connection lost. Select fewer accounts and refresh.');
    setResult({samples,started,scope});setMessage('');
   }catch(e){if(token.current===request){setResult(undefined);setMessage(e instanceof Error?e.message:'Reviewed evidence unavailable.');}}
   finally{if(token.current===request)setBusy(false);}
@@ -63,7 +63,7 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
     <p>{selected.length}/{MAX_REVIEW_ACCOUNTS} selected · {inState.length} eligible loaded accounts, not total state coverage.</p>
     <div className="flex flex-wrap gap-2">{chosen.map(({agency})=><button className="workspace-button min-h-11 break-words" key={agency.id} type="button" disabled={busy} onClick={()=>toggle(agency.id)}>Remove {agency.name}</button>)}</div>
     <div className="max-h-48 overflow-auto border rounded p-2">{inState.filter(a=>(a.agency.name+' '+a.identityKey).toLowerCase().includes(search.toLowerCase())).slice(0,30).map(({agency,identityKey})=><label key={agency.id} className="flex min-h-11 items-center gap-2 break-words"><input type="checkbox" checked={selected.includes(agency.id)} disabled={busy||(!selected.includes(agency.id)&&selected.length>=MAX_REVIEW_ACCOUNTS)} onChange={()=>toggle(agency.id)}/><span>{agency.name} · {identityKey}</span></label>)}</div>
-    <button className="workspace-button min-h-11" type="button" disabled={busy||!chosen.length||chosen.length!==selected.length} onClick={()=>void check()}>{busy?'Checking reviewed evidence…':'Compare selected accounts'}</button>
+    <button className="workspace-button min-h-11" type="button" disabled={busy||!selection.valid} onClick={()=>void check()}>{busy?'Checking reviewed evidence…':'Compare selected accounts'}</button>
    </>}
    {message&&<p role="status">{message}</p>}
    {ranked&&sample&&<>

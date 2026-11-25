@@ -31,6 +31,7 @@ jobs:
         run: cp -a artifacts/ems-territory-intelligence/public/registry/locations "$RUNNER_TEMP/base-locations"
       - name: Query official address points for unresolved provider streets
         run: |
+          set -euo pipefail
           if [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v5" ]; then
             python3 scripts/data/recover_regional_locations.py --source il-peoria --source il-lake --source pa-northampton --source al-baldwin --max-requests 100 --allow-empty
           elif [ "$GITHUB_REF_NAME" = "atlas/regional-address-recovery-v4" ]; then

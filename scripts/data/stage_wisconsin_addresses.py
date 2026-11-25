@@ -77,7 +77,7 @@ def date(v):
     if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('Invalid date')
     return datetime.datetime.fromtimestamp(v/1000,datetime.timezone.utc).date().isoformat()
 def review(e,rows,counties,checked,diagnostic=None):
-    a=e['address'];hits=[];conflict=False;reasons=set();object_ids=set()
+    a=e['address'];hits=[];placement_review=[];placement_values=[];conflict=False;reasons=set();object_ids=set()
     for v,g in rows:
         if v['State']!='WI' or v['Country']!='US' or v['Post_Code']!=a['zip'] or v['Add_Number']!=number(a):continue
         if not isinstance(v['FullStNm'],str) or not isinstance(v['Post_Comm'],str):continue
@@ -100,13 +100,23 @@ def review(e,rows,counties,checked,diagnostic=None):
         lat,lon=g.get('y'),g.get('x');placement=v['Placement']
         if type(lat) not in (int,float) or type(lon) not in (int,float) or not math.isfinite(lat) or not math.isfinite(lon) or not 42.4<=lat<=47.1 or not -93<=lon<=-86.2:
             reasons.add('invalid_coordinates');conflict=True;continue
-        if not isinstance(placement,str) or placement not in ('Structure','Site','PropertyAccess','Property Access','Parcel'):
-            reasons.add('placement_not_allowlisted');conflict=True;continue
-        hits.append({'sourceKey':e['key'],'objectId':v['oid'],'matchedAddress':matched,'countyFips':next(iter(fips)),'latitude':lat,'longitude':lon,'placementAsReported':placement,'recordUpdatedAt':updated,'endUserValidationRequired':True})
+        valid_literal=placement is None or isinstance(placement,str) and len(placement)<=25 and not re.search(r'[\x00-\x1f\x7f]',placement)
+        if not valid_literal:
+            reasons.add('invalid_placement_value');conflict=True;continue
+        placement_values.append({'objectId':v['oid'],'value':placement})
+        point={'sourceKey':e['key'],'objectId':v['oid'],'matchedAddress':matched,'countyFips':next(iter(fips)),'latitude':lat,'longitude':lon,'placementAsReported':placement,'recordUpdatedAt':updated,'endUserValidationRequired':True}
+        if placement not in ('Structure','Site','PropertyAccess','Property Access','Parcel'):
+            reasons.add('placement_not_allowlisted');conflict=True
+            placement_review.append({**point,'publication':'review-only','reason':'placement_not_allowlisted','operationalStationVerified':False})
+            continue
+        hits.append(point)
     if len(hits)>1:reasons.add('multiple_eligible_points')
     status='review' if conflict or len(hits)>1 else 'candidate' if hits else 'noMatch'
     if diagnostic is not None:
-        diagnostic.update({'sourceKey':e['key'],'status':status,'reasons':sorted(reasons or ({'no_exact_address'} if status=='noMatch' else set())),'exactObjectIds':sorted(object_ids),'eligiblePointCount':len(hits)})
+        diagnostic.update({'sourceKey':e['key'],'status':status,'reasons':sorted(reasons or ({'no_exact_address'} if status=='noMatch' else set())),'exactObjectIds':sorted(object_ids),'eligiblePointCount':len(hits),'placementObservations':sorted(placement_values,key=lambda p:p['objectId'])})
+        # Never expose an alternative coordinate when any other exact object or conflicting condition exists.
+        if status=='review' and reasons=={'placement_not_allowlisted'} and len(object_ids)==1 and len(placement_review)==1 and not hits:
+            diagnostic['placementReviewCandidate']=placement_review[0]
     return (hits[0] if status=='candidate' else None),status
 def acquire(entries,counties,checked,out,fetch=request,max_requests=120,delay=1):
     out.mkdir(parents=True,exist_ok=True)
@@ -137,7 +147,9 @@ def acquire(entries,counties,checked,out,fetch=request,max_requests=120,delay=1)
     if schema(after)!=names or (layer.get('editingInfo') or {}).get('lastEditDate')!=(after.get('editingInfo') or {}).get('lastEditDate') or layer_url(fetch(ITEM_URL,{'f':'json'}))!=url:raise ValueError('Source changed during acquisition')
     if collections.Counter(d['status'] for d in diagnostics)!=stats or len({d['sourceKey'] for d in diagnostics})!=len(diagnostics):raise ValueError('Diagnostic accounting mismatch')
     reason_counts=collections.Counter(reason for d in diagnostics if d['status']!='candidate' for reason in d['reasons'])
-    return {'schemaVersion':2,'diagnostics':sorted(diagnostics,key=lambda d:d['sourceKey']),'reasonCounts':dict(sorted(reason_counts.items())),'sourceUrl':url,'sourceItemId':ITEM,'sourcePortal':PORTAL,'checkedAt':checked,'sourceLastEditDate':(layer.get('editingInfo') or {}).get('lastEditDate'),'counts':dict(stats),'requests':requests,'candidates':sorted(hits,key=lambda h:h['sourceKey']),'publication':'review-only','limitations':'Incomplete statewide address dataset; no provider operation or station identity verified.'}
+    placement_candidates=[d['placementReviewCandidate'] for d in diagnostics if 'placementReviewCandidate' in d]
+    placement_counts=collections.Counter(json.dumps(p['value'],ensure_ascii=True) for d in diagnostics if 'placement_not_allowlisted' in d['reasons'] for p in d.get('placementObservations',[]))
+    return {'schemaVersion':3,'placementReviewCandidates':sorted(placement_candidates,key=lambda p:p['sourceKey']),'placementObservationCounts':dict(sorted(placement_counts.items())),'diagnostics':sorted(diagnostics,key=lambda d:d['sourceKey']),'reasonCounts':dict(sorted(reason_counts.items())),'sourceUrl':url,'sourceItemId':ITEM,'sourcePortal':PORTAL,'checkedAt':checked,'sourceLastEditDate':(layer.get('editingInfo') or {}).get('lastEditDate'),'counts':dict(stats),'requests':requests,'candidates':sorted(hits,key=lambda h:h['sourceKey']),'publication':'review-only','limitations':'Incomplete statewide address dataset; no provider operation or station identity verified.'}
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--max-requests',type=int,default=120);args=p.parse_args()
     if not 1<=args.max_requests<=120:raise ValueError('Invalid request budget')
@@ -148,6 +160,6 @@ def main():
     report=acquire(entries,counties,datetime.datetime.now(datetime.timezone.utc).date().isoformat(),args.output,max_requests=args.max_requests)
     report['locationManifestSha256']=sha(raw)
     (args.output/'wisconsin-address-review.json').write_text(json.dumps(report,indent=2)+'\n')
-    print('Wisconsin address review:',json.dumps({'counts':report['counts'],'requests':report['requests'],'reasonCounts':report['reasonCounts']}))
+    print('Wisconsin address review:',json.dumps({'counts':report['counts'],'requests':report['requests'],'reasonCounts':report['reasonCounts'],'placementReviewCandidates':len(report['placementReviewCandidates']),'placementObservationCounts':report['placementObservationCounts']}))
     if report['counts'].get('unavailable') or report['counts'].get('notAttempted'):raise ValueError('Incomplete acquisition; partial review artifact only')
 if __name__=='__main__':main()

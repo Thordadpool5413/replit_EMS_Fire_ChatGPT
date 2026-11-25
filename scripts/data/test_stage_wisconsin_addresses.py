@@ -20,13 +20,22 @@ class WisconsinTest(unittest.TestCase):
         for field,value,reason in [('County','Other','county_not_unique'),('Placement','Geocoding','placement_not_allowlisted'),('Unit_Value','7','subaddress_or_exception')]:
             detail={};bad={**row,'attributes':{**a,field:value}};hit,status=review(e,features({**payload,'features':[bad]},names),counties,'2026-11-25',detail)
             self.assertIsNone(hit);self.assertIn(reason,detail['reasons']);self.assertEqual(detail['exactObjectIds'],[1]);self.assertEqual(detail['status'],status)
+        for placement in (None,'Unknown','Geocoding','structure'):
+            detail={};bad={**row,'attributes':{**a,'Placement':placement}};hit,status=review(e,features({**payload,'features':[bad]},names),counties,'2026-11-25',detail)
+            self.assertIsNone(hit);self.assertEqual(status,'review');self.assertEqual(detail['placementReviewCandidate']['placementAsReported'],placement);self.assertFalse(detail['placementReviewCandidate']['operationalStationVerified'])
+        detail={};bad={**row,'attributes':{**a,'Placement':'Unknown'}};other={**row,'attributes':{**a,'OBJECTID':2,'Unit_Value':'7'}}
+        hit,status=review(e,features({**payload,'features':[bad,other]},names),counties,'2026-11-25',detail)
+        self.assertIsNone(hit);self.assertNotIn('placementReviewCandidate',detail)
         detail={};review(e,[],counties,'2026-11-25',detail);self.assertEqual(detail['reasons'],['no_exact_address'])
         with self.assertRaises(ValueError):layer_url({**item,'url':'https://example.com/FeatureServer'})
         with self.assertRaises(ValueError):schema({**layer,'serviceItemId':'other'})
         with self.assertRaises(ValueError):features({**payload,'features':[row,row]},names)
         with tempfile.TemporaryDirectory() as td:
             report=acquire([e],counties,'2026-11-25',pathlib.Path(td),fetch=lambda url,p: item if 'sharing/rest' in url else payload if url.endswith('/query') else layer,delay=0)
-            self.assertEqual(report['counts'],{'candidate':1});self.assertEqual(report['publication'],'review-only');self.assertEqual(report['diagnostics'][0]['exactObjectIds'],[1]);self.assertEqual(report['reasonCounts'],{})
+            self.assertEqual(report['counts'],{'candidate':1});self.assertEqual(report['publication'],'review-only');self.assertEqual(report['diagnostics'][0]['exactObjectIds'],[1]);self.assertEqual(report['reasonCounts'],{});self.assertEqual(report['placementReviewCandidates'],[])
+            unknown={**row,'attributes':{**a,'Placement':None}}
+            report=acquire([e],counties,'2026-11-25',pathlib.Path(td),fetch=lambda url,p:item if 'sharing/rest' in url else {**payload,'features':[unknown]} if url.endswith('/query') else layer,delay=0)
+            self.assertEqual(report['counts'],{'review':1});self.assertEqual(report['candidates'],[]);self.assertEqual(len(report['placementReviewCandidates']),1);self.assertEqual(report['placementObservationCounts'],{'null':1})
 
     def test_unit_field_aliases_fail_closed(self):
         fields=[{'name':k,'type':v} for k,v in {**FIELDS,'OBJECTID':'esriFieldTypeOID'}.items() if k!='Unit']

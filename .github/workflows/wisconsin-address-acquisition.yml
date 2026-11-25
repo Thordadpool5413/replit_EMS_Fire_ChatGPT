@@ -6,7 +6,7 @@ on:
       - 'scripts/data/test_stage_wisconsin_addresses.py'
       - '.github/workflows/wisconsin-address-acquisition.yml'
   push:
-    branches: [atlas/phase8-0k-wisconsin-addresses, atlas/phase8-0n-wisconsin-diagnostics]
+    branches: [atlas/phase8-0k-wisconsin-addresses, atlas/phase8-0n-wisconsin-diagnostics, atlas/phase8-0p-placement-review]
     paths:
       - 'scripts/data/stage_wisconsin_addresses.py'
       - 'scripts/data/test_stage_wisconsin_addresses.py'

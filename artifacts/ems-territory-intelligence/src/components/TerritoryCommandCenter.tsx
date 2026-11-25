@@ -13,7 +13,7 @@ export function TerritoryCommandSummary({agencies,selected,samples,onView,onOpen
   {label:'Priority accounts',value:r.priorities.length,view:'priorities',detail:r.urgent+' with near deadlines to verify now'},
   {label:'Dated purchasing',value:r.deadlines,view:'commercial',detail:'Accounts with reviewed dates within 90 days'},
   {label:'Funding research',value:r.funding,view:'commercial',detail:'Accounts with eligible funding documents'},
-  {label:'Competitive research',value:r.competitive,view:'priorities',detail:'Accounts with reviewed competitor observations'},
+  {label:'Competitive research',value:r.competitive,view:'competitive',detail:'Accounts with reviewed competitor observations'},
   {label:'Mapped research',value:r.mapped,view:'geography',detail:r.groups+' multi-account proximity groups'},
   {label:'Coverage gaps',value:r.selected-r.checked,view:'coverage',detail:'Selected accounts without a complete document sample'},
   {label:'Account activity coverage',value:r.eligible,view:'activity',detail:'Review recorded contacts and coverage gaps'},

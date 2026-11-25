@@ -32,3 +32,14 @@ export function facilityDirections(f:Facility):string|undefined{
  if(!f.address||!f.city||!f.postalCode||!/^\d/.test(f.address)||/\b(?:P\.?\s*O\.?\s*BOX|POST OFFICE BOX|PMB)\b/i.test(f.address)||!/^\d{5}(?:-\d{4})?$/.test(f.postalCode))return undefined;
  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([f.address,f.city,f.stateCode,f.postalCode].join(', '));
 }
+
+/** Literal map bounds avoid relying on a global Google Maps constructor. */
+export function stationMapBounds(points:readonly {lat:number;lng:number}[]){
+ if(!points.length)return undefined;
+ let south=90,north=-90,west=180,east=-180;
+ for(const p of points){
+  if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||Math.abs(p.lat)>90||Math.abs(p.lng)>180)return undefined;
+  south=Math.min(south,p.lat);north=Math.max(north,p.lat);west=Math.min(west,p.lng);east=Math.max(east,p.lng);
+ }
+ return {south,west,north,east};
+}

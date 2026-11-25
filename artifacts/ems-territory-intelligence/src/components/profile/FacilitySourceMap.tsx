@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {APIProvider,Map,AdvancedMarker,useMap} from '@vis.gl/react-google-maps';
-import type {Facility} from '../../services/departmentFacilities';
+import {stationMapBounds,type Facility} from '../../services/departmentFacilities';
 type Point={id:string;name:string;lat:number;lng:number};
 export function stationMapPoints(facilities:Facility[]):Point[]{
  return facilities.flatMap(f=>{
@@ -10,7 +10,7 @@ export function stationMapPoints(facilities:Facility[]):Point[]{
 }
 function Fit({points}:{points:Point[]}){
  const map=useMap();
- useEffect(()=>{if(!map||!points.length)return;if(points.length===1){map.setCenter(points[0]);map.setZoom(13);return;}const bounds=new google.maps.LatLngBounds();points.forEach(p=>bounds.extend(p));map.fitBounds(bounds,32);},[map,points]);
+ useEffect(()=>{if(!map||!points.length)return;if(points.length===1){map.setCenter(points[0]);map.setZoom(13);return;}const bounds=stationMapBounds(points);if(bounds)map.fitBounds(bounds,32);},[map,points]);
  return null;
 }
 export function FacilitySourceMap({facilities}:{facilities:Facility[]}){

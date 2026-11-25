@@ -21,6 +21,12 @@ import {
   applyAgencySourceRecordData,
   loadAgencySourceRecordData,
 } from "../services/agencySourceRecordStore";
+import {
+  MAX_REGISTRY_IMPORT_SELECTION,
+  importReviewedRegistryProfiles,
+  type RegistryImportResult,
+  type RegistryImportWriteProgress,
+} from "../services/nationalRegistryImport";
 
 const nationalDirectory = createAgencyDirectoryLoader(fetchAgencyDirectoryPage);
 
@@ -46,6 +52,10 @@ export interface UseAgencyRecordsResult {
   strictCloudOnlyMode: boolean;
   toggleStrictCloudOnlyMode: (enabled: boolean) => void;
   hydrateBatchToCloud: (maxRecords?: number) => Promise<number>;
+  importReviewedAgencyProfiles: (
+    profiles: Agency[],
+    onProgress?: (progress: RegistryImportWriteProgress) => void,
+  ) => Promise<RegistryImportResult>;
   updateAgencyInCloud: (agency: Agency) => Promise<void>;
   updateStageInCloud: (agencyId: string, newStage: LeadStage) => Promise<void>;
   toggleRouteInCloud: (agencyId: string) => Promise<void>;
@@ -229,6 +239,48 @@ export function useAgencyRecords({
       setIsSyncing(false);
     }
   }, [allSanitizedAgencies, onToast]);
+
+  const importReviewedAgencyProfiles = useCallback(async (
+    profiles: Agency[],
+    onProgress?: (progress: RegistryImportWriteProgress) => void,
+  ): Promise<RegistryImportResult> => {
+    if (profiles.length > MAX_REGISTRY_IMPORT_SELECTION) {
+      throw new Error(`Select no more than ${MAX_REGISTRY_IMPORT_SELECTION} profiles per import.`);
+    }
+    const sanitized = profiles.map((profile) => dataSanitizationService.sanitizeAgency({ ...profile }));
+    if (sanitized.some((profile) => !profile)) {
+      throw new Error("Every selected profile must pass source-identity validation before it can be saved.");
+    }
+    const candidates = sanitized as Agency[];
+    if (!candidates.length) return { createdIds: [], alreadyPresent: 0 };
+
+    setIsSyncing(true);
+    try {
+      return await importReviewedRegistryProfiles({
+        profiles: candidates,
+        createBatch: (batch) => batchSyncAgenciesToReplit(batch, batch.length),
+        onCreated: (created) => {
+          const nowIso = new Date().toISOString();
+          const ids = created.map((profile) => profile.id);
+          const newlyCreated = created.map((profile) => ({
+            ...profile,
+            _revision: 1,
+            _updatedAt: nowIso,
+            _syncedAt: nowIso,
+            isCloudPersisted: true,
+            dataProvenanceTier: "replit_backend_synced" as const,
+          }));
+          dataSanitizationService.registerCloudSyncedIds(ids);
+          setCloudSyncCount(dataSanitizationService.getCloudSyncedIdsCount());
+          mergeCloudAgencies(newlyCreated);
+          setIsCloudConnected(true);
+        },
+        onProgress,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [mergeCloudAgencies]);
 
   const updateAgencyInCloud = useCallback(async (agency: Agency) => {
     if (isLegacyProviderRecord(agency)) {
@@ -485,6 +537,7 @@ export function useAgencyRecords({
     strictCloudOnlyMode,
     toggleStrictCloudOnlyMode,
     hydrateBatchToCloud,
+    importReviewedAgencyProfiles,
     updateAgencyInCloud,
     updateStageInCloud,
     toggleRouteInCloud,

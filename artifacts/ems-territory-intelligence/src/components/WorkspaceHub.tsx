@@ -12,6 +12,7 @@ import {SharedEvidenceWorkspace} from './SharedEvidenceWorkspace';
 import {OpportunityRadar} from './OpportunityRadar';
 import {IntelligenceResearchQueue} from './IntelligenceResearchQueue';
 import {NationalSourceDirectory} from './NationalSourceDirectory';
+import { NationalAgencyImportPanel } from './NationalAgencyImportPanel';
 import {WorkspaceIcon,WorkspaceHeading} from './design/WorkspaceIcon';
 import { BulkRegistryDirectory } from './BulkRegistryDirectory';
 import { ImportRunHistory } from './ImportRunHistory';
@@ -19,6 +20,7 @@ import { DataCoverageSummary } from './DataCoverageSummary';
 import React, { useMemo, useState } from 'react';
 import { ArrowUpRight, Download, MapPin } from 'lucide-react';
 import type { Agency,AgencySourceRecordAssociation } from '../types';
+import type { RegistryImportResult, RegistryImportWriteProgress } from '../services/nationalRegistryImport';
 import { buildWorkspaceCsv } from '../utils/workspacePresentation';
 const reports = [
   ['contracts','Purchasing timeline','Review recorded contracts and upcoming renewal dates.'],
@@ -33,7 +35,7 @@ const settings = [
   ['gateway','Source directory','Find federal and state sources for your research.'],
   ['claims','Public data & imports','Review Medicare and public-health reference data.'],
 ];
-export const WorkspaceHub: React.FC<{kind:'reports'|'settings';quarantinedProviders?:Agency[];territoryAlerts?:TerritoryAlertState;agencies:Agency[];navigate:(id:string)=>void;pending:number;online:boolean;onOpenAgency?:(a:Agency)=>void;onCreateAgency?:(a:Agency)=>Promise<void>;onDecideSourceRecord?:(id:string,a:AgencySourceRecordAssociation)=>void}> = ({kind,quarantinedProviders,territoryAlerts,agencies,navigate,pending,online,onOpenAgency,onCreateAgency,onDecideSourceRecord}) => {
+export const WorkspaceHub: React.FC<{kind:'reports'|'settings';quarantinedProviders?:Agency[];territoryAlerts?:TerritoryAlertState;agencies:Agency[];directoryStatus?:{status:'loading'|'ready'|'unavailable';loaded:number};navigate:(id:string)=>void;pending:number;online:boolean;onOpenAgency?:(a:Agency)=>void;onCreateAgency?:(a:Agency)=>Promise<void>;onDecideSourceRecord?:(id:string,a:AgencySourceRecordAssociation)=>void;onImportAgencyProfiles?:(profiles:Agency[],onProgress?:(progress:RegistryImportWriteProgress)=>void)=>Promise<RegistryImportResult>}> = ({kind,quarantinedProviders,territoryAlerts,agencies,directoryStatus,navigate,pending,online,onOpenAgency,onCreateAgency,onDecideSourceRecord,onImportAgencyProfiles}) => {
   const [includeEstimates,setIncludeEstimates]=useState(false);
   const work = useMemo(()=>agencies.filter(a=>a.isBookmarked||a.inDayRoute||(a.fieldNotes?.length || a.followUpTasks?.length)||Object.keys(a._reviewOriginalValues??{}).length),[agencies]);
   const exportWork=()=>{
@@ -57,7 +59,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';quarantinedProvid
     {kind==='reports'&&<SamSolicitationDiscovery/>}
     {kind==='reports'&&<IntelligenceResearchQueue agencies={agencies} onOpen={onOpenAgency}/>}
     <div className="workspace-hub-grid">{(kind==='reports'?reports:settings).map(([id,title,description])=><button key={id} type="button" className="workspace-destination" onClick={()=>navigate(id)}><WorkspaceIcon name={id} badge/><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} aria-hidden="true"/></button>)}</div>
-    {kind==='settings'&&<div className="workspace-data-tools"><DataCoverageSummary agencies={agencies}/><LegacyProviderArchive records={quarantinedProviders}/><ImportRunHistory/><NationalSourceDirectory savedAgencies={agencies} onOpenSavedAgency={onOpenAgency} onCreateAgency={onCreateAgency} onDecideSourceRecord={onDecideSourceRecord}/><BulkRegistryDirectory/></div>}
+     {kind==='settings'&&<div className="workspace-data-tools"><DataCoverageSummary agencies={agencies}/><LegacyProviderArchive records={quarantinedProviders}/><ImportRunHistory/><NationalAgencyImportPanel agencies={agencies} directoryStatus={directoryStatus} online={online} onImportProfiles={onImportAgencyProfiles}/><NationalSourceDirectory savedAgencies={agencies} onOpenSavedAgency={onOpenAgency} onCreateAgency={onCreateAgency} onDecideSourceRecord={onDecideSourceRecord}/><BulkRegistryDirectory/></div>}
     <footer className="workspace-hub-footer"><MapPin size={16} aria-hidden="true"/><span>Need an account? Start with the map or agency directory.</span><button className="workspace-text-button" onClick={()=>navigate('states_directory')}>Open directory</button></footer>
   </section>;
 };

@@ -21,12 +21,12 @@ def number(a):
     m=re.match(r'^([1-9]\d{0,5})\s+\S',a['street'])
     return int(m.group(1)) if m else None
 def query(batch):
-    if not 1<=len(batch)<=8 or any(a['state']!='TX' or number(a) is None for a in batch):raise ValueError('Invalid query')
+    if len(batch)!=1 or any(a['state']!='TX' or number(a) is None for a in batch):raise ValueError('Invalid query')
     clauses=sorted({f"(HOUSE_NUM={number(a)} AND ZIP_CODE={sql(a['zip'])})" for a in batch})
-    return {'f':'json','where':' OR '.join(clauses),'outFields':','.join(FIELDS),'returnGeometry':'true','outSR':'4326','resultRecordCount':1000}
+    return {'f':'json','where':' OR '.join(clauses),'outFields':','.join(FIELDS),'returnGeometry':'true','outSR':'4326'}
 def features(p):
     rows=p.get('features');sr=p.get('spatialReference') or {}
-    if not isinstance(rows,list) or len(rows)>=1000 or p.get('exceededTransferLimit') or rows and 4326 not in (sr.get('wkid'),sr.get('latestWkid')):raise ValueError('Incomplete point response')
+    if not isinstance(rows,list) or len(rows)>=2000 or p.get('exceededTransferLimit') or rows and 4326 not in (sr.get('wkid'),sr.get('latestWkid')):raise ValueError('Incomplete point response')
     seen=set()
     for f in rows:
         a=f.get('attributes');g=f.get('geometry')
@@ -65,8 +65,8 @@ def acquire(entries,checked,fetch=request,delay=1):
         if number(a) is None:diagnostics.append({'sourceKey':e['key'],'status':'unsupported','reasons':['unsupported_address_format']});continue
         groups[(a['zip'],number(a))].append(e)
     values=[groups[k] for k in sorted(groups)]
-    for i in range(0,len(values),8):
-        batch=values[i:i+8];es=[e for g in batch for e in g]
+    for i in range(0,len(values),1):
+        batch=values[i:i+1];es=[e for g in batch for e in g]
         if requests>=120:
             diagnostics.extend({'sourceKey':e['key'],'status':'notAttempted','reasons':['request_budget']} for e in es);continue
         requests+=1
@@ -75,7 +75,8 @@ def acquire(entries,checked,fetch=request,delay=1):
             for e in es:
                 hit,d=review(e,rows,checked);diagnostics.append(d)
                 if hit:candidates.append(hit)
-        except (OSError,ValueError,TypeError,KeyError,TimeoutError):
+        except (OSError,ValueError,TypeError,KeyError,TimeoutError) as exc:
+            print('TC911 query unavailable:',type(exc).__name__,str(exc)[:160],flush=True)
             diagnostics.extend({'sourceKey':e['key'],'status':'unavailable','reasons':['source_request_failure']} for e in es)
         time.sleep(delay)
     if metadata(fetch)!=version:raise ValueError('Source changed during acquisition')

@@ -2,7 +2,7 @@ import { validateCorrection } from '../../services/agencyReviewOverlay';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCheck, ExternalLink, FileCheck2, FileSearch, History, MessageSquareText, PencilLine, TriangleAlert, UserCheck } from 'lucide-react';
 import type { Agency, AgencyFactEvidenceKey } from '../../types';
-import { appendFactReview, effectiveFactValue, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
+import { appendFactReview, effectiveFactValue, fieldValidationState, loadFactReviews, safeSourceUrl, type FactReviewAction, type FactReviewEntry } from '../../services/factReviewStore';
 import './FactReviewPanel.css';
 
 type Fact = { id: string; label: string; value: string; sourceKey: AgencyFactEvidenceKey };
@@ -68,6 +68,8 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}>
   const source=agency.factEvidence?.[fact.sourceKey];
   const sourceUrl=safeSourceUrl(source?.sourceUrl);
   const current=effectiveFactValue(fact.value,history);
+  const status=fieldValidationState(fact.value,current,history,source);
+  const factState=(f:Fact)=>{const h=entries.filter(e=>e.fieldId===f.id);return fieldValidationState(f.value,effectiveFactValue(f.value,h),h,agency.factEvidence?.[f.sourceKey]);};
   const changeFact=(id:string)=>{
     if(dirty&&!window.confirm('Discard the unsaved review for this fact?'))return;
     setFieldId(id);setDirty(false);setNote('');setCorrection('');setSupportingUrl('');setMessage('');setError('');
@@ -75,7 +77,7 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}>
   const save=(e:React.FormEvent)=>{
     e.preventDefault();setError('');setMessage('');
     if(action==='confirm'&&current==='Not reported'){setError('A missing value cannot be confirmed. Record a correction and its basis first.');return;}
-    if((action==='flag'||action==='note')&&!note.trim()){setError('Add a note explaining this review.');return;}
+    if((action==='flag'||action==='note'||action==='confirm'||action==='correct')&&!note.trim()){setError('Record the basis for this review, including what you independently checked.');return;}
     if(supportingUrl&&!safeSourceUrl(supportingUrl)){setError('Use a valid http or https supporting link.');return;}
     try {
       if(action==='correct') validateCorrection(fact.id, correction.trim());
@@ -85,7 +87,7 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}>
         ...(action==='correct'?{correctedValue:correction.trim()}:{}),
         reviewer:reviewer.trim(),method:method.trim(),note:note.trim(),
         supportingUrl:supportingUrl.trim()||undefined,
-        sourceName:source?.sourceName,sourceUrl,sourceKind:source?.sourceKind,sourcePeriod:source?.reportingPeriod,
+        sourceName:source?.sourceName,sourceUrl,sourceKind:source?.sourceKind,sourcePeriod:source?.reportingPeriod,sourceRecordId:source?.sourceRecordId,
         reviewedAt:new Date().toISOString(),
       });
       setEntries([...new Map([...(agency._factReviews ?? []), ...next].map(e => [e.id,e])).values()]);setDirty(false);setNote('');setCorrection('');setSupportingUrl('');
@@ -93,27 +95,27 @@ export const FactReviewPanel: React.FC<{agency:Agency;requestedFieldId?:string}>
     } catch(e){setError(e instanceof Error?e.message:'Review could not be saved.');}
   };
   return <section className="fact-review" data-testid="fact-review-panel" aria-labelledby="fact-review-title">
-    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Record details</span><h2 id="fact-review-title">Recorded values and sources</h2><p>View source records, add notes, and keep corrections with their history.</p></div><span className="fr-local">Change history</span></header>
+    <header className="fr-heading"><div><span className="fr-eyebrow"><FileSearch size={16} aria-hidden="true"/>Record details</span><h2 id="fact-review-title">Recorded values and sources</h2><p>Independently validate each individual fact. A source link or an imported verification flag is not an end-user confirmation. Missing values remain not reported.</p></div><span className="fr-local">Change history</span></header>
     {loadError&&<p role="alert" className="fr-error">{loadError} Saving is blocked to protect existing history.</p>}
     <div className="fr-workspace">
       <div className="fr-list">
-        <label className="fr-desktop-filter">Show facts<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All facts</option><option value="needs">No saved entries</option><option value="reviewed">With saved entries</option></select></label>
+        <label className="fr-desktop-filter">Show facts<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All facts</option><option value="needs">Requires validation</option><option value="reviewed">User validated or corrected</option></select></label>
         <label className="fr-mobile-picker">Fact to review<select value={fact.id} onChange={e=>changeFact(e.target.value)} data-testid="select-review-fact-mobile">{facts.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></label>
-        <div className="fr-facts">{facts.filter(f=>filter==='all'||(filter==='reviewed'?entries.some(e=>e.fieldId===f.id):!entries.some(e=>e.fieldId===f.id))).map(f=>{
+        <div className="fr-facts">{facts.filter(f=>filter==='all'||(filter==='reviewed'?['User confirmed this value','User-reported correction'].includes(factState(f)):!['User confirmed this value','User-reported correction'].includes(factState(f)))).map(f=>{
           const reviews=entries.filter(e=>e.fieldId===f.id);
           const hasSource=Boolean(agency.factEvidence?.[f.sourceKey]);
-           return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`} data-source={hasSource?'yes':undefined}><span className="fr-fact-label">{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><span className="fr-fact-marks">{hasSource&&<span className="fr-mark fr-mark--source"><FileCheck2 size={13} aria-hidden="true"/>Source</span>}</span></button>;
+           return <button key={f.id} type="button" aria-pressed={f.id===fact.id} onClick={()=>changeFact(f.id)} data-testid={`review-fact-${f.id}`} data-source={hasSource?'yes':undefined}><span className="fr-fact-label">{f.label}</span><strong>{effectiveFactValue(f.value,reviews)}</strong><span className="fr-fact-marks">{hasSource&&<span className="fr-mark fr-mark--source"><FileCheck2 size={13} aria-hidden="true"/>Source</span>}<span className="fr-mark">{factState(f)}</span></span></button>;
         })}</div>
       </div>
       <div className="fr-detail">
-         <h3>{fact.label}</h3><div className="fr-zones"><div className="fr-zone fr-zone--source"><p className="fr-zone-label"><FileCheck2 size={15} aria-hidden="true"/>Record</p><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div></dl>
+         <h3>{fact.label}</h3><p className="fr-hint" data-testid="fact-validation-state">{status}</p><div className="fr-zones"><div className="fr-zone fr-zone--source"><p className="fr-zone-label"><FileCheck2 size={15} aria-hidden="true"/>Record</p><dl className="fr-values"><div><dt>Imported value</dt><dd>{fact.value}</dd></div></dl>
          {source&&<div className="fr-source">{source.sourceKind&&<span>Type <strong>{source.sourceKind}</strong></span>}{source.sourceName&&<span>{source.sourceName}</span>}{source.reportingPeriod&&<span>Period {source.reportingPeriod}</span>}{sourceUrl&&<a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source<ExternalLink size={14} aria-hidden="true"/></a>}</div>}</div><div className="fr-zone fr-zone--review"><p className="fr-zone-label"><UserCheck size={15} aria-hidden="true"/>Entry details</p><dl className="fr-values"><div><dt>Current value</dt><dd>{current}</dd></div></dl></div></div>
         <form onSubmit={save} onChange={()=>{setDirty(true);setMessage('');}}>
           <label>Review action<select value={action} onChange={e=>setAction(e.target.value as FactReviewAction)} data-testid="fact-review-action">{Object.entries(labels).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
           <div className="fr-form-grid"><label>Reviewer name<input required maxLength={120} value={reviewer} onChange={e=>setReviewer(e.target.value)} autoComplete="name" data-testid="fact-review-reviewer"/></label><label>Review method<input required maxLength={240} placeholder="e.g. agency phone call, document review" value={method} onChange={e=>setMethod(e.target.value)} data-testid="fact-review-method"/></label></div>
-           <p className="fr-hint">Name and method are saved with this entry. Changes save on this device and queue for cloud synchronization.</p>
+           <p className="fr-hint">Name and method are saved with this entry. Changes save on this device and queue for acknowledgment; reviewer identity is self-entered.</p>
           {action==='correct'&&<label>Corrected value<input required maxLength={2000} value={correction} onChange={e=>setCorrection(e.target.value)} data-testid="fact-review-correction"/><span className="fr-hint">Original values and previous corrections remain in history. Valid corrections update the profile, equipment totals, scoring, and exports.</span></label>}
-           <label>Entry notes<textarea rows={3} maxLength={4000} required={action==='flag'||action==='note'} value={note} onChange={e=>setNote(e.target.value)} data-testid="fact-review-note"/></label>
+           <label>Independent verification basis / notes<textarea rows={3} maxLength={4000} required={action==='flag'||action==='note'||action==='confirm'||action==='correct'} value={note} onChange={e=>setNote(e.target.value)} data-testid="fact-review-note"/></label>
           <label>Supporting link <span className="fr-hint">(optional)</span><input type="url" maxLength={2000} placeholder="https://" value={supportingUrl} onChange={e=>setSupportingUrl(e.target.value)}/></label>
           {error&&<p role="alert" className="fr-error">{error}</p>}{message&&<p role="status" className="fr-success">{message}</p>}
            <div className="fr-save"><span>{dirty?'Unsaved changes':'Changes apply to this fact only'}</span><button disabled={!!loadError} type="submit" data-testid="save-fact-review">{action==='confirm'?<CheckCheck size={16}/>:action==='correct'?<PencilLine size={16}/>:action==='flag'?<TriangleAlert size={16}/>:<MessageSquareText size={16}/>}Save entry</button></div>

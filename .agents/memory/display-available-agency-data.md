@@ -1,24 +1,6 @@
 ---
 name: Display available agency and county data
-description: Product rule for showing current EMS, fire, and county information before end-user verification.
+description: Production records must be source-supported and end-user validated.
 ---
 
-Map as much available EMS and fire agency data, information, logic, and API/source detail as possible. Display every available value—including estimates, generated prospect hypotheses, and candidate matches—so the end user can verify it directly with the account. Verification is the end user's responsibility; lack of confirmation or a mapped source must never block display or be framed as a warning.
-
-For county and state context, use the data currently available in the app as the working reference until an end user confirms or corrects it. Keep unconfirmed values visible and clearly separate source-reported facts, estimates, source-native risk categories, missing data, and user-confirmed information. Pending confirmation describes review status; it does not mean the value is false or bad.
-
-**Why:** the user’s goal is comprehensive agency intelligence for end-user verification, not to treat every unverified value as wrong or suppress it.
-
-**How to apply:** map each field to its source or API, geographic scope or agency-matching key, reporting period, refresh date, and calculation where available. Label whether a value is sourced, estimated, generated, or a candidate, and show its basis so users can assess it. Keep source references and verification state separate from data visibility; avoid “source needed” or “unverified” blockers. Use source-defined risk categories when available; do not invent good/bad thresholds for metrics without a valid benchmark. PulseIQ scores are estimates: show them even when inputs lack citations, use neutral estimate/source labels, and do not frame estimate status as a warning.
-
-For missing agency metrics, show “Not reported” rather than substituting a typical or sample number. Preserve reported zero as a real value. Show an estimate only when its agency inputs and calculation method are visible.
-
-**Why:** sample fallbacks can be mistaken for agency-reported facts and impair user review.
-
-**How to apply:** use null-aware presence checks; label estimates, show their source inputs and formula, and never conflate absent data with zero.
-
-For county-directory provider totals, count unique agency records only when their county association uses an exact native geography ID or an explicitly confirmed link. Never derive provider totals from city or ZIP counts; omit the total when the county match is not supported.
-
-**Why:** a mapped-place count is not a provider count, and multiplying one by a constant presents fabricated coverage as a fact.
-
-**How to apply:** keep place coverage and provider-record coverage separate, and label any displayed record count by its actual match scope.
+Never generate a provider, FDID, street address, coordinates, equipment, contract, contact, clinical metric or financial value to fill gaps. A place is not an EMS/fire organization. Legacy illustrative seed and geography-generated accounts are quarantined from active production workflows; preserve the user's archived work without silently transferring it. Use the public registry directory and explicit source-native account creation. Actual source records remain visible with attribution and a requirement for end-user validation. Missing is not zero; do not turn a group-level evidence reference into an individual-field confirmation. Planning estimates are permissible only when explicitly separate from reported facts, reproducible from real inputs, and requested; never use invented inputs as account data. User corrections and confirmations require independent verification basis, exact field/value/source context, and history. Source updates invalidate older confirmation status. No automatic confirmation or live database deletion.

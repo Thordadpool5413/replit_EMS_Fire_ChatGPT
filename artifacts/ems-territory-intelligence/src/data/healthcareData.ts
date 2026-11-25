@@ -39,8 +39,6 @@ export const NATIONAL_BENCHMARKS: NationalBenchmark = {
 };
 
 import { ALL_50_STATES_SUMMARIES } from './nationalGeographicData';
-import { COMPREHENSIVE_NATIONWIDE_AGENCIES } from './nationalAgenciesData';
-import { ALL_50_STATES_ADDITIONAL_AGENCIES } from './allStatesAgenciesData';
 
 export interface StateSummary {
   state: string;
@@ -156,7 +154,5 @@ export const TERRITORY_CLUSTERS: TerritoryCluster[] = [
   }
 ];
 
-export const INITIAL_AGENCIES: Agency[] = [
-  ...COMPREHENSIVE_NATIONWIDE_AGENCIES,
-  ...ALL_50_STATES_ADDITIONAL_AGENCIES
-];
+/** Retired illustrative seed directory: real accounts are explicitly imported or created. */
+export const INITIAL_AGENCIES: Agency[] = [];

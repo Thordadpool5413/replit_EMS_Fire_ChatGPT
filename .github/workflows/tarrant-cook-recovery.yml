@@ -1,0 +1,52 @@
+name: Tarrant County acquisition and Cook exception investigation
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_texas_tarrant_addresses.py'
+      - 'scripts/data/test_texas_tarrant_addresses.py'
+      - 'scripts/data/investigate_address_exceptions.py'
+      - '.github/workflows/tarrant-cook-recovery.yml'
+  push:
+    branches: [atlas/phase9-0h-tarrant-cook]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_texas_tarrant_addresses.py
+      - run: python3 -m unittest discover -s scripts/data -p test_address_exceptions.py
+  tarrant:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_texas_tarrant_addresses.py --output generated-artifacts/tarrant
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: texas-tarrant-address-review
+          path: generated-artifacts/tarrant/
+          if-no-files-found: ignore
+  cook:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve original verified Cook County artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15065944682/zip" > /tmp/cook.zip
+      - run: python3 scripts/data/investigate_address_exceptions.py --state IL --archive /tmp/cook.zip --output generated-artifacts/cook-exceptions
+      - uses: actions/upload-artifact@v4
+        with:
+          name: illinois-cook-exception-review
+          path: generated-artifacts/cook-exceptions/
+          if-no-files-found: error

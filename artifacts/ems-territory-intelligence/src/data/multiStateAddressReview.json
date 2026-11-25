@@ -1,0 +1,1394 @@
+{
+  "schemaVersion": 1,
+  "publication": "review-only",
+  "snapshotGeneratedAt": "2026-11-25T19:32:48.173523+00:00",
+  "locationManifestSha256": "a471cbfe9d8bdd817b7b2f2bdb56d23a33b6bf97d95e6b3795797a44186c5f9c",
+  "sources": {
+    "MN": {
+      "url": "https://enterprise.gisdata.mn.gov/aghost/rest/services/us_mn_state_mngeo/loc_addresses_open/FeatureServer/0",
+      "label": "Minnesota MnGeo",
+      "workflowRunId": 45703549274,
+      "workflowArtifactId": 15064441705,
+      "artifactSha256": "529269b0a69c670d4084a23029a0fcdd961868ab5e3289930ea026e1f649e7a8",
+      "checkedAt": "2026-11-25"
+    },
+    "WI": {
+      "url": "https://services3.arcgis.com/GoOAGCoqFEhZEh7f/arcgis/rest/services/WI_NG911_Site_Structure_Address_Points_2/FeatureServer/0",
+      "label": "Wisconsin OEC NG911",
+      "workflowRunId": 45703743725,
+      "workflowArtifactId": 15064855858,
+      "artifactSha256": "daeb68c05fb864848c2d2ac0195a103217061eeb19ab881cb40ba786f79e41ed",
+      "checkedAt": "2026-11-25"
+    },
+    "MI": {
+      "url": "https://arcgis1.midland-mi.org/arcgis/rest/services/CityCountyShared/FeatureServer/1",
+      "label": "City of Midland GIS",
+      "workflowRunId": 45704269457,
+      "workflowArtifactId": 15064303088,
+      "artifactSha256": "7aef727262e1c60eb381f4a6b32280a44eb9d63ce06dfbb3bd4728db64e0e2e4",
+      "checkedAt": "2026-11-25"
+    }
+  },
+  "candidates": [
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:09105",
+      "objectId": 315506,
+      "matchedAddress": "5592 Highway 210, CROMWELL, MN, 55726",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "Cromwell Fire and Ambulance Service",
+      "registryAddress": {
+        "street": "5592 HWY 210",
+        "city": "Cromwell",
+        "state": "MN",
+        "zip": "55726"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:09108",
+      "objectId": 316015,
+      "matchedAddress": "600 Highway 73, MOOSE LAKE, MN, 55767",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "Moose Lake Fire Protection District",
+      "registryAddress": {
+        "street": "600 Highway 73",
+        "city": "Moose Lake",
+        "state": "MN",
+        "zip": "55767"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:09111",
+      "objectId": 329444,
+      "matchedAddress": "13 Thomson Road, ESKO, MN, 55733",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "Thomson Township / Esko  Fire Department",
+      "registryAddress": {
+        "street": "13 Thomson RD",
+        "city": "Esko",
+        "state": "MN",
+        "zip": "55733"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:09113",
+      "objectId": 315506,
+      "matchedAddress": "5592 Highway 210, CROMWELL, MN, 55726",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "Wright Volunteer Fire Department",
+      "registryAddress": {
+        "street": "5592 Highway 210",
+        "city": "Cromwell",
+        "state": "MN",
+        "zip": "55726"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:09115",
+      "objectId": 318744,
+      "matchedAddress": "3148 County Road 5, BARNUM, MN, 55707",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "Blackhoof Fire Department",
+      "registryAddress": {
+        "street": "3148 County Road 5",
+        "city": "Barnum",
+        "state": "MN",
+        "zip": "55707"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:15103",
+      "objectId": 363659,
+      "matchedAddress": "177 North Avenue, GONVICK, MN, 56644",
+      "countyFips": "27029",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2004-07-15",
+      "registryName": "Gonvick Fire and Rescue",
+      "registryAddress": {
+        "street": "177 North AVE",
+        "city": "Gonvick",
+        "state": "MN",
+        "zip": "56644"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27029",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:36103",
+      "objectId": 17351,
+      "matchedAddress": "301 Mcpherson Street, LITTLEFORK, MN, 56653",
+      "countyFips": "27071",
+      "placementAsReported": "1",
+      "recordUpdatedAt": "2018-06-27",
+      "registryName": "Littlefork Fire Department",
+      "registryAddress": {
+        "street": "301 McPherson  ST",
+        "city": "Littlefork",
+        "state": "MN",
+        "zip": "56653"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27071",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:37101",
+      "objectId": 1899155,
+      "matchedAddress": "302 2nd Street South, BELLINGHAM, MN, 56212",
+      "countyFips": "27073",
+      "placementAsReported": "1",
+      "recordUpdatedAt": "2024-11-01",
+      "registryName": "Bellingham Fire Department",
+      "registryAddress": {
+        "street": "302 2ND ST S",
+        "city": "Bellingham",
+        "state": "MN",
+        "zip": "56212"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27073",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:37106",
+      "objectId": 1897523,
+      "matchedAddress": "203 3rd Avenue North, MARIETTA, MN, 56257",
+      "countyFips": "27073",
+      "placementAsReported": "1",
+      "recordUpdatedAt": "2024-11-01",
+      "registryName": "Marietta Fire Department",
+      "registryAddress": {
+        "street": "203 3RD AVE N",
+        "city": "Marietta",
+        "state": "MN",
+        "zip": "56257"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27073",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:42102",
+      "objectId": 372787,
+      "matchedAddress": "86 West Main Street, COTTONWOOD, MN, 56229",
+      "countyFips": "27083",
+      "placementAsReported": "5",
+      "recordUpdatedAt": "2026-05-14",
+      "registryName": "Cottonwood Fire Department",
+      "registryAddress": {
+        "street": "86 W Main ST",
+        "city": "Cottonwood",
+        "state": "MN",
+        "zip": "56229"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27083",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:45107",
+      "objectId": 275626,
+      "matchedAddress": "390 Pacific Avenue, STEPHEN, MN, 56757",
+      "countyFips": "27089",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2018-03-12",
+      "registryName": "Stephen Volunteer Fire Department",
+      "registryAddress": {
+        "street": "390 Pacific AVE",
+        "city": "Stephen",
+        "state": "MN",
+        "zip": "56757"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27089",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:51102",
+      "objectId": 476661,
+      "matchedAddress": "241 4th Street, CHANDLER, MN, 56122",
+      "countyFips": "27101",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-01-17",
+      "registryName": "City of Chandler, Volunteer Fire Department",
+      "registryAddress": {
+        "street": "241 4th ST",
+        "city": "Chandler",
+        "state": "MN",
+        "zip": "56122"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27101",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:51105",
+      "objectId": 480752,
+      "matchedAddress": "102 3rd Street Northeast, FULDA, MN, 56131",
+      "countyFips": "27101",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-01-17",
+      "registryName": "Fulda Fire Department",
+      "registryAddress": {
+        "street": "102 3RD ST NE",
+        "city": "Fulda",
+        "state": "MN",
+        "zip": "56131"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27101",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:73104",
+      "objectId": 2146410,
+      "matchedAddress": "1010 Front Street, BROOTEN, MN, 56316",
+      "countyFips": "27145",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-03-27",
+      "registryName": "Brooten Volunteer Fire Department",
+      "registryAddress": {
+        "street": "1010 Front ST",
+        "city": "Brooten",
+        "state": "MN",
+        "zip": "56316"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27145",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:73112",
+      "objectId": 2155593,
+      "matchedAddress": "220 Main Street, NEW MUNICH, MN, 56356",
+      "countyFips": "27145",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-10-08",
+      "registryName": "New Munich Fire Department",
+      "registryAddress": {
+        "street": "220 Main ST",
+        "city": "New Munich",
+        "state": "MN",
+        "zip": "56356"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27145",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:81103",
+      "objectId": 1988021,
+      "matchedAddress": "119 South Main Street, WALDORF, MN, 56091",
+      "countyFips": "27161",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-06-12",
+      "registryName": "Waldorf Fire Department",
+      "registryAddress": {
+        "street": "119 S Main ST",
+        "city": "Waldorf",
+        "state": "MN",
+        "zip": "56091"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27161",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:85107",
+      "objectId": 542426,
+      "matchedAddress": "42774 County Road 12, DAKOTA, MN, 55925",
+      "countyFips": "27169",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-08-04",
+      "registryName": "Nodine Volunteer Fire and Rescue",
+      "registryAddress": {
+        "street": "42774 County Road 12",
+        "city": "Dakota",
+        "state": "MN",
+        "zip": "55925"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27169",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:85108",
+      "objectId": 560004,
+      "matchedAddress": "24616 County Road 7, WINONA, MN, 55987",
+      "countyFips": "27169",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-08-04",
+      "registryName": "Pickwick Fire and Rescue",
+      "registryAddress": {
+        "street": "24616 County Road 7",
+        "city": "Winona",
+        "state": "MN",
+        "zip": "55987"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27169",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "FDID:MN:85115",
+      "objectId": 547477,
+      "matchedAddress": "29660 County Road 12, WINONA, MN, 55987",
+      "countyFips": "27169",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-08-04",
+      "registryName": "Wilson Volunteer Fire Department",
+      "registryAddress": {
+        "street": "29660 County RD 12",
+        "city": "Winona",
+        "state": "MN",
+        "zip": "55987"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "27169",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1073500427",
+      "objectId": 1976316,
+      "matchedAddress": "100 West 2nd Street South, COTTONWOOD, MN, 56229",
+      "countyFips": "27083",
+      "placementAsReported": "5",
+      "recordUpdatedAt": "2026-05-14",
+      "registryName": "CITY OF COTTONWOOD",
+      "registryAddress": {
+        "street": "100 WEST 2ND STREET SOUTH",
+        "city": "COTTONWOOD",
+        "state": "MN",
+        "zip": "56229"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1114186988",
+      "objectId": 72550,
+      "matchedAddress": "127 Main Avenue, HOFFMAN, MN, 56339",
+      "countyFips": "27051",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-03-12",
+      "registryName": "CITY OF HOFFMAN",
+      "registryAddress": {
+        "street": "127 MAIN AVE",
+        "city": "HOFFMAN",
+        "state": "MN",
+        "zip": "56339"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1134323264",
+      "objectId": 1984890,
+      "matchedAddress": "202 Parkway Avenue South, LANESBORO, MN, 55949",
+      "countyFips": "27045",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-27",
+      "registryName": "CITY OF LANESBORO",
+      "registryAddress": {
+        "street": "202 PARKWAY AVENUE SOUTH",
+        "city": "LANESBORO",
+        "state": "MN",
+        "zip": "55949"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1154414910",
+      "objectId": 315506,
+      "matchedAddress": "5592 Highway 210, CROMWELL, MN, 55726",
+      "countyFips": "27017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2019-04-08",
+      "registryName": "CROMWELL WRIGHT AREA FIRE DISTRICT",
+      "registryAddress": {
+        "street": "5592 HIGHWAY 210",
+        "city": "CROMWELL",
+        "state": "MN",
+        "zip": "55726"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1407978893",
+      "objectId": 1897523,
+      "matchedAddress": "203 3rd Avenue North, MARIETTA, MN, 56257",
+      "countyFips": "27073",
+      "placementAsReported": "1",
+      "recordUpdatedAt": "2024-11-01",
+      "registryName": "CITY OF MARIETTA",
+      "registryAddress": {
+        "street": "203 3RD AVE. NORTH",
+        "city": "MARIETTA",
+        "state": "MN",
+        "zip": "56257"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1710212485",
+      "objectId": 1288321,
+      "matchedAddress": "799 Reaney Avenue, SAINT PAUL, MN, 55106",
+      "countyFips": "27123",
+      "placementAsReported": "1",
+      "recordUpdatedAt": "2022-10-14",
+      "registryName": "FAIRVIEW HEALTH SERVICES",
+      "registryAddress": {
+        "street": "799 REANEY AVE",
+        "city": "SAINT PAUL",
+        "state": "MN",
+        "zip": "55106"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MN",
+      "sourceKey": "NPI:1902965627",
+      "objectId": 275669,
+      "matchedAddress": "846 5th Street, STEPHEN, MN, 56757",
+      "countyFips": "27089",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2018-03-12",
+      "registryName": "CITY OF STEPHEN",
+      "registryAddress": {
+        "street": "846 5TH STREET",
+        "city": "STEPHEN",
+        "state": "MN",
+        "zip": "56757"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:02040",
+      "objectId": 110154327,
+      "matchedAddress": "102 E Bennett Ave, Mellen, WI, 54546",
+      "countyFips": "55003",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-03",
+      "registryName": "Mellen Fire & Rescue",
+      "registryAddress": {
+        "street": "102 E Bennett AVE",
+        "city": "Mellen",
+        "state": "WI",
+        "zip": "54546"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55003",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:04150",
+      "objectId": 123793508,
+      "matchedAddress": "23845 County Highway M, CABLE, WI, 54821",
+      "countyFips": "55007",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2013-10-21",
+      "registryName": "Town of Namakagon Volunteer Fire Department",
+      "registryAddress": {
+        "street": "23845 County Highway M",
+        "city": "Cable",
+        "state": "WI",
+        "zip": "54821"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55007",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:09030",
+      "objectId": 124685366,
+      "matchedAddress": "436 East Hartford Street, Cadott, WI, 54727",
+      "countyFips": "55017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-27",
+      "registryName": "Cadott Area Fire & Rescue",
+      "registryAddress": {
+        "street": "436 E Hartford ST",
+        "city": "Cadott",
+        "state": "WI",
+        "zip": "54727"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:09040",
+      "objectId": 124686797,
+      "matchedAddress": "1301 Chippewa Crossing Boulevard, Chippewa Falls, WI, 54729",
+      "countyFips": "55017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-27",
+      "registryName": "Chippewa Falls Fire & Emergency Services Department",
+      "registryAddress": {
+        "street": "1301 Chippewa Crossing BLVD",
+        "city": "Chippewa Falls",
+        "state": "WI",
+        "zip": "54729"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55017",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:10110",
+      "objectId": 114241690,
+      "matchedAddress": "101 South Wilson Street, Thorp, WI, 54771",
+      "countyFips": "55019",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-09-16",
+      "registryName": "Thorp Area Fire District",
+      "registryAddress": {
+        "street": "101 S Wilson ST",
+        "city": "Thorp",
+        "state": "WI",
+        "zip": "54771"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55019",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:11110",
+      "objectId": 122022043,
+      "matchedAddress": "301 West Rio Street, Rio, WI, 53960",
+      "countyFips": "55021",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-14",
+      "registryName": "Rio Fire Department",
+      "registryAddress": {
+        "street": "301 W Rio ST",
+        "city": "Rio",
+        "state": "WI",
+        "zip": "53960"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55021",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:22010",
+      "objectId": 116117795,
+      "matchedAddress": "400 South Jackley Lane, Bagley, WI, 53801",
+      "countyFips": "55043",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-13",
+      "registryName": "Bagley Volunteer Fire Department",
+      "registryAddress": {
+        "street": "400 S Jackley LN",
+        "city": "Bagley",
+        "state": "WI",
+        "zip": "53801"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55043",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:28040",
+      "objectId": 113649656,
+      "matchedAddress": "120 South Watertown Street, JOHNSON CREEK, WI, 53038",
+      "countyFips": "55055",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-07-30",
+      "registryName": "Johnson Creek Fire & EMS",
+      "registryAddress": {
+        "street": "120 S Watertown ST",
+        "city": "Johnson Creek",
+        "state": "WI",
+        "zip": "53038"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55055",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:28110",
+      "objectId": 113651865,
+      "matchedAddress": "126 North First Street, PALMYRA, WI, 53156",
+      "countyFips": "55055",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-07-30",
+      "registryName": "Palmyra Fire Department",
+      "registryAddress": {
+        "street": "126 N First   ST",
+        "city": "Palmyra",
+        "state": "WI",
+        "zip": "53156"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55055",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:29070",
+      "objectId": 117866344,
+      "matchedAddress": "303 Mansion Street, Mauston, WI, 53948",
+      "countyFips": "55057",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-02-17",
+      "registryName": "Mauston Volunteer Fire Department",
+      "registryAddress": {
+        "street": "303 Mansion ST",
+        "city": "Mauston",
+        "state": "WI",
+        "zip": "53948"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55057",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:42010",
+      "objectId": 104277776,
+      "matchedAddress": "98 Jackson Street, Oconto Falls, WI, 54154",
+      "countyFips": "55083",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-03-24",
+      "registryName": "Oconto Falls Fire Department",
+      "registryAddress": {
+        "street": "98 Jackson ST",
+        "city": "Oconto Falls",
+        "state": "WI",
+        "zip": "54154"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55083",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:44250",
+      "objectId": 127283329,
+      "matchedAddress": "800 East Pearl Street, Seymour, WI, 54165",
+      "countyFips": "55087",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-06-20",
+      "registryName": "Seymour Fire Department",
+      "registryAddress": {
+        "street": "800 E Pearl ST",
+        "city": "Seymour",
+        "state": "WI",
+        "zip": "54165"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55087",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:49040",
+      "objectId": 122764119,
+      "matchedAddress": "5444 County Road W, BANCROFT, WI, 54921",
+      "countyFips": "55097",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-12-12",
+      "registryName": "Bancroft-Pine Grove Fire Department",
+      "registryAddress": {
+        "street": "5444 County RD W",
+        "city": "Bancroft",
+        "state": "WI",
+        "zip": "54921"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55097",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:49130",
+      "objectId": 122749178,
+      "matchedAddress": "4585 Fairgrounds Road, AMHERST, WI, 54406",
+      "countyFips": "55097",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-12-12",
+      "registryName": "Amherst Fire District",
+      "registryAddress": {
+        "street": "4585 Fairgrounds RD",
+        "city": "Amherst",
+        "state": "WI",
+        "zip": "54406"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55097",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:50070",
+      "objectId": 114933481,
+      "matchedAddress": "605 SPRUCE STREET, PRENTICE, WI, 54556",
+      "countyFips": "55099",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-01-08",
+      "registryName": "Prentice Volunteer Fire Department",
+      "registryAddress": {
+        "street": "605 Spruce ST",
+        "city": "Prentice",
+        "state": "WI",
+        "zip": "54556"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55099",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:52040",
+      "objectId": 127575835,
+      "matchedAddress": "303 NORTH STATE HWY 58, CAZENOVIA, WI, 53924",
+      "countyFips": "55103",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-06-09",
+      "registryName": "Cazenovia Area Fire Department",
+      "registryAddress": {
+        "street": "303 N State HWY 58",
+        "city": "Cazenovia",
+        "state": "WI",
+        "zip": "53924"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55103",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:60020",
+      "objectId": 114874520,
+      "matchedAddress": "654 MCCOMB AVENUE, RIB LAKE, WI, 54470",
+      "countyFips": "55119",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-03",
+      "registryName": "Rib Lake Volunteer Fire Department, Inc.",
+      "registryAddress": {
+        "street": "654 McComb AVE",
+        "city": "Rib Lake",
+        "state": "WI",
+        "zip": "54470"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55119",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:60030",
+      "objectId": 114877522,
+      "matchedAddress": "532 EAST COUNTY ROAD A, STETSONVILLE, WI, 54480",
+      "countyFips": "55119",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-03",
+      "registryName": "Stetsonville Volunteer Fire Department",
+      "registryAddress": {
+        "street": "532 E County Road A",
+        "city": "Stetsonville",
+        "state": "WI",
+        "zip": "54480"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55119",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:62060",
+      "objectId": 102488805,
+      "matchedAddress": "1501 WATER AVENUE, Hillsboro, WI, 54634",
+      "countyFips": "55123",
+      "placementAsReported": "UNKNOWN",
+      "recordUpdatedAt": "2011-08-09",
+      "registryName": "Hillsboro Volunteer Fire Department",
+      "registryAddress": {
+        "street": "1501 Water Ave",
+        "city": "Hillsboro",
+        "state": "WI",
+        "zip": "54634"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55123",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:62090",
+      "objectId": 102485332,
+      "matchedAddress": "188 NORTH MAIN STREET, Stoddard, WI, 54658",
+      "countyFips": "55123",
+      "placementAsReported": "UNKNOWN",
+      "recordUpdatedAt": "2006-12-06",
+      "registryName": "Stoddard Bergen Volunteer Fire Department",
+      "registryAddress": {
+        "street": "188 N Main ST",
+        "city": "Stoddard",
+        "state": "WI",
+        "zip": "54658"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55123",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:65040",
+      "objectId": 125453361,
+      "matchedAddress": "1400 North River Street, SPOONER, WI, 54801",
+      "countyFips": "55129",
+      "placementAsReported": "",
+      "recordUpdatedAt": "2013-12-19",
+      "registryName": "Spooner Fire District",
+      "registryAddress": {
+        "street": "1400 N River ST",
+        "city": "Spooner",
+        "state": "WI",
+        "zip": "54801"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55129",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:68040",
+      "objectId": 124467080,
+      "matchedAddress": "128 West Garfield Avenue, Marion, WI, 54950",
+      "countyFips": "55135",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-11-03",
+      "registryName": "Marion Fire Department",
+      "registryAddress": {
+        "street": "128 W Garfield AVE",
+        "city": "Marion",
+        "state": "WI",
+        "zip": "54950"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55135",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "FDID:WI:68120",
+      "objectId": 124454083,
+      "matchedAddress": "215 North Shawano Street, New London, WI, 54961",
+      "countyFips": "55135",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-11-03",
+      "registryName": "New London Fire Department",
+      "registryAddress": {
+        "street": "215 N Shawano ST",
+        "city": "New London",
+        "state": "WI",
+        "zip": "54961"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "55135",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1073739165",
+      "objectId": 110154327,
+      "matchedAddress": "102 E Bennett Ave, Mellen, WI, 54546",
+      "countyFips": "55003",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-03",
+      "registryName": "CITY OF MELLEN",
+      "registryAddress": {
+        "street": "102 EAST BENNETT AVE",
+        "city": "MELLEN",
+        "state": "WI",
+        "zip": "54546"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1073889580",
+      "objectId": 113651865,
+      "matchedAddress": "126 North First Street, PALMYRA, WI, 53156",
+      "countyFips": "55055",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-07-30",
+      "registryName": "VILLAGE OF PALMYRA",
+      "registryAddress": {
+        "street": "126 N. FIRST STREET",
+        "city": "PALMYRA",
+        "state": "WI",
+        "zip": "53156"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1083822688",
+      "objectId": 122022043,
+      "matchedAddress": "301 West Rio Street, Rio, WI, 53960",
+      "countyFips": "55021",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-14",
+      "registryName": "RIO COMMUNITY FIRE ASSOCIATION",
+      "registryAddress": {
+        "street": "301 W RIO ST",
+        "city": "RIO",
+        "state": "WI",
+        "zip": "53960"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1104029115",
+      "objectId": 113651865,
+      "matchedAddress": "126 North First Street, PALMYRA, WI, 53156",
+      "countyFips": "55055",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-07-30",
+      "registryName": "PALMYRA FIRE DISTRICT",
+      "registryAddress": {
+        "street": "126 N FIRST STREET",
+        "city": "PALMYRA",
+        "state": "WI",
+        "zip": "53156"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1164601522",
+      "objectId": 118464601,
+      "matchedAddress": "309 Maple Avenue West, Plum City, WI, 54761",
+      "countyFips": "55093",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2022-09-01",
+      "registryName": "VILLAGE OF PLUM CITY",
+      "registryAddress": {
+        "street": "309 MAPLE AVE W",
+        "city": "PLUM CITY",
+        "state": "WI",
+        "zip": "54761"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1194838862",
+      "objectId": 110151951,
+      "matchedAddress": "23 N Grant St, Glidden, WI, 54527",
+      "countyFips": "55003",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-03",
+      "registryName": "GLIDDEN AREA AMBULANCE, INC",
+      "registryAddress": {
+        "street": "23 N GRANT ST",
+        "city": "GLIDDEN",
+        "state": "WI",
+        "zip": "54527"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1205827847",
+      "objectId": 116124746,
+      "matchedAddress": "201 Exchange Street, Blue River, WI, 53518",
+      "countyFips": "55043",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-13",
+      "registryName": "BLUE RIVER VOLUNTEER FIRE DEPARTMENT & RESCUE SQUAD",
+      "registryAddress": {
+        "street": "201 EXCHANGE ST",
+        "city": "BLUE RIVER",
+        "state": "WI",
+        "zip": "53518"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1205881760",
+      "objectId": 124685366,
+      "matchedAddress": "436 East Hartford Street, Cadott, WI, 54727",
+      "countyFips": "55017",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-08-27",
+      "registryName": "CADDOT COMMUNITY AMBULANCE VILL OF CADDOT-ARTHUR-GOETZ-SIGEL",
+      "registryAddress": {
+        "street": "436 E HARTFORD ST",
+        "city": "CADOTT",
+        "state": "WI",
+        "zip": "54727"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1265642938",
+      "objectId": 127574684,
+      "matchedAddress": "108 NORTH FIREMAN LANE, LONE ROCK, WI, 53556",
+      "countyFips": "55103",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-06-09",
+      "registryName": "VILLAGE OF LONE ROCK",
+      "registryAddress": {
+        "street": "108 N FIREMAN LN",
+        "city": "LONE ROCK",
+        "state": "WI",
+        "zip": "53556"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1366197832",
+      "objectId": 125316286,
+      "matchedAddress": "780 NORTH BEECH STREET, TIGERTON, WI, 54486",
+      "countyFips": "55115",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2023-03-10",
+      "registryName": "TIGERTON AREA AMBULANCE SERVICE ASSOCIATION INC",
+      "registryAddress": {
+        "street": "780 N BEECH ST",
+        "city": "TIGERTON",
+        "state": "WI",
+        "zip": "54486"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1497804363",
+      "objectId": 125243300,
+      "matchedAddress": "130 2nd Street, Neenah, WI, 54956",
+      "countyFips": "55139",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-07-24",
+      "registryName": "THEDACARE REGIONAL MEDICAL CENTER-NEENAH, INC.",
+      "registryAddress": {
+        "street": "130 2ND ST",
+        "city": "NEENAH",
+        "state": "WI",
+        "zip": "54956"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1528172905",
+      "objectId": 113649656,
+      "matchedAddress": "120 South Watertown Street, JOHNSON CREEK, WI, 53038",
+      "countyFips": "55055",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-07-30",
+      "registryName": "VILLAGE OF JOHNSON CREEK",
+      "registryAddress": {
+        "street": "120 S WATERTOWN ST",
+        "city": "JOHNSON CREEK",
+        "state": "WI",
+        "zip": "53038"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1629176649",
+      "objectId": 122010196,
+      "matchedAddress": "501 Gillette Street, Pardeeville, WI, 53954",
+      "countyFips": "55021",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-14",
+      "registryName": "PARDEEVILLE DISTRICT AMBULANCE SERVICE",
+      "registryAddress": {
+        "street": "501 GILLETTE ST",
+        "city": "PARDEEVILLE",
+        "state": "WI",
+        "zip": "53954"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1740470087",
+      "objectId": 114933481,
+      "matchedAddress": "605 SPRUCE STREET, PRENTICE, WI, 54556",
+      "countyFips": "55099",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-01-08",
+      "registryName": "PRENTICE VOLUNTEER FIRE DEPARTMENT AND AMBULANCE SERVICE",
+      "registryAddress": {
+        "street": "605 SPRUCE ST",
+        "city": "PRENTICE",
+        "state": "WI",
+        "zip": "54556"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1821043910",
+      "objectId": 127534652,
+      "matchedAddress": "45 MILLER DRIVE, BARABOO, WI, 53913",
+      "countyFips": "55111",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2024-02-11",
+      "registryName": "DELLS-DELTON EMS COMMISSION",
+      "registryAddress": {
+        "street": "45 MILLER DR",
+        "city": "BARABOO",
+        "state": "WI",
+        "zip": "53913"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1821104209",
+      "objectId": 121764566,
+      "matchedAddress": "209 East Lake Street, Silver Lake, WI, 53170",
+      "countyFips": "55059",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2026-09-04",
+      "registryName": "SILVER LAKE RESCUE SQUAD INC",
+      "registryAddress": {
+        "street": "209 E LAKE ST",
+        "city": "SILVER LAKE",
+        "state": "WI",
+        "zip": "53170"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1841164142",
+      "objectId": 122010196,
+      "matchedAddress": "501 Gillette Street, Pardeeville, WI, 53954",
+      "countyFips": "55021",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-11-14",
+      "registryName": "VILLAGE OF PARDEEVILLE",
+      "registryAddress": {
+        "street": "501 GILLETTE ST",
+        "city": "PARDEEVILLE",
+        "state": "WI",
+        "zip": "53954"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "WI",
+      "sourceKey": "NPI:1942207402",
+      "objectId": 110157213,
+      "matchedAddress": "300 Stuntz Ave, Ashland, WI, 54806",
+      "countyFips": "55003",
+      "placementAsReported": null,
+      "recordUpdatedAt": "2025-10-09",
+      "registryName": "CITY OF ASHLAND",
+      "registryAddress": {
+        "street": "300 STUNTZ AVE",
+        "city": "ASHLAND",
+        "state": "WI",
+        "zip": "54806"
+      },
+      "registrySourceDate": "2026-11-09 monthly release",
+      "registryCounty": "",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    },
+    {
+      "state": "MI",
+      "sourceKey": "FDID:MI:05611",
+      "objectId": 36339,
+      "matchedAddress": "507 S NINE MILE RD, MIDLAND, MI, 48640",
+      "countyFips": null,
+      "placementAsReported": null,
+      "recordUpdatedAt": null,
+      "registryName": "Lee Township Fire Department",
+      "registryAddress": {
+        "street": "507 S Nine Mile RD",
+        "city": "Midland",
+        "state": "MI",
+        "zip": "48640"
+      },
+      "registrySourceDate": "2026-11-17",
+      "registryCounty": "26111",
+      "registryStatus": "no-match",
+      "endUserValidationRequired": true
+    }
+  ]
+}

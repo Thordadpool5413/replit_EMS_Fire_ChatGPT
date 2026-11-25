@@ -11,7 +11,7 @@ let manifestPromise:Promise<SourceDirectoryManifest>|undefined;
 const statePromises=new Map<string,Promise<SourceDirectoryRecord[]>>();
 export function loadSourceDirectoryManifest():Promise<SourceDirectoryManifest>{
  if(!manifestPromise)manifestPromise=(async()=>{
-  const response=await fetch(base()+'index.json',{signal:AbortSignal.timeout(30000)});
+  const response=await fetch(base()+'index.json',{cache:'no-cache',signal:AbortSignal.timeout(30000)});
   if(!response.ok)throw Error('National registry directory could not be loaded.');
   const data=await response.json() as SourceDirectoryManifest;
   if(data.schemaVersion!==1||!Array.isArray(data.chunks)||Object.keys(data.byState??{}).length!==51)throw Error('Invalid national registry index.');
@@ -25,7 +25,7 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
   const manifest=await loadSourceDirectoryManifest();const chunk=manifest.chunks.find(c=>c.state===state);
   if(!chunk)return [];
   if(!/^(?:[A-Z]{2}|other-[a-f0-9]{8})\.json$/.test(chunk.file))throw Error('Invalid registry file.');
-  const response=await fetch(base()+chunk.file,{signal:AbortSignal.timeout(30000)});
+  const response=await fetch(base()+chunk.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)});
   if(!response.ok)throw Error(`Registry records for ${state} could not be loaded.`);
   const content=await response.text();
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content));

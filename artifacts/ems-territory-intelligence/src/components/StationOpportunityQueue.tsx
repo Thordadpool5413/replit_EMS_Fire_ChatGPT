@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 import type {Agency} from '../types';
 import {sharedAgencyKey} from '../services/sharedEvidence';

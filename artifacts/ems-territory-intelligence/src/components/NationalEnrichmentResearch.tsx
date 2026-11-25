@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import type {Agency} from '../types';
 import {DISCOVERY_STATES} from '../services/publicIntelligenceDiscovery';
 import {TOPICS,topicLabel,sampleResearch,reconcileResearch,type Topic,type Snapshot} from '../services/nationalEnrichmentResearch';

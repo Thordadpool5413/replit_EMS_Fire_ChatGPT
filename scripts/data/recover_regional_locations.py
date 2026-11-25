@@ -66,6 +66,7 @@ def number(a):
 def query(source,addresses):
  if not 1<=len(addresses)<=(16 if source=='tx-stratmap' else 8) or any(a['state']!=SOURCES[source]['state'] or number(a) is None or not re.fullmatch(r'\d{5}',a['zip']) for a in addresses):raise ValueError('Invalid regional batch')
  house,zipfield=QUERY_KEYS[source]
+ if source=='tx-stratmap':
  if source in COUNTY_ADAPTERS:
   adapter=COUNTY_ADAPTERS[source]
   def house_value(a):return str(int(re.match(r'\d+',number(a)).group())) if adapter['integer'] else sql(number(a))

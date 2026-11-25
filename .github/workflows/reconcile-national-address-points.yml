@@ -1,0 +1,33 @@
+name: Reconcile national provider coordinates
+on:
+  push:
+    branches: [atlas/reconcile-national-address-points]
+    paths:
+      - 'scripts/data/reconcile_national_points.py'
+      - 'scripts/data/test_reconcile_national_points.py'
+      - '.github/workflows/reconcile-national-address-points.yml'
+permissions:
+  contents: read
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
+      - name: Reconcile pinned successful source runs
+        run: |
+          git fetch origin 045bdff1904d6220e9245355488293d574c26865 0a152430c397b5bb44e6b22b661aa7331559b9b9 e593e25aa53dd466e005770bf3fbcdb335707fbb f87548420e52709f744051084584abebeea34e37
+          python3 scripts/data/reconcile_national_points.py
+      - name: Publish review-only result
+        run: |
+          set -euo pipefail
+          python3 scripts/data/backfill_provider_locations.py --verify
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- artifacts/ems-territory-intelligence/public/registry/locations
+          git commit -m "Reconcile independently recovered public address coordinates"
+          git push origin "HEAD:refs/heads/atlas/combined-location-data-${GITHUB_RUN_ID}"

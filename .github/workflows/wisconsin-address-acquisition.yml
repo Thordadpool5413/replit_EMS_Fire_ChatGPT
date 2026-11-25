@@ -1,0 +1,32 @@
+name: Wisconsin official address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_wisconsin_addresses.py'
+      - 'scripts/data/test_stage_wisconsin_addresses.py'
+      - '.github/workflows/wisconsin-address-acquisition.yml'
+  push:
+    branches: [atlas/phase8-0k-wisconsin-addresses]
+    paths:
+      - 'scripts/data/stage_wisconsin_addresses.py'
+      - 'scripts/data/test_stage_wisconsin_addresses.py'
+      - '.github/workflows/wisconsin-address-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_wisconsin_addresses.py
+      - name: Query official statewide address layer
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python3 scripts/data/stage_wisconsin_addresses.py --output generated-artifacts/wisconsin-address-review
+      - uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        with:
+          name: wisconsin-address-review
+          path: generated-artifacts/wisconsin-address-review/
+          if-no-files-found: ignore

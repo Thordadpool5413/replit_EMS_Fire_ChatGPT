@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Wisconsin OEC NG911 public address research; never writes provider records."""
+import argparse, collections, datetime, json, math, pathlib, re, time, urllib.parse, urllib.request
+from backfill_provider_locations import PUBLIC, ROOT, read_registry, verify, physical, match_address, sha
+from recover_nad_locations import NoRedirect, county_index, county_key, sql
+ITEM='3b84690a763449988d88da14b502e008'
+ITEM_URL='https://www.arcgis.com/sharing/rest/content/items/'+ITEM
+PORTAL='https://wisconsin-oec-data-portal-wi-oec.hub.arcgis.com/datasets/wi-oec::wi-ng911-site-structure-address-points'
+TEXT_FIELDS=('AddNum_Pre','AddNum_Suf','FullStNm','Post_Comm','Post_Code','State','Country','County','Building','Floor','Unit','Room','Seat','Addtl_Loc','Placement')
+DATE_FIELDS=('Effective','Expire','DateUpdate')
+FIELDS={**{k:'esriFieldTypeString' for k in TEXT_FIELDS},**{k:'esriFieldTypeDate' for k in DATE_FIELDS},'Add_Number':'esriFieldTypeInteger'}
+def request(url,params):
+    target=url+'?'+urllib.parse.urlencode(params)
+    if len(target)>3800:raise ValueError('URL budget exceeded')
+    req=urllib.request.Request(target,headers={'Accept':'application/json','User-Agent':'ATLAS public address review/1.0'})
+    with urllib.request.build_opener(NoRedirect()).open(req,timeout=35) as res:raw=res.read(4_000_001)
+    if len(raw)>4_000_000:raise ValueError('Response too large')
+    obj=json.loads(raw)
+    if not isinstance(obj,dict) or 'error' in obj:raise ValueError('GIS source returned error')
+    return obj
+def layer_url(item):
+    if item.get('id')!=ITEM or item.get('title')!='WI NG911 Site Structure Address Points' or item.get('type')!='Feature Service' or item.get('access')!='public':raise ValueError('Unexpected OEC catalog item')
+    url=item.get('url','')
+    if not re.fullmatch(r'https://services\d*\.arcgis\.com/[A-Za-z0-9]+/[Aa][Rr][Cc][Gg][Ii][Ss]/rest/services/[A-Za-z0-9_]+/FeatureServer/?',url):raise ValueError('Unexpected feature service URL')
+    return url.rstrip('/')+'/0'
+def schema(layer):
+    if layer.get('serviceItemId')!=ITEM or layer.get('id')!=0 or layer.get('geometryType')!='esriGeometryPoint':raise ValueError('Unexpected statewide layer identity')
+    by_name={}
+    for f in layer.get('fields',[]):
+        k=f['name'].lower()
+        if k in by_name:raise ValueError('Ambiguous field names')
+        by_name[k]=f
+    names={}
+    for field,kind in FIELDS.items():
+        f=by_name.get(field.lower(),{})
+        if f.get('type')!=kind or not re.fullmatch(r'[A-Za-z0-9_]+',f.get('name','')):raise ValueError('Unreviewed schema field: '+field)
+        names[field]=f['name']
+    oid=layer.get('objectIdField')
+    if not isinstance(oid,str) or not re.fullmatch(r'[A-Za-z0-9_]+',oid) or by_name.get(oid.lower(),{}).get('type')!='esriFieldTypeOID':raise ValueError('Missing native object ID')
+    names['oid']=oid
+    return names
+def number(a):
+    if not physical(a):return None
+    m=re.match(r'^([1-9]\d{0,5})\s+\S',a['street'])
+    return int(m.group(1)) if m else None
+def query(batch,names):
+    if not 1<=len(batch)<=8 or any(a['state']!='WI' or not number(a) or not re.fullmatch(r'\d{5}',a['zip']) for a in batch):raise ValueError('Invalid address query')
+    clauses=sorted({f"({names['Add_Number']}={number(a)} AND {names['Post_Code']}={sql(a['zip'])})" for a in batch})
+    return {'f':'json','where':names['State']+"='WI' AND "+names['Country']+"='US' AND ("+' OR '.join(clauses)+')','outFields':','.join(names.values()),'returnGeometry':'true','outSR':'4326','resultRecordCount':1000}
+def features(obj,names):
+    rows=obj.get('features')
+    if not isinstance(rows,list) or len(rows)>=1000 or obj.get('exceededTransferLimit'):raise ValueError('Incomplete response')
+    sr=obj.get('spatialReference') or {}
+    if rows and 4326 not in (sr.get('wkid'),sr.get('latestWkid')):raise ValueError('Unexpected coordinate system')
+    result=[];seen=set()
+    for f in rows:
+        a=f['attributes'];g=f['geometry']
+        if not isinstance(a,dict) or not isinstance(g,dict) or any(k not in a for k in names.values()):raise ValueError('Missing feature fields')
+        v={k:a[n] for k,n in names.items()};oid=v['oid']
+        if type(oid) is not int or not 0<oid<=9007199254740991 or oid in seen:raise ValueError('Invalid object ID')
+        seen.add(oid);result.append((v,g))
+    return result
+def date(v):
+    if v is None:return None
+    if type(v) not in (int,float) or not math.isfinite(v) or v<=0:raise ValueError('Invalid date')
+    return datetime.datetime.fromtimestamp(v/1000,datetime.timezone.utc).date().isoformat()
+def review(e,rows,counties,checked):
+    a=e['address'];hits=[];conflict=False
+    for v,g in rows:
+        if v['State']!='WI' or v['Country']!='US' or v['Post_Code']!=a['zip'] or v['Add_Number']!=number(a):continue
+        if not isinstance(v['FullStNm'],str) or not isinstance(v['Post_Comm'],str):continue
+        matched=f"{v['Add_Number']} {v['FullStNm']}, {v['Post_Comm']}, WI, {a['zip']}"
+        if not match_address(a,matched):continue
+        if any(v[k] not in (None,'') for k in ('AddNum_Pre','AddNum_Suf','Building','Floor','Unit','Room','Seat','Addtl_Loc')):continue
+        county=v['County'];fips=counties.get(('WI',county_key(county)),set()) if isinstance(county,str) else set()
+        if len(fips)!=1 or e.get('sourceCounty') and e['sourceCounty'] not in fips:conflict=True;continue
+        try:
+            effective,expire,updated=(date(v[k]) for k in DATE_FIELDS)
+            if effective and effective>checked or expire and expire<=checked or updated and updated>checked:conflict=True;continue
+        except (ValueError,OverflowError,OSError):conflict=True;continue
+        lat,lon=g.get('y'),g.get('x');placement=v['Placement']
+        if type(lat) not in (int,float) or type(lon) not in (int,float) or not math.isfinite(lat) or not math.isfinite(lon) or not 42.4<=lat<=47.1 or not -93<=lon<=-86.2:conflict=True;continue
+        if not isinstance(placement,str) or placement not in ('Structure','Site','PropertyAccess','Property Access','Parcel'):conflict=True;continue
+        hits.append({'sourceKey':e['key'],'objectId':v['oid'],'matchedAddress':matched,'countyFips':next(iter(fips)),'latitude':lat,'longitude':lon,'placementAsReported':placement,'recordUpdatedAt':updated,'endUserValidationRequired':True})
+    if conflict or len(hits)>1:return None,'review'
+    return (hits[0],'candidate') if hits else (None,'noMatch')
+def acquire(entries,counties,checked,out,fetch=request,max_requests=120,delay=1):
+    out.mkdir(parents=True,exist_ok=True)
+    url=layer_url(fetch(ITEM_URL,{'f':'json'}));layer=fetch(url,{'f':'json'})
+    (out/'wisconsin-schema-review.json').write_text(json.dumps({'sourceUrl':url,'itemId':ITEM,'layerId':layer.get('id'),'serviceItemId':layer.get('serviceItemId'),'fields':[{k:f.get(k) for k in ('name','type','domain')} for f in layer.get('fields',[]) if f.get('name','').lower() in {k.lower() for k in FIELDS}]},indent=2)+'\n')
+    names=schema(layer);groups=collections.defaultdict(list);stats=collections.Counter();hits=[];requests=0;errors=0
+    for e in entries:
+        if e['state']!='WI' or e['status'] not in ('no-match','unavailable'):continue
+        a=e['address']
+        if not number(a) or not re.fullmatch(r'\d{5}',a['zip']):stats['unsupported']+=1;continue
+        groups[(a['street'],a['city'],a['zip'])].append(e)
+    batches=[groups[k] for k in sorted(groups)]
+    for i in range(0,len(batches),8):
+        batch=batches[i:i+8]
+        if requests>=max_requests or errors>=3:stats['notAttempted']+=sum(map(len,batch));continue
+        requests+=1
+        try:rows=features(fetch(url+'/query',query([g[0]['address'] for g in batch],names)),names);errors=0
+        except (OSError,ValueError,TypeError,KeyError,TimeoutError):errors+=1;stats['unavailable']+=sum(map(len,batch));continue
+        for group in batch:
+            for e in group:
+                hit,status=review(e,rows,counties,checked);stats[status]+=1
+                if hit:hits.append(hit)
+        time.sleep(delay)
+    after=fetch(url,{'f':'json'})
+    if schema(after)!=names or (layer.get('editingInfo') or {}).get('lastEditDate')!=(after.get('editingInfo') or {}).get('lastEditDate') or layer_url(fetch(ITEM_URL,{'f':'json'}))!=url:raise ValueError('Source changed during acquisition')
+    return {'schemaVersion':1,'sourceUrl':url,'sourceItemId':ITEM,'sourcePortal':PORTAL,'checkedAt':checked,'sourceLastEditDate':(layer.get('editingInfo') or {}).get('lastEditDate'),'counts':dict(stats),'requests':requests,'candidates':sorted(hits,key=lambda h:h['sourceKey']),'publication':'review-only','limitations':'Incomplete statewide address dataset; no provider operation or station identity verified.'}
+def main():
+    p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--max-requests',type=int,default=120);args=p.parse_args()
+    if not 1<=args.max_requests<=120:raise ValueError('Invalid request budget')
+    manifest,rows=read_registry();loc=PUBLIC/'locations';fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes());verify(loc,manifest,rows,fl)
+    raw=(loc/'index.json').read_bytes();idx=json.loads(raw)
+    entries=[e for c in idx['chunks'] for e in json.loads((loc/c['file']).read_bytes()) if e['state']=='WI']
+    counties=county_index(json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_text())['counties'])
+    report=acquire(entries,counties,datetime.datetime.now(datetime.timezone.utc).date().isoformat(),args.output,max_requests=args.max_requests)
+    report['locationManifestSha256']=sha(raw)
+    (args.output/'wisconsin-address-review.json').write_text(json.dumps(report,indent=2)+'\n')
+    print('Wisconsin address review:',json.dumps({'counts':report['counts'],'requests':report['requests']}))
+    if report['counts'].get('unavailable') or report['counts'].get('notAttempted'):raise ValueError('Incomplete acquisition; partial review artifact only')
+if __name__=='__main__':main()

@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Globe,ExternalLink} from 'lucide-react';
 import type {Agency} from '../types';
 import {NATIONAL_STATES,NATIONAL_TOPICS,RESEARCH_SOURCES,loadedResearchCoverage,assessNationalCandidates,type StateResearch,type NationalTopic} from '../services/nationalCompetitiveResearch';
+import {NationalInventoryCoverage} from './NationalInventoryCoverage';
 import {loadNationalResearch} from '../services/loadNationalResearch';
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const money=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -43,6 +44,7 @@ export function NationalCompetitiveResearch({agencies,onOpen}:{agencies:Agency[]
     <label className="block text-sm">Federal activity since year<select className={control} value={fromYear} onChange={e=>{clear();setFromYear(Number(e.target.value));}}>{Array.from({length:year-2009},(_,i)=>year-i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
    </div>
    {counts&&<details><summary className="text-sm font-medium cursor-pointer">Loaded account evidence coverage</summary><p className="text-xs">{counts.loaded.toLocaleString()} loaded rows · {counts.eligible.toLocaleString()} unique eligible registry identities · {counts.excluded.toLocaleString()} excluded or ambiguous rows. Multiple registry identities may represent the same provider. Not a provider census.</p><dl className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">{Object.entries(counts.documented).map(([family,n])=><div key={family}><dt>{family}</dt><dd className="font-semibold tabular-nums">{n}</dd></div>)}</dl><p className="text-xs">Counts have at least one non-stale, structurally valid local document observation in the product category. Independent shared review is not established here; categories overlap and absence is not proof of no equipment.</p></details>}
+   {state&&<details><summary className="text-sm font-medium min-h-11">Review equipment research gaps by category</summary><NationalInventoryCoverage key={state} agencies={agencies} state={state} onOpen={onOpen}/></details>}
    <button type="button" className="workspace-button" disabled={!state||busy} onClick={()=>void run()}>{busy?'Checking public sources…':'Research selected state'}</button>
    <p className="text-xs">First page from OpenFEMA (50), two USAspending searches (25 each), and NYC City Record (25, NY only). Grant searches are not equipment-specific. Federal contract geography is supplier location; NYC notice geography is the publishing jurisdiction. SAM.gov requires its separate authorized search. No private account data is sent.</p>
    {busy&&<p role="status" className="text-sm">Checking source availability and candidates.</p>}

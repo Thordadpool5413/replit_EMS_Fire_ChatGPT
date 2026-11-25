@@ -30,10 +30,17 @@ try {
   // Fixtures are isolated to QA's temporary browser and loopback origin, never production.
   const testOrigin=new URL(base).origin;
   assert.ok(['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname),'Synthetic QA fixtures require loopback preview');
+  // A clean, offline preview must not fabricate provider cards before QA injects fixtures.
+  const ev = expression => evaluate(cdp, expression);
+  await cdp.send('Page.navigate',{url:base});
+  await waitFor(cdp,'Boolean(document.querySelector("main"))','clean app',60000);
+  await ev('(()=>{const button=[...document.querySelectorAll("button")].find(b=>(b.getAttribute("aria-label")||b.innerText).trim()==="Agencies"&&b.getBoundingClientRect().height>0);if(!button)throw Error("Missing Agencies");button.click()})()');
+  await waitFor(cdp,'Boolean(document.querySelector(\'input[placeholder="Search agency, city, ZIP, NPI, or Chief..."]\'))','clean agency directory',60000);
+  assert.equal(await ev('document.querySelectorAll(".agency-lead-cards-grid > div").length'),0,'No synthetic providers in clean directory');
+  console.log('PASS: clean browser does not seed provider cards');
   const fixtures=JSON.parse(await readFile(new URL('./fixtures/profile-test-accounts.json',import.meta.url),'utf8'));
   const entries=fixtures.map(record=>[record.id,{record}]);
   await cdp.send('Page.addScriptToEvaluateOnNewDocument',{source:'if(location.origin==='+JSON.stringify(testOrigin)+')localStorage.setItem("zoll_pulseiq_custom_agencies_v8",'+JSON.stringify(JSON.stringify(entries))+');'});
-  const ev = expression => evaluate(cdp, expression);
   const cases = [
     ...[1366, 1024, 390, 320].map(width => ({ width, agency: '', topics })),
     { width: 1366, agency: 'QA Fire Department', topics },

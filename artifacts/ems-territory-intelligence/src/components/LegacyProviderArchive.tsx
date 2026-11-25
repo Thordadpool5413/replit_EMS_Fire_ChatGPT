@@ -1,10 +1,10 @@
 import React,{useState} from 'react';
 import type {Agency} from '../types';
-import {loadLegacyProviderArchive} from '../utils/syncStore';
 export function LegacyProviderArchive({records=[]}:{records?:Agency[]}){
  const [message,setMessage]=useState('');
- function download(){
+ async function download(){
   try{
+   const {loadLegacyProviderArchive}=await import('../utils/syncStore');
    const archive=loadLegacyProviderArchive(records);
    if(!archive.count){setMessage('No archived legacy account work found on this device.');return;}
    const url=URL.createObjectURL(new Blob([JSON.stringify(archive,null,2)],{type:'application/json'}));

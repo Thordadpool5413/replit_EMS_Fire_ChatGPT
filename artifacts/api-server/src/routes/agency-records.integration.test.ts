@@ -55,6 +55,34 @@ test("saved agency API denies unauthorized access and preserves revision-protect
     const batch = await request(root + "/batch-create", "agency-editor", "POST", { records: [agency] });
     assert.deepEqual(batch.body.createdIds, []);
     assert.equal((await request(root + "/" + id, "agency-viewer")).body.revision, 2);
+    // A retry acknowledges the original receipt but does not mislabel or overwrite the latest payload.
+    const newer = { ...agency, name: "CI newer record" };
+    assert.equal((await request(root + "/" + id, "agency-editor", "PUT", { agency: newer, expectedRevision: 2 })).body.revision, 3);
+    const replay = await request(root + "/" + id + "/mutations", "agency-editor", "POST", mutation);
+    assert.equal(replay.status, 200);
+    assert.equal(replay.body.revision, 2);
+    assert.equal(replay.body.agency._revision, 3);
+    assert.equal(replay.body.agency.name, newer.name);
+    assert.equal((await request(root + "/" + id, "agency-viewer")).body.revision, 3);
+
+    // Concurrent identical requests share one receipt and commit exactly once.
+    const concurrent = { mutationId: "ci-concurrent-mutation", expectedRevision: 3, agency: { ...newer, name: "CI concurrent" } };
+    const retries = await Promise.all(Array.from({length: 4}, () => request(root + "/" + id + "/mutations", "agency-editor", "POST", concurrent)));
+    assert.ok(retries.every(r => r.status === 200 && r.body.revision === 4 && r.body.agency._revision === 4));
+    assert.equal((await request(root + "/" + id, "agency-viewer")).body.revision, 4);
+
+    // One atomic batch, with existing records preserved and caller ordering retained.
+    const z = { id: "ci-batch-z", stateCode: "FL", name: "CI z" };
+    const a = { id: "ci-batch-a", stateCode: "FL", name: "CI a" };
+    const result = await request(root + "/batch-create", "agency-editor", "POST", { records: [z, newer, a] });
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body.createdIds, [z.id, a.id]);
+    assert.equal((await request(root + "/" + id, "agency-viewer")).body.agency.name, "CI concurrent");
+    assert.deepEqual((await request(root + "/batch-create", "agency-editor", "POST", { records: [] })).body.createdIds, []);
+    assert.deepEqual((await request(root + "/batch-create", "agency-editor", "POST", { records: [a,z] })).body.createdIds, []);
+    const wrongAgency = await request(root + "/" + a.id + "/mutations", "agency-editor", "POST", { ...concurrent, agency: a });
+    assert.equal(wrongAgency.status, 409);
+    assert.equal((await request(root + "/" + a.id, "agency-viewer")).body.revision, 1);
     delete process.env.ATLAS_AGENCY_EDITOR_IDS;
     delete process.env.ATLAS_AGENCY_VIEWER_IDS;
     assert.equal((await request(root, "agency-editor")).status, 403);

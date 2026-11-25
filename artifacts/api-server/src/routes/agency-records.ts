@@ -157,38 +157,22 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
         .from(agencyMutationReceiptsTable)
         .where(eq(agencyMutationReceiptsTable.mutationId, body.data.mutationId))
         .limit(1);
-      if (receipt) {
-        if (receipt.agencyId !== req.params.agencyId) return { conflict: true as const, revision: receipt.revision };
-        const [saved] = await tx
-          .select()
-          .from(agencyRecordsTable)
-          .where(eq(agencyRecordsTable.id, req.params.agencyId))
-          .limit(1);
-        if (saved) return { conflict: false as const, revision: receipt.revision, payload: saved.payload };
+      if (receipt && receipt.agencyId !== req.params.agencyId) {
+        return { conflict: true as const, revision: receipt.revision };
       }
 
+      // The mutation-ID lock is held until commit. A second receipt lookup is redundant.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${req.params.agencyId}, 0))`);
-      const [receiptAfterLock] = await tx
-        .select()
-        .from(agencyMutationReceiptsTable)
-        .where(eq(agencyMutationReceiptsTable.mutationId, body.data.mutationId))
-        .limit(1);
-      if (receiptAfterLock) {
-        if (receiptAfterLock.agencyId !== req.params.agencyId) {
-          return { conflict: true as const, revision: receiptAfterLock.revision };
-        }
-        const [saved] = await tx
-          .select()
-          .from(agencyRecordsTable)
-          .where(eq(agencyRecordsTable.id, req.params.agencyId))
-          .limit(1);
-        if (saved) return { conflict: false as const, revision: receiptAfterLock.revision, payload: saved.payload };
-      }
       const [current] = await tx
         .select()
         .from(agencyRecordsTable)
         .where(eq(agencyRecordsTable.id, req.params.agencyId))
         .limit(1);
+      if (receipt) {
+        // Never acknowledge a missing or regressed canonical record.
+        if (!current || current.revision < receipt.revision) throw new Error("Agency receipt has no consistent canonical record");
+        return { conflict: false as const, revision: receipt.revision, recordRevision: current.revision, payload: current.payload };
+      }
       const revision = current?.revision ?? 0;
       if (revision !== body.data.expectedRevision) return { conflict: true as const, revision };
 
@@ -210,7 +194,7 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
         agencyId: req.params.agencyId,
         revision: nextRevision,
       });
-      return { conflict: false as const, revision: nextRevision, payload };
+      return { conflict: false as const, revision: nextRevision, recordRevision: nextRevision, payload };
     });
     if (result.conflict) {
       return res.status(409).json({
@@ -218,7 +202,8 @@ router.post("/agencies/:agencyId/mutations", async (req, res) => {
         currentRevision: result.revision,
       });
     }
-    return res.json(responseRecord(req.params.agencyId, result.revision, result.payload));
+    // Top-level revision is the immutable mutation receipt; embedded revision labels the current record.
+    return res.json({ ...responseRecord(req.params.agencyId, result.recordRevision, result.payload), revision: result.revision });
   } catch (error) {
     logFailure(req, error, "mutation");
     return requestError(res, 503, "database_unavailable", "The queued agency change could not be confirmed.");
@@ -238,22 +223,20 @@ router.post("/agencies/batch-create", async (req, res) => {
   }
 
   try {
-    const createdIds = await db.transaction(async (tx) => {
-      const created: string[] = [];
-      for (const agency of records) {
-        const stateCode = typeof agency.stateCode === "string" && statePattern.test(agency.stateCode.toUpperCase())
-          ? agency.stateCode.toUpperCase()
-          : null;
-        const payload = { ...agency, _revision: 1, _updatedAt: new Date().toISOString() };
-        const [row] = await tx
-          .insert(agencyRecordsTable)
-          .values({ id: agency.id, stateCode, payload, revision: 1 })
-          .onConflictDoNothing()
-          .returning({ id: agencyRecordsTable.id });
-        if (row) created.push(row.id);
-      }
-      return created;
+    if (!records.length) return res.json({ createdIds: [] });
+    const updatedAt = new Date().toISOString();
+    // Insert in stable key order to reduce contention on overlapping batches.
+    // One statement is atomic; conflicts never replace an existing agency.
+    const values = [...records].sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).map(agency => {
+      const stateCode = typeof agency.stateCode === "string" && statePattern.test(agency.stateCode.toUpperCase())
+        ? agency.stateCode.toUpperCase()
+        : null;
+      return { id: agency.id, stateCode, payload: { ...agency, _revision: 1, _updatedAt: updatedAt }, revision: 1 };
     });
+    const inserted = await db.insert(agencyRecordsTable).values(values)
+      .onConflictDoNothing().returning({ id: agencyRecordsTable.id });
+    const insertedIds = new Set(inserted.map(row => row.id));
+    const createdIds = records.filter(record => insertedIds.has(record.id)).map(record => record.id);
     return res.json({ createdIds });
   } catch (error) {
     logFailure(req, error, "batch-create");

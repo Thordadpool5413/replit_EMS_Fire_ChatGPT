@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
   varchar,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export type JsonRecord = Record<string, unknown>;
@@ -177,3 +178,24 @@ export const agencyAuthorityTable = pgTable("agency_authority_observations", {
  reviewerUid:text("reviewer_uid"),
  reviewedAt:timestamp("reviewed_at",{withTimezone:true}),
 },t=>[primaryKey({columns:[t.agencyId,t.submissionId]}),index("agency_authority_lookup_idx").on(t.agencyId,t.identityKey,t.createdAt)]);
+
+/** Private shared working opportunity, separate from CRM and public evidence. */
+export const workingPipelineTable=pgTable("working_pipeline",{
+ agencyId:text("agency_id").primaryKey().references(()=>agencyRecordsTable.id),
+ identityKey:text("identity_key").notNull(),
+ binding:text("binding").notNull(),
+ revision:integer("revision").notNull(),
+ record:jsonb("record").$type<JsonRecord>().notNull(),
+ updatedBy:text("updated_by").notNull(),
+ updatedAt:timestamp("updated_at",{withTimezone:true}).notNull(),
+},t=>[uniqueIndex("working_pipeline_identity_unique").on(t.identityKey)]);
+/** Append-only server-authored revision history; no client-provided actor or timestamp. */
+export const workingPipelineHistoryTable=pgTable("working_pipeline_history",{
+ agencyId:text("agency_id").notNull().references(()=>workingPipelineTable.agencyId),
+ revision:integer("revision").notNull(),
+ identityKey:text("identity_key").notNull(),
+ binding:text("binding").notNull(),
+ record:jsonb("record").$type<JsonRecord>().notNull(),
+ actorUid:text("actor_uid").notNull(),
+ createdAt:timestamp("created_at",{withTimezone:true}).notNull(),
+},t=>[primaryKey({columns:[t.agencyId,t.revision]})]);

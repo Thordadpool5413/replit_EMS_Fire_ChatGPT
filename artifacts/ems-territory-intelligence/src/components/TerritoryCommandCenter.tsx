@@ -16,6 +16,7 @@ export function TerritoryCommandSummary({agencies,selected,samples,onView,onOpen
   {label:'Competitive research',value:r.competitive,view:'priorities',detail:'Accounts with reviewed competitor observations'},
   {label:'Mapped research',value:r.mapped,view:'geography',detail:r.groups+' multi-account proximity groups'},
   {label:'Coverage gaps',value:r.selected-r.checked,view:'coverage',detail:'Selected accounts without a complete document sample'},
+  {label:'Field execution plan',value:r.eligible,view:'plan',detail:'Eligible selected accounts for internal planning'},
   {label:'Open follow-ups',value:r.tasks.length,view:'followups',detail:r.overdue+' overdue · '+r.today+' today'}
  ];
  return <section className="space-y-3 min-w-0" aria-label="Selected territory command center">

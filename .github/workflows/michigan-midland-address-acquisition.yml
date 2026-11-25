@@ -1,0 +1,32 @@
+name: Michigan Midland address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_michigan_midland_addresses.py'
+      - 'scripts/data/test_stage_michigan_midland_addresses.py'
+      - '.github/workflows/michigan-midland-address-acquisition.yml'
+  push:
+    branches: [atlas/phase8-0q-michigan-county-recovery]
+    paths:
+      - 'scripts/data/stage_michigan_midland_addresses.py'
+      - 'scripts/data/test_stage_michigan_midland_addresses.py'
+      - '.github/workflows/michigan-midland-address-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_michigan_midland_addresses.py
+      - name: Acquire official municipal address candidates
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python3 scripts/data/stage_michigan_midland_addresses.py --output generated-artifacts/michigan-midland-address-review
+      - uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        with:
+          name: michigan-midland-address-review
+          path: generated-artifacts/michigan-midland-address-review/
+          if-no-files-found: ignore

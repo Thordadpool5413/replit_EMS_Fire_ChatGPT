@@ -39,7 +39,7 @@ test('closure, identity conflicts, ambiguous casing and invalid evidence cannot 
 const runAt=new Date(now).toISOString(),previous=new Date(now-day).toISOString();
 const c:FeedCandidate={source:'openfema-afg',nativeId:'f1',recordNumber:'A1',organization:'Example Fire Department',state:'FL',kind:'grant',title:'Assistance to Firefighters Grant',amount:100,fiscalYear:2025,publishedDay:null,periodStart:null,periodEnd:null,deadlineLocal:null,vendor:null,sourceUrl:feedSourceUrl('openfema-afg','f1')};
 const item=(id:string,event:FeedItem['event'],latest=true):FeedItem=>({candidate:{...c,nativeId:id,sourceUrl:feedSourceUrl('openfema-afg',id)},scopes:['fema-fl'],firstSeen:event==='changed'?previous:latest?runAt:previous,lastSeen:latest?runAt:previous,lastChanged:latest?runAt:previous,event});
-const snapshot=(items:FeedItem[]):DiscoveryFeed=>({schemaVersion:1,runAt,items,scopes:FEED_SCOPE_IDS.map(id=>({id,status:id==='fema-fl'?'ok':'unavailable',sourceRows:id==='fema-fl'?items.filter(i=>i.lastSeen===runAt).length:0,withheld:0,hasMore:false,lastSuccess:id==='fema-fl'?runAt:null})),evicted:0,conflictingIds:0});
+const snapshot=(items:FeedItem[]):DiscoveryFeed=>({schemaVersion:2,runAt,items,scopes:FEED_SCOPE_IDS.map(id=>({id,status:id==='fema-fl'?'ok':'unavailable',sourceRows:id==='fema-fl'?items.filter(i=>i.lastSeen===runAt).length:0,withheld:0,hasMore:false,lastSuccess:id==='fema-fl'?runAt:null})),evicted:0,conflictingIds:0});
 test('public alerts only use fresh latest-sample changes; baseline and retained history suppressed',()=>{
  const feed=snapshot([item('new','new-to-sample'),item('changed','changed'),item('base','baseline'),item('old','changed',false)]);
  const r=buildPublicTerritoryAlerts(feed,now);
@@ -56,4 +56,12 @@ test('invalid or unavailable feed fails closed and local actions remain separate
  const l=buildLocalTerritoryAlerts([{...a,followUpTasks:[task('today',localDay(new Date(now)))]}],now);
  assert.equal(combineTerritoryAlerts(l.alerts,r.alerts).length,1);
  assert.equal(combineTerritoryAlerts(l.alerts,buildPublicTerritoryAlerts(feed,now).alerts)[0].type,'followup');
+});
+
+test('legacy public alert history still works after scope expansion',()=>{
+ const current=snapshot([item('new','new-to-sample')]);
+ const legacy={...current,schemaVersion:1,scopes:current.scopes.filter(s=>!s.id.startsWith('chicago-')&&s.id!=='nyc-software')};
+ assert.equal(buildPublicTerritoryAlerts(legacy,now).status,'ready');
+ assert.equal(buildPublicTerritoryAlerts(legacy,now).alerts.length,1);
+ assert.equal(buildPublicTerritoryAlerts({...legacy,scopes:current.scopes},now).status,'unavailable');
 });

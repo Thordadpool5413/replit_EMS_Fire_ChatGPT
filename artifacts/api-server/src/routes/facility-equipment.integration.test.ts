@@ -10,6 +10,17 @@ test("equipment input requires dated attribution and explicit review",()=>{
  assert.ok(parseObservation({...observation,basis:"public-document",sourceUrl:"https://example.gov/fixture"}));
  assert.equal(parseDecision({decision:"accepted",note:"CI",attested:false}),undefined);
 });
+test("optional inventory evidence is exact, bounded, backward compatible and never an inferred total",()=>{
+ const legacy=parseObservation(observation,"2026-01-01");
+ assert.deepEqual(legacy,observation);
+ const details={quantity:2,quantityScope:"observed-units",acquiredOn:"2024-01-01",warrantyEnd:"2027-01-01",serviceEnd:"2028-01-01"};
+ assert.deepEqual(parseObservation({...observation,...details},"2026-01-01"),{...observation,...details});
+ for(const patch of [{quantity:0},{quantity:-1},{quantity:1.5},{quantity:100001},{quantityScope:"documented-station-total"},{quantityScope:undefined},{family:"software"},{model:""},{acquiredOn:"2025-02-30"},{acquiredOn:"2025-01-02"},{warrantyEnd:"2023-01-01"},{serviceEnd:"2101-01-01"}]){
+  assert.equal(parseObservation({...observation,...details,...patch},"2026-01-01"),undefined);
+ }
+ assert.equal(parseObservation({...observation,quantityScope:"observed-units"},"2026-01-01"),undefined);
+ assert.ok(parseObservation({...observation,...details,basis:"public-document",sourceUrl:"https://example.gov/fixture",quantityScope:"documented-station-total"},"2026-01-01"));
+});
 test("station equipment is private, immutable, independently reviewed and station scoped",async()=>{
  assert.equal(process.env.ATLAS_EVIDENCE_CI,"1");
  assert.equal(process.env.DATABASE_URL,"postgresql://atlas_ci:atlas_ci_local_only@127.0.0.1:5432/atlas_ci");
@@ -36,7 +47,15 @@ test("station equipment is private, immutable, independently reviewed and statio
   assert.equal((await req(review,"eq-reviewer",{...decision,attested:false})).status,400);
   assert.equal((await req(review,"eq-reviewer",decision)).status,200);assert.equal((await req(review,"eq-reviewer",decision)).status,200);
   assert.equal((await req(review,"eq-reviewer",{...decision,decision:"rejected"})).status,409);
-  const list=await req(root,"eq-viewer");assert.equal(list.body.rows.length,1);assert.equal(list.body.rows[0].decision,"accepted");assert.equal(list.body.canWrite,false);
+  const inventoryId="b1234567-1234-4234-8234-123456789012";
+  const inventory={...observation,quantity:2,quantityScope:"observed-units",acquiredOn:"2024-01-01",serviceEnd:"2027-01-01"};
+  const inventoryBody={submissionId:inventoryId,observation:inventory};
+  assert.equal((await req(root,"eq-author",{...inventoryBody,observation:{...inventory,quantity:0}})).status,400);
+  const saved=await req(root,"eq-author",inventoryBody);assert.equal(saved.status,200);assert.equal(saved.body.observation.quantity,2);assert.equal(saved.body.decision,null);
+  assert.equal((await req(root,"eq-author",inventoryBody)).status,200);
+  assert.equal((await req(root,"eq-author",{...inventoryBody,observation:{...inventory,quantity:3}})).status,409);
+  const list=await req(root,"eq-viewer");assert.equal(list.body.rows.length,2);
+  assert.equal(list.body.rows.find((r:{submissionId:string})=>r.submissionId===inventoryId).observation.serviceEnd,"2027-01-01");assert.equal(list.body.rows.find((r:{submissionId:string})=>r.submissionId===id).decision,"accepted");assert.equal(list.body.canWrite,false);
   assert.equal((await req(root.replace(stationId,"OTHER"),"eq-viewer")).body.rows.length,0);
   const mapRoot="/agencies/"+agencyId+"/facilities/"+parentId+"/equipment-map";
   assert.equal((await req(mapRoot)).status,401);

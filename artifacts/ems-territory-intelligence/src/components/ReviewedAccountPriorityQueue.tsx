@@ -3,6 +3,7 @@ import {useAuth} from '@workspace/replit-auth-web';
 import type {Agency} from '../types';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../services/sharedEvidenceReplit';
 import {MAX_REVIEW_ACCOUNTS,eligiblePriorityAccounts,buildReviewedAccountPriorities,type ReviewedSample,type Band} from '../services/reviewedAccountPriorities';
+import {GeographicOpportunityClusters} from './GeographicOpportunityClusters';
 import {CommercialOpportunityQueue} from './CommercialOpportunityQueue';
 import {SelectedIntelligenceCoverage} from './SelectedIntelligenceCoverage';
 import {OPPORTUNITY_LABELS,type OpportunityKind} from '../services/opportunityRadar';
@@ -61,6 +62,7 @@ function PrivateQueue({agencies,onOpenAgency}:{agencies:Agency[];onOpenAgency:(a
     <details><summary>Ranking method</summary><p className="text-xs">Solicitations within 14 days first, then within 45 days or contract end within 90 days, then later dates within a year and funding, then dated competitor evidence or awards. Documents must be recent and pass independent review. Counts, funding amounts and missing information do not increase rank.</p></details>
     <ol className="divide-y">{ranked.ranked.map((r,i)=><li key={r.identityKey} className="py-3 space-y-1 break-words"><p className="text-xs">{i+1}. {bands[r.primary.band]}</p><p className="font-semibold">{r.agency.name}</p><p>{OPPORTUNITY_LABELS[r.primary.signal.kind]}{r.primary.days!==undefined?' · '+r.primary.days+' days':''}</p><p>{r.primary.signal.evidence.value}</p><p className="text-xs">{r.primary.signal.evidence.sourceName} · {r.primary.signal.evidence.documentDate}</p><a className="underline" href={r.primary.signal.evidence.sourceUrl} target="_blank" rel="noopener noreferrer">Reviewed source</a><p>{r.primary.signal.nextAction}</p><p className="text-xs">{r.signals.length} distinct eligible signal(s), not separate qualified sales opportunities.</p><button className="workspace-button min-h-11" type="button" onClick={()=>onOpenAgency(r.agency)}>Open account profile</button></li>)}</ol>
     {ranked.gaps.length>0&&<div><h3 className="font-semibold">Unranked accounts</h3><ul className="divide-y">{ranked.gaps.map(g=><li key={g.id} className="py-2 break-words">{g.name} · {gapLabels[g.status]}</li>)}</ul></div>}
+    {sample&&<GeographicOpportunityClusters key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     {sample&&<SelectedIntelligenceCoverage agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     {sample&&<CommercialOpportunityQueue key={sample.started+':'+sample.scope} agencies={agencies} selected={selected} samples={sample.samples} onOpenAgency={onOpenAgency}/>}
     <p className="text-xs">Missing reviewed signals do not establish absence of equipment, funding or opportunity. No automatic CRM stage change or provider data write.</p>

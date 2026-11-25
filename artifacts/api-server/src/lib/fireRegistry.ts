@@ -1120,6 +1120,20 @@ export function parseNerisFacility(feature:unknown,parent:FacilityParent):Public
   const coordinates=typeof x==="number"&&typeof y==="number"&&Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x)<=180&&Math.abs(y)<=90&&(x!==0||y!==0)?{latitude:y,longitude:x}:null;
   return {source:"NERIS",sourceRecordId:id,name:sourceText(a.station_name),address:buildAddress([sourceText(a.address_line_1),sourceText(a.address_line_2)]),city:sourceText(a.city),stateCode:state,postalCode:sourceText(a.zip_code,10),coordinates,sourceUrl:stationRecordUrl(1,"neris_id",id),exportDate:toIsoDate(a.export_date)?.toISOString()??null,endUserValidationRequired:true};
 }
+/** Count raw native IDs before filtering. A malformed duplicate must not make a valid row appear unique. */
+export function reconcileNerisFacilities(features:unknown[],parent:FacilityParent,wgs84:boolean){
+  const counts=new Map<string,number>();
+  for(const feature of features){
+    const f=feature as {attributes?:Record<string,unknown>}|null;
+    const id=sourceText(f?.attributes?.neris_id,14)?.toUpperCase();
+    if(id)counts.set(id,(counts.get(id)??0)+1);
+  }
+  const facilities=features.flatMap(feature=>{
+    const row=parseNerisFacility(feature,parent);
+    return row&&row.sourceRecordId&&row.sourceRecordId!==parent.identifier&&counts.get(row.sourceRecordId)===1?[{...row,coordinates:wgs84?row.coordinates:null}]:[];
+  });
+  return {facilities,withheld:features.length-facilities.length};
+}
 async function exactNerisFacilities(parent:FacilityParent) {
   // Validate parent identity against the public department roster before requesting children.
   const departments=await getNerisDepartments(parent.stateCode);
@@ -1133,10 +1147,7 @@ async function exactNerisFacilities(parent:FacilityParent) {
   const payload=await response.json() as {error?:unknown;features?:unknown[];exceededTransferLimit?:boolean;spatialReference?:{wkid?:number;latestWkid?:number}};
   if(payload.error||!Array.isArray(payload.features)||payload.exceededTransferLimit||payload.features.length>=1000)throw Error("Incomplete station response.");
   const wgs84=payload.spatialReference?.wkid===4326||payload.spatialReference?.latestWkid===4326;
-  const rows=payload.features.map(feature=>parseNerisFacility(feature,parent));
-  const counts=new Map<string,number>();for(const row of rows)if(row?.sourceRecordId)counts.set(row.sourceRecordId,(counts.get(row.sourceRecordId)??0)+1);
-  const facilities=rows.flatMap(row=>row&&counts.get(row.sourceRecordId!)===1?[{...row,coordinates:wgs84?row.coordinates:null}]:[]);
-  return {facilities,withheld:rows.length-facilities.length,reportedStationCount:departments.data.find(d=>d.nerisId===parent.identifier)?.stationCount??null};
+  return {...reconcileNerisFacilities(payload.features,parent,wgs84),reportedStationCount:departments.data.find(d=>d.nerisId===parent.identifier)?.stationCount??null};
 }
 export async function listDepartmentFacilities(parent:FacilityParent) {
   if(!validFacilityParent(parent))throw Error("Invalid department identity.");

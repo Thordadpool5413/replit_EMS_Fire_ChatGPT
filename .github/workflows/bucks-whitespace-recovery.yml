@@ -1,0 +1,69 @@
+name: Bucks whitespace review and NJ checkpoint retention
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/recover_bucks_whitespace.py'
+      - 'scripts/data/retain_nj_checkpoint.py'
+      - 'scripts/data/test_bucks_whitespace.py'
+      - 'scripts/data/evidence/recovery-checkpoints/**'
+      - '.github/workflows/bucks-whitespace-recovery.yml'
+  push:
+    branches: [atlas/phase9-0e-bucks-space-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_bucks_whitespace.py
+      - name: Verify retained checkpoint if present
+        run: |
+          if test -d scripts/data/evidence/recovery-checkpoints/2026-11-25/nj-addresspoints; then
+            python3 scripts/data/retain_nj_checkpoint.py --verify
+          fi
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve pinned original Bucks exception archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15067801334/zip" > /tmp/bucks.zip
+      - run: python3 scripts/data/recover_bucks_whitespace.py --archive /tmp/bucks.zip --output generated-artifacts/bucks-whitespace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bucks-whitespace-review
+          path: generated-artifacts/bucks-whitespace/
+          if-no-files-found: error
+  retain:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/atlas/phase9-0e-bucks-space-recovery'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve pinned successful NJ checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15066188860/zip" > /tmp/nj.zip
+      - run: python3 scripts/data/retain_nj_checkpoint.py --archive /tmp/nj.zip
+      - run: python3 scripts/data/retain_nj_checkpoint.py --verify
+      - name: Stage retained source on isolated candidate branch
+        run: |
+          branch="atlas/retained-nj-checkpoint-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/recovery-checkpoints/2026-11-25/nj-addresspoints
+          git commit -m "Retain verified New Jersey recovery checkpoint"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Retention candidate: $branch"

@@ -103,3 +103,13 @@ export function possibleGrantOverlap(items:FeedItem[]):Set<string>{
  return overlap;
 }
 export function feedIsStale(feed:DiscoveryFeed,now=Date.now()){return now-Date.parse(feed.runAt)>FEED_STALE_MS;}
+
+/** Run age and source success are separate. An attempted refresh cannot refresh failed data. */
+export function feedSourceHealth(feed:DiscoveryFeed,now=Date.now()){
+ const scopes=feed.scopes.map(s=>{
+  const age=s.lastSuccess===null?undefined:now-Date.parse(s.lastSuccess);
+  const freshness=age===undefined?'never-checked':age<0||age>FEED_STALE_MS?'stale':'recent';
+  return {...s,freshness};
+ });
+ return {scopes,recent:scopes.filter(s=>s.freshness==='recent').length,unavailable:scopes.filter(s=>s.status==='unavailable').length,partial:scopes.filter(s=>s.status==='partial').length,stale:scopes.filter(s=>s.freshness==='stale').length,neverChecked:scopes.filter(s=>s.freshness==='never-checked').length,allUnavailable:scopes.every(s=>s.status==='unavailable'),lastUsable:scopes.reduce<string|null>((latest,s)=>s.lastSuccess&&(!latest||s.lastSuccess>latest)?s.lastSuccess:latest,null)};
+}

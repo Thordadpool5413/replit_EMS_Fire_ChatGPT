@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {ExternalLink,Radar} from 'lucide-react';
-import {FEED_SCOPES,FEED_SCOPE_IDS,feedIsStale,feedKey,possibleGrantOverlap,type DiscoveryFeed,type FeedScope,type FeedItem} from '../services/recurringDiscoveryContract';
+import {FEED_SCOPES,FEED_SCOPE_IDS,feedIsStale,feedSourceHealth,feedKey,possibleGrantOverlap,type DiscoveryFeed,type FeedScope,type FeedItem} from '../services/recurringDiscoveryContract';
 import {loadRecurringDiscovery} from '../services/recurringDiscovery';
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 const money=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -22,6 +22,7 @@ export function RecurringDiscoveryInbox(){
   catch(e){if(request.current===controller&&!controller.signal.aborted)setError(e instanceof Error?e.message:'Could not retrieve discovery feed.');}
   finally{if(request.current===controller)setBusy(false);}
  }
+ const health=feed?feedSourceHealth(feed,clock):undefined;
  const overlap=useMemo(()=>possibleGrantOverlap(feed?.items??[]),[feed]);
  const latest=(i:FeedItem)=>i.lastSeen===feed?.runAt;
  const changed=(i:FeedItem)=>latest(i)&&i.lastChanged===feed?.runAt&&i.event!=='baseline';
@@ -33,12 +34,15 @@ export function RecurringDiscoveryInbox(){
   <p className="text-xs">New means new to the monitored sample, not newly awarded or published. Source changes are research leads, not verified opportunities. No record disappearance is treated as closure.</p>
   {busy&&<p role="status" className="text-sm">Checking the latest published discovery snapshot.</p>}
   {error&&<p role="alert" className="text-sm break-words">{error}</p>}
-  {feed&&<>
-   <p className="text-xs">Last attempted run {date(feed.runAt)} · bounded first pages; not a statewide or nationwide census.</p>
+  {feed&&health&&<>
+   <p className="text-xs">Published snapshot {date(feed.runAt)} · bounded first pages; not a statewide or nationwide census.</p>
+   <p className="text-xs">Latest usable source retrieval: {health.lastUsable?date(health.lastUsable):'None'} · {health.recent}/{feed.scopes.length} scopes retrieved within 48 hours.</p>
+   {health.unavailable>0&&<p role="status" className="text-sm">{health.unavailable} source scope(s) unavailable in the published run. Retained observations are historical; do not infer closure or current status.</p>}
+   {(health.stale>0||health.neverChecked>0)&&<p className="text-xs">{health.stale} stale scope(s) · {health.neverChecked} without a usable baseline.</p>}
    {feedIsStale(feed,clock)&&<p role="alert" className="text-sm font-medium">Feed is older than 48 hours. All results are historical research only.</p>}
    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">{[['Seen in latest run',feed.items.filter(latest).length],['New / changed',feed.items.filter(changed).length],['Retained history',feed.items.filter(i=>!latest(i)).length],['Unavailable scopes',feed.scopes.filter(s=>s.status==='unavailable').length]].map(([label,value])=><div key={label}><dt>{label}</dt><dd className="font-semibold text-lg tabular-nums">{value}</dd></div>)}</dl>
-   <details><summary className="text-sm font-medium cursor-pointer">Source coverage and last successful checks</summary><ul className="divide-y divide-slate-200 dark:divide-slate-700">{feed.scopes.map(s=><li key={s.id} className="py-2 text-sm break-words"><p>{FEED_SCOPES[s.id].label}</p><p className="text-xs">{s.status==='unavailable'?'Unavailable':s.status==='partial'?'Partial page / withheld records':'Page retrieved'} · {s.sourceRows} source rows · {s.withheld} withheld{s.hasMore?' · more pages available':''}</p><p className="text-xs">Last usable retrieval: {s.lastSuccess?date(s.lastSuccess):'None'}</p></li>)}</ul></details>
-   {(feed.conflictingIds>0||feed.evicted>0)&&<p className="text-xs">{feed.conflictingIds} conflicting source identities withheld this run · {feed.evicted} older records removed from the bounded display history.</p>}
+   <details><summary className="text-sm font-medium cursor-pointer">Source coverage and last successful checks</summary><ul className="divide-y divide-slate-200 dark:divide-slate-700">{health.scopes.map(s=><li key={s.id} className="py-2 text-sm break-words"><p>{FEED_SCOPES[s.id].label}</p><p className="text-xs">{s.status==='unavailable'?'Unavailable':s.status==='partial'?'Partial page / withheld records':'Page retrieved'} · {s.sourceRows} source rows · {s.withheld} withheld{s.hasMore?' · more pages available':''}</p><p className="text-xs">Last usable retrieval: {s.lastSuccess?date(s.lastSuccess):'None'} · {s.freshness==='recent'?'Within 48 hours':s.freshness==='stale'?'Stale':'No baseline'}</p></li>)}</ul></details>
+   {(feed.conflictingIds>0||feed.evicted>0)&&<p className="text-xs">{feed.conflictingIds} conflicting source identities withheld this run · {feed.evicted} records removed by retention or capacity limits.</p>}
    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><label className="block text-sm">Research scope<select className={control} value={scope} onChange={e=>{setScope(e.target.value as typeof scope);setPage(1);}}><option value="all">All pilot scopes</option>{FEED_SCOPE_IDS.map(id=><option key={id} value={id}>{FEED_SCOPES[id].label}</option>)}</select></label><label className="block text-sm">View<select className={control} value={filter} onChange={e=>{setFilter(e.target.value as typeof filter);setPage(1);}}><option value="latest">Seen in latest run</option><option value="changes">New or changed this run</option><option value="retained">Retained / not seen this run</option><option value="all">All retained candidates</option></select></label></div>
    <label className="block text-sm">Search<input className={control} value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}} placeholder="Organization, title, vendor or record number"/></label>
    {!rows.length&&<p role="status" className="text-sm">No records match this view. This does not establish absence of procurement activity.</p>}

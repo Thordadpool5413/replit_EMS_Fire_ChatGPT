@@ -1,0 +1,32 @@
+name: Pennsylvania Bucks address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_pennsylvania_bucks_addresses.py'
+      - 'scripts/data/test_pennsylvania_bucks_addresses.py'
+      - '.github/workflows/pennsylvania-bucks-acquisition.yml'
+  push:
+    branches: [atlas/phase9-0c-pennsylvania-bucks]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_pennsylvania_bucks_addresses.py
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_pennsylvania_bucks_addresses.py --output generated-artifacts/pennsylvania-bucks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pennsylvania-bucks-address-review
+          path: generated-artifacts/pennsylvania-bucks/
+          if-no-files-found: ignore

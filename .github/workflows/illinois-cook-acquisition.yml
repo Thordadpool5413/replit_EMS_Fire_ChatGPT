@@ -1,0 +1,32 @@
+name: Illinois Cook County address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_illinois_cook_addresses.py'
+      - 'scripts/data/test_illinois_cook_addresses.py'
+      - '.github/workflows/illinois-cook-acquisition.yml'
+  push:
+    branches: [atlas/phase9-0f-illinois-cook]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_illinois_cook_addresses.py
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_illinois_cook_addresses.py --output generated-artifacts/illinois-cook
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illinois-cook-address-review
+          path: generated-artifacts/illinois-cook/
+          if-no-files-found: ignore

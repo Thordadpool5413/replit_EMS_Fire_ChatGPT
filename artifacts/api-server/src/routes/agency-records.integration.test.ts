@@ -3,6 +3,7 @@ import test from "node:test";
 import { once } from "node:events";
 import { randomUUID } from "node:crypto";
 import express from "express";
+import catalog from "../lib/addressReviewCatalog.json";
 
 test("agency profiles are publicly readable while private notes and writes stay protected", async () => {
   assert.equal(process.env.ATLAS_EVIDENCE_CI, "1");
@@ -106,6 +107,19 @@ test("agency profiles are publicly readable while private notes and writes stay 
     const wrongAgency = await request(root + "/" + a.id + "/mutations", "agency-editor", "POST", { ...concurrent, agency: a });
     assert.equal(wrongAgency.status, 409);
     assert.equal((await request(root + "/" + a.id, "agency-viewer")).body.revision, 1);
+    // GIS reviews are source-bound and acknowledged by the authenticated editor, never by a client-supplied actor.
+    const c=catalog.find(c=>c.identityKey==='FDID:VA:08520')!;
+    const gisId='ci-gis-'+randomUUID(),gisAgency={id:gisId,name:c.name,stateCode:'VA',countyFips:c.county,registryIdentity:{sourceName:'USFA NFDR',identifier:'08520',stateCode:'VA',name:c.name,sourceUrl:'https://apps.usfa.fema.gov/registry/search'}};
+    const review={id:randomUUID(),agencyId:gisId,fieldId:'identity.address.gis-candidate',action:'confirm',originalValue:c.originalValue,previousValue:c.originalValue,reviewer:'Self-entered',method:'Fixture review',note:'Independent check',sourceName:c.sourceName,sourceUrl:c.sourceUrl,sourceKind:'dataset',sourcePeriod:c.sourcePeriod,sourceRecordId:c.sourceRecordId,reviewedAt:new Date().toISOString(),acknowledgedBy:'spoof'};
+    const gisRoot=root+'/'+gisId;
+    assert.equal((await request(gisRoot,'agency-editor','PUT',{agency:gisAgency,expectedRevision:0})).status,200);
+    const gisMutation={agency:{...gisAgency,_factReviews:[review]},expectedRevision:1,mutationId:randomUUID()};
+    assert.equal((await request(gisRoot+'/mutations','agency-viewer','POST',gisMutation)).status,403);
+    const accepted=await request(gisRoot+'/mutations','agency-editor','POST',gisMutation);
+    assert.equal(accepted.status,200);assert.equal(accepted.body.agency._factReviews[0].acknowledgedBy,'agency-editor');
+    assert.equal((await request(gisRoot)).body.agency._factReviews,undefined);
+    assert.equal((await request(gisRoot,'agency-editor','PUT',{agency:{...gisAgency,_factReviews:[{...review,note:'tampered'}]},expectedRevision:2})).status,422);
+    assert.equal((await request(gisRoot,'agency-editor','PUT',{agency:gisAgency,expectedRevision:2})).body.agency._factReviews[0].id,review.id);
     delete process.env.ATLAS_AGENCY_EDITOR_IDS;
     delete process.env.ATLAS_AGENCY_VIEWER_IDS;
     assert.equal((await request(root + "/" + id, "agency-editor", "PUT", payload)).status, 403);

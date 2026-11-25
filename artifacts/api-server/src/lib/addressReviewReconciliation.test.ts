@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import catalog from './addressReviewCatalog.json';
+import {GIS_REVIEW_FIELD,reconcileAddressReviews} from './addressReviewReconciliation';
+const c=catalog.find(c=>c.identityKey==='FDID:VA:08520')!;
+const now='2026-11-25T12:00:00Z';
+const agency={id:'test-agency',name:c.name,stateCode:c.state,countyFips:c.county,registryIdentity:{sourceName:'USFA NFDR',identifier:'08520',stateCode:c.state,name:c.name,sourceUrl:'https://apps.usfa.fema.gov/registry/search'}};
+const review={id:'test-review',agencyId:agency.id,fieldId:GIS_REVIEW_FIELD,action:'confirm',originalValue:c.originalValue,previousValue:c.originalValue,reviewer:'Self-entered name',method:'Document review',note:'Independent evidence check',sourceName:c.sourceName,sourceUrl:c.sourceUrl,sourceKind:'dataset',sourcePeriod:c.sourcePeriod,sourceRecordId:c.sourceRecordId,reviewedAt:now};
+test('canonical actor, immutable GIS evidence and preservation on full updates',()=>{
+ assert.equal(catalog.length,72);
+ const incoming={...agency,_factReviews:[{...review,acknowledgedBy:'spoof',acknowledgedAt:'spoof'}]};
+ const saved=reconcileAddressReviews(undefined,incoming,'editor',now);
+ const rows=saved._factReviews as Record<string,unknown>[];
+ assert.equal(rows[0].acknowledgedBy,'editor');assert.equal(rows[0].acknowledgedAt,now);
+ assert.deepEqual(reconcileAddressReviews(saved,agency,'another-editor',now)._factReviews,rows);
+ assert.deepEqual(reconcileAddressReviews(saved,{...agency,_factReviews:[review]},'another-editor',now)._factReviews,rows);
+ assert.throws(()=>reconcileAddressReviews(saved,{...agency,_factReviews:[{...review,note:'tampered'}]},'editor',now),/immutable/);
+ assert.throws(()=>reconcileAddressReviews(saved,{...agency,_factReviews:[{...review,fieldId:'identity.address'}]},'editor',now),/conflicts/);
+ for(const patch of [{sourceRecordId:'fake'},{sourceUrl:'https://example.org'},{action:'correct'},{agencyId:'other'},{originalValue:'different'},{note:''},{reviewedAt:'bad'}])assert.throws(()=>reconcileAddressReviews(undefined,{...agency,_factReviews:[{...review,...patch}]},'editor',now),/does not match/);
+ assert.throws(()=>reconcileAddressReviews(undefined,{...agency,stateCode:'WI',_factReviews:[review]},'editor',now));
+ assert.equal('latitude' in saved,false);assert.equal('longitude' in saved,false);
+});

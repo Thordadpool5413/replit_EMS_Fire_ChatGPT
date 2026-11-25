@@ -39,6 +39,9 @@ test('private authority claims are immutable, independently reviewed and identit
   assert.equal((await req(review,'authority-reviewer',decision)).status,200);
   assert.equal((await req(review,'authority-reviewer',decision)).status,200);
   assert.equal((await req(review,'authority-reviewer',{...decision,decision:'rejected'})).status,409);
+  assert.equal((await req(root+'-coverage')).status,401);
+  assert.equal((await req(root+'-coverage','authority-outsider')).status,403);
+  const coverage=await req(root+'-coverage','authority-viewer');assert.equal(coverage.status,200);assert.equal(coverage.body.complete,true);assert.equal(coverage.body.recentReviewed,0);assert.equal(coverage.body.rows,undefined);
   const list=await req(root,'authority-viewer');assert.equal(list.body.rows.length,1);assert.equal(list.body.rows[0].decision,'accepted');assert.equal(list.body.canWrite,false);
   await db.update(agencyRecordsTable).set({payload:{...agency,name:'Changed fixture'}}).where(eq(agencyRecordsTable.id,agency.id));
   const changed=await req(root,'authority-viewer');assert.equal(changed.body.rows.length,0);assert.equal(changed.body.withheld,1);

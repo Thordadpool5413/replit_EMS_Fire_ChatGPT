@@ -163,9 +163,12 @@ def valid_location_method(m,county):
  if m.get('method')=='ohio-lbrs-address-point':
   p=m.get('point')
   return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and isinstance(p.get('sourceDate'),str) and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['sourceDate'])) and p.get('countyFips')==county and county.startswith('39') and 38.3<=m.get('latitude',0)<=42.1 and -85<=m.get('longitude',0)<=-80.4
+ if m.get('method')=='ny-sam-address-point':
+  p=m.get('point')
+  return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and isinstance(p.get('nativeId'),str) and bool(re.fullmatch(r'[-A-Za-z0-9]{1,30}',p['nativeId'])) and isinstance(p.get('sourceDate'),str) and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['sourceDate'])) and isinstance(p.get('authority'),str) and 0<len(p['authority'].strip())<=150 and p.get('placement') in ('Rooftop','Primary structure entrance','Driveway entrance','Parcel centroid') and p.get('countyFips')==county and county.startswith('36') and 40.4<=m.get('latitude',0)<=45.2 and -80<=m.get('longitude',0)<=-71.7
  if m.get('method')!='nad-address-point':return False
  p=m.get('point')
- return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and p.get('release')=='2026-09-30' and isinstance(p.get('authority'),str) and 0<len(p['authority'].strip())<=150 and not re.search(r'[\x00-\x1f\x7f]',p['authority']) and p.get('placement') in ('Structure - Rooftop','Structure - Entrance','Structure - Interior','Structure - Interior Unit Location','Property Access Point','Site Placement','Parcel - Centroid','Parcel - Other/Manual Placement') and p.get('countyFips')==county
+ return isinstance(p,dict) and isinstance(p.get('objectId'),int) and not isinstance(p['objectId'],bool) and p['objectId']>0 and p.get('release')=='2026-09-30' and p.get('dataset') in (None,'bulk-r24') and isinstance(p.get('authority'),str) and 0<len(p['authority'].strip())<=150 and not re.search(r'[\x00-\x1f\x7f]',p['authority']) and p.get('placement') in ('Structure - Rooftop','Structure - Entrance','Structure - Interior','Structure - Interior Unit Location','Property Access Point','Site Placement','Parcel - Centroid','Parcel - Other/Manual Placement') and p.get('countyFips')==county
 def verify(output,manifest,rows,fl):
  index=json.loads((output/'index.json').read_bytes())
  if index['schemaVersion']!=1 or index['benchmark']!=BENCHMARK or index['vintage']!=VINTAGE:raise ValueError('Invalid location manifest')
@@ -184,7 +187,7 @@ def verify(output,manifest,rows,fl):
    seen.add(k);counts[source]['total']+=1;counts[source]['withAddress']+=int(a is not None);counts[source][status]+=1
    if a and address(a['street'],a['city'],a['state'],a['zip'])!=a:raise ValueError('Malformed source address')
    if status=='mapped':
-    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state:raise ValueError('Invalid mapped record')
+    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']:raise ValueError('Invalid mapped record')
    elif m is not None or e['countyFips']:raise ValueError('Unmatched record contains coordinates')
  if seen!=set(expected) or {c['state'] for c in index['chunks']}!=STATES or len(index['chunks'])!=51:raise ValueError('Incomplete native location coverage')
  for source,c in counts.items():

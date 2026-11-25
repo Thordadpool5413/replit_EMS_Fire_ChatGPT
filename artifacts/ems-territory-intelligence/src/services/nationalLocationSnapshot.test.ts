@@ -65,3 +65,14 @@ test('Ohio LBRS points preserve official source attribution and refuse out-of-st
  assert.throws(()=>parseSnapshotEntry({...oh,match:{...oh.match,longitude:-90}},'OH',{'39001':'Adams County'}));
  assert.throws(()=>parseSnapshotEntry({...oh,match:{...oh.match,point:{...oh.match.point,countyFips:'39015'}}},'OH',{'39001':'Adams County'}));
 });
+
+test('NY SAM primary address point validates provenance and county; bulk NAD retains dataset release',()=>{
+ const ny={...e,state:'NY',address:{street:'30 School RD',city:'Guilderland Center',state:'NY',zip:'12085'},countyFips:'36001',match:{latitude:42.7,longitude:-73.95,matchedAddress:'30 School Road, Guilderland Center, NY, 12085',method:'ny-sam-address-point',point:{objectId:7,nativeId:'1234',sourceDate:'2026-11-20',authority:'County AP',placement:'Rooftop',countyFips:'36001'}}};
+ assert.equal(parseSnapshotEntry(ny,'NY',{'36001':'Albany'}).match?.method,'ny-sam-address-point');
+ assert.throws(()=>parseSnapshotEntry({...ny,match:{...ny.match,point:{...ny.match.point,placement:'Miscellaneous'}}},'NY',{'36001':'Albany'}));
+ assert.throws(()=>parseSnapshotEntry({...ny,match:{...ny.match,latitude:28}},'NY',{'36001':'Albany'}));
+ const nad={...e,match:{...e.match,method:'nad-address-point',point:{objectId:42,release:'2026-09-30',authority:'Example county GIS',placement:'Structure - Rooftop',countyFips:'12009',dataset:'bulk-r24'}}};
+ const match=parseSnapshotEntry(nad,'FL',{'12009':'Brevard County'}).match;
+ assert.equal(match?.method,'nad-address-point');
+ if(match?.method==='nad-address-point')assert.equal(match.point.dataset,'bulk-r24');
+});

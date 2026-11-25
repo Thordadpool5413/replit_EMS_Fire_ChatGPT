@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 import type {Agency,FieldNote} from '../types';
 import {evidenceEnabled,evidenceRole,openEvidenceSession,loadReviewedRadarRows} from '../services/sharedEvidenceReplit';
@@ -28,7 +28,7 @@ function PrivateQueue({agencies,onOpenAgency,onCreateTask}:{agencies:Agency[];on
  const [open,setOpen]=useState(false),[state,setState]=useState(''),[search,setSearch]=useState(''),[selected,setSelected]=useState<string[]>([]),[kind,setKind]=useState<OpportunityKind|'all'>('all'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[result,setResult]=useState<{samples:ReviewedSample[];started:number;scope:string}>();
  const [view,setView]=useState<CommandView>('overview');
  const token=useRef(0);
- const selection=commandSelection(agencies,state,selected),{eligible,inState,chosen,scope}=selection,states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort();
+ const selection=useMemo(()=>commandSelection(agencies,state,selected),[agencies,state,selected]),{eligible,inState,chosen,scope}=selection,states=[...new Set(eligible.map(a=>a.agency.stateCode))].sort();
  const sample=currentCommandSample(result,selection,typeof navigator!=='undefined'&&navigator.onLine);
  function clear(){token.current++;setView('overview');setResult(undefined);setMessage('');setBusy(false);}
  useEffect(()=>{clear();},[scope]);

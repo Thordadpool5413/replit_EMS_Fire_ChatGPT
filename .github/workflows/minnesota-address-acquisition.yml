@@ -1,0 +1,32 @@
+name: Minnesota official address acquisition
+on:
+  pull_request:
+    paths:
+      - 'scripts/data/stage_minnesota_addresses.py'
+      - 'scripts/data/test_stage_minnesota_addresses.py'
+      - '.github/workflows/minnesota-address-acquisition.yml'
+  push:
+    branches: [atlas/phase8-0o-minnesota-addresses]
+    paths:
+      - 'scripts/data/stage_minnesota_addresses.py'
+      - 'scripts/data/test_stage_minnesota_addresses.py'
+      - '.github/workflows/minnesota-address-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_stage_minnesota_addresses.py
+      - name: Acquire MnGeo address review candidates
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python3 scripts/data/stage_minnesota_addresses.py --output generated-artifacts/minnesota-address-review
+      - uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        with:
+          name: minnesota-address-review
+          path: generated-artifacts/minnesota-address-review/
+          if-no-files-found: ignore

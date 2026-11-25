@@ -1,0 +1,3 @@
+# Phase 8.0H: provider identity integrity
+
+Require uniqueness across all validated registry claims before using provider intelligence. Align recorded state license collision checks with source-native license keys, preserving state and identifier type. Use the existing confirmed claim validator for department facility parent discovery and withhold a source when its confirmed parent claim is malformed. Regression tests are fixtures only. No automatic merges, new provider records, new coordinates, or production writes. These are loaded-directory and profile-side checks, not a production-wide identity census; private API parity and national acquisition remain separate. End-user validation is still required. Replit unchanged.

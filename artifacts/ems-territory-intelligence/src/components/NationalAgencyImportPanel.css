@@ -400,6 +400,12 @@
   .nri-dialog-actions { flex-direction: column-reverse; }
   .nri-dialog-actions .nri-button { width: 100%; }
 }
+@media (max-width: 360px) {
+  .nri-header { display: grid; grid-template-columns: 35px minmax(0, 1fr); gap: 8px 10px; }
+  .nri-header-mark { grid-column: 1; grid-row: 1; }
+  .nri-heading-copy { grid-column: 2; grid-row: 1; }
+  .nri-connection { grid-column: 2; grid-row: 2; justify-self: start; margin-left: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .nri-spin,
   .nri-skeleton span { animation: none; }

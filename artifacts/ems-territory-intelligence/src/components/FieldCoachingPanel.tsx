@@ -1,29 +1,24 @@
 import React,{useEffect,useRef,useState} from 'react';
 import type {Agency,FieldNote} from '../types';
 import type {ReviewedSample} from '../services/reviewedAccountPriorities';
-import type {DeviceRead} from '../services/leadershipReview';
-import {dealScope,loadDeal} from '../services/workingPipeline';
+
+
 import {buildCoachingReview,coachingPrompt,coachingDraftError,makeCoachingTask,COACHING_LABELS,type CoachingTopic,type CoachingDraft} from '../services/fieldCoaching';
 import type {CommandView} from '../services/territoryCommand';
 import {displayedProviderLocation,mappedProviderLocation,useLocationRevision} from '../services/providerLocation';
+import {useSharedPipeline} from '../services/sharedPipeline';
 import {localDay} from '../utils/followUps';
 import {OPPORTUNITY_LABELS} from '../services/opportunityRadar';
 const resolve=(a:Agency,directory:Agency[])=>({location:displayedProviderLocation(a,directory),match:mappedProviderLocation(a,directory)});
 const control='block w-full min-w-0 rounded border p-2 bg-transparent text-base';
 export function FieldCoachingPanel({uid,agencies,selected,samples,started,onOpenAgency,onView,onCreateTask}:{uid:string;agencies:Agency[];selected:string[];samples:ReviewedSample[];started:number;onOpenAgency:(a:Agency)=>void;onView:(v:CommandView)=>void;onCreateTask?:(id:string,task:FieldNote)=>Promise<void>}){
  useLocationRevision();
- const [device,setDevice]=useState<DeviceRead[]>([]),[draft,setDraft]=useState<CoachingDraft>(),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[checklist,setChecklist]=useState<string[]>([]);
+ const [draft,setDraft]=useState<CoachingDraft>(),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[checklist,setChecklist]=useState<string[]>([]);
  const lock=useRef(false),mounted=useRef(true);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- const scope=dealScope(agencies,selected,started),scopeKey=JSON.stringify(scope.map(a=>[a.agency.id,a.identityKey]).sort());
- function reload(){
-  setDevice(dealScope(agencies,selected,started).map(a=>{
-   const base={agencyId:a.agency.id,identityKey:a.identityKey};
-   try{return {...base,status:'read',record:loadDeal(localStorage,uid,a.agency.id,a.identityKey)};}catch{return {...base,status:'unavailable'};}
-  }));
-  setDraft(undefined);setConfirmed(false);setChecklist([]);
- }
- useEffect(()=>{reload();},[uid,scopeKey,started]);
+ const {reads:device,reload,loading}=useSharedPipeline(uid,agencies,selected,started);
+ useEffect(()=>{setDraft(undefined);setConfirmed(false);setChecklist([]);},[uid,started]);
+
  const today=localDay(),r=buildCoachingReview(agencies,selected,samples,device,resolve,today,started);
  const account=r.rows.find(a=>a.agency.id===draft?.agencyId&&a.identityKey===draft?.identityKey);
  const prompt=account&&draft?coachingPrompt(account,draft.topic):undefined;
@@ -38,7 +33,7 @@ export function FieldCoachingPanel({uid,agencies,selected,samples,started,onOpen
  const checks=['Original evidence checked or missing evidence identified','Account and authorized contact scope confirmed or flagged','Next action and success measure reviewed'];
  const error=draft?coachingDraftError(draft,today):undefined;
  async function save(){
-  if(lock.current||!onCreateTask||!draft||!confirmed||checklist.length!==checks.length||!navigator.onLine||!uid)return;
+  if(lock.current||loading||!onCreateTask||!draft||!confirmed||checklist.length!==checks.length||!navigator.onLine||!uid)return;
   lock.current=true;setBusy(true);setNotice('');
   try{
    const now=Date.now(),current=buildCoachingReview(agencies,selected,samples,device,resolve,localDay(),started,now).rows.find(a=>a.agency.id===draft.agencyId&&a.identityKey===draft.identityKey);
@@ -50,8 +45,9 @@ export function FieldCoachingPanel({uid,agencies,selected,samples,started,onOpen
  }
  if(!r.active)return <p role="status">Selected account sample expired or invalid. Refresh before preparing coaching.</p>;
  return <section className="space-y-3 min-w-0" aria-label="Field coaching workspace">
+  {loading&&<p role="status">Loading shared pipeline records…</p>}
   <header><h4 className="font-semibold">Field coaching workspace</h4><p className="text-xs">Account-specific preparation based on current reviewed documents and recorded workspace gaps. These are coaching prompts, not employee ratings, verified customer needs or AI predictions.</p></header>
-  <p className="text-xs">{r.eligible} eligible selected accounts · {r.checked} complete reviewed samples · {r.attention} with review prompts. Activity lookback: 30 days. Working pipeline context is limited to this signed-in user's device.</p>
+  <p className="text-xs">{r.eligible} eligible selected accounts · {r.checked} complete reviewed samples · {r.attention} with review prompts. Activity lookback: 30 days. Working pipeline context uses authorized shared records.</p>
   <label>Account<select className={control} disabled={busy} value={draft?.agencyId??''} onChange={e=>choose(e.target.value)}><option value="">Choose an account</option>{r.rows.map(a=><option key={a.identityKey} value={a.agency.id}>{a.agency.name}</option>)}</select></label>
   {account&&draft&&prompt&&<>
    <label>Coaching focus<select className={control} disabled={busy} value={draft.topic} onChange={e=>choose(account.agency.id,e.target.value as CoachingTopic)}>{account.topics.map(t=><option key={t} value={t}>{COACHING_LABELS[t]}</option>)}</select></label>

@@ -15,3 +15,14 @@ class RecoveryCheckpointTests(unittest.TestCase):
             d.bind(source,v,date);self.assertFalse(d.defer(e))
         c.bind('nc-addressnc',{'lastEditDate':None},'2026-11-25');c.record(e,'no-match');c.finish()
         d=RecoveryCheckpoint(c.report());d.bind('nc-addressnc',{'lastEditDate':None},'2026-11-26');self.assertFalse(d.defer(e))
+
+    def test_blocked_source_never_creates_reusable_checkpoint(self):
+        from run_recovery_checkpoint import blocked_report
+        from recover_regional_locations import SourceUnavailable
+        r=blocked_report('nc-addressnc','0'*64,'2026-11-25',SourceUnavailable('unavailable'))
+        self.assertEqual(r['acquisitionStatus'],'source-blocked')
+        self.assertFalse(r['completeMetadataCheck'])
+        self.assertEqual(r['rows'],{})
+        self.assertEqual(r['candidates'],[])
+        c=RecoveryCheckpoint(r);c.bind('nc-addressnc',{'lastEditDate':123},'2026-11-25')
+        self.assertFalse(c.defer({'key':'fixture'}))

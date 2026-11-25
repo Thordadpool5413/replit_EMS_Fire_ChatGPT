@@ -53,7 +53,7 @@ export function makeFacilityNotesRouter(loadFacilities= listDepartmentFacilities
       if(existing){if(existing.note!==note||existing.authorUid!==authorUid){res.status(409).json({error:"Submission already exists with different content."});return;}res.json(existing);return;}
       const source=await loadFacilities(parent);
       const matches=source.facilities.filter(f=>f.source==="NERIS"&&f.sourceRecordId===stationId);
-      if(source.warning||matches.length!==1){res.status(409).json({error:"Station relationship could not be confirmed from the current source."});return;}
+      if(source.warning||source.withheld||source.parent.source!==parent.source||source.parent.identifier!==parent.identifier||source.parent.stateCode!==parent.stateCode||matches.length!==1){res.status(409).json({error:"Station relationship could not be confirmed from the current source."});return;}
       const sourceSnapshot={...matches[0],retrievedAt:source.retrievedAt,endUserValidationRequired:true};
       const saved=await db.transaction(async tx=>{
         await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${agencyId}, 0))`);

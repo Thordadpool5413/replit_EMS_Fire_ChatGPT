@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "CMS": {
+    "commit": "010e0fff7425286a776389dbfab9763c517dccf0",
+    "path": "scripts/data/evidence/primary-nppes-native/2026-11-26/native-component-targets.json",
+    "sha256": "cac14a8230f8922fadd733308ab3aa7a161ba141e2593c70f3b7861018971305",
+    "targetCount": 609
+  },
+  "NERIS": {
+    "commit": "461a0ad155e0541bd27290a89d1c5891e7574047",
+    "path": "scripts/data/evidence/primary-neris-mailing-sites/2026-11-26/targets.json",
+    "sha256": "bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a",
+    "targetCount": 1094
+  }
+}

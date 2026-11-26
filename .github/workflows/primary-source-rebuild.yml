@@ -1,0 +1,198 @@
+name: Retain rebuilt primary location sources
+on:
+  push:
+    branches: [atlas/reach-95-primary-mapping]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  federal:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [usgs, hifld-ems, hifld-fire]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify recovery guards
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_address_normalization.py
+          python3 -m unittest discover -s scripts/data -p test_federal_primary_points.py
+      - name: Acquire complete fixed public source and match locally
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_usgs_primary.py --source "$SOURCE" --directory "$RUNNER_TEMP/primary-source" --report "generated-artifacts/primary-source/$SOURCE.json" --workers 4
+          python3 -u scripts/data/retain_federal_primary_points.py --source "$SOURCE" --directory "$RUNNER_TEMP/primary-source" --report "generated-artifacts/primary-source/$SOURCE.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-source-${{ matrix.source }}
+          path: generated-artifacts/primary-source/
+      - name: Save verified source evidence on a review branch
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          case "$SOURCE" in
+            usgs) evidence=primary-usgs-all ;;
+            hifld-ems) evidence=primary-hifld ;;
+            hifld-fire) evidence=primary-hifld-fire ;;
+          esac
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-$SOURCE-$GITHUB_RUN_ID"
+          git add --force "scripts/data/evidence/$evidence"
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete $SOURCE evidence for primary mapping review"
+          git push origin HEAD
+  neris:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_neris_primary_rebuilt.py
+      - name: Reproduce complete retained NERIS evidence
+        run: |
+          python3 -u scripts/data/recover_neris_primary.py --output generated-artifacts/primary-source/neris.json --inputs generated-artifacts/primary-source/neris-inputs.json
+          python3 -u scripts/data/retain_neris_primary.py --report generated-artifacts/primary-source/neris.json --inputs generated-artifacts/primary-source/neris-inputs.json
+          python3 scripts/data/retain_neris_primary.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-source-neris
+          path: generated-artifacts/primary-source/
+      - name: Save verified NERIS evidence on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-neris-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-rebuilt
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain replayed NERIS primary site evidence"
+          git push origin HEAD
+  nad:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]') || contains(github.event.head_commit.message, '[retain-nad]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retain the immutable original primary baseline
+        run: python3 scripts/data/primary_recovery_baseline.py --retain
+      - name: Verify native address and decoder guards
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_nad_primary.py
+          python3 -m unittest discover -s scripts/data -p test_checked_zip_member.py
+      - name: Prepare explicitly bound native headquarters targets
+        run: |
+          python3 scripts/data/prepare_neris_independent_sites.py --batch original-1251 --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
+      - name: Acquire complete fixed public NAD release and match locally
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --output "$RUNNER_TEMP/nad.zip" 'https://data.transportation.gov/api/views/fc2s-wawr/files/596a301b-d548-4589-8c63-6b6a8dc34f30?download=true&filename=TXT.zip'
+          python3 -u scripts/data/stage_nad_primary.py --archive "$RUNNER_TEMP/nad.zip" --directory "$RUNNER_TEMP/nad-native" --extra-targets "$RUNNER_TEMP/neris-targets.json" --report generated-artifacts/primary-source/nad.json --scan --retain
+          python3 scripts/data/build_nad_point_contract.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-source-nad
+          path: generated-artifacts/primary-source/
+      - name: Save verified native NAD evidence on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-nad-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-recovery-baseline scripts/data/evidence/primary-nad-rebuilt artifacts/ems-territory-intelligence/src/services/nadPrimaryPointPins.ts artifacts/api-server/src/lib/nadPrimaryPointPins.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete native NAD primary address evidence"
+          git push origin HEAD
+  overture:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]') || contains(github.event.head_commit.message, '[retain-overture]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install source readers and verify guards
+        run: |
+          python3 -m pip install 'duckdb==2.0.1' 'pyarrow==26.0.1'
+          python3 - <<'PY'
+          import duckdb
+          connection=duckdb.connect()
+          connection.execute("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+          connection.execute("INSTALL spatial FROM 'https://extensions.duckdb.org'")
+          PY
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_addresses.py
+      - name: Acquire fixed complete public address edition and match locally
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_overture_primary_addresses.py --output "$RUNNER_TEMP/overture-addresses" --workers 1 --select-primary
+          python3 -u scripts/data/match_overture_primary_addresses.py --source "$RUNNER_TEMP/overture-addresses" --workers 1
+          python3 -u scripts/data/retain_overture_primary_addresses.py --source "$RUNNER_TEMP/overture-addresses"
+          python3 scripts/data/retain_overture_primary_addresses.py --verify
+      - name: Save verified Overture address evidence on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-overture-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-overture-addresses
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete Overture primary address evidence"
+          git push origin HEAD
+  nad_extended:
+    if: contains(github.event.head_commit.message, '[retain-nad-extended]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify native source and original identity bindings
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_nad_primary.py
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 scripts/data/retain_nppes_native_source.py --verify
+          python3 scripts/data/retain_neris_mailing_sites.py --verify
+      - name: Prepare the exact source-bound extended address batch
+        run: |
+          python3 scripts/data/prepare_nad_extended_targets.py \
+            --mailing-targets scripts/data/evidence/primary-neris-mailing-sites/2026-11-26/targets.json \
+            --mailing-target-sha256 bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a \
+            --output scripts/data/evidence/primary-nad-extended-targets/2026-11-26/targets.json \
+            --report scripts/data/evidence/primary-nad-extended-targets/2026-11-26/report.json
+      - name: Acquire the complete fixed public NAD release and match locally
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --output "$RUNNER_TEMP/nad.zip" 'https://data.transportation.gov/api/views/fc2s-wawr/files/596a301b-d548-4589-8c63-6b6a8dc34f30?download=true&filename=TXT.zip'
+          python3 -u scripts/data/stage_nad_primary.py \
+            --archive "$RUNNER_TEMP/nad.zip" --directory "$RUNNER_TEMP/nad-native" \
+            --extra-targets scripts/data/evidence/primary-nad-extended-targets/2026-11-26/targets.json \
+            --report generated-artifacts/primary-source/nad-extended.json \
+            --evidence scripts/data/evidence/primary-nad-extended/2026-11-26 --scan --retain
+      - name: Save verified extended evidence on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-nad-extended-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-recovery-baseline scripts/data/evidence/primary-nad-extended scripts/data/evidence/primary-nad-extended-targets
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete native NAD evidence for source-bound primary address variants"
+          git push origin HEAD

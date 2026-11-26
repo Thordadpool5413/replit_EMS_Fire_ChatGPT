@@ -1,0 +1,550 @@
+[
+  {
+    "label": "headquarters-mailing-line2",
+    "candidate": {
+      "address": {
+        "city": "Yakutat",
+        "state": "AK",
+        "street": "609 Forest Highway No 10",
+        "zip": "99689"
+      },
+      "countyFips": "02282",
+      "key": "FDID:AK:12220",
+      "match": {
+        "latitude": 59.548995104000035,
+        "longitude": -139.706810019,
+        "matchBasis": "normalized-street-city-state-zip",
+        "matchedAddress": "609 Forest Highway No 10, Yakutat, AK, 99689",
+        "method": "neris-reported-address",
+        "point": {
+          "addressAsReported": [
+            "609 Forest Highway No 10",
+            "PO Box 110",
+            "Yakutat",
+            "AK",
+            "99689"
+          ],
+          "addressComponent": {
+            "otherLineKind": "mailing-address",
+            "rule": "native-physical-line1",
+            "sourceField": "line1"
+          },
+          "coordinatesAsReported": [
+            59.548995104000035,
+            -139.706810019
+          ],
+          "countyFips": "02282",
+          "nativeId": "FD02282259",
+          "objectId": 27151,
+          "parentId": "FD02282259",
+          "sourceDate": "2026-11-26",
+          "sourceKind": "department",
+          "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+        },
+        "sourceAddress": {
+          "city": "Yakutat",
+          "state": "AK",
+          "street": "609 Forest Highway No 10",
+          "zip": "99689"
+        }
+      },
+      "originalAddress": {
+        "city": "Yakutat",
+        "state": "AK",
+        "street": "609 Forest Highway 10",
+        "zip": "99689"
+      },
+      "primaryAddressEvidence": {
+        "association": "inferred",
+        "correlation": {
+          "nameBasis": "normalized-complete-name-city-state-zip",
+          "normalizedCity": "YAKUTAT",
+          "normalizedName": "YAKUTAT VOLUNTEER FIRE DEPARTMENT",
+          "primaryCity": "Yakutat",
+          "primaryKey": "FDID:AK:12220",
+          "primaryName": "Yakutat Volunteer Fire Department",
+          "primaryPostalCode": "99689-0110",
+          "reciprocalPrimaryCount": 1,
+          "reciprocalSourceCount": 1,
+          "state": "AK",
+          "zip": "99689"
+        },
+        "department": {
+          "addressAsReported": [
+            "609 Forest Highway No 10",
+            "PO Box 110",
+            "Yakutat",
+            "AK",
+            "99689"
+          ],
+          "coordinatesAsReported": [
+            59.548995104000035,
+            -139.706810019
+          ],
+          "id": "FD02282259",
+          "name": "Yakutat Volunteer Fire Department",
+          "objectId": 27151,
+          "observedStationCount": 1,
+          "reportedStationCount": 1,
+          "state": "AK"
+        },
+        "endUserValidationRequired": true,
+        "method": "neris-department-site-correlation",
+        "nationalRegistrySha256": "6d828632d3933a2815e497bfa189ae4af75e9b847911903b94bc4f0966b748ca",
+        "nerisIndexSha256": "6047f5d0471a12dba0b3079d68deebb5399d87925f7546186267af193aef3b38",
+        "originalAddress": {
+          "city": "Yakutat",
+          "state": "AK",
+          "street": "609 Forest Highway 10",
+          "zip": "99689"
+        },
+        "originalStatus": "no-match",
+        "site": {
+          "addressAsReported": [
+            "609 Forest Highway No 10",
+            "PO Box 110",
+            "Yakutat",
+            "AK",
+            "99689"
+          ],
+          "coordinatesAsReported": [
+            59.548995104000035,
+            -139.706810019
+          ],
+          "id": "FD02282259",
+          "objectId": 27151,
+          "sourceKind": "department"
+        },
+        "siteRole": "reported-headquarters",
+        "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+      }
+    },
+    "original": {
+      "address": {
+        "city": "Yakutat",
+        "state": "AK",
+        "street": "609 Forest Highway 10",
+        "zip": "99689"
+      },
+      "countyFips": "",
+      "key": "FDID:AK:12220",
+      "match": null,
+      "name": "Yakutat Volunteer Fire Department",
+      "source": "USFA",
+      "sourceCounty": "02282",
+      "sourceDate": "2026-11-17",
+      "state": "AK",
+      "status": "no-match"
+    },
+    "nationalRow": [
+      "usfa:AK:12220",
+      "USFA",
+      "Yakutat Volunteer Fire Department",
+      "AK",
+      "Yakutat",
+      "99689-0110",
+      "02282",
+      "Yakutat",
+      "source-county",
+      "",
+      "609 Forest Highway 10",
+      ""
+    ]
+  },
+  {
+    "label": "sole-station",
+    "candidate": {
+      "address": {
+        "city": "Gustavus",
+        "state": "AK",
+        "street": "1610 Gustavus Road",
+        "zip": "99826"
+      },
+      "countyFips": "02105",
+      "key": "FDID:AK:17400",
+      "match": {
+        "latitude": 58.41260794900006,
+        "longitude": -135.72906956799994,
+        "matchBasis": "normalized-street-city-state-zip",
+        "matchedAddress": "1610 Gustavus Road, Gustavus, AK, 99826",
+        "method": "neris-reported-address",
+        "point": {
+          "addressAsReported": [
+            "1610 Gustavus Road",
+            null,
+            "Gustavus",
+            "AK",
+            "99826"
+          ],
+          "addressComponent": {
+            "otherLineKind": "empty",
+            "rule": "native-physical-line1",
+            "sourceField": "line1"
+          },
+          "coordinatesAsReported": [
+            58.41260794900006,
+            -135.72906956799994
+          ],
+          "countyFips": "02105",
+          "nativeId": "FD02105438S000",
+          "objectId": 64561,
+          "parentId": "FD02105438",
+          "sourceDate": "2026-11-26",
+          "sourceKind": "station",
+          "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+        },
+        "sourceAddress": {
+          "city": "Gustavus",
+          "state": "AK",
+          "street": "1610 Gustavus Road",
+          "zip": "99826"
+        }
+      },
+      "originalAddress": {
+        "city": "Gustavus",
+        "state": "AK",
+        "street": "Gustavus RD",
+        "zip": "99826"
+      },
+      "primaryAddressEvidence": {
+        "association": "inferred",
+        "correlation": {
+          "nameBasis": "normalized-complete-name-city-state-zip",
+          "normalizedCity": "GUSTAVUS",
+          "normalizedName": "GUSTAVUS EMERGENCY RESPONSE",
+          "primaryCity": "Gustavus",
+          "primaryKey": "FDID:AK:17400",
+          "primaryName": "Gustavus Emergency Response",
+          "primaryPostalCode": "99826-0144",
+          "reciprocalPrimaryCount": 1,
+          "reciprocalSourceCount": 1,
+          "state": "AK",
+          "zip": "99826"
+        },
+        "department": {
+          "addressAsReported": [
+            "Gustavus RD",
+            "PO Box 144",
+            "Gustavus",
+            "AK",
+            "99826"
+          ],
+          "coordinatesAsReported": [
+            58.41260794900006,
+            -135.72906956799994
+          ],
+          "id": "FD02105438",
+          "name": "Gustavus Emergency Response",
+          "objectId": 15634,
+          "observedStationCount": 1,
+          "reportedStationCount": 1,
+          "state": "AK"
+        },
+        "endUserValidationRequired": true,
+        "method": "neris-department-site-correlation",
+        "nationalRegistrySha256": "6d828632d3933a2815e497bfa189ae4af75e9b847911903b94bc4f0966b748ca",
+        "nerisIndexSha256": "6047f5d0471a12dba0b3079d68deebb5399d87925f7546186267af193aef3b38",
+        "originalAddress": {
+          "city": "Gustavus",
+          "state": "AK",
+          "street": "Gustavus RD",
+          "zip": "99826"
+        },
+        "originalStatus": "not-eligible",
+        "site": {
+          "addressAsReported": [
+            "1610 Gustavus Road",
+            null,
+            "Gustavus",
+            "AK",
+            "99826"
+          ],
+          "coordinatesAsReported": [
+            58.41260794900006,
+            -135.72906956799994
+          ],
+          "id": "FD02105438S000",
+          "objectId": 64561,
+          "sourceKind": "station"
+        },
+        "siteRole": "sole-reported-station",
+        "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+      }
+    },
+    "original": {
+      "address": {
+        "city": "Gustavus",
+        "state": "AK",
+        "street": "Gustavus RD",
+        "zip": "99826"
+      },
+      "countyFips": "",
+      "key": "FDID:AK:17400",
+      "match": null,
+      "name": "Gustavus Emergency Response",
+      "source": "USFA",
+      "sourceCounty": "02105",
+      "sourceDate": "2026-11-17",
+      "state": "AK",
+      "status": "not-eligible"
+    },
+    "nationalRow": [
+      "usfa:AK:17400",
+      "USFA",
+      "Gustavus Emergency Response",
+      "AK",
+      "Gustavus",
+      "99826-0144",
+      "02105",
+      "Hoonah Angoon",
+      "source-county",
+      "",
+      "Gustavus RD",
+      ""
+    ]
+  },
+  {
+    "label": "headquarters-physical-line2",
+    "candidate": {
+      "address": {
+        "city": "Manley Hot Springs",
+        "state": "AK",
+        "street": "100 Landing RD",
+        "zip": "99756"
+      },
+      "countyFips": "02290",
+      "key": "FDID:AK:31250",
+      "match": {
+        "latitude": 65.10918100000004,
+        "longitude": -151.01377899999997,
+        "matchBasis": "normalized-street-city-state-zip",
+        "matchedAddress": "100 Landing RD, Manley Hot Springs, AK, 99756",
+        "method": "neris-reported-address",
+        "point": {
+          "addressAsReported": [
+            "#2 laura ln.",
+            "100 Landing RD",
+            "Manley Hot Springs",
+            "AK",
+            "99756"
+          ],
+          "addressComponent": {
+            "otherLineKind": "nonphysical-text",
+            "rule": "native-physical-line2",
+            "sourceField": "line2"
+          },
+          "coordinatesAsReported": [
+            65.10918100000004,
+            -151.01377899999997
+          ],
+          "countyFips": "02290",
+          "nativeId": "FD02290742",
+          "objectId": 15642,
+          "parentId": "FD02290742",
+          "sourceDate": "2026-11-26",
+          "sourceKind": "department",
+          "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+        },
+        "sourceAddress": {
+          "city": "Manley Hot Springs",
+          "state": "AK",
+          "street": "100 Landing RD",
+          "zip": "99756"
+        }
+      },
+      "originalAddress": {
+        "city": "Manley Hot Springs",
+        "state": "AK",
+        "street": "#2 laura ln.",
+        "zip": "99756"
+      },
+      "primaryAddressEvidence": {
+        "association": "inferred",
+        "correlation": {
+          "nameBasis": "normalized-complete-name-city-state-zip",
+          "normalizedCity": "MANLEY HOT SPRINGS",
+          "normalizedName": "MANLEY HOT SPRINGS VOLUNTEER FIRE DEPARTMENT",
+          "primaryCity": "Manley Hot Springs",
+          "primaryKey": "FDID:AK:31250",
+          "primaryName": "Manley Hot Springs Volunteer Fire Department",
+          "primaryPostalCode": "99756",
+          "reciprocalPrimaryCount": 1,
+          "reciprocalSourceCount": 1,
+          "state": "AK",
+          "zip": "99756"
+        },
+        "department": {
+          "addressAsReported": [
+            "#2 laura ln.",
+            "100 Landing RD",
+            "Manley Hot Springs",
+            "AK",
+            "99756"
+          ],
+          "coordinatesAsReported": [
+            65.10918100000004,
+            -151.01377899999997
+          ],
+          "id": "FD02290742",
+          "name": "Manley Hot Springs Volunteer Fire Department",
+          "objectId": 15642,
+          "observedStationCount": 1,
+          "reportedStationCount": 1,
+          "state": "AK"
+        },
+        "endUserValidationRequired": true,
+        "method": "neris-department-site-correlation",
+        "nationalRegistrySha256": "6d828632d3933a2815e497bfa189ae4af75e9b847911903b94bc4f0966b748ca",
+        "nerisIndexSha256": "6047f5d0471a12dba0b3079d68deebb5399d87925f7546186267af193aef3b38",
+        "originalAddress": {
+          "city": "Manley Hot Springs",
+          "state": "AK",
+          "street": "#2 laura ln.",
+          "zip": "99756"
+        },
+        "originalStatus": "not-eligible",
+        "site": {
+          "addressAsReported": [
+            "#2 laura ln.",
+            "100 Landing RD",
+            "Manley Hot Springs",
+            "AK",
+            "99756"
+          ],
+          "coordinatesAsReported": [
+            65.10918100000004,
+            -151.01377899999997
+          ],
+          "id": "FD02290742",
+          "objectId": 15642,
+          "sourceKind": "department"
+        },
+        "siteRole": "reported-headquarters",
+        "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+      }
+    },
+    "original": {
+      "address": {
+        "city": "Manley Hot Springs",
+        "state": "AK",
+        "street": "#2 laura ln.",
+        "zip": "99756"
+      },
+      "countyFips": "",
+      "key": "FDID:AK:31250",
+      "match": null,
+      "name": "Manley Hot Springs Volunteer Fire Department",
+      "source": "USFA",
+      "sourceCounty": "02290",
+      "sourceDate": "2026-11-17",
+      "state": "AK",
+      "status": "not-eligible"
+    },
+    "nationalRow": [
+      "usfa:AK:31250",
+      "USFA",
+      "Manley Hot Springs Volunteer Fire Department",
+      "AK",
+      "Manley Hot Springs",
+      "99756",
+      "02290",
+      "Yukon Koyukuk",
+      "source-county",
+      "",
+      "#2 laura ln.",
+      ""
+    ]
+  },
+  {
+    "label": "direct-postal-locality",
+    "candidate": {
+      "address": {
+        "city": "Maytown",
+        "state": "AL",
+        "street": "4509 Town Hall DR",
+        "zip": "35118"
+      },
+      "corroboratingNativeIds": [
+        "FD01073182",
+        "FD01073182S000"
+      ],
+      "countyFips": "01073",
+      "key": "FDID:AL:00134",
+      "match": {
+        "latitude": 33.534828012000034,
+        "longitude": -86.99691701999996,
+        "matchBasis": "normalized-street-state-zip",
+        "matchedAddress": "4509 Town Hall Dr, Mulga, AL, 35118",
+        "method": "neris-reported-address",
+        "point": {
+          "addressAsReported": [
+            "4509 Town Hall Dr",
+            null,
+            "Mulga",
+            "AL",
+            "35118 9710"
+          ],
+          "addressComponent": {
+            "otherLineKind": "empty",
+            "rule": "native-physical-line1",
+            "sourceField": "line1"
+          },
+          "coordinatesAsReported": [
+            33.534828012000034,
+            -86.99691701999996
+          ],
+          "countyFips": "01073",
+          "nativeId": "FD01073182",
+          "objectId": 15537,
+          "parentId": "FD01073182",
+          "sourceDate": "2026-11-26",
+          "sourceKind": "department",
+          "sourceSha256": "1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b"
+        },
+        "sourceAddress": {
+          "city": "Mulga",
+          "state": "AL",
+          "street": "4509 Town Hall Dr",
+          "zip": "35118"
+        }
+      },
+      "originalAddress": {
+        "city": "Maytown",
+        "state": "AL",
+        "street": "4509 Town Hall DR",
+        "zip": "35118"
+      }
+    },
+    "original": {
+      "address": {
+        "city": "Maytown",
+        "state": "AL",
+        "street": "4509 Town Hall DR",
+        "zip": "35118"
+      },
+      "countyFips": "",
+      "key": "FDID:AL:00134",
+      "match": null,
+      "name": "Maytown Fire Department",
+      "source": "USFA",
+      "sourceCounty": "01073",
+      "sourceDate": "2026-11-17",
+      "state": "AL",
+      "status": "no-match"
+    },
+    "nationalRow": [
+      "usfa:AL:00134",
+      "USFA",
+      "Maytown Fire Department",
+      "AL",
+      "Maytown",
+      "35118",
+      "01073",
+      "Jefferson",
+      "source-county",
+      "",
+      "4509 Town Hall DR",
+      ""
+    ]
+  }
+]

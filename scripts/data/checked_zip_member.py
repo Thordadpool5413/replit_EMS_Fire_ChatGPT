@@ -18,7 +18,7 @@ class CheckedMember(io.RawIOBase):
   if self.actual_crc!=self.crc:raise ValueError('ZIP member CRC mismatch')
 
 def decoder_path():
- return shutil.which('7zz') or shutil.which('7z')
+ return shutil.which('7zz') or shutil.which('7z') or shutil.which('unzip')
 
 @contextlib.contextmanager
 def open_checked_member(archive,z,member):
@@ -37,13 +37,17 @@ def open_checked_member(archive,z,member):
     checked.verify()
   return
  decoder=decoder_path()
- if not decoder:raise RuntimeError('ZIP compression method '+str(member.compress_type)+' requires 7-Zip')
+ if not decoder:raise RuntimeError('ZIP compression method '+str(member.compress_type)+' requires a supported native ZIP decoder')
  # A literal, unique member path; disable wildcard expansion and archive extraction to disk.
  if sum(i.filename==member.filename for i in z.infolist())!=1 or not member.filename or any(ord(c)<32 for c in member.filename) or member.filename.startswith(('-','@')):
   raise ValueError('Unsafe or duplicate ZIP member name')
- print('Streaming ZIP compression method',member.compress_type,'through 7-Zip; expected bytes',member.file_size,flush=True)
+ is_unzip=pathlib.Path(decoder).name=='unzip'
+ if is_unzip and any(c in member.filename for c in '*?[]'):raise ValueError('Info-ZIP requires a literal member name')
+ command=([decoder,'-p',str(pathlib.Path(archive).resolve()),member.filename] if is_unzip else
+          [decoder,'x','-so','-bd','-bb0','-bso0','-bsp0','-bse2','-spd','--',str(pathlib.Path(archive).resolve()),member.filename])
+ print('Streaming ZIP compression method',member.compress_type,'through native decoder; expected bytes',member.file_size,flush=True)
  with tempfile.TemporaryFile() as errors:
-  proc=subprocess.Popen([decoder,'x','-so','-bd','-bb0','-bso0','-bsp0','-bse2','-spd','--',str(pathlib.Path(archive).resolve()),member.filename],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=errors)
+  proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=errors)
   try:
    with proc.stdout:
     checked=CheckedMember(proc.stdout,member.file_size,member.CRC)
@@ -53,7 +57,7 @@ def open_checked_member(archive,z,member):
    status=proc.wait(timeout=60)
    if status:
     errors.seek(0)
-    raise ValueError('7-Zip decoder failed (exit '+str(status)+'): '+errors.read(500).decode('utf-8','replace'))
+    raise ValueError('Native ZIP decoder failed (exit '+str(status)+'): '+errors.read(500).decode('utf-8','replace'))
   finally:
    if proc.poll() is None:
     proc.kill();proc.wait(timeout=60)

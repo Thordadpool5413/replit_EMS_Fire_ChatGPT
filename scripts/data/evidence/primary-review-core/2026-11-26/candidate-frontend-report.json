@@ -1,0 +1,28 @@
+{
+  "totalPrimarySourceRecords": 46791,
+  "rawMapped": 38771,
+  "usableMapped": 38633,
+  "usableCoveragePct": 82.565,
+  "requiredMapped": 44452,
+  "remainingToTarget": 5819,
+  "targetMet": false,
+  "nationalListingsChecked": 38405,
+  "inferredSites": 2853,
+  "bySource": {
+    "USFA": 22839,
+    "NPPES": 15566,
+    "State EMS": 228
+  },
+  "byMethod": {
+    "usgs-structure-address": 2249,
+    "neris-reported-address": 5529,
+    "census-address-range": 28859,
+    "hifld-ems-address": 522,
+    "nad-address-point": 699,
+    "hifld-fire-address": 92,
+    "regional-address-point": 249,
+    "ny-sam-address-point": 246,
+    "ohio-lbrs-address-point": 188
+  },
+  "frontendContract": "passed"
+}

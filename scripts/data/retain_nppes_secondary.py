@@ -3,6 +3,11 @@
 import argparse,collections,datetime,json,pathlib,re,shutil,zipfile
 from stage_nppes_secondary import ARCHIVE_SHA,PERIOD,REF,DEST,serialize,snapshot,fingerprint,address_key
 from backfill_provider_locations import ROOT,SOURCE,sha,physical,address,clean,zip5,geocode,BENCHMARK,VINTAGE,ENDPOINT
+from historical_primary_snapshot import historical_primary
+
+def retained_snapshot():
+    with historical_primary() as loc:return snapshot(loc)
+
 ARTIFACT=15082394618
 DIGEST='5c9bfebd46b9252e973e53773e9e32889796774dd61cc1a7df93e212d1f11e94'
 EVIDENCE=ROOT/'scripts/data/evidence/nppes-secondary/2026-11-26'
@@ -57,7 +62,7 @@ def geocode_rows(rows,fn=geocode):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path);p.add_argument('--verify',action='store_true');p.add_argument('--geocode-output',type=pathlib.Path);a=p.parse_args()
     if bool(a.archive)==a.verify or a.verify and a.geocode_output:raise ValueError('Choose stage or verify')
-    parents,loc,nat=snapshot()
+    parents,loc,nat=retained_snapshot()
     data,rows=read(EVIDENCE/'original.zip' if a.verify else a.archive,parents,loc,nat)
     if a.geocode_output:
         report=geocode_rows(rows);a.geocode_output.mkdir(parents=True,exist_ok=True)

@@ -45,7 +45,8 @@ def outputs(archive):
     with zipfile.ZipFile(archive) as z:
         if z.namelist()!=[MEMBER] or z.infolist()[0].file_size>2_000_000:raise ValueError('Unexpected geocoding archive members')
         report=json.loads(z.read(MEMBER))
-    parents,loc,nat=snapshot()
+    from retain_nppes_secondary import retained_snapshot
+    parents,loc,nat=retained_snapshot()
     source_files,sources=read_secondary(SECONDARY_EVIDENCE/'original.zip',parents,loc,nat)
     for k,v in source_files.items():
         if (PUBLIC/'nppes-secondary'/k).read_bytes()!=v:raise ValueError('Integrated secondary catalog has changed')

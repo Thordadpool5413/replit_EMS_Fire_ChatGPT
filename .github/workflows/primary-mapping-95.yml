@@ -1,0 +1,40 @@
+name: Primary mapping 95 percent federal recovery
+on:
+  push:
+    branches: [atlas/primary-95-federal-address-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_primary_federal_addresses.py
+      - name: Recover existing primary addresses nationwide
+        run: python3 scripts/data/recover_primary_federal_addresses.py --report generated-artifacts/primary-95/recovery.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-mapping-95-recovery
+          path: generated-artifacts/primary-95/
+      - name: Stage additive primary data release
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- artifacts/ems-territory-intelligence/public/registry/locations; then
+            echo "No additional primary mapping candidates; no data branch generated"
+            exit 0
+          fi
+          python3 scripts/data/backfill_provider_locations.py --verify
+          python3 scripts/data/retain_nppes_secondary.py --verify
+          python3 scripts/data/retain_nppes_secondary_geocodes.py --verify
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="atlas/primary-95-data-$GITHUB_RUN_ID"
+          git switch -c "$branch"
+          git add --force artifacts/ems-territory-intelligence/public/registry/locations scripts/data/evidence/primary-location-baseline
+          git commit -m "Publish additional source-backed primary provider coordinates"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Primary mapping data candidate: $branch"

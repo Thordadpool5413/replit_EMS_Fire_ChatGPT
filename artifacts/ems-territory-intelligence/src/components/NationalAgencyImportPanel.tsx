@@ -55,6 +55,7 @@ function countyBasisLabel(value?: string) {
     'ohio-lbrs-address-point': 'Ohio LBRS address-point match',
     'ny-sam-address-point': 'New York SAM address-point match',
     'regional-address-point': 'Official regional address-point match',
+    'neris-reported-address': 'Federal NERIS reported address geography',
   };
   return value ? labels[value] ?? `Recorded basis: ${value}` : 'No supported exact county assignment';
 }

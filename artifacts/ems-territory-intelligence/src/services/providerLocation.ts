@@ -146,7 +146,7 @@ export function providerAddressReview(a:Agency,directory:Agency[]){
 }
 export function locationStatus(a:Agency,directory:Agency[]):string{
  const pin=mappedProviderLocation(a,directory);
- if(pin)return pin.method==='nad-address-point'?'Mapped · USDOT public address point':pin.method==='ohio-lbrs-address-point'?'Mapped · Ohio LBRS address point':pin.method==='ny-sam-address-point'?'Mapped · New York SAM address point':pin.method==='regional-address-point'?(pin.point.source==='tx-stratmap'?'Mapped · official address point (placement not reported)':'Mapped · official regional address point'):'Mapped · approximate street location';
+ if(pin)return pin.method==='neris-reported-address'?'Mapped · federal NERIS source-reported address':pin.method==='nad-address-point'?'Mapped · USDOT public address point':pin.method==='ohio-lbrs-address-point'?'Mapped · Ohio LBRS address point':pin.method==='ny-sam-address-point'?'Mapped · New York SAM address point':pin.method==='regional-address-point'?(pin.point.source==='tx-stratmap'?'Mapped · official address point (placement not reported)':'Mapped · official regional address point'):'Mapped · approximate street location';
  const loc=displayedProviderLocation(a,directory),id=nativeIdentity(a,directory);
  if(!loc)return id?'Source address not found; review required':'Provider identity or location source needs review';
  if(!isPhysicalStreet(loc.address.street))return 'Recorded mailing or nonstandard address; physical site not established';

@@ -104,10 +104,16 @@ def stage(path,out,minimum=100,kind='provider',require_official=False):
      else:row[k]=text(value)
     except ValueError as exc:raise ValueError(f'Invalid roster field {k} at row {row_number} (cell type {type(value).__name__}): {exc}') from exc
    if not row['name']:raise ValueError('Missing organization name')
-   if row.get('issuedOn') and row.get('expiresOn') and row['expiresOn']<row['issuedOn']:raise ValueError('Reversed license dates')
+   if row.get('issuedOn') and row.get('expiresOn') and row['expiresOn']<row['issuedOn']:
+    # The actual DSHS provider workbook contains a reversed first-licensure/expiry pair.
+    # Preserve the source record and flag the contradiction, never repair dates or
+    # infer eligibility. Generic unreviewed workbook schemas remain fail-closed.
+    if tuple(headers)!=OFFICIAL_HEADERS:raise ValueError('Reversed license dates')
+    row['licenseDateConflict']=True
+   elif tuple(headers)==OFFICIAL_HEADERS:row['licenseDateConflict']=False
    row['endUserValidationRequired']=True;records.append(row)
   if not minimum<=len(records)<=5000:raise ValueError('Unexpected roster size')
-  result={'schemaVersion':1,'jurisdiction':'TX','sourceName':'Texas Department of State Health Services','sourceUrl':ROSTERS[kind],'rosterKind':kind,'identifierKind':'license' if kind=='provider' else 'registration','referenceUrl':REFERENCE,'retrievedAt':datetime.datetime.now(datetime.timezone.utc).date().isoformat(),'sourceDate':None,'sourceSha256':digest,'identifierColumn':headers[cols['identifier']],'nameColumn':headers[cols['name']],'addressColumn':headers[cols['addressAsReported']] if 'addressAsReported' in cols else None,'addressPurpose':'mailing-only' if tuple(headers)==OFFICIAL_HEADERS else 'not-established','stationCountMeaning':'Source-reported aggregate; no individual station identifiers or locations.' if 'stationCountAsReported' in cols else None,'scope':'Review-only organization roster; license or registration identifiers are distinct, addresses may be mailing addresses, and current operational status and station locations are not established.','records':records}
+  result={'schemaVersion':1,'jurisdiction':'TX','sourceName':'Texas Department of State Health Services','sourceUrl':ROSTERS[kind],'rosterKind':kind,'identifierKind':'license' if kind=='provider' else 'registration','referenceUrl':REFERENCE,'retrievedAt':datetime.datetime.now(datetime.timezone.utc).date().isoformat(),'sourceDate':None,'sourceSha256':digest,'identifierColumn':headers[cols['identifier']],'nameColumn':headers[cols['name']],'addressColumn':headers[cols['addressAsReported']] if 'addressAsReported' in cols else None,'addressPurpose':'mailing-only' if tuple(headers)==OFFICIAL_HEADERS else 'not-established','stationCountMeaning':'Source-reported aggregate; no individual station identifiers or locations.' if 'stationCountAsReported' in cols else None,'issuedOnMeaning':'First licensure date as reported, not current credential issue date' if tuple(headers)==OFFICIAL_HEADERS else None,'licenseDateConflictCount':sum(r.get('licenseDateConflict') is True for r in records),'scope':'Review-only organization roster; license or registration identifiers are distinct, addresses may be mailing addresses, and current operational status and station locations are not established.','records':records}
   (out/('TX-candidate.json' if kind=='provider' else 'TX-first-responder-candidate.json')).write_text(json.dumps(result,indent=2)+'\n')
   return result
  finally:wb.close()
@@ -118,5 +124,5 @@ def main():
   with build_opener(NoRedirect()).open(Request(ROSTERS[args.kind],headers={'User-Agent':'ATLAS public organization roster review'}),timeout=60) as res:data=res.read(MAX_BYTES+1)
   if len(data)>MAX_BYTES:raise ValueError('Download exceeds bound')
   path.write_bytes(data);result=stage(path,args.output,kind=args.kind,require_official=True)
-  print('Texas roster acquisition:',json.dumps({'kind':args.kind,'records':len(result['records']),'sourceSha256':result['sourceSha256'],'addressColumn':result['addressColumn'],'publication':'review-only'}))
+  print('Texas roster acquisition:',json.dumps({'kind':args.kind,'records':len(result['records']),'sourceSha256':result['sourceSha256'],'addressColumn':result['addressColumn'],'licenseDateConflicts':result['licenseDateConflictCount'],'publication':'review-only'}))
 if __name__=='__main__':main()

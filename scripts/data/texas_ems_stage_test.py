@@ -62,3 +62,13 @@ class TexasStageTest(unittest.TestCase):
    self.assertNotIn('latitude',row);self.assertNotIn('headquartersAddress',row)
    s['C2']='Different Name';w.save(p)
    with self.assertRaises(ValueError):stage(p,out,1,require_official=True)
+
+ def test_official_date_contradiction_is_retained_and_flagged(self):
+  from stage_texas_ems import OFFICIAL_HEADERS
+  with tempfile.TemporaryDirectory() as td:
+   p=pathlib.Path(td)/'fixture.xlsx';out=pathlib.Path(td)/'review';w=Workbook();s=w.active
+   s.append(['Official fixture report']);s.append(list(OFFICIAL_HEADERS))
+   s.append(['EMS Provider','ALS','Fixture','DBA','00123','Active',None,'2020-01-01','2021-01-01',None,None,None,'PO Box 7',None,'Example','TX','75001',None,None,None,0]);w.save(p)
+   r=stage(p,out,1,require_official=True);row=r['records'][0]
+   self.assertTrue(row['licenseDateConflict']);self.assertTrue(row['endUserValidationRequired'])
+   self.assertEqual(row['issuedOn'],'2021-01-01');self.assertEqual(row['expiresOn'],'2020-01-01');self.assertEqual(r['licenseDateConflictCount'],1)

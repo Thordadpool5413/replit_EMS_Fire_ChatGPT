@@ -11,7 +11,7 @@ import json
 import math
 import zipfile
 from backfill_provider_locations import ROOT
-from address_normalization import normalize_street, source_street_line
+from address_normalization import normalize_street, normalized_city, source_street_line
 
 FEDERAL = {'usgs-structure-address': 'usgs', 'hifld-ems-address': 'hifld-ems',
            'hifld-fire-address': 'hifld-fire'}
@@ -42,7 +42,7 @@ def _county(state, latitude, longitude):
 @functools.lru_cache(maxsize=3)
 def _federal_native(source):
     from retain_federal_primary_points import evidence_directory, verify
-    from stage_usgs_primary import attrs, source_address, address_key, valid_point, placement
+    from stage_usgs_primary import attrs, source_address, valid_point, placement
     evidence = evidence_directory(source)
     verify(evidence)
     by_address = collections.defaultdict(list)
@@ -51,8 +51,8 @@ def _federal_native(source):
         for page in inventory['pages']:
             for feature in json.loads(archive.read('source/'+page['file']))['features']:
                 address = source_address(feature, source)
-                key = address_key(address, include_city=False)
-                if not key or not valid_point(feature) or not placement(feature, source):
+                key = (address['state'], address['zip'], normalize_street(source_street_line(address['street'])))
+                if not key[0] or not key[2] or not valid_point(feature) or not placement(feature, source):
                     continue
                 native = attrs(feature)
                 by_address[key].append({'objectId': native['OBJECTID'], 'address': address,
@@ -62,9 +62,12 @@ def _federal_native(source):
 
 
 def federal_witnesses(match, target_address):
-    from stage_usgs_primary import address_key
     source = FEDERAL[match['method']]
-    native = _federal_native(source).get(address_key(match['sourceAddress'], include_city=False), [])
+    address = match['sourceAddress']
+    key = (address['state'], address['zip'], normalize_street(source_street_line(address['street'])))
+    native = _federal_native(source).get(key, [])
+    if match.get('matchBasis') == 'normalized-street-city-state':
+        native = [row for row in native if normalized_city(row['address']['city']) == normalized_city(target_address['city'])]
     selected = [row for row in native if row['objectId'] == match['point']['objectId']]
     if len(selected) != 1 or any(selected[0][key] != match[key] for key in ('latitude', 'longitude')):
         raise ValueError('Selected federal endpoint differs from the complete retained source')

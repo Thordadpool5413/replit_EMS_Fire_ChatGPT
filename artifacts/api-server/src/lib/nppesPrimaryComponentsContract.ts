@@ -1,5 +1,9 @@
 import type {StreetAddress} from './providerLocationContract';
-import type {NerisPrimarySiteContext} from './nerisPrimarySiteContract';
+// Structural API counterpart of the frontend NerisPrimarySiteContext.
+type NerisPrimarySiteContext={
+ key:string;name:string;state:string;source:string;sourceCounty?:string;countyFips:string;
+ address:StreetAddress;match:unknown;originalAddress:StreetAddress|null;nationalRow?:readonly string[];
+};
 import {NPPES_COMPONENT_BINDINGS} from './nppesPrimaryComponentsPins';
 
 export const NPPES_PRIMARY_COMPONENTS_METHOD='nppes-primary-address-components' as const;

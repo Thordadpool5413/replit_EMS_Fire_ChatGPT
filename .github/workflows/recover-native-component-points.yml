@@ -17,6 +17,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Verify frozen source and native component replay
         run: |
           set -euo pipefail
@@ -32,6 +35,14 @@ jobs:
           python3 -u scripts/data/retain_federal_city_points.py --report "$RUNNER_TEMP/native-city.json"
           python3 -u scripts/data/retain_federal_city_points.py --verify
           python3 -u scripts/data/build_federal_city_contract.py
+          python3 -u scripts/data/build_nppes_component_contract.py
+          python3 -u scripts/data/write_native_profile_summaries.py
+      - name: Compile standalone frontend and API native contracts
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/native-contract-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          node "$RUNNER_TEMP/native-contract-tools/node_modules/typescript/bin/tsc" --module commonjs --moduleResolution node --target ES2022 --strict --skipLibCheck --outDir "$RUNNER_TEMP/native-contracts" artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsContract.ts artifacts/ems-territory-intelligence/src/services/federalCityPointContract.ts artifacts/ems-territory-intelligence/src/services/tigerPrimaryPointContract.ts artifacts/api-server/src/lib/nppesPrimaryComponentsContract.ts artifacts/api-server/src/lib/federalCityPointContract.ts artifacts/api-server/src/lib/tigerPrimaryPointContract.ts
+          node scripts/test-native-source-contracts.cjs "$RUNNER_TEMP/native-contracts"
       - uses: actions/upload-artifact@v4
         with:
           name: native-component-and-city-points
@@ -44,7 +55,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git switch -c "atlas/native-component-points-$GITHUB_RUN_ID"
-          git add --force scripts/data/evidence/primary-nppes-components scripts/data/evidence/primary-federal-city-fallback scripts/fixtures/federal-city-point-examples.json artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts artifacts/api-server/src/lib/federalCityPointPins.ts scripts/data/evidence/primary-recovery-baseline
+          git add --force scripts/data/evidence/primary-nppes-components scripts/data/evidence/primary-federal-city-fallback scripts/fixtures/federal-city-point-examples.json scripts/fixtures/nppes-primary-component-examples.json artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsPins.ts artifacts/api-server/src/lib/nppesPrimaryComponentsPins.ts artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts artifacts/api-server/src/lib/federalCityPointPins.ts scripts/data/evidence/primary-recovery-baseline
           git diff --cached --quiet && exit 0
           git commit -m 'Retain fully replayed CMS components and exact city native point profiles'
           git push origin HEAD

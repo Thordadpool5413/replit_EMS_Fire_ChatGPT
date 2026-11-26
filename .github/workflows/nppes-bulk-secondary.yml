@@ -1,0 +1,39 @@
+name: Nationwide NPPES secondary practice acquisition
+on:
+  push:
+    branches: [atlas/phase9-0t-nppes-bulk-secondary]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_nppes_secondary.py'
+      - 'scripts/data/test_nppes_secondary.py'
+      - '.github/workflows/nppes-bulk-secondary.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-nppes-secondary-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_nppes_secondary.py
+  acquire:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download same official CMS monthly archive as primary snapshot
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 1800 --max-filesize 2000000000 --retry 1 --output "$RUNNER_TEMP/nppes.zip" 'https://download.cms.gov/nppes/NPPES_Data_Dissemination_November_2026_V2.zip'
+      - name: Extract nationwide secondary organization address evidence
+        run: python3 scripts/data/stage_nppes_secondary.py --archive "$RUNNER_TEMP/nppes.zip" --output generated-artifacts/nppes-secondary
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nationwide-nppes-secondary-practice-evidence
+          path: generated-artifacts/nppes-secondary/
+          if-no-files-found: error

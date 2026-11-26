@@ -1,0 +1,44 @@
+name: Westchester regional evidence integration
+on:
+  push:
+    branches: [atlas/phase9-0s-ny-catalog]
+  pull_request:
+    paths:
+      - 'scripts/data/build_ny_westchester_catalog.py'
+      - 'scripts/data/evidence/ny-westchester/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/state-ems-review/NY-westchester-*.json'
+      - '.github/workflows/ny-westchester-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve successful pinned acquisition
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15082079577/zip" > /tmp/ny-westchester.zip
+      - run: python3 scripts/data/build_ny_westchester_catalog.py --archive /tmp/ny-westchester.zip
+      - run: python3 scripts/data/build_ny_westchester_catalog.py --verify
+      - name: Retain evidence and stage actual integration
+        run: |
+          branch="atlas/ny-westchester-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/ny-westchester/2026-11-26 artifacts/ems-territory-intelligence/public/registry/state-ems-review/NY-westchester-*.json
+          git commit -m "Retain and integrate 88 acquired Westchester organization listings"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Westchester catalog candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/build_ny_westchester_catalog.py --verify

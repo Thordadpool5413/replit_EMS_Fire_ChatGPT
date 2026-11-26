@@ -110,6 +110,25 @@ Ordinary Places:
 
 The scoped workflow is .github/workflows/overture-profile-rebuild.yml. A recovery-branch commit tagged [retain-overture-profiles] runs ordinary sources; a commit tagged [retain-overture-variants] runs the pinned native scopes. Output branches are atlas/overture-addresses-source-RUN_ID, atlas/overture-places-source-RUN_ID and atlas/overture-variants-source-RUN_ID. They contain evidence and code pins for central review, without public-shard changes.
 
+## Verified recovery checkpoints
+
+The complete source jobs passed on 2026-11-26. Ordinary Addresses was retained by Actions run 45829415880, ordinary Places by run 45830607928, and the native target profiles by run 45830963044. Each run completed source replay and browser/API checks before its durable evidence commit.
+
+| Retained catalog | Accepted source candidates | Report SHA-256 |
+| --- | ---: | --- |
+| Ordinary Addresses | 461 | 2adb2dc598586af97b9082287a816cc8e0fc238ae9276633bf8518943a41527e |
+| Ordinary Places | 2,744 | d12f9bd5cd610caf05566422a2383cd9462b9c2e0a0996f4a66c02661cd5991e |
+| CMS native Address variants | 47 | b2b00f2f6dd98e8eeab0eb18b869d64f01455276b4255e014ac30acf837b0872 |
+| CMS and NERIS native Places variants | 578 | a5b36bd19fe4040321102115422e7a3a467ba61eb9b5ac2dab9ef10916afa758 |
+
+Archive SHA-256 values are e94d946304bc66ffa5e0772078bf0ba7114c82ee74755a6cfaab555b24576df4 for ordinary Addresses, 1a596673fdac93cb5ec588e12333916c9a361236d05b3130a2d73cfd083f5e8c for ordinary Places, and 5e01f6755021136124020ae28f1b072e7b1bbf0b56a4251a78d04e9928795000 for the combined native target archive. The complete source inventory hashes are d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8 for Addresses and b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339 for Places.
+
+The rebuilt native Address catalog contains all matching native source records for its 609 CMS targets. Its outcomes include 225 unsupported native-NAD status wrappers, six conflicting-point targets and four distinct-address coordinate-reuse targets. Complete provenance acquisition does not make those excluded rows acceptable. The Places variant report preserves 120 conflicting-point targets, 78 coordinate-reuse targets and 61 county-conflict targets, plus source-quality exclusions.
+
+The actual NERIS target input contains 1,094 records and has SHA-256 bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a. The combined Places source target list contains 1,703 records. The source candidate counts above overlap across sources and profiles; they are not net primary coverage.
+
+Run python3 scripts/data/verify_overture_retained_profiles.py to replay the retained catalogs together using the Python standard library. This additionally checks that every selected native coordinate appears in the endpoint expansion, every pair agrees within the source threshold, mutated bindings return no endpoints, ordinary wrappers preserve every variant endpoint, and rejected variants retain their exact target address. A branch commit tagged [verify-overture-profiles] runs this gate plus the combined browser/API tests without acquiring source files again.
+
 ## Official source documentation
 
 - https://docs.overturemaps.org/guides/addresses/

@@ -18,9 +18,9 @@ from stage_overture_primary_places import GLOBAL_COUNT, GLOBAL_FILES, PREFIX, US
 EVIDENCE=ROOT/'scripts/data/evidence/primary-overture-places'/DATE
 # A recovered release stays disabled until the runner completes native replay,
 # then freezes explicit source/archive/report pins in its review commit.
-SOURCE_INVENTORY_SHA256=''
-ARCHIVE_SHA256=''
-REPORT_SHA256=''
+SOURCE_INVENTORY_SHA256='b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339'
+ARCHIVE_SHA256='1a596673fdac93cb5ec588e12333916c9a361236d05b3130a2d73cfd083f5e8c'
+REPORT_SHA256='d12f9bd5cd610caf05566422a2383cd9462b9c2e0a0996f4a66c02661cd5991e'
 COMPLETE_US_ROWS=US_COUNT
 REQUIRED={'inventory.xml','inventory.json','metadata-inventory.json','complete-us-receipt.json',
           'targets.json','selected-native-records.json','primary-place-address-candidates.json'}

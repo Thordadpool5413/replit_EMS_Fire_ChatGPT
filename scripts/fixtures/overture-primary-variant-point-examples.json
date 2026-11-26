@@ -1,0 +1,286 @@
+[
+  {
+    "label": "separate-native-target-overture-address",
+    "key": "NPI:1003838046",
+    "originalAddress": {
+      "city": "SPRING VALLEY",
+      "state": "CA",
+      "street": "9960 CAMPO RD",
+      "zip": "91977"
+    },
+    "latitude": 32.7481452,
+    "longitude": -116.9812266,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "9960 CAMPO RD, Spring Valley, CA, 91977",
+    "method": "overture-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "us/ca/san_diego",
+          "license": "LicenseRef-Public-Domain-US-CA-Law",
+          "property": "",
+          "provider": "open_addresses",
+          "record_id": "700661",
+          "resource": "us_ca_san_diego",
+          "update_time": "2026-11-02T13:09:32.490Z",
+          "version": "946199"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 126202222,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        32.7481452,
+        -116.9812266
+      ],
+      "countyFips": "06073",
+      "nativeId": "aa7be89e-eb69-4864-babb-7c4f20cf7559",
+      "precision": "reported-address-point",
+      "release": "2026-11-18.0",
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "0e748c57e36bf4c02ec510a20baa8b89-7",
+      "sourceFile": "release/2026-11-18.0/theme=addresses/type=address/part-00018-60763ca9-30c2-5b25-af5a-a8d40caaf9ca-c000.zstd.parquet",
+      "sourceFileSha256": "b635c9858407bb7f9d8e554d1c1cb42bb45f59221c35b358ab065b5be03ad87e",
+      "sourceInventorySha256": "d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8",
+      "sourceRowNumber": 3939895,
+      "sourceSha256": "ba0b9957ed4b58fbe9f4efae0423776a0a3d5dffed231edee4a2ff4342bea39b"
+    },
+    "sourceAddress": {
+      "city": "Spring Valley",
+      "state": "CA",
+      "street": "9960 CAMPO RD",
+      "zip": "91977"
+    }
+  },
+  {
+    "label": "separate-native-target-overture-address",
+    "key": "NPI:1023182417",
+    "originalAddress": {
+      "city": "CORVALLIS",
+      "state": "OR",
+      "street": "400 NW HARRISON BLVD",
+      "zip": "97330"
+    },
+    "latitude": 44.5674565,
+    "longitude": -123.2609785,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "400 Northwest Harrison Boulevard, Corvallis, OR, 97330",
+    "method": "overture-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "us/or/statewide",
+          "license": "LicenseRef-Proprietary",
+          "property": "",
+          "provider": "open_addresses",
+          "record_id": "f16d6bc565cc11bc",
+          "resource": "us_or_statewide",
+          "update_time": "2026-10-27T19:51:00.000Z",
+          "version": "939131"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 126202222,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        44.5674565,
+        -123.2609785
+      ],
+      "countyFips": "41003",
+      "nativeId": "801fab36-bfc4-4017-b6a7-aa789ef615eb",
+      "precision": "reported-address-point",
+      "release": "2026-11-18.0",
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "c7bc3a985b272057e11b0b8f7792c64b-7",
+      "sourceFile": "release/2026-11-18.0/theme=addresses/type=address/part-00016-63238166-01e1-542b-b56f-602c41975196-c000.zstd.parquet",
+      "sourceFileSha256": "1c7f66bacbf795744b30e5006b36ab674a417c7e6c3d9fd0c0d9b6f6a400fbf6",
+      "sourceInventorySha256": "d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8",
+      "sourceRowNumber": 415850,
+      "sourceSha256": "3ef6640bbd46c36b8ab991567bef152690df26fee810712494ffc7bba678b4ae"
+    },
+    "sourceAddress": {
+      "city": "Corvallis",
+      "state": "OR",
+      "street": "400 Northwest Harrison Boulevard",
+      "zip": "97330"
+    }
+  },
+  {
+    "label": "separate-native-target-overture-place-address",
+    "key": "NPI:1013274323",
+    "originalAddress": {
+      "city": "SOUTHAMPTON",
+      "state": "PA",
+      "street": "1300 INDUSTRIAL BLVD",
+      "zip": "18966"
+    },
+    "latitude": 40.161259,
+    "longitude": -75.033906,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "1300 Industrial Blvd, Southampton, PA, 18966",
+    "method": "overture-place-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": 0.95,
+          "dataset": "BrightQuery",
+          "license": "CDLA-Permissive-2.0",
+          "property": "",
+          "provider": "brightquery",
+          "record_id": "381952022",
+          "resource": "brightquery",
+          "update_time": "2026-11-11T05:21:49.035Z",
+          "version": "2026-09-08"
+        },
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "Overture",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/confidence",
+          "provider": "overture",
+          "record_id": null,
+          "resource": "confidence_calculation",
+          "update_time": "2026-11-11T15:48:27Z",
+          "version": "2026-11-11"
+        },
+        {
+          "between": null,
+          "confidence": 1.0,
+          "dataset": "Overture-signals",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/operating_status",
+          "provider": "overture",
+          "record_id": "b1782867-a880-4160-b956-1b6ef7255fbc",
+          "resource": "operating_status_signal",
+          "update_time": "2026-11-03T23:28:14Z",
+          "version": "2026-11-02"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 18806080,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 18,
+      "coordinatesAsReported": [
+        40.161259,
+        -75.033906
+      ],
+      "countyFips": "42017",
+      "nativeId": "f268f982-bd8e-4d66-a454-d83a75be0be6",
+      "operatingStatus": "open",
+      "placeConfidence": 0.95,
+      "placeName": "Live Face On Web, Llc.",
+      "precision": "reported-place-point",
+      "release": "2026-11-18.0",
+      "sourceAddressOrdinal": 0,
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "dd4d58aa03249df787c38e62f71f2302-13",
+      "sourceFile": "release/2026-11-18.0/theme=places/type=place/part-00003-819c3e38-54b8-53cb-b676-a831881a66e9-c000.zstd.parquet",
+      "sourceFileSha256": "4c2aac24f6a7c78c4cc451eca4f09b910f68d594789f48ae9f2b0c104d678afc",
+      "sourceInventorySha256": "b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339",
+      "sourceRowNumber": 5215268,
+      "sourceSha256": "7240fb8799f8b89fd2e3d43d6db6cc0323e1ee7c434c0f12f68605d29146e74b"
+    },
+    "sourceAddress": {
+      "city": "Southampton",
+      "state": "PA",
+      "street": "1300 Industrial Blvd Ste 2",
+      "zip": "18966"
+    }
+  },
+  {
+    "label": "separate-native-target-overture-place-address",
+    "key": "NPI:1013940139",
+    "originalAddress": {
+      "city": "MIFFLINTOWN",
+      "state": "PA",
+      "street": "47 CJEMS LN",
+      "zip": "17059"
+    },
+    "latitude": 40.57565733,
+    "longitude": -77.38115502,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "47 Cjems Ln, Mifflintown, PA, 17059",
+    "method": "overture-place-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": 0.9180689454078674,
+          "dataset": "meta",
+          "license": "CDLA-Permissive-2.0",
+          "property": "",
+          "provider": "meta",
+          "record_id": "197001867593645",
+          "resource": "meta",
+          "update_time": "2026-11-02T00:00:00.000Z",
+          "version": "2026-11-02"
+        },
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "Overture",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/confidence",
+          "provider": "overture",
+          "record_id": null,
+          "resource": "confidence_calculation",
+          "update_time": "2026-11-11T15:48:27Z",
+          "version": "2026-11-11"
+        },
+        {
+          "between": null,
+          "confidence": 1.0,
+          "dataset": "Overture-signals",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/operating_status",
+          "provider": "overture",
+          "record_id": "3eb7590c-e436-42f8-95be-063d46350c38",
+          "resource": "operating_status_signal",
+          "update_time": "2026-11-03T23:28:14Z",
+          "version": "2026-11-02"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 18806080,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        40.57565733,
+        -77.38115502
+      ],
+      "countyFips": "42067",
+      "nativeId": "47eb56ff-ee56-4499-8b1b-71310d042c50",
+      "operatingStatus": "open",
+      "placeConfidence": 0.9199122190475464,
+      "placeName": "Central Juniata EMS",
+      "precision": "reported-place-point",
+      "release": "2026-11-18.0",
+      "sourceAddressOrdinal": 0,
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "dd4d58aa03249df787c38e62f71f2302-13",
+      "sourceFile": "release/2026-11-18.0/theme=places/type=place/part-00003-819c3e38-54b8-53cb-b676-a831881a66e9-c000.zstd.parquet",
+      "sourceFileSha256": "4c2aac24f6a7c78c4cc451eca4f09b910f68d594789f48ae9f2b0c104d678afc",
+      "sourceInventorySha256": "b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339",
+      "sourceRowNumber": 5013087,
+      "sourceSha256": "db6dd9a47180f61f7a4d4d0e3fff101d81f070f92bb78cecfe0cc282a5b6d488"
+    },
+    "sourceAddress": {
+      "city": "Mifflintown",
+      "state": "PA",
+      "street": "47 Cjems Ln",
+      "zip": "17059"
+    }
+  }
+]

@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {validateSecondaryShard} from './nppesMonthlySecondary';
+import {validateMonthlyGeocodeShard} from './nppesMonthlyGeocode';
+import {buildSecondaryDiscovery,filterSecondaryDiscovery,groupSecondaryDiscovery} from './nppesSecondaryDiscovery';
+const read=async(path:string)=>JSON.parse(await readFile(new URL('../../public/registry/'+path,import.meta.url),'utf8'));
+test('actual retained nationwide secondary evidence reconciles and scopes by address state, not parent state',async()=>{
+ const s=await read('nppes-secondary/index.json'),g=await read('nppes-secondary-geocode/index.json'),n=await read('national/index.json');
+ const sources=(await Promise.all(s.chunks.map(async(c:any)=>validateSecondaryShard(await read('nppes-secondary/'+c.file),c.prefix,c.count)))).flat();
+ const geo=(await Promise.all(g.chunks.map(async(c:any)=>validateMonthlyGeocodeShard(await read('nppes-secondary-geocode/'+c.file),c.prefix,c.count)))).flat();
+ const data=buildSecondaryDiscovery(sources,geo,n.countyNames);
+ assert.equal(data.rows.length,580);assert.equal(groupSecondaryDiscovery(data.rows).length,559);
+ const cross=data.rows.find(r=>r.source.crossState)!;assert.ok(cross);
+ const scope={state:cross.source.address.state,county:cross.countyFips,city:cross.source.address.city,category:'ems' as const,query:cross.source.parentNpi};
+ assert.ok(filterSecondaryDiscovery(data,scope).some(r=>r.source.sourceKey===cross.source.sourceKey));
+ assert.ok(filterSecondaryDiscovery(data,{...scope,county:n.countyNames[cross.countyFips]}).some(r=>r.source.sourceKey===cross.source.sourceKey));
+ assert.equal(filterSecondaryDiscovery(data,{...scope,category:'fire'}).length,0);
+ assert.equal(filterSecondaryDiscovery(data,{...scope,state:'all'}).length,0);
+ assert.equal(filterSecondaryDiscovery(data,{...scope,query:'no-such-fixture-search-123'}).length,0);
+ assert.ok(!filterSecondaryDiscovery(data,{...scope,state:cross.source.parentState,county:'all',city:'all'}).some(r=>r.source.sourceKey===cross.source.sourceKey));
+ assert.throws(()=>buildSecondaryDiscovery(sources.slice(1),geo,n.countyNames));
+ assert.throws(()=>buildSecondaryDiscovery(sources,[{...geo[0],parentNpi:'1234567893'},...geo.slice(1)],n.countyNames));
+});

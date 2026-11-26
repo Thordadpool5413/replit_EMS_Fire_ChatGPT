@@ -2,6 +2,8 @@ import {ProviderAddressMapping} from './ProviderAddressMapping';
 import {locationOverlay,useLocationRevision,loadProviderLocationState} from '../services/providerLocation';
 import {loadedLocationState,snapshotMapRows} from '../services/nationalLocationSnapshot';
 import {PublicRegistryLocationMarkers} from './PublicRegistryLocationMarkers';
+import {SecondaryPracticeLocationMarkers} from './SecondaryPracticeLocationMarkers';
+import {loadSecondaryDiscovery,filterSecondaryDiscovery,groupSecondaryDiscovery,type SecondaryDiscovery} from '../services/nppesSecondaryDiscovery';
 import {registryIdentityKey} from '../services/registryAccountLink';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
 import {equipmentGeographyScope,matchesEquipmentFilter,equipmentMapStyle,EQUIPMENT_MAP_STYLES} from '../utils/equipmentPresence';
@@ -256,8 +258,8 @@ const FitAreaControl: React.FC<FitAreaControlProps> = ({ points, fallbackCenter,
           onClick={handleFit}
           data-testid="button-gmap-fit-area"
           className="gmap-ctl"
-          title={points.length ? `Fit all ${points.length} plotted agencies` : 'Return to territory view'}
-          aria-label={points.length ? `Fit map to ${points.length} plotted agencies` : 'Return map to territory view'}
+          title={points.length ? `Fit all ${points.length} plotted locations` : 'Return to territory view'}
+          aria-label={points.length ? `Fit map to ${points.length} plotted locations` : 'Return map to territory view'}
         >
           <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Fit area</span>
@@ -288,6 +290,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 }) => {
   const locationRevision=useLocationRevision();
   const [showPublicRegistry,setShowPublicRegistry]=useState(true),[publicPage,setPublicPage]=useState(0);
+  const [showSecondary,setShowSecondary]=useState(false),[secondaryPage,setSecondaryPage]=useState(0),[secondaryData,setSecondaryData]=useState<SecondaryDiscovery|null>(null),[secondaryStatus,setSecondaryStatus]=useState<'idle'|'loading'|'ready'|'unavailable'>('idle'),[secondaryRetry,setSecondaryRetry]=useState(0);
   useEffect(()=>{if(globalState!=='all')void loadProviderLocationState(globalState);setPublicPage(0);},[globalState,globalCounty,globalCity,globalCategory]);
   const publicState=loadedLocationState(globalState);
   const agencies=useMemo(()=>originalAgencies.map(a=>locationOverlay(a,originalAgencies)),[originalAgencies,locationRevision]);
@@ -296,8 +299,9 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
    const existing=new Set(originalAgencies.flatMap(a=>mappedIds.has(a.id)&&a.registryIdentity?[registryIdentityKey(a.registryIdentity)]:[]).filter(Boolean));
    return snapshotMapRows(publicState,{county:globalCounty,city:globalCity,category:globalCategory}).filter(e=>!existing.has(e.key));
   },[publicState,globalCounty,globalCity,globalCategory,originalAgencies,mappedIds]);
-  const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/150)-1));
-  const publicPins=useMemo(()=>showPublicRegistry?publicRows.slice(publicCurrent*150,(publicCurrent+1)*150):[],[showPublicRegistry,publicRows,publicCurrent]);
+  const publicPageSize=showSecondary&&globalCategory!=='fire'?100:150;
+  const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/publicPageSize)-1));
+  const publicPins=useMemo(()=>showPublicRegistry?publicRows.slice(publicCurrent*publicPageSize,(publicCurrent+1)*publicPageSize):[],[showPublicRegistry,publicRows,publicCurrent,publicPageSize]);
 
   // Resolve Google Maps API Key from environment or localStorage
   const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -351,6 +355,18 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 
   // Filters & Map Display Settings
   const [searchQuery, setSearchQuery] = useState<string>(savedMapFilters.searchQuery ?? '');
+  const secondaryEnabled=showSecondary&&globalState!=='all'&&globalCategory!=='fire'&&!isNearMeActive;
+  useEffect(()=>{
+   if(!secondaryEnabled)return;
+   let active=true;setSecondaryStatus('loading');
+   loadSecondaryDiscovery().then(d=>{if(active){setSecondaryData(d);setSecondaryStatus('ready');}}).catch(()=>{if(active){setSecondaryData(null);setSecondaryStatus('unavailable');}});
+   return()=>{active=false;};
+  },[secondaryEnabled,secondaryRetry]);
+  useEffect(()=>{setSecondaryPage(0);},[globalState,globalCounty,globalCity,globalCategory,searchQuery]);
+  const secondaryRows=useMemo(()=>secondaryEnabled&&secondaryData?filterSecondaryDiscovery(secondaryData,{state:globalState,county:globalCounty,city:globalCity,category:globalCategory,query:searchQuery}):[],[secondaryEnabled,secondaryData,globalState,globalCounty,globalCity,globalCategory,searchQuery]);
+  const secondaryGroups=useMemo(()=>groupSecondaryDiscovery(secondaryRows),[secondaryRows]);
+  const secondaryCurrent=Math.min(secondaryPage,Math.max(0,Math.ceil(secondaryGroups.length/50)-1));
+  const secondaryPins=useMemo(()=>secondaryGroups.slice(secondaryCurrent*50,(secondaryCurrent+1)*50),[secondaryGroups,secondaryCurrent]);
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const [colorByEquipment,setColorByEquipment]=useState(false);
   useEffect(()=>{if(equipmentFilter.presence!=='all'||equipmentFilter.evidence==='documented')setColorByEquipment(true);},[equipmentFilter]);
@@ -635,7 +651,15 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
       <section className="pi-surface p-3 min-w-0 space-y-2" aria-label="Bundled public registry locations">
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showPublicRegistry} disabled={!publicState||isNearMeActive} onChange={e=>{setShowPublicRegistry(e.target.checked);setPublicPage(0);}}/> Show public registry street locations</label>
         <p className="text-xs">{globalState==='all'?'Select a state to load its public registry locations.':publicState?publicRows.length.toLocaleString()+' mapped, unlinked public source listings in this geography. Source snapshot '+publicState.generatedAt.slice(0,10)+'.':'No validated bundled location snapshot for this state yet.'} Separate teal markers, not saved accounts, equipment evidence or confirmed stations.</p>
-        {showPublicRegistry&&!isNearMeActive&&publicRows.length>150&&<div className="flex flex-wrap gap-2 items-center"><button className="workspace-button" type="button" disabled={publicCurrent===0} onClick={()=>setPublicPage(publicCurrent-1)}>Previous locations</button><span className="text-xs">Showing {publicCurrent*150+1}–{Math.min((publicCurrent+1)*150,publicRows.length)} of {publicRows.length}</span><button className="workspace-button" type="button" disabled={(publicCurrent+1)*150>=publicRows.length} onClick={()=>setPublicPage(publicCurrent+1)}>Next locations</button></div>}
+        {showPublicRegistry&&!isNearMeActive&&publicRows.length>publicPageSize&&<div className="flex flex-wrap gap-2 items-center"><button className="workspace-button" type="button" disabled={publicCurrent===0} onClick={()=>setPublicPage(publicCurrent-1)}>Previous locations</button><span className="text-xs">Showing {publicCurrent*publicPageSize+1}–{Math.min((publicCurrent+1)*publicPageSize,publicRows.length)} of {publicRows.length}</span><button className="workspace-button" type="button" disabled={(publicCurrent+1)*publicPageSize>=publicRows.length} onClick={()=>setPublicPage(publicCurrent+1)}>Next locations</button></div>}
+      </section>
+      <section className="pi-surface p-3 min-w-0 space-y-2" aria-label="Federal secondary practice location map">
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showSecondary} disabled={globalState==='all'||globalCategory==='fire'||isNearMeActive} onChange={e=>{setShowSecondary(e.target.checked);setPublicPage(0);setSecondaryPage(0);}}/> Show federal secondary practice addresses</label>
+        <p className="text-xs">Purple S markers: November 2026 NPPES practice addresses with approximate Census coordinates. Separate from account markers, primary registry listings and station counts. Select a state in EMS or All mode. Search and address geography apply; opportunity and equipment filters do not apply. Disabled in Near Me mode.</p>
+        {secondaryEnabled&&secondaryStatus==='loading'&&<p role="status" className="text-xs">Loading federal address evidence…</p>}
+        {secondaryEnabled&&secondaryStatus==='unavailable'&&<p role="alert" className="text-xs">Federal geographic evidence unavailable. <button type="button" className="underline" onClick={()=>setSecondaryRetry(x=>x+1)}>Retry</button></p>}
+        {secondaryEnabled&&secondaryStatus==='ready'&&<p role="status" className="text-xs" data-testid="secondary-location-map-count">{secondaryRows.length} source address records at {secondaryGroups.length} approximate points in this selection. {secondaryGroups.length?'Shared points are grouped without merging organizations.':'No matching approximate points in this source snapshot.'} End-user validation required.</p>}
+        {secondaryEnabled&&secondaryGroups.length>50&&<div className="flex flex-wrap items-center gap-2"><button className="workspace-button" type="button" disabled={secondaryCurrent===0} onClick={()=>setSecondaryPage(secondaryCurrent-1)}>Previous points</button><span className="text-xs">Points {secondaryCurrent*50+1}–{Math.min((secondaryCurrent+1)*50,secondaryGroups.length)} of {secondaryGroups.length}</span><button className="workspace-button" type="button" disabled={(secondaryCurrent+1)*50>=secondaryGroups.length} onClick={()=>setSecondaryPage(secondaryCurrent+1)}>Next points</button></div>}
       </section>
       <ProviderAddressMapping agencies={originalAgencies} scope={addressScope} state={globalState}/>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
@@ -1149,7 +1173,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   <CameraSync center={mapCenter} zoom={mapZoom} />
                   <FitAreaControl
                     automatic={!activeAccount}
-                    points={filteredAgencies.map((a) => ({ lat: a.latitude, lng: a.longitude }))}
+                    points={[...filteredAgencies.map(a=>({lat:a.latitude,lng:a.longitude})),...(!isNearMeActive?publicPins.flatMap(r=>r.match?[{lat:r.match.latitude,lng:r.match.longitude}]:[]):[]),...secondaryPins.map(g=>({lat:g.lat,lng:g.lng}))]}
                     fallbackCenter={mapCenter}
                     fallbackZoom={mapZoom}
                   />
@@ -1364,6 +1388,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                     );
                   })()}
                   {!isNearMeActive&&<PublicRegistryLocationMarkers rows={publicPins}/>}
+                  {secondaryEnabled&&secondaryData&&<SecondaryPracticeLocationMarkers key={globalState+':'+globalCounty+':'+globalCity+':'+secondaryCurrent} groups={secondaryPins} countyNames={secondaryData.countyNames}/>}
                 </Map>
               </APIProvider>
             ) : (

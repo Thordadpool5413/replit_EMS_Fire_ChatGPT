@@ -7,9 +7,9 @@
     "targetCount": 609
   },
   "NERIS": {
-    "commit": "",
-    "path": "",
-    "sha256": "",
+    "commit": "461a0ad155e0541bd27290a89d1c5891e7574047",
+    "path": "scripts/data/evidence/primary-neris-mailing-sites/2026-11-26/targets.json",
+    "sha256": "bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a",
     "targetCount": 1094
   }
 }

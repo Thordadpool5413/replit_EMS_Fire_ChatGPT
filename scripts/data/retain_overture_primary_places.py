@@ -156,12 +156,12 @@ def _validated():
 
 
 def validated_evidence():
-    report,targets,_=_validated()
-    return copy.deepcopy(({r['key']:r for r in report['candidates']},{r['key']:r for r in targets['targets']}))
+    candidates,targets,_,_=_coordinate_indexes()
+    return copy.deepcopy((candidates,targets))
 
 
 def validate_overture_place_primary_entry(entry):
-    candidates,targets=validated_evidence();expected=candidates.get(entry.get('key'));original=targets.get(entry.get('key'))
+    candidates,targets,_,_=_coordinate_indexes();expected=candidates.get(entry.get('key'));original=targets.get(entry.get('key'))
     return bool(expected and original and entry.get('status')=='mapped'
                 and all(entry.get(k)==original.get(k) for k in ('source','state','name','sourceDate'))
                 and entry.get('address')==expected['originalAddress'] and entry.get('sourceCounty')==original.get('sourceCounty')
@@ -184,17 +184,26 @@ def coordinate_witnesses(records,key):
     return result
 
 
+@functools.lru_cache(maxsize=1)
+def _coordinate_indexes():
+    report,targets,files=_validated();by_target={};bindings={}
+    for record in json.loads(files['selected-native-records.json'])['records']:
+        for key in {ref['key'] for ref in record['targets']}: by_target.setdefault(key,[]).append(record)
+    candidates={r['key']:r for r in report['candidates']}
+    for key,candidate in candidates.items():
+        bindings.setdefault(encoded((candidate['match'],candidate['originalAddress'])),[]).append(key)
+    return candidates,{t['key']:t for t in targets['targets']},by_target,bindings
+
+
 def overture_primary_coordinate_witnesses(key):
-    _,_,files=_validated()
-    return coordinate_witnesses(json.loads(files['selected-native-records.json'])['records'],key)
+    _,_,by_target,_=_coordinate_indexes()
+    return coordinate_witnesses(by_target.get(key,[]),key)
 
 
 def overture_primary_point_witnesses(match,target_address):
-    report,_,files=_validated()
-    keys=[c['key'] for c in report['candidates'] if encoded(c['match'])==encoded(match) and encoded(c['originalAddress'])==encoded(target_address)]
-    records=json.loads(files['selected-native-records.json'])['records'];witnesses={}
-    for key in keys:
-        for witness in coordinate_witnesses(records,key):
+    _,_,by_target,bindings=_coordinate_indexes();witnesses={}
+    for key in bindings.get(encoded((match,target_address)),[]):
+        for witness in coordinate_witnesses(by_target.get(key,[]),key):
             witnesses[(witness['sourceFile'],witness['sourceRowNumber'],witness['sourceAddressOrdinal'])]=witness
     return [witnesses[key] for key in sorted(witnesses)]
 

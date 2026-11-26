@@ -138,7 +138,7 @@ def _validated_evidence():
 
 
 def validate_overture_address_evidence(entry):
-    candidates,targets=validated_evidence()
+    candidates,targets=_validated_evidence()
     expected=candidates.get(entry.get('key'));original=targets.get(entry.get('key'))
     return bool(expected and original and entry.get('status')=='mapped'
                 and all(entry.get(k)==original.get(k) for k in ('source','state','name','sourceDate'))
@@ -178,18 +178,27 @@ def coordinate_witnesses(records,key):
     return result
 
 
+@functools.lru_cache(maxsize=1)
+def _coordinate_indexes():
+    candidates,_=_validated_evidence()
+    records=json.loads(_native_files()['selected-native-records.json'])['records'];by_target={};bindings={}
+    for record in records:
+        for key in {ref['key'] for ref in record['targets']}: by_target.setdefault(key,[]).append(record)
+    for key,candidate in candidates.items():
+        binding=encoded((candidate['match'],candidate['originalAddress']))
+        bindings.setdefault(binding,[]).append(key)
+    return by_target,bindings
+
+
 def overture_primary_coordinate_witnesses(key):
-    records=json.loads(_native_files()['selected-native-records.json'])['records']
-    return coordinate_witnesses(records,key)
+    by_target,_=_coordinate_indexes()
+    return coordinate_witnesses(by_target.get(key,[]),key)
 
 
 def overture_primary_point_witnesses(match,target_address):
-    candidates,_=_validated_evidence()
-    keys=[key for key,candidate in candidates.items() if encoded(candidate['match'])==encoded(match) and encoded(candidate['originalAddress'])==encoded(target_address)]
-    records=json.loads(_native_files()['selected-native-records.json'])['records']
-    witnesses={}
-    for key in keys:
-        for witness in coordinate_witnesses(records,key):
+    by_target,bindings=_coordinate_indexes();witnesses={}
+    for key in bindings.get(encoded((match,target_address)),[]):
+        for witness in coordinate_witnesses(by_target.get(key,[]),key):
             witnesses[(witness['sourceFile'],witness['sourceRowNumber'])]=witness
     return [witnesses[key] for key in sorted(witnesses)]
 

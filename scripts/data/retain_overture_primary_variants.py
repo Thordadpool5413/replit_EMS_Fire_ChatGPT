@@ -148,6 +148,17 @@ def _validated():
     return validate_files(files,enforce_pins=True)
 
 
+@functools.lru_cache(maxsize=2)
+def _coordinate_indexes(method):
+    data=_validated()[method];report=data['report'];by_target={};bindings={}
+    for record in json.loads(data['sourceFiles']['selected-native-records.json'])['records']:
+        for key in {ref['key'] for ref in record['targets']}: by_target.setdefault(key,[]).append(record)
+    candidates={r['key']:r for r in report['candidates']}
+    for key,candidate in candidates.items():
+        bindings.setdefault(encoded((candidate['match'],candidate['originalAddress'])),[]).append(key)
+    return candidates,{t['key']:t for t in report['inputTargets']},by_target,bindings
+
+
 def overture_diagnostic_catalog(method):
     if method not in METHODS: raise ValueError('Unsupported Overture diagnostic source')
     report=_validated()[method]['report']
@@ -161,16 +172,15 @@ def validate_overture_diagnostic_candidate(candidate,target):
     try:
         method=candidate['match']['method']
         if method not in METHODS: return False
-        report=_validated()[method]['report'];key=candidate['key']
-        expected=next((r for r in report['candidates'] if r['key']==key),None)
-        expected_target=next((r for r in report['inputTargets'] if r['key']==key),None)
+        candidates,targets,_,_=_coordinate_indexes(method);key=candidate['key']
+        expected=candidates.get(key);expected_target=targets.get(key)
         return expected is not None and expected_target is not None and encoded(candidate)==encoded(expected) and encoded(target)==encoded(expected_target)
     except (KeyError,TypeError,ValueError): return False
 
 
 def overture_diagnostic_coordinate_witnesses(method,key):
-    source=_validated()[method]['sourceFiles']
-    records=json.loads(source['selected-native-records.json'])['records']
+    _,_,by_target,_=_coordinate_indexes(method)
+    records=by_target.get(key,[])
     reader=addresses.coordinate_witnesses if method=='overture-address' else places.coordinate_witnesses
     return reader(records,key)
 
@@ -178,8 +188,8 @@ def overture_diagnostic_coordinate_witnesses(method,key):
 def overture_diagnostic_witnesses_for_match(match,target_address):
     method=match.get('method') if isinstance(match,dict) else None
     if method not in METHODS or not (EVIDENCE/'original.zip').exists(): return []
-    report=_validated()[method]['report'];witnesses={}
-    keys=[r['key'] for r in report['candidates'] if encoded(r['match'])==encoded(match) and encoded(r['originalAddress'])==encoded(target_address)]
+    _,_,_,bindings=_coordinate_indexes(method);witnesses={}
+    keys=bindings.get(encoded((match,target_address)),[])
     for key in keys:
         for witness in overture_diagnostic_coordinate_witnesses(method,key):
             identity=(witness['sourceFile'],witness['sourceRowNumber'],witness.get('sourceAddressOrdinal',-1))
@@ -199,6 +209,9 @@ def main():
         for method,catalog in catalogs.items():
             for key,candidate in catalog['candidates'].items():
                 if not validate_overture_diagnostic_candidate(candidate,catalog['targets'][key]): raise ValueError('Exact retained target/candidate binding failed')
+                witnesses=overture_diagnostic_witnesses_for_match(candidate['match'],candidate['originalAddress'])
+                from match_overture_primary_addresses import points_agree
+                if not witnesses or not points_agree([w['coordinatesAsReported'] for w in witnesses]): raise ValueError('Native endpoint expansion lost source consensus')
                 changed=copy.deepcopy(candidate);changed['match']['latitude']+=0.0001
                 if validate_overture_diagnostic_candidate(changed,catalog['targets'][key]): raise ValueError('Coordinate mutation was accepted')
             print('Native variant replay',method,len(catalog['candidates']),'accepted',len(catalog['rejected']),'rejected')

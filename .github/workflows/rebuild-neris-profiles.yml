@@ -258,3 +258,44 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain original frozen NERIS site identities and complete independent point consensus"
           git push origin HEAD
+  mailing-geocoded-sites:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-mail-geocodes]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Explain original retained geocode source decisions
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/summarize_neris_geocoded_audit.py --evidence scripts/data/evidence/primary-neris-geocoded-sites/2026-11-26 --output scripts/data/evidence/primary-neris-geocoded-sites/2026-11-26/diagnostic-summary.json
+      - name: Rebuild full five-source native mailing-site consensus
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_geocoded_sites.py scripts/data/test_neris_grid_points.py
+          python3 -u scripts/data/retain_neris_mailing_geocoded_sites.py
+          python3 -u scripts/data/retain_neris_mailing_geocoded_sites.py --verify
+          python3 -u scripts/data/summarize_neris_geocoded_audit.py --evidence scripts/data/evidence/primary-neris-mailing-geocoded-sites/2026-11-26 --output scripts/data/evidence/primary-neris-mailing-geocoded-sites/2026-11-26/diagnostic-summary.json
+          python3 -u scripts/data/build_neris_retained_profile_pins.py --profile mailing-geocoded --validation-output "$RUNNER_TEMP/neris-mailing-geocoded-frontend.json"
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-mailing-geocoded-frontend.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-five-source-mailing-review
+          path: |
+            scripts/data/evidence/primary-neris-mailing-geocoded-sites
+            scripts/data/evidence/primary-neris-geocoded-sites/2026-11-26/diagnostic-summary.json
+            artifacts/ems-territory-intelligence/src/services/nerisMailingGeocodedSitePins.json
+            scripts/fixtures/neris-retained-mailing-geocoded-examples.json
+      - name: Save native mailing identities and five-source consensus
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-mailing-geocoded-sites-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-mailing-geocoded-sites scripts/data/evidence/primary-neris-geocoded-sites/2026-11-26/diagnostic-summary.json
+          git add artifacts/ems-territory-intelligence/src/services/nerisMailingGeocodedSitePins.json scripts/fixtures/neris-retained-mailing-geocoded-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain full five-source native mailing-site consensus and exact frontend bindings"
+          git push origin HEAD

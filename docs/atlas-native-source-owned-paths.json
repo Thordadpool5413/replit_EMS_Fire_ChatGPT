@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRef": "9a5f4a142be26837247caee820a9a72d3a5ae3a5",
+  "sourceRef": "4fbb0ca699bb9df0644e5ed1a9b2eb7ede6a70f4",
   "purpose": "Exact owned paths for root integration; central/shared and other-agent dependencies are excluded.",
   "files": [
     "scripts/data/recover_nppes_native_primary.py",
@@ -38,7 +38,8 @@
     "scripts/data/retain_nppes_other_names.py",
     "scripts/data/recover_nppes_phone_dba_identity.py",
     "scripts/data/test_nppes_phone_dba_identity.py",
-    "scripts/data/audit_tiger_native_aliases.py"
+    "scripts/data/audit_tiger_native_aliases.py",
+    "scripts/test-native-phone-contracts.cjs"
   ],
   "generatedContractFiles": [
     "artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts",
@@ -51,7 +52,8 @@
     "artifacts/api-server/src/lib/nppesPhoneSitePins.ts",
     "scripts/fixtures/federal-city-point-examples.json",
     "scripts/fixtures/tiger-primary-point-examples.json",
-    "scripts/fixtures/nppes-primary-component-examples.json"
+    "scripts/fixtures/nppes-primary-component-examples.json",
+    "scripts/fixtures/nppes-phone-site-examples.json"
   ],
   "evidencePrefixes": [
     "scripts/data/evidence/primary-nppes-native/",

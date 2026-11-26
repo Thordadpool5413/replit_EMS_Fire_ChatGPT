@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import {countSourceListingsByCounty,filterSourceDirectory,loadSourceDirectoryManifest,loadSourceDirectoryState,type SourceDirectoryRecord} from './nationalSourceDirectory';
 const fire:SourceDirectoryRecord=['usfa:FL:123','USFA','Example Fire','FL','Miami','33101','12086','Miami-Dade','source-county','','123 Main',''];
 const npi:SourceDirectoryRecord=['nppes:1234567890','NPPES','Example Ambulance','FL','Miami','33101','','','unassigned','01/01/2025','','https://npiregistry.cms.hhs.gov/provider-view/1234567890'];
+const countyNpi:SourceDirectoryRecord=['nppes:1234567891','NPPES','County Ambulance','FL','Miami','33101','12086','','census-address-range','','200 Main','https://npiregistry.cms.hhs.gov/provider-view/1234567891'];
 test('county drilldown includes only established locations and exposes unassigned state listings separately',()=>{
  assert.deepEqual(filterSourceDirectory([fire,npi],{countyFips:'12086'}),[fire]);
  assert.deepEqual(filterSourceDirectory([fire,npi],{unassignedOnly:true}),[npi]);
  assert.deepEqual(filterSourceDirectory([fire,npi],{source:'NPPES',query:'miami ambulance'}),[npi]);
+ assert.deepEqual(filterSourceDirectory([fire,npi],{source:'USFA',countyFips:'12086'}),[fire]);
+ assert.deepEqual(filterSourceDirectory([fire,npi],{source:'NPPES',countyFips:'12086'}),[]);
+ assert.deepEqual(filterSourceDirectory([fire,countyNpi],{source:'NPPES',countyFips:'12086'}),[countyNpi]);
  assert.deepEqual(filterSourceDirectory([fire,npi],{query:'nonexistent'}),[]);
 });
 test('county listing rollups count source rows only for known county FIPS and preserve source breakdowns',()=>{

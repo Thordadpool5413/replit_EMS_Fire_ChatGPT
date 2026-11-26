@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRef": "60c7c66e114de698346481f58fe67def1f04832c",
+  "sourceRef": "295fa81a8117b3ec73638815ea1db1063d825931",
   "purpose": "Exact owned paths for root integration; central/shared and other-agent dependencies are excluded.",
   "files": [
     "scripts/data/recover_nppes_native_primary.py",

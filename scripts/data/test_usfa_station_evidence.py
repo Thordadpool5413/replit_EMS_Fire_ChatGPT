@@ -16,3 +16,22 @@ class USFAStationTests(unittest.TestCase):
         self.assertEqual(len({r['sourceKey'] for r in rows}),4)
     def test_reject_changed_source_schema(self):
         with self.assertRaises(ValueError):parse(b'FDID,Unknown\n0012,Example\n',[],minimum=1)
+
+    def test_malformed_quote_isolated_and_later_records_retained(self):
+        header=','.join(FIELDS)+'\n'
+        rows='0012,TX,Station A,TX,123 Main St,,Example,75001\n0012,TX,"broken"tail,TX,123 Main St,,Example,75001\n0012,TX,Station B,TX,124 Main St,,Example,75001\n0012,TX,wrong-width\n'
+        records,counts,audit=parse((header+rows).encode(),[],minimum=1,with_audit=True)
+        self.assertEqual([r['stationNameAsReported'] for r in records],['Station A','Station B'])
+        self.assertEqual(counts['sourceRows'],4)
+        self.assertEqual(counts['malformedCsvRecords'],2)
+        self.assertEqual([a['reason'] for a in audit],['malformed-csv','column-count-mismatch'])
+        self.assertEqual([a['firstPhysicalLine'] for a in audit],[3,5])
+        self.assertTrue(all(len(a['fragmentSha256'])==64 for a in audit))
+        self.assertNotIn('broken',str(audit))
+    def test_valid_multiline_not_reinterpreted_as_separate_row(self):
+        header=','.join(FIELDS)+'\n'
+        raw=header+'0012,TX,"Station\nA",TX,123 Main St,,Example,75001\n'
+        rows,counts,audit=parse(raw.encode(),[],minimum=1,with_audit=True)
+        self.assertEqual(rows[0]['stationNameAsReported'],'Station A')
+        self.assertEqual(counts['sourcePhysicalLines'],3)
+        self.assertEqual(audit,[])

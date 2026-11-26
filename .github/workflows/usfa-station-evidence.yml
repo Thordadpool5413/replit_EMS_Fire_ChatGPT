@@ -1,7 +1,7 @@
 name: Nationwide legacy USFA station address acquisition
 on:
   push:
-    branches: [atlas/phase9-0x-usfa-station-evidence]
+    branches: [atlas/phase9-0x-usfa-station-evidence, atlas/phase9-0y-usfa-csv-recovery]
   pull_request:
     paths:
       - 'scripts/data/stage_usfa_station_evidence.py'

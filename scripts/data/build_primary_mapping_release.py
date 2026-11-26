@@ -24,6 +24,8 @@ QUALIFIED_REJECTIONS = {
     'coordinate-reused-across-distinct-addresses', 'coordinate-shared-by-distinct-addresses',
     'nonactive-lifecycle', 'retired-native-address', 'valid-independent-source-conflict',
     'range-coordinate-disagreement', 'conflicting-native-ranges',
+    'qualified-source-point-disagreement', 'shared-native-coordinate',
+    'native-county-disagreement', 'native-point-disagreement',
 }
 
 
@@ -113,49 +115,73 @@ def inferred_site_identity(entry):
 
 
 def _reason_set(row):
-    result = set(row.get('reasons') or []) | set(row.get('blockedReasons') or [])
-    if isinstance(row.get('reason'), str):
-        result.add(row['reason'])
-    return result & QUALIFIED_REJECTIONS
+    if isinstance(row, str):
+        return {row} & QUALIFIED_REJECTIONS
+    if isinstance(row, list):
+        result = set()
+        for item in row:
+            result |= _reason_set(item)
+        return result
+    if not isinstance(row, dict):
+        return set()
+    result = set()
+    for field in ('reason', 'reasons', 'blockedReasons'):
+        result |= _reason_set(row.get(field))
+    for field in ('sourceConflicts', 'sourceRejections'):
+        children = row.get(field) or []
+        if isinstance(children, dict):
+            children = list(children.values())
+        result |= _reason_set(children)
+    return result
 
 
 def collect_vetoes(originals, reports, target_batches=()):
     """Bind consequential negative evidence to the exact queried physical site."""
-    by_key = collections.defaultdict(list)
     by_digest = {}
     for batch in target_batches:
         rows = batch['targets']
-        by_digest[batch['sha256']] = {row['key']: row for row in rows}
-        for row in rows:
-            by_key[row['key']].append(row)
+        index = {row['key']: row for row in rows}
+        if len(index) != len(rows):
+            raise ValueError('Duplicate identity in a declared source target batch')
+        for digest in (batch['sha256'], sha(dump(rows))):
+            if digest in by_digest and by_digest[digest] != index:
+                raise ValueError('Conflicting target batches share a declared digest')
+            by_digest[digest] = index
     vetoes = collections.defaultdict(list)
     for report in reports:
         source = report.get('source') or report.get('method') or 'neris'
-        digest = next((report.get(name) for name in (
-            'baselineIndexSha256', 'targetsSha256', 'targetVariantsSha256', 'targetVariantSha256',
-            'targetFileSha256') if report.get(name) in by_digest), None)
-        report_targets = by_digest.get(digest, {})
+        declared = [report[name] for name in ('targetsSha256', 'targetVariantsSha256',
+                    'targetVariantSha256', 'targetFileSha256') if report.get(name)]
+        baseline_digest = report.get('baselineIndexSha256')
+        if not declared and baseline_digest and baseline_digest != BASELINE_INDEX_SHA:
+            declared = [baseline_digest]
+        found = [by_digest[digest] for digest in declared if digest in by_digest]
+        if found and any(index != found[0] for index in found[1:]):
+            raise ValueError('Source report declares contradictory target scopes')
+        report_targets = found[0] if found else {}
+        unresolved_scope = bool(declared) and not found
         for field in ('rejected', 'withheld', 'originalAddressCoordinateConflicts', 'consensusVetoes'):
             for row in report.get(field, []):
                 reasons = _reason_set(row)
-                nested = row.get('sourceConflicts') or []
-                for item in nested:
-                    reasons |= _reason_set(item)
                 if not reasons:
                     continue
                 key = row.get('originalPrimaryKey') or row.get('primaryKey') or row.get('key', '').split('@', 1)[0]
                 if key not in originals:
                     raise ValueError('Qualified rejection is not bound to an original primary identity')
-                address = row.get('targetAddress') or row.get('originalAddress') or row.get('address')
+                address = row.get('targetAddress')
                 target = report_targets.get(row.get('key'))
+                if address and target and address != target.get('address'):
+                    raise ValueError('Explicit rejection address differs from its declared source target')
+                if unresolved_scope and not address:
+                    raise ValueError('Qualified rejection requires its exact declared target scope: '+str(row.get('key')))
                 if not address and target:
                     address = target.get('address')
-                if not address and row.get('key') in by_key:
-                    addresses = {dump(target['address']): target['address'] for target in by_key[row['key']]}
-                    if len(addresses) == 1:
-                        address = next(iter(addresses.values()))
-                if not address and row.get('key') == key and (
-                        report.get('baselineIndexSha256') in (None, BASELINE_INDEX_SHA) and not report.get('method')):
+                if not address and report_targets:
+                    raise ValueError('Qualified rejection identity is absent from its declared target scope')
+                if not address:
+                    address = row.get('originalAddress') or row.get('address')
+                if not address and row.get('key') == key and not declared and (
+                        baseline_digest in (None, BASELINE_INDEX_SHA) and not report.get('method')):
                     address = originals[key]['address']
                 if not isinstance(address, dict):
                     raise ValueError('Qualified source rejection lacks an explicit target-address binding: '+str(row.get('key')))

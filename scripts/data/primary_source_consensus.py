@@ -174,6 +174,10 @@ def point_witnesses(match, target_address):
     method = match['method']
     if method in FEDERAL:
         return federal_witnesses(match, target_address)
+    if method == 'tiger-address-range':
+        from retain_tiger_primary import tiger_coordinate_witnesses_for_match
+        return [_simple(row, native_id=row.get('point', {}).get('nativeId'))
+                for row in tiger_coordinate_witnesses_for_match(match, target_address)]
     if method == 'nad-address-point' and match.get('point', {}).get('sourceArchiveSha256'):
         return nad_witnesses(match, target_address)
     if method == 'neris-reported-address':
@@ -234,7 +238,7 @@ def entry_witnesses(entry):
         # as the exact final USFA parent, including the original county guard.
         if match['method'] not in FEDERAL and match['method'] not in (
                 'nad-address-point', 'neris-reported-address', 'overture-address',
-                'overture-place-address'):
+                'overture-place-address', 'tiger-address-range'):
             points.append(_simple(match, row.get('countyFips', entry['countyFips'])))
         else:
             points.extend(point_witnesses(match, address))

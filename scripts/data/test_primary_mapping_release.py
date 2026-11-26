@@ -148,4 +148,50 @@ class PrimaryReleaseTest(unittest.TestCase):
         self.assertEqual(rows[0]['match'],self.candidate()['match'])
         self.assertFalse(review['qualifiedSourceConflicts'])
 
+    def test_nested_city_conflict_keeps_its_qualified_native_reason(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+            'reason':'native-city-source-conflict','sourceConflicts':[
+                {'source':'usgs','sourceConflicts':[{'reason':'native-point-disagreement'}]}]}
+        rows,review=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+        self.assertEqual(review['qualifiedSourceConflicts'][0]['sourceRejections'][0]['reasons'],['native-point-disagreement'])
+
+    def test_component_veto_uses_explicit_target_over_original_combined_address(self):
+        candidate=self.candidate()
+        candidate['address']=dict(candidate['address'],street='900 Glacier Ave')
+        candidate['primaryAddressEvidence']={'method':'nppes-primary-address-components','association':'source-native'}
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+                   'originalAddress':self.original()['address'],'reason':'qualified-source-point-disagreement'}
+        rows,_=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+
+    def test_original_rejection_does_not_take_another_batch_with_the_same_key(self):
+        from build_primary_mapping_release import BASELINE_INDEX_SHA
+        candidate=self.candidate()
+        target={'key':candidate['key'],'address':dict(candidate['address'],street='900 Different Road')}
+        report={'source':'usgs','baselineIndexSha256':BASELINE_INDEX_SHA,'candidates':[candidate],
+                'rejected':[{'key':candidate['key'],'reason':'conflicting-native-points'}]}
+        with patch('build_primary_mapping_release.validate_primary_entry',return_value=True):
+            rows,_=combine([self.original()],None,[report],{},[{'sha256':'a'*64,'targets':[target]}])
+        self.assertEqual(rows,[self.original()])
+
+    def test_declared_target_scope_is_required_even_when_another_batch_key_matches(self):
+        candidate=self.candidate()
+        target={'key':candidate['key'],'address':dict(candidate['address'],street='900 Different Road')}
+        report={'source':'overture','targetsSha256':'b'*64,'candidates':[candidate],
+                'rejected':[{'key':candidate['key'],'reason':'conflicting-native-points'}]}
+        with self.assertRaisesRegex(ValueError,'exact declared target scope'):
+            combine([self.original()],None,[report],{},[{'sha256':'a'*64,'targets':[target]}])
+
+    def test_canonical_target_digest_resolves_a_wrapped_target_file(self):
+        from build_primary_mapping_release import sha,dump
+        candidate=self.candidate()
+        target={'key':candidate['key'],'address':candidate['address']}
+        report={'source':'overture','targetsSha256':sha(dump([target])),'candidates':[candidate],
+                'rejected':[{'key':candidate['key'],'reason':'conflicting-native-points'}]}
+        with patch('build_primary_mapping_release.validate_primary_entry',return_value=True):
+            rows,_=combine([self.original()],None,[report],{},[{'sha256':'a'*64,'targets':[target]}])
+        self.assertEqual(rows,[self.original()])
+
 if __name__=='__main__':unittest.main()

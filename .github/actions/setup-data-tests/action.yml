@@ -1,0 +1,13 @@
+name: Set up Python data tests
+description: Install the pinned Python dependencies used by the data test suite.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: scripts/data/requirements-test.txt
+    - name: Install data test dependencies
+      shell: bash
+      run: python -m pip install --disable-pip-version-check --requirement scripts/data/requirements-test.txt

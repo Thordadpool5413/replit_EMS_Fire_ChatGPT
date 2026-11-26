@@ -1,0 +1,2 @@
+# Native TIGER matching tests import the shapefile reader.
+pyshp==2.3.1

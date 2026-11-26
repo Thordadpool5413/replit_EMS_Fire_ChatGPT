@@ -35,6 +35,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - name: Validate matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Verify and preserve base

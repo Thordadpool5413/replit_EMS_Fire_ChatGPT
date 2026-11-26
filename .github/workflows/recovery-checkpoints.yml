@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
   research:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

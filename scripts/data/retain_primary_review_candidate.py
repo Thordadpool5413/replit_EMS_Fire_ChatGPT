@@ -33,7 +33,9 @@ def main():
     if frontend:
         summary['actualFrontend'] = frontend
     (source/'coverage-summary.json').write_bytes(dump(summary))
-    for name in ('backend-report.json', 'source-replay.json', 'coverage-summary.json', 'candidate-frontend-report.json'):
+    for name in ('backend-report.json', 'source-replay.json', 'coverage-summary.json', 'candidate-frontend-report.json',
+                 'residual-summary.json', 'census-address-request.csv',
+                 'census-address-request-manifest.json', 'census-address-request-bindings.json'):
         path = source/name
         if path.is_file():
             shutil.copyfile(path, destination/name)
@@ -50,7 +52,7 @@ def main():
         'fullTypecheckPassed': args.typecheck_passed, 'targetMet': backend['after']['targetMet'],
         'publicationEligible': eligible,
         'files': {path.name: {'sha256': sha(path.read_bytes()), 'bytes': path.stat().st_size}
-                  for path in sorted(destination.glob('*.json')) if path.name != 'manifest.json'},
+                  for path in sorted(destination.iterdir()) if path.suffix in ('.json', '.csv') and path.name != 'manifest.json'},
     }
     (destination/'manifest.json').write_bytes(dump(manifest))
     print(json.dumps(summary), flush=True)

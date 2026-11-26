@@ -39,6 +39,9 @@ jobs:
       - name: Verify actual frontend parsing, map filters, listings, and donor equality
         id: frontend
         run: pnpm --filter @workspace/scripts exec tsx ../scripts/check-primary-map-consumption.mjs "$GITHUB_WORKSPACE/generated-artifacts/primary-review-$PRIMARY_STAGE/candidate"
+      - name: Measure the final residual and prepare an unsent public-address batch when needed
+        if: env.PRIMARY_INCLUDE_PHONE == '1'
+        run: python3 scripts/data/prepare_primary_residual.py --input "generated-artifacts/primary-review-$PRIMARY_STAGE"
       - name: Verify complete app and API types
         id: types
         run: pnpm run typecheck

@@ -208,6 +208,17 @@ def generate(inputs, core, departments, supplement, boundaries):
         else:
             outcomes['no-unambiguous-physical-site'] += 1
         rejected.append({'key': entry['key'], 'reason': reason, 'nativeDepartmentId': department['id']})
+    consensus_vetoes = [{'originalPrimaryKey': row['key'], 'targetAddress': row['targetAddress'],
+                         'source': 'neris-mailing-identity', 'reasons': [row['reason']]}
+                        for row in core_conflicts]
+    target_by_key = {target['originalPrimaryKey']: target for target in targets}
+    for rejection in rejected:
+        target = target_by_key.get(rejection['key'])
+        reason = rejection['reason'] or ''
+        if target and any(token in reason for token in ('county-disagreement', 'coordinate-disagreement', 'coordinate-reused', 'conflicting-native-address')):
+            consensus_vetoes.append({'originalPrimaryKey': target['originalPrimaryKey'],
+                                     'targetAddress': target['address'], 'source': 'neris',
+                                     'reasons': [reason]})
     targets.sort(key=lambda row: row['key'])
     if len(targets) != len({row['originalPrimaryKey'] for row in targets}):
         raise ValueError('Duplicate primary identity in mailing target variants')
@@ -215,7 +226,7 @@ def generate(inputs, core, departments, supplement, boundaries):
               'mailingSourceSha256': MAILING_SHA, 'sourceSha256': SOURCE_SHA, 'nerisIndexSha256': INDEX_SHA,
               'nativeDepartmentCount': len(departments), 'completeMailingSourceCount': 30700,
               'targetVariantCount': len(targets), 'targetsSha256': sha(dump(targets)), 'candidates': candidates,
-              'coreIdentityConflicts': core_conflicts, 'rejected': rejected, 'sourceStats': stats,
+              'coreIdentityConflicts': core_conflicts, 'consensusVetoes': consensus_vetoes, 'rejected': rejected, 'sourceStats': stats,
               'outcomes': dict(sorted(outcomes.items())),
               'limitations': 'Mailing fields establish only a reciprocal inferred department identity. Coordinates come from the selected actual reported physical HQ or sole station. Complete physical and mailing alternatives participate in uniqueness. No operating status or building accuracy is certified.'}
     return report, targets

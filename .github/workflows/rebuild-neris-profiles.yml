@@ -51,3 +51,38 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain complete native NERIS supplemental source and frozen original site targets"
           git push origin HEAD
+  mailing-identities:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-mailing]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce complete mailing identities and physical site targets
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/data/recover_neris_mailing_sites.py scripts/data/retain_neris_mailing_sites.py scripts/data/neris_profile_witnesses.py
+          python3 scripts/data/retain_neris_mailing_source.py --verify
+          python3 -u scripts/data/recover_neris_mailing_sites.py --output "$RUNNER_TEMP/neris-mailing-report.json" --targets "$RUNNER_TEMP/neris-mailing-targets.json"
+          python3 -u scripts/data/retain_neris_mailing_sites.py --report "$RUNNER_TEMP/neris-mailing-report.json" --targets "$RUNNER_TEMP/neris-mailing-targets.json" --pin-targets
+          python3 -u scripts/data/retain_neris_mailing_sites.py --verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-mailing-identity-review
+          path: |
+            scripts/data/evidence/primary-neris-mailing-sites
+            scripts/fixtures/neris-mailing-target-edition.json
+            ${{ runner.temp }}/neris-mailing-report.json
+            ${{ runner.temp }}/neris-mailing-targets.json
+      - name: Save source bound identity scope on isolated review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-mailing-identities-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-mailing-sites scripts/fixtures/neris-mailing-target-edition.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain replayed NERIS mailing identities and actual frozen physical site targets"
+          git push origin HEAD

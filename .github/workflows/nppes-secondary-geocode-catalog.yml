@@ -1,0 +1,47 @@
+name: Retained federal secondary geocode integration
+on:
+  push:
+    branches: [atlas/phase9-0u-secondary-geocode]
+  pull_request:
+    paths:
+      - 'scripts/data/retain_nppes_secondary_geocodes.py'
+      - 'scripts/data/test_nppes_secondary_geocodes.py'
+      - 'scripts/data/evidence/nppes-secondary-geocode/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/nppes-secondary-geocode/**'
+      - '.github/workflows/nppes-secondary-geocode-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_nppes_secondary_geocodes.py
+      - name: Retrieve the successful exact geocoding evidence archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15082474553/zip" > /tmp/nppes-secondary-geocodes.zip
+      - run: python3 scripts/data/retain_nppes_secondary_geocodes.py --archive /tmp/nppes-secondary-geocodes.zip
+      - run: python3 scripts/data/retain_nppes_secondary_geocodes.py --verify
+      - name: Stage source archive and complete geographic catalog
+        run: |
+          branch="atlas/nppes-secondary-geocodes-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/nppes-secondary-geocode/2026-11-26 artifacts/ems-territory-intelligence/public/registry/nppes-secondary-geocode
+          git commit -m "Retain 844 federal secondary geocode outcomes and 580 approximate locations"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Federal secondary geocode candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_nppes_secondary_geocodes.py
+      - run: python3 scripts/data/retain_nppes_secondary_geocodes.py --verify

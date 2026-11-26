@@ -36,10 +36,7 @@ function loadIndex(){
  if(!indexPromise)indexPromise=getText('index.json').then(s=>validateIndex(JSON.parse(s))).catch(e=>{indexPromise=undefined;throw e});
  return indexPromise;
 }
-export async function loadMonthlySecondary(npi:string){
- if(!validNpi(npi))throw Error('Invalid NPI');
- const idx=await loadIndex(),chunk=idx.chunks.find(c=>c.prefix===npi.slice(0,2));
- if(!chunk)return {reportingPeriod:period,sourceUrl:idx.sourceUrl,referenceUrl:idx.referenceUrl,rows:[] as MonthlySecondaryRow[]};
+async function loadSecondaryChunk(chunk:Index['chunks'][number]):Promise<MonthlySecondaryRow[]>{
  let promise=shards.get(chunk.prefix);
  if(!promise){
   promise=(async()=>{
@@ -50,5 +47,14 @@ export async function loadMonthlySecondary(npi:string){
   })().catch(e=>{shards.delete(chunk.prefix);throw e});
   shards.set(chunk.prefix,promise);
  }
- return {reportingPeriod:period,sourceUrl:idx.sourceUrl,referenceUrl:idx.referenceUrl,rows:(await promise).filter(r=>r.parentNpi===npi)};
+ return promise;
+}
+export async function loadAllMonthlySecondaryRows(){
+ const idx=await loadIndex();
+ return (await Promise.all(idx.chunks.map(loadSecondaryChunk))).flat();
+}
+export async function loadMonthlySecondary(npi:string){
+ if(!validNpi(npi))throw Error('Invalid NPI');
+ const idx=await loadIndex(),chunk=idx.chunks.find(c=>c.prefix===npi.slice(0,2));
+ return {reportingPeriod:period,sourceUrl:idx.sourceUrl,referenceUrl:idx.referenceUrl,rows:chunk?(await loadSecondaryChunk(chunk)).filter(r=>r.parentNpi===npi):[] as MonthlySecondaryRow[]};
 }

@@ -58,14 +58,20 @@ function loadIndex(){
  })().catch(e=>{pending=undefined;throw e});
  return pending;
 }
-export async function loadMonthlySecondaryGeocodes(npi:string,sourceRows:MonthlySecondaryRow[]){
- if(!validNpi(npi))throw Error('Invalid NPI');
- const idx=await loadIndex(),c=idx.chunks.find(x=>x.prefix===npi.slice(0,2));
- if(!c)return joinMonthlyGeocodes(npi,sourceRows,[]);
+async function loadGeocodeChunk(c:Index['chunks'][number]):Promise<MonthlyGeocodeRow[]>{
  let p=shards.get(c.prefix);
  if(!p){
   p=(async()=>{const raw=await getText('nppes-secondary-geocode/'+c.file);if(await hash(raw)!==c.sha256)throw Error('Secondary geocode shard checksum mismatch');return validateMonthlyGeocodeShard(JSON.parse(raw),c.prefix,c.count)})().catch(e=>{shards.delete(c.prefix);throw e});
   shards.set(c.prefix,p);
  }
- return joinMonthlyGeocodes(npi,sourceRows,await p);
+ return p;
+}
+export async function loadAllMonthlyGeocodeRows(){
+ const idx=await loadIndex();
+ return (await Promise.all(idx.chunks.map(loadGeocodeChunk))).flat();
+}
+export async function loadMonthlySecondaryGeocodes(npi:string,sourceRows:MonthlySecondaryRow[]){
+ if(!validNpi(npi))throw Error('Invalid NPI');
+ const idx=await loadIndex(),c=idx.chunks.find(x=>x.prefix===npi.slice(0,2));
+ return joinMonthlyGeocodes(npi,sourceRows,c?await loadGeocodeChunk(c):[]);
 }

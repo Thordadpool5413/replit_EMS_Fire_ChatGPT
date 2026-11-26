@@ -381,3 +381,45 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain truthfully labeled native range site proofs and complete negative binding audit"
           git push origin HEAD
+  native-range-checkpoint:
+    if: contains(github.event.head_commit.message, '[checkpoint-neris-ranges]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native range reader
+        run: python3 -m pip install pyshp==2.3.1
+      - name: Stage and fully replay both ranges within one verified source catalog lifetime
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_range_sites.py
+          python3 -u scripts/data/checkpoint_neris_range_profiles.py --validation-output "$RUNNER_TEMP/neris-range-frontend.json"
+      - name: Validate actual finite frontend proofs and coordinate mutations
+        run: |
+          set -euo pipefail
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-range-frontend.json"
+          npx --yes tsx --test artifacts/ems-territory-intelligence/src/services/nerisGeocodedSiteContract.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-verified-range-checkpoint
+          path: |
+            scripts/data/evidence/primary-neris-range-sites
+            scripts/data/evidence/primary-neris-mailing-range-sites
+            artifacts/ems-territory-intelligence/src/services/nerisRangeSitePins.json
+            artifacts/ems-territory-intelligence/src/services/nerisMailingRangeSitePins.json
+            scripts/fixtures/neris-retained-range-examples.json
+            scripts/fixtures/neris-retained-mailing-range-examples.json
+      - name: Save verified range archives immediately for combined validation
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-range-checkpoint-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-range-sites scripts/data/evidence/primary-neris-mailing-range-sites
+          git add artifacts/ems-territory-intelligence/src/services/nerisRangeSitePins.json artifacts/ems-territory-intelligence/src/services/nerisMailingRangeSitePins.json scripts/fixtures/neris-retained-range-examples.json scripts/fixtures/neris-retained-mailing-range-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Checkpoint fully replayed native NERIS range profiles and exact frontend bindings"
+          git push origin HEAD

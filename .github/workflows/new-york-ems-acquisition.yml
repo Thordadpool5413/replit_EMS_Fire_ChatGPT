@@ -1,0 +1,37 @@
+name: New York official EMS roster acquisition
+on:
+  push:
+    branches: [atlas/phase9-0p-new-york-rosters]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_new_york_ems.py'
+      - 'scripts/data/test_new_york_ems.py'
+      - '.github/workflows/new-york-ems-acquisition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_new_york_ems.py
+  acquire:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [agency-codes, ambulance-als, bls-nontransport]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y poppler-utils
+      - run: python3 scripts/data/stage_new_york_ems.py --kind ${{ matrix.kind }} --output generated-artifacts/ny-ems-review
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ny-ems-${{ matrix.kind }}-review
+          path: generated-artifacts/ny-ems-review/
+          if-no-files-found: ignore

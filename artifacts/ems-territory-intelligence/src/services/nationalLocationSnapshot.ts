@@ -45,6 +45,25 @@ export function applyOfficialAddressEvidence(entry:SnapshotLocation):SnapshotLoc
  if(!address||address.state!==entry.state||!address.zip||!isPhysicalStreet(address.street)||!e.sourceUrl.startsWith('https://')||!e.authority||!e.checkedAt)return entry;
  return {...entry,address,status:'pending',officialAddressEvidence:{...e,address}};
 }
+
+/** Phone-derived sites must retain the exact usable USFA parent in this release. */
+export function validatePrimaryParentBindings(rawEntries:readonly unknown[]):void{
+ const entries=new Map<string,Record<string,unknown>>();
+ for(const raw of rawEntries){
+  if(!record(raw)||typeof raw.key!=='string'||entries.has(raw.key))throw Error('Invalid primary parent identity inventory.');
+  entries.set(raw.key,raw);
+ }
+ const canonical=(value:unknown)=>JSON.stringify(value,(_key,part:unknown)=>record(part)?Object.fromEntries(Object.entries(part).sort(([a],[b])=>a.localeCompare(b))):part);
+ for(const entry of entries.values()){
+  const proof=entry.primaryAddressEvidence;
+  if(!record(proof)||proof.method!=='nppes-usfa-primary-site-correlation')continue;
+  const donor=record(proof.donor)?proof.donor.entry:undefined;
+  if(!record(donor)||typeof donor.key!=='string')throw Error('Missing primary phone parent evidence.');
+  const parent=entries.get(donor.key);
+  if(!parent||parent.source!=='USFA'||parent.state!==entry.state||parent.status!=='mapped'||!record(parent.match)||parent.sourceCounty&&parent.sourceCounty!==parent.countyFips||canonical(parent)!==canonical(donor))throw Error('Primary phone site differs from its final usable USFA parent.');
+ }
+}
+
 const loaded=new Map<string,LocationState>(),pending=new Map<string,Promise<LocationState|undefined>>();
 let manifestPromise:Promise<LocationManifest|undefined>|undefined;
 const base=()=> (import.meta.env?.BASE_URL??'/')+'registry/locations/';
@@ -77,6 +96,7 @@ export async function loadNationalLocationState(state:string):Promise<LocationSt
   if(!Array.isArray(rows)||rows.length!==chunk.count)throw Error('Location count mismatch.');
   const entries=new Map<string,SnapshotLocation>();
   for(const value of rows){const entry=parseSnapshotEntry(value,state,registry.countyNames);if(entries.has(entry.key))throw Error('Duplicate location identity.');entries.set(entry.key,applyOfficialAddressEvidence(entry));}
+  validatePrimaryParentBindings(rows);
   const result={generatedAt:index.generatedAt,entries,nppesProcessed:index.nppesArchive.status==='processed'};
   loaded.set(state,result);return result;
  })().catch(()=>undefined).finally(()=>pending.delete(state));

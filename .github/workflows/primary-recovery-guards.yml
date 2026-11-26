@@ -22,3 +22,21 @@ jobs:
           python3 -m unittest discover -s scripts/data -p test_nad_primary.py
           python3 scripts/data/primary_recovery_baseline.py --retain
           python3 scripts/data/prepare_neris_independent_sites.py --batch original-1251 --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
+  ui:
+    if: contains(github.event.head_commit.message, '[verify-primary-ui]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify complete frontend and API type compatibility
+        run: pnpm run typecheck
+      - name: Verify actual directory and parent-binding guards
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/ems-territory-intelligence/src/services/nationalLocationSnapshot.test.ts ../artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.test.ts

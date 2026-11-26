@@ -1,0 +1,32 @@
+name: Texas official provider location source discovery
+on:
+  push:
+    branches: [atlas/phase9-0m-texas-operating-locations]
+  pull_request:
+    paths:
+      - 'scripts/data/discover_texas_provider_map.py'
+      - 'scripts/data/test_texas_provider_map.py'
+      - '.github/workflows/texas-provider-map-discovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_texas_provider_map.py
+  research:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/discover_texas_provider_map.py --output generated-artifacts/texas-provider-map
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: texas-provider-map-sources
+          path: generated-artifacts/texas-provider-map/
+          if-no-files-found: ignore

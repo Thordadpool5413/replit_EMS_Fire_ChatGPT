@@ -14,7 +14,8 @@ def build():
    'originalAddress':copy.deepcopy(old['address']),'address':copy.deepcopy(c['address']),'countyFips':c['countyFips'],
    'match':copy.deepcopy(c['match']),'evidence':copy.deepcopy(proof),'nationalRow':copy.deepcopy(national[key])}
   pins.setdefault(key,[]).append(binding)
-  kind=(c['match']['method'],proof['correlation']['nameBasis']['rule'],proof['donor']['siteRole'])
+  kind=(c['match']['method'],proof['correlation']['nameBasis']['rule'],
+        proof['correlation']['nameBasis'].get('cmsNameField'),proof['donor']['siteRole'])
   if kind not in seen:
    seen.add(kind);examples.append({'label':str(kind),'evidence':proof,
     'context':{'key':key,'name':old['name'],'state':old['state'],'source':old['source'],'sourceCounty':old['sourceCounty'],

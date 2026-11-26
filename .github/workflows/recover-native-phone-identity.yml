@@ -1,0 +1,40 @@
+name: Replay native CMS USFA phone identity
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phone-identity:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[replay-native-phone-identity]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify native reciprocal phone and identity guards
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/data -p test_nppes_phone_identity.py
+          python3 -u scripts/data/retain_usfa_native_source.py --verify
+          python3 -u scripts/data/recover_nppes_phone_identity.py --code-values "$RUNNER_TEMP/cms-code-values.pdf" --download-code-values
+          python3 -u scripts/data/recover_nppes_phone_identity.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-phone-identity-only
+          path: scripts/data/evidence/primary-nppes-phone-identity/
+      - name: Commit identity-only native correlation proof
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-phone-identity-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-phone-identity
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain complete reciprocal native CMS USFA phone identity evidence without locations'
+          git push origin HEAD

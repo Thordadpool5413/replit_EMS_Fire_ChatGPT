@@ -1,0 +1,32 @@
+name: Audit native range exclusions
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+permissions:
+  contents: read
+jobs:
+  range-exclusions:
+    if: contains(github.event.head_commit.message, '[audit-native-exclusions]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay source and explain retained exclusions
+        run: |
+          set -euo pipefail
+          python3 -m pip install 'pyshp==2.3.1'
+          python3 -u scripts/data/audit_tiger_range_exclusions.py
+      - name: Commit read-only native exclusion report
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-range-exclusion-audit-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-tiger-native/2026-11-26/exclusion-audit.json
+          git commit -m 'Explain native range exclusions with exact retained source row witnesses'
+          git push origin HEAD

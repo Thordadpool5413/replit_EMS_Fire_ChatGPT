@@ -1,0 +1,31 @@
+name: Texas historical station location evidence acquisition
+on:
+  push:
+    branches: [atlas/phase9-0n-texas-station-evidence]
+  pull_request:
+    paths:
+      - 'scripts/data/acquire_texas_station_evidence.py'
+      - 'scripts/data/test_texas_station_evidence.py'
+      - '.github/workflows/texas-station-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_texas_station_evidence.py
+  acquire:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/acquire_texas_station_evidence.py --output generated-artifacts/texas-station-evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: texas-station-location-evidence
+          path: generated-artifacts/texas-station-evidence/
+          if-no-files-found: error

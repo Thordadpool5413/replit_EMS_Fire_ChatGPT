@@ -194,6 +194,23 @@ def consensus_witnesses(entry):
     return [{'match': row['match'], 'targetAddress': entry['address'], 'countyFips': row['countyFips']} for row in observed] + native_witnesses(entry['address'])
 
 
+def stage_from_retained_sources(destination=EVIDENCE):
+    target_path = ROOT/'scripts/data/evidence/primary-neris-original-site-targets/2026-11-26/targets.json'
+    targets, inputs = load_target_inputs(target_path)
+    reports = {source: replay_federal(source, None, targets) for source in sorted(REQUIRED_SOURCES - {'nad'})}
+    from stage_nad_primary import EVIDENCE as NAD_EVIDENCE
+    with zipfile.ZipFile(NAD_EVIDENCE/'original.zip') as archive:
+        reports['nad'] = json.loads(archive.read('report.json'))
+    replay_nad(reports['nad'], targets)
+    result = generate(targets, inputs, reports, load_departments())
+    with tempfile.TemporaryDirectory(prefix='atlas-neris-core-geocodes-') as temporary:
+        root = pathlib.Path(temporary); paths = {}
+        for source, report in reports.items():
+            paths[source] = root/(source+'.json'); paths[source].write_bytes(dump(report))
+        result_path = root/'report.json'; result_path.write_bytes(dump(result))
+        return stage(target_path, paths, result_path, destination)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--targets', type=pathlib.Path)
@@ -204,9 +221,12 @@ def main():
     p.add_argument('--nad-report', type=pathlib.Path)
     p.add_argument('--evidence', type=pathlib.Path, default=EVIDENCE)
     p.add_argument('--verify', action='store_true')
+    p.add_argument('--retained-sources', action='store_true')
     args = p.parse_args()
     if args.verify:
         manifest = verify(args.evidence)
+    elif args.retained_sources:
+        manifest = stage_from_retained_sources(args.evidence)
     else:
         paths = {s: getattr(args, s.replace('-', '_')+'_report') for s in REQUIRED_SOURCES}
         if not args.targets or not args.report or not all(paths.values()):

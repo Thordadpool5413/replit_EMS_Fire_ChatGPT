@@ -16,14 +16,16 @@ from backfill_provider_locations import ROOT, sha
 from address_normalization import physical_address, normalize_street, source_street_line, normalized_city
 from recover_neris_primary import (dump, load_departments, load_boundaries, source_objects,
                                  matching_records, valid_point, distance, SOURCE_SHA, INDEX_SHA, NATIONAL_SHA)
-from prepare_neris_independent_sites import prepare
+from prepare_neris_independent_sites import prepare_original_batch
 from retain_neris_primary import DEFAULT as PRIMARY_EVIDENCE
+from primary_source_consensus import point_witnesses
 
 TARGET_SHA = 'cb4c896b00f7ca2a1710a57a142f94e67b0e4463871e217ae9b1a8eeafe7744a'
 METHOD = 'neris-department-geocoded-site-correlation'
 SOURCE_METHODS = {'usgs': 'usgs-structure-address', 'hifld-ems': 'hifld-ems-address',
                   'hifld-fire': 'hifld-fire-address', 'nad': 'nad-address-point'}
 REQUIRED_SOURCES = set(SOURCE_METHODS)
+ALL_SOURCE_METHODS = {**SOURCE_METHODS, 'overture': 'overture-place-address'}
 FEDERAL_COUNTS = {'usgs': 386823, 'hifld-ems': 42812, 'hifld-fire': 53087}
 MAX_DISTANCE = 75
 
@@ -38,21 +40,26 @@ def load_target_inputs(path):
         approved = json.loads(archive.read('candidates.json'))
     # The target batch is frozen. Later conservative legacy audits may expose
     # additional unresolved records; those do not silently expand this batch.
-    expected, counts = prepare(inputs, approved, load_departments(), {t['originalPrimaryKey'] for t in targets})
+    expected, counts = prepare_original_batch(inputs, approved, load_departments())
     if dump(expected) != raw or len(targets) != 1251 or len({t['originalPrimaryKey'] for t in targets}) != 1251:
         raise ValueError('NERIS target variants no longer reproduce their reciprocal native identity proof')
     return targets, inputs
 
 
-def source_rows(source, report):
+def source_rows(source, report, targets_sha=TARGET_SHA, nad_diagnostic_count=1251):
+    if source == 'overture':
+        if (report.get('source') != 'overture-place-neris-diagnostic' or report.get('targetsSha256') != targets_sha or
+                not report.get('completeNativeSourceReplay') or not isinstance(report.get('rejected'), list)):
+            raise ValueError('Places source report is not a complete replayed native-target catalog')
+        return report['candidates']
     if source not in SOURCE_METHODS:
         raise ValueError('Unknown independent address source')
     if source == 'nad':
         from stage_nad_primary import ARCHIVE_SHA, SOURCE_COUNT
-        if report.get('source') != 'nad-bulk-r24' or report.get('sourceArchiveSha256') != ARCHIVE_SHA or report.get('sourceCount') != SOURCE_COUNT or report.get('originalPrimaryCount') != 46791 or report.get('additionalDiagnosticTargets') != 1251 or not isinstance(report.get('rejected'), list):
+        if report.get('source') != 'nad-bulk-r24' or report.get('sourceArchiveSha256') != ARCHIVE_SHA or report.get('sourceCount') != SOURCE_COUNT or report.get('originalPrimaryCount') != 46791 or report.get('additionalDiagnosticTargets') != nad_diagnostic_count or not isinstance(report.get('rejected'), list):
             raise ValueError('NAD source report lacks complete frozen-target and conflict accounting')
         return report.get('diagnosticCandidates', [])
-    if report.get('source') != source or report.get('baselineIndexSha256') != TARGET_SHA or report.get('sourceStats', {}).get('completeRowsScanned') != FEDERAL_COUNTS[source] or report.get('sourceStats', {}).get('coordinateAuditRowsScanned') != FEDERAL_COUNTS[source]:
+    if report.get('source') != source or report.get('baselineIndexSha256') != targets_sha or report.get('sourceStats', {}).get('completeRowsScanned') != FEDERAL_COUNTS[source] or report.get('sourceStats', {}).get('coordinateAuditRowsScanned') != FEDERAL_COUNTS[source]:
         raise ValueError('Independent source report is not a complete frozen-target audit')
     return report['candidates']
 
@@ -69,13 +76,13 @@ def point_matches_target(target, address, basis, source):
             source == 'nad' and basis == 'normalized-street-city-state' and city)
 
 
-def collect_observations(targets, reports):
+def collect_observations(targets, reports, targets_sha=TARGET_SHA, nad_diagnostic_count=1251):
     desired = {t['key']: t for t in targets}
     points = collections.defaultdict(list)
     vetoes = collections.defaultdict(list)
     summaries = {}
     for source, report in sorted(reports.items()):
-        selected = source_rows(source, report)
+        selected = source_rows(source, report, targets_sha, nad_diagnostic_count)
         seen = set()
         for candidate in selected:
             key = candidate['key']
@@ -90,7 +97,7 @@ def collect_observations(targets, reports):
             m = candidate['match']
             if (candidate['address'] != t['address'] or candidate['originalAddress'] != t['address'] or
                     candidate.get('state', t['state']) != t['state'] or candidate.get('source', t['source']) != t['source'] or
-                    m.get('method') != SOURCE_METHODS[source] or not point_matches_target(t['address'], m.get('sourceAddress'), m.get('matchBasis'), source) or
+                    m.get('method') != ALL_SOURCE_METHODS[source] or not point_matches_target(t['address'], m.get('sourceAddress'), m.get('matchBasis'), source) or
                     not valid_point([m.get('latitude'), m.get('longitude')]) or candidate['countyFips'] != m.get('point', {}).get('countyFips')):
                 raise ValueError('Independent point is not bound to the exact native physical site address')
             if t.get('sourceCounty') and candidate['countyFips'] != t['sourceCounty']:
@@ -103,10 +110,13 @@ def collect_observations(targets, reports):
             key = rejected['key']
             reasons = set(rejected.get('reasons', []))
             consequential = reasons & {'independent-source-rows-disagree', 'primary-source-county-disagreement',
-                                       'conflicting-native-points', 'original-source-county-disagreement', 'nonactive-lifecycle'}
+                                       'conflicting-native-points', 'original-source-county-disagreement', 'native-source-county-disagreement',
+                                       'source-coordinate-shared-across-distinct-addresses',
+                                       'coordinate-reused-across-distinct-addresses', 'nonactive-lifecycle',
+                                       'source-point-county-conflict', 'coordinate-shared-by-distinct-addresses'}
             if key in desired and consequential:
                 vetoes[key].append({'source': source, **copy.deepcopy(rejected)})
-        summaries[source] = {'method': SOURCE_METHODS[source], 'reportSha256': sha(dump(report)),
+        summaries[source] = {'method': ALL_SOURCE_METHODS[source], 'reportSha256': sha(dump(report)),
                              'sourceSha256': report.get('sourceSha256'), 'candidateCount': len(seen)}
     return points, vetoes, summaries
 
@@ -124,31 +134,52 @@ def native_index(departments):
 def selection_rank(point):
     source = point['source']
     precision = point['match']['point'].get('precision')
-    return (precision == 'blockface', {'nad': 0, 'usgs': 1, 'hifld-ems': 2, 'hifld-fire': 3}[source],
+    return (precision == 'blockface', {'nad': 0, 'usgs': 1, 'hifld-ems': 2, 'hifld-fire': 3, 'overture': 4}[source],
             str(point['match']['point'].get('objectId', '')))
 
 
-def generate(targets, inputs, reports, departments):
-    points, source_vetoes, summaries = collect_observations(targets, reports)
+def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, method=METHOD, nad_diagnostic_count=1251, required_sources=None):
+    required_sources = REQUIRED_SOURCES if required_sources is None else set(required_sources)
+    points, source_vetoes, summaries = collect_observations(targets, reports, targets_sha, nad_diagnostic_count)
     originals = {r['key']: r for r in inputs['entries']}
     native = native_index(departments)
-    candidates, withheld = [], []
+    candidates, withheld, consensus_vetoes = [], [], []
     outcomes = collections.Counter()
     for target in sorted(targets, key=lambda row: row['key']):
         key = target['key']
         observed = sorted(points.get(key, []), key=selection_rank)
+        native_matches = matching_records(target, native)
+        native_qualified = [record for record, _ in native_matches if not record['withheldReason']]
+        native_issues = [record for record, _ in native_matches if record['withheldReason'] == 'coordinate-reused-across-distinct-addresses']
+        if native_issues:
+            source_vetoes[key].append({'source': 'neris', 'key': key, 'reasons': ['coordinate-reused-across-distinct-addresses'],
+                                      'nativeIds': sorted(record['object']['id'] for record in native_issues)})
+        if target.get('sourceCounty') and any(record['countyFips'] != target['sourceCounty'] for record in native_qualified):
+            source_vetoes[key].append({'source': 'neris', 'key': key, 'reasons': ['native-source-county-disagreement'],
+                                      'nativeIds': sorted(record['object']['id'] for record in native_qualified)})
         if source_vetoes.get(key):
             withheld.append({'key': key, 'originalPrimaryKey': target['originalPrimaryKey'],
-                             'reason': 'valid-independent-source-conflict', 'sourceConflicts': source_vetoes[key]})
+                             'targetAddress': target['address'], 'reason': 'valid-independent-source-conflict', 'sourceConflicts': source_vetoes[key]})
+            consensus_vetoes.extend({'originalPrimaryKey': target['originalPrimaryKey'], 'targetAddress': target['address'],
+                                     'source': conflict['source'], 'reasons': conflict['reasons']} for conflict in source_vetoes[key])
             outcomes['valid-independent-source-conflict'] += 1
             continue
         if not observed:
             outcomes['no-independent-address-point'] += 1
             continue
         coords = [[p['match']['latitude'], p['match']['longitude']] for p in observed]
-        if len({p['countyFips'] for p in observed}) != 1 or any(distance(a, b) > MAX_DISTANCE for i, a in enumerate(coords) for b in coords[i+1:]):
+        endpoints = [point for observation in observed for point in point_witnesses(observation['match'], target['address'])]
+        endpoints.extend({'method': 'neris-reported-address', 'latitude': record['coordinates'][0],
+                          'longitude': record['coordinates'][1], 'countyFips': record['countyFips'],
+                          'nativeId': record['object']['id']} for record in native_qualified)
+        endpoint_coordinates = [[point['latitude'], point['longitude']] for point in endpoints]
+        if (not endpoints or len({point['countyFips'] for point in endpoints}) != 1 or
+                any(distance(a, b) > MAX_DISTANCE for i, a in enumerate(endpoint_coordinates) for b in endpoint_coordinates[i+1:])):
             withheld.append({'key': key, 'originalPrimaryKey': target['originalPrimaryKey'],
-                             'reason': 'independent-coordinate-disagreement', 'sourcePoints': observed})
+                             'targetAddress': target['address'], 'reason': 'independent-coordinate-disagreement', 'sourcePoints': observed,
+                             'allQualifiedNativeEndpoints': endpoints})
+            consensus_vetoes.append({'originalPrimaryKey': target['originalPrimaryKey'], 'targetAddress': target['address'],
+                                     'source': 'neris-site-source-consensus', 'reasons': ['independent-coordinate-disagreement']})
             outcomes['independent-coordinate-disagreement'] += 1
             continue
         selected = observed[0]
@@ -156,10 +187,10 @@ def generate(targets, inputs, reports, departments):
         original = originals[target['originalPrimaryKey']]
         proof = copy.deepcopy(target['primaryAddressEvidence'])
         proof.pop('diagnosticOnly')
-        if proof['method'] != METHOD or proof['sourceSha256'] != SOURCE_SHA or proof['nerisIndexSha256'] != INDEX_SHA or proof['nationalRegistrySha256'] != NATIONAL_SHA:
+        if proof['method'] != method or proof['sourceSha256'] != SOURCE_SHA or proof['nerisIndexSha256'] != INDEX_SHA or proof['nationalRegistrySha256'] != NATIONAL_SHA:
             raise ValueError('Unexpected frozen native identity proof')
         comparisons = []
-        for record, basis in matching_records(target, native):
+        for record, basis in native_matches:
             obj = record['object']
             coordinate = record['coordinates']
             comparisons.append({'nativeId': obj['id'], 'objectId': obj['oid'],
@@ -173,13 +204,14 @@ def generate(targets, inputs, reports, departments):
         for i, point in enumerate(observed):
             point['selected'] = i == 0
             point['distanceToSelectedMeters'] = round(distance(coords[i], selected_coordinates), 6)
-        proof['geocoding'] = {'targetKey': key, 'targetsSha256': TARGET_SHA,
+        proof['geocoding'] = {'targetKey': key, 'targetsSha256': targets_sha,
                              'selectionBasis': 'separate-public-source-exact-native-site-address',
                              'nativeCoordinatesUsed': False, 'maximumIndependentSeparationMeters': MAX_DISTANCE,
                              'auditedSources': sorted(reports),
                              'sourceReportDigests': {source: metadata['reportSha256'] for source, metadata in summaries.items()},
                              'selectedCoordinates': selected_coordinates,
                              'sourceObservations': observed,
+                             'allQualifiedNativeEndpoints': endpoints,
                              'nativeNerisObservations': sorted(comparisons, key=lambda row: row['nativeId'])}
         candidates.append({'key': original['key'], 'source': original['source'], 'state': original['state'],
                            'originalAddress': copy.deepcopy(original.get('address')), 'originalStatus': original['status'],
@@ -188,11 +220,11 @@ def generate(targets, inputs, reports, departments):
         outcomes[proof['siteRole']] += 1
         outcomes['selected-' + selected['source']] += 1
         outcomes['native-coordinate-discrepancy-recorded'] += any(r['distanceToSelectedMeters'] is not None and r['distanceToSelectedMeters'] > MAX_DISTANCE for r in comparisons)
-    return {'schemaVersion': 1, 'method': METHOD, 'originalPrimaryIdentityCount': 46791,
-            'targetVariantsSha256': TARGET_SHA, 'targetVariantCount': len(targets),
-            'completeRequiredSources': set(reports) == REQUIRED_SOURCES,
-            'requiredSources': sorted(REQUIRED_SOURCES), 'sourceReports': summaries,
-            'candidates': candidates, 'withheld': withheld, 'outcomes': dict(sorted(outcomes.items())),
+    return {'schemaVersion': 1, 'method': method, 'originalPrimaryIdentityCount': 46791,
+            'targetVariantsSha256': targets_sha, 'targetVariantCount': len(targets),
+            'completeRequiredSources': set(reports) == required_sources,
+            'requiredSources': sorted(required_sources), 'sourceReports': summaries,
+            'candidates': candidates, 'withheld': withheld, 'consensusVetoes': consensus_vetoes, 'outcomes': dict(sorted(outcomes.items())),
             'limitations': 'The department/site association remains inferred. Physical native NERIS addresses are separately geocoded; all native coordinates and discrepancies remain in the proof. HIFLD observations can share an originating dataset and are not independent votes. No operational status or rooftop accuracy is certified.'}
 
 

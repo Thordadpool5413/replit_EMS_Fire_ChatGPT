@@ -17,6 +17,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m pip install 'pyshp==2.3.1'
-          python3 -m py_compile scripts/data/recover_nppes_native_primary.py scripts/data/retain_nppes_native_source.py scripts/data/recover_nppes_primary_components.py scripts/data/diagnose_federal_city_fallback.py scripts/data/retain_federal_city_points.py scripts/data/stage_tiger_primary.py scripts/data/checkpoint_tiger_source.py scripts/data/match_tiger_primary.py scripts/data/retain_tiger_primary.py scripts/data/build_tiger_point_contract.py
+          python3 -m py_compile scripts/data/recover_nppes_native_primary.py scripts/data/retain_nppes_native_source.py scripts/data/recover_nppes_primary_components.py scripts/data/diagnose_federal_city_fallback.py scripts/data/retain_federal_city_points.py scripts/data/stage_tiger_primary.py scripts/data/checkpoint_tiger_source.py scripts/data/match_tiger_primary.py scripts/data/retain_tiger_primary.py scripts/data/build_tiger_point_contract.py scripts/data/recover_nppes_primary_components_extended.py
           python3 -m unittest discover -s scripts/data -p test_nppes_native_primary.py
           python3 -m unittest discover -s scripts/data -p test_tiger_primary.py
+          python3 -m unittest discover -s scripts/data -p test_nppes_extended_components.py

@@ -1,0 +1,53 @@
+name: Replay extended native CMS components
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  extended-components:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[replay-extended-components]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check native component selection guards
+        run: |
+          set -euo pipefail
+          python3 -m pip install 'pyshp==2.3.1'
+          python3 -m unittest discover -s scripts/data -p test_nppes_extended_components.py
+      - name: Retain and independently replay every complete native source
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/recover_nppes_primary_components_extended.py --report "$RUNNER_TEMP/native-components-extended.json"
+          python3 -u scripts/data/recover_nppes_primary_components_extended.py --verify
+          python3 -u scripts/data/build_nppes_component_contract.py --extended
+      - name: Compile and test exact frontend and API bindings
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/native-contract-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          node "$RUNNER_TEMP/native-contract-tools/node_modules/typescript/bin/tsc" --module commonjs --moduleResolution node --target ES2022 --strict --skipLibCheck --outDir "$RUNNER_TEMP/native-contracts" artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsContract.ts artifacts/ems-territory-intelligence/src/services/federalCityPointContract.ts artifacts/ems-territory-intelligence/src/services/tigerPrimaryPointContract.ts artifacts/api-server/src/lib/nppesPrimaryComponentsContract.ts artifacts/api-server/src/lib/federalCityPointContract.ts artifacts/api-server/src/lib/tigerPrimaryPointContract.ts
+          node scripts/test-native-source-contracts.cjs "$RUNNER_TEMP/native-contracts"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-native-component-profile
+          path: scripts/data/evidence/primary-nppes-components-extended/
+      - name: Commit source-native component evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-extended-components-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-components-extended artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsPins.ts artifacts/api-server/src/lib/nppesPrimaryComponentsPins.ts scripts/fixtures/nppes-primary-component-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain complete native CMS component consensus and clean range fallback'
+          git push origin HEAD

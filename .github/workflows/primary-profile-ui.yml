@@ -1,0 +1,33 @@
+name: Verify primary profile UI integration
+on:
+  push:
+    branches: [atlas/integrate-primary-ui]
+permissions:
+  contents: read
+jobs:
+  contracts_and_listings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck the complete workspace
+        run: pnpm run typecheck
+      - name: Exercise source contracts, native proofs, listings, county holds, and final phone parents
+        run: |
+          pnpm --filter @workspace/scripts exec tsx --test \
+            ../artifacts/ems-territory-intelligence/src/services/primaryProfileIntegration.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/nationalLocationSnapshot.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/providerLocation.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/nerisPrimarySiteContract.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/overturePlacePrimaryPointContract.test.ts \
+            ../artifacts/ems-territory-intelligence/src/services/overturePrimaryVariantPointContract.test.ts \
+            ../artifacts/api-server/src/lib/providerLocation.test.ts

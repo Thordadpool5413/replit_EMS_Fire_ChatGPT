@@ -2,7 +2,10 @@ import {compatibleSourceAddress,parseStreetAddress,isPhysicalStreet,validateAddr
 import {loadSourceDirectoryManifest,type SourceDirectoryRecord} from './nationalSourceDirectory';
 import {registryIdentityKey,snapshotRegistryIdentity,type RegistryIdentity} from './registryAccountLink';
 import officialAddressResearch from '../data/officialProviderAddressResearch.json';
-import {validatePrimaryAddressEvidence,type PrimaryAddressEvidence} from './primaryAddressEvidence';
+import {validatePrimaryAddressEvidence,primaryAssociationLocality,type PrimaryAddressEvidence} from './primaryAddressEvidence';
+import {NERIS_GRID_PROFILE,validateNerisGridAddressMatch} from './nerisGridAddressContract';
+import {NPPES_PRIMARY_COMPONENTS_METHOD} from './nppesPrimaryComponentsContract';
+import {NPPES_PHONE_SITE_METHOD} from './nppesPhoneSiteContract';
 
 export type OfficialAddressEvidence={key:string;name:string;state:string;countyFips:string;address:StreetAddress;authority:string;sourceUrl:string;checkedAt:string;note:string};
 
@@ -108,18 +111,27 @@ export function matchingSnapshotLocation(id:RegistryIdentity,known?:StreetAddres
  if(!e||!e.address||e.status==='historical'||e.status==='review'||nameKey(e.name)!==nameKey(id.name))return undefined;
  if(e.primaryAddressEvidence){
   const p=e.primaryAddressEvidence;
-  if(known&&(!p.originalAddress||!compatibleSourceAddress(known,p.originalAddress))||id.city&&nameKey(id.city)!==nameKey(p.correlation.primaryCity)||id.postalCode&&id.postalCode.slice(0,5)!==p.correlation.zip)return undefined;
+  const locality=primaryAssociationLocality(p);
+  if(known&&(!p.originalAddress||!compatibleSourceAddress(known,p.originalAddress))||id.city&&(!locality||nameKey(id.city)!==nameKey(locality.city))||id.postalCode&&(!locality||id.postalCode.slice(0,5)!==locality.zip))return undefined;
   try{validatePrimaryAddressEvidence(p,{...e,address:e.address,originalAddress:known??p.originalAddress});}catch{return undefined;}
  }else if(known&&!compatibleSourceAddress(known,e.address))return undefined;
  return e;
 }
 function siteEvidenceForRow(e:SnapshotLocation,row:SourceDirectoryRecord):PrimaryAddressEvidence|undefined{
  if(!e.primaryAddressEvidence||!e.address)return undefined;
- const originalAddress=row[10].trim()?parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]}):null;
+ const proof=e.primaryAddressEvidence;
+ // The national NPPES directory omits the monthly native primary street. Its
+ // finite proof independently binds both that original address and this raw row.
+ const nativeNppes=proof.method===NPPES_PRIMARY_COMPONENTS_METHOD||proof.method===NPPES_PHONE_SITE_METHOD;
+ const originalAddress=row[10].trim()?parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]}):nativeNppes?proof.originalAddress:null;
  if(originalAddress===undefined)return undefined;
  try{return validatePrimaryAddressEvidence(e.primaryAddressEvidence,{...e,address:e.address,originalAddress,nationalRow:row});}catch{return undefined;}
 }
-export function primaryAssociationLabel(proof:PrimaryAddressEvidence):string{return proof.siteRole==='reported-headquarters'?'Inferred association with reported headquarters · end-user validation required':'Inferred association with sole reported station · end-user validation required';}
+export function primaryAssociationLabel(proof:PrimaryAddressEvidence):string{
+ if(proof.method===NPPES_PRIMARY_COMPONENTS_METHOD)return 'CMS registered primary practice · native address component';
+ if(proof.method===NPPES_PHONE_SITE_METHOD)return 'Inferred association with USFA primary site · end-user validation required';
+ return proof.siteRole==='reported-headquarters'?'Inferred association with reported headquarters · end-user validation required':'Inferred association with sole reported station · end-user validation required';
+}
 /** Enrich only the source directory view; preserve original source-county relationships and raw records. */
 export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationState|undefined):SourceDirectoryRecord{
  const id=snapshotRegistryIdentity(row);
@@ -137,6 +149,10 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  return out;
 }
 export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null;officialAddressEvidence?:OfficialAddressEvidence;primaryAddressEvidence?:PrimaryAddressEvidence};
+function retainedGridEligible(address:StreetAddress,match:AddressMatch|null):boolean{
+ if(!match||!('sourceAddressProfile' in match)||match.sourceAddressProfile!==NERIS_GRID_PROFILE)return false;
+ try{validateNerisGridAddressMatch(match,address);return true;}catch{return false;}
+}
 export function listingLocation(row:SourceDirectoryRecord,locations:LocationState|undefined):ListingLocation{
  const id=snapshotRegistryIdentity(row),key=id&&registryIdentityKey(id);
  const address=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]})??null;
@@ -149,7 +165,7 @@ export function listingLocation(row:SourceDirectoryRecord,locations:LocationStat
  if(e.status==='historical'||e.status==='review')return {address:address??e.address,status:e.status,match:null};
  const loc=e.address??address;
  if(!loc)return {address:null,status:'source-missing',match:null};
- if(!isPhysicalStreet(loc.street)||!loc.zip)return {address:loc,status:'not-eligible',match:null};
+ if(!loc.zip||!isPhysicalStreet(loc.street)&&!retainedGridEligible(loc,e.match))return {address:loc,status:'not-eligible',match:null};
  if(e.match&&(e.sourceCounty&&e.sourceCounty!==e.countyFips||row[6]&&row[6]!==e.countyFips))return {address:loc,status:'review',match:null};
  return {address:loc,status:e.status,match:e.match,officialAddressEvidence:e.officialAddressEvidence,primaryAddressEvidence};
 }
@@ -157,7 +173,10 @@ export const LISTING_LOCATION_LABELS:Record<ListingLocation['status'],string>={
  mapped:'Mapped street address', 'missing-identity':'Registry ID not reported; location association needs review', 'source-missing':'Street address not reported', 'not-eligible':'Mailing/nonstandard address or ZIP missing; no street pin', historical:'Historical source record', review:'Source or county disagreement; review required', pending:'Address recovered; coordinate match pending', unavailable:'Geocoder unavailable; retry required', 'no-match':'No exact street match; research required', 'not-checked':'Address recorded; coordinates not checked',
 };
 export function snapshotSourceUrl(e:SnapshotLocation){
- if(e.primaryAddressEvidence)return 'https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/0/query?'+new URLSearchParams({where:'OBJECTID='+e.primaryAddressEvidence.department.objectId,outFields:'*',returnGeometry:'true',outSR:'4326',f:'pjson'});
+ const proof=e.primaryAddressEvidence;
+ if(proof?.method===NPPES_PRIMARY_COMPONENTS_METHOD)return proof.sourceUrl;
+ if(proof?.method===NPPES_PHONE_SITE_METHOD)return 'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4);
+ if(proof)return 'https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/0/query?'+new URLSearchParams({where:'OBJECTID='+proof.department.objectId,outFields:'*',returnGeometry:'true',outSR:'4326',f:'pjson'});
  return e.officialAddressEvidence?.sourceUrl??(e.source==='NPPES'?'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4):e.source==='USFA'?'https://apps.usfa.fema.gov/registry/search':'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf');
 }
 export function snapshotMapRows(state:LocationState|undefined,scope:{county:string;city:string;category:string}){

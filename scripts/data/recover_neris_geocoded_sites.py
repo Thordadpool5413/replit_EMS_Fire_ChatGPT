@@ -18,6 +18,7 @@ from recover_neris_primary import (dump, load_departments, load_boundaries, sour
                                  matching_records, valid_point, distance, SOURCE_SHA, INDEX_SHA, NATIONAL_SHA)
 from prepare_neris_independent_sites import prepare_original_batch
 from retain_neris_primary import DEFAULT as PRIMARY_EVIDENCE
+from primary_source_consensus import point_witnesses
 
 TARGET_SHA = 'cb4c896b00f7ca2a1710a57a142f94e67b0e4463871e217ae9b1a8eeafe7744a'
 METHOD = 'neris-department-geocoded-site-correlation'
@@ -134,23 +135,43 @@ def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, meth
     points, source_vetoes, summaries = collect_observations(targets, reports, targets_sha, nad_diagnostic_count)
     originals = {r['key']: r for r in inputs['entries']}
     native = native_index(departments)
-    candidates, withheld = [], []
+    candidates, withheld, consensus_vetoes = [], [], []
     outcomes = collections.Counter()
     for target in sorted(targets, key=lambda row: row['key']):
         key = target['key']
         observed = sorted(points.get(key, []), key=selection_rank)
+        native_matches = matching_records(target, native)
+        native_qualified = [record for record, _ in native_matches if not record['withheldReason']]
+        native_issues = [record for record, _ in native_matches if record['withheldReason'] == 'coordinate-reused-across-distinct-addresses']
+        if native_issues:
+            source_vetoes[key].append({'source': 'neris', 'key': key, 'reasons': ['coordinate-reused-across-distinct-addresses'],
+                                      'nativeIds': sorted(record['object']['id'] for record in native_issues)})
+        if target.get('sourceCounty') and any(record['countyFips'] != target['sourceCounty'] for record in native_qualified):
+            source_vetoes[key].append({'source': 'neris', 'key': key, 'reasons': ['native-source-county-disagreement'],
+                                      'nativeIds': sorted(record['object']['id'] for record in native_qualified)})
         if source_vetoes.get(key):
             withheld.append({'key': key, 'originalPrimaryKey': target['originalPrimaryKey'],
-                             'reason': 'valid-independent-source-conflict', 'sourceConflicts': source_vetoes[key]})
+                             'targetAddress': target['address'], 'reason': 'valid-independent-source-conflict', 'sourceConflicts': source_vetoes[key]})
+            consensus_vetoes.extend({'originalPrimaryKey': target['originalPrimaryKey'], 'targetAddress': target['address'],
+                                     'source': conflict['source'], 'reasons': conflict['reasons']} for conflict in source_vetoes[key])
             outcomes['valid-independent-source-conflict'] += 1
             continue
         if not observed:
             outcomes['no-independent-address-point'] += 1
             continue
         coords = [[p['match']['latitude'], p['match']['longitude']] for p in observed]
-        if len({p['countyFips'] for p in observed}) != 1 or any(distance(a, b) > MAX_DISTANCE for i, a in enumerate(coords) for b in coords[i+1:]):
+        endpoints = [point for observation in observed for point in point_witnesses(observation['match'], target['address'])]
+        endpoints.extend({'method': 'neris-reported-address', 'latitude': record['coordinates'][0],
+                          'longitude': record['coordinates'][1], 'countyFips': record['countyFips'],
+                          'nativeId': record['object']['id']} for record in native_qualified)
+        endpoint_coordinates = [[point['latitude'], point['longitude']] for point in endpoints]
+        if (not endpoints or len({point['countyFips'] for point in endpoints}) != 1 or
+                any(distance(a, b) > MAX_DISTANCE for i, a in enumerate(endpoint_coordinates) for b in endpoint_coordinates[i+1:])):
             withheld.append({'key': key, 'originalPrimaryKey': target['originalPrimaryKey'],
-                             'reason': 'independent-coordinate-disagreement', 'sourcePoints': observed})
+                             'targetAddress': target['address'], 'reason': 'independent-coordinate-disagreement', 'sourcePoints': observed,
+                             'allQualifiedNativeEndpoints': endpoints})
+            consensus_vetoes.append({'originalPrimaryKey': target['originalPrimaryKey'], 'targetAddress': target['address'],
+                                     'source': 'neris-site-source-consensus', 'reasons': ['independent-coordinate-disagreement']})
             outcomes['independent-coordinate-disagreement'] += 1
             continue
         selected = observed[0]
@@ -161,7 +182,7 @@ def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, meth
         if proof['method'] != method or proof['sourceSha256'] != SOURCE_SHA or proof['nerisIndexSha256'] != INDEX_SHA or proof['nationalRegistrySha256'] != NATIONAL_SHA:
             raise ValueError('Unexpected frozen native identity proof')
         comparisons = []
-        for record, basis in matching_records(target, native):
+        for record, basis in native_matches:
             obj = record['object']
             coordinate = record['coordinates']
             comparisons.append({'nativeId': obj['id'], 'objectId': obj['oid'],
@@ -182,6 +203,7 @@ def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, meth
                              'sourceReportDigests': {source: metadata['reportSha256'] for source, metadata in summaries.items()},
                              'selectedCoordinates': selected_coordinates,
                              'sourceObservations': observed,
+                             'allQualifiedNativeEndpoints': endpoints,
                              'nativeNerisObservations': sorted(comparisons, key=lambda row: row['nativeId'])}
         candidates.append({'key': original['key'], 'source': original['source'], 'state': original['state'],
                            'originalAddress': copy.deepcopy(original.get('address')), 'originalStatus': original['status'],
@@ -194,7 +216,7 @@ def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, meth
             'targetVariantsSha256': targets_sha, 'targetVariantCount': len(targets),
             'completeRequiredSources': set(reports) == REQUIRED_SOURCES,
             'requiredSources': sorted(REQUIRED_SOURCES), 'sourceReports': summaries,
-            'candidates': candidates, 'withheld': withheld, 'outcomes': dict(sorted(outcomes.items())),
+            'candidates': candidates, 'withheld': withheld, 'consensusVetoes': consensus_vetoes, 'outcomes': dict(sorted(outcomes.items())),
             'limitations': 'The department/site association remains inferred. Physical native NERIS addresses are separately geocoded; all native coordinates and discrepancies remain in the proof. HIFLD observations can share an originating dataset and are not independent votes. No operational status or rooftop accuracy is certified.'}
 
 

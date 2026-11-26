@@ -86,3 +86,13 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain replayed NERIS mailing identities and actual frozen physical site targets"
           git push origin HEAD
+  owned-tests:
+    if: contains(github.event.head_commit.message, '[test-neris-profiles]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate native identity, component and complete endpoint guards
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_primary_rebuilt.py scripts/data/test_neris_mailing_sites.py scripts/data/test_neris_geocoded_sites.py

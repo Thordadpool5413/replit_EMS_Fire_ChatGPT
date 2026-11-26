@@ -4,8 +4,7 @@ import functools
 from address_normalization import normalize_street, source_street_line
 from recover_neris_primary import source_objects, load_departments, load_boundaries, matching_records, make_match, distance
 
-QUALIFIED_NATIVE_ISSUES = {'coordinate-reused-across-distinct-addresses', 'native-parent-name-conflict',
-                          'conflicting-native-address-lines'}
+QUALIFIED_NATIVE_ISSUES = {'coordinate-reused-across-distinct-addresses'}
 
 
 @functools.lru_cache(maxsize=1)

@@ -185,6 +185,14 @@ def validate_geocoded_primary_entry(entry, national_row=None):
         return False
 
 
+def consensus_witnesses(entry):
+    if not validate_geocoded_primary_entry(entry):
+        raise ValueError('Unvalidated independently geocoded NERIS primary entry')
+    from neris_profile_witnesses import native_witnesses
+    observed = entry['primaryAddressEvidence']['geocoding']['sourceObservations']
+    return [{'match': row['match'], 'targetAddress': entry['address'], 'countyFips': row['countyFips']} for row in observed] + native_witnesses(entry['address'])
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--targets', type=pathlib.Path)

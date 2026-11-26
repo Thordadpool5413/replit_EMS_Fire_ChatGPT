@@ -133,16 +133,9 @@ def load_departments():
 
 
 def load_primary():
-    idx = json.loads((LOCATIONS/'index.json').read_bytes())
-    rows = []
-    for chunk in idx['chunks']:
-        data = (LOCATIONS/chunk['file']).read_bytes()
-        if sha(data) != chunk['sha256']:
-            raise ValueError('Primary source snapshot changed')
-        rows.extend(json.loads(data))
-    if len(rows) != 46791 or len({r['key'] for r in rows}) != 46791:
-        raise ValueError('Original primary denominator changed')
-    return rows
+    from primary_recovery_baseline import load_primary_baseline
+    _, entries, _ = load_primary_baseline()
+    return entries
 
 
 def source_objects(departments, boundaries):

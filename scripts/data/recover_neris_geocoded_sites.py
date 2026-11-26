@@ -16,7 +16,7 @@ from backfill_provider_locations import ROOT, sha
 from address_normalization import physical_address, normalize_street, source_street_line, normalized_city
 from recover_neris_primary import (dump, load_departments, load_boundaries, source_objects,
                                  matching_records, valid_point, distance, SOURCE_SHA, INDEX_SHA, NATIONAL_SHA)
-from prepare_neris_independent_sites import prepare
+from prepare_neris_independent_sites import prepare_original_batch
 from retain_neris_primary import DEFAULT as PRIMARY_EVIDENCE
 
 TARGET_SHA = 'cb4c896b00f7ca2a1710a57a142f94e67b0e4463871e217ae9b1a8eeafe7744a'
@@ -38,21 +38,21 @@ def load_target_inputs(path):
         approved = json.loads(archive.read('candidates.json'))
     # The target batch is frozen. Later conservative legacy audits may expose
     # additional unresolved records; those do not silently expand this batch.
-    expected, counts = prepare(inputs, approved, load_departments(), {t['originalPrimaryKey'] for t in targets})
+    expected, counts = prepare_original_batch(inputs, approved, load_departments())
     if dump(expected) != raw or len(targets) != 1251 or len({t['originalPrimaryKey'] for t in targets}) != 1251:
         raise ValueError('NERIS target variants no longer reproduce their reciprocal native identity proof')
     return targets, inputs
 
 
-def source_rows(source, report):
+def source_rows(source, report, targets_sha=TARGET_SHA, nad_diagnostic_count=1251):
     if source not in SOURCE_METHODS:
         raise ValueError('Unknown independent address source')
     if source == 'nad':
         from stage_nad_primary import ARCHIVE_SHA, SOURCE_COUNT
-        if report.get('source') != 'nad-bulk-r24' or report.get('sourceArchiveSha256') != ARCHIVE_SHA or report.get('sourceCount') != SOURCE_COUNT or report.get('originalPrimaryCount') != 46791 or report.get('additionalDiagnosticTargets') != 1251 or not isinstance(report.get('rejected'), list):
+        if report.get('source') != 'nad-bulk-r24' or report.get('sourceArchiveSha256') != ARCHIVE_SHA or report.get('sourceCount') != SOURCE_COUNT or report.get('originalPrimaryCount') != 46791 or report.get('additionalDiagnosticTargets') != nad_diagnostic_count or not isinstance(report.get('rejected'), list):
             raise ValueError('NAD source report lacks complete frozen-target and conflict accounting')
         return report.get('diagnosticCandidates', [])
-    if report.get('source') != source or report.get('baselineIndexSha256') != TARGET_SHA or report.get('sourceStats', {}).get('completeRowsScanned') != FEDERAL_COUNTS[source] or report.get('sourceStats', {}).get('coordinateAuditRowsScanned') != FEDERAL_COUNTS[source]:
+    if report.get('source') != source or report.get('baselineIndexSha256') != targets_sha or report.get('sourceStats', {}).get('completeRowsScanned') != FEDERAL_COUNTS[source] or report.get('sourceStats', {}).get('coordinateAuditRowsScanned') != FEDERAL_COUNTS[source]:
         raise ValueError('Independent source report is not a complete frozen-target audit')
     return report['candidates']
 
@@ -69,13 +69,13 @@ def point_matches_target(target, address, basis, source):
             source == 'nad' and basis == 'normalized-street-city-state' and city)
 
 
-def collect_observations(targets, reports):
+def collect_observations(targets, reports, targets_sha=TARGET_SHA, nad_diagnostic_count=1251):
     desired = {t['key']: t for t in targets}
     points = collections.defaultdict(list)
     vetoes = collections.defaultdict(list)
     summaries = {}
     for source, report in sorted(reports.items()):
-        selected = source_rows(source, report)
+        selected = source_rows(source, report, targets_sha, nad_diagnostic_count)
         seen = set()
         for candidate in selected:
             key = candidate['key']
@@ -103,7 +103,9 @@ def collect_observations(targets, reports):
             key = rejected['key']
             reasons = set(rejected.get('reasons', []))
             consequential = reasons & {'independent-source-rows-disagree', 'primary-source-county-disagreement',
-                                       'conflicting-native-points', 'original-source-county-disagreement', 'nonactive-lifecycle'}
+                                       'conflicting-native-points', 'original-source-county-disagreement', 'native-source-county-disagreement',
+                                       'source-coordinate-shared-across-distinct-addresses',
+                                       'coordinate-reused-across-distinct-addresses', 'nonactive-lifecycle'}
             if key in desired and consequential:
                 vetoes[key].append({'source': source, **copy.deepcopy(rejected)})
         summaries[source] = {'method': SOURCE_METHODS[source], 'reportSha256': sha(dump(report)),
@@ -128,8 +130,8 @@ def selection_rank(point):
             str(point['match']['point'].get('objectId', '')))
 
 
-def generate(targets, inputs, reports, departments):
-    points, source_vetoes, summaries = collect_observations(targets, reports)
+def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, method=METHOD, nad_diagnostic_count=1251):
+    points, source_vetoes, summaries = collect_observations(targets, reports, targets_sha, nad_diagnostic_count)
     originals = {r['key']: r for r in inputs['entries']}
     native = native_index(departments)
     candidates, withheld = [], []
@@ -156,7 +158,7 @@ def generate(targets, inputs, reports, departments):
         original = originals[target['originalPrimaryKey']]
         proof = copy.deepcopy(target['primaryAddressEvidence'])
         proof.pop('diagnosticOnly')
-        if proof['method'] != METHOD or proof['sourceSha256'] != SOURCE_SHA or proof['nerisIndexSha256'] != INDEX_SHA or proof['nationalRegistrySha256'] != NATIONAL_SHA:
+        if proof['method'] != method or proof['sourceSha256'] != SOURCE_SHA or proof['nerisIndexSha256'] != INDEX_SHA or proof['nationalRegistrySha256'] != NATIONAL_SHA:
             raise ValueError('Unexpected frozen native identity proof')
         comparisons = []
         for record, basis in matching_records(target, native):
@@ -173,7 +175,7 @@ def generate(targets, inputs, reports, departments):
         for i, point in enumerate(observed):
             point['selected'] = i == 0
             point['distanceToSelectedMeters'] = round(distance(coords[i], selected_coordinates), 6)
-        proof['geocoding'] = {'targetKey': key, 'targetsSha256': TARGET_SHA,
+        proof['geocoding'] = {'targetKey': key, 'targetsSha256': targets_sha,
                              'selectionBasis': 'separate-public-source-exact-native-site-address',
                              'nativeCoordinatesUsed': False, 'maximumIndependentSeparationMeters': MAX_DISTANCE,
                              'auditedSources': sorted(reports),
@@ -188,8 +190,8 @@ def generate(targets, inputs, reports, departments):
         outcomes[proof['siteRole']] += 1
         outcomes['selected-' + selected['source']] += 1
         outcomes['native-coordinate-discrepancy-recorded'] += any(r['distanceToSelectedMeters'] is not None and r['distanceToSelectedMeters'] > MAX_DISTANCE for r in comparisons)
-    return {'schemaVersion': 1, 'method': METHOD, 'originalPrimaryIdentityCount': 46791,
-            'targetVariantsSha256': TARGET_SHA, 'targetVariantCount': len(targets),
+    return {'schemaVersion': 1, 'method': method, 'originalPrimaryIdentityCount': 46791,
+            'targetVariantsSha256': targets_sha, 'targetVariantCount': len(targets),
             'completeRequiredSources': set(reports) == REQUIRED_SOURCES,
             'requiredSources': sorted(REQUIRED_SOURCES), 'sourceReports': summaries,
             'candidates': candidates, 'withheld': withheld, 'outcomes': dict(sorted(outcomes.items())),

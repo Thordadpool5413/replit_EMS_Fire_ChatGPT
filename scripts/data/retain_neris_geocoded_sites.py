@@ -18,11 +18,11 @@ from stage_usgs_primary import validate_inventory, match_inventory
 EVIDENCE = ROOT/'scripts/data/evidence/primary-neris-geocoded-sites/2026-11-26'
 
 
-def dependencies():
+def dependencies(nad_evidence=None):
     from stage_nad_primary import EVIDENCE as NAD_EVIDENCE
     result = {}
     for source in sorted(REQUIRED_SOURCES):
-        directory = NAD_EVIDENCE if source == 'nad' else evidence_directory(source)
+        directory = (nad_evidence or NAD_EVIDENCE) if source == 'nad' else evidence_directory(source)
         manifest = json.loads((directory/'manifest.json').read_bytes())
         result[source] = {'directory': str(directory.relative_to(ROOT)),
                           'archiveSha256': manifest['archiveSha256'],
@@ -30,7 +30,7 @@ def dependencies():
     return result
 
 
-def replay_federal(source, report, targets):
+def replay_federal(source, report, targets, targets_sha=TARGET_SHA):
     evidence = evidence_directory(source)
     manifest = json.loads((evidence/'manifest.json').read_bytes())
     if manifest['source'] != source or digest_file(evidence/'original.zip') != manifest['archiveSha256']:
@@ -53,21 +53,25 @@ def replay_federal(source, report, targets):
         validate_inventory(directory, inventory)
         if inventory['sourceSha256'] != manifest['sourceInventorySha256']:
             raise ValueError('Independent source inventory pin changed')
-        replay = match_inventory(directory, inventory, targets, TARGET_SHA)
+        replay = match_inventory(directory, inventory, targets, targets_sha)
         if replay != report:
             raise ValueError('Frozen NERIS target geocodes do not replay from complete '+source+' evidence')
 
 
-def replay_nad(report, targets):
+def replay_nad(report, targets, evidence=None, diagnostic_count=1251, exact_targets=True):
     from stage_nad_primary import verify, EVIDENCE as NAD_EVIDENCE
-    verify()
-    with zipfile.ZipFile(NAD_EVIDENCE/'original.zip') as archive:
+    evidence = evidence or NAD_EVIDENCE
+    verify(evidence)
+    with zipfile.ZipFile(evidence/'original.zip') as archive:
         native_report = json.loads(archive.read('report.json'))
         inputs = json.loads(archive.read('inputs.json'))
     if native_report != report:
         raise ValueError('NAD report differs from complete retained native-row/reuse replay')
     source_targets = {e['key']: e for e in inputs['entries'] if e.get('originalPrimaryKey')}
-    if set(source_targets) != {t['key'] for t in targets} or any(source_targets[t['key']] != t for t in targets):
+    target_keys = {t['key'] for t in targets}
+    if (len(source_targets) != diagnostic_count or report.get('additionalDiagnosticTargets') != diagnostic_count or
+            not target_keys <= set(source_targets) or exact_targets and set(source_targets) != target_keys or
+            any(source_targets[t['key']] != t for t in targets)):
         raise ValueError('Independent NAD native-point targets changed')
 
 
@@ -75,6 +79,12 @@ def replay_all(targets, inputs, reports, expected):
     if set(reports) != REQUIRED_SOURCES or not expected.get('completeRequiredSources'):
         raise ValueError('Every required independent source must be audited before publication')
     verify_primary(PRIMARY_EVIDENCE)
+    from prepare_neris_independent_sites import prepare_original_batch
+    with zipfile.ZipFile(PRIMARY_EVIDENCE/'original.zip') as archive:
+        core = json.loads(archive.read('candidates.json'))
+    reproduced, _ = prepare_original_batch(inputs, core, load_departments())
+    if reproduced != targets:
+        raise ValueError('Frozen NERIS target scope or reciprocal identity does not replay')
     for source in sorted(REQUIRED_SOURCES):
         if source == 'nad':
             replay_nad(reports[source], targets)
@@ -162,14 +172,15 @@ def validate_geocoded_candidate(candidate, original_entry, national_row=None):
         return False
 
 
-def validate_geocoded_primary_entry(entry):
+def validate_geocoded_primary_entry(entry, national_row=None):
     try:
         candidates, originals, national = candidate_index()
         candidate = candidates.get(entry['key'])
         original = originals.get(entry['key'])
         return bool(candidate and original and entry.get('status') == 'mapped' and
-                    all(entry.get(k) == original.get(k) for k in ('key', 'name', 'source', 'state', 'sourceCounty')) and
-                    all(entry.get(k) == candidate.get(k) for k in ('address', 'countyFips', 'match', 'primaryAddressEvidence')))
+                    all(entry.get(k) == original.get(k) for k in ('key', 'name', 'source', 'sourceDate', 'state', 'sourceCounty')) and
+                    all(entry.get(k) == candidate.get(k) for k in ('address', 'countyFips', 'match', 'primaryAddressEvidence')) and
+                    (national_row is None or national_row == national.get(entry['key'])))
     except (ValueError, KeyError, TypeError, OSError, zipfile.BadZipFile):
         return False
 

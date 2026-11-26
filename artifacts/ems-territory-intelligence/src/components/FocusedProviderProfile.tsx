@@ -103,6 +103,7 @@ import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
 import {CmsAmbulanceEvidencePanel} from './profile/CmsAmbulanceEvidencePanel';
+import {NppesPracticeLocationsPanel} from './profile/NppesPracticeLocationsPanel';
 import { FactReviewPanel } from './profile/FactReviewPanel';
 import { ADDRESS_CANDIDATE_FIELD } from '../services/addressCandidateValidation';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
@@ -1079,6 +1080,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
             <TexasProfileLocationEvidence key={rawAgency.id+':texas-location-review'} agency={rawAgency} directory={directoryAgencies}/>
+            <NppesPracticeLocationsPanel key={rawAgency.id+':nppes-practice'} agency={rawAgency}/>
             <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}} onReviewCandidate={()=>{setRequestedReviewField(ADDRESS_CANDIDATE_FIELD);navigateProfileSection('evidence');}}/>
             {(()=>{const c=providerAddressReview(rawAgency,directoryAgencies);return c&&c.countyVerified&&!c.sharedSourcePoint?<PrivateCoordinateMap key={rawAgency.id+':'+c.sourceIdentityKey+':'+c.snapshotGeneratedAt} agencyId={rawAgency.id} candidate={c}/>:null;})()}
             <div className="acp-contact-row" aria-label="Agency contact actions">

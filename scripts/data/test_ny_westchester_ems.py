@@ -20,3 +20,11 @@ class RegionalRosterTests(unittest.TestCase):
     def test_reject_changed_schema(self):
         with self.assertRaises(ValueError):parse(fixture([row('Example','0012')]).replace('Headquarters Street','Unknown'),minimum=1)
         with self.assertRaises(ValueError):parse(fixture([row('Example','0012')[:-1]]),minimum=1)
+
+    def test_optional_html_table_end_tags(self):
+        raw=fixture([row('Example EMS','0012'),row('Second EMS','0013')])
+        raw=raw.replace('</td>','').replace('</th>','').replace('</tr>','')
+        records=parse(raw,minimum=2)
+        self.assertEqual([r['agencyCodeAsReported'] for r in records],['0012','0013'])
+        # An unrelated outer layout table cannot interrupt the exact roster header.
+        self.assertEqual(len(parse('<table><tr><td>'+raw+'</table>',minimum=2)),2)

@@ -102,6 +102,7 @@ import { FieldNotesPanel } from './profile/FieldNotesPanel';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
+import {CmsAmbulanceEvidencePanel} from './profile/CmsAmbulanceEvidencePanel';
 import { FactReviewPanel } from './profile/FactReviewPanel';
 import { ADDRESS_CANDIDATE_FIELD } from '../services/addressCandidateValidation';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
@@ -1991,6 +1992,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
+                {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency}/>}
                 {activeSection === 'medicare' && (
           <FinancialIntelligence
             agency={agency}

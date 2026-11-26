@@ -6,12 +6,18 @@ from stage_usgs_primary import SOURCES,distance_m,dump
 from diagnose_federal_city_fallback import diagnose
 from retain_federal_primary_points import evidence_directory,retained_files
 from retain_nppes_native_source import DEFAULT as NATIVE_EVIDENCE
-from recover_nppes_primary_components import EVIDENCE as STRICT_COMPONENT_EVIDENCE,inputs as native_inputs
+from recover_nppes_primary_components import EVIDENCE as STRICT_COMPONENT_EVIDENCE,inputs as native_inputs,verify as verify_strict_components
 
 PROFILE='exact-street-city-state-native-postal-difference'
 EVIDENCE=ROOT/'scripts/data/evidence/primary-federal-city-fallback/2026-11-26'
 
+@functools.lru_cache(maxsize=1)
+def verified_dependencies():
+ # The strict profile replays the full native CMS scope and all three source negative tables.
+ return verify_strict_components(complete=True)
+
 def inputs():
+ verified_dependencies()
  snapshot,components,_=native_inputs();targets=[('original',e)for e in snapshot['entries']]+[('cms-native',e)for e in components]
  vetoes=set();strict_points=collections.defaultdict(list)
  with zipfile.ZipFile(STRICT_COMPONENT_EVIDENCE/'original.zip')as z:cms={s:json.loads(z.read('reports/'+s+'.json'))for s in SOURCES}

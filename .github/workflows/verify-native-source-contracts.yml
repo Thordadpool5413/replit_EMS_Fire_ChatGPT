@@ -1,0 +1,22 @@
+name: Verify native source contracts
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+permissions:
+  contents: read
+jobs:
+  native-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and interpolation guards
+        run: |
+          set -euo pipefail
+          python3 -m pip install 'pyshp==2.3.1'
+          python3 -m py_compile scripts/data/recover_nppes_native_primary.py scripts/data/retain_nppes_native_source.py scripts/data/recover_nppes_primary_components.py scripts/data/diagnose_federal_city_fallback.py scripts/data/retain_federal_city_points.py scripts/data/stage_tiger_primary.py scripts/data/checkpoint_tiger_source.py scripts/data/match_tiger_primary.py scripts/data/retain_tiger_primary.py scripts/data/build_tiger_point_contract.py
+          python3 -m unittest discover -s scripts/data -p test_nppes_native_primary.py
+          python3 -m unittest discover -s scripts/data -p test_tiger_primary.py

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "source": "tiger-2026-addrfeat",
+  "method": "tiger-address-range",
+  "originalPrimaryCount": 46791,
+  "candidateCount": 962,
+  "diagnosticCandidateCount": 1082,
+  "diagnosticScopes": {
+    "neris-native": 388,
+    "cms-native": 352,
+    "additional-native": 342
+  },
+  "sourceCountyFileCount": 3227,
+  "sourceCount": 23314306,
+  "retainedNativeFeatureCount": 843830,
+  "sourceInventorySha256": "f615f787d12195cca39440f23ca3bfdf7ade566b9944f28d5e4788a24bc646f7",
+  "archiveSha256": "e7082171189f472740d04bc9a6c18de00f6464553e05ab701419c527c9a88286",
+  "reportSha256": "dbfbb26f44490ec9f20b4199def0a217c6b14cb0b0365a6f08cb0f7b247fb6da",
+  "targetsSha256": "f61bd3e63cb0ba79da2ed0dcf3adcf9120716829dac56a8a66ec82c6787e7a3b",
+  "additionalDiagnosticTargetsSha256": "bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a",
+  "outcomes": {
+    "additional-native:accepted-range": 342,
+    "additional-native:native-range-conflict": 68,
+    "additional-native:no-exact-native-numeric-range": 684,
+    "cms-native:accepted-range": 352,
+    "cms-native:native-range-conflict": 5,
+    "cms-native:no-exact-native-numeric-range": 252,
+    "neris-native:accepted-range": 388,
+    "neris-native:native-range-conflict": 75,
+    "neris-native:no-exact-native-numeric-range": 788,
+    "original:accepted-range": 962,
+    "original:ineligible-original-status": 31538,
+    "original:native-range-conflict": 126,
+    "original:no-exact-native-numeric-range": 14165
+  },
+  "interpretation": "Approximate numeric house-range interpolation along complete native NAD83 street geometry. Native parity, flags, county and every conflicting range are retained. No building, occupancy, present headquarters, or street-side offset is inferred.",
+  "publication": "source candidates only; net coverage requires combined original-denominator audit",
+  "sourceReplayRun": "https://github.com/Thordadpool5413/replit_EMS_Fire_ChatGPT/actions/runs/45832566373"
+}

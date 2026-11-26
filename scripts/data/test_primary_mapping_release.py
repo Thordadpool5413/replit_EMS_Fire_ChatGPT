@@ -224,4 +224,13 @@ class PrimaryReleaseTest(unittest.TestCase):
         self.assertEqual(rows,[self.original()])
         self.assertEqual([row['source'] for row in review['qualifiedSourceConflicts'][0]['sourceRejections']],['usgs'])
 
+
+    def test_explicit_native_range_address_binds_a_composite_target_inventory(self):
+        candidate=self.candidate('tiger-address-range')
+        rejection={'key':candidate['key'],'address':candidate['address'],
+                   'reasons':['conflicting-native-ranges']}
+        rows,_=self.run_reports([{'source':'tiger-2026-addrfeat','method':'tiger-address-range',
+            'targetsSha256':'b'*64,'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+
 if __name__=='__main__':unittest.main()

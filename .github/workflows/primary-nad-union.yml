@@ -1,0 +1,33 @@
+name: Rebuild the combined native NAD runtime bindings
+on:
+  push:
+    branches: [atlas/reach-95-primary-mapping]
+permissions:
+  contents: read
+jobs:
+  nad:
+    if: contains(github.event.head_commit.message, '[refresh-nad-pins]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay both complete native editions and generate their union
+        run: python3 -u scripts/data/build_nad_point_contract.py
+      - name: Verify release and native grid safeguards
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_primary_mapping_release.py
+          python3 -m unittest discover -s scripts/data -p test_neris_grid_points.py
+      - name: Retain the exact runtime union on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-nad-union-$GITHUB_RUN_ID"
+          git add artifacts/ems-territory-intelligence/src/services/nadPrimaryPointPins.ts artifacts/api-server/src/lib/nadPrimaryPointPins.ts
+          git commit -m "Bind original and extended native NAD points without replacing prior pins"
+          git push origin HEAD

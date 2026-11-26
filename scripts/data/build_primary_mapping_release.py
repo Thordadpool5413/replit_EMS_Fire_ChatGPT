@@ -210,7 +210,7 @@ def collect_vetoes(originals, reports, target_batches=()):
                 key = row.get('originalPrimaryKey') or row.get('primaryKey') or row.get('key', '').split('@', 1)[0]
                 if key not in originals:
                     raise ValueError('Qualified rejection is not bound to an original primary identity')
-                address = row.get('targetAddress')
+                address = row.get('targetAddress') or row.get('address')
                 target = report_targets.get(row.get('key'))
                 if address and target and address != target.get('address'):
                     raise ValueError('Explicit rejection address differs from its declared source target')

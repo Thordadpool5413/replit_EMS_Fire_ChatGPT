@@ -1,6 +1,7 @@
 import collections
 import copy
 import unittest
+from unittest.mock import patch
 from recover_neris_grid_points import is_grid_address, native_component, source_records, select
 from address_normalization import normalize_street, source_street_line
 from test_neris_primary_rebuilt import department, primary
@@ -54,6 +55,16 @@ class NativeGridTests(unittest.TestCase):
     def test_source_county_is_a_veto(self):
         e = entry(); e['sourceCounty'] = '55001'
         self.assertEqual(choose([dept()], e)[1], 'native-grid-source-county-disagreement')
+
+    def test_numeric_targets_see_distinct_grid_address_reuse_without_changing_core_report(self):
+        from retain_neris_grid_points import grid_aware_native_reuse_vetoes
+        numeric = dept(1, '123 Main Street'); grid = dept(2, 'N123W456 Other Road')
+        records, _ = source_records([numeric, grid], BOUNDARIES); index = collections.defaultdict(list)
+        for row in records:
+            a = row['address']; index[(a['state'], normalize_street(source_street_line(a['street'])))].append(row)
+        a = {**entry()['address'], 'street': '123 Main Street'}
+        with patch('retain_neris_grid_points._grid_complete_index', return_value=index):
+            self.assertEqual(grid_aware_native_reuse_vetoes(a), ['coordinate-reused-across-distinct-addresses'])
 
     def test_exact_native_city_is_required(self):
         d = dept(); d['address'][2] = 'Different City'

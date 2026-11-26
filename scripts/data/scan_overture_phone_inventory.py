@@ -98,7 +98,7 @@ def scan_file(source,expected_digest,work,wanted,target_sha):
     if expected_digest and digest!=expected_digest:raise ValueError('Full Places source file differs from original retained edition')
     c=connection();c.execute("SET temp_directory='"+str(work/'duckdb-temp').replace("'","''")+"'")
     counts=c.execute("""SELECT count(*),count(*)FILTER(WHERE list_contains(list_transform(addresses,lambda a:a.country),'US')),
-        coalesce(sum(array_length(phones)),0) FROM read_parquet(?)""",[str(original)]).fetchone()
+        coalesce(sum(array_length(phones)),0) FROM read_parquet(?)""",[str(original)]).fetchall()[0]
     if counts[0]!=source['rows']:raise ValueError('Complete source row count changed')
     c.register('wanted_phones',pa.table({'phone':sorted(wanted)}))
     # This considers every ten-digit window, including conservative malformed
@@ -131,7 +131,7 @@ def scan_file(source,expected_digest,work,wanted,target_sha):
           FROM read_parquet(?,file_row_number=true)
           WHERE list_contains(list_transform(addresses,lambda a:a.country),'US'))TO?(FORMAT PARQUET,COMPRESSION ZSTD)""",
           [str(original),str(part)])
-        if c.execute('SELECT count(*)FROM read_parquet(?)',[str(part)]).fetchone()[0]!=counts[1]:
+        if c.execute('SELECT count(*)FROM read_parquet(?)',[str(part)]).fetchall()[0][0]!=counts[1]:
             raise ValueError('Incomplete full-native US projection')
         # Compare every phone-selected US row against its actual complete file.
         us_records={r['sourceRowNumber']:r for r in records if any(a.get('country')=='US'for a in r['nativeRecord'].get('addresses')or[])}

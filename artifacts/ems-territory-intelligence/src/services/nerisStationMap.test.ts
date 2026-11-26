@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {validateNerisMapShard,filterNerisMap,filterNerisCountyStations,groupNerisMap} from './nerisStationMap';
+import {validateNerisMapShard,filterNerisMap,filterNerisCountyStations,groupNerisMap,nerisParentDepartmentIdentity} from './nerisStationMap';
+import {registryIdentityKey} from './registryAccountLink';
 const read=async(path:string)=>JSON.parse(await readFile(new URL('../../public/registry/'+path,import.meta.url),'utf8'));
 test('national station discovery uses actual retained source, geographic state and bounded grouping',async()=>{
  const i=await read('neris-station-map/index.json'),m=await read('national/index.json');
@@ -18,5 +19,11 @@ test('national station discovery uses actual retained source, geographic state a
  assert.equal(filterNerisMap(data,{...scope,state:cross.parentState}).length,0);
  assert.equal(filterNerisMap(data,{...scope,category:'ems'}).length,0);
  assert.equal(filterNerisMap(data,{...scope,county:'not-a-county'}).length,0);
+  const parentIdentity=nerisParentDepartmentIdentity(cross,i.retrievedAt);
+  assert.equal(parentIdentity.identifier,cross.parentId);
+  assert.notEqual(parentIdentity.identifier,cross.id);
+  assert.equal(parentIdentity.city,undefined);
+  assert.equal(parentIdentity.address,undefined);
+  assert.equal(registryIdentityKey(parentIdentity),'NERIS:'+cross.parentId);
  const c=i.chunks[0];assert.throws(()=>validateNerisMapShard(chunks[0].slice(1),c,m.countyNames));
 });

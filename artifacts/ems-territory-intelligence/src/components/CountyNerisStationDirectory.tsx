@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { Agency } from '../types';
 import { filterNerisCountyStations, linkedNerisAccount, loadNerisMapState } from '../services/nerisStationMap';
 import { nerisObjectUrl } from '../services/nerisStationCatalog';
+import { nerisParentDepartmentIdentity } from '../services/nerisStationMap';
+import { RegistryAccountReview } from './RegistryAccountReview';
+import type { AgencySourceRecordAssociation } from '../types';
 
 const PAGE_SIZE = 10;
 
@@ -12,6 +15,7 @@ export function CountyNerisStationDirectory({
   city = '',
   agencies = [],
   onOpenSavedAgency,
+  onDecideSourceRecord,
 }: {
   stateCode: string;
   countyFips: string;
@@ -19,6 +23,7 @@ export function CountyNerisStationDirectory({
   city?: string;
   agencies?: Agency[];
   onOpenSavedAgency?: (agency: Agency) => void;
+  onDecideSourceRecord?: (id: string, association: AgencySourceRecordAssociation) => void;
 }) {
   const [data, setData] = useState<Awaited<ReturnType<typeof loadNerisMapState>> | null>(null);
   const [error, setError] = useState('');
@@ -53,6 +58,28 @@ export function CountyNerisStationDirectory({
     [data, countyFips, city, query],
   );
   const parentCount = useMemo(() => new Set(stations.map((station) => station.parentId)).size, [stations]);
+  const parents = useMemo(() => {
+    const grouped = new Map<string, { parentId: string; names: Set<string>; stationCount: number; conflict: boolean }>();
+    for (const station of stations) {
+      const current = grouped.get(station.parentId) ?? {
+        parentId: station.parentId,
+        names: new Set<string>(),
+        stationCount: 0,
+        conflict: false,
+      };
+      current.names.add(station.parentName);
+      current.stationCount += 1;
+      current.conflict ||= station.parentNameConflict;
+      grouped.set(station.parentId, current);
+    }
+    return [...grouped.values()]
+      .map((parent) => ({
+        ...parent,
+        name: [...parent.names].sort((a, b) => a.localeCompare(b))[0] ?? 'Name not reported',
+        conflict: parent.conflict || parent.names.size > 1,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.parentId.localeCompare(b.parentId));
+  }, [stations]);
   const pageCount = Math.max(1, Math.ceil(stations.length / PAGE_SIZE));
   const visibleStations = stations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -106,6 +133,44 @@ export function CountyNerisStationDirectory({
           <p role="status" className="text-sm font-medium text-slate-800 dark:text-slate-100">
             {stations.length.toLocaleString()} station source records · {parentCount.toLocaleString()} parent department IDs represented · County FIPS {countyFips}
           </p>
+          {parents.length > 0 && (
+            <details className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60" data-testid="county-parent-profile-links">
+              <summary className="cursor-pointer font-semibold text-slate-900 dark:text-white">
+                Connect {parents.length.toLocaleString()} parent departments to saved profiles
+              </summary>
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                Each review uses the exact NERIS parent department ID, not the individual station ID. A parent profile may have a different recorded location; linking does not establish county service area. A source listing is not linked unless a user reviews and confirms the association.
+              </p>
+              <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-700">
+                {parents.map((parent) => {
+                  const identity = nerisParentDepartmentIdentity({
+                    parentId: parent.parentId,
+                    parentName: parent.name,
+                    parentState: stateCode,
+                  }, data.retrievedAt);
+                  return (
+                    <li key={parent.parentId} className="space-y-1 py-3 first:pt-1">
+                      <p className="font-semibold text-slate-900 dark:text-white">{parent.name}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200">
+                        NERIS parent ID {parent.parentId} · {parent.stationCount.toLocaleString()} station source {parent.stationCount === 1 ? 'record' : 'records'} in this view
+                      </p>
+                      {parent.conflict && (
+                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                          Source parent-name discrepancy; review the parent ID and source evidence before linking.
+                        </p>
+                      )}
+                      <RegistryAccountReview
+                        identity={identity}
+                        agencies={agencies}
+                        onOpen={onOpenSavedAgency}
+                        onDecide={parent.conflict ? undefined : onDecideSourceRecord}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          )}
           {!stations.length ? (
             <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               No station records in this source snapshot have a point assigned to this county. Unassigned or ambiguous records are excluded; this does not establish that the county has no stations.

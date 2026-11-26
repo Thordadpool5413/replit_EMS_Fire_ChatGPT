@@ -1,5 +1,6 @@
 import type {Agency} from '../types';
 import {registryClaims} from './registryAccountLink';
+import type {RegistryIdentity} from './registryAccountLink';
 import {normalizeCountyName} from '../utils/countyIdentity';
 import {loadSourceDirectoryManifest} from './nationalSourceDirectory';
 type Address=[string|null,string|null,string|null,string,string|null];
@@ -74,6 +75,9 @@ export function filterNerisMap(data:NerisMapData,scope:{state:string;county:stri
 export function filterNerisCountyStations(data:NerisMapData,countyFips:string,city='',query=''){
  if(!/^\d{5}$/.test(countyFips))return [];
  return filterNerisMap(data,{state:data.state,county:countyFips,city:city||'all',query,category:'fire'});
+}
+export function nerisParentDepartmentIdentity(station:Pick<NerisMapRow,'parentId'|'parentName'|'parentState'>,retrievedAt:string):RegistryIdentity{
+ return {sourceName:'NERIS',identifier:station.parentId,stateCode:station.parentState,name:station.parentName,sourceUrl:'https://www.usfa.fema.gov/neris/public/',retrievedAt};
 }
 export function groupNerisMap(rows:NerisMapRow[]):NerisMapGroup[]{
  const groups=new Map<string,NerisMapGroup>();

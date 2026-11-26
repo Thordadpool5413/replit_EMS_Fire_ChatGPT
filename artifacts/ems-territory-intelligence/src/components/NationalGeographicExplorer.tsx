@@ -2402,12 +2402,14 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             providerScope={agencyCategoryFilter}
             city={selectedCityName === 'all' ? '' : selectedCityName}
             savedAgencies={agencies}
+            countyProfiles={selectedCountyName === 'all' ? [] : matchingAgencies}
+            countyProfilesStatus={effectiveDirectoryStatus}
             onOpenSavedAgency={onSelectAgency}
             onDecideSourceRecord={onDecideSourceRecord}
             onCreateAgency={onAddAgency}
           />
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
-          <div className="territory-results-summary" data-testid="territory-results-summary" aria-live="polite">
+          <div id="territory-results-summary" className="territory-results-summary scroll-mt-24" data-testid="territory-results-summary" aria-live="polite">
             <div>
               <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong><p className="text-xs">{matchingAgencies.filter(isGeographicProspect).length.toLocaleString()} geography-generated prospects; not a count of registered or operating providers.</p>
               <span> in {selectedAreaLabel}</span>

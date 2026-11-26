@@ -46,3 +46,19 @@ class TexasStageTest(unittest.TestCase):
    h=json.loads(raw)['sheets'][0]['headerCandidates'][0]
    self.assertIn('unmapped organization column',h['headers'])
    self.assertNotIn('private row text',raw.lower())
+
+ def test_pinned_official_schema_and_contact_exclusion(self):
+  from stage_texas_ems import OFFICIAL_HEADERS
+  with tempfile.TemporaryDirectory() as td:
+   p=pathlib.Path(td)/'fixture.xlsx';out=pathlib.Path(td)/'review';w=Workbook();s=w.active
+   s.append(['Official fixture report']);s.append(list(OFFICIAL_HEADERS))
+   s.append(['EMS Provider','ALS','Primary Organization','Trading Name','00123','Active','Current','2027-01-01','2020-01-01','2024-01-01','region','area','PO Box 7','Suite 3','Example','TX','75001','Example County','000-000-0000','excluded@example.invalid',4]);w.save(p)
+   r=stage(p,out,1,require_official=True)
+   row=r['records'][0]
+   self.assertEqual(row['identifier'],'00123');self.assertEqual(row['name'],'Primary Organization');self.assertEqual(row['dbaName'],'Trading Name')
+   self.assertEqual(row['stationCountAsReported'],4);self.assertEqual(row['mailingAddress2'],'Suite 3')
+   self.assertEqual(r['addressPurpose'],'mailing-only');self.assertEqual(r['identifierColumn'],'license number')
+   self.assertNotIn('excluded@example.invalid',(out/'TX-candidate.json').read_text())
+   self.assertNotIn('latitude',row);self.assertNotIn('headquartersAddress',row)
+   s['C2']='Different Name';w.save(p)
+   with self.assertRaises(ValueError):stage(p,out,1,require_official=True)

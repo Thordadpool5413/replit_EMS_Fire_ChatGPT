@@ -1,3 +1,4 @@
+import {matchesSourceAddress,sourceStreetLine,type AddressMatchBasis} from './addressNormalization';
 /** Street-level public registry location and Census range match, never a verified station. */
 export type StreetAddress={street:string;city:string;state:string;zip:string};
 export type NpiAddress={npi:string;name:string;address:StreetAddress;sourceDate:string|null};
@@ -14,7 +15,7 @@ export type RegionalPoint={source:RegionalSource;objectId:number;checkedAt:strin
 export type NerisAddressPoint={objectId:number;nativeId:string;parentId:string;sourceKind:'department'|'station';sourceDate:'2026-11-26';sourceSha256:string;countyFips:string};
 const NERIS_POINT_HASH='1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b';
 const NERIS_POINT_URL='https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer';
-type AddressCoordinates={latitude:number;longitude:number;matchedAddress:string};
+type AddressCoordinates={latitude:number;longitude:number;matchedAddress:string;sourceAddress?:StreetAddress;matchBasis?:AddressMatchBasis};
 export type AddressMatch=AddressCoordinates&({method:'census-address-range'}|{method:'nad-address-point';point:NadPoint}|{method:'ohio-lbrs-address-point';point:OhioPoint}|{method:'ny-sam-address-point';point:NyPoint}|{method:'regional-address-point';point:RegionalPoint}|{method:'neris-reported-address';point:NerisAddressPoint});
 export function addressMatchLabel(m:AddressMatch){return m.method==='neris-reported-address'?'Federal NERIS source-reported address location · end-user validation required':m.method==='nad-address-point'?'USDOT NAD address point · '+m.point.placement+(m.point.dataset==='bulk-r24'?' · release r24':''):m.method==='ny-sam-address-point'?'New York SAM address point · '+m.point.placement:m.method==='ohio-lbrs-address-point'?'Ohio LBRS public address point':m.method==='regional-address-point'?REGIONAL_POINT_SOURCES[m.point.source].label+' · '+m.point.placement:'Census approximate street-range location';}
 export function addressPointSource(m:AddressMatch):{url:string;label:string}|undefined{
@@ -84,10 +85,22 @@ export function matchedStreet(a:StreetAddress,matched:string):boolean{
  if(parts.length===3)return norm(parts[0])===norm(geocodeStreet(a.street))&&norm(parts[1])===norm(a.city)&&parts[2].toUpperCase()===a.state+' '+a.zip;
  return false;
 }
+/** A locality fallback keeps the source's actual address and names its exact basis. */
+function addressEvidence(v:Record<string,unknown>,a:StreetAddress):{sourceAddress:StreetAddress;matchBasis:AddressMatchBasis}|undefined{
+ if(v.sourceAddress===undefined&&v.matchBasis===undefined)return undefined;
+ const source=v.sourceAddress,basis=v.matchBasis;
+ if(!obj(source)||!['normalized-street-city-state-zip','normalized-street-state-zip','normalized-street-city-state'].includes(String(basis))||v.method!=='neris-reported-address')throw Error('Unsupported address correspondence evidence.');
+ if(typeof source.street!=='string'||!source.street.trim()||source.street.length>200||typeof source.city!=='string'||source.city.length>100||typeof source.state!=='string'||!/^[A-Z]{2}$/.test(source.state)||typeof source.zip!=='string'||source.zip!==''&&!/^\d{5}$/.test(source.zip)||[source.street,source.city].some(s=>/[\u0000-\u001f\u007f]/.test(s)))throw Error('Invalid reported source address.');
+ const sourceAddress={street:source.street,city:source.city,state:source.state,zip:source.zip};
+ if(!matchesSourceAddress(a,sourceAddress,basis as AddressMatchBasis)||v.matchedAddress!==[sourceStreetLine(sourceAddress.street),sourceAddress.city,sourceAddress.state,sourceAddress.zip].join(', '))throw Error('Source address does not support the primary address.');
+ return {sourceAddress,matchBasis:basis as AddressMatchBasis};
+}
 export function validateAddressMatch(v:unknown,a:StreetAddress):AddressMatch|null{
  if(v===null)return null;
- if(!obj(v)||(v.method!=='census-address-range'&&v.method!=='nad-address-point'&&v.method!=='ohio-lbrs-address-point'&&v.method!=='ny-sam-address-point'&&v.method!=='regional-address-point'&&v.method!=='neris-reported-address')||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
- const coords={latitude:v.latitude,longitude:v.longitude,matchedAddress:v.matchedAddress};
+ if(!obj(v))throw Error('Unverified address match.');
+ const evidence=addressEvidence(v,a);
+ if((v.method!=='census-address-range'&&v.method!=='nad-address-point'&&v.method!=='ohio-lbrs-address-point'&&v.method!=='ny-sam-address-point'&&v.method!=='regional-address-point'&&v.method!=='neris-reported-address')||typeof v.latitude!=='number'||!Number.isFinite(v.latitude)||Math.abs(v.latitude)>90||typeof v.longitude!=='number'||!Number.isFinite(v.longitude)||Math.abs(v.longitude)>180||v.latitude===0&&v.longitude===0||typeof v.matchedAddress!=='string'||!evidence&&!matchedStreet(a,v.matchedAddress))throw Error('Unverified address match.');
+ const coords={latitude:v.latitude,longitude:v.longitude,matchedAddress:v.matchedAddress,...evidence};
  if(v.method==='census-address-range')return {...coords,method:v.method};
  const p=v.point;
  if(v.method==='neris-reported-address'){

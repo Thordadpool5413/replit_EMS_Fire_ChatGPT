@@ -71,7 +71,8 @@ def identity_indices(inputs, supplement):
             if street:
                 primary_street[(key, street)].add(native)
     return {'sourceLocal': source_local, 'sourceStreet': source_street, 'primaryLocal': primary_local,
-            'primaryStreet': primary_street, 'national': national, 'attributes': attributes}
+            'primaryStreet': primary_street, 'national': national, 'attributes': attributes,
+            'primaryInventoryCount': sum(row[1] == 'USFA' for row in inputs['nationalRows'])}
 
 
 def correlate(entry, indices, departments_by_oid):
@@ -107,7 +108,7 @@ def correlate(entry, indices, departments_by_oid):
                        'normalizedCity': identity[1], 'state': identity[2], 'zip': identity[3],
                        'reciprocalSourceCount': 1, 'reciprocalPrimaryCount': 1,
                        'localityRole': 'native-mailing', 'sourceIdentityInventoryCount': 30700,
-                       'primaryIdentityInventoryCount': 27117, 'sourceAlternatives': ['physical', 'mailing'],
+                       'primaryIdentityInventoryCount': indices['primaryInventoryCount'], 'sourceAlternatives': ['physical', 'mailing'],
                        'nativeMailingAddressAsReported': raw,
                        'nativeMailingField': MAILING_FIELDS[matching_lines[0]] if matching_lines else None,
                        'normalizedMailingStreet': matched_street}
@@ -153,8 +154,6 @@ def generate(inputs, core, departments, supplement, boundaries):
     entries = inputs['entries']
     if len(entries) != 46791 or len({e['key'] for e in entries}) != 46791 or len(supplement['features']) != 30700:
         raise ValueError('Complete primary/native identity denominator changed')
-    if sum(e['source'] == 'USFA' for e in entries) != 27117:
-        raise ValueError('Complete USFA primary identity inventory changed')
     indices = identity_indices(inputs, supplement)
     department_index = {d['oid']: d for d in departments}
     records, stats = source_objects(departments, boundaries)
@@ -225,6 +224,8 @@ def generate(inputs, core, departments, supplement, boundaries):
     report = {'schemaVersion': 1, 'method': METHOD, 'originalPrimaryIdentityCount': 46791,
               'mailingSourceSha256': MAILING_SHA, 'sourceSha256': SOURCE_SHA, 'nerisIndexSha256': INDEX_SHA,
               'nativeDepartmentCount': len(departments), 'completeMailingSourceCount': 30700,
+              'completeUsfaRegistryCount': indices['primaryInventoryCount'],
+              'fixedUsfaPrimaryCount': sum(entry['source'] == 'USFA' for entry in entries),
               'targetVariantCount': len(targets), 'targetsSha256': sha(dump(targets)), 'candidates': candidates,
               'coreIdentityConflicts': core_conflicts, 'consensusVetoes': consensus_vetoes, 'rejected': rejected, 'sourceStats': stats,
               'outcomes': dict(sorted(outcomes.items())),

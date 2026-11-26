@@ -1,0 +1,34 @@
+name: Nationwide public NERIS station acquisition
+on:
+  push:
+    branches: [atlas/phase9-0w-neris-national-stations]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_neris_national_stations.py'
+      - 'scripts/data/test_neris_national_stations.py'
+      - '.github/workflows/neris-national-stations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: neris-national-stations-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p 'test_*neris*stations.py'
+  acquire:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_neris_national_stations.py --output generated-artifacts/neris-national
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neris-national-station-evidence
+          path: generated-artifacts/neris-national/
+          if-no-files-found: error

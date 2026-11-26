@@ -104,6 +104,7 @@ import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
 import {CmsAmbulanceEvidencePanel} from './profile/CmsAmbulanceEvidencePanel';
 import {NppesPracticeLocationsPanel} from './profile/NppesPracticeLocationsPanel';
+import {NerisProfileStations} from './profile/NerisDepartmentStations';
 import { FactReviewPanel } from './profile/FactReviewPanel';
 import { ADDRESS_CANDIDATE_FIELD } from '../services/addressCandidateValidation';
 import type { AgencySourceRecordData } from '../services/agencySourceRecordStore';
@@ -1079,6 +1080,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
+            <NerisProfileStations key={rawAgency.id+':neris-stations'} agency={rawAgency} directory={directoryAgencies}/>
             <TexasProfileLocationEvidence key={rawAgency.id+':texas-location-review'} agency={rawAgency} directory={directoryAgencies}/>
             <NppesPracticeLocationsPanel key={rawAgency.id+':nppes-practice'} agency={rawAgency}/>
             <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}} onReviewCandidate={()=>{setRequestedReviewField(ADDRESS_CANDIDATE_FIELD);navigateProfileSection('evidence');}}/>

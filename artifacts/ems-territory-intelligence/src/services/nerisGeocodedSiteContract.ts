@@ -1,3 +1,5 @@
+import {validateRetainedNerisEvidence,type NerisRetainedBindings} from './nerisRetainedProfileContract';
+import retainedPins from './nerisGeocodedSitePins.json';
 import {validateAddressMatch,type AddressMatch} from './providerLocationContract';
 import {matchesSourceAddress} from './addressNormalization';
 import {selectNerisNativeAddress,validNerisCoordinates,type NerisNativeAddress,type NerisAddressComponent} from './nerisAddressComponent';
@@ -12,7 +14,7 @@ type NativeObservation={nativeId:string;objectId:number;sourceKind:'department'|
 export type NerisGeocodedSiteEvidence=Omit<NerisSiteIdentityEvidence,'method'|'site'>&{
  method:typeof NERIS_GEOCODED_SITE_METHOD;originalMappingWithheld:boolean;
  site:NerisSiteIdentityEvidence['site']&{addressComponent:NerisAddressComponent};
- geocoding:{targetKey:string;targetsSha256:string;selectionBasis:'separate-public-source-exact-native-site-address';nativeCoordinatesUsed:false;maximumIndependentSeparationMeters:75;auditedSources:IndependentSource[];sourceReportDigests:Record<IndependentSource,string>;selectedCoordinates:[number,number];sourceObservations:SourceObservation[];nativeNerisObservations:NativeObservation[]};
+ geocoding:{targetKey:string;targetsSha256:string;selectionBasis:'separate-public-source-exact-native-site-address';nativeCoordinatesUsed:false;maximumIndependentSeparationMeters:75;auditedSources:IndependentSource[];sourceReportDigests:Record<IndependentSource,string>;selectedCoordinates:[number,number];sourceObservations:SourceObservation[];nativeNerisObservations:NativeObservation[];allQualifiedNativeEndpoints:unknown[]};
 };
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const sourceNames=Object.keys(METHODS).sort();
@@ -33,6 +35,7 @@ const validDistance=(reported:unknown,a:[number,number],b:[number,number])=>type
 export function validateNerisGeocodedSiteEvidence(value:unknown,ctx:NerisPrimarySiteContext):NerisGeocodedSiteEvidence|undefined{
  const identity=validateNerisSiteIdentity(value,ctx,NERIS_GEOCODED_SITE_METHOD,true);
  if(identity===undefined)return undefined;
+ validateRetainedNerisEvidence<NerisGeocodedSiteEvidence>(value,ctx,NERIS_GEOCODED_SITE_METHOD,retainedPins as NerisRetainedBindings);
  const fail=():never=>{throw Error('Invalid separately geocoded NERIS primary-site evidence.');};
  if(!obj(value)||value.diagnosticOnly!==undefined||typeof value.originalMappingWithheld!=='boolean'||value.originalMappingWithheld!==(value.originalStatus==='mapped')||!obj(value.geocoding)||!obj(value.site))return fail();
  const g=value.geocoding,site=value.site;

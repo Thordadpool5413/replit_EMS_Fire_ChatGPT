@@ -11,6 +11,7 @@ from recover_neris_primary import dump
 FRONTEND = ROOT/'artifacts/ems-territory-intelligence/src/services'
 API = ROOT/'artifacts/api-server/src/lib'
 PROFILES = {
+ 'core-geocoded': ('retain_neris_geocoded_sites', None, 'nerisGeocodedSitePins.json', 'neris-department-geocoded-site-correlation'),
  'mailing': ('retain_neris_mailing_sites', None, 'nerisMailingSitePins.json', 'neris-department-mailing-site-correlation'),
  'mailing-geocoded': ('retain_neris_mailing_geocoded_sites', None, 'nerisMailingGeocodedSitePins.json', 'neris-department-mailing-geocoded-site-correlation'),
  'range': ('retain_neris_range_sites', 'core', 'nerisRangeSitePins.json', 'neris-department-range-site-correlation'),

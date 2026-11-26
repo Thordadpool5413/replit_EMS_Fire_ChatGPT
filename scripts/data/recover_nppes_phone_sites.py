@@ -35,15 +35,25 @@ def release_files(directory):
  if len(entries)!=46791 or len({e['key']for e in entries})!=46791:raise ValueError('Full original donor identity inventory changed')
  return files,index,entries
 
+def require_legacy_snapshot_binding(entry,original,is_rebuilt):
+ if entry.get('status')=='mapped'and not is_rebuilt and entry!=original:
+  raise ValueError('Changed or new legacy donor coordinates require replayed rebuilt source evidence')
+
 def validate_release(directory,audit):
  from build_primary_mapping_release import metric
+ from primary_mapping_contract import rebuilt_entry,validate_primary_entry
  files,index,entries=release_files(directory);_,originals,baseline_sha=load_primary_baseline()
  original={e['key']:e for e in originals};actual={e['key']:e for e in entries}
+ manifest,national=read_registry();native_rows={native_key(row):row for row in national if native_key(row)}
  if set(actual)!=set(original):raise ValueError('Donor release contains synthetic or missing original identities')
  for key,entry in actual.items():
   old=original[key]
   if any(entry.get(k)!=old.get(k)for k in('key','name','source','state','sourceDate','sourceCounty')):
    raise ValueError('Donor release changed original source identity metadata')
+  rebuilt=rebuilt_entry(entry)
+  require_legacy_snapshot_binding(entry,old,rebuilt)
+  if entry.get('status')=='mapped'and rebuilt and not validate_primary_entry(entry,native_rows.get(key)):
+   raise ValueError('Changed or new donor location did not replay against its exact national source row')
   proof=entry.get('primaryAddressEvidence')or{}
   if proof.get('method')==METHOD:raise ValueError('Phone donor release must be built before all phone children')
   if entry.get('address')!=old.get('address')and proof.get('originalAddress')!=old.get('address'):
@@ -53,7 +63,7 @@ def validate_release(directory,audit):
     index.get('primaryMappingRecovery',{}).get('baselineIndexSha256')!=baseline_sha or
     index.get('primaryMappingRecovery',{}).get('sourceReports')!=audit.get('sourceReports')):
   raise ValueError('Donor release is not bound to its complete non-phone combined audit')
- manifest,national=read_registry();fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes())
+ fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes())
  verify_locations(directory,manifest,national,fl)
  return files,index,entries
 

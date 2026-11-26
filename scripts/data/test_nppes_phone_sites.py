@@ -1,5 +1,5 @@
 import copy,unittest
-from recover_nppes_phone_sites import METHOD,build,validate_final_phone_parent
+from recover_nppes_phone_sites import METHOD,build,validate_final_phone_parent,require_legacy_snapshot_binding
 class FinalPhoneDonorTests(unittest.TestCase):
  def donor(self):
   return {'key':'FDID:NY:EXAMPLE','source':'USFA','name':'Example Fire Department','state':'NY','sourceDate':'2026-11-17','sourceCounty':'36001','status':'mapped','countyFips':'36001',
@@ -10,6 +10,13 @@ class FinalPhoneDonorTests(unittest.TestCase):
   self.assertTrue(validate_final_phone_parent(entry,{donor['key']:donor}))
   for change in[{'status':'no-match'},{'countyFips':'36003'},{'match':{**donor['match'],'latitude':40.01}},{'name':'Changed name'}]:
    altered={**donor,**change};self.assertFalse(validate_final_phone_parent(entry,{donor['key']:altered}))
+ def test_changed_legacy_census_point_cannot_be_reauthorized_by_new_shard_hashes(self):
+  original=self.donor();altered=copy.deepcopy(original);altered['match']['latitude']+=0.001
+  require_legacy_snapshot_binding(original,original,False)
+  with self.assertRaises(ValueError):require_legacy_snapshot_binding(altered,original,False)
+ def test_original_unmapped_identity_cannot_gain_a_naked_census_match(self):
+  candidate=self.donor();original={**copy.deepcopy(candidate),'status':'no-match','match':None,'countyFips':''}
+  with self.assertRaises(ValueError):require_legacy_snapshot_binding(candidate,original,False)
  def test_legacy_census_donor_keeps_actual_match_without_invented_point(self):
   donor=self.donor();old={'key':'NPI:1234567890','name':'Example Ambulance','source':'NPPES','state':'NY','sourceDate':'2026-11','sourceCounty':'','status':'no-match','address':{'street':'PO Box 9','city':'Example','state':'NY','zip':'10001'}}
   pair={'key':old['key'],'donorPrimaryKey':donor['key'],'donorOriginalName':donor['name'],'donorOriginalAddress':donor['address'],'nameBasis':{'rule':'normalized-complete-native-name'}}

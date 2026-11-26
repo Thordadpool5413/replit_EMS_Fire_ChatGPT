@@ -4,6 +4,9 @@ on:
     branches: [atlas/integrate-primary-ui]
 permissions:
   contents: read
+concurrency:
+  group: primary-profile-ui-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   contracts_and_listings:
     runs-on: ubuntu-latest

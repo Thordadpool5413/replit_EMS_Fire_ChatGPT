@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
 import test from 'node:test';
 import {validateOverturePrimaryPoint} from './overturePrimaryPointContract';
 
-const filename=path.resolve('scripts/fixtures/overture-place-primary-point-examples.json');
+const filename=new URL('../../../../scripts/fixtures/overture-place-primary-point-examples.json',import.meta.url);
 const examples=fs.existsSync(filename)?JSON.parse(fs.readFileSync(filename,'utf8')):[];
 test('replayed native Places examples retain all exact source fields',()=>{
   assert.ok(examples.length>0,'Generate the retained Places examples before this release test.');

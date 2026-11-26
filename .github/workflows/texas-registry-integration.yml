@@ -1,0 +1,51 @@
+name: Verified Texas registry integration
+on:
+  push:
+    branches: [atlas/phase9-0l-texas-registry-integration]
+  pull_request:
+    paths:
+      - 'scripts/data/build_texas_review_registry.py'
+      - 'scripts/data/test_texas_review_registry.py'
+      - 'scripts/data/evidence/texas-rosters/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/state-ems-review/**'
+      - '.github/workflows/texas-registry-integration.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_texas_review_registry.py
+      - name: Reproduce catalog from retained source archives
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/data/build_texas_review_registry.py --verify
+  stage:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve successful pinned acquisition archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/texas-rosters
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15077494754/zip" > /tmp/texas-rosters/provider.zip
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15078672658/zip" > /tmp/texas-rosters/first-responder.zip
+      - run: python3 scripts/data/build_texas_review_registry.py --archives /tmp/texas-rosters
+      - run: python3 scripts/data/build_texas_review_registry.py --verify
+      - name: Stage verified data with integration code
+        run: |
+          branch="atlas/texas-roster-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/texas-rosters/2026-11-26 artifacts/ems-territory-intelligence/public/registry/state-ems-review
+          git commit -m "Retain and integrate 1386 verified Texas DSHS review records"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Texas catalog candidate: $branch"

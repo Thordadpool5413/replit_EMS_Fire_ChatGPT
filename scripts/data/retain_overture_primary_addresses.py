@@ -201,6 +201,13 @@ def overture_primary_catalog():
             'rejected':report['rejected'],'uncertain':[],'reportSha256':REPORT_SHA256}
 
 
+def overture_coordinate_witnesses_for_match(match,target_address):
+    witnesses=overture_primary_point_witnesses(match,target_address)
+    if witnesses: return witnesses
+    from retain_overture_primary_variants import overture_diagnostic_witnesses_for_match
+    return overture_diagnostic_witnesses_for_match(match,target_address)
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--source',type=pathlib.Path);p.add_argument('--verify',action='store_true');a=p.parse_args()
     if a.verify:

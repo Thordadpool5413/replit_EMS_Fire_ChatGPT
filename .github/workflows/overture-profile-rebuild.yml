@@ -5,12 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: overture-profiles-${{ github.ref }}
-  cancel-in-progress: false
 jobs:
   ordinary:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-overture-profiles]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-overture-profiles]') || contains(github.event.head_commit.message, '[retain-overture-places]') || contains(github.event.head_commit.message, '[retain-overture-addresses]')
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:
@@ -18,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [addresses, places]
+        source: ${{ fromJSON(contains(github.event.head_commit.message, '[retain-overture-places]') && '["places"]' || contains(github.event.head_commit.message, '[retain-overture-addresses]') && '["addresses"]' || '["addresses","places"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

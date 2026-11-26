@@ -22,6 +22,8 @@ GLOBAL_FILES=16
 def place_address(value):
     if not isinstance(value,dict) or value.get('country')!='US': return None
     state=normalized_city(value.get('region'))
+    # Native Places region is ISO 3166-2 (for example US-NY), not an inferred state.
+    if re.fullmatch(r'US-[A-Z]{2}',state): state=state[3:]
     state=STATE_NAMES.get(state,state)
     if state not in STATES: return None
     postal=str(value.get('postcode') or '').strip()

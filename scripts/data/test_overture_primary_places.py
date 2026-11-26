@@ -10,6 +10,8 @@ class PlacesSourceGuards(unittest.TestCase):
     def test_country_and_reported_postal_fields(self):
         raw={'country':'US','region':'NY','locality':'ALBANY','postcode':'12207-1234','freeform':'12 Main Street Suite 4'}
         self.assertEqual(place_address(raw),{'state':'NY','city':'ALBANY','zip':'12207','street':'12 Main Street Suite 4'})
+        self.assertEqual(place_address({**raw,'region':'US-NY'})['state'],'NY')
+        self.assertIsNone(place_address({**raw,'region':'CA-ON'}))
         self.assertIsNone(place_address({**raw,'country':'CA'}))
         self.assertEqual(place_address({**raw,'postcode':None})['zip'],'')
 

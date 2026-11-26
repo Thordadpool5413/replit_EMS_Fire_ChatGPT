@@ -1,0 +1,74 @@
+name: Verify every retained primary source in the actual app
+on:
+  push:
+    branches: [atlas/reach-95-primary-mapping]
+permissions:
+  contents: read
+jobs:
+  combined:
+    if: contains(github.event.head_commit.message, '[review-primary-nonphone]') || contains(github.event.head_commit.message, '[review-primary-final]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      PRIMARY_STAGE: ${{ contains(github.event.head_commit.message, '[review-primary-final]') && 'combined' || 'combined-nonphone' }}
+      PRIMARY_INCLUDE_PHONE: ${{ contains(github.event.head_commit.message, '[review-primary-final]') && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify source selection and preserved identity safeguards
+        run: python3 -m unittest discover -s scripts/data -p test_primary_mapping_release.py
+      - name: Replay all required sources and build a separate candidate
+        id: build
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ "$PRIMARY_INCLUDE_PHONE" = "1" ]; then extra+=(--include-phone); fi
+          python3 -u scripts/data/run_combined_primary_review.py --output "generated-artifacts/primary-review-$PRIMARY_STAGE" "${extra[@]}"
+      - name: Verify actual frontend parsing, map filters, listings, and donor equality
+        id: frontend
+        run: pnpm --filter @workspace/scripts exec tsx ../scripts/check-primary-map-consumption.mjs "$GITHUB_WORKSPACE/generated-artifacts/primary-review-$PRIMARY_STAGE/candidate"
+      - name: Measure the final residual and prepare an unsent public-address batch when needed
+        if: env.PRIMARY_INCLUDE_PHONE == '1'
+        run: python3 scripts/data/prepare_primary_residual.py --input "generated-artifacts/primary-review-$PRIMARY_STAGE"
+      - name: Verify complete app and API types
+        id: types
+        run: pnpm run typecheck
+      - name: Retain the measured candidate on a review branch
+        if: always() && steps.build.outcome == 'success'
+        env:
+          FRONTEND_OUTCOME: ${{ steps.frontend.outcome }}
+          TYPES_OUTCOME: ${{ steps.types.outcome }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ "$FRONTEND_OUTCOME" = "success" ]; then extra+=(--frontend-passed); fi
+          if [ "$TYPES_OUTCOME" = "success" ]; then extra+=(--typecheck-passed); fi
+          python3 scripts/data/retain_primary_review_candidate.py --input "generated-artifacts/primary-review-$PRIMARY_STAGE" --stage "$PRIMARY_STAGE" "${extra[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-review-$PRIMARY_STAGE-$GITHUB_RUN_ID"
+          git add --force "scripts/data/evidence/primary-review-$PRIMARY_STAGE"
+          git commit -m "Retain measured combined primary candidate with complete source and app checks"
+          git push origin HEAD
+      - name: Require the exact 95 percent threshold for final publication
+        if: env.PRIMARY_INCLUDE_PHONE == '1'
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib
+          path=pathlib.Path('generated-artifacts')/('primary-review-'+os.environ['PRIMARY_STAGE'])/'coverage-summary.json'
+          report=json.loads(path.read_bytes())
+          if not report['publicationEligible']:
+              raise SystemExit('Final publication gate not met: '+json.dumps(report['after']))
+          PY

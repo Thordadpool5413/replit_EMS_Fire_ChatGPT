@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyOfficialAddressEvidence,snapshotSourceUrl,parseSnapshotEntry,enrichRegistryRow,snapshotMapRows,listingLocation,type LocationState} from './nationalLocationSnapshot';
+import {validatePrimaryParentBindings,applyOfficialAddressEvidence,snapshotSourceUrl,parseSnapshotEntry,enrichRegistryRow,snapshotMapRows,listingLocation,type LocationState} from './nationalLocationSnapshot';
 import type {SourceDirectoryRecord} from './nationalSourceDirectory';
 const e={key:'NPI:1234567893',name:'Example EMS',state:'FL',source:'NPPES',sourceDate:'2026-11-09 monthly release',address:{street:'123 Main Street',city:'Example',state:'FL',zip:'32901'},status:'mapped',match:{latitude:28.1,longitude:-80.6,matchedAddress:'123 MAIN ST, EXAMPLE, FL, 32901',method:'census-address-range'},sourceCounty:'',countyFips:'12009'};
 const row:SourceDirectoryRecord=['nppes:1234567893','NPPES','Example EMS','FL','Example','32901','','','unassigned','','','https://npiregistry.cms.hhs.gov/provider-view/1234567893'];
@@ -82,4 +82,21 @@ test('regional points require allowlisted source, source geography, placement an
  assert.equal(parseSnapshotEntry(regional,'FL',{'12057':'Hillsborough'}).match?.method,'regional-address-point');
  for(const point of [{...regional.match.point,source:'unknown'},{...regional.match.point,countyFips:'12103'},{...regional.match.point,recordUpdatedAt:'2026-11-25'},{...regional.match.point,placement:'Unknown'}])assert.throws(()=>parseSnapshotEntry({...regional,match:{...regional.match,point}},'FL',{'12057':'Hillsborough'}));
  assert.throws(()=>parseSnapshotEntry({...regional,match:{...regional.match,latitude:42}},'FL',{'12057':'Hillsborough'}));
+});
+
+
+test('phone-derived primary sites require the exact final usable USFA parent',()=>{
+ const parent={...e,key:'FDID:FL:12345',source:'USFA',sourceCounty:'12009'};
+ const child={...e,primaryAddressEvidence:{method:'nppes-usfa-primary-site-correlation',donor:{entry:structuredClone(parent)}}};
+ assert.doesNotThrow(()=>validatePrimaryParentBindings([child,parent]));
+ assert.throws(()=>validatePrimaryParentBindings([child]),/final usable USFA parent/);
+ assert.throws(()=>validatePrimaryParentBindings([child,{...parent,status:'review',match:null,countyFips:''}]),/final usable USFA parent/);
+ assert.throws(()=>validatePrimaryParentBindings([child,{...parent,sourceCounty:'12011'}]),/final usable USFA parent/);
+ assert.throws(()=>validatePrimaryParentBindings([child,{...parent,match:{...parent.match,latitude:parent.match.latitude+0.01}}]),/final usable USFA parent/);
+});
+test('exact primary parent binding is independent of JSON object-key order',()=>{
+ const parent={...e,key:'FDID:FL:12345',source:'USFA',sourceCounty:'12009'};
+ const donor=Object.fromEntries(Object.entries(parent).reverse());
+ const child={...e,primaryAddressEvidence:{method:'nppes-usfa-primary-site-correlation',donor:{entry:donor}}};
+ assert.doesNotThrow(()=>validatePrimaryParentBindings([parent,child]));
 });

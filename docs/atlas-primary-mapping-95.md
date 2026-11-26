@@ -1,3 +1,42 @@
 # Primary provider mapping: 95% minimum
-The existing 46,791 source-native primary records form the denominator. Count a primary record only when a usable mapped coordinate exists and any recorded source county agrees with the point county. Do not add station or secondary practice records to numerator or denominator. Baseline is 30,379 raw mapped, 30,241 usable after withholding 138 county conflicts; minimum target 44,452 usable, gap 14,211. This is not a census of unique active organizations.
-This first recovery phase uses the retained national federal NERIS department and station addresses and existing trustworthy geocodes as exact base-address (street, city, state, ZIP) evidence. No station address substitution, name-only joins or state-license requirements. Existing valid mappings are untouched. Withhold conflicting county or coordinates more than 75 metres apart, ambiguous boundary and shared-source coordinate spanning distinct known addresses. Preserve native source identifiers and NERIS provenance in app labels. The official point is a source report, not a independently verified station. Original primary snapshot is retained for historical NPPES evidence reproduction. The workflow outputs real before/after counts and additive release candidate; --require-target measures a readiness target, not a code merge gate. Additional sources and corrections will be necessary if the target is unmet. No Replit changes.
+
+The denominator is the existing **46,791 source-native primary records**. The
+release needs at least **44,452 usable primary mappings**. Station records,
+secondary practices, and added identities do not count toward this target.
+
+The published baseline at `0049221` has 31,599 raw mapped records and **31,461
+usable records (67.2373%)**. The application withholds 138 pins whose recorded
+source county conflicts with the coordinate county. A raw coordinate count is
+not the readiness metric.
+
+## Acceptance rules
+
+- Preserve source-native identity, name, source date, original primary address,
+  and county evidence. A missing record remains in the denominator.
+- Match physical house number and street through documented normalization;
+  preserve the source's actual city, state and ZIP. State/ZIP or exact-city
+  locality fallbacks require an explicit supported basis.
+- Scan complete source inventories before applying uniqueness or coordinate
+  reuse checks. Withhold conflicting coordinates and unresolved county points.
+- A department-site association is inferred. Retain the exact reciprocal
+  identity evidence, original address, reported site role, and a requirement
+  for end-user validation. A sole station is never relabeled as headquarters.
+- Historical facility points support a physical address location. Their old
+  source dates and placement precision do not establish a current headquarters.
+- Reproduce new candidates from retained native source evidence and pass the
+  same parsers, listing association checks, and county guards used by the app.
+
+## Release procedure
+
+Build into a separate candidate directory with all 51 state/DC shards and the
+original identity set. Preserve valid published mappings, explicitly audit
+legacy NERIS points, and report every newly withheld conflict. Count only
+records that the actual frontend consumes as usable pins.
+
+The `--require-target` gate must fail below 44,452 usable mappings. Passing
+source acquisition, unit tests, or a raw coordinate count does not satisfy the
+95% requirement. Public location shards are promoted only after the complete
+candidate, retained evidence, and frontend coverage gate have passed.
+
+This recovery changes the Git repository. It does not deploy the application
+or operate Replit.

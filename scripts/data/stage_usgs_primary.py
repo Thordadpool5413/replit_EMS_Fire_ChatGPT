@@ -327,6 +327,10 @@ def make_match(feature, page, inventory, county):
 
 
 def load_locations(directory):
+    if directory.resolve() == (PUBLIC/'locations').resolve():
+        from primary_recovery_baseline import load_primary_baseline
+        _, rows, index_sha = load_primary_baseline()
+        return rows, index_sha
     raw = (directory / 'index.json').read_bytes()
     index = json.loads(raw)
     rows = []

@@ -1,0 +1,46 @@
+name: Recover pinned native CMS components
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-cms:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[acquire-native-cms]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify original identity and native component guards
+        run: |
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 -m unittest discover -s scripts/data -p test_nppes_native_primary.py
+          python3 -m unittest discover -s scripts/data -p test_checked_zip_member.py
+      - name: Read complete fixed public monthly source locally
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --output "$RUNNER_TEMP/nppes.zip" 'https://download.cms.gov/nppes/NPPES_Data_Dissemination_November_2026_V2.zip'
+          python3 -u scripts/data/recover_nppes_native_primary.py --archive "$RUNNER_TEMP/nppes.zip" --output generated-artifacts/native-cms/native-primary.json --targets generated-artifacts/native-cms/native-component-targets.json
+          python3 -u scripts/data/retain_nppes_native_source.py --native generated-artifacts/native-cms/native-primary.json --targets generated-artifacts/native-cms/native-component-targets.json
+          python3 scripts/data/recover_nppes_native_primary.py --replay-native --output generated-artifacts/native-cms/native-primary.json --targets generated-artifacts/native-cms/native-component-targets.json
+      - name: Retain source evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rebuilt-native-cms-evidence
+          path: scripts/data/evidence/primary-nppes-native/2026-11-26/
+      - name: Commit independently verified native evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-cms-evidence-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-native scripts/data/evidence/primary-recovery-baseline
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain regenerated complete native CMS component evidence'
+          git push origin HEAD

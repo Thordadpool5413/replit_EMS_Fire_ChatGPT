@@ -124,6 +124,18 @@ def tiger_diagnostic_range_witnesses(candidate):
  if not validate_tiger_diagnostic_candidate(candidate):raise ValueError('Unvalidated TIGER diagnostic')
  return copy.deepcopy(runtime_indexes()[4][candidate['targetId']]['acceptedNativeRanges'])
 
+def tiger_coordinate_witnesses_for_match(match_value,target_address):
+ """Resolve all full native range matches from an exact retained match/address."""
+ report,_,_=validated_catalog();decisions={d['targetId']:d for d in report['selectionDecisions']};witnesses={}
+ for candidate in report['candidates']+report['diagnosticCandidates']:
+  if candidate['match']!=match_value or candidate['address']!=target_address:continue
+  target_id=candidate.get('targetId','original:'+candidate['key'])
+  for witness in decisions[target_id]['acceptedNativeRanges']:
+   key=witness['point']['nativeId']
+   if key in witnesses and witnesses[key]!=witness:raise ValueError('Retained native range identity conflict')
+   witnesses[key]=witness
+ return [copy.deepcopy(witnesses[key])for key in sorted(witnesses)]
+
 def main():
  p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,default=EVIDENCE);p.add_argument('--source-cache',type=pathlib.Path,default=SOURCE_CACHE)
  p.add_argument('--additional-targets',type=pathlib.Path);p.add_argument('--report',type=pathlib.Path);p.add_argument('--verify',action='store_true');a=p.parse_args()

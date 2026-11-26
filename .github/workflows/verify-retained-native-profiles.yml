@@ -1,0 +1,45 @@
+name: Verify retained native profile contracts
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-profile-contracts:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[verify-retained-native]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify strict native components and city dependency replay
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/recover_nppes_primary_components.py --verify
+          python3 -u scripts/data/retain_federal_city_points.py --verify
+          python3 -u scripts/data/build_nppes_component_contract.py
+          python3 -u scripts/data/build_federal_city_contract.py
+      - name: Compile standalone frontend and API native contracts
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/native-contract-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          node "$RUNNER_TEMP/native-contract-tools/node_modules/typescript/bin/tsc" --module commonjs --moduleResolution node --target ES2022 --strict --skipLibCheck --outDir "$RUNNER_TEMP/native-contracts" artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsContract.ts artifacts/ems-territory-intelligence/src/services/federalCityPointContract.ts artifacts/ems-territory-intelligence/src/services/tigerPrimaryPointContract.ts artifacts/api-server/src/lib/nppesPrimaryComponentsContract.ts artifacts/api-server/src/lib/federalCityPointContract.ts artifacts/api-server/src/lib/tigerPrimaryPointContract.ts
+          node scripts/test-native-source-contracts.cjs "$RUNNER_TEMP/native-contracts"
+      - name: Commit exact native component contract pins
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-profile-contracts-$GITHUB_RUN_ID"
+          git add --force artifacts/ems-territory-intelligence/src/services/nppesPrimaryComponentsPins.ts artifacts/api-server/src/lib/nppesPrimaryComponentsPins.ts artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts artifacts/api-server/src/lib/federalCityPointPins.ts scripts/fixtures/nppes-primary-component-examples.json scripts/fixtures/federal-city-point-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain exact native CMS component bindings after frontend and API mutation checks'
+          git push origin HEAD

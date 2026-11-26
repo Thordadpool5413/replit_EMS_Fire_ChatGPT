@@ -223,3 +223,38 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain complete reciprocal native website site identities and frontend proof bindings"
           git push origin HEAD
+  original-geocoded-sites:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-core-geocodes]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild complete original NERIS independent-site source consensus
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_geocoded_sites.py
+          python3 -u scripts/data/retain_neris_geocoded_sites.py --retained-sources
+          python3 -u scripts/data/retain_neris_geocoded_sites.py --verify
+          python3 -u scripts/data/build_neris_retained_profile_pins.py --profile core-geocoded --validation-output "$RUNNER_TEMP/neris-core-geocoded-frontend.json"
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-core-geocoded-frontend.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-original-geocoded-sites-review
+          path: |
+            scripts/data/evidence/primary-neris-geocoded-sites
+            artifacts/ems-territory-intelligence/src/services/nerisGeocodedSitePins.json
+            scripts/fixtures/neris-retained-core-geocoded-examples.json
+      - name: Save native identity and complete point consensus on review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-core-geocoded-sites-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-geocoded-sites
+          git add artifacts/ems-territory-intelligence/src/services/nerisGeocodedSitePins.json scripts/fixtures/neris-retained-core-geocoded-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain original frozen NERIS site identities and complete independent point consensus"
+          git push origin HEAD

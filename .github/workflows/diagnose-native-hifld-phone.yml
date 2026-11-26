@@ -1,0 +1,38 @@
+name: Diagnose retained HIFLD native phone sites
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phone-yield:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[diagnose-native-hifld-phone]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay complete retained native phone and point inventories
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/diagnose_nppes_hifld_phone_sites.py
+          python3 -u scripts/data/diagnose_nppes_hifld_phone_sites.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-hifld-phone-diagnostic
+          path: scripts/data/evidence/primary-nppes-hifld-phone-diagnostic/
+      - name: Commit read-only native source yield assessment
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-hifld-phone-diagnostic-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-hifld-phone-diagnostic
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain read-only exact native HIFLD phone name locality site assessment'
+          git push origin HEAD

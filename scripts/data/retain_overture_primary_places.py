@@ -216,7 +216,7 @@ def overture_primary_catalog():
 
 
 def overture_coordinate_witnesses_for_match(match,target_address):
-    witnesses=overture_primary_point_witnesses(match,target_address)
+    witnesses=overture_primary_point_witnesses(match,target_address) if (EVIDENCE/'original.zip').exists() else []
     if witnesses: return witnesses
     from retain_overture_primary_variants import overture_diagnostic_witnesses_for_match
     return overture_diagnostic_witnesses_for_match(match,target_address)

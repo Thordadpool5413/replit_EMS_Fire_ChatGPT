@@ -8,6 +8,7 @@ import json
 import pathlib
 from backfill_provider_locations import sha
 from address_normalization import physical_address
+from recover_neris_grid_points import is_grid_address
 from primary_recovery_baseline import load_primary_baseline
 from build_primary_mapping_release import dump, metric, usable
 
@@ -43,7 +44,8 @@ def prepare(directory):
         'bySource': dict(sorted(collections.Counter(e['source'] for e in residual).items())),
         'byState': dict(sorted(collections.Counter(e['state'] for e in residual).items())),
         'byCurrentStatus': dict(sorted(collections.Counter(e['status'] for e in residual).items())),
-        'originalPhysicalAddressCount': sum(physical_address(original[e['key']]['address']) for e in residual),
+        'originalPhysicalAddressCount': sum(bool(physical_address(original[e['key']]['address']) or is_grid_address(original[e['key']]['address'])) for e in residual),
+        'originalGridAddressCount': sum(bool(is_grid_address(original[e['key']]['address'])) for e in residual),
         'retainedCountyHolds': sum(e['status'] == 'mapped' and bool(e.get('sourceCounty')) and e['sourceCounty'] != e.get('countyFips') for e in residual),
         'requestPrepared': False,
     }
@@ -63,7 +65,7 @@ def prepare(directory):
             exclusions['retained-county-conflict'] += 1
             continue
         address = old['address']
-        if not physical_address(address):
+        if not (physical_address(address) or is_grid_address(address)):
             exclusions['no-original-physical-street-address'] += 1
             continue
         # Only case/edge whitespace are ignored for duplicate transport rows.
@@ -84,6 +86,8 @@ def prepare(directory):
         request_id = str(ordinal)
         writer.writerow([request_id]+[address[field] for field in ('street', 'city', 'state', 'zip')])
         bindings.append({'requestId': request_id, 'address': address, 'primaryRecords': group['primaryRecords']})
+    if len(bindings) > 10000:
+        raise ValueError('A reviewed request must be split to the documented 10,000-record batch limit')
     payload = output.getvalue().encode('utf-8')
     name = 'census-address-request.csv'
     (directory/name).write_bytes(payload)
@@ -91,6 +95,8 @@ def prepare(directory):
         'schemaVersion': 1, 'status': 'prepared-not-sent', 'authorizationRequired': True,
         'destination': DESTINATION, 'payloadFile': name,
         'columns': ['request_id', 'street', 'city', 'state', 'zip'],
+        'formParameters': {'benchmark': 'Public_AR_Current', 'vintage': 'Current_Current'},
+        'apiDocumentation': 'https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html',
         'containsHeader': False, 'encoding': 'utf-8', 'lineEnding': 'CRLF',
         'uniqueAddressRequests': len(bindings),
         'originalPrimaryRecordsRepresented': sum(len(row['primaryRecords']) for row in bindings),
@@ -121,3 +127,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

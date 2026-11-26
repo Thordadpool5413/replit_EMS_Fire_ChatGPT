@@ -37,6 +37,17 @@ for(const root of ['ems-territory-intelligence/src/services','api-server/src/lib
    const altered=clone(example.context);change(altered);
    assert.throws(()=>contract.validateNppesPhoneSiteEvidence(example.evidence,altered));checks++;
   }
+  const referenceNames=example.evidence.correlation.nameBasis.nativeOtherNameRecords;
+  if(referenceNames){
+   assert.ok(referenceNames.length>0);
+   for(const row of referenceNames){
+    assert.equal(row.native['NPI'],example.context.key.slice(4));
+    assert.equal(row.native['Provider Other Organization Name Type Code'],'3');
+   }
+   const altered=clone(example.evidence);
+   altered.correlation.nameBasis.nativeOtherNameRecords[0].native['Provider Other Organization Name Type Code']='5';
+   assert.throws(()=>contract.validateNppesPhoneSiteEvidence(altered,example.context));checks++;
+  }
   const donor=example.evidence.donor.entry;
   assert.deepEqual(example.context.match,donor.match);
   assert.deepEqual(example.context.address,donor.address);

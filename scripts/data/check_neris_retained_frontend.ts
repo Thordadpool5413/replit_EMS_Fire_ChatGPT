@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 const path=process.argv[2];if(!path)throw Error('A fully replayed retained validation input is required.');
 const profiles=JSON.parse(readFileSync(path,'utf8')) as Array<{profile:string;records:Array<{key:string;payload:any;nationalRow:string[]}>}>;
 const modules:Record<string,[string,string]>={
+ 'core-geocoded':['nerisGeocodedSiteContract.ts','validateNerisGeocodedSiteEvidence'],
  mailing:['nerisMailingSiteContract.ts','validateNerisMailingSiteEvidence'],
  'mailing-geocoded':['nerisMailingGeocodedSiteContract.ts','validateNerisMailingGeocodedSiteEvidence'],
  range:['nerisRangeSiteContract.ts','validateNerisRangeSiteEvidence'],
@@ -32,5 +33,5 @@ for(const profile of profiles){
   }
   checked++;
  }
- console.log(JSON.stringify({profile:profile.profile,actualFrontendBindingsChecked:checked,nativeIdentityAndCoordinateMutationChecks:'passed'}));
+ console.log(JSON.stringify({profile:profile.profile,actualFrontendBindingsChecked:checked,nativeIdentityAndCoordinateMutationChecks:checked?'passed':'not-applicable-empty-catalog'}));
 }

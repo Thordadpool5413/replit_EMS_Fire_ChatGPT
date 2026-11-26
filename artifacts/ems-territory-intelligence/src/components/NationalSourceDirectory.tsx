@@ -2,6 +2,7 @@ import {enrichRegistryRow,loadNationalLocationState,listingLocation,LISTING_LOCA
 import {addressText,isPhysicalStreet} from '../services/providerLocationContract';
 import {FloridaEmsRoster} from './FloridaEmsRoster';
 import { StateEmsRoster } from './StateEmsRoster';
+import {TexasEmsReviewRoster} from './TexasEmsReviewRoster';
 import type { Agency, AgencySourceRecordAssociation } from '../types';
 import { snapshotRegistryIdentity, registryIdentifierText, withholdReviewedRegistryCounty } from '../services/registryAccountLink';
 import { RegistryAccountReview } from './RegistryAccountReview';
@@ -13,7 +14,7 @@ import {filterSourceDirectory,loadSourceDirectoryState,type SourceDirectoryRecor
 export function NationalSourceDirectory({stateCode='',countyFips='',providerScope='all',city='',savedAgencies=[],onOpenSavedAgency,onDecideSourceRecord,onCreateAgency}:{stateCode?:string;countyFips?:string;providerScope?:'all'|'ems'|'fire';city?:string;savedAgencies?:Agency[];onOpenSavedAgency?:(agency:Agency)=>void;onDecideSourceRecord?:(id:string,association:AgencySourceRecordAssociation)=>void;onCreateAgency?:(a:Agency)=>void|Promise<void>}){
  const {manifest,error:manifestError,retry}=useNationalSourceDirectory();
  const [locationState,setLocationState]=useState<LocationState>();
- const[liveNeris,setLiveNeris]=useState(false);const[showOhio,setShowOhio]=useState(false);const[showFlorida,setShowFlorida]=useState(false);
+ const[liveNeris,setLiveNeris]=useState(false);const[showOhio,setShowOhio]=useState(false);const[showFlorida,setShowFlorida]=useState(false);const[showTexas,setShowTexas]=useState(false);
  const[state,setState]=useState(stateCode);const[query,setQuery]=useState('');const[source,setSource]=useState<'all'|'USFA'|'NPPES'>(providerScope==='ems'?'NPPES':providerScope==='fire'?'USFA':'all');const[unassigned,setUnassigned]=useState(false);const[locationFilter,setLocationFilter]=useState<'all'|'mapped'|'needs-location'>('all');const[records,setRecords]=useState<SourceDirectoryRecord[]>([]);const[busy,setBusy]=useState(false);const[error,setError]=useState('');const[page,setPage]=useState(1);const[attempt,setAttempt]=useState(0);
  useEffect(()=>{setState(stateCode);setUnassigned(false);setPage(1);},[stateCode,countyFips,city]);
  useEffect(()=>{setSource(providerScope==='ems'?'NPPES':providerScope==='fire'?'USFA':'all');setPage(1);},[providerScope]);
@@ -40,6 +41,8 @@ export function NationalSourceDirectory({stateCode='',countyFips='',providerScop
   </div>
   {state==='FL'&&providerScope!=='fire'&&<label className="block text-sm"><input type="checkbox" aria-label="Browse Florida EMS license roster" checked={showFlorida} onChange={e=>setShowFlorida(e.target.checked)}/> Browse Florida's official EMS license roster</label>}
   {state==='FL'&&providerScope!=='fire'&&showFlorida&&<FloridaEmsRoster key={countyFips+':'+city} city={city} countyFips={countyFips} countyNames={countyNames} agencies={savedAgencies} onOpen={onOpenSavedAgency} onDecide={onDecideSourceRecord} onCreate={onCreateAgency}/>}
+  {state==='TX'&&providerScope!=='fire'&&<label className="block text-sm"><input type="checkbox" aria-label="Browse Texas state EMS rosters" checked={showTexas} onChange={e=>setShowTexas(e.target.checked)}/> Browse Texas DSHS provider and first-responder rosters</label>}
+  {state==='TX'&&providerScope!=='fire'&&showTexas&&<TexasEmsReviewRoster countySelected={!!countyFips}/>}
   {state==='OH'&&providerScope!=='fire'&&<label className="block text-sm"><input type="checkbox" aria-label="Browse Ohio state agency roster" checked={showOhio} onChange={e=>setShowOhio(e.target.checked)}/> Browse Ohio's official state agency roster</label>}
   {state==='OH'&&providerScope!=='fire'&&showOhio&&<StateEmsRoster key={city} city={city} countySelected={!!countyFips} agencies={savedAgencies} onOpen={onOpenSavedAgency} onDecide={onDecideSourceRecord} onCreate={onCreateAgency}/>}
   {state&&providerScope!=='ems'&&<label className="block text-sm"><input type="checkbox" checked={liveNeris} onChange={e=>setLiveNeris(e.target.checked)}/> Also load current NERIS department listings</label>}

@@ -1,0 +1,82 @@
+name: Review recovered primary mapping in the actual app
+on:
+  push:
+    branches: [atlas/reach-95-primary-mapping]
+permissions:
+  contents: read
+jobs:
+  core:
+    if: contains(github.event.head_commit.message, '[review-primary-core]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify revised release decisions
+        run: python3 -m unittest discover -s scripts/data -p test_primary_mapping_release.py
+      - name: Read complete retained native source reports
+        run: |
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 - <<'PY'
+          import pathlib,zipfile
+          root=pathlib.Path('scripts/data/evidence')
+          output=pathlib.Path('generated-artifacts/primary-review-core/reports')
+          output.mkdir(parents=True,exist_ok=True)
+          profiles=[('neris','primary-neris-rebuilt','candidates.json'),
+                    ('usgs','primary-usgs-all','primary-candidates.json'),
+                    ('ems','primary-hifld','primary-candidates.json'),
+                    ('fire','primary-hifld-fire','primary-candidates.json')]
+          for label,directory,member in profiles:
+              with zipfile.ZipFile(root/directory/'2026-11-26/original.zip') as archive:
+                  (output/(label+'.json')).write_bytes(archive.read(member))
+          PY
+      - name: Build a separate source-validated candidate
+        id: build
+        run: |
+          python3 -u scripts/data/build_primary_mapping_release.py \
+            --output generated-artifacts/primary-review-core/candidate \
+            --report generated-artifacts/primary-review-core/backend-report.json \
+            --neris-report generated-artifacts/primary-review-core/reports/neris.json \
+            --source-report generated-artifacts/primary-review-core/reports/usgs.json \
+            --source-report generated-artifacts/primary-review-core/reports/ems.json \
+            --source-report generated-artifacts/primary-review-core/reports/fire.json
+      - name: Verify actual frontend parsers, directory listings, and map counts
+        id: frontend
+        run: pnpm --filter @workspace/scripts exec tsx ../scripts/check-primary-map-consumption.mjs "$GITHUB_WORKSPACE/generated-artifacts/primary-review-core/candidate"
+      - name: Save the measured review candidate and original baseline
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib,shutil,zipfile
+          source=pathlib.Path('generated-artifacts/primary-review-core')
+          target=pathlib.Path('scripts/data/evidence/primary-review-core/2026-11-26')
+          target.mkdir(parents=True,exist_ok=True)
+          for name in ('backend-report.json','candidate-frontend-report.json'):
+              if (source/name).exists():shutil.copyfile(source/name,target/name)
+          with zipfile.ZipFile(target/'candidate.zip','w',zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
+              for path in sorted((source/'candidate').glob('*.json')):archive.write(path,path.name)
+          raw=(target/'candidate.zip').read_bytes()
+          manifest={'schemaVersion':1,'publicationEligible':False,'scope':'core NERIS and three complete federal point sources',
+                    'archiveSha256':hashlib.sha256(raw).hexdigest(),'archiveBytes':len(raw),
+                    'actualFrontendPassed':(source/'candidate-frontend-report.json').exists()}
+          (target/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,separators=(',',':'))+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-review-core-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-recovery-baseline scripts/data/evidence/primary-review-core
+          git commit -m "Retain measured primary recovery candidate for combined-source review"
+          git push origin HEAD

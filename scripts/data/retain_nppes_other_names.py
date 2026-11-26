@@ -15,7 +15,7 @@ from stage_nppes import valid_npi
 
 EVIDENCE=ROOT/'scripts/data/evidence/primary-nppes-other-names/2026-11-26'
 SOURCE_MEMBER='othername_pfile_20050523-20261102.csv'
-FIELDS=('NPI','Provider Other Organization Name','Provider Other Organization Name Type Code')
+FIELDS=('NPI','Provider Other Organization Name','Provider Other Organization Name Type Code','Created Date')
 PACK_BYTES=64*1024*1024
 
 def source_keys():

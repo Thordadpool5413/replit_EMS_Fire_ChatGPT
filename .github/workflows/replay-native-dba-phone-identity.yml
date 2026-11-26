@@ -1,0 +1,39 @@
+name: Replay native Type 3 DBA phone identity
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dba-identity:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[replay-native-dba-phone]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify complete native reference and unchanged collision guards
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/data -p test_nppes_phone_dba_identity.py
+          python3 -u scripts/data/recover_nppes_phone_dba_identity.py
+          python3 -u scripts/data/recover_nppes_phone_dba_identity.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-native-dba-phone-identity
+          path: scripts/data/evidence/primary-nppes-phone-dba-identity/
+      - name: Commit separate native DBA identity proof
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-dba-phone-identity-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-phone-dba-identity
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain exact native Type 3 DBA phone identity supplement'
+          git push origin HEAD

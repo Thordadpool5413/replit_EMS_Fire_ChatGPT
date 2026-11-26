@@ -1,0 +1,44 @@
+name: Retain nationwide NERIS station catalog
+on:
+  push:
+    branches: [atlas/phase9-0y-neris-national-catalog]
+  pull_request:
+    paths:
+      - 'scripts/data/retain_neris_national_stations.py'
+      - 'scripts/data/evidence/neris-national-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-stations/**'
+      - '.github/workflows/neris-national-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact successful acquisition
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15086965702/zip" > /tmp/neris-national.zip
+      - run: python3 scripts/data/retain_neris_national_stations.py --archive /tmp/neris-national.zip
+      - run: python3 scripts/data/retain_neris_national_stations.py --verify
+      - name: Stage complete source catalog
+        run: |
+          branch="atlas/neris-national-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/neris-national-stations/2026-11-26 artifacts/ems-territory-intelligence/public/registry/neris-stations
+          git commit -m "Retain 30672 NERIS departments and 65970 station source records"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "NERIS national catalog candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/retain_neris_national_stations.py --verify

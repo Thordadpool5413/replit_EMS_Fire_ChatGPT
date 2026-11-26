@@ -96,3 +96,32 @@ jobs:
         run: |
           set -euo pipefail
           PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_primary_rebuilt.py scripts/data/test_neris_mailing_sites.py scripts/data/test_neris_geocoded_sites.py
+  grid-points:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-grid]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test and replay complete native directional grid points
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_grid_points.py
+          python3 -u scripts/data/retain_neris_grid_points.py
+          python3 -u scripts/data/retain_neris_grid_points.py --verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-grid-point-review
+          path: scripts/data/evidence/primary-neris-grid-points
+      - name: Save complete native grid point replay on isolated review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-grid-points-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-grid-points
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain exact native directional grid address source points"
+          git push origin HEAD

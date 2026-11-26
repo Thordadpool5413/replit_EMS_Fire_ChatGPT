@@ -1,0 +1,27 @@
+name: New York regional EMS organization acquisition
+on:
+  push:
+    branches: [atlas/phase9-0q-ny-regional-rosters]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_ny_westchester_ems.py'
+      - 'scripts/data/test_ny_westchester_ems.py'
+      - '.github/workflows/ny-westchester-ems.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_ny_westchester_ems.py
+      - if: github.event_name != 'pull_request'
+        run: python3 scripts/data/stage_ny_westchester_ems.py --output generated-artifacts/ny-westchester
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: ny-westchester-agency-review
+          path: generated-artifacts/ny-westchester/
+          if-no-files-found: error

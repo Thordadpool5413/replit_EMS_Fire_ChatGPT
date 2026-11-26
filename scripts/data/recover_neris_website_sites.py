@@ -76,7 +76,9 @@ def generate(inputs, core, mailing, departments, supplement, usfa, boundaries):
                          'targetAddress': target['address'] if target else None})
         outcomes['independent-native-site-target' if target else 'no-unambiguous-native-site'] += 1
     targets.sort(key=lambda row: row['key'])
-    return {'schemaVersion': 1, 'method': METHOD, 'originalPrimaryIdentityCount': 46791,
+    return {'schemaVersion': 1, 'method': METHOD, 'scope': 'additional-unresolved-after-core-and-mailing-native',
+            'excludedAlreadyQualifiedNativeKeyCount': len(accepted), 'excludedAlreadyQualifiedNativeKeysSha256': sha(dump(sorted(accepted))),
+            'originalPrimaryIdentityCount': 46791,
             'nativeNerisInventoryCount': 30700, 'completeNativeUsfaSourceRows': 27117,
             'mailingSourceSha256': NERIS_MAILING_SHA, 'usfaNativeSourceSha256': USFA_SHA,
             'candidates': candidates, 'diagnosticTargets': targets, 'diagnosticTargetsSha256': sha(dump(targets)),

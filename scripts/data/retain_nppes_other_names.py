@@ -15,6 +15,10 @@ from stage_nppes import valid_npi
 
 EVIDENCE=ROOT/'scripts/data/evidence/primary-nppes-other-names/2026-11-26'
 SOURCE_MEMBER='othername_pfile_20050523-20261102.csv'
+SOURCE_MEMBER_SHA='2f485b743264ee5201a9d3e4075b21ac81b5ebaee54a73f94ab1392a96942e87'
+SOURCE_MEMBER_BYTES=50408886
+SOURCE_ROWS=866962
+SOURCE_NATIVE_INVENTORY_SHA='b7fa19f860b49c7fd64e0fa3ee036bfcfd2ddbd8d64a39e1c20daedf6723ef16'
 FIELDS=('NPI','Provider Other Organization Name','Provider Other Organization Name Type Code','Created Date')
 PACK_BYTES=64*1024*1024
 
@@ -37,7 +41,9 @@ def parse_source(path,keys):
    if not valid_npi(row['NPI'])or not row[FIELDS[1]].strip():
     quarantined.append({**witness,'reason':'invalid-native-npi-or-empty-name'});continue
    if row['NPI']in keys:selected.append(witness)
- if count==0:raise ValueError('Empty complete Other Names source')
+ if(count!=SOURCE_ROWS or path.stat().st_size!=SOURCE_MEMBER_BYTES or digest_file(path)!=SOURCE_MEMBER_SHA or
+    inventory.hexdigest()!=SOURCE_NATIVE_INVENTORY_SHA):
+  raise ValueError('Frozen complete native Other Names member/count/inventory changed')
  return {'nativeHeader':header,'completeRowsScanned':count,'sourceMemberSha256':digest_file(path),
   'sourceMemberBytes':path.stat().st_size,'completeNativeInventorySha256':inventory.hexdigest(),
   'nameTypeCounts':dict(sorted(types.items())),'ambulanceInventoryCount':len(keys),

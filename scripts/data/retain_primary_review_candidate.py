@@ -39,6 +39,8 @@ def main():
         path = source/name
         if path.is_file():
             shutil.copyfile(path, destination/name)
+        elif (destination/name).is_file():
+            (destination/name).unlink()
     with zipfile.ZipFile(destination/'candidate.zip', 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted((source/'candidate').glob('*.json')):
             info = zipfile.ZipInfo(path.name, date_time=(2026, 11, 26, 0, 0, 0))

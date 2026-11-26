@@ -94,11 +94,12 @@ class PrimaryReleaseTest(unittest.TestCase):
     def test_consensus_expands_source_endpoints_beyond_each_winner(self):
         point=self.candidate()
         self.witness_mock.side_effect=lambda entry:[
+            {'method':entry['match']['method'],'latitude':entry['match']['latitude'],'longitude':entry['match']['longitude'],'countyFips':entry['countyFips']},
             {'method':'usgs-structure-address','latitude':58.30107,'longitude':-134.42044,'countyFips':'02110'},
             {'method':'usgs-structure-address','latitude':58.30107,'longitude':-134.42294,'countyFips':'02110'}]
         rows,review=self.run_reports([{'candidates':[point]}])
         self.assertEqual(rows,[self.original()])
-        self.assertEqual(len(review['qualifiedSourceConflicts'][0]['points']),2)
+        self.assertEqual(len(review['qualifiedSourceConflicts'][0]['points']),3)
 
     def test_phone_child_cannot_reintroduce_a_withheld_parent(self):
         parent=self.original()
@@ -193,5 +194,34 @@ class PrimaryReleaseTest(unittest.TestCase):
         with patch('build_primary_mapping_release.validate_primary_entry',return_value=True):
             rows,_=combine([self.original()],None,[report],{},[{'sha256':'a'*64,'targets':[target]}])
         self.assertEqual(rows,[self.original()])
+
+    def test_native_endpoint_expansion_must_include_its_selected_display_point(self):
+        self.witness_mock.side_effect=lambda entry:[
+            {'method':entry['match']['method'],'latitude':58.30107,'longitude':-134.49,'countyFips':'02110'}]
+        with self.assertRaisesRegex(ValueError,'omits the selected display point'):
+            self.run_reports([{'candidates':[self.candidate()]}])
+
+    def test_nested_range_rejection_preserves_its_lower_precision(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+            'reason':'valid-independent-source-conflict','sourceConflicts':[
+                {'source':'tiger','reason':'conflicting-native-ranges'}]}
+        rows,_=self.run_reports([{'method':'nppes-primary-address-components','candidates':[candidate],
+                                'rejected':[rejection]}])
+        self.assertEqual(rows[0]['status'],'mapped')
+        rows,_=self.run_reports([{'method':'nppes-primary-address-components',
+                                'candidates':[self.candidate('tiger-address-range')],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+
+    def test_nested_precise_source_conflict_is_not_hidden_by_a_range_conflict(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+            'reason':'valid-independent-source-conflict','sourceConflicts':[
+                {'source':'tiger','reason':'conflicting-native-ranges'},
+                {'source':'usgs','reason':'primary-source-county-disagreement'}]}
+        rows,review=self.run_reports([{'method':'nppes-primary-address-components',
+                                      'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+        self.assertEqual([row['source'] for row in review['qualifiedSourceConflicts'][0]['sourceRejections']],['usgs'])
 
 if __name__=='__main__':unittest.main()

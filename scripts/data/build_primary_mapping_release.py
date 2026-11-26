@@ -135,6 +135,40 @@ def _reason_set(row):
     return result
 
 
+
+def _qualified_rejection_records(row, source, address, method=None):
+    """Keep each nested source's precision and physical target attached."""
+    if not isinstance(row, dict):
+        return []
+    own_source = row.get('source') or source
+    own_address = row.get('targetAddress') or address
+    own_method = row.get('method') or method
+    direct = _reason_set({field: row.get(field) for field in ('reason', 'reasons', 'blockedReasons')})
+    nested = []
+    for field in ('sourceConflicts', 'sourceRejections'):
+        children = row.get(field) or []
+        groups = children.items() if isinstance(children, dict) and not any(
+            key in children for key in ('reason', 'reasons', 'source')) else [(own_source, children)]
+        for inherited_source, values in groups:
+            if isinstance(values, dict):
+                values = [values]
+            for child in values if isinstance(values, list) else []:
+                if isinstance(child, str):
+                    child = {'reason': child}
+                child_method = own_method if inherited_source == own_source and not child.get('source') else None
+                nested.extend(_qualified_rejection_records(child, inherited_source, own_address, child_method))
+    if nested:
+        direct.discard('valid-independent-source-conflict')
+    result = []
+    if direct:
+        range_only = direct <= {'range-coordinate-disagreement', 'conflicting-native-ranges'}
+        is_range = (str(own_source).lower().startswith('tiger') or own_method in INTERPOLATED or
+                    row.get('precision') == 'range' or range_only)
+        result.append({'source': own_source, 'targetAddress': copy.deepcopy(own_address),
+                       'reasons': sorted(direct), 'precision': 'range' if is_range else 'point'})
+    return result+nested
+
+
 def collect_vetoes(originals, reports, target_batches=()):
     """Bind consequential negative evidence to the exact queried physical site."""
     by_digest = {}
@@ -185,10 +219,10 @@ def collect_vetoes(originals, reports, target_batches=()):
                     address = originals[key]['address']
                 if not isinstance(address, dict):
                     raise ValueError('Qualified source rejection lacks an explicit target-address binding: '+str(row.get('key')))
-                row_source = row.get('source') or source
-                precision = 'range' if row_source in ('tiger', 'tiger-address-range', 'tiger-addrfeat-2026') or report.get('method') == 'tiger-address-range' else 'point'
-                vetoes[key].append({'source': row_source, 'targetAddress': copy.deepcopy(address),
-                                    'reasons': sorted(reasons), 'precision': precision})
+                records = _qualified_rejection_records(row, source, address, report.get('method'))
+                if not records:
+                    raise ValueError('Qualified source rejection lost its native source/precision binding')
+                vetoes[key].extend(records)
     return vetoes
 
 
@@ -287,7 +321,14 @@ def combine(originals, neris, source_reports, national, target_batches=()):
             continue
         witnesses = []
         for entry in options:
-            witnesses.extend(entry_witnesses(entry))
+            expanded = entry_witnesses(entry)
+            selected_point = entry['match']
+            if not any(point['latitude'] == selected_point['latitude'] and
+                       point['longitude'] == selected_point['longitude'] and
+                       point['countyFips'] == entry['countyFips'] and
+                       point['method'] == selected_point['method'] for point in expanded):
+                raise ValueError('Native endpoint expansion omits the selected display point: '+key)
+            witnesses.extend(expanded)
         witnesses = list({dump(point): point for point in witnesses}.values())
         counties = {point['countyFips'] for point in witnesses} | {entry['countyFips'] for entry in options}
         if len(counties) != 1 or any(distance(left, right) > 75

@@ -136,4 +136,16 @@ class PrimaryReleaseTest(unittest.TestCase):
         entry['match'].pop('point')
         self.assertEqual(rank(entry)[0],21)
 
+    def test_a_withdrawn_legacy_coordinate_does_not_veto_current_native_consensus(self):
+        original=self.original()
+        original.update(status='mapped',match=self.candidate('neris-reported-address',-134.49)['match'],countyFips='02110')
+        report={'candidates':[],'legacyAudit':[{'key':original['key'],'accepted':False,
+            'reason':'legacy-point-disagrees-with-native-address','candidate':None}],
+            'originalAddressCoordinateConflicts':[{'key':original['key'],'originalAddress':original['address'],
+            'reason':'legacy-point-disagrees-with-native-address'}]}
+        with patch('build_primary_mapping_release.validate_primary_entry',return_value=True):
+            rows,review=combine([original],report,[{'candidates':[self.candidate()]}],{})
+        self.assertEqual(rows[0]['match'],self.candidate()['match'])
+        self.assertFalse(review['qualifiedSourceConflicts'])
+
 if __name__=='__main__':unittest.main()

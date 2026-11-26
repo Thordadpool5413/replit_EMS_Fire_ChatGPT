@@ -16,7 +16,7 @@ REQUIRED = 44452
 PHONE_METHOD = 'nppes-usfa-primary-site-correlation'
 QUALIFIED_REJECTIONS = {
     'independent-source-rows-disagree', 'conflicting-native-points',
-    'native-address-coordinate-disagreement', 'legacy-point-disagrees-with-native-address',
+    'native-address-coordinate-disagreement',
     'independent-coordinate-disagreement', 'qualified-source-coordinate-disagreement',
     'primary-source-county-disagreement', 'original-source-county-disagreement',
     'native-source-county-disagreement', 'source-county-disagreement',

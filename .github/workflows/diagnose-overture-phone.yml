@@ -1,0 +1,37 @@
+name: Diagnose retained Places phone and native CMS names
+on:
+  push:
+    branches: [atlas/diagnose-overture-phone-sites]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retained-diagnostic:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[diagnose-places-phone]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay retained native sources and diagnose phone name locality
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/diagnose_overture_phone_opportunity.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retained-places-phone-opportunity
+          path: scripts/data/evidence/overture-phone-opportunity/
+      - name: Save read-only diagnostic evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/places-phone-diagnostic-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/overture-phone-opportunity/
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain diagnostic Places phone name observations without mapping authorization'
+          git push origin HEAD

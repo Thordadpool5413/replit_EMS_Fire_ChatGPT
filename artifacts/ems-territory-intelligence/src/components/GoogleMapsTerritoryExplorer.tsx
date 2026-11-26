@@ -3,6 +3,8 @@ import {locationOverlay,useLocationRevision,loadProviderLocationState} from '../
 import {loadedLocationState,snapshotMapRows} from '../services/nationalLocationSnapshot';
 import {PublicRegistryLocationMarkers} from './PublicRegistryLocationMarkers';
 import {SecondaryPracticeLocationMarkers} from './SecondaryPracticeLocationMarkers';
+import {NerisStationMapMarkers,NerisMapStationDetails} from './NerisStationMapMarkers';
+import {loadNerisMapState,filterNerisMap,groupNerisMap,type NerisMapData} from '../services/nerisStationMap';
 import {loadSecondaryDiscovery,filterSecondaryDiscovery,groupSecondaryDiscovery,type SecondaryDiscovery} from '../services/nppesSecondaryDiscovery';
 import {registryIdentityKey} from '../services/registryAccountLink';
 import {EquipmentMapFilter,useEquipmentMapFilter} from './EquipmentMapFilter';
@@ -290,6 +292,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
 }) => {
   const locationRevision=useLocationRevision();
   const [showPublicRegistry,setShowPublicRegistry]=useState(true),[publicPage,setPublicPage]=useState(0);
+  const [showNeris,setShowNeris]=useState(true),[nerisPage,setNerisPage]=useState(0),[nerisData,setNerisData]=useState<NerisMapData|null>(null),[nerisStatus,setNerisStatus]=useState<'idle'|'loading'|'ready'|'unavailable'>('idle'),[nerisRetry,setNerisRetry]=useState(0);
   const [showSecondary,setShowSecondary]=useState(false),[secondaryPage,setSecondaryPage]=useState(0),[secondaryData,setSecondaryData]=useState<SecondaryDiscovery|null>(null),[secondaryStatus,setSecondaryStatus]=useState<'idle'|'loading'|'ready'|'unavailable'>('idle'),[secondaryRetry,setSecondaryRetry]=useState(0);
   useEffect(()=>{if(globalState!=='all')void loadProviderLocationState(globalState);setPublicPage(0);},[globalState,globalCounty,globalCity,globalCategory]);
   const publicState=loadedLocationState(globalState);
@@ -299,7 +302,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
    const existing=new Set(originalAgencies.flatMap(a=>mappedIds.has(a.id)&&a.registryIdentity?[registryIdentityKey(a.registryIdentity)]:[]).filter(Boolean));
    return snapshotMapRows(publicState,{county:globalCounty,city:globalCity,category:globalCategory}).filter(e=>!existing.has(e.key));
   },[publicState,globalCounty,globalCity,globalCategory,originalAgencies,mappedIds]);
-  const publicPageSize=showSecondary&&globalCategory!=='fire'?100:150;
+  const publicPageSize=150-(showSecondary&&globalCategory!=='fire'&&globalState!=='all'?50:0)-(showNeris&&globalCategory!=='ems'&&globalState!=='all'?50:0);
   const publicCurrent=Math.min(publicPage,Math.max(0,Math.ceil(publicRows.length/publicPageSize)-1));
   const publicPins=useMemo(()=>showPublicRegistry?publicRows.slice(publicCurrent*publicPageSize,(publicCurrent+1)*publicPageSize):[],[showPublicRegistry,publicRows,publicCurrent,publicPageSize]);
 
@@ -367,6 +370,18 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
   const secondaryGroups=useMemo(()=>groupSecondaryDiscovery(secondaryRows),[secondaryRows]);
   const secondaryCurrent=Math.min(secondaryPage,Math.max(0,Math.ceil(secondaryGroups.length/50)-1));
   const secondaryPins=useMemo(()=>secondaryGroups.slice(secondaryCurrent*50,(secondaryCurrent+1)*50),[secondaryGroups,secondaryCurrent]);
+  const nerisEnabled=showNeris&&globalState!=='all'&&globalCategory!=='ems'&&!isNearMeActive;
+  useEffect(()=>{
+   if(!nerisEnabled)return;
+   let active=true;setNerisData(null);setNerisStatus('loading');
+   loadNerisMapState(globalState).then(d=>{if(active){setNerisData(d);setNerisStatus('ready');}}).catch(()=>{if(active){setNerisData(null);setNerisStatus('unavailable');}});
+   return()=>{active=false;};
+  },[nerisEnabled,globalState,nerisRetry]);
+  useEffect(()=>{setNerisPage(0);},[globalState,globalCounty,globalCity,globalCategory,searchQuery]);
+  const nerisRows=useMemo(()=>nerisEnabled&&nerisData?filterNerisMap(nerisData,{state:globalState,county:globalCounty,city:globalCity,category:globalCategory,query:searchQuery}):[],[nerisEnabled,nerisData,globalState,globalCounty,globalCity,globalCategory,searchQuery]);
+  const nerisGroups=useMemo(()=>groupNerisMap(nerisRows),[nerisRows]);
+  const nerisCurrent=Math.min(nerisPage,Math.max(0,Math.ceil(nerisGroups.length/50)-1));
+  const nerisPins=useMemo(()=>nerisGroups.slice(nerisCurrent*50,(nerisCurrent+1)*50),[nerisGroups,nerisCurrent]);
   const [equipmentFilter,setEquipmentFilter]=useEquipmentMapFilter();
   const [colorByEquipment,setColorByEquipment]=useState(false);
   useEffect(()=>{if(equipmentFilter.presence!=='all'||equipmentFilter.evidence==='documented')setColorByEquipment(true);},[equipmentFilter]);
@@ -580,9 +595,11 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
       const avgLng = filteredAgencies.reduce((acc, a) => acc + a.longitude, 0) / filteredAgencies.length;
       return { lat: avgLat, lng: avgLng };
     }
+    const federalPoints=[...secondaryPins,...nerisPins];
+    if(federalPoints.length&&!isNearMeActive)return {lat:federalPoints.reduce((n,p)=>n+p.lat,0)/federalPoints.length,lng:federalPoints.reduce((n,p)=>n+p.lng,0)/federalPoints.length};
     // Default territory centroid (e.g. Illinois or Midwest)
     return { lat: 40.0, lng: -89.0 };
-  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies,agencies,mappedIds,publicPins]);
+  }, [isNearMeActive, userLocation, activeAccount, filteredAgencies,agencies,mappedIds,publicPins,secondaryPins,nerisPins]);
 
   const mapZoom = useMemo(() => {
     if (isNearMeActive) {
@@ -660,6 +677,16 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
         {secondaryEnabled&&secondaryStatus==='unavailable'&&<p role="alert" className="text-xs">Federal geographic evidence unavailable. <button type="button" className="underline" onClick={()=>setSecondaryRetry(x=>x+1)}>Retry</button></p>}
         {secondaryEnabled&&secondaryStatus==='ready'&&<p role="status" className="text-xs" data-testid="secondary-location-map-count">{secondaryRows.length} source address records at {secondaryGroups.length} approximate points in this selection. {secondaryGroups.length?'Shared points are grouped without merging organizations.':'No matching approximate points in this source snapshot.'} End-user validation required.</p>}
         {secondaryEnabled&&secondaryGroups.length>50&&<div className="flex flex-wrap items-center gap-2"><button className="workspace-button" type="button" disabled={secondaryCurrent===0} onClick={()=>setSecondaryPage(secondaryCurrent-1)}>Previous points</button><span className="text-xs">Points {secondaryCurrent*50+1}–{Math.min((secondaryCurrent+1)*50,secondaryGroups.length)} of {secondaryGroups.length}</span><button className="workspace-button" type="button" disabled={(secondaryCurrent+1)*50>=secondaryGroups.length} onClick={()=>setSecondaryPage(secondaryCurrent+1)}>Next points</button></div>}
+      </section>
+      <section className="pi-surface p-3 min-w-0 space-y-2" aria-label="Federal NERIS station locations">
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showNeris} disabled={globalState==='all'||globalCategory==='ems'||isNearMeActive} onChange={e=>{setShowNeris(e.target.checked);setPublicPage(0);setNerisPage(0);}}/> Show federal fire station locations</label>
+        <p className="text-xs">Amber F markers: NERIS-reported station points. State follows the reported station address; county is derived from bundled generalized county boundaries, not a service territory. Select a state in Fire or All mode. Search and geography apply; account opportunity and equipment filters do not apply. Not available in Near Me mode.</p>
+        {nerisEnabled&&nerisStatus==='loading'&&<p role="status">Loading federal station records…</p>}
+        {nerisEnabled&&nerisStatus==='unavailable'&&<p role="alert">Station map evidence unavailable. <button type="button" className="underline" onClick={()=>setNerisRetry(n=>n+1)}>Retry</button></p>}
+        {nerisEnabled&&nerisStatus==='ready'&&nerisData?.state===globalState&&<><p role="status" className="text-xs" data-testid="neris-station-map-count">{nerisRows.length.toLocaleString()} station source records · {nerisGroups.length.toLocaleString()} distinct coordinate points in this selection. {nerisRows.filter(s=>!s.countyFips).length} without assigned point county. End-user validation required.</p>
+        {nerisGroups.length>50&&<div className="flex flex-wrap gap-2 items-center"><button className="workspace-button" type="button" disabled={!nerisCurrent} onClick={()=>setNerisPage(nerisCurrent-1)}>Previous stations</button><span className="text-xs">Points {nerisCurrent*50+1}–{Math.min((nerisCurrent+1)*50,nerisGroups.length)} of {nerisGroups.length}</span><button className="workspace-button" type="button" disabled={(nerisCurrent+1)*50>=nerisGroups.length} onClick={()=>setNerisPage(nerisCurrent+1)}>Next stations</button></div>}
+        {!!nerisRows.length&&<details className="text-sm"><summary className="cursor-pointer font-medium">Browse visible station records</summary><ul className="divide-y max-h-96 overflow-y-auto">{nerisPins.flatMap(g=>g.rows).map(s=><li key={s.id}><NerisMapStationDetails station={s} countyNames={nerisData.countyNames} agencies={originalAgencies} onOpen={onSelectAgency}/></li>)}{nerisRows.filter(s=>!s.coordinates).map(s=><li key={s.id}><NerisMapStationDetails station={s} countyNames={nerisData.countyNames} agencies={originalAgencies} onOpen={onSelectAgency}/></li>)}</ul></details>}
+        </>}
       </section>
       <ProviderAddressMapping agencies={originalAgencies} scope={addressScope} state={globalState}/>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={vendorScope} scopeLabel="selected geography and provider scope, before search, score and equipment filtering; Near Me counts are before distance filtering" onOpen={onSelectAgency}/>
@@ -1173,7 +1200,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   <CameraSync center={mapCenter} zoom={mapZoom} />
                   <FitAreaControl
                     automatic={!activeAccount}
-                    points={[...filteredAgencies.map(a=>({lat:a.latitude,lng:a.longitude})),...(!isNearMeActive?publicPins.flatMap(r=>r.match?[{lat:r.match.latitude,lng:r.match.longitude}]:[]):[]),...secondaryPins.map(g=>({lat:g.lat,lng:g.lng}))]}
+                    points={[...filteredAgencies.map(a=>({lat:a.latitude,lng:a.longitude})),...(!isNearMeActive?publicPins.flatMap(r=>r.match?[{lat:r.match.latitude,lng:r.match.longitude}]:[]):[]),...secondaryPins.map(g=>({lat:g.lat,lng:g.lng})),...nerisPins.map(g=>({lat:g.lat,lng:g.lng}))]}
                     fallbackCenter={mapCenter}
                     fallbackZoom={mapZoom}
                   />
@@ -1389,6 +1416,7 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                   })()}
                   {!isNearMeActive&&<PublicRegistryLocationMarkers rows={publicPins}/>}
                   {secondaryEnabled&&secondaryData&&<SecondaryPracticeLocationMarkers key={globalState+':'+globalCounty+':'+globalCity+':'+secondaryCurrent} groups={secondaryPins} countyNames={secondaryData.countyNames}/>}
+                  {nerisEnabled&&nerisData?.state===globalState&&<NerisStationMapMarkers key={globalState+':'+globalCounty+':'+globalCity+':'+nerisCurrent} groups={nerisPins} countyNames={nerisData.countyNames} agencies={originalAgencies} onOpen={onSelectAgency}/>}
                 </Map>
               </APIProvider>
             ) : (

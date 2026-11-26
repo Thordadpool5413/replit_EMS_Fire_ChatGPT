@@ -1,0 +1,50 @@
+name: National NERIS station map index
+on:
+  push:
+    branches: [atlas/phase10-0-neris-map-intelligence, main]
+    paths:
+      - 'scripts/data/build_neris_station_map.py'
+      - 'scripts/data/test_build_neris_station_map.py'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-station-map/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/data/us-counties-boundaries.json'
+      - '.github/workflows/neris-station-map.yml'
+  pull_request:
+    paths:
+      - 'scripts/data/build_neris_station_map.py'
+      - 'scripts/data/test_build_neris_station_map.py'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-station-map/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/data/us-counties-boundaries.json'
+      - '.github/workflows/neris-station-map.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/atlas/phase10-0-neris-map-intelligence'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_build_neris_station_map.py
+      - run: python3 scripts/data/build_neris_station_map.py
+      - run: python3 scripts/data/build_neris_station_map.py --verify
+      - run: |
+          branch="atlas/neris-station-map-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force artifacts/ems-territory-intelligence/public/registry/neris-station-map
+          git commit -m "Index retained NERIS stations by reported state and point county"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "NERIS map candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_build_neris_station_map.py
+      - run: python3 scripts/data/build_neris_station_map.py --verify

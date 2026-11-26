@@ -1,0 +1,44 @@
+name: Texas historical location catalog integration
+on:
+  push:
+    branches: [atlas/phase9-0o-texas-location-catalog]
+  pull_request:
+    paths:
+      - 'scripts/data/build_texas_location_catalog.py'
+      - 'scripts/data/evidence/texas-station-locations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/state-ems-review/TX-location-*.json'
+      - '.github/workflows/texas-location-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact historical evidence archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15079638432/zip" > /tmp/texas-location.zip
+      - run: python3 scripts/data/build_texas_location_catalog.py --archive /tmp/texas-location.zip
+      - run: python3 scripts/data/build_texas_location_catalog.py --verify
+      - name: Stage reproducible catalog and source archive
+        run: |
+          branch="atlas/texas-location-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/texas-station-locations/2026-11-26 artifacts/ems-territory-intelligence/public/registry/state-ems-review/TX-location-*.json
+          git commit -m "Retain 735 Texas source features and integrate 11 historical review candidates"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Texas location catalog candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/build_texas_location_catalog.py --verify

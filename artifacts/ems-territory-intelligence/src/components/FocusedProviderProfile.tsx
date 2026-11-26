@@ -76,6 +76,7 @@ import { validateNpiCheckDigit } from '../services/npiVerificationService';
 import { getAgencyMedicareDenialMetricForDisplay } from '../services/agencyMedicareDenialService';
 import { getAgencyGeographicLinks } from '../services/geographicMappingService';
 import { PrivateCoordinateMap } from './profile/PrivateCoordinateMap';
+import { TexasProfileLocationEvidence } from './profile/TexasHistoricalLocationEvidence';
 import { saveAgencyProfileReviewedAt } from '../services/agencyProfileReviewStore';
 import { ClinicalMeasures } from './profile/ClinicalMeasures';
 import { EmsRegistryLookup } from './EmsRegistryLookup';
@@ -1076,6 +1077,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               {agency.agencyType && <span className="acp-type-sub">· {agency.agencyType}</span>}
             </p>
             <h1 id="acp-agency-name" className="acp-name" data-testid="text-agency-name">{agency.name}</h1>
+            <TexasProfileLocationEvidence key={rawAgency.id+':texas-location-review'} agency={rawAgency} directory={directoryAgencies}/>
             <ProviderAddressLine key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={()=>{setRequestedReviewField('identity.address');navigateProfileSection('evidence');}} onReviewCandidate={()=>{setRequestedReviewField(ADDRESS_CANDIDATE_FIELD);navigateProfileSection('evidence');}}/>
             {(()=>{const c=providerAddressReview(rawAgency,directoryAgencies);return c&&c.countyVerified&&!c.sharedSourcePoint?<PrivateCoordinateMap key={rawAgency.id+':'+c.sourceIdentityKey+':'+c.snapshotGeneratedAt} agencyId={rawAgency.id} candidate={c}/>:null;})()}
             <div className="acp-contact-row" aria-label="Agency contact actions">

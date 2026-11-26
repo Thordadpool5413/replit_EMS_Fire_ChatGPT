@@ -15,7 +15,8 @@ from recover_neris_primary import dump, source_zip
 from primary_recovery_baseline import load_primary_baseline
 
 SOURCE_URL = 'https://apps.usfa.fema.gov/registry/api/download/national'
-SOURCE_SHA = 'c5b98d7fde08b48f6433694568f8e6fdbdfdbb13e2cd533c58d2ac148f03c1ea'
+PIN = ROOT/'scripts/fixtures/usfa-native-source-edition.json'
+SOURCE_SHA = json.loads(PIN.read_bytes())['sourceSha256']
 EVIDENCE = ROOT/'scripts/data/evidence/usfa-native-national/2026-11-26'
 EXPECTED_LOGICAL_ROWS = 27117
 REQUIRED_FIELDS = {'FDID', 'Fire dept name', 'HQ city', 'HQ state', 'HQ zip', 'Website'}
@@ -30,8 +31,8 @@ def phone_candidates(fragment):
     return sorted(values)
 
 
-def parse_raw(raw):
-    if sha(raw) != SOURCE_SHA:
+def parse_raw(raw, expected_sha=None):
+    if sha(raw) != (expected_sha or SOURCE_SHA):
         raise ValueError('Fixed public USFA national source bytes changed')
     text = raw.decode('utf-8-sig')
     lines = text.splitlines(keepends=True)
@@ -85,8 +86,8 @@ def native_identity(native):
     return 'FDID:'+state+':'+fdid if re.fullmatch(r'[A-Z]{2}', state) and fdid else None
 
 
-def reconcile(raw):
-    headers, rows, quarantined = parse_raw(raw)
+def reconcile(raw, expected_sha=None):
+    headers, rows, quarantined = parse_raw(raw, expected_sha)
     _, originals, baseline_sha = load_primary_baseline()
     core = ROOT/'scripts/data/evidence/primary-neris-rebuilt/2026-11-26/original.zip'
     if digest_file(core) != 'd302384e7c46e44b8812bdce89abe243b51479450d682b26ce56e7d18f47a4b2':
@@ -131,23 +132,46 @@ def reconcile(raw):
     return report
 
 
-def stage(directory, destination=EVIDENCE):
+def native_inventory(raw):
+    headers, rows, quarantined = parse_raw(raw, sha(raw))
+    return {'headers': headers, 'recordHashes': sorted(row['nativeRecordSha256'] for row in rows),
+            'quarantinedFragments': sorted(row['fragmentSha256'] for row in quarantined)}
+
+
+def stage(directory, destination=EVIDENCE, pin_edition=False):
+    global SOURCE_SHA
     raw = (directory/'usfa-national.csv').read_bytes()
+    confirmation = (directory/'usfa-national-confirmation.csv').read_bytes()
+    inventory = native_inventory(raw)
+    if native_inventory(confirmation) != inventory:
+        raise ValueError('Repeated full USFA exports disagree on native records or malformed fragments')
+    if pin_edition:
+        reconcile(raw, sha(raw))
+        SOURCE_SHA = sha(raw)
+        PIN.write_bytes(dump({'schemaVersion': 1, 'sourceSha256': SOURCE_SHA,
+                              'completeNativeInventorySha256': sha(dump(inventory)),
+                              'confirmationSourceSha256': sha(confirmation),
+                              'previousSourceSha256': 'c5b98d7fde08b48f6433694568f8e6fdbdfdbb13e2cd533c58d2ac148f03c1ea'}))
+    edition = json.loads(PIN.read_bytes())
+    if edition.get('completeNativeInventorySha256') != sha(dump(inventory)) or edition.get('confirmationSourceSha256') != sha(confirmation):
+        raise ValueError('Explicit complete native USFA source edition changed')
     report = reconcile(raw)
     if destination.exists(): raise ValueError('Retained native USFA source edition already exists')
     destination.mkdir(parents=True)
     report_raw = dump(report)
-    members = {'source/usfa-national.csv': raw, 'source/native-usfa.json': report_raw}
+    members = {'source/usfa-national.csv': raw, 'source/usfa-national-confirmation.csv': confirmation,
+               'source/native-usfa.json': report_raw, 'source/native-inventory.json': dump(inventory)}
     with zipfile.ZipFile(destination/'original.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, content in sorted(members.items()):
             info = zipfile.ZipInfo(name, date_time=(2026, 11, 26, 0, 0, 0)); info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, content)
     manifest = {'schemaVersion': 1, 'sourceUrl': SOURCE_URL, 'sourceSha256': SOURCE_SHA,
                 'archiveSha256': digest_file(destination/'original.zip'), 'archiveBytes': (destination/'original.zip').stat().st_size,
-                'nativeReportSha256': sha(report_raw), 'baselineIndexSha256': report['baselineIndexSha256'],
+                'nativeReportSha256': sha(report_raw), 'baselineIndexSha256': report['baselineIndexSha256'], 'sourceEdition': edition,
                 'members': {name: {'sha256': sha(content), 'bytes': len(content)} for name, content in members.items()}}
     summary = {key: report[key] for key in ('sourceUrl', 'sourceSha256', 'sourceBytes', 'completeLogicalSourceRows', 'parsedRows', 'quarantinedRows',
                                           'headers', 'baselineIndexSha256', 'originalPrimaryIdentityCount', 'completeUsfaRegistryRows', 'reconciliationOutcomes', 'limitations')}
+    summary['sourceEdition'] = edition
     summary['duplicateNativeIdentityGroupCount'] = len(report['duplicateNativeIdentityGroups'])
     summary['malformedSpans'] = [{key: row[key] for key in ('sourceRowNumber', 'lineStart', 'lineEnd', 'reason', 'fragmentSha256')} for row in report['quarantined']]
     (destination/'manifest.json').write_bytes(dump(manifest)); (destination/'summary.json').write_bytes(dump(summary))
@@ -157,10 +181,11 @@ def stage(directory, destination=EVIDENCE):
 def read(destination=EVIDENCE):
     manifest = json.loads((destination/'manifest.json').read_bytes())
     if (manifest.get('sourceUrl') != SOURCE_URL or manifest.get('sourceSha256') != SOURCE_SHA or
+            manifest.get('sourceEdition') != json.loads(PIN.read_bytes()) or
             digest_file(destination/'original.zip') != manifest['archiveSha256'] or
             (destination/'original.zip').stat().st_size != manifest['archiveBytes']):
         raise ValueError('Native USFA source edition changed')
-    names = {'source/usfa-national.csv', 'source/native-usfa.json'}
+    names = {'source/usfa-national.csv', 'source/usfa-national-confirmation.csv', 'source/native-usfa.json', 'source/native-inventory.json'}
     with zipfile.ZipFile(destination/'original.zip') as archive:
         if set(archive.namelist()) != names or len(archive.namelist()) != len(names) or set(manifest['members']) != names:
             raise ValueError('Native USFA source member inventory changed')
@@ -170,6 +195,12 @@ def read(destination=EVIDENCE):
                 raise ValueError('Unexpected native USFA source member size')
             data[name] = archive.read(name)
             if sha(data[name]) != manifest['members'][name]['sha256']: raise ValueError('Native USFA source member changed')
+    inventory = native_inventory(data['source/usfa-national.csv'])
+    edition = json.loads(PIN.read_bytes())
+    if (native_inventory(data['source/usfa-national-confirmation.csv']) != inventory or
+            dump(inventory) != data['source/native-inventory.json'] or sha(dump(inventory)) != edition['completeNativeInventorySha256'] or
+            sha(data['source/usfa-national-confirmation.csv']) != edition['confirmationSourceSha256']):
+        raise ValueError('Repeated complete native source inventories no longer agree')
     report = reconcile(data['source/usfa-national.csv'])
     if (dump(report) != data['source/native-usfa.json'] or sha(dump(report)) != manifest['nativeReportSha256'] or
             report['baselineIndexSha256'] != manifest['baselineIndexSha256']):
@@ -184,7 +215,8 @@ def source_catalog(): return read()
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--directory', type=pathlib.Path)
     parser.add_argument('--evidence', type=pathlib.Path, default=EVIDENCE)
-    parser.add_argument('--download', action='store_true'); parser.add_argument('--verify', action='store_true'); args = parser.parse_args()
+    parser.add_argument('--download', action='store_true'); parser.add_argument('--verify', action='store_true')
+    parser.add_argument('--pin-edition', action='store_true'); args = parser.parse_args()
     if args.verify:
         report, manifest = read(args.evidence)
         print(json.dumps({'sourceSha256': SOURCE_SHA, 'parsedRows': report['parsedRows'], 'quarantinedRows': report['quarantinedRows'],
@@ -193,13 +225,14 @@ def main():
     if not args.directory: parser.error('--directory is required for source acquisition')
     args.directory.mkdir(parents=True, exist_ok=True)
     if args.download:
-        request = urllib.request.Request(SOURCE_URL, headers={'User-Agent': 'ATLAS public source provenance replay'})
-        with urllib.request.urlopen(request, timeout=180) as response:
-            raw = response.read(25_000_001)
-        if len(raw)>25_000_000: raise ValueError('Unexpected national CSV size')
-        (args.directory/'usfa-national.csv').write_bytes(raw)
-        print(json.dumps({'downloadBytes': len(raw), 'actualSourceSha256': sha(raw)}), flush=True)
-    manifest, summary = stage(args.directory, args.evidence)
+        for name in ('usfa-national.csv', 'usfa-national-confirmation.csv'):
+            request = urllib.request.Request(SOURCE_URL, headers={'User-Agent': 'ATLAS public source provenance replay'})
+            with urllib.request.urlopen(request, timeout=180) as response:
+                raw = response.read(25_000_001)
+            if len(raw)>25_000_000: raise ValueError('Unexpected national CSV size')
+            (args.directory/name).write_bytes(raw)
+            print(json.dumps({'response': name, 'downloadBytes': len(raw), 'actualSourceSha256': sha(raw)}), flush=True)
+    manifest, summary = stage(args.directory, args.evidence, args.pin_edition)
     print(json.dumps({'manifest': manifest, 'summary': summary}), flush=True)
 
 if __name__ == '__main__':

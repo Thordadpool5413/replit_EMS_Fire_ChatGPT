@@ -136,7 +136,7 @@ jobs:
       - name: Retain complete fixed national CSV and native identity reconciliation
         run: |
           set -euo pipefail
-          python3 -u scripts/data/retain_usfa_native_source.py --download --directory "$RUNNER_TEMP/usfa-native"
+          python3 -u scripts/data/retain_usfa_native_source.py --download --pin-edition --directory "$RUNNER_TEMP/usfa-native"
           python3 -u scripts/data/retain_usfa_native_source.py --verify
       - uses: actions/upload-artifact@v4
         if: always()
@@ -144,6 +144,7 @@ jobs:
           name: usfa-native-source-review
           path: |
             scripts/data/evidence/usfa-native-national
+            scripts/fixtures/usfa-native-source-edition.json
             ${{ runner.temp }}/usfa-native
       - name: Save complete native public source on isolated review branch
         run: |
@@ -151,7 +152,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "atlas/usfa-native-source-$GITHUB_RUN_ID"
-          git add --force scripts/data/evidence/usfa-native-national
+          git add --force scripts/data/evidence/usfa-native-national scripts/fixtures/usfa-native-source-edition.json
           git diff --cached --quiet && exit 0
           git commit -m "Retain complete fixed public USFA native source and malformed row quarantine"
           git push origin HEAD

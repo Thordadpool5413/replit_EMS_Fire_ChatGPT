@@ -1,0 +1,53 @@
+name: Rebuild retained NERIS profiles
+on:
+  push:
+    branches: [atlas/recover-neris-profiles]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mailing-source:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[rebuild-neris-source]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check reconstructed source and exact first target batch
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/data/stage_neris_mailing_supplement.py scripts/data/retain_neris_mailing_source.py scripts/data/prepare_neris_independent_sites.py
+          python3 scripts/data/retain_neris_primary.py --verify
+          python3 scripts/data/prepare_neris_independent_sites.py --batch original-1251 --output "$RUNNER_TEMP/neris-original-1251.json" --report "$RUNNER_TEMP/neris-original-1251-report.json"
+      - name: Acquire complete fixed public fields and bind original native records
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_neris_mailing_supplement.py --directory "$RUNNER_TEMP/neris-mailing-source"
+          python3 scripts/data/retain_neris_mailing_source.py --directory "$RUNNER_TEMP/neris-mailing-source" --pin-edition
+          python3 scripts/data/retain_neris_mailing_source.py --verify
+      - name: Preserve frozen original target bytes
+        run: |
+          set -euo pipefail
+          mkdir -p scripts/data/evidence/primary-neris-original-site-targets/2026-11-26
+          cp "$RUNNER_TEMP/neris-original-1251.json" scripts/data/evidence/primary-neris-original-site-targets/2026-11-26/targets.json
+          cp "$RUNNER_TEMP/neris-original-1251-report.json" scripts/data/evidence/primary-neris-original-site-targets/2026-11-26/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-native-source-review
+          path: |
+            scripts/data/evidence/neris-department-mailing
+            scripts/data/evidence/primary-neris-original-site-targets
+            scripts/fixtures/neris-mailing-source-edition.json
+            ${{ runner.temp }}/neris-mailing-source/metadata-before.json
+      - name: Save reviewed source evidence on an isolated branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-native-source-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/neris-department-mailing scripts/data/evidence/primary-neris-original-site-targets scripts/fixtures/neris-mailing-source-edition.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete native NERIS supplemental source and frozen original site targets"
+          git push origin HEAD

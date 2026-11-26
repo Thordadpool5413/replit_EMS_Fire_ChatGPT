@@ -49,7 +49,8 @@ def validate_bound_departments(features, metadata):
     if sha(original_report) != SOURCE_SHA:
         raise ValueError('Original complete NERIS native report changed')
     original = json.loads(original_report)
-    original_ids = {row['sourceObjectId'] for row in original['sourceObjectAudit'] if row['layer'] == 0}
+    original_ids = ({row['sourceObjectId'] for row in original['departments']} |
+                    {row['sourceObjectId'] for row in original['sourceObjectAudit'] if row['layer'] == 0})
     if len(features) != 30700 or {f['attributes']['OBJECTID'] for f in features} != original_ids:
         raise ValueError('The complete original 30700 native department OID inventory changed')
     by_id = {}

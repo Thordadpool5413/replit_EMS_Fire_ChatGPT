@@ -233,4 +233,36 @@ class PrimaryReleaseTest(unittest.TestCase):
             'targetsSha256':'b'*64,'candidates':[candidate],'rejected':[rejection]}])
         self.assertEqual(rows,[self.original()])
 
+
+    def test_native_mailing_identity_ambiguity_withholds_an_inferred_site(self):
+        candidate=self.candidate()
+        candidate['primaryAddressEvidence']={'method':'neris-department-site-correlation',
+            'association':'inferred','department':{'id':'DEPT-1'},'site':{'id':'SITE-1'},
+            'siteRole':'reported-headquarters'}
+        rejection={'originalPrimaryKey':candidate['key'],'targetAddress':candidate['address'],
+                   'source':'neris-mailing-identity','reasons':['additional-native-mailing-identity-ambiguity']}
+        rows,_=self.run_reports([{'candidates':[candidate],'consensusVetoes':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+
+    def test_identity_ambiguity_preserves_a_separately_valid_original_address(self):
+        candidate=self.candidate()
+        rejection={'originalPrimaryKey':candidate['key'],'targetAddress':candidate['address'],
+                   'source':'neris-mailing-identity','reasons':['additional-native-mailing-identity-ambiguity']}
+        rows,_=self.run_reports([{'candidates':[candidate],'consensusVetoes':[rejection]}])
+        self.assertEqual(rows[0]['status'],'mapped')
+
+    def test_site_prefix_keeps_qualified_native_county_evidence(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+                   'reason':'site-source-county-disagreement'}
+        rows,_=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows,[self.original()])
+
+    def test_missing_native_site_coordinate_is_not_a_qualified_point_conflict(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+                   'reason':'site-no-source-coordinate'}
+        rows,_=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows[0]['status'],'mapped')
+
 if __name__=='__main__':unittest.main()

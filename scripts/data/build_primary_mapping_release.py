@@ -14,6 +14,7 @@ from address_normalization import normalize_street, normalized_city, source_stre
 
 REQUIRED = 44452
 PHONE_METHOD = 'nppes-usfa-primary-site-correlation'
+IDENTITY_REJECTIONS = {'additional-native-mailing-identity-ambiguity'}
 QUALIFIED_REJECTIONS = {
     'independent-source-rows-disagree', 'conflicting-native-points',
     'native-address-coordinate-disagreement',
@@ -26,7 +27,9 @@ QUALIFIED_REJECTIONS = {
     'range-coordinate-disagreement', 'conflicting-native-ranges',
     'qualified-source-point-disagreement', 'shared-native-coordinate',
     'native-county-disagreement', 'native-point-disagreement',
-}
+    'native-grid-coordinate-or-address-conflict', 'native-grid-source-county-disagreement',
+    'native-grid-coordinate-disagreement',
+} | IDENTITY_REJECTIONS
 
 
 def dump(value):
@@ -124,6 +127,14 @@ def inferred_site_identity(entry):
 
 def _reason_set(row):
     if isinstance(row, str):
+        # Native NERIS site selectors preserve their context in these exact
+        # prefixes; the underlying qualified source reason is unchanged.
+        for prefix in ('site-address-', 'site-'):
+            if row.startswith(prefix):
+                row = row[len(prefix):]
+                break
+        if row == 'native-coordinate-disagreement':
+            row = 'native-address-coordinate-disagreement'
         return {row} & QUALIFIED_REJECTIONS
     if isinstance(row, list):
         result = set()
@@ -168,6 +179,11 @@ def _qualified_rejection_records(row, source, address, method=None):
     if nested:
         direct.discard('valid-independent-source-conflict')
     result = []
+    identity_reasons = direct & IDENTITY_REJECTIONS
+    if identity_reasons:
+        result.append({'source': own_source, 'targetAddress': copy.deepcopy(own_address),
+                       'reasons': sorted(identity_reasons), 'precision': 'identity'})
+    direct -= IDENTITY_REJECTIONS
     if direct:
         range_only = direct <= {'range-coordinate-disagreement', 'conflicting-native-ranges'}
         is_range = (str(own_source).lower().startswith('tiger') or own_method in INTERPOLATED or
@@ -318,7 +334,9 @@ def combine(originals, neris, source_reports, national, target_batches=()):
         precise = [entry for entry in site_options if entry['match']['method'] not in INTERPOLATED]
         options = precise or site_options
         relevant = [row for row in vetoes.get(key, [])
-                    if same_site_address(first_address, row['targetAddress']) and (not precise or row['precision'] != 'range')]
+                    if same_site_address(first_address, row['targetAddress']) and
+                    (not direct or row['precision'] != 'identity') and
+                    (not precise or row['precision'] != 'range')]
         native_reasons = native_neris_vetoes(first_address, original[key].get('sourceCounty', ''))
         if native_reasons:
             relevant.append({'source': 'neris', 'targetAddress': first_address,

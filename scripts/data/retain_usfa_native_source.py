@@ -87,8 +87,18 @@ def native_identity(native):
 
 def reconcile(raw):
     headers, rows, quarantined = parse_raw(raw)
-    _, national, baseline_sha = load_primary_baseline()
-    primary = [row for row in national if row[1] == 'USFA']
+    _, originals, baseline_sha = load_primary_baseline()
+    core = ROOT/'scripts/data/evidence/primary-neris-rebuilt/2026-11-26/original.zip'
+    if digest_file(core) != 'd302384e7c46e44b8812bdce89abe243b51479450d682b26ce56e7d18f47a4b2':
+        raise ValueError('Original source-bound national registry evidence changed')
+    with zipfile.ZipFile(core) as archive:
+        frozen = archive.read('inputs.json')
+    if sha(frozen) != '77131bc7408db0296789bf954e85921555b829974c5659f77cae20561bc07059':
+        raise ValueError('Original native registry input changed')
+    original_inputs = json.loads(frozen)
+    if {row['key']: row for row in original_inputs['entries']} != {row['key']: row for row in originals}:
+        raise ValueError('USFA native reconciliation changed the original primary scope')
+    primary = [row for row in original_inputs['nationalRows'] if row[1] == 'USFA']
     groups = collections.defaultdict(list)
     for row in rows:
         key = native_identity(row['native'])

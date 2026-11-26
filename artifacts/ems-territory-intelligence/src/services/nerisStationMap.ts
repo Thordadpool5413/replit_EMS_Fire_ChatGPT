@@ -71,6 +71,10 @@ export function filterNerisMap(data:NerisMapData,scope:{state:string;county:stri
  const q=norm(scope.query).split(' ').filter(Boolean);
  return data.rows.filter(s=>(scope.county==='all'||!!s.countyFips&&(scope.county===s.countyFips||normalizeCountyName(data.countyNames[s.countyFips]??'')===normalizeCountyName(scope.county)))&&(scope.city==='all'||norm(s.address[2]??'')===norm(scope.city))&&q.every(w=>norm([s.id,s.parentId,s.name,s.parentName,...s.address].join(' ')).includes(w)));
 }
+export function filterNerisCountyStations(data:NerisMapData,countyFips:string,city='',query=''){
+ if(!/^\d{5}$/.test(countyFips))return [];
+ return filterNerisMap(data,{state:data.state,county:countyFips,city:city||'all',query,category:'fire'});
+}
 export function groupNerisMap(rows:NerisMapRow[]):NerisMapGroup[]{
  const groups=new Map<string,NerisMapGroup>();
  for(const r of rows){

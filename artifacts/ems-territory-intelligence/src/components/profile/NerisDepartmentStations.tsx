@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import type {Agency} from '../../types';
+import {UsfaNerisParentComparisons} from './UsfaLegacyStations';
 import {loadNerisDepartment,nerisAddressText,nerisCatalogDate,nerisObjectUrl,profileNerisId,type NerisCatalogDepartment} from '../../services/nerisStationCatalog';
 export function NerisDepartmentStations({id}:{id:string}){
  const [opened,setOpened]=useState(false),[data,setData]=useState<NerisCatalogDepartment|null>(null),[status,setStatus]=useState<'idle'|'loading'|'ready'|'error'>('idle'),[attempt,setAttempt]=useState(0),[page,setPage]=useState(0);
@@ -12,6 +13,7 @@ export function NerisDepartmentStations({id}:{id:string}){
  {status==='ready'&&!d&&<p>No matching native department in this snapshot.</p>}
  {d&&<><p className="font-semibold break-words">{d.name} · {d.id}</p><p className="break-words">Reported headquarters: {nerisAddressText(d.address)||'Not reported'}</p>
  <p>{d.stations.length} station source records · reported department station count {d.reportedStationCount??'not reported'}.</p><a className="underline text-xs" href={nerisObjectUrl(0,d.oid)} target="_blank" rel="noreferrer">Original department GIS record</a>
+ <UsfaNerisParentComparisons key={d.id} id={d.id} state={d.state}/>
  {!d.stations.length&&<p>No station records returned; does not imply zero facilities.</p>}
  <ul className="divide-y">{d.stations.slice(page*8,page*8+8).map(s=><li key={s.id} className="py-2 space-y-1 break-words"><strong>{s.name||'Unnamed station source record'}</strong><p>Station ID {s.id} · Parent {s.parentId}</p><p>Reported address: {nerisAddressText(s.address)||'Not reported'}</p>
  {s.address[3]!==d.state&&<p>Cross-state station address.</p>}

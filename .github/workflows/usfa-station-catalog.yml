@@ -1,0 +1,56 @@
+name: Operational USFA station and NERIS comparison catalog
+on:
+  push:
+    branches: [atlas/phase10-1-usfa-station-intelligence, main]
+    paths:
+      - 'scripts/data/retain_usfa_station_catalog.py'
+      - 'scripts/data/test_usfa_station_catalog.py'
+      - 'scripts/data/evidence/usfa-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/usfa-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/national/**'
+      - '.github/workflows/usfa-station-catalog.yml'
+  pull_request:
+    paths:
+      - 'scripts/data/retain_usfa_station_catalog.py'
+      - 'scripts/data/test_usfa_station_catalog.py'
+      - 'scripts/data/evidence/usfa-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/usfa-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/neris-stations/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/national/**'
+      - '.github/workflows/usfa-station-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/atlas/phase10-1-usfa-station-intelligence'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_usfa_station_catalog.py
+      - name: Retrieve successful acquisition artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15086119349/zip" > /tmp/usfa-stations.zip
+      - run: python3 scripts/data/retain_usfa_station_catalog.py --archive /tmp/usfa-stations.zip
+      - run: python3 scripts/data/retain_usfa_station_catalog.py --verify
+      - run: |
+          branch="atlas/usfa-station-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/usfa-stations/2026-11-26 artifacts/ems-territory-intelligence/public/registry/usfa-stations
+          git commit -m "Retain 8071 legacy station address rows and cross-source comparisons"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "USFA station catalog candidate: $branch"
+  verify:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_usfa_station_catalog.py
+      - run: python3 scripts/data/retain_usfa_station_catalog.py --verify

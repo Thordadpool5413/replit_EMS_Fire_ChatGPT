@@ -11,15 +11,16 @@ from recover_neris_primary import dump, SOURCE_SHA, INDEX_SHA
 from stage_neris_mailing_supplement import FIELDS, validate_bound_departments
 from stage_neris_national_stations import ITEM
 
-SOURCE = '5a13fee2362d08e2c0119eebdc14bca7732b2597208d73296fe2b9883b30ba6c'
+PIN = ROOT/'scripts/fixtures/neris-mailing-source-edition.json'
+SOURCE = json.loads(PIN.read_bytes())['sourceSha256']
 EVIDENCE = ROOT/'scripts/data/evidence/neris-department-mailing/2026-11-26'
 MEMBERS = ('neris-mailing-supplement.json', 'metadata-before.json', 'metadata-after.json',
            'object-ids-before.json', 'object-ids-after.json')
 
 
-def validate(data):
+def validate(data, expected_sha=None):
     raw = data['neris-mailing-supplement.json']
-    if sha(raw) != SOURCE:
+    if sha(raw) != (expected_sha or SOURCE):
         raise ValueError('Public NERIS physical/mailing source edition changed')
     source = json.loads(raw)
     before, after = [json.loads(data['metadata-'+stage+'.json']) for stage in ('before', 'after')]
@@ -90,10 +91,12 @@ def source_catalog():
 
 
 def main():
+    global SOURCE
     parser = argparse.ArgumentParser()
     parser.add_argument('--directory', type=pathlib.Path)
     parser.add_argument('--evidence', type=pathlib.Path, default=EVIDENCE)
     parser.add_argument('--verify', action='store_true')
+    parser.add_argument('--pin-edition', action='store_true', help='After complete native binding, save the actual newly acquired source hash on this review branch')
     args = parser.parse_args()
     if args.verify:
         source, bound = read(args.evidence)
@@ -101,6 +104,14 @@ def main():
     else:
         if not args.directory:
             parser.error('Staging requires the complete acquired source directory')
+        if args.pin_edition:
+            data = {name: (args.directory/name).read_bytes() for name in MEMBERS}
+            actual = sha(data['neris-mailing-supplement.json'])
+            validate(data, actual)
+            PIN.write_bytes(dump({'schemaVersion': 1, 'sourceSha256': actual, 'sourceCount': 30700,
+                                  'boundOriginalDepartmentCount': 30672, 'originalNerisSourceSha256': SOURCE_SHA,
+                                  'previousReconstructionSourceSha256': '5a13fee2362d08e2c0119eebdc14bca7732b2597208d73296fe2b9883b30ba6c'}))
+            SOURCE = actual
         print(json.dumps(stage(args.directory, args.evidence)))
 
 

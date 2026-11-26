@@ -21,13 +21,9 @@ EVIDENCE=ROOT/'scripts/data/evidence/primary-nad-rebuilt/2026-11-26'
 
 def dump(x):return (json.dumps(x,sort_keys=True,ensure_ascii=True,separators=(',',':'),allow_nan=False)+'\n').encode()
 def load_primary():
-    index_raw=(PUBLIC/'locations/index.json').read_bytes();index=json.loads(index_raw);entries=[]
-    for c in index['chunks']:
-        raw=(PUBLIC/'locations'/c['file']).read_bytes()
-        if sha(raw)!=c['sha256']:raise ValueError('Primary snapshot changed')
-        entries.extend(json.loads(raw))
-    if len(entries)!=46791 or len({e['key'] for e in entries})!=46791:raise ValueError('Primary denominator changed')
-    return entries,sha(index_raw)
+    from primary_recovery_baseline import load_primary_baseline
+    _, entries, baseline_sha = load_primary_baseline()
+    return entries, baseline_sha
 
 def native_rows(archive,receipt):
     with zipfile.ZipFile(archive) as z:
@@ -229,24 +225,24 @@ def validate_nad_primary_entry(entry):
     row=candidate_index().get(entry.get('key'))
     return bool(row and entry.get('status')=='mapped' and all(entry.get(k)==row.get(k) for k in ('key','source','state','address','sourceCounty','countyFips','match')))
 
-@functools.lru_cache(maxsize=1)
-def diagnostic_candidate_index():
-    verify()
-    with zipfile.ZipFile(EVIDENCE/'original.zip') as z:
+@functools.lru_cache(maxsize=4)
+def diagnostic_candidate_index(evidence=EVIDENCE):
+    verify(evidence)
+    with zipfile.ZipFile(evidence/'original.zip') as z:
         report=json.loads(z.read('report.json'));inputs=json.loads(z.read('inputs.json'))
     candidates={r['key']:r for r in report['diagnosticCandidates']}
     targets={r['key']:r for r in inputs['entries'] if r.get('originalPrimaryKey')}
     return candidates,targets
 
-def validate_diagnostic_candidate(candidate,target):
+def validate_diagnostic_candidate(candidate,target,evidence=EVIDENCE):
     try:
-        candidates,targets=diagnostic_candidate_index()
+        candidates,targets=diagnostic_candidate_index(evidence)
         return candidate==candidates.get(target['key']) and target==targets.get(target['key'])
     except (ValueError,KeyError,TypeError,OSError,zipfile.BadZipFile):return False
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path);p.add_argument('--directory',type=pathlib.Path);p.add_argument('--report',type=pathlib.Path);p.add_argument('--extra-targets',type=pathlib.Path);p.add_argument('--scan',action='store_true');p.add_argument('--retain',action='store_true');p.add_argument('--verify',action='store_true');a=p.parse_args()
-    if a.verify:print('NAD retained replay passed:',json.dumps(verify()),flush=True);return
+    p=argparse.ArgumentParser();p.add_argument('--archive',type=pathlib.Path);p.add_argument('--directory',type=pathlib.Path);p.add_argument('--report',type=pathlib.Path);p.add_argument('--extra-targets',type=pathlib.Path);p.add_argument('--scan',action='store_true');p.add_argument('--retain',action='store_true');p.add_argument('--verify',action='store_true');p.add_argument('--evidence',type=pathlib.Path,default=EVIDENCE);a=p.parse_args()
+    if a.verify:print('NAD retained replay passed:',json.dumps(verify(a.evidence)),flush=True);return
     if not a.directory or not a.report:p.error('--directory and --report are required for source staging')
     entries,baseline=load_primary()
     if a.extra_targets:
@@ -262,8 +258,8 @@ def main():
         scan(a.archive,entries,a.directory)
     report=make_candidates(a.directory,entries,baseline);a.report.parent.mkdir(parents=True,exist_ok=True);a.report.write_bytes(dump(report))
     if a.retain:
-        retain(a.directory,entries,baseline,report,EVIDENCE)
-        print('Retained NAD:',json.dumps(verify()),flush=True)
+        retain(a.directory,entries,baseline,report,a.evidence)
+        print('Retained NAD:',json.dumps(verify(a.evidence)),flush=True)
     print('NAD outcomes:',json.dumps(report['outcomes']),flush=True)
 
 if __name__=='__main__':main()

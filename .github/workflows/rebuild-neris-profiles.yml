@@ -188,3 +188,38 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Bind native NERIS mailing and grid frontend records to exact replayed evidence"
           git push origin HEAD
+  website-sites:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-website]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify complete website identities and exact native site geometry
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_website_sites.py
+          python3 -u scripts/data/retain_neris_website_sites.py
+          python3 -u scripts/data/retain_neris_website_sites.py --verify
+          python3 -u scripts/data/build_neris_retained_profile_pins.py --profile website --validation-output "$RUNNER_TEMP/neris-website-frontend.json"
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-website-frontend.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-native-website-review
+          path: |
+            scripts/data/evidence/primary-neris-website-sites
+            artifacts/ems-territory-intelligence/src/services/nerisWebsiteSitePins.json
+            scripts/fixtures/neris-retained-website-examples.json
+      - name: Save complete native website site evidence on isolated review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-website-sites-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-website-sites
+          git add artifacts/ems-territory-intelligence/src/services/nerisWebsiteSitePins.json scripts/fixtures/neris-retained-website-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete reciprocal native website site identities and frontend proof bindings"
+          git push origin HEAD

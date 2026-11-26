@@ -97,19 +97,44 @@ def prepare(inputs, approved, departments, only_original_keys=None):
     return targets, dict(sorted(counts.items()))
 
 
+
+ORIGINAL_TARGET_SHA = 'cb4c896b00f7ca2a1710a57a142f94e67b0e4463871e217ae9b1a8eeafe7744a'
+ORIGINAL_SCOPE = pathlib.Path(__file__).resolve().parents[1]/'fixtures/neris-independent-original-batch.json'
+
+
+def prepare_original_batch(inputs, approved, departments):
+    """Reproduce the first source-audited batch without later audit additions."""
+    scope = json.loads(ORIGINAL_SCOPE.read_bytes())
+    excluded = {row['key'] for row in scope['excludedLaterAuditAdditions']}
+    if (scope.get('batch') != 'original-1251' or scope.get('targetCount') != 1251 or
+            scope.get('targetSha256') != ORIGINAL_TARGET_SHA or
+            excluded != {'FDID:MN:70108', 'FDID:MO:04809', 'FDID:NC:00901'}):
+        raise ValueError('Frozen original NERIS batch scope changed')
+    if len(inputs['entries']) != 46791 or len({e['key'] for e in inputs['entries']}) != 46791:
+        raise ValueError('Original primary identity inventory changed')
+    keys = {entry['key'] for entry in inputs['entries']} - excluded
+    targets, counts = prepare(inputs, approved, departments, only_original_keys=keys)
+    if (len(targets) != 1251 or len({row['originalPrimaryKey'] for row in targets}) != 1251 or
+            sha(dump(targets)) != ORIGINAL_TARGET_SHA):
+        raise ValueError('Frozen original 1251 native site targets do not reproduce exactly')
+    return targets, counts
+
+
 def main():
     p = argparse.ArgumentParser()
+    p.add_argument('--batch', choices=('original-1251', 'current-audit'), default='original-1251')
     p.add_argument('--output', type=pathlib.Path, required=True)
     p.add_argument('--report', type=pathlib.Path, required=True)
     args = p.parse_args()
     with zipfile.ZipFile(DEFAULT/'original.zip') as archive:
         inputs = json.loads(archive.read('inputs.json'))
         approved = json.loads(archive.read('candidates.json'))
-    targets, counts = prepare(inputs, approved, load_departments())
+    maker = prepare_original_batch if args.batch == 'original-1251' else prepare
+    targets, counts = maker(inputs, approved, load_departments())
     data = dump(targets)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(data)
-    report = {'schemaVersion': 1, 'diagnosticOnly': True, 'publicationEligible': False,
+    report = {'schemaVersion': 1, 'batch': args.batch, 'diagnosticOnly': True, 'publicationEligible': False,
               'originalPrimaryIdentityCount': 46791, 'targetVariantCount': len(targets),
               'distinctOriginalPrimaryTargetCount': len({t['originalPrimaryKey'] for t in targets}),
               'targetFileSha256': sha(data), 'sourceSha256': SOURCE_SHA,

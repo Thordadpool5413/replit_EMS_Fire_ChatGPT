@@ -79,20 +79,25 @@ jobs:
           git commit -m "Retain replayed NERIS primary site evidence"
           git push origin HEAD
   nad:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]') || contains(github.event.head_commit.message, '[retain-nad]')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retain the immutable original primary baseline
+        run: python3 scripts/data/primary_recovery_baseline.py --retain
       - name: Verify native address and decoder guards
         run: |
           python3 -m unittest discover -s scripts/data -p test_nad_primary.py
           python3 -m unittest discover -s scripts/data -p test_checked_zip_member.py
       - name: Prepare explicitly bound native headquarters targets
         run: |
-          python3 scripts/data/prepare_neris_independent_sites.py --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
+          python3 scripts/data/prepare_neris_independent_sites.py --batch original-1251 --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
       - name: Acquire complete fixed public NAD release and match locally
         run: |
           set -euo pipefail
@@ -109,7 +114,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "atlas/primary-source-nad-$GITHUB_RUN_ID"
-          git add --force scripts/data/evidence/primary-nad-rebuilt artifacts/ems-territory-intelligence/src/services/nadPrimaryPointPins.ts artifacts/api-server/src/lib/nadPrimaryPointPins.ts
+          git add --force scripts/data/evidence/primary-recovery-baseline scripts/data/evidence/primary-nad-rebuilt artifacts/ems-territory-intelligence/src/services/nadPrimaryPointPins.ts artifacts/api-server/src/lib/nadPrimaryPointPins.ts
           git diff --cached --quiet && exit 0
           git commit -m "Retain complete native NAD primary address evidence"
           git push origin HEAD

@@ -8,6 +8,7 @@ and cache replay scripts preserve the large public-data scan without committing
 the entire nationwide address database into the application repository.
 """
 import argparse
+import copy
 import functools
 import io
 import json
@@ -120,7 +121,7 @@ def retain(source):
 
 
 @functools.lru_cache(maxsize=1)
-def validated_evidence():
+def _validated_evidence():
     raw=(EVIDENCE/'original.zip').read_bytes();manifest=json.loads((EVIDENCE/'manifest.json').read_bytes())
     if not ARCHIVE_SHA256 or not REPORT_SHA256: raise ValueError('Overture release pins are not frozen')
     if sha(raw)!=ARCHIVE_SHA256 or manifest['archiveSha256']!=ARCHIVE_SHA256 or manifest['reportSha256']!=REPORT_SHA256:
@@ -147,6 +148,57 @@ def validate_overture_address_evidence(entry):
 
 
 validate_overture_primary_entry=validate_overture_address_evidence
+
+
+def validated_evidence():
+    return copy.deepcopy(_validated_evidence())
+
+
+@functools.lru_cache(maxsize=1)
+def _native_files():
+    _validated_evidence()
+    raw=(EVIDENCE/'original.zip').read_bytes()
+    if sha(raw)!=ARCHIVE_SHA256: raise ValueError('Retained Address source changed')
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        return {name:archive.read(name) for name in ('selected-native-records.json','primary-address-candidates.json','targets.json')}
+
+
+def coordinate_witnesses(records,key):
+    from match_overture_primary_addresses import source_address,source_block_reason
+    result=[]
+    for record in records:
+        row=record['nativeRecord']
+        if source_block_reason(row): continue
+        point=wkb_point(row['geometryWkb'])
+        if point is None: continue
+        for ref in record['targets']:
+            if ref['key']!=key or ref['matchBasis'] not in ('normalized-street-city-state-zip','normalized-street-state-zip'): continue
+            result.append({'coordinatesAsReported':point,'nativeId':row['id'],'sourceFile':record['sourceFile'],
+                           'sourceRowNumber':record['sourceRowNumber'],'matchBasis':ref['matchBasis'],'sourceAddress':source_address(row)})
+    return result
+
+
+def overture_primary_coordinate_witnesses(key):
+    records=json.loads(_native_files()['selected-native-records.json'])['records']
+    return coordinate_witnesses(records,key)
+
+
+def overture_primary_point_witnesses(match,target_address):
+    candidates,_=_validated_evidence()
+    keys=[key for key,candidate in candidates.items() if candidate['match']==match and candidate['originalAddress']==target_address]
+    records=json.loads(_native_files()['selected-native-records.json'])['records']
+    witnesses={}
+    for key in keys:
+        for witness in coordinate_witnesses(records,key):
+            witnesses[(witness['sourceFile'],witness['sourceRowNumber'])]=witness
+    return [witnesses[key] for key in sorted(witnesses)]
+
+
+def overture_primary_catalog():
+    files=_native_files();report=json.loads(files['primary-address-candidates.json'])
+    return {'candidates':{r['key']:r for r in report['candidates']},
+            'targets':{r['key']:r for r in json.loads(files['targets.json'])['targets']},
+            'rejected':report['rejected'],'uncertain':[],'reportSha256':REPORT_SHA256}
 
 
 def main():

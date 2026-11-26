@@ -25,6 +25,7 @@ METHOD = 'neris-department-geocoded-site-correlation'
 SOURCE_METHODS = {'usgs': 'usgs-structure-address', 'hifld-ems': 'hifld-ems-address',
                   'hifld-fire': 'hifld-fire-address', 'nad': 'nad-address-point'}
 REQUIRED_SOURCES = set(SOURCE_METHODS)
+ALL_SOURCE_METHODS = {**SOURCE_METHODS, 'overture': 'overture-place-address'}
 FEDERAL_COUNTS = {'usgs': 386823, 'hifld-ems': 42812, 'hifld-fire': 53087}
 MAX_DISTANCE = 75
 
@@ -46,6 +47,11 @@ def load_target_inputs(path):
 
 
 def source_rows(source, report, targets_sha=TARGET_SHA, nad_diagnostic_count=1251):
+    if source == 'overture':
+        if (report.get('source') != 'overture-place-neris-diagnostic' or report.get('targetsSha256') != targets_sha or
+                not report.get('completeNativeSourceReplay') or not isinstance(report.get('rejected'), list)):
+            raise ValueError('Places source report is not a complete replayed native-target catalog')
+        return report['candidates']
     if source not in SOURCE_METHODS:
         raise ValueError('Unknown independent address source')
     if source == 'nad':
@@ -91,7 +97,7 @@ def collect_observations(targets, reports, targets_sha=TARGET_SHA, nad_diagnosti
             m = candidate['match']
             if (candidate['address'] != t['address'] or candidate['originalAddress'] != t['address'] or
                     candidate.get('state', t['state']) != t['state'] or candidate.get('source', t['source']) != t['source'] or
-                    m.get('method') != SOURCE_METHODS[source] or not point_matches_target(t['address'], m.get('sourceAddress'), m.get('matchBasis'), source) or
+                    m.get('method') != ALL_SOURCE_METHODS[source] or not point_matches_target(t['address'], m.get('sourceAddress'), m.get('matchBasis'), source) or
                     not valid_point([m.get('latitude'), m.get('longitude')]) or candidate['countyFips'] != m.get('point', {}).get('countyFips')):
                 raise ValueError('Independent point is not bound to the exact native physical site address')
             if t.get('sourceCounty') and candidate['countyFips'] != t['sourceCounty']:
@@ -106,10 +112,11 @@ def collect_observations(targets, reports, targets_sha=TARGET_SHA, nad_diagnosti
             consequential = reasons & {'independent-source-rows-disagree', 'primary-source-county-disagreement',
                                        'conflicting-native-points', 'original-source-county-disagreement', 'native-source-county-disagreement',
                                        'source-coordinate-shared-across-distinct-addresses',
-                                       'coordinate-reused-across-distinct-addresses', 'nonactive-lifecycle'}
+                                       'coordinate-reused-across-distinct-addresses', 'nonactive-lifecycle',
+                                       'source-point-county-conflict', 'coordinate-shared-by-distinct-addresses'}
             if key in desired and consequential:
                 vetoes[key].append({'source': source, **copy.deepcopy(rejected)})
-        summaries[source] = {'method': SOURCE_METHODS[source], 'reportSha256': sha(dump(report)),
+        summaries[source] = {'method': ALL_SOURCE_METHODS[source], 'reportSha256': sha(dump(report)),
                              'sourceSha256': report.get('sourceSha256'), 'candidateCount': len(seen)}
     return points, vetoes, summaries
 
@@ -127,11 +134,12 @@ def native_index(departments):
 def selection_rank(point):
     source = point['source']
     precision = point['match']['point'].get('precision')
-    return (precision == 'blockface', {'nad': 0, 'usgs': 1, 'hifld-ems': 2, 'hifld-fire': 3}[source],
+    return (precision == 'blockface', {'nad': 0, 'usgs': 1, 'hifld-ems': 2, 'hifld-fire': 3, 'overture': 4}[source],
             str(point['match']['point'].get('objectId', '')))
 
 
-def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, method=METHOD, nad_diagnostic_count=1251):
+def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, method=METHOD, nad_diagnostic_count=1251, required_sources=None):
+    required_sources = REQUIRED_SOURCES if required_sources is None else set(required_sources)
     points, source_vetoes, summaries = collect_observations(targets, reports, targets_sha, nad_diagnostic_count)
     originals = {r['key']: r for r in inputs['entries']}
     native = native_index(departments)
@@ -214,8 +222,8 @@ def generate(targets, inputs, reports, departments, targets_sha=TARGET_SHA, meth
         outcomes['native-coordinate-discrepancy-recorded'] += any(r['distanceToSelectedMeters'] is not None and r['distanceToSelectedMeters'] > MAX_DISTANCE for r in comparisons)
     return {'schemaVersion': 1, 'method': method, 'originalPrimaryIdentityCount': 46791,
             'targetVariantsSha256': targets_sha, 'targetVariantCount': len(targets),
-            'completeRequiredSources': set(reports) == REQUIRED_SOURCES,
-            'requiredSources': sorted(REQUIRED_SOURCES), 'sourceReports': summaries,
+            'completeRequiredSources': set(reports) == required_sources,
+            'requiredSources': sorted(required_sources), 'sourceReports': summaries,
             'candidates': candidates, 'withheld': withheld, 'consensusVetoes': consensus_vetoes, 'outcomes': dict(sorted(outcomes.items())),
             'limitations': 'The department/site association remains inferred. Physical native NERIS addresses are separately geocoded; all native coordinates and discrepancies remain in the proof. HIFLD observations can share an originating dataset and are not independent votes. No operational status or rooftop accuracy is certified.'}
 

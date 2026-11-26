@@ -54,8 +54,9 @@ def replay_federal(source, report, targets, targets_sha=TARGET_SHA):
         if inventory['sourceSha256'] != manifest['sourceInventorySha256']:
             raise ValueError('Independent source inventory pin changed')
         replay = match_inventory(directory, inventory, targets, targets_sha)
-        if replay != report:
+        if report is not None and replay != report:
             raise ValueError('Frozen NERIS target geocodes do not replay from complete '+source+' evidence')
+        return replay
 
 
 def replay_nad(report, targets, evidence=None, diagnostic_count=1251, exact_targets=True):

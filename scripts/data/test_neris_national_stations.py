@@ -25,3 +25,26 @@ class NationalNerisTests(unittest.TestCase):
         self.assertEqual(set(batch(1,p,[1],fields)),{1})
         with self.assertRaises(ValueError):batch(1,p,[2],fields)
         with self.assertRaises(ValueError):batch(1,{**p,'spatialReference':{'wkid':3857}},[1],fields)
+
+    def test_malformed_source_fields_isolated_without_repairing_identity(self):
+        fields={'OBJECTID':'esriFieldTypeOID','neris_id':'esriFieldTypeString','name':'esriFieldTypeString','state':'esriFieldTypeString'}
+        p={'features':[{'attributes':{'OBJECTID':1,'neris_id':'FD123','name':'Fixture\r\nEMS','state':'FL'},'geometry':{'x':-84,'y':33}},{'attributes':{'OBJECTID':2,'neris_id':'FD\n124','name':'Bad\x00name','state':'FL'},'geometry':{'x':999,'y':33}}],'spatialReference':{'wkid':4326}}
+        rows=batch(0,p,[1,2],fields)
+        self.assertEqual(rows[1]['attributes']['name'],'Fixture EMS')
+        self.assertEqual(rows[1]['attributes']['neris_id'],'FD123')
+        self.assertIsNone(rows[2]['attributes']['neris_id'])
+        self.assertIsNone(rows[2]['attributes']['name'])
+        self.assertIsNone(rows[2]['geometry'])
+        self.assertEqual(len(rows[2]['sourceFieldIssues']),3)
+        self.assertEqual(set(rows),{1,2})
+        self.assertTrue(all(len(i['sourceValueSha256'])==64 for r in rows.values() for i in r['sourceFieldIssues']))
+    def test_withheld_native_objects_accounted_for(self):
+        d=self.row(DEPT,OBJECTID=1,neris_id='FD123',name='Fixture EMS',state='FL',station_count=1)
+        a=self.row(STATION,OBJECTID=2,neris_id='ST123',department_neris_id='FD123',state='GA')
+        b=self.row(STATION,OBJECTID=3,neris_id=None,department_neris_id='FD123',state='GA')
+        b['sourceFieldIssues']=[{'field':'neris_id','reason':'malformed-native-field-withheld','sourceValueSha256':'a'*64}]
+        result=build([d],[a,b])
+        self.assertEqual(result['summary']['eligibleStations'],1)
+        self.assertEqual(result['summary']['withheldObjectAuditRows'],1)
+        self.assertEqual(result['summary']['sourceObjectsWithFieldIssues'],1)
+        self.assertEqual(result['sourceObjectAudit'][0]['sourceObjectId'],3)

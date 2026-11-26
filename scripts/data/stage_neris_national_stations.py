@@ -25,13 +25,23 @@ def inventory(layer,fetch):
     ids=p.get('objectIds')
     if type(count) is not int or not 0<count<=150000 or p.get('objectIdFieldName')!='OBJECTID' or not isinstance(ids,list) or len(ids)!=count or any(type(i) is not int or not 0<i<=9007199254740991 for i in ids) or len(set(ids))!=count:raise ValueError('Incomplete source object inventory')
     return sorted(ids)
-def source_value(v,kind):
-    if v is None:return None
+# Never repair identifiers or jurisdiction codes. Normalize only display text
+# with ordinary layout whitespace. Record every change without retaining unsafe text.
+EXACT_TEXT={'neris_id','department_neris_id','state','zip_code'}
+def source_value(v,kind,field):
+    if v is None:return None,None
     if kind in ('esriFieldTypeOID','esriFieldTypeDate','esriFieldTypeSmallInteger'):
-        if type(v) is not int or abs(v)>9007199254740991:raise ValueError('Unexpected source number')
-        return v
-    if not isinstance(v,str) or len(v)>255 or re.search(r'[\x00-\x1f\x7f]',v):raise ValueError('Unexpected source text')
-    return v
+        if type(v) is not int or abs(v)>9007199254740991:return None,'invalid-number-withheld'
+        return v,None
+    if not isinstance(v,str):return None,'non-string-withheld'
+    if len(v)>255:return None,'oversize-text-withheld'
+    if re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]',v):return None,'unsafe-text-withheld'
+    if re.search(r'[\t\r\n]',v):
+        if field in EXACT_TEXT:return None,'malformed-native-field-withheld'
+        return re.sub(r'\s+',' ',v).strip(),'layout-whitespace-normalized'
+    return v,None
+def issue(field,reason,value):
+    return {'field':field,'reason':reason,'sourceValueSha256':sha(json.dumps(value,sort_keys=True,ensure_ascii=True,separators=(',',':')).encode())}
 def coordinate(g):
     if g is None:return None
     if not isinstance(g,dict):raise ValueError('Unexpected geometry')
@@ -48,7 +58,15 @@ def batch(layer,p,ids,fields):
         if not isinstance(a,dict) or set(a)!=set(fields):raise ValueError('Unexpected source row fields')
         oid=a['OBJECTID']
         if type(oid) is not int or oid not in ids or oid in rows:raise ValueError('Invalid object membership')
-        rows[oid]={'attributes':{k:source_value(a[k],v) for k,v in fields.items()},'geometry':coordinate(f.get('geometry'))}
+        attrs={};issues=[]
+        for k,v in fields.items():
+            attrs[k],reason=source_value(a[k],v,k)
+            if reason:issues.append(issue(k,reason,a[k]))
+        try:g=coordinate(f.get('geometry'))
+        except ValueError:
+            g=None;issues.append(issue('geometry','invalid-coordinate-withheld',f.get('geometry')))
+        rows[oid]={'attributes':attrs,'geometry':g}
+        if issues:rows[oid]['sourceFieldIssues']=issues
     if set(rows)!=set(ids):raise ValueError('Missing source objects')
     return rows
 def collect(layer,ids,meta,fetch,delay):
@@ -76,6 +94,18 @@ def build(departments,stations):
     for s in accepted.values():
         p=s['coordinates'];s['sharedSourcePoint']=bool(p and coordinates[(p['latitude'],p['longitude'])]>1)
     result['summary'].update(distinctStationSourcePoints=len(coordinates),sharedStationCoordinateRows=sum(s['sharedSourcePoint'] for s in accepted.values()),parentNameConflicts=sum(s['parentNameConflict'] for s in accepted.values()),departmentsWithStationRows=len({s['departmentId'] for s in accepted.values()}),stationAddressStates=dict(sorted(collections.Counter(s['stationState'] for s in accepted.values()).items())))
+    # All native objects are accounted for, even when not usable in the review catalog.
+    # Individual row errors cannot discard an otherwise complete source acquisition.
+    audit=[]
+    for layer,features,selected in ((0,departments,ds),(1,stations,ss)):
+        selected_oids={f['attributes']['OBJECTID'] for f in selected.values()}
+        for f in features:
+            oid=f['attributes']['OBJECTID'];issues=f.get('sourceFieldIssues',[])
+            if issues or oid not in selected_oids:
+                audit.append({'layer':layer,'sourceObjectId':oid,'disposition':'retained' if oid in selected_oids else 'withheld','fieldIssues':issues})
+    result['sourceObjectAudit']=sorted(audit,key=lambda x:(x['layer'],x['sourceObjectId']))
+    result['summary'].update(sourceObjectsWithFieldIssues=sum(bool(r['fieldIssues']) for r in audit),sourceFieldIssueCounts=dict(sorted(collections.Counter(i['reason'] for r in audit for i in r['fieldIssues']).items())),withheldObjectAuditRows=sum(r['disposition']=='withheld' for r in audit))
+    if result['summary']['withheldObjectAuditRows']!=result['summary']['withheldDepartments']+result['summary']['withheldStations']:raise ValueError('Withheld source membership accounting mismatch')
     return result
 def acquire(fetch=request,delay=.25):
     before=[metadata(i,fetch) for i in (0,1)]

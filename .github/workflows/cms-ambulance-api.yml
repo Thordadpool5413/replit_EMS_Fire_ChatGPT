@@ -1,0 +1,31 @@
+name: Nationwide CMS ambulance API smoke
+on:
+  push:
+    branches: [atlas/phase9-0r-federal-cms-api]
+  pull_request:
+    paths:
+      - 'artifacts/api-server/src/lib/cmsAmbulanceEvidence*'
+      - 'artifacts/api-server/src/routes/public-intelligence-discovery.ts'
+      - '.github/workflows/cms-ambulance-api.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/cmsAmbulanceEvidence.test.ts
+      - name: Read public CMS API for an observed ambulance NPI
+        if: github.event_name != 'pull_request'
+        run: |
+          pnpm --filter @workspace/scripts exec tsx -e 'import {fetchCmsAmbulanceEvidence} from "../artifacts/api-server/src/lib/cmsAmbulanceEvidence"; fetchCmsAmbulanceEvidence("1003006180").then(r=>{if(!r.rows.some(x=>x.hcpcs==="A0429"))throw Error("Observed CMS service missing");console.log("Federal CMS API acquisition:", JSON.stringify({npi:r.npi,reportingYear:r.reportingYear,publishedRows:r.rows.length,endUserValidationRequired:r.endUserValidationRequired}));}).catch(e=>{console.error(e);process.exitCode=1})'

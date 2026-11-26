@@ -1,7 +1,7 @@
 name: New York regional EMS organization acquisition
 on:
   push:
-    branches: [atlas/phase9-0q-ny-regional-rosters]
+    branches: [atlas/phase9-0q-ny-regional-rosters, atlas/phase9-0r-federal-cms-api]
   pull_request:
     paths:
       - 'scripts/data/stage_ny_westchester_ems.py'

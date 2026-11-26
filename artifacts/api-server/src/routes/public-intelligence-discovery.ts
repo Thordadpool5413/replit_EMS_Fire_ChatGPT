@@ -12,6 +12,7 @@ import {createChicagoDiscoveryService} from '../lib/chicagoDiscovery';
 import {parseChicagoQuery} from '../lib/chicagoDiscoveryContract';
 import {fetchNppesLocation,fetchCensusLocation,boundedLocationService} from '../lib/providerLocation';
 import {validNpi,parseStreetAddress,isPhysicalStreet,addressKey} from '../lib/providerLocationContract';
+import {fetchCmsAmbulanceEvidence} from '../lib/cmsAmbulanceEvidence';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
 router.get('/discovery/fema',async(req,res)=>{
@@ -80,5 +81,11 @@ router.get('/discovery/address-location',async(req,res)=>{
  res.set('Cache-Control','no-store');const a=parseStreetAddress(req.query);
  if(!a||!a.zip||Object.keys(req.query).some(k=>!['street','city','state','zip'].includes(k))||!isPhysicalStreet(a.street)){res.status(400).json({error:'A complete physical street address is required.'});return;}
  try{res.json(await streetLocation(a));}catch{req.log.warn('Street location lookup unavailable');res.status(502).json({error:'Street location service unavailable.'});}
+});
+const cmsAmbulance=boundedLocationService((npi:string)=>fetchCmsAmbulanceEvidence(npi),npi=>npi);
+router.get('/discovery/cms-ambulance-services',async(req,res)=>{
+ res.set('Cache-Control','no-store');const npi=req.query.npi;
+ if(!validNpi(npi)||Object.keys(req.query).length!==1){res.status(400).json({error:'Valid NPI required.'});return;}
+ try{res.json(await cmsAmbulance(npi));}catch{req.log.warn('CMS public ambulance service lookup unavailable');res.status(502).json({error:'CMS service evidence unavailable; no records inferred.'});}
 });
 export default router;

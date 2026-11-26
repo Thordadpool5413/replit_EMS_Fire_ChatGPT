@@ -14,35 +14,42 @@ def norm(v):return ' '.join(v.split())
 class Tables(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True);self.stack=[];self.tables=[]
+    @staticmethod
+    def close_cell(t):
+        if t['cell'] is not None:
+            if t['row'] is None:raise ValueError('Unexpected cell outside row')
+            t['row'].append(norm(''.join(t['cell'])));t['cell']=None
+    @classmethod
+    def close_row(cls,t):
+        cls.close_cell(t)
+        if t['row'] is not None:
+            if t['row']:t['rows'].append(t['row'])
+            t['row']=None
     def handle_starttag(self,tag,attrs):
         if tag=='table':
             if len(self.stack)>8:raise ValueError('Unexpected nested table depth')
-            self.stack.append({'rows':[],'row':None,'cell':None,'nested':False})
+            if self.stack:self.stack[-1]['nested']=True
+            self.stack.append({'rows':[],'row':None,'cell':None,'nested':False});return
         if not self.stack:return
         t=self.stack[-1]
         if tag=='tr':
-            if t['row'] is not None:raise ValueError('Unclosed table row')
-            t['row']=[]
+            self.close_row(t);t['row']=[]
         elif tag in ('th','td'):
-            if t['row'] is None or t['cell'] is not None:raise ValueError('Unexpected cell structure')
+            self.close_cell(t)
+            if t['row'] is None:t['row']=[]
             if any(k in ('rowspan','colspan') and v not in ('1',None) for k,v in attrs):t['nested']=True
             t['cell']=[]
+        elif tag in ('thead','tbody','tfoot'):self.close_row(t)
         elif tag=='br' and t['cell'] is not None:t['cell'].append(' ')
     def handle_data(self,data):
         if self.stack and self.stack[-1]['cell'] is not None:self.stack[-1]['cell'].append(data)
     def handle_endtag(self,tag):
         if not self.stack:return
         t=self.stack[-1]
-        if tag in ('td','th'):
-            if t['cell'] is None or t['row'] is None:raise ValueError('Malformed table cell')
-            t['row'].append(norm(''.join(t['cell'])));t['cell']=None
-        elif tag=='tr':
-            if t['row'] is None or t['cell'] is not None:raise ValueError('Malformed table row')
-            t['rows'].append(t['row']);t['row']=None
+        if tag in ('td','th'):self.close_cell(t)
+        elif tag in ('tr','thead','tbody','tfoot'):self.close_row(t)
         elif tag=='table':
-            if t['row'] is not None or t['cell'] is not None:raise ValueError('Malformed table ending')
-            self.tables.append(self.stack.pop())
-            if self.stack:self.stack[-1]['nested']=True
+            self.close_row(t);self.tables.append(self.stack.pop())
 def parse(html,minimum=60):
     p=Tables();p.feed(html);p.close()
     if p.stack:raise ValueError('Unclosed source table')

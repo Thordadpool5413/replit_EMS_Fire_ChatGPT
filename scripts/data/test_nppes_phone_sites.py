@@ -1,5 +1,5 @@
 import copy,unittest
-from recover_nppes_phone_sites import METHOD,build,validate_final_phone_parent,require_legacy_snapshot_binding
+from recover_nppes_phone_sites import METHOD,build,validate_final_phone_parent,require_legacy_snapshot_binding,identity_catalog
 class FinalPhoneDonorTests(unittest.TestCase):
  def donor(self):
   return {'key':'FDID:NY:EXAMPLE','source':'USFA','name':'Example Fire Department','state':'NY','sourceDate':'2026-11-17','sourceCounty':'36001','status':'mapped','countyFips':'36001',
@@ -10,6 +10,8 @@ class FinalPhoneDonorTests(unittest.TestCase):
   self.assertTrue(validate_final_phone_parent(entry,{donor['key']:donor}))
   for change in[{'status':'no-match'},{'countyFips':'36003'},{'match':{**donor['match'],'latitude':40.01}},{'name':'Changed name'}]:
    altered={**donor,**change};self.assertFalse(validate_final_phone_parent(entry,{donor['key']:altered}))
+ def test_unknown_identity_profile_cannot_fall_back_to_a_different_catalog(self):
+  with self.assertRaises(ValueError):identity_catalog('unretained')
  def test_changed_legacy_census_point_cannot_be_reauthorized_by_new_shard_hashes(self):
   original=self.donor();altered=copy.deepcopy(original);altered['match']['latitude']+=0.001
   require_legacy_snapshot_binding(original,original,False)

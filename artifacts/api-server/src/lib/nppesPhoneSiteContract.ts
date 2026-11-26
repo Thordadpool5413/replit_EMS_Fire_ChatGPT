@@ -11,7 +11,7 @@ export type NppesPhoneSiteEvidence={
  method:typeof NPPES_PHONE_SITE_METHOD;association:'inferred';endUserValidationRequired:true;
  siteRole:'correlated-usfa-primary-site';originalAddress:StreetAddress|null;
  originalStatus:'no-match'|'not-eligible'|'unavailable'|'pending';baselineIndexSha256:string;
- nationalRegistrySha256:string;identityReportSha256:string;identityPairSha256:string;
+ nationalRegistrySha256:string;identityProfile:'native'|'native-dba-reference';identityReportSha256:string;identityPairSha256:string;
  correlation:Record<string,unknown>;donorReleaseIndexSha256:string;donorAuditSha256:string;
  donor:{primaryKey:string;siteRole:string;entry:Record<string,unknown>};interpretation:string;
 };

@@ -105,7 +105,8 @@ def source_inputs():
  if not{'HQ phone','HQ addr1','HQ addr2','County'}<=set(usfa['headers']):raise ValueError('Native USFA phone/headquarters schema changed')
  return snapshot,native,usfa,usfa_manifest
 
-def derive(snapshot,native,usfa,usfa_manifest,code_values):
+def derive(snapshot,native,usfa,usfa_manifest,code_values,*,name_resolver=None):
+ if name_resolver is None:name_resolver=name_basis
  from retain_usfa_native_source import native_identity
  originals={e['key']:e for e in snapshot['entries']};national={native_key(r):r for r in snapshot['nationalRows']if native_key(r)}
  cms_by_key={r['key']:r for r in native['records']};cms_owners=collections.defaultdict(set);usfa_owners=collections.defaultdict(set)
@@ -153,7 +154,7 @@ def derive(snapshot,native,usfa,usfa_manifest,code_values):
      county_ok,county=county_binding(department,donor_original,county_index)
      if not county_ok:reason='native-usfa-county-disagreement'
      else:
-      basis=name_basis(record,department,county)
+      basis=name_resolver(record,department,county)
       if basis is None:reason='native-complete-name-or-explicit-owner-not-confirmed'
       else:
        pair={'key':key,'donorPrimaryKey':donor_key,'phone':p,'originalAddress':copy.deepcopy(old['address']),

@@ -4,13 +4,15 @@ import {loadSourceDirectoryState} from './nationalSourceDirectory';
 import {snapshotRegistryIdentity} from './registryAccountLink';
 import {loadFloridaRoster,floridaRegistryIdentity} from './floridaEmsRoster';
 import {isGeographicProspect} from '../utils/providerRecordTrust';
-import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressKey,addressText,isPhysicalStreet,compatibleSourceAddress,parseRegistryStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
+import {parseStreetAddress,validateNpiAddress,validateAddressMatch,addressMatchLabel,addressKey,addressText,isPhysicalStreet,compatibleSourceAddress,parseRegistryStreet,type StreetAddress,type AddressMatch} from './providerLocationContract';
 import {useSyncExternalStore} from 'react';
 import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,snapshotSourceUrl} from './nationalLocationSnapshot';
 
 import {multiStateAddressReviewCandidate} from './multiStateAddressReview';
+import {NPPES_PRIMARY_COMPONENTS_METHOD} from './nppesPrimaryComponentsContract';
+import {NPPES_PHONE_SITE_METHOD} from './nppesPhoneSiteContract';
 
-export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'|'inferred headquarters'|'inferred sole reported station'};
+export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'|'inferred headquarters'|'inferred sole reported station'|'inferred USFA primary site'};
 const norm=(s:unknown)=>typeof s==='string'?s.normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim():'';
 const https=(v:unknown):v is string=>{try{const u=new URL(String(v));return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}};
 const flagged=(a:Agency)=>a._factReviews?.some(r=>r.fieldId==='identity.address'&&(r.action==='flag'||r.action==='correct'));
@@ -120,7 +122,12 @@ function snapshotFor(a:Agency,directory:Agency[]){
 }
 function snapshotLocation(a:Agency,directory:Agency[]):ProviderLocation|undefined{
  const e=snapshotFor(a,directory);if(!e?.address)return undefined;
- if(e.primaryAddressEvidence)return {address:e.address,identityKey:e.key,sourceName:'Federal NERIS / USFA inferred association',sourceUrl:snapshotSourceUrl(e),sourceDate:'2026-11-26',kind:e.primaryAddressEvidence.siteRole==='reported-headquarters'?'inferred headquarters':'inferred sole reported station'};
+ if(e.primaryAddressEvidence){
+  const proof=e.primaryAddressEvidence;
+  if(proof.method===NPPES_PRIMARY_COMPONENTS_METHOD)return {address:e.address,identityKey:e.key,sourceName:'CMS NPPES native primary practice',sourceUrl:snapshotSourceUrl(e),sourceDate:proof.sourceDate,kind:'registered practice location'};
+  if(proof.method===NPPES_PHONE_SITE_METHOD)return {address:e.address,identityKey:e.key,sourceName:'CMS NPPES / USFA inferred association',sourceUrl:snapshotSourceUrl(e),sourceDate:e.sourceDate,kind:'inferred USFA primary site'};
+  return {address:e.address,identityKey:e.key,sourceName:'Federal NERIS inferred site association',sourceUrl:snapshotSourceUrl(e),sourceDate:'2026-11-26',kind:proof.siteRole==='reported-headquarters'?'inferred headquarters':'inferred sole reported station'};
+ }
  return {address:e.address,identityKey:e.key,sourceName:e.officialAddressEvidence?.authority??(e.source==='NPPES'?'CMS NPPES':e.source==='USFA'?'USFA NFDR':'Florida Department of Health'),sourceUrl:snapshotSourceUrl(e),sourceDate:e.officialAddressEvidence?.checkedAt??e.sourceDate,kind:e.officialAddressEvidence?'official department location':e.source==='USFA'?'registry headquarters':e.source==='NPPES'?'registered practice location':'recorded license address'};
 }
 export function displayedProviderLocation(a:Agency,directory:Agency[]){return snapshotLocation(a,directory)??recordedProviderLocation(a,directory)??lookup(a,directory)?.location;}
@@ -147,7 +154,7 @@ export function providerAddressReview(a:Agency,directory:Agency[]){
 }
 export function locationStatus(a:Agency,directory:Agency[]):string{
  const pin=mappedProviderLocation(a,directory);
- if(pin)return pin.method==='neris-reported-address'?'Mapped · federal NERIS source-reported address':pin.method==='nad-address-point'?'Mapped · USDOT public address point':pin.method==='ohio-lbrs-address-point'?'Mapped · Ohio LBRS address point':pin.method==='ny-sam-address-point'?'Mapped · New York SAM address point':pin.method==='regional-address-point'?(pin.point.source==='tx-stratmap'?'Mapped · official address point (placement not reported)':'Mapped · official regional address point'):'Mapped · approximate street location';
+ if(pin)return 'Mapped · '+addressMatchLabel(pin);
  const loc=displayedProviderLocation(a,directory),id=nativeIdentity(a,directory);
  if(!loc)return id?'Source address not found; review required':'Provider identity or location source needs review';
  if(!isPhysicalStreet(loc.address.street))return 'Recorded mailing or nonstandard address; physical site not established';

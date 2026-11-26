@@ -156,3 +156,35 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain complete fixed public USFA native source and malformed row quarantine"
           git push origin HEAD
+  retained-frontend-pins:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-pins]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact frontend and API bindings from full native replay
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/build_neris_retained_profile_pins.py --profile mailing --profile grid --validation-output "$RUNNER_TEMP/neris-profile-frontend.json"
+          npx --yes tsx --test artifacts/ems-territory-intelligence/src/services/nerisProofHash.test.ts
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-profile-frontend.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-retained-frontend-bindings
+          path: |
+            artifacts/ems-territory-intelligence/src/services/neris*Pins.json
+            artifacts/api-server/src/lib/nerisGrid*
+            scripts/fixtures/neris-retained-*-examples.json
+      - name: Save exact frontend proof bindings on isolated review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-retained-pins-$GITHUB_RUN_ID"
+          git add artifacts/ems-territory-intelligence/src/services/neris*Pins.json artifacts/api-server/src/lib/nerisProofHash.ts artifacts/api-server/src/lib/nerisGridAddressContract.ts artifacts/api-server/src/lib/nerisGridPointPins.json scripts/fixtures/neris-retained-*-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Bind native NERIS mailing and grid frontend records to exact replayed evidence"
+          git push origin HEAD

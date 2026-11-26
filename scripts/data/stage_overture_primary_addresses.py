@@ -237,8 +237,7 @@ def main():
     target_data=None
     if a.select_primary:
         from match_overture_primary_addresses import load_targets
-        from backfill_provider_locations import PUBLIC
-        target_data=load_targets(a.locations or PUBLIC/'locations')
+        target_data=load_targets(a.locations)
         (a.output/'targets.json').write_bytes(encoded(target_data))
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:
         receipts=list(pool.map(lambda s:cache_file(s,a.output,target_data),[m for m in metas if m['mayContainUS']]))

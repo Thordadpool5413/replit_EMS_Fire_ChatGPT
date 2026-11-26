@@ -58,19 +58,21 @@ def source_block_reason(row):
     return None
 
 
-def load_targets(locations, extra=None):
-    raw=(locations/'index.json').read_bytes();index=json.loads(raw)
-    entries=[]
-    for chunk in index['chunks']:
-        b=(locations/chunk['file']).read_bytes()
-        if sha(b)!=chunk['sha256']: raise ValueError('Primary source shard changed')
-        entries.extend(json.loads(b))
+def load_targets(locations=None, extra=None):
+    if locations is None:
+        from primary_recovery_baseline import load_primary_baseline
+        index,entries,index_sha=load_primary_baseline()
+    else:
+        raw=(locations/'index.json').read_bytes();index=json.loads(raw);index_sha=sha(raw);entries=[]
+        for chunk in index['chunks']:
+            b=(locations/chunk['file']).read_bytes()
+            if sha(b)!=chunk['sha256']: raise ValueError('Primary source shard changed')
+            entries.extend(json.loads(b))
     if len(entries)!=46_791 or len({e['key'] for e in entries})!=len(entries): raise ValueError('Primary denominator changed')
     targets=[e for e in entries if e['status'] in ('no-match','unavailable','pending') and physical_address(e['address'])]
-    if extra:
-        targets.extend(json.loads(extra.read_bytes()))
+    if extra: targets.extend(json.loads(extra.read_bytes()))
     if len({e['key'] for e in targets})!=len(targets): raise ValueError('Duplicate target keys')
-    return {'locationIndexSha256':sha(raw),'targetsSha256':sha(encoded(targets)),'targets':targets}
+    return {'locationIndexSha256':index_sha,'targetsSha256':sha(encoded(targets)),'targets':targets}
 
 
 def matching_targets(source, by_zip, by_city):
@@ -357,7 +359,7 @@ def resolve(target_data, records, reuse, inventory_sha, allow_city=False):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--source',type=pathlib.Path,required=True)
-    p.add_argument('--locations',type=pathlib.Path,default=PUBLIC/'locations')
+    p.add_argument('--locations',type=pathlib.Path)
     p.add_argument('--extra-targets',type=pathlib.Path);p.add_argument('--workers',type=int,default=2)
     p.add_argument('--allow-blank-postcode-city',action='store_true');p.add_argument('--select-only',action='store_true')
     p.add_argument('--recheck-reuse',action='store_true')

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Replay every required profile, then build one fixed-denominator candidate.
 
-Raw source reports and exact target batches are copied without modification.
-No missing source is silently skipped. Phone associations are added only after
+Raw source reports and exact target batches are preserved without modification.
+Replay-derived NERIS negative-evidence adapters retain their separate raw and
+release report hashes. No missing source is silently skipped. Phone associations are added only after
 their donor proof was built from this exact complete non-phone candidate.
 """
 import argparse
@@ -62,6 +63,12 @@ PROFILES = [
 ]
 PHONE = ('phone-sites', 'primary-nppes-phone-sites', 'report.json',
          'recover_nppes_phone_sites', 'runtime_indexes', (), False, ())
+NERIS_ADAPTER_PROFILES = {
+    'neris-mailing': 'mailing', 'neris-geocoded': 'core-geocoded',
+    'neris-mailing-geocoded': 'mailing-geocoded', 'neris-range': 'range',
+    'neris-mailing-range': 'mailing-range', 'neris-grid': 'grid',
+    'neris-website': 'website',
+}
 NESTED_NEGATIVES = {
     'neris-geocoded': ('usgs', 'hifld-ems', 'hifld-fire', 'nad'),
     'neris-mailing-geocoded': ('usgs', 'hifld-ems', 'hifld-fire', 'nad', 'overture'),
@@ -82,8 +89,10 @@ def prepare(output, include_phone=False):
         raise ValueError('Required retained evidence is incomplete: '+', '.join(missing))
     reports_dir = output/'reports'
     targets_dir = output/'targets'
+    raw_reports_dir = output/'raw-reports'
     reports_dir.mkdir(parents=True, exist_ok=True)
     targets_dir.mkdir(parents=True, exist_ok=True)
+    raw_reports_dir.mkdir(parents=True, exist_ok=True)
     source_paths, veto_paths, target_paths, receipts = [], [], [], []
     verified = set()
     core_path = None
@@ -105,8 +114,22 @@ def prepare(output, include_phone=False):
             report = json.loads(raw)
             if not isinstance(report.get('candidates'), list):
                 raise ValueError('Complete source report has no candidate list: '+label)
+            (raw_reports_dir/(label+'.json')).write_bytes(raw)
+            release_raw = raw
+            adapter = None
+            if label in NERIS_ADAPTER_PROFILES:
+                from neris_release_reports import combined_release_report
+                derived = combined_release_report(NERIS_ADAPTER_PROFILES[label])
+                if dump(derived['candidates']) != dump(report['candidates']):
+                    raise ValueError('Negative-evidence adapter changed source candidates: '+label)
+                release_raw = dump(derived)
+                adapter = {
+                    'module': 'neris_release_reports',
+                    'profile': NERIS_ADAPTER_PROFILES[label],
+                    'codeSha256': sha((ROOT/'scripts/data/neris_release_reports.py').read_bytes()),
+                }
             path = reports_dir/(label+'.json')
-            path.write_bytes(raw)
+            path.write_bytes(release_raw)
             if label == 'neris':
                 core_path = path
             elif veto_only:
@@ -132,7 +155,8 @@ def prepare(output, include_phone=False):
             receipts.append({
                 'profile': label, 'evidenceDirectory': str(evidence.relative_to(ROOT)),
                 'archiveSha256': archive_sha, 'manifestSha256': sha(manifest_raw),
-                'reportMember': member, 'reportSha256': sha(raw),
+                'reportMember': member, 'rawReportSha256': sha(raw),
+                'reportSha256': sha(release_raw), 'negativeEvidenceAdapter': adapter,
                 'candidateCount': len(report['candidates']), 'vetoOnly': veto_only,
                 'nativeReplay': 'passed',
             })

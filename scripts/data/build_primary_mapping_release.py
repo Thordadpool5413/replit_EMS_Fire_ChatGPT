@@ -27,7 +27,7 @@ QUALIFIED_REJECTIONS = {
     'range-coordinate-disagreement', 'conflicting-native-ranges',
     'qualified-source-point-disagreement', 'shared-native-coordinate',
     'native-county-disagreement', 'native-point-disagreement',
-    'native-grid-coordinate-or-address-conflict', 'native-grid-source-county-disagreement',
+    'native-grid-source-county-disagreement',
     'native-grid-coordinate-disagreement',
 } | IDENTITY_REJECTIONS
 

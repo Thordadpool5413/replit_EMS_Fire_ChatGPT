@@ -265,4 +265,12 @@ class PrimaryReleaseTest(unittest.TestCase):
         rows,_=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
         self.assertEqual(rows[0]['status'],'mapped')
 
+
+    def test_ambiguous_native_grid_lines_alone_are_not_a_point_conflict(self):
+        candidate=self.candidate()
+        rejection={'key':candidate['key'],'targetAddress':candidate['address'],
+                   'reason':'native-grid-coordinate-or-address-conflict'}
+        rows,_=self.run_reports([{'candidates':[candidate],'rejected':[rejection]}])
+        self.assertEqual(rows[0]['status'],'mapped')
+
 if __name__=='__main__':unittest.main()

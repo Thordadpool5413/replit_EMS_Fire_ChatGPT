@@ -62,8 +62,8 @@ def acquire(stream,targets):
     counts['distinctSecondaryAddresses']=len(addresses)
     if counts['targetReferenceRows']!=sum(counts[k] for k in ('historicalParent','nonUsAddress','unsupportedAddress','primaryDuplicate','duplicateSecondary','acceptedSecondary')):raise ValueError('Reference accounting mismatch')
     return sorted(rows,key=lambda r:r['sourceKey']),dict(sorted(counts.items()))
-def snapshot():
-    manifest,national=read_registry();loc=PUBLIC/'locations'
+def snapshot(loc=PUBLIC/'locations'):
+    manifest,national=read_registry()
     fl=json.loads((PUBLIC/'state-ems/FL.json').read_bytes())
     verify(loc,manifest,national,fl)
     raw=(loc/'index.json').read_bytes();idx=json.loads(raw)

@@ -159,6 +159,9 @@ def publish(output,manifest,entries,metadata):
  index=dict(schemaVersion=1,generatedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),benchmark=BENCHMARK,vintage=VINTAGE,sourceScope='Public source identities; not a census of unique active operating departments',chunks=chunks,coverage=by_source,**metadata)
  (output/'index.json').write_bytes(compact(index));print(json.dumps(by_source,indent=2),flush=True)
 def valid_location_method(m,county):
+ if m.get('method')=='neris-reported-address':
+  p=m.get('point')
+  return isinstance(p,dict) and type(p.get('objectId')) is int and p['objectId']>0 and isinstance(p.get('nativeId'),str) and bool(re.fullmatch(r'[-A-Z0-9]{1,14}',p['nativeId'])) and isinstance(p.get('parentId'),str) and bool(re.fullmatch(r'[-A-Z0-9]{1,14}',p['parentId'])) and p.get('sourceKind') in ('department','station') and (p['sourceKind']!='department' or p['nativeId']==p['parentId']) and p.get('sourceDate')=='2026-11-26' and p.get('sourceSha256')=='1ec2a427cbc5ea1949ff731527de3c701ed9592bc4fa83fe796a54defa18880b' and p.get('countyFips')==county
  if m.get('method')=='regional-address-point':
   from regional_point_contract import valid_regional_point
   return valid_regional_point(m,county)
@@ -190,7 +193,7 @@ def verify(output,manifest,rows,fl):
    seen.add(k);counts[source]['total']+=1;counts[source]['withAddress']+=int(a is not None);counts[source][status]+=1
    if a and address(a['street'],a['city'],a['state'],a['zip'])!=a:raise ValueError('Malformed source address')
    if status=='mapped':
-    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or (m.get('method') in ('ny-sam-address-point','ohio-lbrs-address-point','nad-address-point','regional-address-point') and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']):raise ValueError('Invalid mapped record')
+    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or (m.get('method') in ('ny-sam-address-point','ohio-lbrs-address-point','nad-address-point','regional-address-point','neris-reported-address') and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']):raise ValueError('Invalid mapped record')
    elif m is not None or e['countyFips']:raise ValueError('Unmatched record contains coordinates')
  if seen!=set(expected) or {c['state'] for c in index['chunks']}!=STATES or len(index['chunks'])!=51:raise ValueError('Incomplete native location coverage')
  for source,c in counts.items():

@@ -144,6 +144,7 @@ const EXACT_COUNTY_BASES = new Set([
   'ohio-lbrs-address-point',
   'ny-sam-address-point',
   'regional-address-point',
+  'neris-reported-address',
 ]);
 
 const emptyCounts = (): RegistryImportCounts => ({

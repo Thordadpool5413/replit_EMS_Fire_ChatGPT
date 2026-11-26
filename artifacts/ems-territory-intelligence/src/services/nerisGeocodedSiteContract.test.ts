@@ -25,7 +25,7 @@ test('rejects a fabricated but well-formed source report digest',()=>{
 });
 test('rejects changed nonselected consensus endpoint evidence',()=>{
  const {proof,ctx}=retainedExample();
- proof.geocoding.allQualifiedNativeEndpoints[0].latitude+=0.000001;
+ const endpoint=proof.geocoding.allQualifiedNativeEndpoints[0];assert.ok(endpoint);endpoint.latitude+=0.000001;
  assert.throws(()=>validateNerisGeocodedSiteEvidence(proof,ctx));
 });
 test('rejects changed original national identity and reported native object',()=>{
@@ -37,8 +37,8 @@ test('rejects changed original national identity and reported native object',()=
 });
 test('rejects changed selected coordinate and original mailing address',()=>{
  const {proof,ctx}=retainedExample();
- const changed=structuredClone(ctx);changed.match!.latitude+=0.000001;
- assert.throws(()=>validateNerisGeocodedSiteEvidence(proof,changed));
+ const changed=structuredClone(ctx.match) as {latitude:number};changed.latitude+=0.000001;
+ assert.throws(()=>validateNerisGeocodedSiteEvidence(proof,{...ctx,match:changed}));
  assert.throws(()=>validateNerisGeocodedSiteEvidence(proof,{...ctx,originalAddress:{
   ...ctx.originalAddress!,street:'999 Different Street'}}));
 });

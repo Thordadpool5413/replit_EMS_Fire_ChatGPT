@@ -33,5 +33,5 @@ for(const profile of profiles){
   }
   checked++;
  }
- console.log(JSON.stringify({profile:profile.profile,actualFrontendBindingsChecked:checked,nativeIdentityAndCoordinateMutationChecks:'passed'}));
+ console.log(JSON.stringify({profile:profile.profile,actualFrontendBindingsChecked:checked,nativeIdentityAndCoordinateMutationChecks:checked?'passed':'not-applicable-empty-catalog'}));
 }

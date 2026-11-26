@@ -19,11 +19,11 @@ import retain_overture_primary_addresses as addresses
 import retain_overture_primary_places as places
 
 EVIDENCE=ROOT/'scripts/data/evidence/primary-overture-native-variants'/DATE
-ARCHIVE_SHA256=''
-ADDRESS_REPORT_SHA256=''
-PLACE_REPORT_SHA256=''
-CMS_TARGET_SHA256=''
-NERIS_TARGET_SHA256=''
+ARCHIVE_SHA256='5e01f6755021136124020ae28f1b072e7b1bbf0b56a4251a78d04e9928795000'
+ADDRESS_REPORT_SHA256='b2b00f2f6dd98e8eeab0eb18b869d64f01455276b4255e014ac30acf837b0872'
+PLACE_REPORT_SHA256='a5b36bd19fe4040321102115422e7a3a467ba61eb9b5ac2dab9ef10916afa758'
+CMS_TARGET_SHA256='cac14a8230f8922fadd733308ab3aa7a161ba141e2593c70f3b7861018971305'
+NERIS_TARGET_SHA256='bf48de5304c9c6e5c7ee498527e2852db219f73d9f8b543dace6e2c6dd12bf4a'
 MEMBERS={'cms-targets.json','neris-targets.json','target-receipt.json','addresses.zip','places.zip','address-report.json','places-report.json'}
 METHODS={'overture-address':('addresses.zip','address-report.json','cms-targets.json'),
          'overture-place-address':('places.zip','places-report.json',None)}

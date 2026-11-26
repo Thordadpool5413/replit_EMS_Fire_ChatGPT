@@ -181,3 +181,26 @@ jobs:
             scripts/data/evidence/primary-overture-native-variants/2026-11-26/
             ${{ runner.temp }}/native-scope/
           if-no-files-found: ignore
+
+  retained_profiles:
+    if: contains(github.event.head_commit.message, '[verify-overture-profiles]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay all retained source catalogs and endpoint bindings together
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_addresses.py
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_places.py
+          python3 -u scripts/data/verify_overture_retained_profiles.py
+      - name: Verify the combined browser and API point catalogs
+        run: |
+          npm install --ignore-scripts --no-package-lock --prefix "$RUNNER_TEMP/overture-node" typescript@5.9.3 tsx@4.20.6
+          node "$RUNNER_TEMP/overture-node/node_modules/typescript/bin/tsc" --noEmit --target es2022 --module esnext --moduleResolution bundler --strict --skipLibCheck artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.ts
+          node --import "$RUNNER_TEMP/overture-node/node_modules/tsx/dist/loader.mjs" --test artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.test.ts artifacts/ems-territory-intelligence/src/services/overturePlacePrimaryPointContract.test.ts artifacts/ems-territory-intelligence/src/services/overturePrimaryVariantPointContract.test.ts

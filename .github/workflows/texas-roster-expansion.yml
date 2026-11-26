@@ -1,0 +1,44 @@
+name: Texas provider and first responder roster acquisition
+on:
+  push:
+    branches: [atlas/phase9-0k-texas-rosters]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_texas_ems.py'
+      - 'scripts/data/texas_ems_stage_test.py'
+      - '.github/workflows/texas-roster-expansion.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install openpyxl==3.1.5
+      - run: python -m unittest discover -s scripts/data -p texas_ems_stage_test.py
+  acquire:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [provider, first-responder]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install openpyxl==3.1.5
+      - run: python scripts/data/stage_texas_ems.py --kind ${{ matrix.kind }} --output generated-artifacts/texas-roster-review
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: texas-ems-${{ matrix.kind }}-review
+          path: generated-artifacts/texas-roster-review/
+          if-no-files-found: ignore

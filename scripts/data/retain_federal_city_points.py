@@ -63,7 +63,7 @@ def generate(snapshot,reports,strict_points):
   if native_rejections.get((scope,key)):reason='native-city-source-conflict'
   elif len({p['countyFips']for p in witnesses})>1 or any(distance_m(a,b)>75 for i,a in enumerate(witnesses)for b in witnesses[i+1:]):reason='qualified-source-point-disagreement'
   decision={'scope':scope,'key':key,'address':copy.deepcopy(address),'acceptedPointObservations':observations,
-            'acceptedNativeWitnesses':witnesses,'sourceConflicts':native_rejections.get((scope,key),[]),'outcome':reason or'accepted'}
+            'acceptedNativeWitnesses':witnesses,'strictPointObservations':copy.deepcopy(strict_points.get((scope,key),[])),'sourceConflicts':native_rejections.get((scope,key),[]),'outcome':reason or'accepted'}
   decisions.append(decision)
   if reason:
    rejected.append({'scope':scope,'key':key,'address':copy.deepcopy(address),'reason':reason,
@@ -128,11 +128,13 @@ def validate_federal_city_diagnostic_candidate(candidate):
 
 def federal_city_witnesses(entry):
  if not validate_federal_city_primary_entry(entry):raise ValueError('Unvalidated city profile entry')
- return copy.deepcopy(runtime_indexes()[4][('original',entry['key'])]['acceptedNativeWitnesses'])
+ decision=runtime_indexes()[4][('original',entry['key'])]
+ return [copy.deepcopy(o['match'])for o in decision['acceptedPointObservations']]+copy.deepcopy(decision['strictPointObservations'])
 
 def federal_city_diagnostic_witnesses(candidate):
  if not validate_federal_city_diagnostic_candidate(candidate):raise ValueError('Unvalidated native component city candidate')
- return copy.deepcopy(runtime_indexes()[4][('cms-native',candidate['key'])]['acceptedNativeWitnesses'])
+ decision=runtime_indexes()[4][('cms-native',candidate['key'])]
+ return [copy.deepcopy(o['match'])for o in decision['acceptedPointObservations']]+copy.deepcopy(decision['strictPointObservations'])
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,default=EVIDENCE);p.add_argument('--report',type=pathlib.Path);p.add_argument('--verify',action='store_true');a=p.parse_args()

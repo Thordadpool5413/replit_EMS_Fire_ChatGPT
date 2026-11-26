@@ -165,7 +165,7 @@ def validate_nppes_component_primary_entry(entry,national_row=None):
 
 def primary_component_witnesses(entry):
  if not validate_nppes_component_primary_entry(entry):raise ValueError('Unvalidated component entry')
- return copy.deepcopy(candidate_index()[3][entry['key']]['acceptedNativeWitnesses'])
+ return [copy.deepcopy(o['candidate']['match'])for o in candidate_index()[3][entry['key']]['pointObservations']]
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--diagnostic',action='append',default=[])

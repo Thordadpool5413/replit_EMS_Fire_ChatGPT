@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRef": "d111b2a915f3367012b7d917b5c605f4d0b61c4f",
+  "sourceRef": "edb235c111980619e14b96f514c3ebfb74635d6c",
   "purpose": "Exact owned paths for root integration; central/shared and other-agent dependencies are excluded.",
   "files": [
     "scripts/data/recover_nppes_native_primary.py",
@@ -40,7 +40,8 @@
     "scripts/data/test_nppes_phone_dba_identity.py",
     "scripts/data/audit_tiger_native_aliases.py",
     "scripts/test-native-phone-contracts.cjs",
-    "scripts/data/diagnose_nppes_hifld_phone_sites.py"
+    "scripts/data/diagnose_nppes_hifld_phone_sites.py",
+    "scripts/data/run_nppes_final_phone_review.py"
   ],
   "generatedContractFiles": [
     "artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts",
@@ -54,7 +55,8 @@
     "scripts/fixtures/federal-city-point-examples.json",
     "scripts/fixtures/tiger-primary-point-examples.json",
     "scripts/fixtures/nppes-primary-component-examples.json",
-    "scripts/fixtures/nppes-phone-site-examples.json"
+    "scripts/fixtures/nppes-phone-site-examples.json",
+    "scripts/fixtures/primary-phone-final-donor.json"
   ],
   "evidencePrefixes": [
     "scripts/data/evidence/primary-nppes-native/",
@@ -83,7 +85,8 @@
     ".github/workflows/recover-native-other-names.yml",
     ".github/workflows/replay-native-dba-phone-identity.yml",
     ".github/workflows/audit-native-tiger-aliases.yml",
-    ".github/workflows/diagnose-native-hifld-phone.yml"
+    ".github/workflows/diagnose-native-hifld-phone.yml",
+    ".github/workflows/replay-final-native-phone-sites.yml"
   ],
   "additionalOwnedLoaderFix": "scripts/data/stage_usgs_primary.py default load_locations now uses immutable baseline; compare with root before adopting."
 }

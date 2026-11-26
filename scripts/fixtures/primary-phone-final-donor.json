@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "enabled": false,
+  "identityProfile": "native-dba-reference",
+  "sourceCommit": null,
+  "evidenceDirectory": "scripts/data/evidence/primary-review-combined-nonphone/2026-11-26",
+  "sha256": {
+    "candidate.zip": null,
+    "backend-report.json": null,
+    "source-replay.json": null,
+    "coverage-summary.json": null,
+    "candidate-frontend-report.json": null,
+    "manifest.json": null
+  },
+  "candidateIndexSha256": null,
+  "reason": "Waiting for the complete final non-phone source, actual frontend and typecheck review to finish. No provisional donor release is permitted."
+}

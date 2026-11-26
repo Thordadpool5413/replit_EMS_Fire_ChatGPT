@@ -1,0 +1,83 @@
+name: Replay exact final native phone site donors
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  final-native-phone:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[replay-final-phone-sites]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: runner
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require an exact completed non-phone review
+        id: donor
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          value=json.loads(pathlib.Path('runner/scripts/fixtures/primary-phone-final-donor.json').read_bytes())
+          if value.get('enabled') is not True or not re.fullmatch('[0-9a-f]{40}',value.get('sourceCommit') or ''):
+              raise SystemExit('The final non-phone donor review has not been frozen; provisional donors are not allowed.')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              output.write('source_ref='+value['sourceCommit']+'\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.donor.outputs.source_ref }}
+          path: source
+      - name: Install retained replay dependency and preserve runner receipt
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python3 -m pip install 'pyshp==2.3.1'
+          cp ../runner/scripts/data/run_nppes_final_phone_review.py scripts/data/run_nppes_final_phone_review.py
+          cp ../runner/scripts/fixtures/primary-phone-final-donor.json scripts/fixtures/primary-phone-final-donor.json
+          cp ../runner/scripts/test-native-phone-contracts.cjs scripts/test-native-phone-contracts.cjs
+          python3 -m unittest discover -s scripts/data -p test_nppes_phone_sites.py
+          python3 -m unittest discover -s scripts/data -p test_nppes_phone_dba_identity.py
+      - name: Validate all donor sources and retain exact final site associations
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/run_nppes_final_phone_review.py --pins scripts/fixtures/primary-phone-final-donor.json --donor-output "$RUNNER_TEMP/final-phone-donor" --historical-hifld-archive ../runner/scripts/data/evidence/primary-nppes-hifld-phone-diagnostic/2026-11-26/original.zip
+      - name: Compile and test actual frontend and API finite phone proofs
+        working-directory: source
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/phone-contract-tools" --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          node "$RUNNER_TEMP/phone-contract-tools/node_modules/typescript/bin/tsc" --module commonjs --moduleResolution node --target ES2022 --strict --skipLibCheck --outDir "$RUNNER_TEMP/phone-contracts" artifacts/ems-territory-intelligence/src/services/nppesPhoneSiteContract.ts artifacts/api-server/src/lib/nppesPhoneSiteContract.ts
+          node scripts/test-native-phone-contracts.cjs "$RUNNER_TEMP/phone-contracts"
+          python3 - <<'PY'
+          import json,pathlib
+          path=pathlib.Path('scripts/data/evidence/primary-nppes-phone-sites/2026-11-26/retention-receipt.json')
+          receipt=json.loads(path.read_bytes())
+          receipt['phoneFiniteContractTest']='passed'
+          path.write_text(json.dumps(receipt,sort_keys=True,separators=(',',':'))+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-final-native-phone-sites
+          path: source/scripts/data/evidence/primary-nppes-phone-sites/
+      - name: Commit complete donor proof and finite contracts on a review branch
+        working-directory: source
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-final-phone-sites-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-phone-sites scripts/data/run_nppes_final_phone_review.py scripts/fixtures/primary-phone-final-donor.json scripts/test-native-phone-contracts.cjs artifacts/ems-territory-intelligence/src/services/nppesPhoneSitePins.ts artifacts/api-server/src/lib/nppesPhoneSitePins.ts scripts/fixtures/nppes-phone-site-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain native phone site proofs from the exact reviewed final non-phone donor release'
+          git push origin HEAD

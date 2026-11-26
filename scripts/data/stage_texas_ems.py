@@ -55,7 +55,12 @@ def stage(path,out,minimum=100,kind='provider'):
     headers=[norm(c.value) for c in cells]
     cols={k:[j for j,h in enumerate(headers) if h in aliases] for k,aliases in ALIASES.items()}
     recognized.append(sorted({h for h in headers if any(h in a for a in ALIASES.values())}))
-    if all(len(cols[k])>=1 for k in ('identifier','name')):
+    # Emit header labels only when the row has the unmistakable published
+    # column names; never print organization records or contact data.
+    if {'license number','license status','license expiration date','license type','mailing city','mailing state','mailing zip'}<=set(headers):
+     if len(headers)>100 or any(len(h)>120 for h in headers):raise ValueError('Unexpected header length')
+     header_candidates.append({'row':i,'headers':headers,'recognizedColumns':{k:v for k,v in cols.items() if v}})
+    elif all(len(cols[k])>=1 for k in ('identifier','name')):
      header_candidates.append({'row':i,'recognizedColumns':{k:v for k,v in cols.items() if v}})
     if all(len(cols[k])==1 for k in ('identifier','name')) and all(len(v)<=1 for v in cols.values()):
      matches.append((ws,i,{k:v[0] for k,v in cols.items() if v},headers))

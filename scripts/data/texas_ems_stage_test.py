@@ -34,3 +34,15 @@ class TexasStageTest(unittest.TestCase):
    self.assertTrue(r['records'][0]['endUserValidationRequired'])
    s['A2'].number_format='General';w.save(p)
    with self.assertRaises(ValueError):stage(p,out,1,kind='first-responder')
+
+ def test_schema_diagnostic_contains_only_recognized_header_row(self):
+  import json
+  with tempfile.TemporaryDirectory() as td:
+   p=pathlib.Path(td)/'fixture.xlsx';out=pathlib.Path(td)/'review';w=Workbook();s=w.active
+   s.append(['License Number','License Status','License Expiration Date','License Type','Mailing City','Mailing State','Mailing Zip','Unmapped Organization Column'])
+   s.append(['00123','Active','2027-01-01','Provider','Example','TX','75001','Private row text']);w.save(p)
+   with self.assertRaises(ValueError):stage(p,out,1)
+   raw=(out/'schema-review.json').read_text()
+   h=json.loads(raw)['sheets'][0]['headerCandidates'][0]
+   self.assertIn('unmapped organization column',h['headers'])
+   self.assertNotIn('private row text',raw.lower())

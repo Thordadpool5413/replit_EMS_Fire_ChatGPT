@@ -53,6 +53,10 @@ export function CountyNerisStationDirectory({
     };
   }, [stateCode, attempt]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [countyFips, city]);
+
   const stations = useMemo(
     () => data ? filterNerisCountyStations(data, countyFips, city, query) : [],
     [data, countyFips, city, query],

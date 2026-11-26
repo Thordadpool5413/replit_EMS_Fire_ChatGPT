@@ -1,0 +1,257 @@
+[
+  {
+    "label": "exact-place-address",
+    "key": "FDID:AK:11100",
+    "originalAddress": {
+      "city": "Juneau",
+      "state": "AK",
+      "street": "820 Glacier AVE",
+      "zip": "99801"
+    },
+    "latitude": 58.30112146,
+    "longitude": -134.42152036,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "820 Glacier Ave, Juneau, AK, 99801",
+    "method": "overture-place-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": 0.9628087282180786,
+          "dataset": "meta",
+          "license": "CDLA-Permissive-2.0",
+          "property": "",
+          "provider": "meta",
+          "record_id": "313380332197871",
+          "resource": "meta",
+          "update_time": "2026-11-02T00:00:00.000Z",
+          "version": "2026-11-02"
+        },
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "Overture",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/confidence",
+          "provider": "overture",
+          "record_id": null,
+          "resource": "confidence_calculation",
+          "update_time": "2026-11-11T15:48:27Z",
+          "version": "2026-11-11"
+        },
+        {
+          "between": null,
+          "confidence": 1.0,
+          "dataset": "Overture-signals",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/operating_status",
+          "provider": "overture",
+          "record_id": "4903c336-d67b-4a8d-af6e-d941d87820f4",
+          "resource": "operating_status_signal",
+          "update_time": "2026-11-03T23:28:14Z",
+          "version": "2026-11-02"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 18806080,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        58.30112146,
+        -134.42152036
+      ],
+      "countyFips": "02110",
+      "nativeId": "66c65913-d408-425c-9097-6fa1c412e6d9",
+      "operatingStatus": "open",
+      "placeConfidence": 0.9961507033705711,
+      "placeName": "Juneau Fire Station",
+      "precision": "reported-place-point",
+      "release": "2026-11-18.0",
+      "sourceAddressOrdinal": 0,
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "4deda9314cbe9252124f6c0967072f1a-13",
+      "sourceFile": "release/2026-11-18.0/theme=places/type=place/part-00002-5783d80c-d44a-5845-9057-3a39013540b0-c000.zstd.parquet",
+      "sourceFileSha256": "be8157302e8d94b648f884ae65b10f6073960b439dd0aceda2e145c75bfe5441",
+      "sourceInventorySha256": "b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339",
+      "sourceRowNumber": 1945392,
+      "sourceSha256": "7246836abf475d84b1756ff9e3d6d5de7e1dca7105a01b5d5f802964b53d4c63"
+    },
+    "sourceAddress": {
+      "city": "Juneau",
+      "state": "AK",
+      "street": "820 Glacier Ave",
+      "zip": "99801"
+    }
+  },
+  {
+    "label": "postal-locality",
+    "key": "FDID:AL:00152",
+    "originalAddress": {
+      "city": "Lipscomb",
+      "state": "AL",
+      "street": "5512 AVE H",
+      "zip": "35020"
+    },
+    "latitude": 33.42410269,
+    "longitude": -86.92568755,
+    "matchBasis": "normalized-street-state-zip",
+    "matchedAddress": "5512 Avenue H, Bessemer, AL, 35020",
+    "method": "overture-place-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": 0.756231427192688,
+          "dataset": "meta",
+          "license": "CDLA-Permissive-2.0",
+          "property": "",
+          "provider": "meta",
+          "record_id": "205696192633746",
+          "resource": "meta",
+          "update_time": "2026-11-02T00:00:00.000Z",
+          "version": "2026-11-02"
+        },
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "Overture",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/confidence",
+          "provider": "overture",
+          "record_id": null,
+          "resource": "confidence_calculation",
+          "update_time": "2026-11-11T15:48:27Z",
+          "version": "2026-11-11"
+        },
+        {
+          "between": null,
+          "confidence": 1.0,
+          "dataset": "Overture-signals",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/operating_status",
+          "provider": "overture",
+          "record_id": "e008f77c-d8bd-446c-9a64-b2bd8614e4f7",
+          "resource": "operating_status_signal",
+          "update_time": "2026-11-03T23:28:14Z",
+          "version": "2026-11-02"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 18806080,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        33.42410269,
+        -86.92568755
+      ],
+      "countyFips": "01073",
+      "nativeId": "47090d21-75ee-42bd-9059-82d6b10b8c7b",
+      "operatingStatus": "open",
+      "placeConfidence": 0.9902192950248718,
+      "placeName": "Lipscomb Fire Department",
+      "precision": "reported-place-point",
+      "release": "2026-11-18.0",
+      "sourceAddressOrdinal": 0,
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "af3fa5bae8f9d322b7a88c7a794f2036-13",
+      "sourceFile": "release/2026-11-18.0/theme=places/type=place/part-00001-43e455e5-5fd3-50ee-8b56-2de40da4223e-c000.zstd.parquet",
+      "sourceFileSha256": "0679fbe44ee8642000a73ead77d196945f17b3d12a44a5bc17bd5db95b746fc3",
+      "sourceInventorySha256": "b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339",
+      "sourceRowNumber": 4647707,
+      "sourceSha256": "e20bf5066b363c403d3ab3618acaa3993718b19e2e13580cbe93b865ffdd5a8a"
+    },
+    "sourceAddress": {
+      "city": "Bessemer",
+      "state": "AL",
+      "street": "5512 Avenue H",
+      "zip": "35020"
+    }
+  },
+  {
+    "label": "same-physical-address-reuse",
+    "key": "NPI:1326632142",
+    "originalAddress": {
+      "city": "ANCHORAGE",
+      "state": "AK",
+      "street": "151 W 100TH AVE",
+      "zip": "99515"
+    },
+    "latitude": 61.1302763,
+    "longitude": -149.8819645,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "151 W 100th Ave, Anchorage, AK, 99515",
+    "method": "overture-place-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": 0.85,
+          "dataset": "Microsoft",
+          "license": "CDLA-Permissive-2.0",
+          "property": "",
+          "provider": "microsoft",
+          "record_id": "844424933229265",
+          "resource": "microsoft",
+          "update_time": "2021-11-29T20:56:29.677Z",
+          "version": "2025-10-20"
+        },
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "Overture",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/confidence",
+          "provider": "overture",
+          "record_id": null,
+          "resource": "confidence_calculation",
+          "update_time": "2026-11-11T15:48:27Z",
+          "version": "2026-11-11"
+        },
+        {
+          "between": null,
+          "confidence": 1.0,
+          "dataset": "Overture-signals",
+          "license": "CDLA-Permissive-2.0",
+          "property": "/properties/operating_status",
+          "provider": "overture",
+          "record_id": "17a163b0-badb-487d-921a-1386b0e8e28d",
+          "resource": "operating_status_signal",
+          "update_time": "2026-10-13T21:03:00Z",
+          "version": "2026-09-21"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 18806080,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 2,
+      "coordinatesAsReported": [
+        61.1302763,
+        -149.8819645
+      ],
+      "countyFips": "02020",
+      "nativeId": "25152666-a437-4181-9683-5826247814f6",
+      "operatingStatus": "open",
+      "placeConfidence": 0.9227142333984375,
+      "placeName": "BAC Transportation",
+      "precision": "reported-place-point",
+      "release": "2026-11-18.0",
+      "sourceAddressOrdinal": 0,
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "4deda9314cbe9252124f6c0967072f1a-13",
+      "sourceFile": "release/2026-11-18.0/theme=places/type=place/part-00002-5783d80c-d44a-5845-9057-3a39013540b0-c000.zstd.parquet",
+      "sourceFileSha256": "be8157302e8d94b648f884ae65b10f6073960b439dd0aceda2e145c75bfe5441",
+      "sourceInventorySha256": "b63c22f9c4a4d4560707fca076a7f027ffb8520db1cd07fa8f490e74aeafa339",
+      "sourceRowNumber": 1881574,
+      "sourceSha256": "ae56323527d265d8cac7113fbd8728513197d133f57fa752edef2812246a6c4e"
+    },
+    "sourceAddress": {
+      "city": "Anchorage",
+      "state": "AK",
+      "street": "151 W 100th Ave",
+      "zip": "99515"
+    }
+  }
+]

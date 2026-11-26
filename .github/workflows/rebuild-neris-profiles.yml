@@ -330,3 +330,53 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Audit replay-derived native negative report bindings against production source collector"
           git push origin HEAD
+  native-range-sites:
+    if: contains(github.event.head_commit.message, '[rebuild-neris-ranges]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the native source shapefile reader
+        run: python3 -m pip install pyshp==2.3.1
+      - name: Rebuild both strict native range fallback profiles
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_range_sites.py scripts/data/test_neris_release_reports.py
+          python3 -u scripts/data/retain_neris_range_sites.py --family core
+          python3 -u scripts/data/retain_neris_range_sites.py --family core --verify
+          python3 -u scripts/data/retain_neris_range_sites.py --family mailing
+          python3 -u scripts/data/retain_neris_range_sites.py --family mailing --verify
+          python3 -u scripts/data/build_neris_retained_profile_pins.py --profile range --profile mailing-range --validation-output "$RUNNER_TEMP/neris-range-frontend.json"
+          npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-range-frontend.json"
+      - name: Audit all seven complete profile negative reports
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin 712b04527baddd469880d6be9b2ecafe7a02aab4
+          git show FETCH_HEAD:scripts/data/build_primary_mapping_release.py > "$RUNNER_TEMP/production-primary-builder.py"
+          python3 -u scripts/data/neris_release_reports.py --profile mailing --profile website --profile grid --profile core-geocoded --profile mailing-geocoded --profile range --profile mailing-range --output-directory scripts/data/evidence/primary-neris-release-negative-adapters/2026-11-26
+          python3 -u scripts/data/audit_neris_release_reports.py --builder-file "$RUNNER_TEMP/production-primary-builder.py" --profile mailing --profile website --profile grid --profile core-geocoded --profile mailing-geocoded --profile range --profile mailing-range --output scripts/data/evidence/primary-neris-release-negative-adapters/2026-11-26/audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-native-range-sites-review
+          path: |
+            scripts/data/evidence/primary-neris-range-sites
+            scripts/data/evidence/primary-neris-mailing-range-sites
+            scripts/data/evidence/primary-neris-release-negative-adapters
+            artifacts/ems-territory-intelligence/src/services/nerisRangeSitePins.json
+            artifacts/ems-territory-intelligence/src/services/nerisMailingRangeSitePins.json
+            scripts/fixtures/neris-retained-range-examples.json
+            scripts/fixtures/neris-retained-mailing-range-examples.json
+      - name: Save native range fallback evidence and report adapters
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-native-range-sites-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-range-sites scripts/data/evidence/primary-neris-mailing-range-sites scripts/data/evidence/primary-neris-release-negative-adapters
+          git add artifacts/ems-territory-intelligence/src/services/nerisRangeSitePins.json artifacts/ems-territory-intelligence/src/services/nerisMailingRangeSitePins.json scripts/fixtures/neris-retained-range-examples.json scripts/fixtures/neris-retained-mailing-range-examples.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain truthfully labeled native range site proofs and complete negative binding audit"
+          git push origin HEAD

@@ -8,9 +8,9 @@ import pathlib
 import zipfile
 from backfill_provider_locations import ROOT, sha, digest_file, native_key
 from address_normalization import normalize_street, source_street_line
-from recover_neris_primary import dump, load_departments, load_boundaries, make_match
+from recover_neris_primary import dump, load_departments, load_boundaries, make_match, matching_records
 from recover_neris_mailing_sites import source_inputs
-from recover_neris_grid_points import PROFILE, generate, source_records, select
+from recover_neris_grid_points import PROFILE, generate, source_records, select, is_grid_address
 from retain_neris_primary import DEFAULT as CORE, verify as verify_core
 
 EVIDENCE = ROOT/'scripts/data/evidence/primary-neris-grid-points/2026-11-26'
@@ -113,6 +113,42 @@ def consensus_witnesses(entry):
     return [{'match': {**make_match(record, 'normalized-street-city-state-zip'), 'sourceAddressProfile': PROFILE},
              'countyFips': record['countyFips'], 'nativeId': record['object']['id'], 'targetAddress': entry['address']}
             for record in records]
+
+
+@functools.lru_cache(maxsize=1)
+def _grid_complete_index():
+    report, _, _ = validated_catalog()
+    records, _ = source_records(load_departments(), load_boundaries())
+    if len(records) != report['completeNativeObjectCount']:
+        raise ValueError('Complete numeric/grid native inventory changed')
+    index = collections.defaultdict(list)
+    for record in records:
+        address = record['address']
+        if record['addressComponent']:
+            index[(address['state'], normalize_street(source_street_line(address['street'])))].append(record)
+    return index
+
+
+def grid_aware_native_reuse_evidence(address):
+    """Qualified reuse witnesses across every native numeric and grid address.
+
+    This is an additional combined-source veto. It never edits the original
+    core report or declares the reused source coordinate a usable location.
+    """
+    index = _grid_complete_index()
+    if is_grid_address(address):
+        key = (address['state'], normalize_street(source_street_line(address['street'])))
+        matches = [(row, None) for row in index.get(key, []) if row['address']['zip'] == address['zip']]
+    else:
+        matches = matching_records({'address': address}, index)
+    return [{'reason': 'coordinate-reused-across-distinct-addresses',
+             'nativeId': row['object']['id'], 'objectId': row['object']['oid'], 'sourceKind': row['kind'],
+             'addressAsReported': row['object']['address'], 'coordinatesAsReported': row['coordinates']}
+            for row, _ in matches if row['withheldReason'] == 'coordinate-reused-across-distinct-addresses']
+
+
+def grid_aware_native_reuse_vetoes(address):
+    return sorted({row['reason'] for row in grid_aware_native_reuse_evidence(address)})
 
 
 def main():

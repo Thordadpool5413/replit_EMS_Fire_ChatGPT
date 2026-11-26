@@ -9,7 +9,7 @@ import pathlib
 from backfill_provider_locations import ROOT, PUBLIC, sha, read_registry, native_key, publish, verify
 from primary_mapping_contract import validate_primary_entry
 from primary_recovery_baseline import INDEX_SHA as BASELINE_INDEX_SHA, BASELINE, retain_baseline
-from primary_source_consensus import entry_witnesses, native_neris_vetoes, INTERPOLATED
+from primary_source_consensus import entry_witnesses, native_neris_vetoes as numeric_native_neris_vetoes, INTERPOLATED
 from address_normalization import normalize_street, normalized_city, source_street_line
 
 REQUIRED = 44452
@@ -32,6 +32,14 @@ QUALIFIED_REJECTIONS = {
 def dump(value):
     return (json.dumps(value, sort_keys=True, ensure_ascii=True,
                        separators=(',', ':'), allow_nan=False)+'\n').encode()
+
+
+def native_neris_vetoes(address, source_county=''):
+    # Keep the original source replay immutable while also auditing native
+    # numeric/grid address reuse across the complete NERIS inventory.
+    from retain_neris_grid_points import grid_aware_native_reuse_vetoes
+    return sorted(set(numeric_native_neris_vetoes(address, source_county)) |
+                  set(grid_aware_native_reuse_vetoes(address)))
 
 
 def baseline():

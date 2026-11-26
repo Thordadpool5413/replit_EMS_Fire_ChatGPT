@@ -1,0 +1,50 @@
+name: Replay native CMS and exact city address points
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  component-points:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[replay-native-components]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen source and native component replay
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/data/recover_nppes_primary_components.py scripts/data/diagnose_federal_city_fallback.py scripts/data/retain_federal_city_points.py scripts/data/build_federal_city_contract.py
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 -m unittest discover -s scripts/data -p test_nppes_native_primary.py
+          python3 scripts/data/retain_nppes_native_source.py --verify
+          python3 -u scripts/data/recover_nppes_primary_components.py --report "$RUNNER_TEMP/native-components.json"
+          python3 -u scripts/data/recover_nppes_primary_components.py --verify
+      - name: Retain and replay exact city postal-difference profile
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/retain_federal_city_points.py --report "$RUNNER_TEMP/native-city.json"
+          python3 -u scripts/data/retain_federal_city_points.py --verify
+          python3 -u scripts/data/build_federal_city_contract.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-component-and-city-points
+          path: |
+            scripts/data/evidence/primary-nppes-components/
+            scripts/data/evidence/primary-federal-city-fallback/
+      - name: Commit replayed component and city evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-component-points-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-components scripts/data/evidence/primary-federal-city-fallback scripts/fixtures/federal-city-point-examples.json artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts artifacts/api-server/src/lib/federalCityPointPins.ts scripts/data/evidence/primary-recovery-baseline
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain fully replayed CMS components and exact city native point profiles'
+          git push origin HEAD

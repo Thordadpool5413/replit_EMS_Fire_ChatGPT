@@ -1,7 +1,7 @@
 name: Nationwide public NERIS station acquisition
 on:
   push:
-    branches: [atlas/phase9-0w-neris-national-stations]
+    branches: [atlas/phase9-0w-neris-national-stations, atlas/phase9-0x-neris-row-recovery]
   pull_request:
     paths:
       - 'scripts/data/stage_neris_national_stations.py'

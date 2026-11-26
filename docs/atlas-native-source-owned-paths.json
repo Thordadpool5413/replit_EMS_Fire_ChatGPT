@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRef": "295fa81a8117b3ec73638815ea1db1063d825931",
+  "sourceRef": "9a5f4a142be26837247caee820a9a72d3a5ae3a5",
   "purpose": "Exact owned paths for root integration; central/shared and other-agent dependencies are excluded.",
   "files": [
     "scripts/data/recover_nppes_native_primary.py",
@@ -37,7 +37,8 @@
     "scripts/data/audit_tiger_range_exclusions.py",
     "scripts/data/retain_nppes_other_names.py",
     "scripts/data/recover_nppes_phone_dba_identity.py",
-    "scripts/data/test_nppes_phone_dba_identity.py"
+    "scripts/data/test_nppes_phone_dba_identity.py",
+    "scripts/data/audit_tiger_native_aliases.py"
   ],
   "generatedContractFiles": [
     "artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts",
@@ -62,7 +63,8 @@
     "scripts/data/evidence/primary-nppes-phone-identity/",
     "scripts/data/evidence/primary-nppes-phone-sites/",
     "scripts/data/evidence/primary-nppes-other-names/",
-    "scripts/data/evidence/primary-nppes-phone-dba-identity/"
+    "scripts/data/evidence/primary-nppes-phone-dba-identity/",
+    "scripts/data/evidence/primary-tiger-alias-review/"
   ],
   "workflows": [
     ".github/workflows/recover-native-cms.yml",
@@ -75,7 +77,8 @@
     ".github/workflows/recover-native-phone-identity.yml",
     ".github/workflows/audit-native-range-exclusions.yml",
     ".github/workflows/recover-native-other-names.yml",
-    ".github/workflows/replay-native-dba-phone-identity.yml"
+    ".github/workflows/replay-native-dba-phone-identity.yml",
+    ".github/workflows/audit-native-tiger-aliases.yml"
   ],
   "additionalOwnedLoaderFix": "scripts/data/stage_usgs_primary.py default load_locations now uses immutable baseline; compare with root before adopting."
 }

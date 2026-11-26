@@ -1,0 +1,39 @@
+name: Audit bounded native TIGER range aliases
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-alias-review:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[audit-native-tiger-aliases]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read complete bounded public source tables and replay native joins
+        run: |
+          set -euo pipefail
+          python3 -m pip install 'pyshp==2.3.1'
+          python3 -u scripts/data/audit_tiger_native_aliases.py --acquire
+          python3 -u scripts/data/audit_tiger_native_aliases.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-tiger-range-alias-review
+          path: scripts/data/evidence/primary-tiger-alias-review/
+      - name: Commit read-only native relationship source audit
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-tiger-alias-review-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-tiger-alias-review
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain bounded native range and feature-name relationship audit'
+          git push origin HEAD

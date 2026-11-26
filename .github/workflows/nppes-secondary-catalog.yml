@@ -1,0 +1,63 @@
+name: Retained nationwide secondary location integration
+on:
+  push:
+    branches: [atlas/phase9-0t-secondary-catalog]
+  pull_request:
+    paths:
+      - 'scripts/data/retain_nppes_secondary.py'
+      - 'scripts/data/evidence/nppes-secondary/**'
+      - 'artifacts/ems-territory-intelligence/public/registry/nppes-secondary/**'
+      - '.github/workflows/nppes-secondary-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  stage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact sanitized federal acquisition
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15082394618/zip" > /tmp/nppes-secondary.zip
+      - run: python3 scripts/data/retain_nppes_secondary.py --archive /tmp/nppes-secondary.zip
+      - run: python3 scripts/data/retain_nppes_secondary.py --verify
+      - name: Retain evidence and stage actual catalog
+        run: |
+          branch="atlas/nppes-secondary-catalog-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add --force scripts/data/evidence/nppes-secondary/2026-11-26 artifacts/ems-territory-intelligence/public/registry/nppes-secondary
+          git commit -m "Retain and integrate 844 federal secondary practice address records"
+          git push origin "HEAD:refs/heads/$branch"
+          echo "Federal secondary catalog candidate: $branch"
+  geocode:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve same federal acquisition for separate geographic review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/15082394618/zip" > /tmp/nppes-secondary.zip
+      - run: python3 scripts/data/retain_nppes_secondary.py --archive /tmp/nppes-secondary.zip --geocode-output generated-artifacts/nppes-secondary-geocode
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nppes-secondary-geocode-review
+          path: generated-artifacts/nppes-secondary-geocode/
+          if-no-files-found: error
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/retain_nppes_secondary.py --verify

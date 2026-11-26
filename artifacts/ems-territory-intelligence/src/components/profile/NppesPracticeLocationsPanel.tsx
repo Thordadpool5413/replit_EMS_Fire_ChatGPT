@@ -4,6 +4,7 @@ import {profileCmsLookupNpi} from '../../services/cmsAmbulanceEvidence';
 import {loadNppesPracticeEvidence,loadNppesPracticeMap} from '../../services/nppesPracticeEvidence';
 import type {NppesPracticeEvidence,NppesPracticeRow} from '../../services/nppesPracticeContract';
 import {addressText,type AddressMatch} from '../../services/providerLocationContract';
+import {loadMonthlySecondary,type MonthlySecondaryRow} from '../../services/nppesMonthlySecondary';
 function LocationRow({row,profileState}:{row:NppesPracticeRow;profileState:string}){
  const [match,setMatch]=useState<AddressMatch|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const pending=useRef<AbortController|null>(null);
@@ -19,6 +20,27 @@ function LocationRow({row,profileState}:{row:NppesPracticeRow;profileState:strin
  {message&&<p role="status" className="text-xs">{message}</p>}
  {match&&<a className="underline" target="_blank" rel="noreferrer" href={'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(match.latitude+','+match.longitude)}>Open approximate address map</a>}
  </li>;
+}
+function MonthlyLocations({npi,agency}:{npi:string;agency:Agency}){
+ const [rows,setRows]=useState<MonthlySecondaryRow[]|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const active=useRef(true);
+ useEffect(()=>{active.current=true;return()=>{active.current=false}},[]);
+ async function load(){
+  setBusy(true);setError('');
+  try{const result=await loadMonthlySecondary(npi);if(active.current)setRows(result.rows);}
+  catch{if(active.current)setError('Monthly federal location evidence unavailable. Live NPPES lookup is still available.');}
+  finally{if(active.current)setBusy(false);}
+ }
+ return <section className="my-2 border rounded p-2 min-w-0 text-sm" data-testid="nppes-monthly-secondary">
+ <h4 className="font-semibold">November 2026 federal secondary addresses</h4>
+ <p>Monthly CMS release, independent of state licensing records. Additional practice locations are not confirmed stations.</p>
+ <button className="workspace-button min-h-11" type="button" disabled={busy} onClick={()=>void load()}>{busy?'Loading monthly addresses…':rows?'Reload monthly addresses':'Show monthly secondary addresses'}</button>
+ {error&&<p role="alert">{error}</p>}
+ {rows&&<><p role="status">{rows.length} additional address {rows.length===1?'row':'rows'} in this scoped snapshot. {rows.length===0?'No listing is not proof of no additional sites.':''}</p>
+ <p><a className="underline" href="https://download.cms.gov/nppes/NPI_Files.html" target="_blank" rel="noreferrer">Official CMS monthly reference file</a> · November 9, 2026 release.</p>
+ {rows.length>0&&<p>Source organization: {rows[0].parentName} · NPI {npi}. Confirm the operating relationship before use.</p>}
+ <ul className="divide-y">{rows.map(r=><li key={r.sourceKey} className="py-2"><p className="text-xs">Source row {r.sourceRow}{r.sharedAddressAcrossNpis?' · Address shared across NPIs; not a merged agency':''}</p><ul><LocationRow row={{key:r.sourceKey,kind:'secondary-practice',address:r.address,physicalStreet:true,stationIdentityEstablished:false,endUserValidationRequired:true}} profileState={agency.stateCode}/></ul></li>)}</ul></>}
+ </section>;
 }
 export function NppesPracticeLocationsPanel({agency}:{agency:Agency}){
  const npi=profileCmsLookupNpi(agency).npi;
@@ -36,6 +58,7 @@ export function NppesPracticeLocationsPanel({agency}:{agency:Agency}){
  return <details className="acp-address-note min-w-0" data-testid="nppes-practice-locations"><summary className="cursor-pointer font-semibold">Federal NPI practice and mailing locations</summary>
  <p className="my-2">CMS NPPES organization NPI {npi}. No state licensing lookup required. Source-reported addresses are not confirmed operating stations or saved profile locations.</p>
  <button type="button" className="workspace-button min-h-11" disabled={busy} onClick={()=>void load()}>{busy?'Loading…':current?'Refresh federal addresses':'Pull federal addresses'}</button>
+ <MonthlyLocations key={agency.id+':'+npi} npi={npi} agency={agency}/>
  {error&&<p role="alert">{error}</p>}
  {current&&<><p><a className="underline" href={current.sourceUrl} target="_blank" rel="noreferrer">Official NPPES record</a> · Retrieved {current.retrievedAt.slice(0,10)} UTC{current.sourceDate?' · Registry updated '+current.sourceDate:''}.</p>
  {current.status!=='source-reported'?<p>No eligible active ambulance organization record returned for this NPI. No site inferred.</p>:<><p className="font-semibold">{current.organizationName}</p><p>Secondary practice collection: {current.secondaryCollection==='reported'?'returned by CMS':'not returned; completeness unknown'}. {current.withheldAddressCount?current.withheldAddressCount+' duplicate, conflicting or unsupported address entries withheld.':''}</p>

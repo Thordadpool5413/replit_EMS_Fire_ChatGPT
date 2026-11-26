@@ -7,7 +7,7 @@ export function CmsAmbulanceEvidencePanel({agency}:{agency:Agency}){
  const lookup=profileCmsLookupNpi(agency),npi=lookup.npi;
  const [result,setResult]=useState<CmsServiceEvidence|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const active=useRef<AbortController|null>(null);
- useEffect(()=>()=>{active.current?.abort();active.current=null},[agency.id,npi]);
+ useEffect(()=>{setResult(null);setBusy(false);setError('');return()=>{active.current?.abort();active.current=null}},[agency.id,npi]);
  async function refresh(){
   if(!npi)return;active.current?.abort();
   const c=new AbortController();active.current=c;setBusy(true);setResult(null);setError('');

@@ -10,7 +10,8 @@ export function profileCmsLookupNpi(a:Agency):{npi:string|null;reason:string}{
  const claims=registryClaims(a);const keys=claims.keys.filter(k=>k.startsWith('NPI:')).map(k=>k.slice(4));
  const raw=a.npiNumber?.trim();if(raw)keys.push(raw);
  const ids=[...new Set(keys)];
- if(claims.invalid.length||claims.conflicts.some(c=>c.some(k=>k.startsWith('NPI:')))||ids.length>1)return {npi:null,reason:'Conflicting provider identifiers; review the NPI before querying.'};
+ const invalidNpiClaim=(a.sourceRecordAssociations??[]).some(x=>x.sourceName==='NPPES'&&claims.invalid.includes(x.id));
+ if(invalidNpiClaim||claims.conflicts.some(c=>c.some(k=>k.startsWith('NPI:')))||ids.length>1)return {npi:null,reason:'Conflicting provider identifiers; review the NPI before querying.'};
  if(ids.length!==1||!validateNpiCheckDigit(ids[0]).isValid)return {npi:null,reason:'No valid recorded NPI. State license information is not required for a federal lookup.'};
  return {npi:ids[0],reason:'Recorded NPI query only; operating relationship is not verified by CMS utilization.'};
 }

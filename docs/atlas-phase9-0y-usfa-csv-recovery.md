@@ -1,0 +1,3 @@
+# USFA export recovery
+
+Live acquisition run 45753176852 failed on `_csv.Error: ',' expected after '"'`. Keep strict CSV semantics, but quarantine the exact physical-line span consumed by an invalid record or wrong-width row, with digest and reason. Resume from the parser's next record, never repair quotes or assign partial columns. Preserve valid multiline records. Source rows count attempted records, not guaranteed original logical rows; track physical lines and rejected spans separately. Withhold release if too little usable data or excessive corruption. No inferred IDs, geocodes or state licensing dependency.

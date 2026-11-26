@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      PRIMARY_REVIEW_ROOT: ${{ runner.temp }}/primary-local-review
+      PRIMARY_REVIEW_ROOT: generated-artifacts/primary-local-review
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

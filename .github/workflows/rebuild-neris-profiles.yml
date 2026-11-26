@@ -299,3 +299,34 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Retain full five-source native mailing-site consensus and exact frontend bindings"
           git push origin HEAD
+  native-negative-report-audit:
+    if: contains(github.event.head_commit.message, '[audit-neris-negatives]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact native negative address bindings against production collector
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts/data python3 -m unittest scripts/data/test_neris_release_reports.py
+          git fetch --depth=1 origin 1e974f90c52c2126645fc464cb808086a48096b7
+          git show FETCH_HEAD:scripts/data/build_primary_mapping_release.py > "$RUNNER_TEMP/production-primary-builder.py"
+          python3 -u scripts/data/neris_release_reports.py --profile mailing --profile website --profile grid --profile core-geocoded --output-directory scripts/data/evidence/primary-neris-release-negative-adapters/2026-11-26
+          python3 -u scripts/data/audit_neris_release_reports.py --builder-file "$RUNNER_TEMP/production-primary-builder.py" --profile mailing --profile website --profile grid --profile core-geocoded --output scripts/data/evidence/primary-neris-release-negative-adapters/2026-11-26/audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neris-native-negative-binding-audit
+          path: scripts/data/evidence/primary-neris-release-negative-adapters
+      - name: Save derived report audit without rewriting source archives
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/neris-native-negative-audit-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-release-negative-adapters
+          git diff --cached --quiet && exit 0
+          git commit -m "Audit replay-derived native negative report bindings against production source collector"
+          git push origin HEAD

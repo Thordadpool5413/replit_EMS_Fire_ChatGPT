@@ -350,6 +350,7 @@ jobs:
           python3 -u scripts/data/retain_neris_range_sites.py --family mailing --verify
           python3 -u scripts/data/build_neris_retained_profile_pins.py --profile range --profile mailing-range --validation-output "$RUNNER_TEMP/neris-range-frontend.json"
           npx --yes tsx scripts/data/check_neris_retained_frontend.ts "$RUNNER_TEMP/neris-range-frontend.json"
+          npx --yes tsx --test artifacts/ems-territory-intelligence/src/services/nerisGeocodedSiteContract.test.ts
       - name: Audit all seven complete profile negative reports
         run: |
           set -euo pipefail

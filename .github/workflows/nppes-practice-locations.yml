@@ -1,0 +1,33 @@
+name: Federal NPPES practice locations
+on:
+  push:
+    branches: [atlas/phase9-0s-federal-practice-locations]
+  pull_request:
+    paths:
+      - 'artifacts/api-server/src/lib/nppesPractice*'
+      - 'artifacts/ems-territory-intelligence/src/services/nppesPractice*'
+      - '.github/workflows/nppes-practice-locations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/lib/nppesPracticeEvidence.test.ts
+      - name: Verify mirrored federal location contract
+        run: cmp artifacts/api-server/src/lib/nppesPracticeContract.ts artifacts/ems-territory-intelligence/src/services/nppesPracticeContract.ts
+      - name: Query official NPPES by exact NPI
+        if: github.event_name != 'pull_request'
+        run: |
+          pnpm --filter @workspace/scripts exec tsx -e 'import {fetchNppesPracticeEvidence} from "../artifacts/api-server/src/lib/nppesPracticeEvidence"; fetchNppesPracticeEvidence("1003006180").then(r=>{if(r.status!=="source-reported"||!r.rows.some(x=>x.kind==="primary-practice"))throw Error("Expected public organization practice address missing");console.log("Federal practice locations:",JSON.stringify({npi:r.npi,counts:Object.fromEntries(["primary-practice","secondary-practice","mailing"].map(k=>[k,r.rows.filter(x=>x.kind===k).length])),secondaryCollection:r.secondaryCollection,withheld:r.withheldAddressCount,publicationEligible:r.publicationEligible}));}).catch(e=>{console.error(e);process.exitCode=1})'

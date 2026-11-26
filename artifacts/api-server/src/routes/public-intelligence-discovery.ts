@@ -13,6 +13,7 @@ import {parseChicagoQuery} from '../lib/chicagoDiscoveryContract';
 import {fetchNppesLocation,fetchCensusLocation,boundedLocationService} from '../lib/providerLocation';
 import {validNpi,parseStreetAddress,isPhysicalStreet,addressKey} from '../lib/providerLocationContract';
 import {fetchCmsAmbulanceEvidence} from '../lib/cmsAmbulanceEvidence';
+import {fetchNppesPracticeEvidence} from '../lib/nppesPracticeEvidence';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
 router.get('/discovery/fema',async(req,res)=>{
@@ -87,5 +88,11 @@ router.get('/discovery/cms-ambulance-services',async(req,res)=>{
  res.set('Cache-Control','no-store');const npi=req.query.npi;
  if(!validNpi(npi)||Object.keys(req.query).length!==1){res.status(400).json({error:'Valid NPI required.'});return;}
  try{res.json(await cmsAmbulance(npi));}catch{req.log.warn('CMS public ambulance service lookup unavailable');res.status(502).json({error:'CMS service evidence unavailable; no records inferred.'});}
+});
+const nppesPractice=boundedLocationService((npi:string)=>fetchNppesPracticeEvidence(npi),npi=>npi);
+router.get('/discovery/nppes-practice-locations',async(req,res)=>{
+ res.set('Cache-Control','no-store');const npi=req.query.npi;
+ if(!validNpi(npi)||Object.keys(req.query).length!==1){res.status(400).json({error:'Valid organization NPI required.'});return;}
+ try{res.json(await nppesPractice(npi));}catch{req.log.warn('NPPES practice location evidence unavailable');res.status(502).json({error:'NPPES location evidence unavailable; no addresses inferred.'});}
 });
 export default router;

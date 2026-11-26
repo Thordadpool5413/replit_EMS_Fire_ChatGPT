@@ -1,0 +1,52 @@
+name: Recurring federal provider address refresh
+on:
+  push:
+    branches: [atlas/phase9-0t-federal-refresh]
+  pull_request:
+    paths:
+      - 'scripts/data/refresh_federal_provider_locations*'
+      - '.github/workflows/federal-provider-refresh.yml'
+  schedule:
+    - cron: '17 3,15 * * *'
+  workflow_dispatch:
+    inputs:
+      offset:
+        description: 'Optional explicit queue offset'
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: atlas-federal-provider-refresh-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/scripts exec tsx --test data/refresh_federal_provider_locations.test.mjs
+      - name: Refresh a rotating national batch
+        if: github.event_name != 'pull_request'
+        env:
+          OFFSET: ${{ inputs.offset }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "$OFFSET" ]; then args+=(--offset "$OFFSET"); fi
+          pnpm --filter @workspace/scripts exec tsx data/refresh_federal_provider_locations.mjs --limit 96 --geocode-limit 24 --output ../generated-artifacts/federal-provider-refresh "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name != 'pull_request'
+        with:
+          name: federal-provider-address-refresh
+          path: generated-artifacts/federal-provider-refresh/
+          if-no-files-found: ignore
+          retention-days: 90

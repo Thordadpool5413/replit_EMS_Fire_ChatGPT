@@ -383,7 +383,8 @@ class LocalReview:
         with self.phase('phone_finite_contract_checks'):
             compiled = self.private/'phone-contracts'
             compile_receipt = run_command(PNPM+['exec', 'tsc', '--module', 'commonjs', '--moduleResolution', 'node',
-                '--target', 'ES2022', '--strict', '--skipLibCheck', '--outDir', str(compiled),
+                '--target', 'ES2022', '--strict', '--skipLibCheck', '--resolveJsonModule', '--esModuleInterop',
+                '--outDir', str(compiled),
                 'artifacts/ems-territory-intelligence/src/services/nppesPhoneSiteContract.ts',
                 'artifacts/api-server/src/lib/nppesPhoneSiteContract.ts'], self.private/'phone-contract-compile.log')
             mutation_receipt = run_command(['node', 'scripts/test-native-phone-contracts.cjs', str(compiled)],

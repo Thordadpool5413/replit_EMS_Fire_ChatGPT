@@ -226,12 +226,20 @@ def main():
     args.directory.mkdir(parents=True, exist_ok=True)
     if args.download:
         for name in ('usfa-national.csv', 'usfa-national-confirmation.csv'):
-            request = urllib.request.Request(SOURCE_URL, headers={'User-Agent': 'ATLAS public source provenance replay'})
-            with urllib.request.urlopen(request, timeout=180) as response:
-                raw = response.read(25_000_001)
-            if len(raw)>25_000_000: raise ValueError('Unexpected national CSV size')
-            (args.directory/name).write_bytes(raw)
-            print(json.dumps({'response': name, 'downloadBytes': len(raw), 'actualSourceSha256': sha(raw)}), flush=True)
+            for attempt in range(1, 7):
+                request = urllib.request.Request(SOURCE_URL, headers={'User-Agent': 'ATLAS public source provenance replay'})
+                try:
+                    with urllib.request.urlopen(request, timeout=180) as response:
+                        raw = response.read(25_000_001)
+                    if len(raw)>25_000_000: raise ValueError('Unexpected national CSV size')
+                    (args.directory/(name+'.attempt-'+str(attempt))).write_bytes(raw)
+                    native_inventory(raw)
+                    (args.directory/name).write_bytes(raw)
+                    print(json.dumps({'response': name, 'attempt': attempt, 'downloadBytes': len(raw), 'actualSourceSha256': sha(raw), 'completeInventory': 'passed'}), flush=True)
+                    break
+                except (ValueError, UnicodeError, OSError) as error:
+                    print(json.dumps({'response': name, 'attempt': attempt, 'completeInventory': 'failed', 'reason': str(error)}), flush=True)
+                    if attempt == 6: raise
     manifest, summary = stage(args.directory, args.evidence, args.pin_edition)
     print(json.dumps({'manifest': manifest, 'summary': summary}), flush=True)
 

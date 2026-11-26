@@ -141,7 +141,7 @@ def make_candidates(directory,entries,baseline_hash):
     if receipt.get('targetsSha256')!=target_digest(entries):raise ValueError('Native NAD scan belongs to different address targets')
     identities=json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_bytes())['counties']
     boundaries=geometry_index(json.loads(BOUNDARY.read_bytes()),{c['GEOID']:c['USPS'] for c in identities if c['USPS'] in STATES})
-    counties=county_index(identities);county_cache={};outcomes=collections.Counter();candidates=[]
+    counties=county_index(identities);county_cache={};outcomes=collections.Counter();candidates=[];rejected=[]
     for row in rows:source_index[native_signature(row['native'])].append(row)
     for row in witnesses:
         p=native_point(row['native'])
@@ -165,25 +165,29 @@ def make_candidates(directory,entries,baseline_hash):
             cache_key=(a['state'],p)
             if cache_key not in county_cache:county_cache[cache_key]=county_for(p,boundaries[a['state']])[0]
             county=county_cache[cache_key];reported=counties.get((a['state'],county_key(n['County'])),set())
-            if not county or entry['sourceCounty'] and county!=entry['sourceCounty'] or reported and county not in reported:reasons.add('county-disagreement-or-boundary');continue
+            if not county:reasons.add('point-county-unresolved');continue
+            if entry['sourceCounty'] and county!=entry['sourceCounty']:reasons.add('original-source-county-disagreement');continue
+            if reported and county not in reported:reasons.add('native-source-county-disagreement');continue
             point={'objectId':int(n['OID_']),'release':'2026-09-30','dataset':'bulk-r24','authority':authority,'placement':n['Placement'],'countyFips':county,
                    'sourceArchiveSha256':ARCHIVE_SHA,'sourceRowNumber':row['sourceRowNumber'],'nativeRecordSha256':sha(dump(n)),
-                   'sourceCityField':city_field,'sourceCountyName':n['County'],'lifecycle':n['Lifecycle'],'addressClass':n['AddrClass']}
+                   'sourceCityField':city_field,'sourceCountyName':n['County'],'lifecycle':n['Lifecycle'],'addressClass':n['AddrClass'],'coordinatesAsReported':list(p)}
             match={'method':'nad-address-point','latitude':p[0],'longitude':p[1],'sourceAddress':source_address,'matchBasis':basis,
                    'matchedAddress':', '.join((source_street_line(source_address['street']),source_address['city'],source_address['state'],source_address['zip'])),'point':point}
             accepted.append((p,county,match))
         # An explicit rejected status, shared location, or county conflict is
         # retained as a veto; no good-looking row silently overrides it.
-        if reasons:outcomes['withheld:'+','.join(sorted(reasons))]+=1;continue
+        if reasons:
+            outcomes['withheld:'+','.join(sorted(reasons))]+=1;rejected.append({'key':entry['key'],'originalAddress':copy.deepcopy(a),'reasons':sorted(reasons),'eligibleNativePoints':[v[2] for v in accepted]});continue
         if not accepted:outcomes['no-source-match']+=1;continue
-        if len({v[1] for v in accepted})!=1 or any(distance(accepted[0][0],v[0])>75 for v in accepted):outcomes['conflicting-native-points']+=1;continue
+        if len({v[1] for v in accepted})!=1 or any(distance(v[0],w[0])>75 for i,v in enumerate(accepted) for w in accepted[i+1:]):
+            outcomes['conflicting-native-points']+=1;rejected.append({'key':entry['key'],'originalAddress':copy.deepcopy(a),'reasons':['conflicting-native-points'],'eligibleNativePoints':[v[2] for v in accepted]});continue
         chosen=min(accepted,key=lambda v:(v[2]['point']['placement'] in {'Unknown','Other'},v[2]['point']['objectId']))
         candidates.append({'key':entry['key'],'source':entry['source'],'state':entry['state'],'originalAddress':copy.deepcopy(a),'address':copy.deepcopy(a),'sourceCounty':entry['sourceCounty'],'countyFips':chosen[1],'match':chosen[2]})
         outcomes['candidates']+=1
     diagnostic_keys={e['key'] for e in entries if e.get('originalPrimaryKey')}
     return {'schemaVersion':1,'source':'nad-bulk-r24','sourceArchiveSha256':ARCHIVE_SHA,'baselineIndexSha256':baseline_hash,'originalPrimaryCount':46791,
             'additionalDiagnosticTargets':len(diagnostic_keys),'sourceCount':SOURCE_COUNT,'scanReceiptSha256':sha((directory/'scan-receipt.json').read_bytes()),'outcomes':dict(sorted(outcomes.items())),
-            'candidates':[c for c in candidates if c['key'] not in diagnostic_keys],'diagnosticCandidates':[c for c in candidates if c['key'] in diagnostic_keys]}
+            'candidates':[c for c in candidates if c['key'] not in diagnostic_keys],'diagnosticCandidates':[c for c in candidates if c['key'] in diagnostic_keys],'rejected':rejected}
 
 def retain(directory,entries,baseline_hash,report,evidence):
     evidence.mkdir(parents=True,exist_ok=True);files=['scan-receipt.json','native-matches.json','address-scan.json','coordinate-witnesses.json','coordinate-scan.json','coordinate-audit-counts.json']
@@ -214,6 +218,7 @@ def verify(evidence=EVIDENCE):
 
 @functools.lru_cache(maxsize=1)
 def candidate_index():
+    verify()
     m=json.loads((EVIDENCE/'manifest.json').read_bytes());raw=(EVIDENCE/'candidates.json').read_bytes()
     if m['sourceArchiveSha256']!=ARCHIVE_SHA or m['sourceCount']!=SOURCE_COUNT or sha(raw)!=m['candidatesSha256']:raise ValueError('NAD retained candidate binding changed')
     rows=json.loads(raw);index={r['key']:r for r in rows}

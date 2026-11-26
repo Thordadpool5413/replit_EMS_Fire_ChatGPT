@@ -123,6 +123,7 @@ def connection():
     c.execute('LOAD httpfs')
     c.execute('LOAD spatial')
     c.execute('SET threads=2')
+    c.execute('SET preserve_insertion_order=true')
     c.execute("SET memory_limit='1200MB'")
     c.execute('SET http_retries=5')
     c.execute('SET http_timeout=120')
@@ -218,6 +219,7 @@ def main():
     p.add_argument('--workers',type=int,default=2)
     p.add_argument('--metadata-only',action='store_true')
     p.add_argument('--select-primary',action='store_true')
+    p.add_argument('--locations',type=pathlib.Path)
     a=p.parse_args()
     inv=json.loads((a.output/'inventory.json').read_bytes()) if (a.output/'inventory.json').exists() else inventory(a.output)
     meta_path=a.output/'metadata-inventory.json'
@@ -236,7 +238,7 @@ def main():
     if a.select_primary:
         from match_overture_primary_addresses import load_targets
         from backfill_provider_locations import PUBLIC
-        target_data=load_targets(PUBLIC/'locations')
+        target_data=load_targets(a.locations or PUBLIC/'locations')
         (a.output/'targets.json').write_bytes(encoded(target_data))
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:
         receipts=list(pool.map(lambda s:cache_file(s,a.output,target_data),[m for m in metas if m['mayContainUS']]))

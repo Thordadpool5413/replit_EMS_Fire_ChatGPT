@@ -1,0 +1,173 @@
+[
+  {
+    "label": "exact-address",
+    "key": "FDID:CA:04045",
+    "originalAddress": {
+      "city": "Oroville",
+      "state": "CA",
+      "street": "5 Tyme WAY",
+      "zip": "95966"
+    },
+    "latitude": 39.5020874,
+    "longitude": -121.5048705,
+    "matchBasis": "normalized-street-city-state-zip",
+    "matchedAddress": "5 TYME WAY, OROVILLE, CA, 95966",
+    "method": "overture-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "us/ca/butte",
+          "license": "LicenseRef-Public-Domain-US-CA-Law",
+          "property": "",
+          "provider": "open_addresses",
+          "record_id": "068-160-045-000",
+          "resource": "us_ca_butte",
+          "update_time": "2026-11-02T13:09:00.064Z",
+          "version": "946400"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 126202222,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        39.5020874,
+        -121.5048705
+      ],
+      "countyFips": "06007",
+      "nativeId": "e9013143-593d-41c7-93a1-78c9fb863930",
+      "precision": "reported-address-point",
+      "release": "2026-11-18.0",
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "55cc355b3001b970d1129e9fba379618-7",
+      "sourceFile": "release/2026-11-18.0/theme=addresses/type=address/part-00017-a852fc78-5b75-5ea4-b18a-cbc11f282d48-c000.zstd.parquet",
+      "sourceFileSha256": "c6a709b8c4261931d571a409e303ac6b9b1083d5c065898e2102c38b588960be",
+      "sourceInventorySha256": "d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8",
+      "sourceRowNumber": 2332400,
+      "sourceSha256": "7fb172578d43567113af16efb9b385ebcf8f7f5f059cc47418e67bd2e2a3bd04"
+    },
+    "sourceAddress": {
+      "city": "OROVILLE",
+      "state": "CA",
+      "street": "5 TYME WAY",
+      "zip": "95966"
+    }
+  },
+  {
+    "label": "postal-locality",
+    "key": "FDID:CA:12165",
+    "originalAddress": {
+      "city": "Whitehorn",
+      "state": "CA",
+      "street": "9126 Shelter Cove RD",
+      "zip": "95589"
+    },
+    "latitude": 40.0288638,
+    "longitude": -124.0654261,
+    "matchBasis": "normalized-street-state-zip",
+    "matchedAddress": "9126 SHELTER COVE RD, SHELTER COVE, CA, 95589",
+    "method": "overture-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "us/ca/humboldt",
+          "license": "LicenseRef-Public-Domain-US-CA-Law",
+          "property": "",
+          "provider": "open_addresses",
+          "record_id": "e04633699a21741e",
+          "resource": "us_ca_humboldt",
+          "update_time": "2026-11-02T13:09:09.471Z",
+          "version": "946262"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 126202222,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 1,
+      "coordinatesAsReported": [
+        40.0288638,
+        -124.0654261
+      ],
+      "countyFips": "06023",
+      "nativeId": "d6147ae1-86b4-401a-8b72-9116df53e752",
+      "precision": "reported-address-point",
+      "release": "2026-11-18.0",
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "c7bc3a985b272057e11b0b8f7792c64b-7",
+      "sourceFile": "release/2026-11-18.0/theme=addresses/type=address/part-00016-63238166-01e1-542b-b56f-602c41975196-c000.zstd.parquet",
+      "sourceFileSha256": "1c7f66bacbf795744b30e5006b36ab674a417c7e6c3d9fd0c0d9b6f6a400fbf6",
+      "sourceInventorySha256": "d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8",
+      "sourceRowNumber": 31125,
+      "sourceSha256": "c4dc5c682dd83d5260b46dbc6adcbb1072921d5799011d570a50d2e0f06a3117"
+    },
+    "sourceAddress": {
+      "city": "SHELTER COVE",
+      "state": "CA",
+      "street": "9126 SHELTER COVE RD",
+      "zip": "95589"
+    }
+  },
+  {
+    "label": "same-physical-address-reuse",
+    "key": "FDID:MA:11319",
+    "originalAddress": {
+      "city": "Wendell Depot",
+      "state": "MA",
+      "street": "3 Jackie LN",
+      "zip": "01380"
+    },
+    "latitude": 42.5531057,
+    "longitude": -72.3968602,
+    "matchBasis": "normalized-street-state-zip",
+    "matchedAddress": "3 JACKIE LANE, WENDELL, MA, 01380",
+    "method": "overture-address",
+    "point": {
+      "attribution": [
+        {
+          "between": null,
+          "confidence": null,
+          "dataset": "us/ma/statewide",
+          "license": "LicenseRef-Proprietary",
+          "property": "",
+          "provider": "open_addresses",
+          "record_id": "389495d0aea17d95",
+          "resource": "us_ma_statewide",
+          "update_time": "2026-11-02T13:06:46.337Z",
+          "version": "945055"
+        }
+      ],
+      "collectionDate": "2026-11-26",
+      "completeUSRowsAudited": 126202222,
+      "coordinateReuseDistinctAddresses": 1,
+      "coordinateReuseRows": 2,
+      "coordinatesAsReported": [
+        42.5531057,
+        -72.3968602
+      ],
+      "countyFips": "25011",
+      "nativeId": "fcaeccc4-3593-474b-82ef-b0f182aa3626",
+      "precision": "reported-address-point",
+      "release": "2026-11-18.0",
+      "sourceDate": null,
+      "sourceDigestScope": "canonical-native-record",
+      "sourceEtag": "72c32eca8f215ecb0cc42d68a25eae4e-7",
+      "sourceFile": "release/2026-11-18.0/theme=addresses/type=address/part-00030-bacfe2e3-8cd6-5833-8a5d-9df36ff83ed0-c000.zstd.parquet",
+      "sourceFileSha256": "c5342dbf87f16b7adb89e99bc02c592899b353c5771d002775e9d282cd597c23",
+      "sourceInventorySha256": "d6846293aeb456eb246818796a87c481036209ecd067f95b78deda3c76a95fa8",
+      "sourceRowNumber": 3753213,
+      "sourceSha256": "332289cab42c99bc42d3020a054fa0a5161f1d5b70f1d97b074cdc401b08ebe4"
+    },
+    "sourceAddress": {
+      "city": "WENDELL",
+      "state": "MA",
+      "street": "3 JACKIE LANE",
+      "zip": "01380"
+    }
+  }
+]

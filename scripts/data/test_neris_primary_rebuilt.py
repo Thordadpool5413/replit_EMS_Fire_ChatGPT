@@ -98,6 +98,15 @@ class NerisPrimaryTests(unittest.TestCase):
         d2['coordinates'] = [32.55, -86.5]
         self.assertEqual(run([e], [d, d2])['candidates'], [])
 
+    def test_all_pairs_prevents_middle_point_hiding_wide_source_spread(self):
+        e = primary(street='123 Main St')
+        middle = department('FD01001001')
+        south = department('FD01001002')
+        north = department('FD01001003')
+        south['coordinates'] = [32.4994, -86.5]
+        north['coordinates'] = [32.5006, -86.5]
+        self.assertEqual(run([e], [middle, south, north])['candidates'], [])
+
     def test_exact_zip_precedes_same_city_different_zip(self):
         e = primary(street='123 Main St')
         d = department()
@@ -151,6 +160,23 @@ class NerisPrimaryTests(unittest.TestCase):
         audit = run([e], [department()])['legacyAudit'][0]
         self.assertFalse(audit['accepted'])
         self.assertEqual(audit['reason'], 'legacy-point-disagrees-with-native-address')
+
+    def test_supported_legacy_coordinate_never_snaps_to_nearby_source_point(self):
+        e = primary(street='123 Main St')
+        e.update(status='mapped', countyFips='01001', match={'method': 'neris-reported-address', 'latitude': 32.5001, 'longitude': -86.5, 'point': {'nativeId': 'FD01001002'}})
+        d, second = department(), department('FD01001002')
+        second['coordinates'] = [32.5001, -86.5]
+        audit = run([e], [d, second])['legacyAudit'][0]
+        self.assertTrue(audit['accepted'])
+        self.assertEqual(audit['candidate']['match']['latitude'], 32.5001)
+        self.assertTrue(audit['coordinatePreserved'])
+
+    def test_unbacked_nearby_legacy_coordinate_is_withheld(self):
+        e = primary(street='123 Main St')
+        e.update(status='mapped', countyFips='01001', match={'method': 'neris-reported-address', 'latitude': 32.5001, 'longitude': -86.5})
+        audit = run([e], [department()])['legacyAudit'][0]
+        self.assertFalse(audit['accepted'])
+        self.assertEqual(audit['reason'], 'legacy-point-not-in-complete-native-address-evidence')
 
     def test_full_name_modifiers_preserved(self):
         self.assertEqual(identity_name('Springfield Vol. Fire Dept.'), 'SPRINGFIELD VOLUNTEER FIRE DEPARTMENT')

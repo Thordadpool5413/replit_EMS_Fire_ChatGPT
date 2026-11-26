@@ -1,7 +1,7 @@
 import unittest
 
 from match_overture_primary_addresses import (
-    coordinate_key, distinct_fingerprints, matching_targets, native_street_fingerprint,
+    coordinate_key, distinct_fingerprints, matching_targets, native_street_fingerprint, points_agree,
     source_address, source_block_reason, target_indexes, wkb_point,
 )
 
@@ -57,6 +57,12 @@ class OvertureSourceGuards(unittest.TestCase):
         self.assertIsNone(wkb_point(struct.pack('<BIdd',1,2,-85.0,40.0)))
         self.assertIsNone(wkb_point(struct.pack('<BIdd',1,1,float('nan'),40.0)))
         self.assertEqual(coordinate_key([40.123456789,-85.123456789]),(401234568,-851234568))
+
+    def test_coordinate_consensus_checks_every_pair(self):
+        center=[40.0,-85.0];west=[40.0,-85.0008];east=[40.0,-84.9992]
+        self.assertTrue(points_agree([center,west]))
+        self.assertTrue(points_agree([center,east]))
+        self.assertFalse(points_agree([center,west,east]))
 
 
 if __name__=='__main__': unittest.main()

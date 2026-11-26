@@ -2,11 +2,12 @@ import {compatibleSourceAddress,parseStreetAddress,isPhysicalStreet,validateAddr
 import {loadSourceDirectoryManifest,type SourceDirectoryRecord} from './nationalSourceDirectory';
 import {registryIdentityKey,snapshotRegistryIdentity,type RegistryIdentity} from './registryAccountLink';
 import officialAddressResearch from '../data/officialProviderAddressResearch.json';
+import {validatePrimaryAddressEvidence,type PrimaryAddressEvidence} from './primaryAddressEvidence';
 
 export type OfficialAddressEvidence={key:string;name:string;state:string;countyFips:string;address:StreetAddress;authority:string;sourceUrl:string;checkedAt:string;note:string};
 
 export type LocationStatus='mapped'|'no-match'|'not-eligible'|'source-missing'|'unavailable'|'review'|'historical'|'pending';
-export type SnapshotLocation={key:string;name:string;state:string;source:'USFA'|'NPPES'|'State EMS';sourceDate:string|null;address:StreetAddress|null;status:LocationStatus;match:AddressMatch|null;sourceCounty:string;countyFips:string;countyName?:string;officialAddressEvidence?:OfficialAddressEvidence};
+export type SnapshotLocation={key:string;name:string;state:string;source:'USFA'|'NPPES'|'State EMS';sourceDate:string|null;address:StreetAddress|null;status:LocationStatus;match:AddressMatch|null;sourceCounty:string;countyFips:string;countyName?:string;officialAddressEvidence?:OfficialAddressEvidence;primaryAddressEvidence?:PrimaryAddressEvidence};
 type Chunk={state:string;file:string;count:number;sha256:string;registrySha256:string};
 type LocationManifest={schemaVersion:1;generatedAt:string;benchmark:'Public_AR_Current';vintage:'Current_Current';chunks:Chunk[];nppesArchive:{status:'processed'|'unavailable'}};
 export type LocationState={generatedAt:string;entries:ReadonlyMap<string,SnapshotLocation>;nppesProcessed:boolean};
@@ -27,9 +28,10 @@ export function parseSnapshotEntry(value:unknown,state:string,counties:Readonly<
   if(!address||!e.match||!/^\d{5}$/.test(e.countyFips)||!Object.hasOwn(counties,e.countyFips))throw Error('Invalid mapped location.');
   const match=validateAddressMatch(e.match,address);
   if(!match||match.method!=='census-address-range'&&match.point.countyFips!==e.countyFips)throw Error('Missing or conflicting map match.');
-  return {...e,address,match,countyName:counties[e.countyFips]};
+  const primaryAddressEvidence=validatePrimaryAddressEvidence(e.primaryAddressEvidence,{...e,address,match,originalAddress:e.primaryAddressEvidence?.originalAddress??null});
+  return {...e,address,match,countyName:counties[e.countyFips],...(primaryAddressEvidence?{primaryAddressEvidence}:{})};
  }
- if(e.match!==null||e.countyFips)throw Error('Unmapped record contains coordinates.');
+ if(e.match!==null||e.countyFips||e.primaryAddressEvidence!==undefined)throw Error('Unmapped record contains coordinates or site evidence.');
  return {...e,address:address??null,match:null};
 }
 /** Local reviewed evidence is supplemental only; never overwrite registry or mapped coordinates. */
@@ -83,15 +85,30 @@ export async function loadNationalLocationState(state:string):Promise<LocationSt
 export function matchingSnapshotLocation(id:RegistryIdentity,known?:StreetAddress):SnapshotLocation|undefined{
  const key=registryIdentityKey(id);if(!key)return undefined;
  const e=loaded.get(id.stateCode)?.entries.get(key);
- if(!e||!e.address||e.status==='historical'||e.status==='review'||nameKey(e.name)!==nameKey(id.name)||known&&!compatibleSourceAddress(known,e.address))return undefined;
+ if(!e||!e.address||e.status==='historical'||e.status==='review'||nameKey(e.name)!==nameKey(id.name))return undefined;
+ if(e.primaryAddressEvidence){
+  const p=e.primaryAddressEvidence;
+  if(known&&(!p.originalAddress||!compatibleSourceAddress(known,p.originalAddress))||id.city&&nameKey(id.city)!==nameKey(p.correlation.primaryCity)||id.postalCode&&id.postalCode.slice(0,5)!==p.correlation.zip)return undefined;
+  try{validatePrimaryAddressEvidence(p,{...e,address:e.address,originalAddress:known??p.originalAddress});}catch{return undefined;}
+ }else if(known&&!compatibleSourceAddress(known,e.address))return undefined;
  return e;
 }
+function siteEvidenceForRow(e:SnapshotLocation,row:SourceDirectoryRecord):PrimaryAddressEvidence|undefined{
+ if(!e.primaryAddressEvidence||!e.address)return undefined;
+ const originalAddress=row[10].trim()?parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]}):null;
+ if(originalAddress===undefined)return undefined;
+ try{return validatePrimaryAddressEvidence(e.primaryAddressEvidence,{...e,address:e.address,originalAddress,nationalRow:row});}catch{return undefined;}
+}
+export function primaryAssociationLabel(proof:PrimaryAddressEvidence):string{return proof.siteRole==='reported-headquarters'?'Inferred association with reported headquarters · end-user validation required':'Inferred association with sole reported station · end-user validation required';}
 /** Enrich only the source directory view; preserve original source-county relationships and raw records. */
 export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationState|undefined):SourceDirectoryRecord{
  const id=snapshotRegistryIdentity(row);
  const key=id&&registryIdentityKey(id);
  const e=key&&locations?.entries.get(key);
  if(!id||!e||!e.address||e.officialAddressEvidence||e.status==='review'||e.status==='historical'||nameKey(e.name)!==nameKey(row[2])||e.state!==row[3])return row;
+ // Keep raw directory identity/address fields intact; the listing presents the
+ // separately labeled source site after validating it against this raw row.
+ if(e.primaryAddressEvidence)return row;
  const a=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]});
  if(a&&!compatibleSourceAddress(a,e.address))return row;
  const out=[...row] as SourceDirectoryRecord;
@@ -99,7 +116,7 @@ export function enrichRegistryRow(row:SourceDirectoryRecord,locations:LocationSt
  if(!out[6]&&e.match&&e.countyFips){out[6]=e.countyFips;out[8]=e.match.method;}
  return out;
 }
-export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null;officialAddressEvidence?:OfficialAddressEvidence};
+export type ListingLocation={address:StreetAddress|null;status:'mapped'|'missing-identity'|'source-missing'|'not-eligible'|'historical'|'review'|'pending'|'unavailable'|'no-match'|'not-checked';match:AddressMatch|null;officialAddressEvidence?:OfficialAddressEvidence;primaryAddressEvidence?:PrimaryAddressEvidence};
 export function listingLocation(row:SourceDirectoryRecord,locations:LocationState|undefined):ListingLocation{
  const id=snapshotRegistryIdentity(row),key=id&&registryIdentityKey(id);
  const address=parseStreetAddress({street:row[10],city:row[4],state:row[3],zip:row[5]})??null;
@@ -107,18 +124,20 @@ export function listingLocation(row:SourceDirectoryRecord,locations:LocationStat
  if(!key)return {address,status:'missing-identity',match:null};
  const e=locations?.entries.get(key);
  if(!e)return {address,status:address?'not-checked':'source-missing',match:null};
- if(e.state!==row[3]||nameKey(e.name)!==nameKey(row[2])||e.officialAddressEvidence&&row[6]!==e.sourceCounty||address&&e.address&&!compatibleSourceAddress(address,e.address))return {address,status:'review',match:null};
+ const primaryAddressEvidence=siteEvidenceForRow(e,row);
+ if(e.state!==row[3]||nameKey(e.name)!==nameKey(row[2])||e.officialAddressEvidence&&row[6]!==e.sourceCounty||e.primaryAddressEvidence&&!primaryAddressEvidence||!primaryAddressEvidence&&address&&e.address&&!compatibleSourceAddress(address,e.address))return {address,status:'review',match:null};
  if(e.status==='historical'||e.status==='review')return {address:address??e.address,status:e.status,match:null};
  const loc=e.address??address;
  if(!loc)return {address:null,status:'source-missing',match:null};
  if(!isPhysicalStreet(loc.street)||!loc.zip)return {address:loc,status:'not-eligible',match:null};
  if(e.match&&(e.sourceCounty&&e.sourceCounty!==e.countyFips||row[6]&&row[6]!==e.countyFips))return {address:loc,status:'review',match:null};
- return {address:loc,status:e.status,match:e.match,officialAddressEvidence:e.officialAddressEvidence};
+ return {address:loc,status:e.status,match:e.match,officialAddressEvidence:e.officialAddressEvidence,primaryAddressEvidence};
 }
 export const LISTING_LOCATION_LABELS:Record<ListingLocation['status'],string>={
  mapped:'Mapped street address', 'missing-identity':'Registry ID not reported; location association needs review', 'source-missing':'Street address not reported', 'not-eligible':'Mailing/nonstandard address or ZIP missing; no street pin', historical:'Historical source record', review:'Source or county disagreement; review required', pending:'Address recovered; coordinate match pending', unavailable:'Geocoder unavailable; retry required', 'no-match':'No exact street match; research required', 'not-checked':'Address recorded; coordinates not checked',
 };
 export function snapshotSourceUrl(e:SnapshotLocation){
+ if(e.primaryAddressEvidence)return 'https://services5.arcgis.com/lPbcyJOcoLyZmvo6/arcgis/rest/services/NERIS%20Public%20Fire%20Departments/FeatureServer/0/query?'+new URLSearchParams({where:'OBJECTID='+e.primaryAddressEvidence.department.objectId,outFields:'*',returnGeometry:'true',outSR:'4326',f:'pjson'});
  return e.officialAddressEvidence?.sourceUrl??(e.source==='NPPES'?'https://npiregistry.cms.hhs.gov/provider-view/'+e.key.slice(4):e.source==='USFA'?'https://apps.usfa.fema.gov/registry/search':'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf');
 }
 export function snapshotMapRows(state:LocationState|undefined,scope:{county:string;city:string;category:string}){

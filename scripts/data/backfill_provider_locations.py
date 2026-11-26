@@ -179,6 +179,7 @@ def verify(output,manifest,rows,fl):
  index=json.loads((output/'index.json').read_bytes())
  if index['schemaVersion']!=1 or index['benchmark']!=BENCHMARK or index['vintage']!=VINTAGE:raise ValueError('Invalid location manifest')
  expected={native_key(r):(r[2],r[3],'USFA' if r[1]=='USFA' else 'NPPES') for r in rows if native_key(r)}
+ native_rows={native_key(r):r for r in rows if native_key(r)}
  expected.update({'STATE-EMS:FL:license:'+r['identifier']:(r['name'],'FL','State EMS') for r in fl['records'] if r['headquartersState']=='FL'})
  seen=set();counts=collections.defaultdict(collections.Counter)
  fips={c['GEOID']:c['USPS'] for c in json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_text())['counties']}
@@ -193,7 +194,10 @@ def verify(output,manifest,rows,fl):
    seen.add(k);counts[source]['total']+=1;counts[source]['withAddress']+=int(a is not None);counts[source][status]+=1
    if a and address(a['street'],a['city'],a['state'],a['zip'])!=a:raise ValueError('Malformed source address')
    if status=='mapped':
-    if not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or (m.get('method') in ('ny-sam-address-point','ohio-lbrs-address-point','nad-address-point','regional-address-point','neris-reported-address') and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']):raise ValueError('Invalid mapped record')
+    from primary_mapping_contract import rebuilt_entry,validate_primary_entry
+    if rebuilt_entry(e):
+     if fips.get(e['countyFips'])!=state or not validate_primary_entry(e,native_rows.get(k)):raise ValueError('Invalid rebuilt primary mapping: '+k)
+    elif not physical(a) or not m or not match_address(a,m['matchedAddress']) or not valid_location_method(m,e['countyFips']) or not math.isfinite(m['latitude']) or not math.isfinite(m['longitude']) or abs(m['latitude'])>90 or abs(m['longitude'])>180 or not (m['latitude'] or m['longitude']) or fips.get(e['countyFips'])!=state or (m.get('method') in ('ny-sam-address-point','ohio-lbrs-address-point','nad-address-point','regional-address-point','neris-reported-address') and e.get('sourceCounty') and e['sourceCounty']!=e['countyFips']):raise ValueError('Invalid mapped record')
    elif m is not None or e['countyFips']:raise ValueError('Unmatched record contains coordinates')
  if seen!=set(expected) or {c['state'] for c in index['chunks']}!=STATES or len(index['chunks'])!=51:raise ValueError('Incomplete native location coverage')
  for source,c in counts.items():

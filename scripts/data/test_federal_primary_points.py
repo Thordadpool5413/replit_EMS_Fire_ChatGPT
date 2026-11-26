@@ -87,6 +87,11 @@ class FederalPrimaryPointsTest(unittest.TestCase):
         self.assertEqual(report['rejected'][0]['reasons'], ['primary-source-county-disagreement'])
         self.assertEqual(report['rejected'][0]['pointCountyFips'], '48201')
 
+    def test_source_consensus_requires_all_pairs_not_only_chosen_center(self):
+        report = self.replay([feature(), feature(2, x=-95.36575), feature(3, x=-95.36425)])
+        self.assertEqual(report['candidates'], [])
+        self.assertEqual(report['outcomes']['sourceCoordinateDisagreement'], 1)
+
     def test_unknown_and_approximate_usgs_locations_do_not_qualify(self):
         for precision in [0, 3, 4, None]:
             with self.subTest(precision=precision):

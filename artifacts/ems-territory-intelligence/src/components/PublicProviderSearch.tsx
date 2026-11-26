@@ -2,7 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import type {Agency,AgencySourceRecordAssociation} from '../types';
 import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
 import {searchPublicProviders,type PublicSearchScope,type PublicSearchResult} from '../services/publicProviderSearch';
-import {listingLocation,enrichRegistryRow,loadNationalLocationState,LISTING_LOCATION_LABELS,type LocationState} from '../services/nationalLocationSnapshot';
+import {primaryAssociationLabel,listingLocation,enrichRegistryRow,loadNationalLocationState,LISTING_LOCATION_LABELS,type LocationState} from '../services/nationalLocationSnapshot';
 import {addressText,isPhysicalStreet,addressMatchLabel} from '../services/providerLocationContract';
 import {snapshotRegistryIdentity,registryIdentifierText,withholdReviewedRegistryCounty} from '../services/registryAccountLink';
 import {RegistryAccountReview} from './RegistryAccountReview';
@@ -54,6 +54,7 @@ export function PublicProviderSearch({scope,countyUnresolved=false,agencies,onSt
     <button className="workspace-button min-h-11" type="button" aria-expanded={details===raw[0]} onClick={()=>setDetails(details===raw[0]?undefined:raw[0])}>{details===raw[0]?'Close provider profile':'View provider profile'}</button>
     {details===raw[0]&&<div className="border-t pt-2 space-y-2" data-testid="public-provider-profile"><p className="text-sm font-semibold">End-user validation required</p><p className="text-xs">Source-reported identity, not a confirmed operating station. Equipment, decision-makers, purchasing and service volumes: not reported by this registry.</p>
      <p className="text-xs">{row[6]?manifest?.countyNames[row[6]]||row[6]:'County not established'} · {loc.match?addressMatchLabel(loc.match):'No accepted map coordinates'}</p>
+     {loc.primaryAddressEvidence&&loc.address&&<p className="text-xs">{primaryAssociationLabel(loc.primaryAddressEvidence)}<br/>{addressText(loc.address)}{loc.primaryAddressEvidence.originalAddress&&<><br/>Original registry address: {addressText(loc.primaryAddressEvidence.originalAddress)}</>}</p>}
      {loc.officialAddressEvidence&&<p className="text-xs"><a className="underline" href={loc.officialAddressEvidence.sourceUrl} target="_blank" rel="noreferrer">{loc.officialAddressEvidence.authority}</a> · checked {loc.officialAddressEvidence.checkedAt}</p>}
      <div className="flex flex-wrap gap-3 text-sm"><a className="underline" href={sourceUrl} target="_blank" rel="noreferrer">Original source</a>{loc.address&&isPhysicalStreet(loc.address.street)&&loc.status!=='historical'&&loc.status!=='review'&&<a className="underline" href={'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(addressText(loc.address))} target="_blank" rel="noreferrer">Directions</a>}{loc.match&&<a className="underline" href={'https://www.google.com/maps/search/?api=1&query='+loc.match.latitude+','+loc.match.longitude} target="_blank" rel="noreferrer">View mapped point</a>}</div>
      {identity?<RegistryAccountReview identity={{...identity,countyName:identity.countyFips?manifest?.countyNames[identity.countyFips]:undefined}} agencies={agencies} onOpen={onOpen} onCreate={onCreate} onDecide={onDecide}/>:<p className="text-xs">Official identity missing; review before creating an account.</p>}

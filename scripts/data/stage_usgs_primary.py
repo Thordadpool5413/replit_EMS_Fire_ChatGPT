@@ -418,7 +418,7 @@ def match_inventory(directory, inventory, entries, baseline_hash):
         valid.sort(key=lambda m: (m['point']['precision'] == 'blockface', m['point']['objectId']))
         chosen = valid[0]
         if (len({m['point']['countyFips'] for m in valid}) != 1 or
-                any(distance_m(chosen, m) > 75 for m in valid)):
+                any(distance_m(left, right) > 75 for i, left in enumerate(valid) for right in valid[i + 1:])):
             for target in targets:
                 outcomes['sourceCoordinateDisagreement'] += 1
                 rejected.append({'key': target['key'], 'reasons': ['independent-source-rows-disagree']})

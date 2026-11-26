@@ -19,6 +19,10 @@ export type NerisPrimarySiteContext={
  key:string;name:string;state:string;source:string;sourceCounty?:string;countyFips:string;
  address:StreetAddress;match:unknown;originalAddress:StreetAddress|null;nationalRow?:readonly string[];
 };
+export type NerisSiteIdentityEvidence=Omit<NerisPrimarySiteEvidence,'method'|'originalStatus'|'site'>&{
+ method:string;originalStatus:NerisPrimarySiteEvidence['originalStatus']|'mapped';originalMappingWithheld?:boolean;
+ site:Omit<NerisPrimarySiteEvidence['site'],'coordinatesAsReported'>&{coordinatesAsReported:[number,number]|null};
+};
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const text=(v:unknown,max=255):v is string=>typeof v==='string'&&v.length<=max&&!/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(v);
 const nativeId=(v:unknown):v is string=>typeof v==='string'&&/^[-A-Z0-9]{1,14}$/.test(v);
@@ -37,15 +41,15 @@ function originalAddress(value:unknown,state:string):value is StreetAddress|null
  * Parsing alone checks the internal proof. Consumers must supply nationalRow or
  * the independently known originalAddress before attaching this to a listing.
  */
-export function validateNerisPrimarySiteEvidence(value:unknown,ctx:NerisPrimarySiteContext):NerisPrimarySiteEvidence|undefined{
+export function validateNerisSiteIdentity(value:unknown,ctx:NerisPrimarySiteContext,expectedMethod:string,allowWithheldMapped=false):NerisSiteIdentityEvidence|undefined{
  if(value===undefined)return undefined;
  const fail=():never=>{throw Error('Invalid inferred NERIS primary-site evidence.');};
- if(!obj(value)||value.method!==NERIS_PRIMARY_SITE_METHOD||value.association!=='inferred'||value.endUserValidationRequired!==true||!['reported-headquarters','sole-reported-station'].includes(String(value.siteRole))||value.sourceSha256!==SOURCE_SHA||value.nerisIndexSha256!==INDEX_SHA||value.nationalRegistrySha256!==NATIONAL_SHA||!['no-match','not-eligible','unavailable','pending','source-missing'].includes(String(value.originalStatus)))return fail();
+ if(!obj(value)||value.method!==expectedMethod||value.association!=='inferred'||value.endUserValidationRequired!==true||!['reported-headquarters','sole-reported-station'].includes(String(value.siteRole))||value.sourceSha256!==SOURCE_SHA||value.nerisIndexSha256!==INDEX_SHA||value.nationalRegistrySha256!==NATIONAL_SHA||!(['no-match','not-eligible','unavailable','pending','source-missing'].includes(String(value.originalStatus))||allowWithheldMapped&&value.originalStatus==='mapped'&&value.originalMappingWithheld===true))return fail();
  if(ctx.source!=='USFA'||!ctx.key.startsWith('FDID:'+ctx.state+':')||!/^FDID:[A-Z]{2}:[-A-Z0-9.]{1,80}$/.test(ctx.key)||!countyPrefixes[ctx.state]||!/^\d{5}$/.test(ctx.countyFips)||!ctx.countyFips.startsWith(countyPrefixes[ctx.state])||ctx.sourceCounty&&ctx.sourceCounty!==ctx.countyFips)return fail();
  if(!originalAddress(value.originalAddress,ctx.state)||!originalAddress(ctx.originalAddress,ctx.state))return fail();
  if(value.originalAddress===null?ctx.originalAddress!==null:ctx.originalAddress===null||!sameNerisAddress(value.originalAddress,ctx.originalAddress))return fail();
- const c=value.correlation,d=value.department,s=value.site,m=ctx.match;
- if(!obj(c)||!obj(d)||!obj(s)||!obj(m)||!obj(m.point))return fail();
+ const c=value.correlation,d=value.department,s=value.site;
+ if(!obj(c)||!obj(d)||!obj(s))return fail();
  if(c.nameBasis!=='normalized-complete-name-city-state-zip'||c.primaryKey!==ctx.key||c.primaryName!==ctx.name||!text(c.primaryName)||!text(c.primaryCity)||!c.primaryCity||!text(c.primaryPostalCode)||c.state!==ctx.state||typeof c.zip!=='string'||!/^\d{5}$/.test(c.zip)||nerisZip(c.primaryPostalCode)!==c.zip||c.reciprocalSourceCount!==1||c.reciprocalPrimaryCount!==1)return fail();
  const normalizedName=nerisIdentityName(c.primaryName),city=normalizedCity(c.primaryCity);
  if(!normalizedName||c.normalizedName!==normalizedName||c.normalizedCity!==city||!normalizedName.split(' ').some(word=>!genericNames.has(word))||!city)return fail();
@@ -53,11 +57,9 @@ export function validateNerisPrimarySiteEvidence(value:unknown,ctx:NerisPrimaryS
  if(!nativeId(d.id)||!positiveInt(d.objectId)||!text(d.name)||!d.name||d.state!==ctx.state||nerisIdentityName(d.name)!==normalizedName||!(d.reportedStationCount===null||count(d.reportedStationCount))||!count(d.observedStationCount)||!(d.coordinatesAsReported===null||validNerisCoordinates(d.coordinatesAsReported)))return fail();
  const departmentAddress=selectNerisNativeAddress(d.addressAsReported),siteAddress=selectNerisNativeAddress(s.addressAsReported);
  if(!departmentAddress||!siteAddress||!Array.isArray(d.addressAsReported)||!Array.isArray(s.addressAsReported)||normalizedCity(departmentAddress.address.city)!==city||departmentAddress.address.state!==ctx.state||departmentAddress.address.zip!==c.zip||!siteAddress.component||siteAddress.conflict||siteAddress.address.state!==ctx.state||!siteAddress.address.city||!/^\d{5}$/.test(siteAddress.address.zip)||!sameNerisAddress(siteAddress.address,ctx.address))return fail();
- if(!nativeId(s.id)||!positiveInt(s.objectId)||!['department','station'].includes(String(s.sourceKind))||!validNerisCoordinates(s.coordinatesAsReported))return fail();
- const p=m.point;
- if(m.method!=='neris-reported-address'||m.matchBasis!=='normalized-street-city-state-zip'||!obj(m.sourceAddress)||!sameNerisAddress(m.sourceAddress as StreetAddress,ctx.address)||p.sourceSha256!==SOURCE_SHA||p.sourceDate!=='2026-11-26'||p.countyFips!==ctx.countyFips||p.nativeId!==s.id||p.objectId!==s.objectId||p.sourceKind!==s.sourceKind||p.parentId!==d.id||!validateNerisAddressComponent(p,ctx.address)||!Array.isArray(p.addressAsReported)||!sameArray(p.addressAsReported,s.addressAsReported)||!validNerisCoordinates(p.coordinatesAsReported)||!sameArray(p.coordinatesAsReported,s.coordinatesAsReported)||m.latitude!==s.coordinatesAsReported[0]||m.longitude!==s.coordinatesAsReported[1])return fail();
+ if(!nativeId(s.id)||!positiveInt(s.objectId)||!['department','station'].includes(String(s.sourceKind))||!(s.coordinatesAsReported===null||validNerisCoordinates(s.coordinatesAsReported)))return fail();
  if(value.siteRole==='reported-headquarters'){
-  if(s.sourceKind!=='department'||s.id!==d.id||s.objectId!==d.objectId||!sameArray(s.addressAsReported,d.addressAsReported)||!validNerisCoordinates(d.coordinatesAsReported)||!sameArray(d.coordinatesAsReported,s.coordinatesAsReported))return fail();
+  if(s.sourceKind!=='department'||s.id!==d.id||s.objectId!==d.objectId||!sameArray(s.addressAsReported,d.addressAsReported)||!(d.coordinatesAsReported===null?s.coordinatesAsReported===null:validNerisCoordinates(s.coordinatesAsReported)&&sameArray(d.coordinatesAsReported,s.coordinatesAsReported)))return fail();
  }else if(s.sourceKind!=='station'||!s.id.startsWith(d.id+'S')||d.reportedStationCount!==1||d.observedStationCount!==1||departmentAddress.hasPhysical)return fail();
  if(ctx.nationalRow){
   const row=ctx.nationalRow;
@@ -65,5 +67,17 @@ export function validateNerisPrimarySiteEvidence(value:unknown,ctx:NerisPrimaryS
   const street=row[10].trim();
   if(street?(value.originalAddress===null||value.originalAddress.street!==street):value.originalAddress!==null)return fail();
  }
- return value as NerisPrimarySiteEvidence;
+ return value as NerisSiteIdentityEvidence;
+}
+
+/** The original source-reported-point method additionally binds native geometry. */
+export function validateNerisPrimarySiteEvidence(value:unknown,ctx:NerisPrimarySiteContext):NerisPrimarySiteEvidence|undefined{
+ const evidence=validateNerisSiteIdentity(value,ctx,NERIS_PRIMARY_SITE_METHOD);
+ if(evidence===undefined)return undefined;
+ const fail=():never=>{throw Error('Invalid inferred NERIS primary-site coordinates.');};
+ const m=ctx.match,s=evidence.site,d=evidence.department;
+ if(!obj(m)||!obj(m.point)||!validNerisCoordinates(s.coordinatesAsReported))return fail();
+ const p=m.point;
+ if(m.method!=='neris-reported-address'||m.matchBasis!=='normalized-street-city-state-zip'||!obj(m.sourceAddress)||!sameNerisAddress(m.sourceAddress as StreetAddress,ctx.address)||p.sourceSha256!==SOURCE_SHA||p.sourceDate!=='2026-11-26'||p.countyFips!==ctx.countyFips||p.nativeId!==s.id||p.objectId!==s.objectId||p.sourceKind!==s.sourceKind||p.parentId!==d.id||!validateNerisAddressComponent(p,ctx.address)||!Array.isArray(p.addressAsReported)||!sameArray(p.addressAsReported,s.addressAsReported)||!validNerisCoordinates(p.coordinatesAsReported)||!sameArray(p.coordinatesAsReported,s.coordinatesAsReported)||m.latitude!==s.coordinatesAsReported[0]||m.longitude!==s.coordinatesAsReported[1])return fail();
+ return evidence as NerisPrimarySiteEvidence;
 }

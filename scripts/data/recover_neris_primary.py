@@ -261,7 +261,8 @@ def direct_selection(entry, index):
     order = {'normalized-street-city-state-zip': 0, 'normalized-street-state-zip': 1, 'normalized-street-city-state': 2}
     eligible.sort(key=lambda pair: (order[pair[1]], pair[0]['kind'] != 'department', pair[0]['object']['id']))
     selected, basis = eligible[0]
-    if any(distance(selected['coordinates'], r['coordinates']) > 75 for r, _ in eligible[1:]):
+    if any(distance(left['coordinates'], right['coordinates']) > 75
+           for i, (left, _) in enumerate(eligible) for right, _ in eligible[i+1:]):
         return None, 'native-address-coordinate-disagreement'
     return {'key': entry['key'], 'originalAddress': copy.deepcopy(a), 'address': copy.deepcopy(a),
             'countyFips': selected['countyFips'], 'match': make_match(selected, basis),
@@ -347,8 +348,24 @@ def generate_candidates(entries, departments, national_rows, boundaries):
                 original_point = [entry['match']['latitude'], entry['match']['longitude']]
                 if candidate and (candidate['countyFips'] != entry['countyFips'] or distance(original_point, [candidate['match']['latitude'], candidate['match']['longitude']]) > 75):
                     candidate, reason = None, 'legacy-point-disagrees-with-native-address'
+                if candidate:
+                    # Auditing must not move a previously valid public pin.
+                    # Preserve its exact native coordinate, while correcting
+                    # source identifiers/address-component labels if needed.
+                    all_supported = [(r, basis) for r, basis in matching_records(entry, index) if not r['withheldReason']]
+                    exact = [(r, basis) for r, basis in all_supported if r['coordinates'] == original_point and r['countyFips'] == entry['countyFips']]
+                    if any(distance(original_point, r['coordinates']) > 75 for r, _ in all_supported):
+                        candidate, reason = None, 'legacy-point-disagrees-with-native-address'
+                    elif not exact:
+                        candidate, reason = None, 'legacy-point-not-in-complete-native-address-evidence'
+                    else:
+                        old_native = entry['match'].get('point', {}).get('nativeId')
+                        exact.sort(key=lambda pair: (pair[0]['object']['id'] != old_native, pair[0]['kind'] != 'department', pair[0]['object']['id']))
+                        record, basis = exact[0]
+                        candidate['match'] = make_match(record, basis)
                 legacy_audit.append({'key': entry['key'], 'accepted': bool(candidate),
-                                     'reason': reason, 'candidate': candidate})
+                                     'reason': reason, 'candidate': candidate,
+                                     'coordinatePreserved': bool(candidate)})
                 if not candidate:
                     record_conflict(entry, reason)
             continue

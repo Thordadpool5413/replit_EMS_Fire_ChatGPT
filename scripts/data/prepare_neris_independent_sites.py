@@ -18,7 +18,7 @@ from recover_neris_primary import (dump, identity_key, load_departments, native_
 from retain_neris_primary import DEFAULT
 
 
-def prepare(inputs, approved, departments):
+def prepare(inputs, approved, departments, only_original_keys=None):
     native_index = collections.defaultdict(list)
     primary_index = collections.defaultdict(list)
     national_by_key = {}
@@ -39,6 +39,8 @@ def prepare(inputs, approved, departments):
     targets = []
     counts = collections.Counter()
     for e in sorted(inputs['entries'], key=lambda value: value['key']):
+        if only_original_keys is not None and e['key'] not in only_original_keys:
+            continue
         if e['source'] != 'USFA' or e['key'] in accepted or e['status'] in ('historical', 'review') or e['status'] == 'mapped' and e['key'] not in withheld_legacy:
             continue
         row = national_by_key.get(e['key'])

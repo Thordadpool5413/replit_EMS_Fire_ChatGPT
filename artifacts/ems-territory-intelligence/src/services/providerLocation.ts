@@ -10,7 +10,7 @@ import {loadNationalLocationState,loadedLocationState,matchingSnapshotLocation,s
 
 import {multiStateAddressReviewCandidate} from './multiStateAddressReview';
 
-export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'};
+export type ProviderLocation={address:StreetAddress;sourceName:string;sourceUrl:string;sourceDate?:string|null;identityKey:string;kind:'registry headquarters'|'registered practice location'|'recorded license address'|'source-reported address'|'official department location'|'inferred headquarters'|'inferred sole reported station'};
 const norm=(s:unknown)=>typeof s==='string'?s.normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim():'';
 const https=(v:unknown):v is string=>{try{const u=new URL(String(v));return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}};
 const flagged=(a:Agency)=>a._factReviews?.some(r=>r.fieldId==='identity.address'&&(r.action==='flag'||r.action==='correct'));
@@ -120,6 +120,7 @@ function snapshotFor(a:Agency,directory:Agency[]){
 }
 function snapshotLocation(a:Agency,directory:Agency[]):ProviderLocation|undefined{
  const e=snapshotFor(a,directory);if(!e?.address)return undefined;
+ if(e.primaryAddressEvidence)return {address:e.address,identityKey:e.key,sourceName:'Federal NERIS / USFA inferred association',sourceUrl:snapshotSourceUrl(e),sourceDate:'2026-11-26',kind:e.primaryAddressEvidence.siteRole==='reported-headquarters'?'inferred headquarters':'inferred sole reported station'};
  return {address:e.address,identityKey:e.key,sourceName:e.officialAddressEvidence?.authority??(e.source==='NPPES'?'CMS NPPES':e.source==='USFA'?'USFA NFDR':'Florida Department of Health'),sourceUrl:snapshotSourceUrl(e),sourceDate:e.officialAddressEvidence?.checkedAt??e.sourceDate,kind:e.officialAddressEvidence?'official department location':e.source==='USFA'?'registry headquarters':e.source==='NPPES'?'registered practice location':'recorded license address'};
 }
 export function displayedProviderLocation(a:Agency,directory:Agency[]){return snapshotLocation(a,directory)??recordedProviderLocation(a,directory)??lookup(a,directory)?.location;}

@@ -282,6 +282,10 @@ def distance(a,b):
     return 12_742_000*math.asin(min(1,math.sqrt(h)))
 
 
+def points_agree(points, tolerance=75):
+    return all(distance(a,b)<=tolerance for i,a in enumerate(points) for b in points[:i])
+
+
 def resolve(target_data, records, reuse, inventory_sha, allow_city=False):
     identities={r['GEOID']:r['USPS'] for r in json.loads((ROOT/'scripts/fixtures/census-2026-county-identities.json').read_bytes())['counties'] if r['USPS'] in STATES}
     counties=geometry_index(json.loads(BOUNDARY.read_bytes()),identities)
@@ -324,7 +328,7 @@ def resolve(target_data, records, reuse, inventory_sha, allow_city=False):
             reason=sorted(serious)[0]
         elif not usable:
             reason=sorted(set(blocked))[0] if blocked else 'no-eligible-native-point'
-        elif len({u[3] for u in usable})!=1 or any(distance(usable[0][2],u[2])>75 for u in usable[1:]):
+        elif len({u[3] for u in usable})!=1 or not points_agree([u[2] for u in usable]):
             reason='conflicting-native-points'
         else:
             reason=None
@@ -337,6 +341,7 @@ def resolve(target_data, records, reuse, inventory_sha, allow_city=False):
                'sourceRowNumber':record['sourceRowNumber'],'sourceSha256':record['sourceSha256'],
                'sourceDigestScope':'canonical-native-record','sourceInventorySha256':inventory_sha,
                'release':RELEASE,'countyFips':county,'precision':'reported-address-point','sourceDate':None,
+               'coordinatesAsReported':point,
                'collectionDate':DATE,'attribution':row['sources'],'coordinateReuseRows':groups[coordinate_key(point)]['rows'],
                'coordinateReuseDistinctAddresses':1,'completeUSRowsAudited':US_COUNT}
         match={'latitude':point[0],'longitude':point[1],'matchedAddress':', '.join([a['street'],a['city'],a['state'],a['zip']]),

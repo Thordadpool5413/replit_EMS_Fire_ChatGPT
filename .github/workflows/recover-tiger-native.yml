@@ -1,0 +1,49 @@
+name: Recover complete native TIGER source
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tiger-source:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[acquire-native-tiger]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install native geometry reader and check code
+        run: |
+          python3 -m pip install 'pyshp==2.3.1'
+          python3 -m py_compile scripts/data/stage_tiger_primary.py scripts/data/checkpoint_tiger_source.py
+          python3 scripts/data/primary_recovery_baseline.py --retain
+      - name: Prepare exact native source targets
+        run: |
+          set -euo pipefail
+          python3 scripts/data/retain_nppes_native_source.py --verify
+          python3 scripts/data/prepare_neris_independent_sites.py --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
+      - name: Acquire all fixed public county sources and retain native selected features
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_tiger_primary.py --directory "$RUNNER_TEMP/tiger-native" --neris-targets "$RUNNER_TEMP/neris-targets.json" --cms-targets scripts/data/evidence/primary-nppes-native/2026-11-26/native-component-targets.json --workers 6
+          python3 -u scripts/data/checkpoint_tiger_source.py --source "$RUNNER_TEMP/tiger-native"
+          python3 -u scripts/data/checkpoint_tiger_source.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-native-tiger-source
+          path: scripts/data/evidence/primary-tiger-source-cache/2026-11-26/
+      - name: Commit verified source-only evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-tiger-source-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-tiger-source-cache scripts/data/evidence/primary-recovery-baseline
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain all complete native TIGER county source receipts and selected geometry'
+          git push origin HEAD

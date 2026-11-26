@@ -64,6 +64,8 @@ on:
       - 'scripts/check-release-config.test.mjs'
       - 'scripts/post-merge.sh'
       - 'security/**'
+      - '.github/actions/setup-data-tests/**'
+      - 'scripts/data/requirements-test.txt'
       - '.github/workflows/profile-presentation.yml'
   push:
     branches: [main]
@@ -130,6 +132,8 @@ on:
       - 'scripts/check-release-config.test.mjs'
       - 'scripts/post-merge.sh'
       - 'security/**'
+      - '.github/actions/setup-data-tests/**'
+      - 'scripts/data/requirements-test.txt'
       - '.github/workflows/profile-presentation.yml'
 permissions:
   contents: read
@@ -162,6 +166,8 @@ jobs:
       - run: node scripts/check-ems-source-coverage.mjs
       - run: node --test scripts/refresh-ohio-state-ems.test.mjs
       - run: pnpm --filter @workspace/scripts run test:replit-migration
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Verify bundled public location snapshot if present
         run: |

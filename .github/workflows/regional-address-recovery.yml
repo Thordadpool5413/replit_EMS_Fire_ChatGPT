@@ -34,6 +34,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - name: Verify regional matching and release gates
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Verify checked-in provider location snapshot
@@ -62,6 +64,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - name: Validate regional source contract and matching rules
         run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Preserve verified base snapshot for additive release gate

@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Recover New York official SAM points
         run: python3 scripts/data/recover_ny_locations.py
@@ -58,6 +60,8 @@ jobs:
             sudo apt-get install -y p7zip-full
           fi
           command -v 7zz || command -v 7z
+      - name: Set up Python data tests
+        uses: ./.github/actions/setup-data-tests
       - run: python3 -m unittest discover -s scripts/data -p 'test_*.py'
       - name: Download pinned USDOT public release r24
         shell: bash

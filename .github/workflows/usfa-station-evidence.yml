@@ -1,0 +1,31 @@
+name: Nationwide legacy USFA station address acquisition
+on:
+  push:
+    branches: [atlas/phase9-0x-usfa-station-evidence]
+  pull_request:
+    paths:
+      - 'scripts/data/stage_usfa_station_evidence.py'
+      - 'scripts/data/test_usfa_station_evidence.py'
+      - '.github/workflows/usfa-station-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_usfa_station_evidence.py
+  acquire:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/data/stage_usfa_station_evidence.py --output generated-artifacts/usfa-station-evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usfa-national-station-address-evidence
+          path: generated-artifacts/usfa-station-evidence/
+          if-no-files-found: error

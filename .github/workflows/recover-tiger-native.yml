@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/data/retain_nppes_native_source.py --verify
-          python3 scripts/data/prepare_neris_independent_sites.py --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
+          python3 scripts/data/prepare_neris_independent_sites.py --batch original-1251 --output "$RUNNER_TEMP/neris-targets.json" --report "$RUNNER_TEMP/neris-targets-report.json"
       - name: Acquire all fixed public county sources and retain native selected features
         run: |
           set -euo pipefail

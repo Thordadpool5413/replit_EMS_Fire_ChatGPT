@@ -114,7 +114,7 @@ jobs:
           git commit -m "Retain complete native NAD primary address evidence"
           git push origin HEAD
   overture:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]') || contains(github.event.head_commit.message, '[retain-overture]')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -124,6 +124,12 @@ jobs:
       - name: Install source readers and verify guards
         run: |
           python3 -m pip install 'duckdb==2.0.1' 'pyarrow==26.0.1'
+          python3 - <<'PY'
+          import duckdb
+          connection=duckdb.connect()
+          connection.execute("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+          connection.execute("INSTALL spatial FROM 'https://extensions.duckdb.org'")
+          PY
           python3 -m unittest discover -s scripts/data -p test_overture_primary_addresses.py
       - name: Acquire fixed complete public address edition and match locally
         run: |

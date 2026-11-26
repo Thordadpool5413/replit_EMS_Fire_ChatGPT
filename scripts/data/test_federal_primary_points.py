@@ -73,10 +73,19 @@ class FederalPrimaryPointsTest(unittest.TestCase):
         self.assertEqual(report['candidates'], [])
         self.assertEqual(report['outcomes']['sourceEvidenceConflict'], 1)
 
+    def test_coordinate_reuse_distinguishes_identical_streets_in_other_postal_areas(self):
+        other = feature(2, city='Another Town')
+        other['attributes']['ZIPCODE'] = '77003'
+        report = self.replay([feature(), other])
+        self.assertEqual(report['candidates'], [])
+        self.assertEqual(report['outcomes']['sourceEvidenceConflict'], 1)
+
     def test_primary_source_county_must_agree(self):
         report = self.replay([feature()], target(county='48001'))
         self.assertEqual(report['candidates'], [])
         self.assertEqual(report['outcomes']['primarySourceCountyDisagreement'], 1)
+        self.assertEqual(report['rejected'][0]['reasons'], ['primary-source-county-disagreement'])
+        self.assertEqual(report['rejected'][0]['pointCountyFips'], '48201')
 
     def test_unknown_and_approximate_usgs_locations_do_not_qualify(self):
         for precision in [0, 3, 4, None]:

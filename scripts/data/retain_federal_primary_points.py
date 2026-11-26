@@ -132,7 +132,9 @@ def validate_federal_primary_entry(entry):
     if not source:
         return False
     candidate = candidate_index(source).get(entry.get('key'))
-    return bool(candidate and all(entry.get(k) == candidate.get(k) for k in ('key', 'source', 'state', 'address', 'countyFips', 'match')))
+    return bool(candidate and entry.get('status') == 'mapped' and
+                entry.get('sourceCounty', '') in ('', candidate['countyFips']) and
+                all(entry.get(k) == candidate.get(k) for k in ('key', 'source', 'state', 'address', 'countyFips', 'match')))
 
 
 def main():

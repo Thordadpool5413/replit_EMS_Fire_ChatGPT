@@ -10,11 +10,9 @@ import collections
 import concurrent.futures
 import copy
 import datetime
-import hashlib
 import json
 import math
 import pathlib
-import re
 import time
 import urllib.parse
 import urllib.request
@@ -64,8 +62,7 @@ def get_public(url, params):
     error = None
     for attempt in range(5):
         try:
-            request = urllib.request.Request(full, headers={'User-Agent': 'ATLAS public-source provenance recovery'})
-            with urllib.request.urlopen(request, timeout=90) as response:
+            with urllib.request.urlopen(full, timeout=60) as response:
                 raw = response.read(30_000_001)
             if len(raw) > 30_000_000:
                 raise ValueError('Unexpectedly large source response')
@@ -123,6 +120,8 @@ def acquire(source, directory, workers=4):
     if existing_inventory.exists():
         inventory = json.loads(existing_inventory.read_bytes())
         validate_inventory(directory, inventory)
+        if inventory['source'] != source:
+            raise ValueError('Acquisition directory belongs to a different source')
         return inventory
     metadata_path = directory / 'metadata.json'
     ids_path = directory / 'ids.json'
@@ -261,7 +260,9 @@ def coordinate_address_signature(a):
     street = normalize_street(source_street_line(a.get('street')))
     if not street or street in {'UNKNOWN', 'NOT AVAILABLE', 'NO ADDRESS', 'UNAVAILABLE'}:
         return None
-    return a.get('state', ''), street
+    # Same-street records in different postal areas are not automatically the
+    # same physical address. City aliases within one ZIP remain comparable.
+    return a.get('state', ''), street, a.get('zip', '')
 
 
 def address_key(a, include_city=True):
@@ -426,6 +427,10 @@ def match_inventory(directory, inventory, entries, baseline_hash):
             county = chosen['point']['countyFips']
             if target.get('sourceCounty') and target['sourceCounty'] != county:
                 outcomes['primarySourceCountyDisagreement'] += 1
+                rejected.append({'key': target['key'], 'reasons': ['primary-source-county-disagreement'],
+                                 'primarySourceCountyFips': target['sourceCounty'],
+                                 'pointCountyFips': county,
+                                 'objectIds': [m['point']['objectId'] for m in valid]})
                 continue
             match = copy.deepcopy(chosen)
             if address_key(target['address']) != address_key(chosen['sourceAddress']):
@@ -457,6 +462,8 @@ def main():
         parser.error('--workers must be between 1 and 8')
     inventory = (validate_inventory(args.directory, json.loads((args.directory / 'inventory.json').read_bytes()))
                  if args.offline else acquire(args.source, args.directory, args.workers))
+    if inventory['source'] != args.source:
+        raise ValueError('Requested source differs from retained inventory')
     if args.acquire_only:
         print(json.dumps({'source': args.source, 'count': inventory['sourceCount'], 'sha256': inventory['sourceSha256']}))
         return

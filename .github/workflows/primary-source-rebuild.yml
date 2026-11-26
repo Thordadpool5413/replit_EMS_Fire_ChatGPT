@@ -1,0 +1,80 @@
+name: Retain rebuilt primary location sources
+on:
+  push:
+    branches: [atlas/reach-95-primary-mapping]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  federal:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [usgs, hifld-ems, hifld-fire]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify recovery guards
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_address_normalization.py
+          python3 -m unittest discover -s scripts/data -p test_federal_primary_points.py
+      - name: Acquire complete fixed public source and match locally
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_usgs_primary.py --source "$SOURCE" --directory "$RUNNER_TEMP/primary-source" --report "generated-artifacts/primary-source/$SOURCE.json" --workers 4
+          python3 -u scripts/data/retain_federal_primary_points.py --source "$SOURCE" --directory "$RUNNER_TEMP/primary-source" --report "generated-artifacts/primary-source/$SOURCE.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-source-${{ matrix.source }}
+          path: generated-artifacts/primary-source/
+      - name: Save verified source evidence on a review branch
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          case "$SOURCE" in
+            usgs) evidence=primary-usgs-all ;;
+            hifld-ems) evidence=primary-hifld ;;
+            hifld-fire) evidence=primary-hifld-fire ;;
+          esac
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-$SOURCE-$GITHUB_RUN_ID"
+          git add --force "scripts/data/evidence/$evidence"
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain complete $SOURCE evidence for primary mapping review"
+          git push origin HEAD
+  neris:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-sources]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/data -p test_neris_primary_rebuilt.py
+      - name: Reproduce complete retained NERIS evidence
+        run: |
+          python3 -u scripts/data/recover_neris_primary.py --output generated-artifacts/primary-source/neris.json --inputs generated-artifacts/primary-source/neris-inputs.json
+          python3 -u scripts/data/retain_neris_primary.py --report generated-artifacts/primary-source/neris.json --inputs generated-artifacts/primary-source/neris-inputs.json
+          python3 scripts/data/retain_neris_primary.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-source-neris
+          path: generated-artifacts/primary-source/
+      - name: Save verified NERIS evidence on a review branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/primary-source-neris-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-neris-rebuilt
+          git diff --cached --quiet && exit 0
+          git commit -m "Retain replayed NERIS primary site evidence"
+          git push origin HEAD

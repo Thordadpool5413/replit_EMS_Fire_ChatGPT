@@ -9,7 +9,7 @@ import pathlib
 from backfill_provider_locations import ROOT, PUBLIC, sha, read_registry, native_key, publish, verify
 from primary_mapping_contract import validate_primary_entry
 from primary_recovery_baseline import INDEX_SHA as BASELINE_INDEX_SHA, BASELINE, retain_baseline
-from primary_source_consensus import entry_witnesses, native_neris_vetoes as numeric_native_neris_vetoes, INTERPOLATED
+from primary_source_consensus import entry_witnesses as native_entry_witnesses, native_neris_vetoes as numeric_native_neris_vetoes, INTERPOLATED
 from address_normalization import normalize_street, normalized_city, source_street_line
 
 REQUIRED = 44452
@@ -43,6 +43,13 @@ def native_neris_vetoes(address, source_county=''):
     from retain_neris_grid_points import grid_aware_native_reuse_vetoes
     return sorted(set(numeric_native_neris_vetoes(address, source_county)) |
                   set(grid_aware_native_reuse_vetoes(address)))
+
+
+def entry_witnesses(entry):
+    if (entry.get('primaryAddressEvidence') or {}).get('method') == 'nppes-primary-address-components':
+        from recover_nppes_primary_components_extended import primary_component_consensus_witnesses
+        return primary_component_consensus_witnesses(entry)
+    return native_entry_witnesses(entry)
 
 
 def baseline():

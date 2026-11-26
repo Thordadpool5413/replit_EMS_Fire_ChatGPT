@@ -16,7 +16,7 @@ from retain_federal_city_points import (EVIDENCE as CITY_EVIDENCE,verify as veri
  validate_federal_city_diagnostic_candidate)
 from stage_usgs_primary import distance_m
 
-EVIDENCE=ROOT/'scripts/data/evidence/primary-nppes-components-extended/2026-11-26'
+EVIDENCE=ROOT/'scripts/data/evidence/primary-nppes-components-qualified/2026-11-26'
 NAD_EVIDENCE=ROOT/'scripts/data/evidence/primary-nad-extended/2026-11-26'
 OVERTURE_EVIDENCE=ROOT/'scripts/data/evidence/primary-overture-native-variants/2026-11-26'
 TIGER_EVIDENCE=ROOT/'scripts/data/evidence/primary-tiger-native/2026-11-26'
@@ -25,13 +25,52 @@ POSITIVE_OVERTURE={'conflicting-native-points','source-point-county-conflict',
 POINT_ORDER={'nad-address-point':0,'usgs-structure-address':1,'overture-address':2,'neris-reported-address':3,
              'hifld-ems-address':3,'hifld-fire-address':4,'overture-place-address':5}
 REQUIRED_SOURCES={'usgs','hifld-ems','hifld-fire','federal-city','nad','neris','overture-address','overture-place-address','tiger'}
+NAD_QUALIFICATION_BLOCKS={'unsupported-source-point'}
+NAD_QUALIFIED_CONFLICTS={'nonactive-lifecycle','coordinate-reused-across-distinct-addresses',
+ 'original-source-county-disagreement','native-source-county-disagreement','conflicting-native-points'}
 
 def adapted_nad_target(target):
  result=copy.deepcopy(target);result['key']=target['key']+'@NPPES-PRIMARY';result['originalPrimaryKey']=target['key'];return result
 
 def bucket():
  return {'pointObservations':[],'rangeObservations':[],'rangePointObservations':[],
-         'pointConflicts':[],'pointBlocks':[],'rangeConflicts':[]}
+         'pointConflicts':[],'pointBlocks':[],'rangeConflicts':[], 'qualifiedNadObservations':[]}
+
+def nad_rejection_class(row):
+ reasons=set(row.get('reasons',[]))
+ if not reasons or reasons-(NAD_QUALIFICATION_BLOCKS|NAD_QUALIFIED_CONFLICTS):
+  raise ValueError('Unknown NAD rejection requires explicit source-qualification review')
+ return 'pointConflicts'if reasons&NAD_QUALIFIED_CONFLICTS else'pointBlocks'
+
+def nad_rejected_observations(row,target):
+ """Keep qualified native endpoints without promoting a rejected NAD cluster."""
+ from stage_nad_primary import ARCHIVE_SHA,ALLOWED_PLACEMENTS,SOURCE_COUNT
+ if(row['key']!=target['key']or row['nativeTargetKey']!=target['key']+'@NPPES-PRIMARY'
+    or row['originalAddress']!=target['address']):
+  raise ValueError('Rejected NAD endpoints lost their exact native component target')
+ result=[]
+ for match in row.get('eligibleNativePoints',[]):
+  point=match.get('point',{});coordinates=[match.get('latitude'),match.get('longitude')]
+  if(match.get('method')!='nad-address-point'or point.get('sourceArchiveSha256')!=ARCHIVE_SHA
+     or point.get('dataset')!='bulk-r24'or point.get('coordinatesAsReported')!=coordinates
+     or point.get('placement')not in ALLOWED_PLACEMENTS
+     or point.get('addressClass')!='Numbered Thoroughfare Address'
+     or point.get('lifecycle')not in('','Active')
+     or type(point.get('objectId'))is not int or point['objectId']<=0
+     or type(point.get('sourceRowNumber'))is not int or not 1<=point['sourceRowNumber']<=SOURCE_COUNT
+     or not isinstance(point.get('nativeRecordSha256'),str)or len(point['nativeRecordSha256'])!=64
+     or not isinstance(point.get('countyFips'),str)or len(point['countyFips'])!=5
+     or target.get('sourceCounty')and target['sourceCounty']!=point['countyFips']):
+   raise ValueError('Rejected NAD observation lacks its qualified native point proof')
+  result.append({'source':'nad','targetAddress':copy.deepcopy(target['address']),
+   'nativeTargetKey':row['nativeTargetKey'],'nativeRejectionSha256':sha(dump(row)),
+   'selectable':False,'match':copy.deepcopy(match)})
+ return result
+
+def nad_observation_endpoints(observations):
+ return [{'source':'nad','method':row['match']['method'],'latitude':row['match']['latitude'],
+          'longitude':row['match']['longitude'],'countyFips':row['match']['point']['countyFips'],
+          'nativeId':str(row['match']['point']['objectId'])}for row in observations]
 
 def observation(source,candidate,target,selectable=True,component=None):
  if(candidate.get('key')!=target['key']or candidate.get('address')!=target['address']or
@@ -142,7 +181,11 @@ def collect_sources(snapshot,targets):
  for key,(candidate,native_candidate)in nad.items():
   observed=observation('nad',candidate,desired[key]);observed['sourceCandidateSha256']=sha(dump(native_candidate));observed['nativeTargetKey']=native_candidate['key']
   scopes[key]['pointObservations'].append(observed)
- for row in nad_rejected:scopes[row['key']]['pointConflicts'].append(reject_binding('nad',row,desired[row['key']]))
+ for row in nad_rejected:
+  target=desired[row['key']];field=nad_rejection_class(row)
+  scopes[row['key']][field].append(reject_binding('nad',row,target))
+  if field=='pointBlocks':
+   scopes[row['key']]['qualifiedNadObservations'].extend(nad_rejected_observations(row,target))
  neris=load_neris(targets);digests['neris']=sha(dump(neris))
  for c in neris['candidates']:scopes[c['key']]['pointObservations'].append(observation('neris',c,desired[c['key']]))
  for row in neris['rejected']:scopes[row['key']]['pointConflicts'].append(reject_binding('neris',row,desired[row['key']]))
@@ -187,15 +230,15 @@ def collect_sources(snapshot,targets):
 def choose_location(scope,witnesses):
  selectable=[o for o in scope['pointObservations']if o['selectable']]
  if scope['pointConflicts']:return None,'qualified-native-source-conflict'
+ if witnesses and(len({w['countyFips']for w in witnesses})!=1 or any(distance_m(a,b)>75 for i,a in enumerate(witnesses)for b in witnesses[i+1:])):
+  return None,'qualified-source-coordinate-disagreement'
  if selectable:
   if not witnesses:raise ValueError('Accepted source point has no complete native endpoints')
-  if len({w['countyFips']for w in witnesses})!=1 or any(distance_m(a,b)>75 for i,a in enumerate(witnesses)for b in witnesses[i+1:]):
-   return None,'qualified-source-coordinate-disagreement'
   ordered=sorted(selectable,key=lambda o:(o['candidate']['match']['point'].get('precision')=='blockface',
                      o['candidate']['match']['point'].get('placement')in('Unknown','Other'),
                      POINT_ORDER[o['candidate']['match']['method']],o['source']))
   return ordered[0],'native-component-address-point'
- if scope['pointObservations']:return None,'qualified-point-without-selectable-profile'
+ if scope['pointObservations']or scope.get('qualifiedNadObservations'):return None,'qualified-point-without-selectable-profile'
  if scope['pointBlocks']:return None,'incomplete-or-unqualified-native-point-source'
  if scope['rangeConflicts']:return None,'native-range-source-conflict'
  if scope['rangeObservations']:
@@ -213,6 +256,7 @@ def generate(snapshot,targets,native,scopes,digests):
  candidates=[];rejected=[];decisions=[];outcomes=collections.Counter()
  for key,target in sorted(desired.items()):
   scope=scopes[key];witnesses=qualified_witnesses(scope['pointObservations'],target)if scope['pointObservations']else[]
+  witnesses.extend(nad_observation_endpoints(scope['qualifiedNadObservations']))
   selected,reason=choose_location(scope,witnesses)
   decision={'key':key,'originalAddress':copy.deepcopy(original[key]['address']),'targetAddress':copy.deepcopy(target['address']),
             **copy.deepcopy(scope),'acceptedNativeWitnesses':witnesses,'outcome':reason,
@@ -224,6 +268,7 @@ def generate(snapshot,targets,native,scopes,digests):
      'targetAddress':copy.deepcopy(target['address']),'address':copy.deepcopy(target['address']),'reason':reason,
      'sourceConflicts':copy.deepcopy(scope['pointConflicts']),'pointBlocks':copy.deepcopy(scope['pointBlocks']),
      'rangeConflicts':copy.deepcopy(scope['rangeConflicts']),'qualifiedNativeWitnesses':witnesses,
+     'qualifiedNadObservations':copy.deepcopy(scope['qualifiedNadObservations']),
      'selectionDecisionSha256':sha(dump(decision))})
    continue
   source=selected['candidate'];old=original[key];candidate={k:copy.deepcopy(old[k])for k in('key','name','source','state','sourceDate','sourceCounty')}
@@ -231,12 +276,12 @@ def generate(snapshot,targets,native,scopes,digests):
    countyFips=source['countyFips'],match=copy.deepcopy(source['match']),primaryAddressEvidence=component_proof(records[key],target,snapshot))
   if old.get('sourceCounty')and old['sourceCounty']!=candidate['countyFips']:raise ValueError('Selected native component violated original county')
   candidates.append(candidate)
- return {'schemaVersion':2,'source':'nppes-native-primary-components-extended','method':METHOD,
+ return {'schemaVersion':3,'source':'nppes-native-primary-components-qualified','method':METHOD,
   'originalPrimaryCount':46791,'baselineIndexSha256':snapshot['baselineIndexSha256'],
   'nativeTargetsSha256':target_sha,'nativeReportSha256':native_sha,'nativeTargetCount':609,
   'auditedSources':sorted(digests),'sourceReportDigests':copy.deepcopy(digests),'candidates':candidates,'rejected':rejected,
   'selectionDecisions':decisions,'outcomes':dict(sorted(outcomes.items())),
-  'interpretation':'Native registered primary-practice address component. Every qualified native address-point endpoint must agree; retained numeric street-range interpolation is only a clean point-absence fallback. Source roles and actual precision remain unchanged.'}
+  'interpretation':'Native registered primary-practice address component. Every qualified native address-point endpoint must agree, including eligible native NAD points retained in an otherwise unqualified cluster. Unsupported NAD point rows block range fallback but do not contradict an independently qualified point. Rejected NAD clusters remain nonselectable. Source roles and actual precision remain unchanged.'}
 
 def dependencies():
  result={}
@@ -308,7 +353,22 @@ def primary_component_witnesses(entry):
  if not validate_nppes_extended_component_primary_entry(entry):raise ValueError('Unvalidated extended native component entry')
  decision=runtime_indexes()[3][entry['key']]
  if decision['outcome']=='native-component-range-fallback':return copy.deepcopy(decision['rangePointObservations'])
- return [copy.deepcopy(o['candidate']['match'])for o in decision['pointObservations']]
+ return([copy.deepcopy(o['candidate']['match'])for o in decision['pointObservations']]+
+        [copy.deepcopy(o['match'])for o in decision['qualifiedNadObservations']])
+
+def primary_component_consensus_witnesses(entry):
+ """Return every endpoint from the exact fully replayed component decision.
+
+Rejected NAD eligible points deliberately do not enter the ordinary selected
+NAD catalog. This explicit API retains them as consensus-only observations.
+ """
+ if not validate_nppes_extended_component_primary_entry(entry):raise ValueError('Unvalidated native component consensus entry')
+ decision=runtime_indexes()[3][entry['key']]
+ if decision['outcome']=='native-component-range-fallback':
+  return [{'method':m['method'],'latitude':m['latitude'],'longitude':m['longitude'],
+           'countyFips':m['point']['countyFips'],'nativeId':m['point']['nativeId']}for m in decision['rangePointObservations']]
+ return [{field:copy.deepcopy(row[field])for field in('method','latitude','longitude','countyFips','nativeId')if field in row}
+         for row in decision['acceptedNativeWitnesses']]
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,default=EVIDENCE);p.add_argument('--report',type=pathlib.Path);p.add_argument('--verify',action='store_true');a=p.parse_args()

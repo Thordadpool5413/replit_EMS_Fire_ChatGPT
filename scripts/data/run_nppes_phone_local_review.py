@@ -47,7 +47,7 @@ HASH_FIELDS = {
     'phoneFiniteChecksSha256', 'finalIndexSha256', 'finalBackendSha256',
     'finalSourceReplaySha256', 'finalChecksSha256', 'finalCodeStateSha256',
     'residualSummarySha256', 'unsentRequestSha256', 'unsentRequestManifestSha256',
-    'unsentRequestBindingsSha256',
+    'unsentRequestBindingsSha256', 'componentFiniteChecksSha256',
 }
 METRIC_FIELDS = {
     'totalPrimarySourceRecords', 'rawMapped', 'usableMapped',

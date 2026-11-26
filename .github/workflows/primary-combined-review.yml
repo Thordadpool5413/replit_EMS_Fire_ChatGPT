@@ -39,22 +39,17 @@ jobs:
             scripts/fixtures/neris-retained-mailing-range-examples.json
       - name: Verify source selection and preserved identity safeguards
         run: python3 -m unittest discover -s scripts/data -p test_primary_mapping_release.py
+      - name: Verify native component qualification safeguards
+        run: |
+          python3 -m unittest discover -s scripts/data -p test_nppes_extended_components.py
+          python3 -m unittest discover -s scripts/data -p test_nppes_component_qualification.py
       - name: Verify the aggregate output boundary
         run: python3 scripts/data/run_nppes_phone_local_review.py --self-test
-      - name: Replay all non-phone sources in private runner files
+      - name: Replay all native sources and verify the actual app against 95 percent
         run: |
-          set -euo pipefail
-          mkdir -p "$PRIMARY_REVIEW_ROOT"
-          if ! python3 -u scripts/data/run_combined_primary_review.py \
-            --output "$PRIMARY_REVIEW_ROOT/nonphone" \
-            > "$PRIMARY_REVIEW_ROOT/nonphone.log" 2>&1; then
-            echo "Complete non-phone verification failed; raw records and logs remain runner-local."
-            exit 1
-          fi
-      - name: Verify final phone proofs, actual app coverage, and exact 95 percent target
-        run: |
-          python3 -u scripts/data/run_nppes_phone_local_review.py \
-            --nonphone "$PRIMARY_REVIEW_ROOT/nonphone" \
+          python3 -u scripts/data/bootstrap_nppes_phone_local_review.py \
+            --prepare-qualified-profile \
+            --nonphone-output "$PRIMARY_REVIEW_ROOT/nonphone" \
             --output "$PRIMARY_REVIEW_ROOT/final-review" \
             --aggregate-output "$PRIMARY_REVIEW_ROOT/aggregate.json" \
             --require-target

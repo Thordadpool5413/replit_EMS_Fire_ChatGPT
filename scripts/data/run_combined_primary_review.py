@@ -44,7 +44,7 @@ PROFILES = [
      'retain_federal_city_points', 'validated_catalog', (), False, ()),
     ('tiger', 'primary-tiger-native', 'report.json',
      'retain_tiger_primary', 'validated_catalog', (), False, ()),
-    ('cms-components', 'primary-nppes-components-extended', 'report.json',
+    ('cms-components', 'primary-nppes-components-qualified', 'report.json',
      'recover_nppes_primary_components_extended', 'runtime_indexes', (), False, ()),
     ('neris-mailing', 'primary-neris-mailing-sites', 'candidates.json',
      'retain_neris_mailing_sites', 'candidate_index', (), False, ('targets.json',)),

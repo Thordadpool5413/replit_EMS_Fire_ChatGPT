@@ -1,0 +1,183 @@
+name: Recover and retain Overture primary source profiles
+on:
+  push:
+    branches: [atlas/recover-overture-profiles]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ordinary:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[retain-overture-profiles]') || contains(github.event.head_commit.message, '[retain-overture-places]') || contains(github.event.head_commit.message, '[retain-overture-addresses]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ fromJSON(contains(github.event.head_commit.message, '[retain-overture-places]') && '["places"]' || contains(github.event.head_commit.message, '[retain-overture-addresses]') && '["addresses"]' || '["addresses","places"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned readers and official extensions
+        run: |
+          python3 -m pip install 'duckdb==2.0.1' 'pyarrow==26.0.1' 'numpy==2.3.5'
+          python3 - <<'PY'
+          import duckdb
+          c=duckdb.connect()
+          c.execute("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+          c.execute("INSTALL spatial FROM 'https://extensions.duckdb.org'")
+          PY
+          npm install --ignore-scripts --no-package-lock --prefix "$RUNNER_TEMP/overture-node" typescript@5.9.3 tsx@4.20.6
+      - name: Verify source guards and retain the immutable baseline
+        run: |
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_addresses.py
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_places.py
+          python3 -m compileall -q scripts/data/stage_overture_primary_places.py scripts/data/match_overture_primary_places.py scripts/data/retain_overture_primary_places.py
+      - name: Acquire complete fixed public source and match only on runner
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          if [ "$SOURCE" = addresses ]; then
+            python3 -u scripts/data/stage_overture_primary_addresses.py --output "$RUNNER_TEMP/overture-$SOURCE" --workers 1 --select-primary
+            python3 -u scripts/data/match_overture_primary_addresses.py --source "$RUNNER_TEMP/overture-$SOURCE" --workers 1
+          else
+            python3 -u scripts/data/stage_overture_primary_places.py --output "$RUNNER_TEMP/overture-$SOURCE" --workers 1
+            python3 -u scripts/data/match_overture_primary_places.py --source "$RUNNER_TEMP/overture-$SOURCE"
+          fi
+          python3 -u "scripts/data/retain_overture_primary_$SOURCE.py" --source "$RUNNER_TEMP/overture-$SOURCE"
+      - name: Freeze measured pins after native replay
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          if [ "$SOURCE" = addresses ]; then expected=461; else expected=2744; fi
+          python3 scripts/data/freeze_overture_recovered_release.py --source "$SOURCE" --expected-candidates "$expected"
+          python3 "scripts/data/retain_overture_primary_$SOURCE.py" --verify
+          if [ "$SOURCE" = addresses ]; then
+            python3 scripts/data/build_overture_point_fixtures.py --source "$RUNNER_TEMP/overture-$SOURCE"
+          else
+            python3 scripts/data/build_overture_place_point_fixtures.py --source "$RUNNER_TEMP/overture-$SOURCE"
+          fi
+      - name: Verify generated browser and API contracts
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          node "$RUNNER_TEMP/overture-node/node_modules/typescript/bin/tsc" --noEmit --target es2022 --module esnext --moduleResolution bundler --strict --skipLibCheck artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.ts
+          node --import "$RUNNER_TEMP/overture-node/node_modules/tsx/dist/loader.mjs" --test artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.test.ts
+          if [ "$SOURCE" = places ]; then
+            node --import "$RUNNER_TEMP/overture-node/node_modules/tsx/dist/loader.mjs" --test artifacts/ems-territory-intelligence/src/services/overturePlacePrimaryPointContract.test.ts
+          fi
+      - name: Save source evidence through normal checkout credentials
+        if: always()
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          evidence="scripts/data/evidence/primary-overture-$SOURCE/2026-11-26"
+          if [ ! -f "$evidence/manifest.json" ]; then exit 0; fi
+          PYTHONPATH=scripts/data python3 - "$SOURCE" <<'PY'
+          import importlib,io,sys,zipfile
+          module=importlib.import_module('retain_overture_primary_'+sys.argv[1])
+          raw=(module.EVIDENCE/'original.zip').read_bytes()
+          with zipfile.ZipFile(io.BytesIO(raw)) as z:
+              files={i.filename:z.read(i) for i in z.infolist()}
+          report,_=module.validate_files(files)
+          print('Saving replayed review evidence:',len(report['candidates']),'source candidates')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/overture-$SOURCE-source-$GITHUB_RUN_ID"
+          git add --force "$evidence" scripts/data/evidence/primary-recovery-baseline/2026-11-26.zip "scripts/data/retain_overture_primary_$SOURCE.py"
+          if [ "$SOURCE" = addresses ]; then pin=overturePrimaryPointPins.ts; fixture=overture-primary-point-examples.json; else pin=overturePlacePrimaryPointPins.ts; fixture=overture-place-primary-point-examples.json; fi
+          git add "artifacts/ems-territory-intelligence/src/services/$pin" "artifacts/api-server/src/lib/$pin"
+          if [ -f "scripts/fixtures/$fixture" ]; then git add "scripts/fixtures/$fixture"; fi
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Retain replayed Overture $SOURCE source evidence for review"
+          git push origin HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: overture-${{ matrix.source }}-${{ github.run_id }}
+          path: scripts/data/evidence/primary-overture-${{ matrix.source }}/2026-11-26/
+          if-no-files-found: ignore
+
+  native_variants:
+    if: contains(github.event.head_commit.message, '[retain-overture-variants]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned source and contract readers
+        run: |
+          python3 -m pip install 'duckdb==2.0.1' 'pyarrow==26.0.1' 'numpy==2.3.5'
+          python3 - <<'PY'
+          import duckdb
+          c=duckdb.connect()
+          c.execute("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+          c.execute("INSTALL spatial FROM 'https://extensions.duckdb.org'")
+          PY
+          npm install --ignore-scripts --no-package-lock --prefix "$RUNNER_TEMP/overture-node" typescript@5.9.3 tsx@4.20.6
+      - name: Replay immutable target dependencies
+        run: |
+          set -euo pipefail
+          python3 scripts/data/primary_recovery_baseline.py --retain
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_addresses.py
+          python3 -m unittest discover -s scripts/data -p test_overture_primary_places.py
+          python3 -m compileall -q scripts/data/prepare_overture_native_variants.py scripts/data/retain_overture_primary_variants.py
+          python3 scripts/data/fetch_overture_native_inputs.py --config scripts/fixtures/overture-native-variant-inputs.json --output "$RUNNER_TEMP/native-inputs"
+          python3 scripts/data/prepare_overture_native_variants.py --cms-targets "$RUNNER_TEMP/native-inputs/cms-targets.json" --neris-targets "$RUNNER_TEMP/native-inputs/neris-targets.json" --output "$RUNNER_TEMP/native-scope"
+      - name: Acquire every matching native Address row and national reuse witnesses
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_overture_primary_addresses.py --output "$RUNNER_TEMP/native-addresses" --workers 1 --select-primary --targets "$RUNNER_TEMP/native-scope/cms-targets.json"
+          python3 -u scripts/data/match_overture_primary_addresses.py --source "$RUNNER_TEMP/native-addresses" --workers 1 --targets "$RUNNER_TEMP/native-scope/cms-targets.json"
+      - name: Acquire every matching native Places row and national reuse witnesses
+        run: |
+          set -euo pipefail
+          python3 -u scripts/data/stage_overture_primary_places.py --output "$RUNNER_TEMP/native-places" --workers 1 --targets "$RUNNER_TEMP/native-scope/combined-targets.json"
+          python3 -u scripts/data/match_overture_primary_places.py --source "$RUNNER_TEMP/native-places"
+      - name: Retain separate catalogs and freeze actual source pins
+        run: |
+          set -euo pipefail
+          python3 scripts/data/retain_overture_primary_variants.py --addresses "$RUNNER_TEMP/native-addresses" --places "$RUNNER_TEMP/native-places" --scope "$RUNNER_TEMP/native-scope" --freeze
+          python3 scripts/data/retain_overture_primary_variants.py --verify
+          python3 scripts/data/build_overture_variant_point_fixtures.py
+          node "$RUNNER_TEMP/overture-node/node_modules/typescript/bin/tsc" --noEmit --target es2022 --module esnext --moduleResolution bundler --strict --skipLibCheck artifacts/ems-territory-intelligence/src/services/overturePrimaryPointContract.ts
+          node --import "$RUNNER_TEMP/overture-node/node_modules/tsx/dist/loader.mjs" --test artifacts/ems-territory-intelligence/src/services/overturePrimaryVariantPointContract.test.ts
+      - name: Commit replayed native variant evidence using checkout credentials
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "atlas/overture-variants-source-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-overture-native-variants/2026-11-26 scripts/data/evidence/primary-recovery-baseline/2026-11-26.zip
+          git add scripts/data/retain_overture_primary_variants.py scripts/fixtures/overture-primary-variant-point-examples.json
+          git add artifacts/ems-territory-intelligence/src/services/overturePrimaryVariantPointPins.ts artifacts/api-server/src/lib/overturePrimaryVariantPointPins.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Retain complete native Overture target geocode catalogs for association review"
+          git push origin HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: overture-native-variants-${{ github.run_id }}
+          path: |
+            scripts/data/evidence/primary-overture-native-variants/2026-11-26/
+            ${{ runner.temp }}/native-scope/
+          if-no-files-found: ignore

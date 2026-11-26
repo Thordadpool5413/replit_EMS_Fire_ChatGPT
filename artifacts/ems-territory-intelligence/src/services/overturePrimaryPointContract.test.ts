@@ -15,8 +15,8 @@ test('actual retained points preserve native coordinates, attribution and approx
     assert.equal(point.sourceDate,null);
   }
   assert.equal(isOverturePointMethod('overture-address'),true);
-  assert.equal(isOverturePointMethod('overture-place-address'),false);
-  assert.equal(OVERTURE_POINT_SOURCES['overture-place-address'].enabled,false);
+  assert.equal(isOverturePointMethod('overture-place-address'),true);
+  assert.equal(OVERTURE_POINT_SOURCES['overture-place-address'].enabled,!!OVERTURE_POINT_SOURCES['overture-place-address'].inventory);
 });
 
 test('source row, file, inventory, native coordinate and precision mutations fail closed',()=>{
@@ -52,7 +52,7 @@ test('native source attribution is not replaced by a wrapper or inferred license
 });
 
 test('API and frontend retain identical native point contracts and source row pins',()=>{
-  for(const name of ['overturePrimaryPointContract.ts','overturePrimaryPointPins.ts']){
+  for(const name of ['overturePrimaryPointContract.ts','overturePrimaryPointPins.ts','overturePlacePrimaryPointPins.ts','overturePrimaryVariantPointPins.ts']){
     assert.equal(readFileSync(new URL('./'+name,import.meta.url),'utf8'),readFileSync(new URL('../../../api-server/src/lib/'+name,import.meta.url),'utf8'));
   }
 });

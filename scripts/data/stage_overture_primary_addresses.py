@@ -220,6 +220,7 @@ def main():
     p.add_argument('--metadata-only',action='store_true')
     p.add_argument('--select-primary',action='store_true')
     p.add_argument('--locations',type=pathlib.Path)
+    p.add_argument('--targets',type=pathlib.Path)
     a=p.parse_args()
     inv=json.loads((a.output/'inventory.json').read_bytes()) if (a.output/'inventory.json').exists() else inventory(a.output)
     meta_path=a.output/'metadata-inventory.json'
@@ -235,9 +236,10 @@ def main():
         meta_path.write_bytes(encoded({'release':RELEASE,'inventorySha256':file_sha(a.output/'inventory.json'),'files':metas}))
     if a.metadata_only: return
     target_data=None
-    if a.select_primary:
-        from match_overture_primary_addresses import load_targets
-        target_data=load_targets(a.locations)
+    if a.select_primary or a.targets:
+        from match_overture_primary_addresses import load_targets,load_explicit_targets
+        if a.targets and a.locations: raise ValueError('Choose one explicit native target scope')
+        target_data=load_explicit_targets(a.targets) if a.targets else load_targets(a.locations)
         (a.output/'targets.json').write_bytes(encoded(target_data))
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:
         receipts=list(pool.map(lambda s:cache_file(s,a.output,target_data),[m for m in metas if m['mayContainUS']]))

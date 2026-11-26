@@ -144,7 +144,7 @@ def validate_overture_address_evidence(entry):
                 and all(entry.get(k)==original.get(k) for k in ('source','state','name','sourceDate'))
                 and entry.get('address')==expected['originalAddress']
                 and entry.get('sourceCounty')==original.get('sourceCounty')
-                and entry.get('match')==expected['match'] and entry.get('countyFips')==expected['countyFips'])
+                and encoded(entry.get('match'))==encoded(expected['match']) and entry.get('countyFips')==expected['countyFips'])
 
 
 validate_overture_primary_entry=validate_overture_address_evidence
@@ -185,7 +185,7 @@ def overture_primary_coordinate_witnesses(key):
 
 def overture_primary_point_witnesses(match,target_address):
     candidates,_=_validated_evidence()
-    keys=[key for key,candidate in candidates.items() if candidate['match']==match and candidate['originalAddress']==target_address]
+    keys=[key for key,candidate in candidates.items() if encoded(candidate['match'])==encoded(match) and encoded(candidate['originalAddress'])==encoded(target_address)]
     records=json.loads(_native_files()['selected-native-records.json'])['records']
     witnesses={}
     for key in keys:

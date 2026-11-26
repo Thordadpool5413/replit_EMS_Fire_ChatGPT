@@ -75,6 +75,18 @@ def load_targets(locations=None, extra=None):
     return {'locationIndexSha256':index_sha,'targetsSha256':sha(encoded(targets)),'targets':targets}
 
 
+def load_explicit_targets(path):
+    raw=path.read_bytes();value=json.loads(raw)
+    targets=value['targets'] if isinstance(value,dict) else value
+    if not isinstance(targets,list) or not targets or len({t['key'] for t in targets})!=len(targets):
+        raise ValueError('Invalid separate native target scope')
+    if any(not physical_address(t.get('address')) for t in targets):
+        raise ValueError('Native source scope contains a nonphysical address')
+    from primary_recovery_baseline import INDEX_SHA
+    return {'locationIndexSha256':INDEX_SHA,'targetsSha256':sha(encoded(targets)),
+            'targets':targets,'inputTargetsFileSha256':sha(raw)}
+
+
 def matching_targets(source, by_zip, by_city):
     a=source_address(source)
     if not a: return []
@@ -360,13 +372,14 @@ def resolve(target_data, records, reuse, inventory_sha, allow_city=False):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--source',type=pathlib.Path,required=True)
     p.add_argument('--locations',type=pathlib.Path)
-    p.add_argument('--extra-targets',type=pathlib.Path);p.add_argument('--workers',type=int,default=2)
+    p.add_argument('--extra-targets',type=pathlib.Path);p.add_argument('--targets',type=pathlib.Path);p.add_argument('--workers',type=int,default=2)
     p.add_argument('--allow-blank-postcode-city',action='store_true');p.add_argument('--select-only',action='store_true')
     p.add_argument('--recheck-reuse',action='store_true')
     a=p.parse_args();output=a.source
     receipt=json.loads((output/'complete-us-receipt.json').read_bytes())
     if receipt['release']!=RELEASE or receipt['usRows']!=US_COUNT or receipt['globalFiles']!=64: raise ValueError('Incomplete US source')
-    target_data=load_targets(a.locations,a.extra_targets)
+    if a.targets and (a.locations or a.extra_targets): raise ValueError('Choose one explicit native target scope')
+    target_data=load_explicit_targets(a.targets) if a.targets else load_targets(a.locations,a.extra_targets)
     (output/'targets.json').write_bytes(encoded(target_data))
     inputs=[r for r in receipt['files'] if r['usRows']]
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:

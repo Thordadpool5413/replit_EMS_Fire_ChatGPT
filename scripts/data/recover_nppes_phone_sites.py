@@ -50,12 +50,12 @@ def validate_release(directory,audit):
   old=original[key]
   if any(entry.get(k)!=old.get(k)for k in('key','name','source','state','sourceDate','sourceCounty')):
    raise ValueError('Donor release changed original source identity metadata')
+  proof=entry.get('primaryAddressEvidence')or{}
+  if proof.get('method')==METHOD:raise ValueError('Phone donor release must be built before all phone children')
   rebuilt=rebuilt_entry(entry)
   require_legacy_snapshot_binding(entry,old,rebuilt)
   if entry.get('status')=='mapped'and rebuilt and not validate_primary_entry(entry,native_rows.get(key)):
    raise ValueError('Changed or new donor location did not replay against its exact national source row')
-  proof=entry.get('primaryAddressEvidence')or{}
-  if proof.get('method')==METHOD:raise ValueError('Phone donor release must be built before all phone children')
   if entry.get('address')!=old.get('address')and proof.get('originalAddress')!=old.get('address'):
    raise ValueError('Changed donor address lost its original source-address proof')
  if(audit.get('baselineIndexSha256')!=baseline_sha or audit.get('after')!=metric(entries)or

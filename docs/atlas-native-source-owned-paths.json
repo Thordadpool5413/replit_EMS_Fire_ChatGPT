@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRef": "566528a49af1e14c3a0bb3c0ff5d1e6ce854d62a",
+  "sourceRef": "9b3f2944f596041c80cb7306cd863f6076509a82",
   "purpose": "Exact owned paths for root integration; central/shared and other-agent dependencies are excluded.",
   "files": [
     "scripts/data/recover_nppes_native_primary.py",
@@ -34,7 +34,8 @@
     "artifacts/api-server/src/lib/nppesPhoneSiteContract.ts",
     "scripts/data/build_nppes_phone_contract.py",
     "scripts/data/test_nppes_phone_sites.py",
-    "scripts/data/audit_tiger_range_exclusions.py"
+    "scripts/data/audit_tiger_range_exclusions.py",
+    "scripts/data/retain_nppes_other_names.py"
   ],
   "generatedContractFiles": [
     "artifacts/ems-territory-intelligence/src/services/federalCityPointPins.ts",
@@ -57,7 +58,8 @@
     "scripts/data/evidence/primary-tiger-source-cache/",
     "scripts/data/evidence/primary-tiger-native/",
     "scripts/data/evidence/primary-nppes-phone-identity/",
-    "scripts/data/evidence/primary-nppes-phone-sites/"
+    "scripts/data/evidence/primary-nppes-phone-sites/",
+    "scripts/data/evidence/primary-nppes-other-names/"
   ],
   "workflows": [
     ".github/workflows/recover-native-cms.yml",
@@ -68,7 +70,8 @@
     ".github/workflows/verify-retained-native-profiles.yml",
     ".github/workflows/replay-extended-cms-components.yml",
     ".github/workflows/recover-native-phone-identity.yml",
-    ".github/workflows/audit-native-range-exclusions.yml"
+    ".github/workflows/audit-native-range-exclusions.yml",
+    ".github/workflows/recover-native-other-names.yml"
   ],
   "additionalOwnedLoaderFix": "scripts/data/stage_usgs_primary.py default load_locations now uses immutable baseline; compare with root before adopting."
 }

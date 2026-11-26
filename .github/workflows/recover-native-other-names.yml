@@ -1,0 +1,39 @@
+name: Recover complete native NPPES Other Names
+on:
+  push:
+    branches: [atlas/recover-native-sources]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  other-names:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[acquire-native-other-names]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retain and replay complete fixed public reference
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --output "$RUNNER_TEMP/nppes.zip" 'https://download.cms.gov/nppes/NPPES_Data_Dissemination_November_2026_V2.zip'
+          python3 -u scripts/data/retain_nppes_other_names.py --archive "$RUNNER_TEMP/nppes.zip"
+          python3 -u scripts/data/retain_nppes_other_names.py --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-native-other-names-source
+          path: scripts/data/evidence/primary-nppes-other-names/
+      - name: Commit complete native reference source
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "atlas/native-other-names-source-$GITHUB_RUN_ID"
+          git add --force scripts/data/evidence/primary-nppes-other-names
+          git diff --cached --quiet && exit 0
+          git commit -m 'Retain complete pinned NPPES Other Names reference and native inventory replay'
+          git push origin HEAD

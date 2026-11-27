@@ -1,0 +1,32 @@
+name: National AED and procurement source refresh
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Refresh public source snapshots
+        run: |
+          ./scripts/node_modules/.bin/tsx scripts/refresh-national-aed-coverage.mts "$RUNNER_TEMP/national-public-aed-coverage.json"
+          ./scripts/node_modules/.bin/tsx scripts/refresh-national-aed-procurement.mts "$RUNNER_TEMP/national-aed-procurement.json"
+          ./scripts/node_modules/.bin/tsx scripts/refresh-state-procurement-portals.mts "$RUNNER_TEMP/state-procurement-portals.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: national-aed-source-snapshots
+          path: |
+            ${{ runner.temp }}/national-public-aed-coverage.json
+            ${{ runner.temp }}/national-aed-procurement.json
+            ${{ runner.temp }}/state-procurement-portals.json
+          if-no-files-found: error

@@ -1,3 +1,4 @@
+import { createSourceCoverageGeography } from './lib/sourceCoverageGeography.mts';
 import { createHash } from 'node:crypto';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -27,31 +28,28 @@ const states = new Set<string>(neris.chunks.map((item: { state: string }) => ite
 if (states.size !== 51) throw Error('Expected 50 states and DC.');
 const counties = new Map<string, string>(Object.entries(national.countyNames));
 const boundaries = JSON.parse(readFileSync(resolve(registry, '../data/us-counties-boundaries.json'), 'utf8'));
-type Ring = [number, number][];
-type Boundary = { id: string; properties: { STATE_CODE: string; BBOX: number[] }; geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: Ring[] | Ring[][] } };
-const byBoundaryState = new Map([...states].map(state => [state,
-  (boundaries.features as Boundary[]).filter(feature => feature.properties.STATE_CODE === state && counties.has(feature.id)),
-]));
-const prefixes = new Map([...byBoundaryState].flatMap(([state, shapes]) => shapes.map(shape => [shape.id.slice(0, 2), state] as const)));
-function insideRing(x: number, y: number, ring: Ring) {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [a, b] = ring[i];
-    const [c, d] = ring[j];
-    if ((b > y) !== (d > y) && x < (c - a) * (y - b) / (d - b) + a) inside = !inside;
+const { countyAtPoint, prefixes } = createSourceCoverageGeography(boundaries.features, counties, states);
+const aedContext = read('../data/national-public-aed-coverage.json');
+const procurement = read('../data/national-aed-procurement.json');
+const portals = read('../data/state-procurement-portals.json');
+const procurementCountsByCounty = new Map<string, number>();
+const procurementScopes = Object.values(procurement.byState) as { awards: { county: string }[] }[];
+for (const scope of procurementScopes) {
+  for (const { county } of scope.awards) if (county) {
+    procurementCountsByCounty.set(county, (procurementCountsByCounty.get(county) ?? 0) + 1);
   }
-  return inside;
 }
-function countyAtHeadquarters(state: string, [y, x]: [number, number]) {
-  const matches = (byBoundaryState.get(state) ?? []).filter(feature => {
-    const [west, south, east, north] = feature.properties.BBOX;
-    if (x < west || x > east || y < south || y > north) return false;
-    const { type, coordinates } = feature.geometry;
-    const polygons = type === 'Polygon' ? [coordinates as Ring[]] : coordinates as Ring[][];
-    return polygons.some(([outer, ...holes]) => insideRing(x, y, outer) && !holes.some(ring => insideRing(x, y, ring)));
-  });
-  return matches.length === 1 ? matches[0].id : '';
+function regionalCounts(state: string, county?: string) {
+  return {
+    public_aed_locations_in_area: county ? aedContext.byCounty[county] ?? '' : aedContext.byState[state] ?? '',
+    public_aed_geography: county ? 'County' : 'State',
+    federal_aed_award_candidates_in_area: county
+      ? procurementCountsByCounty.get(county) ?? 0 : procurement.byState[state]?.awards.length ?? '',
+    federal_aed_award_count_basis: 'Federal recipient address, bounded keyword search',
+    state_procurement_portal: portals.byState[state]?.[0]?.url ?? '',
+  };
 }
+
 const records: ReturnType<typeof audit>[] = [];
 const stations: Record<string, unknown>[] = [];
 const stationCounties = new Map<string, number>();
@@ -76,6 +74,7 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
     state: profile.state, county_fips: counties.has(county) ? county : '', county_name: counties.get(county) ?? '',
     county_basis: countyBasis, provider: name, registry_key: key ?? '',
     linked_evidence_key: evidence ? providerEvidenceKey(key, name) ?? '' : '',
+    ...regionalCounts(profile.state, counties.has(county) ? county : undefined),
     profile_route: '/' + providerProfileHref(profile), source_status: sourceStatus,
     aed_inventory: scopedModelCount ? 'In-service report with model and count' : inService.length ? 'In-service report, incomplete inventory' : aeds.length ? 'Dated AED evidence only' : 'No AED evidence in audited sources',
     aed_brand_model: [...new Set(aeds.map(row => [row.manufacturer, row.model].filter(Boolean).join(' ')).filter(Boolean))].join(' | '),
@@ -131,14 +130,14 @@ for (const chunk of neris.chunks) {
     const key = 'NERIS:' + row.id;
     const linked = providerEvidenceKey(key, row.name);
     const known = linked ? linkedCounties.get(linked) : undefined;
-    const spatial = row.coordinates ? countyAtHeadquarters(row.state, row.coordinates) : '';
+    const spatial = row.coordinates ? countyAtPoint(row.coordinates, row.state) : '';
     const conflict = Boolean(known && spatial && known !== spatial);
     const county = conflict ? '' : spatial || known || '';
     records.push(audit(row.state + '/neris/' + row.id, row.name, key, county,
       conflict ? 'Cross-registry and spatial counties disagree' : spatial ? 'NERIS headquarters point in generalized county boundary'
         : known ? 'Documented cross-registry county' : 'Department county unresolved', 'NERIS source listing'));
     for (const station of row.stations) {
-      const stationCounty = station.coordinates ? countyAtHeadquarters(station.address[3], station.coordinates) : '';
+      const stationCounty = station.coordinates ? countyAtPoint(station.coordinates, station.address[3]) : '';
       if (stationCounty) stationCounties.set(stationCounty, (stationCounties.get(stationCounty) ?? 0) + 1);
       stations.push({
         department_state: row.state, station_address_state: station.address[3], station_county_fips: stationCounty,
@@ -220,7 +219,21 @@ const contacts = providerProfileEvidence.flatMap(evidence =>
     email: station.contact.email ?? '', source_date: station.contact.source.date, source: station.contact.source.url,
   }] : []));
 if (contacts.length) writeCsv('published-station-contacts.csv', contacts);
-writeCsv('state-coverage.csv', [...byState].map(([state, value]) => ({ state, ...value })));
-writeCsv('county-coverage.csv', [...byCounty].map(([county_fips, value]) => ({ state: prefixes.get(county_fips.slice(0, 2)), county_fips, county: counties.get(county_fips), neris_station_rows: stationCounties.get(county_fips) ?? 0, ...value })));
-writeFileSync(resolve(out, 'summary.json'), JSON.stringify({ ...total, states: byState.size, counties: byCounty.size, distinct_mapped_station_contacts: contacts.length, neris_station_rows: stations.length, neris_station_rows_with_county: [...stationCounties.values()].reduce((a, b) => a + b, 0), revision: process.env.PROVIDER_COVERAGE_REVISION ?? null }, null, 2) + '\n');
+writeCsv('state-coverage.csv', [...byState].map(([state, value]) => ({ state, ...regionalCounts(state), ...value })));
+writeCsv('county-coverage.csv', [...byCounty].map(([county_fips, value]) => ({ state: prefixes.get(county_fips.slice(0, 2)), county_fips, county: counties.get(county_fips), ...regionalCounts(prefixes.get(county_fips.slice(0, 2))!, county_fips), neris_station_rows: stationCounties.get(county_fips) ?? 0, ...value })));
+writeFileSync(resolve(out, 'summary.json'), JSON.stringify({ ...total, states: byState.size, counties: byCounty.size, distinct_mapped_station_contacts: contacts.length, neris_station_rows: stations.length, neris_station_rows_with_county: [...stationCounties.values()].reduce((a, b) => a + b, 0), public_aed_source_date: aedContext.sourceDate, public_aed_locations: aedContext.sourceRows - aedContext.unassigned,
+  public_aed_unassigned: aedContext.unassigned, counties_with_public_aed_locations: Object.values(aedContext.byCounty).filter(Boolean).length,
+  federal_award_query_through: procurement.throughDate, federal_award_query_states: Object.keys(procurement.byState).length,
+  federal_award_candidates: procurementScopes.reduce((total, scope) => total + scope.awards.length, 0),
+  counties_with_federal_award_candidates: procurementCountsByCounty.size, revision: process.env.PROVIDER_COVERAGE_REVISION ?? null }, null, 2) + '\n');
 console.log(total);
+
+// Optional runtime lookup for NERIS listings whose roster has a headquarters point but no county field.
+const countyLookup = process.argv[3];
+if (countyLookup) {
+  const byDepartment = Object.fromEntries(records.flatMap(row =>
+    row.registry_key.startsWith('NERIS:') && row.county_fips
+      ? [[row.registry_key.slice('NERIS:'.length), row.county_fips]] : []));
+  writeFileSync(countyLookup, JSON.stringify({ schemaVersion: 1, source: 'NERIS',
+    retrievedAt: neris.retrievedAt, byDepartment }) + '\n');
+}

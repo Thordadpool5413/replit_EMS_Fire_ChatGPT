@@ -29,10 +29,15 @@ test('profile links reject cross-state fire IDs and unsupported input', () => {
 
 test('enrichment belongs to exact registry identities and preserves purchase status', () => {
   const keys = new Set<string>();
-  for (const record of providerProfileEvidence) {
-    const [, state, id] = record.registryKey.split(':');
+  const manifest = JSON.parse(readFileSync(new URL('index.json', shards), 'utf8'));
+  const names = new Map<string, string>();
+  for (const state of Object.keys(manifest.byState)) {
     const rows = JSON.parse(readFileSync(new URL(state + '.json', shards), 'utf8')) as SourceDirectoryRecord[];
-    assert.equal(rows.find((row) => row[0] === `usfa:${state}:${id}`)?.[2], record.registryName);
+    for (const [id, , name] of rows) names.set(id, name);
+  }
+  for (const record of providerProfileEvidence) {
+    const sourceId = record.registryKey.replace(/^FDID:/, 'usfa:').replace(/^NPI:/, 'nppes:');
+    assert.equal(names.get(sourceId), record.registryName);
     assert.equal(keys.has(record.registryKey), false);
     keys.add(record.registryKey);
     assert.equal(findProviderEvidence(record.registryKey, 'another department'), undefined);

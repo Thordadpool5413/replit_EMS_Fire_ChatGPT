@@ -1,3 +1,4 @@
+import { providerDocumentRecords } from './providerDocumentRecords';
 import { municipalAedPurchases } from './providerAedPurchasingEvidence';
 import { municipalBillingRecords } from './providerBillingEvidence';
 import { expandedProviderRecords } from './providerSourceExpansion';
@@ -53,6 +54,7 @@ export type DepartmentMetric = {
   context?: string;
   reportingPeriod?: string;
   comparison?: 'apparatus';
+  denialPayer?: string;
   source: ProviderEvidenceSource;
 };
 
@@ -479,6 +481,7 @@ export const providerProfileEvidence = [
   },
   ...expandedProviderRecords,
   ...municipalBillingRecords,
+  ...providerDocumentRecords,
   ...municipalAedPurchases,
 ] satisfies ProviderEvidence[];
 
@@ -495,6 +498,9 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD17113730', { name: 'Normal Fire Department', fdid: 'FDID:IL:MK332' }],
+  ['NERIS:FD26121215', { name: 'City Of Muskegon Fire Department', fdid: 'FDID:MI:06110' }],
+  ['NERIS:FD06073172', { name: 'Santee Fire Department', fdid: 'FDID:CA:37150' }],
   ['NERIS:FD51550625', { name: 'Chesapeake Fire Department', fdid: 'FDID:VA:55000' }],
   ['NERIS:FD53033044', { name: 'City Of Bothell Fire Department', fdid: 'FDID:WA:17M04' }],
   ['NERIS:FD48135893', { name: 'Odessa Fire Department', fdid: 'FDID:TX:DZ704' }],

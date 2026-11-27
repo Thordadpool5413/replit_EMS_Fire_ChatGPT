@@ -736,13 +736,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                       ))}
                       {projectedSingleCounty.cityPins.map((pin) => {
                         const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                        const pinColor = isSelected
-                          ? '#2563eb'
-                          : isEquipmentMapActive
-                            ? '#0f766e'
-                            : pin.isCountySeat
-                              ? '#b7791f'
-                              : '#286987';
                         return (
                           <AdvancedMarker
                             key={pin.cityName}
@@ -751,10 +744,16 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
                             zIndex={isSelected ? 1000 : pin.isCountySeat ? 700 : 500}
                           >
-                            <span
-                              className={`county-satellite-place-marker${isSelected ? ' is-selected' : ''}${pin.isCountySeat ? ' is-seat' : ''}`}
-                              style={{ backgroundColor: pinColor }}
+                            <img
+                              className={`county-map-native-pin${isSelected ? ' is-selected' : ''}`}
+                              src={isSelected
+                                ? 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png'
+                                : pin.isCountySeat
+                                  ? 'https://maps.google.com/mapfiles/ms/icons/yellow-pushpin.png'
+                                  : 'https://maps.google.com/mapfiles/ms/icons/blue-pushpin.png'}
+                              alt=""
                               aria-hidden="true"
+                              draggable={false}
                             />
                           </AdvancedMarker>
                         );
@@ -836,8 +835,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 )}
               </div>
               <div className="cv-legend">
-                <span><span className="cv-dot" style={{ backgroundColor: '#b7791f' }} />County seat · {activeCountyNode.countySeat}</span>
-                <span><span className="cv-dot" style={{ backgroundColor: isEquipmentMapActive ? '#0f766e' : '#286987' }} />Place</span>
+                <span><span className="cv-dot" style={{ backgroundColor: '#d4a72c' }} />County seat · {activeCountyNode.countySeat}</span>
+                <span><span className="cv-dot" style={{ backgroundColor: '#2872b9' }} />Place</span>
+                {selectedCityName !== 'all' && <span><span className="cv-dot" style={{ backgroundColor: '#d94b3d' }} />Selected place</span>}
                 <span>Imagery: Google Maps satellite</span>
               </div>
             </div>

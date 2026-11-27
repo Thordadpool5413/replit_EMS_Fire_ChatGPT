@@ -1089,9 +1089,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             stroke="#ffffff"
                             strokeWidth={isPhone ? 3 : 2}
                             paintOrder="stroke"
-                            fontSize={isPhone ? 16 : 10}
-                            fontWeight={cSel ? '800' : '700'}
-                            fontFamily="Inter, system-ui, sans-serif"
+                            fontSize={isPhone ? 19 : 11.5}
+                            fontWeight={cSel ? '800' : '750'}
+                            fontFamily="Arial, Helvetica, system-ui, sans-serif"
                             letterSpacing=".2"
                           >{st.code}</text>
                         </g>
@@ -1126,11 +1126,11 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           dominantBaseline={isPhone ? 'central' : undefined}
                           fill="#243d49"
                           stroke="#ffffff"
-                          strokeWidth={isPhone ? 3.1 : 2.1}
+                          strokeWidth={isPhone ? 2.8 : 1.9}
                           paintOrder="stroke"
-                          fontSize={isPhone ? 16 : 10}
-                          fontWeight={isSelected ? '800' : '700'}
-                          fontFamily="Inter, system-ui, sans-serif"
+                          fontSize={isPhone ? 19 : 11.5}
+                          fontWeight={isSelected ? '800' : '750'}
+                          fontFamily="Arial, Helvetica, system-ui, sans-serif"
                           letterSpacing=".12"
                         >
                           {st.code}

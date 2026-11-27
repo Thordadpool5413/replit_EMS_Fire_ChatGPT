@@ -305,19 +305,8 @@
 .gmap-ctl:focus-visible { outline: 2px solid #285ee8; outline-offset: 2px; }
 .gmap-ctl svg { color: #285ee8; }
 
-.neris-map-dot {
-  display: grid;
-  width: 13px;
-  height: 13px;
-  place-items: center;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: #a75518;
-  color: #fff;
-  font: 700 8px/1 system-ui, sans-serif;
-  box-shadow: 0 1px 2px rgba(8, 24, 37, .35);
-}
-.neris-map-dot.is-selected { background: #245f7a; }
+.neris-map-native-pin { display: block; width: 16px; height: 16px; object-fit: contain; user-select: none; }
+.neris-map-native-pin.is-selected { width: 20px; height: 20px; }
 
 .territory-agency-map-marker {
   display: flex;

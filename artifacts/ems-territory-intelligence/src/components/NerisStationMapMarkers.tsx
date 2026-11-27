@@ -22,10 +22,20 @@ export function NerisStationMapMarkers({groups,countyNames,agencies,onOpen}:{gro
  const [selected,setSelected]=useState<string>();
  const group=groups.find(g=>g.key===selected);
  return <>
-  {groups.map(g=><AdvancedMarker key={g.key} position={{lat:g.lat,lng:g.lng}} title={g.rows.length===1?(g.rows[0].name||g.rows[0].parentName)+' · NERIS station source record':g.rows.length+' NERIS station records at one source point'} onClick={()=>setSelected(g.key)} zIndex={selected===g.key?1200:500}>
-    <span className={`neris-map-dot${selected===g.key?' is-selected':''}`} aria-hidden="true">
-     {g.rows.length>1?g.rows.length:''}
-    </span>
+  {groups.map(g=><AdvancedMarker
+   key={g.key}
+   position={{lat:g.lat,lng:g.lng}}
+   title={g.rows.length===1?(g.rows[0].name||g.rows[0].parentName)+' · NERIS station source record':g.rows.length+' NERIS station records at one source point'}
+   onClick={()=>setSelected(g.key)}
+   zIndex={selected===g.key?1200:500}
+  >
+   <img
+    className={`neris-map-native-pin${selected===g.key?' is-selected':''}`}
+    src={selected===g.key?'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png':'https://maps.google.com/mapfiles/ms/icons/green-pushpin.png'}
+    alt=""
+    aria-hidden="true"
+    draggable={false}
+   />
   </AdvancedMarker>)}
  {group&&<InfoWindow position={{lat:group.lat,lng:group.lng}} onCloseClick={()=>setSelected(undefined)}><div style={{maxWidth:280,maxHeight:350,overflowY:'auto',color:'#14283f',overflowWrap:'anywhere'}}><strong>Federal NERIS station locations</strong><p className="text-xs">Source-reported points; not confirmed current operating stations. End-user validation required.</p><ul className="divide-y">{group.rows.map(s=><li key={s.id}><NerisMapStationDetails station={s} countyNames={countyNames} agencies={agencies} onOpen={onOpen}/></li>)}</ul></div></InfoWindow>}
  </>;

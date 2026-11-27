@@ -1,3 +1,6 @@
+import { registryIdentityKey } from '../../services/registryAccountLink';
+import { useDiscoverySources } from '../../services/useDiscoverySources';
+import { linkedBillingOrganization, providerEvidenceNerisId } from '../../data/providerProfileEvidence';
 import type { RegistryIdentity } from '../../services/registryAccountLink';
 import type { ProviderEvidence } from '../../data/providerProfileEvidence';
 import { discoveryFacts, type DiscoveryFact } from '../../services/discoveryEvidence';
@@ -34,26 +37,40 @@ function Session({facts,agency, stakeholder, topic, objection, mode}: {facts:Dis
     {error && <p role="alert">{error}</p>}
   </div>;
 }
-export function DiscoveryCoach({agency,evidence,identity}:{agency:string;evidence?:ProviderEvidence;identity?:RegistryIdentity}) {
+export function DiscoveryCoach({agency,evidence,identity,billingNpi}:{agency:string;billingNpi?:string|null;evidence?:ProviderEvidence;identity?:RegistryIdentity}) {
   const [index,setIndex]=useState(0),[role,setRole]=useState('Training captain'),[mode,setMode]=useState<Mode>('ask');
-  const facts=discoveryFacts(evidence,identity);
+  const key=identity && registryIdentityKey(identity);
+  const npi=billingNpi === undefined ? (identity?.sourceName==='NPPES' ? identity.identifier : linkedBillingOrganization(key,evidence)) : billingNpi;
+  const sources=useDiscoverySources(npi || undefined,evidence?.registryKey ?? key,identity?.sourceName==='NERIS'?identity.identifier:providerEvidenceNerisId(evidence));
+  const facts=[...discoveryFacts(evidence,identity),...sources.facts].sort((a,b)=>(b.source.date.match(/\d{4}(?:-\d{2}){0,2}/)?.[0]??'').localeCompare(a.source.date.match(/\d{4}(?:-\d{2}){0,2}/)?.[0]??''));
+  const factKey=(f:DiscoveryFact)=>JSON.stringify([f.topic,f.source.url,f.source.date,f.detail]);
+
   const [selected,setSelected]=useState('all');
   const [device,setDevice]=useState(''),[product,setProduct]=useState(''),[task,setTask]=useState('');
   const [topic,question,objection,more,empathy]=discoveryLibrary[index];
   return <section className="pr-panel space-y-3"><h2 className="pr-icon-heading"><MessagesSquare aria-hidden="true"/>Discovery</h2>
     <h3>Ask this profile</h3>
-    <label className="block">Public evidence <select value={selected} onChange={e=>setSelected(e.target.value)}><option value="all">All available records ({facts.length})</option>{facts.map((f,i)=><option key={i} value={i}>{f.topic} · {f.detail.slice(0,70)} · {f.source.date}</option>)}</select></label>
-    {facts.length ? <details key={selected} open={selected!=='all'}><summary>{selected==='all'?'Latest dated evidence':'Selected record'}</summary>{(selected==='all'?facts.slice(0,5):[facts[Number(selected)]]).filter(Boolean).map((f,i)=><p key={i}>{f.detail}<br/><small>{f.source.label} · {f.source.date}</small></p>)}</details>:<p>No matched public evidence is loaded for this assistant.</p>}
+    {sources.loading && <p role="status">Loading matched sources…</p>}
+    {sources.unavailable && <p role="status">Sources currently unavailable: {sources.unavailable}.</p>}
+    {sources.partial && <p>Partial purchasing results.</p>}
+    <label className="block">Public evidence <select value={selected} onChange={e=>setSelected(e.target.value)}><option value="all">All available records ({facts.length})</option>{facts.map((f,i)=><option key={i} value={factKey(f)}>{f.topic} · {f.detail.slice(0,70)} · {f.source.date}</option>)}</select></label>
+    {facts.length ? <details key={selected} open={selected!=='all'}><summary>{selected==='all'?'Latest dated evidence':'Selected record'}</summary>{(selected==='all'?facts.slice(0,5):facts.filter(f=>factKey(f)===selected)).filter(Boolean).map((f,i)=><p key={i}>{f.detail}<br/><small>{f.source.label} · {f.source.date}</small></p>)}</details>:<p>No matched public evidence is loaded for this assistant.</p>}
     <details><summary>Compare equipment for a crew evaluation</summary>
     <label className="block">Documented equipment <select value={device} onChange={e=>setDevice(e.target.value)}><option value="">Select equipment</option>{facts.filter(f=>f.topic==='Equipment').map((f,i)=><option key={i} value={f.detail}>{f.detail.slice(0,90)}</option>)}</select></label>
     <label className="block">ZOLL model to evaluate <select value={product} onChange={e=>setProduct(e.target.value)}><option value="">Select model</option>{Object.values(ZOLL_PRODUCTS).map(p=><option key={p.id}>{p.name}</option>)}</select></label>
     <label className="block">Task the crew wants to evaluate <input value={task} onChange={e=>setTask(e.target.value)} maxLength={200}/></label>
+    {device && product && <div className="grid gap-2 sm:grid-cols-2">
+      <article className="pr-panel"><strong>Department record</strong><p>{device}</p>
+      {/\bLIFEPAK 15\b/i.test(device.split(' · ').slice(0,2).join(' ')) && <p>Stryker lists 18.5 lb fully featured with two batteries and roll paper. Source: LIFEPAK 15 data sheet.</p>}</article>
+      <article className="pr-panel"><strong>{product}</strong>
+      {product===ZOLL_PRODUCTS['x-series-advanced'].name ? <p>ZOLL lists 10.6 lb without battery and paper. The factory-refurbished package lists a SurePower II battery. Source: X Series Advanced Operator’s Guide, appendix A, and ZOLL ExpertCare package list.</p>:<p>Configuration-specific accessory requirements need confirmation.</p>}</article>
+      <p>Compare weights with the same installed accessories. Confirm mount, power supply and cables for each vehicle.</p></div>}
     {task && product && device && <p>Use the same setup and crew-defined task on both configurations: <strong>{task}</strong>. Record the steps, accessories required, and crew observations for each. Confirm installed options on both devices.</p>}</details>
     <label className="block">Conversation topic <select value={index} onChange={e=>setIndex(Number(e.target.value))}>{discoveryLibrary.map(([label],i)=><option value={i} key={label}>{label}</option>)}</select></label>
     <h3>{question}</h3><details><summary>Practice objection · “{objection}”</summary>
     <p><strong>Tell me more</strong> · {more}</p><p><strong>Feel, felt, found</strong> · {empathy}</p></details>
     <label className="block">Stakeholder <select value={role} onChange={e=>setRole(e.target.value)}>{['Chief','Training captain','Frontline medic','Fleet manager','Medical director','Purchasing officer'].map(r=><option key={r}>{r}</option>)}</select></label>
     <label className="block">AI mode <select value={mode} onChange={e=>setMode(e.target.value as typeof mode)}><option value="ask">Ask this profile</option><option value="coach">Ask a discovery coach</option><option value="practice">Practice with a stakeholder</option></select></label>
-    <Session facts={selected==='all'?facts:facts.slice(Number(selected),Number(selected)+1)} key={[agency,role,index,mode,selected].join('|')} agency={agency} stakeholder={role} topic={topic} objection={objection} mode={mode}/>
+    <Session facts={selected==='all'?facts:facts.filter(f=>factKey(f)===selected)} key={[agency,role,index,mode,selected].join('|')} agency={agency} stakeholder={role} topic={topic} objection={objection} mode={mode}/>
   </section>;
 }

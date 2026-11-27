@@ -1,3 +1,4 @@
+import { ProviderChanges } from './ProviderChanges';
 import { DiscoveryCoach } from './DiscoveryCoach';
 import { ProviderStory } from './ProviderStory';
 import { InlineAgencyRecords } from './InlineAgencyRecords';
@@ -265,7 +266,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
-      {section === 'overview' && <><ProfileGlance evidence={evidence} /><ProviderStory key={reference} evidence={evidence} nerisId={profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence)} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
+      {section === 'overview' && <><ProviderChanges evidence={evidence} /><ProfileGlance evidence={evidence} /><ProviderStory key={reference} evidence={evidence} nerisId={profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence)} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />

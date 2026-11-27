@@ -1,3 +1,5 @@
+import { ProviderChanges } from './profile/ProviderChanges';
+import { profileCmsLookupNpi } from '../services/cmsAmbulanceEvidence';
 import { DiscoveryCoach } from './profile/DiscoveryCoach';
 import { ProviderStory } from './profile/ProviderStory';
 import { InlineAgencyRecords } from './profile/InlineAgencyRecords';
@@ -1660,7 +1662,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             aria-label={PROFILE_SECTIONS.find(tab=>tab.id===activeSection)?.label}
             tabIndex={0}
           >
-          {activeSection === 'discovery_coach' && <DiscoveryCoach identity={publicIdentity} evidence={publicEvidence} key={rawAgency.id} agency={agency.name} />}
+          {activeSection === 'discovery_coach' && <DiscoveryCoach billingNpi={profileCmsLookupNpi(rawAgency.npiNumber || !linkedBillingNpi ? rawAgency : {...rawAgency,npiNumber:linkedBillingNpi}).npi} identity={publicIdentity} evidence={publicEvidence} key={rawAgency.id} agency={agency.name} />}
           {activeSection === 'overview' && (
             <div className="pi-surface p-3 text-sm" data-testid="provider-validation-notice"><strong>End-user validation required</strong><p>Registry and imported records are working source information, not confirmed operating facts. Verify individual addresses, equipment, contacts, dates and volumes with the agency. Missing values are not reported.</p><button type="button" className="workspace-button min-h-11" onClick={openProfileSources}>Review individual facts and sources</button></div>
           )}
@@ -1671,6 +1673,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
+          {activeSection === 'overview' && <ProviderChanges evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderStory key={rawAgency.id} evidence={publicEvidence} nerisId={publicIdentity?.sourceName === 'NERIS' ? publicIdentity.identifier : providerEvidenceNerisId(publicEvidence)} stationDevices={<StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />} />}
           {activeSection === 'overview' && <InlineAgencyRecords state={agency.stateCode} registryKey={publicIdentity ? registryIdentityKey(publicIdentity) : undefined} evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderEvidenceStatus evidence={publicEvidence} />}

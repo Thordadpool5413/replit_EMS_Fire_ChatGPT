@@ -39,6 +39,9 @@ export function floridaCounty(row:FloridaEmsLicense,countyNames:ReadonlyMap<stri
 }
 /** A license may name both the parent and its operating service. */
 export function floridaServiceName(row: FloridaEmsLicense): string | undefined {
+ // Health First publishes the full operating name truncated in the state PDF.
+ // https://www.hf.org/healthcare-home/departments-services/trauma-services/first-flight-brevard-countys-air-ambulance
+ if (row.identifier === '506' && row.city.toLowerCase() === 'melbourne' && /dba first flig$/i.test(row.name)) return 'First Flight';
  const tradeName = row.name.split(/\s+d\.?b\.?a\.?\s+/i)[1]?.trim();
  if (tradeName && !/\b(?:hospitals?|clinics?|holdings|medical center)\b/i.test(tradeName)) return tradeName;
  if (hasProviderServiceName(row.name)) return row.name;

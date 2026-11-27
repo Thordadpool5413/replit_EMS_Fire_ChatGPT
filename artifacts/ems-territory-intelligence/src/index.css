@@ -3,6 +3,7 @@
 @import "@fontsource-variable/instrument-sans";
 @import "@fontsource-variable/manrope";
 @import "tailwindcss";
+@import "./components/profile/service-brief.css";
 
 @import "./styles/shared/foundation.css";
 @import "./styles/shell/foundation.css";

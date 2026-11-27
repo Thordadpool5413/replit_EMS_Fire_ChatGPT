@@ -2108,6 +2108,33 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       {activeFocusLevel === 'providers' && (
         <div className="county-geo county-providers-shell grid grid-cols-1 min-w-0">
           
+          {/* Real-World County Boundary Polygon & Plotted City Jurisdiction Inspector */}
+          {selectedStateCode !== 'all' && selectedCountyName !== 'all' && (
+            <ErrorBoundary
+              key={`county-map:${selectedStateCode}:${selectedCountyName}`}
+              fallback={<TerritoryMapFailureFallback title="County boundary map unavailable" />}
+            >
+              <RealWorldCountyBoundaryMap
+                providerScope={agencyCategoryFilter}
+                stateCode={selectedStateCode}
+                selectedCountyName={selectedCountyName}
+                selectedCityName={selectedCityName}
+                agencies={agencies}
+                onSelectAgency={onSelectAgency}
+                onSelectCounty={(countyName, stCode) => handleSelectCounty(countyName, stCode)}
+                onSelectCity={(cityName, countyName, stCode) => handleSelectCity(cityName, countyName, stCode)}
+                showExplorerHeader={false}
+                onShowAllPlaces={() => {
+                  setSelectedCityName('all');
+                  setAgencyPage(1);
+                  if (onSyncGlobalGeography) {
+                    onSyncGlobalGeography(selectedStateCode, selectedCountyName, 'all', agencyCategoryFilter);
+                  }
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
           {/* Source-native discovery, separate from saved or modeled records. */}
           <NationalSourceDirectory
             stateCode={selectedStateCode === 'all' ? '' : selectedStateCode}
@@ -2121,6 +2148,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             onDecideSourceRecord={onDecideSourceRecord}
             onCreateAgency={onAddAgency}
           />
+          {(selectedCountyName === 'all' || agencies.length > 0) && <>
           {/* Streamlined Single-Row Filter Bar + Hybrid View Mode Toggle */}
           <div className="county-providers-head min-w-0">
             <div className="cv-geo-head" data-testid="provider-mobile-summary">
@@ -2306,33 +2334,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </div>
           </div>
 
-          {/* Real-World County Boundary Polygon & Plotted City Jurisdiction Inspector */}
-          {selectedStateCode !== 'all' && selectedCountyName !== 'all' && (
-            <ErrorBoundary
-              key={`county-map:${selectedStateCode}:${selectedCountyName}`}
-              fallback={<TerritoryMapFailureFallback title="County boundary map unavailable" />}
-            >
-              <RealWorldCountyBoundaryMap
-                providerScope={agencyCategoryFilter}
-                stateCode={selectedStateCode}
-                selectedCountyName={selectedCountyName}
-                selectedCityName={selectedCityName}
-                agencies={agencies}
-                onSelectAgency={onSelectAgency}
-                onSelectCounty={(countyName, stCode) => handleSelectCounty(countyName, stCode)}
-                onSelectCity={(cityName, countyName, stCode) => handleSelectCity(cityName, countyName, stCode)}
-                showExplorerHeader={false}
-                onShowAllPlaces={() => {
-                  setSelectedCityName('all');
-                  setAgencyPage(1);
-                  if (onSyncGlobalGeography) {
-                    onSyncGlobalGeography(selectedStateCode, selectedCountyName, 'all', agencyCategoryFilter);
-                  }
-                }}
-              />
-            </ErrorBoundary>
-          )}
-
+          </>}
           {/* Collapsible Connected City Filter Drawer */}
           {showCityPillsDrawer && availableCities.length > 0 && (
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2.5 animate-in fade-in duration-150">
@@ -2402,6 +2404,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           )}
 
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
+          {(selectedCountyName === 'all' || matchingAgencies.length > 0) && <>
           <div id="territory-results-summary" className="territory-results-summary scroll-mt-24" data-testid="territory-results-summary" aria-live="polite">
             <div>
               <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong><p className="text-xs">{matchingAgencies.filter(isGeographicProspect).length.toLocaleString()} geography-generated prospects; not a count of registered or operating providers.</p>
@@ -2417,6 +2420,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             )}
           </div>
 
+          </>}
           {effectiveDirectoryStatus === 'loading' && selectedStateCode !== 'all' && (
             <p className="territory-data-status" role="status">
               Loading saved agency records for {ALL_50_STATES_SUMMARIES[selectedStateCode]?.state || selectedStateCode}. Cached records, if available, remain visible.
@@ -2428,7 +2432,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </p>
           )}
 
-          {paginatedAgencies.length === 0 ? (
+          {paginatedAgencies.length === 0 && selectedCountyName !== 'all' && !agencies.length ? null : paginatedAgencies.length === 0 ? (
             <div className="territory-empty-state" role={effectiveDirectoryStatus === 'loading' ? 'status' : 'region'}>
               {effectiveDirectoryStatus === 'loading' && selectedStateCode !== 'all' ? (
                 <>

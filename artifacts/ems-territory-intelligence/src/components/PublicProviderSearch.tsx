@@ -1,3 +1,4 @@
+import { ServiceBrief } from './profile/ServiceBrief';
 import React,{useEffect,useMemo,useState} from 'react';
 import type {Agency,AgencySourceRecordAssociation} from '../types';
 import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
@@ -42,22 +43,22 @@ export function PublicProviderSearch({scope,countyUnresolved=false,agencies,onSt
   {busy&&<p role="status">Searching source records…</p>}
   {!busy&&ready&&!blocked&&manifest&&!error&&<p role="status" data-testid="public-provider-count">{result.records.length.toLocaleString()} matching public listings{incomplete?' (partial coverage)':''} · {result.statesSearched} state/DC {result.statesSearched===1?'directory':'directories'} checked. Equipment and operating status require validation.</p>}
   {!busy&&ready&&result.records.length===0&&!incomplete&&!error&&manifest&&!blocked&&<p className="text-sm">No matching listing in the searched snapshot. Review the search and geography; absence does not establish that a provider does not exist.</p>}
-  <ul className="space-y-2">{visible.map(raw=>{
+  <ul className="grid items-start gap-3 md:grid-cols-2">{visible.map(raw=>{
    const stateLocations=locations[raw[3]],row=enrichRegistryRow(raw,stateLocations),loc=listingLocation(raw,stateLocations);
     const rawIdentity=snapshotRegistryIdentity(row,row[1]==='USFA'?manifest?.sources.USFA.retrievedAt:manifest?.sources.NPPES.reportingPeriod,row[1]==='USFA'?manifest?.sources.USFA.retrievedAt:manifest?.sources.NPPES.stagedAt);
     const identity=rawIdentity&&withholdReviewedRegistryCounty(rawIdentity,loc.status==='review'||loc.status==='historical');
    const sourceUrl=row[1]==='USFA'?'https://apps.usfa.fema.gov/registry/search':row[11];
    return <li key={raw[0]} className="border rounded-lg p-3 space-y-1 min-w-0 break-words" data-testid="public-provider-result">
-    <strong className="block">{row[2]}</strong>
+    <ServiceBrief record={{state:row[3],source:'registry',id:row[0]}} name={row[2]} location={[row[4],row[3]].filter(Boolean).join(', ')}/>
     <p className="text-sm">{loc.address?addressText(loc.address):[row[4],row[3],row[5]].filter(Boolean).join(' ')}{!loc.address&&!stateLocations?' · address data loading or unavailable':''}</p>
     <p className="text-xs">{registryIdentifierText(row)} · {row[1]==='USFA'?'USFA fire registry':'CMS NPPES'} · {stateLocations?LISTING_LOCATION_LABELS[loc.status]:'Location snapshot not loaded'}</p>
-    <button className="workspace-button min-h-11" type="button" aria-expanded={details===raw[0]} onClick={()=>setDetails(details===raw[0]?undefined:raw[0])}>{details===raw[0]?'Close provider profile':'View provider profile'}</button>
-    {details===raw[0]&&<div className="border-t pt-2 space-y-2" data-testid="public-provider-profile"><p className="text-sm font-semibold">End-user validation required</p><p className="text-xs">Source-reported identity, not a confirmed operating station. Equipment, decision-makers, purchasing and service volumes: not reported by this registry.</p>
+    <button className="workspace-button min-h-11" type="button" aria-expanded={details===raw[0]} onClick={()=>setDetails(details===raw[0]?undefined:raw[0])}>{details===raw[0]?'Close registry details':'Registry details'}</button>
+    {details===raw[0]&&<div className="border-t pt-2 space-y-2" data-testid="public-provider-profile"><p className="text-sm font-semibold">End-user validation required</p>
      <p className="text-xs">{row[6]?manifest?.countyNames[row[6]]||row[6]:'County not established'} · {loc.match?addressMatchLabel(loc.match):'No accepted map coordinates'}</p>
      {loc.primaryAddressEvidence&&loc.address&&<p className="text-xs">{primaryAssociationLabel(loc.primaryAddressEvidence)}<br/>{addressText(loc.address)}{loc.primaryAddressEvidence.originalAddress&&<><br/>Original registry address: {addressText(loc.primaryAddressEvidence.originalAddress)}</>}</p>}
      {loc.officialAddressEvidence&&<p className="text-xs"><a className="underline" href={loc.officialAddressEvidence.sourceUrl} target="_blank" rel="noreferrer">{loc.officialAddressEvidence.authority}</a> · checked {loc.officialAddressEvidence.checkedAt}</p>}
      <div className="flex flex-wrap gap-3 text-sm"><a className="underline" href={sourceUrl} target="_blank" rel="noreferrer">Original source</a>{loc.address&&isPhysicalStreet(loc.address.street)&&loc.status!=='historical'&&loc.status!=='review'&&<a className="underline" href={'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(addressText(loc.address))} target="_blank" rel="noreferrer">Directions</a>}{loc.match&&<a className="underline" href={'https://www.google.com/maps/search/?api=1&query='+loc.match.latitude+','+loc.match.longitude} target="_blank" rel="noreferrer">View mapped point</a>}</div>
-     {identity?<RegistryAccountReview identity={{...identity,countyName:identity.countyFips?manifest?.countyNames[identity.countyFips]:undefined}} agencies={agencies} onOpen={onOpen} onCreate={onCreate} onDecide={onDecide}/>:<p className="text-xs">Official identity missing; review before creating an account.</p>}
+     {identity?<RegistryAccountReview showPublicProfile={false} identity={{...identity,countyName:identity.countyFips?manifest?.countyNames[identity.countyFips]:undefined}} agencies={agencies} onOpen={onOpen} onCreate={onCreate} onDecide={onDecide}/>:<p className="text-xs">Official identity missing; review before creating an account.</p>}
     </div>}
    </li>;
   })}</ul>

@@ -27,7 +27,7 @@ function Timeline({ events, empty }: { events: Event[]; empty: string }) {
 
 const views = [['Equipment', CalendarClock], ['Stations', Warehouse], ['Funding', Landmark]] as const;
 export function ProviderStory({ evidence, nerisId, stationDevices }: { evidence?: ProviderEvidence; nerisId?: string; stationDevices?: React.ReactNode }) {
-  const [view,setView] = useState<string>('Equipment');
+  const [view,setView] = useState<string>(evidence?.equipment?.length ? 'Equipment' : evidence?.funding?.length ? 'Funding' : (nerisId || evidence?.stationDirectory) ? 'Stations' : 'Equipment');
   const equipment: Event[] = [];
   const funding: Event[] = [];
   for (const unit of evidence?.equipment ?? []) {

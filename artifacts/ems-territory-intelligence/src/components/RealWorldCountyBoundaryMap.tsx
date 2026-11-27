@@ -435,6 +435,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         </header>
       )}
 
+      {!activeCountyNode && <>
       <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={equipmentAgencies} scopeLabel="loaded records for this state and provider scope, before county selection"/>
       {isEquipmentMapActive&&<EquipmentCoverageLegend
         note={`County records are matched by FIPS or an unambiguous county name within ${stateNode.stateName}. “Both found in area” may be different agencies; candidate records still need confirmation. ${equipmentCoverage.unassignedCounty} loaded records have unresolved county geography and are not assigned to a county.`}
@@ -446,6 +447,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
         {' '}equipment details recorded {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.reported||0} · no substantive equipment entry {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unreported||0}.
         {' '}Loaded-record counts, not a complete equipment census.
       </p>}
+      </>}
       {/* Mode A: statewide county boundaries + inspector */}
       {!activeCountyNode && (
         <>
@@ -732,9 +734,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                           clickable={false}
                           fillColor={isEquipmentMapActive ? '#f3b34c' : '#32a4c8'}
                           fillOpacity={isEquipmentMapActive ? 0.16 : 0.11}
-                          strokeColor="#ffffff"
+                          strokeColor="#c6fff7"
                           strokeOpacity={0.95}
-                          strokeWeight={2.5}
+                          strokeWeight={3}
                           zIndex={20}
                         />
                       ))}
@@ -748,17 +750,9 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
                             zIndex={isSelected ? 1000 : pin.isCountySeat ? 700 : 500}
                           >
-                            <img
-                              className={`county-map-native-pin${isSelected ? ' is-selected' : ''}`}
-                              src={isSelected
-                                ? 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png'
-                                : pin.isCountySeat
-                                  ? 'https://maps.google.com/mapfiles/ms/icons/yellow-pushpin.png'
-                                  : 'https://maps.google.com/mapfiles/ms/icons/blue-pushpin.png'}
-                              alt=""
-                              aria-hidden="true"
-                              draggable={false}
-                            />
+                            <span aria-hidden="true" className={'county-service-pin' + (pin.isCountySeat ? ' seat' : '') + (isSelected ? ' selected' : '')}>
+                              {isSelected ? '✓' : pin.isCountySeat ? '★' : '•'}
+                            </span>
                           </AdvancedMarker>
                         );
                       })}
@@ -913,6 +907,19 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
             </section>
           </div>
+          <details className="county-layer-options"><summary>Equipment map layers</summary>
+      <EquipmentMapFilter value={equipmentFilter} onChange={setEquipmentFilter} agencies={equipmentAgencies} scopeLabel="loaded records for this state and provider scope, before county selection"/>
+      {isEquipmentMapActive&&<EquipmentCoverageLegend
+        note={`County records are matched by FIPS or an unambiguous county name within ${stateNode.stateName}. “Both found in area” may be different agencies; candidate records still need confirmation. ${equipmentCoverage.unassignedCounty} loaded records have unresolved county geography and are not assigned to a county.`}
+      />}
+      {isEquipmentMapActive&&inspectedCounty&&<p className="cv-note" role="status" data-testid={`equipment-county-rollup-${inspectedCounty.countyFips}`}>
+        {inspectedCounty.countyName} · {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.total||0} loaded records ·
+        {' '}ZOLL {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.zoll||0} · other makers {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.competitor||0} ·
+        {' '}mixed {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.mixed||0} · no recognized maker {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unknown||0} ·
+        {' '}equipment details recorded {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.reported||0} · no substantive equipment entry {equipmentCoverage.byCounty[inspectedCounty.countyFips]?.unreported||0}.
+        {' '}Loaded-record counts, not a complete equipment census.
+      </p>}
+          </details>
           {unmatchedSection}
         </>
       )}

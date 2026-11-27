@@ -26,3 +26,13 @@ test('Orange County billing and fire identities produce one selectable provider 
  assert.deepEqual(visible.map(a=>a.id),[fire[0]]);
  assert.ok(matchesAgencyScope(visible[0],'ems') && matchesAgencyScope(visible[0],'fire'));
 });
+
+test('Cocoa license 518 resolves to the department with municipal contacts and activity', async()=>{
+ const {findProviderEvidenceByConfirmedKeys}=await import('../data/providerProfileEvidence');
+ const ref=departmentProfile({state:'FL',source:'state-ems',id:'518'});
+ assert.equal(ref.id,'usfa:FL:19052');
+ const evidence=findProviderEvidenceByConfirmedKeys(['FDID:FL:19052']);
+ assert.equal(evidence?.stationDirectory?.stations.length,3);
+ assert.equal(evidence?.operations?.find(row=>row.label==='Medical incidents')?.value,3966);
+ assert.equal(evidence?.contacts?.find(row=>row.role==='Fire Chief')?.name,'Jonathan Lamm');
+});

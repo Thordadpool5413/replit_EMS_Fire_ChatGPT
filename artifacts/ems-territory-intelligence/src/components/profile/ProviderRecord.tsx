@@ -1,3 +1,4 @@
+import { ServiceBrief } from './ServiceBrief';
 import { departmentAliases, isCombinedDepartment } from '../../services/departmentIdentity';
 import { ProviderChanges } from './ProviderChanges';
 import { DiscoveryCoach } from './DiscoveryCoach';
@@ -277,7 +278,8 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
-      {section === 'overview' && <><ProviderChanges evidence={evidence} /><ProfileGlance evidence={evidence} /><ProviderStory key={reference} evidence={evidence} nerisId={stationId} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
+      {section === 'overview' && ref && <ServiceBrief record={ref} name={profile.name} location={profile.address ?? profile.city} serviceLevel={profile.identity?.serviceLevel} reportedStations={profile.reportedStationCount} reportDate={profile.source.date} overview/>}
+      {section === 'overview' && <><ProviderChanges evidence={evidence} />{(evidence?.equipment?.length || evidence?.funding?.length || stationId) ? <ProviderStory key={reference} evidence={evidence} nerisId={stationId} /> : null}</>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
@@ -287,8 +289,8 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
-          {section === 'discovery' && <DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} />}
-          {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /><ProviderEvidenceStatus evidence={evidence} /></>}
+          {section === 'discovery' && <><ProfileGlance evidence={evidence}/><DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} /></>}
+          {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} /></>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <><ProviderPeople evidence={evidence} /><FloridaProviderContacts license={floridaLicense} /></>}
           {section === 'stations' && <><ProviderStations profile={profile} evidence={evidence} />
@@ -297,7 +299,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {section === 'claims' && <Claims profile={profile} evidence={evidence} />}
           {section === 'quality' && <><Quality evidence={evidence} />{profile.countyFips === '53033' && <KingCountyOutcome />}</>}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
-          {section === 'sources' && <Sources profile={profile} evidence={evidence} />}
+          {section === 'sources' && <><Sources profile={profile} evidence={evidence}/><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence}/><ProviderEvidenceStatus evidence={evidence}/></>}
         </div>
         <div className="pr-section-rail">
           {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} linkedNerisId={stationId} />}

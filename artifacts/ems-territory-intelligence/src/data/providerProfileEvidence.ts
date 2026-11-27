@@ -195,7 +195,26 @@ const coralGrants = {
 };
 
 /** Attach only to the exact public identity. Name-only or city-only records are ineligible. */
+const cocoaDirectory = {label:'City of Cocoa fire department directory', date:'Accessed 2026-11-27', url:'https://www.cocoafl.gov/m/directory/department?did=6'};
+const cocoaActivity = {label:'City of Cocoa annual statistics', date:'2021', url:'https://www.cocoafl.gov/1716/Annual-Statistics'};
 export const providerProfileEvidence = [
+  {
+    registryKey:'FDID:FL:19052', registryName:'Cocoa Fire Department', combinedServices:true,
+    operations:[
+      {label:'Calls for service',value:5920,reportingPeriod:'Calendar 2021',source:cocoaActivity},
+      {label:'Medical incidents',value:3966,reportingPeriod:'Calendar 2021',source:cocoaActivity},
+      {label:'Fire incidents',value:1954,reportingPeriod:'Calendar 2021',source:cocoaActivity},
+    ],
+    contacts:[
+      {role:'Fire Chief',name:'Jonathan Lamm',phone:'321-639-7610',source:cocoaDirectory},
+      {role:'Assistant Fire Chief',name:'Roderick Moore',email:'rmoore@cocoafl.gov',source:cocoaDirectory},
+    ],
+    stationDirectory:{source:cocoaDirectory,stations:[
+      {number:'1',name:'Fire Station 1',category:'Department',address:'1740 Dixon Blvd, Cocoa, FL 32922',contact:{role:'Station phone',phone:'321-639-7605',source:cocoaDirectory}},
+      {number:'2',name:'Fire Station 2',category:'Department',address:'300 Brunson Blvd, Cocoa, FL 32922',contact:{role:'Station phone',phone:'321-433-8655',source:cocoaDirectory}},
+      {number:'3',name:'Fire Station 3',category:'Department',address:'3505 SR 524, Cocoa, FL 32926',contact:{role:'Station phone',phone:'321-433-8682',source:cocoaDirectory}},
+    ]},
+  },
   {
     registryKey: 'FDID:FL:61091', registryName: 'Flagler County Fire Rescue', combinedServices: true,
     publicAwardRecipients: ['Flagler County', 'County of Flagler'],
@@ -505,6 +524,8 @@ export const providerProfileEvidence = [
 
 // Identity bridges grounded in the state roster and matching published headquarters.
 const registryEvidenceMatches = new Map([
+  ['STATE-EMS:FL:license:518', { name: 'City Of Cocoa/Cocoa Fire Department', fdid: 'FDID:FL:19052' }],
+  ['NERIS:FD12009983', { name: 'Cocoa Fire Department', fdid: 'FDID:FL:19052' }],
   ['NERIS:FD25015329', { name: 'Easthampton Fire Department', fdid: 'FDID:MA:15087' }],
   ['NERIS:FD27017449', { name: 'Cloquet Area Fire District', fdid: 'FDID:MN:09305' }],
   ['NPI:1871748681', { name: 'CLOQUET AREA FIRE DISTRICT', fdid: 'FDID:MN:09305' }],

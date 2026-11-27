@@ -1,3 +1,4 @@
+import { ServiceBrief } from './profile/ServiceBrief';
 import React,{useEffect,useMemo,useState} from 'react';
 import type {Agency,AgencySourceRecordAssociation} from '../types';
 import {loadOhioRoster,ohioRegistryIdentity,type StateEmsRoster as Roster} from '../services/stateEmsRoster';
@@ -13,7 +14,7 @@ export function StateEmsRoster({agencies,onOpen,onDecide,onCreate,city='',county
  <label className="block text-sm">Search Ohio agency codes<input aria-label="Search Ohio agency codes" className="block w-full min-w-0 border rounded p-2 bg-transparent text-base" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Agency, city or code"/></label>
  <label className="block text-sm"><input type="checkbox" checked={emsOnly} onChange={e=>{setEmsOnly(e.target.checked);setPage(1)}}/> Only listings with reported EMS service levels</label>
  <p role="status" className="text-sm">{matches.length.toLocaleString()} matching agency listings</p>
- <ul>{matches.slice((page-1)*8,page*8).map(r=><li className="py-3 border-b text-sm break-words" key={r.identifier}><strong>{r.name}</strong><p>Ohio agency code {r.identifier} · {r.city||'City not reported'}</p><p>EMS service level: {r.serviceLevel??'Not reported'}</p><RegistryAccountReview identity={ohioRegistryIdentity(data,r)} agencies={agencies} onOpen={onOpen} onDecide={onDecide} onCreate={onCreate}/></li>)}</ul>
+ <ul className="grid items-start gap-3 md:grid-cols-2">{matches.slice((page-1)*8,page*8).map(r=><li className="py-3 border-b text-sm break-words" key={r.identifier}><ServiceBrief record={{state:'OH',source:'state-ems',id:r.identifier}} name={r.name} location={r.city} serviceLevel={r.serviceLevel}/><p>Ohio agency code {r.identifier} · {r.city||'City not reported'}</p><p>EMS service level: {r.serviceLevel??'Not reported'}</p><RegistryAccountReview identity={ohioRegistryIdentity(data,r)} agencies={agencies} onOpen={onOpen} onDecide={onDecide} onCreate={onCreate}/></li>)}</ul>
  <div className="flex flex-wrap items-center gap-2"><button type="button" className="workspace-button" disabled={page===1} onClick={()=>setPage(x=>x-1)}>Previous</button><span>Page {page} of {Math.max(1,Math.ceil(matches.length/8))}</span><button type="button" className="workspace-button" disabled={page*8>=matches.length} onClick={()=>setPage(x=>x+1)}>Next</button></div></>}
  </section>
 }

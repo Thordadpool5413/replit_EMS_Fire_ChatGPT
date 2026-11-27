@@ -275,7 +275,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
-          {section === 'discovery' && <DiscoveryCoach key={reference} agency={profile.name} />}
+          {section === 'discovery' && <DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} />}
           {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /><ProviderEvidenceStatus evidence={evidence} /></>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <><ProviderPeople evidence={evidence} /><FloridaProviderContacts license={floridaLicense} /></>}

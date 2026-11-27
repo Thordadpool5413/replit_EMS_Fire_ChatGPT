@@ -169,6 +169,20 @@ export function listingLocation(row:SourceDirectoryRecord,locations:LocationStat
  if(e.match&&(e.sourceCounty&&e.sourceCounty!==e.countyFips||row[6]&&row[6]!==e.countyFips))return {address:loc,status:'review',match:null};
  return {address:loc,status:e.status,match:e.match,officialAddressEvidence:e.officialAddressEvidence,primaryAddressEvidence};
 }
+/** Use the same accepted location for county browsing and the individual profile. */
+export function providerProfileCountyFips(
+ row: SourceDirectoryRecord,
+ locations: LocationState | undefined,
+ location = listingLocation(row, locations),
+): string {
+ if (location.status === 'review' || location.status === 'historical') return '';
+ if (row[6]) return row[6];
+ if (location.status !== 'mapped') return '';
+ const identity = snapshotRegistryIdentity(row);
+ const key = identity && registryIdentityKey(identity);
+ return (key && locations?.entries.get(key)?.countyFips) || '';
+}
+
 export const LISTING_LOCATION_LABELS:Record<ListingLocation['status'],string>={
  mapped:'Mapped street address', 'missing-identity':'Registry ID not reported; location association needs review', 'source-missing':'Street address not reported', 'not-eligible':'Mailing/nonstandard address or ZIP missing; no street pin', historical:'Historical source record', review:'Source or county disagreement; review required', pending:'Address recovered; coordinate match pending', unavailable:'Geocoder unavailable; retry required', 'no-match':'No exact street match; research required', 'not-checked':'Address recorded; coordinates not checked',
 };

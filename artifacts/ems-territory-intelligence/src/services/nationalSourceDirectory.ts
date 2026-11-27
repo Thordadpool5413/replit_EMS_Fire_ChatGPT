@@ -40,9 +40,10 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
  })().catch(error=>{statePromises.delete(state);throw error;});
  statePromises.set(state,pending);return pending;
 }
-export function filterSourceDirectory(records:SourceDirectoryRecord[],scope:{source?:'all'|'USFA'|'NPPES';countyFips?:string;query?:string;unassignedOnly?:boolean}):SourceDirectoryRecord[]{
+export function filterSourceDirectory(records:SourceDirectoryRecord[],scope:{source?:'all'|'USFA'|'NPPES';countyFips?:string;query?:string;unassignedOnly?:boolean;countyOf?:(row:SourceDirectoryRecord)=>string}):SourceDirectoryRecord[]{
  const words=(scope.query??'').toLocaleLowerCase().split(/\s+/).filter(Boolean);
- return records.filter(r=>(!scope.source||scope.source==='all'||r[1]===scope.source)&&(!scope.countyFips||r[6]===scope.countyFips)&&(!scope.unassignedOnly||!r[6])&&words.every(w=>[r[0],r[2],r[4],r[5],r[7],r[10]].join(' ').toLocaleLowerCase().includes(w)));
+ const countyOf=scope.countyOf??((row:SourceDirectoryRecord)=>row[6]);
+ return records.filter(r=>(!scope.source||scope.source==='all'||r[1]===scope.source)&&(!scope.countyFips||countyOf(r)===scope.countyFips)&&(!scope.unassignedOnly||!countyOf(r))&&words.every(w=>[r[0],r[2],r[4],r[5],r[7],r[10]].join(' ').toLocaleLowerCase().includes(w)));
 }
 /** Count source rows only when their county FIPS belongs to the loaded county-equivalent directory.
  * Rows from USFA and NPPES remain separate registry listings; this is not a unique-agency count.

@@ -21,8 +21,8 @@ export const ClinicalMeasures: React.FC<{ agency: Agency }> = ({ agency }) => {
     { key: 'ccf', label: 'Chest compression fraction', def: 'Of CPR time in resuscitations, share with compressions active', value: q.nemsqaChestCompressionFractionPct },
     { key: 'etco2', label: 'ETCO2 ventilation compliance', def: 'Of ventilated patients, share with ETCO2 maintained 35-45 mmHg', value: q.nemsqaEtco2VentilationCompliancePct },
     { key: 'peds', label: 'Pediatric respiratory support', def: 'Of pediatric respiratory-distress patients, share given respiratory support (NEMSQA Pediatrics-01)', value: q.nemsqaPediatricRespiratorySupportPct },
-    { key: 'stroke', label: 'Stroke last-known-well', def: 'Of suspected-stroke patients, share with last-known-well documented (NEMSQA Stroke-01)', value: q.nemsqaStrokeLkwDocumentedPct },
-    { key: 'pain', label: 'Trauma pain management', def: 'Of trauma patients with pain, share assessed and addressed (NEMSQA Trauma-01)', value: q.nemsqaPainManagementEffectivePct },
+    { key: 'stroke', label: 'Stroke last-known-well', def: 'Of suspected-stroke patients, share with last-known-well documented', value: q.nemsqaStrokeLkwDocumentedPct },
+    { key: 'pain', label: 'Trauma pain management', def: 'Of trauma patients with pain, share assessed and addressed', value: q.nemsqaPainManagementEffectivePct },
   ];
   const reported = rows.filter((r) => isNum(r.value));
   const missing = rows.filter((r) => !isNum(r.value));

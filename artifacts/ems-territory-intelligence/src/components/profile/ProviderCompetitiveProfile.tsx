@@ -1,3 +1,4 @@
+import { registryProfileHref } from '../../navigation/providerProfileUrl';
 import React,{useEffect,useId,useMemo,useRef,useState} from 'react';
 import {ChevronDown,ExternalLink,ShieldCheck} from 'lucide-react';
 import type {Agency} from '../../types';
@@ -60,10 +61,12 @@ function GrantResearch({agency,directory}:{agency:Agency;directory:Agency[]}){
 export function ProviderCompetitiveProfile({agency,directory,view,onOpenSources}:{agency:Agency;directory:Agency[];view:'equipment'|'purchasing';onOpenSources:()=>void}){
  const [open,setOpen]=useState(false),id=useId();
  const data=useMemo(()=>buildProviderCompetitiveProfile(agency,directory),[agency,directory]);
+ const publicProfile=agency.registryIdentity && registryProfileHref(agency.registryIdentity);
  const heading=view==='equipment'?'Competitive equipment evidence':'Purchasing & funding evidence';
  const count=view==='equipment'?data.documentedCategories+' of 6 categories with dated local observations':data.purchasing.filter(d=>d.status==='document-observation').length+' dated local purchasing / funding observations';
  return <section className="pcp-panel" aria-label={heading} data-testid={'provider-competitive-'+view}>
   <div className="pcp-heading"><ShieldCheck size={20} aria-hidden="true"/><div><h3>{heading}</h3><p>{data.identityReady&&data.complete?count:'Source identity or evidence review needed'}</p></div><button className="pcp-toggle" type="button" aria-expanded={open} aria-controls={id} onClick={()=>setOpen(v=>!v)}>{open?'Hide details':'Review evidence'} <ChevronDown size={16} aria-hidden="true"/></button></div>
+  {publicProfile&&view==='equipment'&&<a className="pcp-link" href={publicProfile+'#equipment'}>View public equipment &amp; funding records <ExternalLink size={14} aria-hidden="true"/></a>}
   {open&&<div id={id} className="pcp-body">
    <p>Local dated documents only. Not independently approved shared evidence, a verified installed fleet, or a qualified sales opportunity. Recorded inventory fields and estimates are not promoted here.</p>
    {!data.complete&&<p role="status">{data.reason??'Source records require review.'} {data.invalid>0?data.invalid+' invalid typed record(s) withheld.':''}</p>}

@@ -1,3 +1,4 @@
+import { InlineAgencyRecords } from './profile/InlineAgencyRecords';
 import { ProviderEvidenceStatus } from './PublicProviderEvidenceCoverage';
 import { ProviderSourceWorkspace } from './profile/ProviderSourceWorkspace';
 import { RegionalAedSources } from './RegionalAedSources';
@@ -1665,6 +1666,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
+          {activeSection === 'overview' && <InlineAgencyRecords state={agency.stateCode} registryKey={publicIdentity ? registryIdentityKey(publicIdentity) : undefined} evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderEvidenceStatus evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderCardIntelligence agency={agency} />}
           {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}

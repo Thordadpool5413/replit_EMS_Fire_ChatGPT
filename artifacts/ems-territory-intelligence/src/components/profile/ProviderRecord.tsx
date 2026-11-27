@@ -1,11 +1,12 @@
+import { InlineAgencyRecords } from './InlineAgencyRecords';
 import { KingCountyOutcome } from '../PublicProviderEvidenceCoverage';
 import { ProviderEvidenceStatus } from '../PublicProviderEvidenceCoverage';
 import { RegionalAedSources } from '../RegionalAedSources';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
-import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, linkedBillingOrganization, linkedFireDepartment, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
-import { parseProviderProfileRef, providerProfileHref } from '../../navigation/providerProfileUrl';
+import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, linkedBillingOrganization, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
+import { parseProviderProfileRef } from '../../navigation/providerProfileUrl';
 import { loadPublicProviderProfile, type PublicProviderProfile } from '../../services/publicProviderProfile';
 import { canCreateRegistryAccount } from '../../services/registryAccountLink';
 import { createSourceNativeAgency } from '../../services/sourceNativeAgency';
@@ -162,22 +163,6 @@ function Sources({ profile, evidence }: { profile: PublicProviderProfile; eviden
   </section>;
 }
 
-function RelatedRecords({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
-  const fire = linkedFireDepartment(profile.registryKey, evidence);
-  const links = <>
-      {fire && fire !== profile.registryKey && <li><a className="pr-source-link"
-        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'usfa:' + fire.slice(5) })}>Related fire registry profile</a></li>}
-      {providerEvidenceNerisId(evidence) && profile.identity?.sourceName !== 'NERIS' && <li><a className="pr-source-link"
-        href={providerProfileHref({ state: profile.stateCode, source: 'neris', id: providerEvidenceNerisId(evidence)! })}>Related NERIS station profile</a></li>}
-      {linkedBillingOrganization(profile.registryKey, evidence) && profile.identity?.sourceName !== 'NPPES' && <li><a className="pr-source-link"
-        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'nppes:' + linkedBillingOrganization(profile.registryKey, evidence) })}>Related billing organization profile</a></li>}
-  </>;
-  if (!(linkedBillingOrganization(profile.registryKey, evidence) && profile.identity?.sourceName !== 'NPPES') &&
-      !(providerEvidenceNerisId(evidence) && profile.identity?.sourceName !== 'NERIS') &&
-      !(fire && fire !== profile.registryKey)) return null;
-  return <section className="pr-panel"><h2>Linked agency records</h2><ul>{links}</ul></section>;
-}
-
 function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
   const equipment = evidence?.equipment?.slice().sort((a, b) => {
     const date = (item: typeof a) => item.lastPurchasedOn ?? item.acquiredOn ?? item.paidOn ?? item.approvedOn ?? item.source.date.match(/\d{4}(?:-\d{2}){0,2}/)?.[0] ?? '';
@@ -277,7 +262,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
-      {section === 'overview' && <><ProfileGlance evidence={evidence} /><RelatedRecords profile={profile} evidence={evidence} /></>}
+      {section === 'overview' && <><ProfileGlance evidence={evidence} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />

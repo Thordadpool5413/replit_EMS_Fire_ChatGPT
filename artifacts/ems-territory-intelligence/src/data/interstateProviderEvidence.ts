@@ -32,6 +32,7 @@ export const minnesotaGrantSource = {
 export const interstateProviderEvidence: ProviderEvidence[] = [
   ...minnesotaGrants.flatMap((grant): ProviderEvidence[] => grant.registryKey && grant.registryName ? [{
     registryKey: grant.registryKey, registryName: grant.registryName,
+    identitySources: grant.identityUrl ? [{ label: grant.recipient + ' operating identity', date: 'Reviewed 2026-11-27', url: grant.identityUrl }] : undefined,
     funding: [{ title: 'Ambulance Operating Deficit Grant', status: 'Awarded', fiscalYear: 2026,
       amount: grant.amount, basis: grant.purpose + '. The state reported $0 spent as of its February progress report.', source: minnesotaGrantSource }],
   }] : []),

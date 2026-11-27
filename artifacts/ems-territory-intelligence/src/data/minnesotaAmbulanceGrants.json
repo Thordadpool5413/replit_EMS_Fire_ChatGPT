@@ -175,7 +175,10 @@
     "recipient": "Hayfield Ambulance",
     "amount": 12307.04,
     "purpose": "Ambulance Personnel",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1366515959",
+    "registryName": "HAYFIELD COMMUNITY AMBULANCE",
+    "identityUrl": "https://mn.gov/oems/assets/Office%20of%20Emergency%20Medical%20Services%202025%20Annual%20Report_tcm1221-725126.pdf"
   },
   {
     "recipient": "Blackduck Ambulance Association",
@@ -189,7 +192,10 @@
     "recipient": "Tower Ambulance",
     "amount": 44653.46,
     "purpose": "Ambulance Personnel",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1295951309",
+    "registryName": "CITY OF TOWER",
+    "identityUrl": "https://www.lcc.mn.gov/ems/20240216/EMS%20Written%20Testimony%202.16.24.pdf"
   },
   {
     "recipient": "City of Buhl",
@@ -259,7 +265,10 @@
     "recipient": "Melrose Ambulance",
     "amount": 95114.12,
     "purpose": "Ambulance Purchase",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1376688234",
+    "registryName": "CITY OF MELROSE",
+    "identityUrl": "https://www.cityofmelrose.com/page/ambulance/"
   },
   {
     "recipient": "Henning Ambulance",
@@ -277,7 +286,10 @@
     "recipient": "Lakefield Ambulance",
     "amount": 19628.2,
     "purpose": "Ambulance Personnel",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1629114566",
+    "registryName": "CITY OF LAKEFIELD",
+    "identityUrl": "https://www.lakefieldmn.com/ambulance"
   },
   {
     "recipient": "Murray County Ambulance",
@@ -289,7 +301,10 @@
     "recipient": "Rushford Ambulance",
     "amount": 41060.31,
     "purpose": "Ambulance Personnel",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1134166077",
+    "registryName": "CITY OF RUSHFORD",
+    "identityUrl": "https://rushford.govoffice.com/index.asp?DE=A3DF96E5-7C86-4AD2-91B3-A5D3C53363AE&SEC=E4507E08-19A6-48C3-B18E-862D748FF6CB"
   },
   {
     "recipient": "Mayo \u2013 Albert Lea",
@@ -447,7 +462,10 @@
     "recipient": "Chatfield Ambulance",
     "amount": 64311.74,
     "purpose": "Ambulance Personnel, Stair Chairs",
-    "spent": 0.0
+    "spent": 0.0,
+    "registryKey": "NPI:1689672628",
+    "registryName": "CITY OF CHATFIELD",
+    "identityUrl": "https://www.cityofchatfieldmn.gov/public-safety/ambulance"
   },
   {
     "recipient": "NORTH Memorial \u2013 Douglas County",

@@ -68,6 +68,8 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
     ...aeds.map(row => row.source.url),
     ...(evidence?.stationDirectory ? [evidence.stationDirectory.source.url] : []),
     ...(evidence?.billing?.map(row => row.source.url) ?? []),
+    ...(evidence?.payerMix?.map(row => row.source.url) ?? []),
+    ...(evidence?.billingDenials?.map(row => row.source.url) ?? []),
     ...(evidence?.quality?.map(row => row.source.url) ?? []),
   ])];
   return {
@@ -90,8 +92,8 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
     direct_station_contacts: direct.map(row => row.number + ': ' + [row.contact?.phone, row.contact?.email].filter(Boolean).join(' ')).join(' | '),
     station_directory_count: evidence?.stationDirectory?.stations.length ?? '',
     department_visit_contact: evidence?.stationDirectory?.visitContact?.phone ?? '',
-    provider_denials: 'Authorized agency or billing export required',
-    payer_breakdown: 'Authorized agency or billing export required',
+    provider_denials: evidence?.billingDenials?.length ? 'Public department figures with limited cohort' : 'No provider denials in audited sources',
+    payer_breakdown: evidence?.payerMix?.length ? 'Published payer breakdown' : 'No payer breakdown in audited sources',
     department_transport_billing: evidence?.billing?.length ? 'Published program totals' : 'No program totals in audited sources',
     department_quality: evidence?.quality?.length ? 'Published measures in profile' : 'No quality report in audited sources',
     original_sources: sources.join(' | '),
@@ -173,7 +175,7 @@ for (const [state, file, field] of [['TX', 'TX-review.json', 'sourceKey'], ['NY'
 
 if (new Set(records.map(row => row.profile_route)).size !== records.length) throw Error('Duplicate profile route.');
 const counts = () => ({ listing_rows: 0, county_assigned: 0, in_service_model_count: 0, in_service_partial: 0, dated_aed_only: 0,
-  with_purchase_date: 0, with_payment_date: 0, with_direct_station_contact: 0, with_transport_billing: 0, with_quality: 0 });
+  with_purchase_date: 0, with_payment_date: 0, with_direct_station_contact: 0, with_transport_billing: 0, with_payer_breakdown: 0, with_denials: 0, with_quality: 0 });
 type Counts = ReturnType<typeof counts>;
 function count(item: Counts, row: (typeof records)[number]) {
   item.listing_rows++;
@@ -185,6 +187,8 @@ function count(item: Counts, row: (typeof records)[number]) {
   item.with_payment_date += Number(Boolean(row.documented_aed_payment_dates));
   item.with_direct_station_contact += Number(row.direct_station_contact_count > 0);
   item.with_transport_billing += Number(row.department_transport_billing === 'Published program totals');
+  item.with_payer_breakdown += Number(row.payer_breakdown === 'Published payer breakdown');
+  item.with_denials += Number(row.provider_denials === 'Public department figures with limited cohort');
   item.with_quality += Number(row.department_quality === 'Published measures in profile');
 }
 const byState = new Map([...states].sort().map(state => [state, counts()]));

@@ -145,7 +145,7 @@ function Quality({ evidence }: { evidence?: ProviderEvidence }) {
 }
 
 function Sources({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
-  const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.billing ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
+  const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.billing ?? []), ...(evidence?.payerMix ?? []), ...(evidence?.billingDenials ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
   rows.push(...(evidence?.identitySources ?? []).map(source => ({ source })));
   if (evidence?.stationDirectory) rows.push(evidence.stationDirectory);
   const sources = [...new Map(rows.map(({ source }) => [source.url, source])).values()];

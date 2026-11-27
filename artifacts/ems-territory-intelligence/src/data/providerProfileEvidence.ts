@@ -1,3 +1,4 @@
+import { municipalBillingRecords } from './providerBillingEvidence';
 import { expandedProviderRecords } from './providerSourceExpansion';
 import { publicDepartmentLeadership } from './providerLeadership';
 
@@ -88,6 +89,8 @@ export type ProviderEvidence = {
   operations?: DepartmentMetric[];
   quality?: DepartmentMetric[];
   billing?: DepartmentMetric[];
+  billingDenials?: DepartmentMetric[];
+  payerMix?: DepartmentMetric[];
   accountContext?: ProviderAccountContext[];
   contacts?: ProviderContact[];
   stationDirectory?: { source: ProviderEvidenceSource; visitContact?: ProviderContact; stations: ProviderStation[] };
@@ -474,6 +477,7 @@ export const providerProfileEvidence = [
     }],
   },
   ...expandedProviderRecords,
+  ...municipalBillingRecords,
 ] satisfies ProviderEvidence[];
 
 // Identity bridges grounded in the state roster and matching published headquarters.
@@ -489,6 +493,9 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD17043548', { name: 'Naperville Fire Department', fdid: 'FDID:IL:DD132' }],
+  ['NERIS:FD06001800', { name: 'City Of Alameda Fire Department', fdid: 'FDID:CA:01005' }],
+  ['NERIS:FD29183681', { name: 'Saint Charles Fire Department', fdid: 'FDID:MO:09203' }],
   ['NERIS:FD17089896', { name: 'Elgin Fire Department', fdid: 'FDID:IL:KA191' }],
   ['NERIS:FD44005667', { name: 'Middletown Fire Department', fdid: 'FDID:RI:01900' }],
   ['NERIS:FD17097770', { name: 'Waukegan Fire Department', fdid: 'FDID:IL:LA401' }],

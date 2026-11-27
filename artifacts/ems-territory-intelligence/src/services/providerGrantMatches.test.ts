@@ -72,3 +72,14 @@ test('paid purchases, dated allocations and station phone numbers retain their s
   assert.equal(new Set(beach?.stationDirectory?.stations.map(row => row.contact?.phone)).size, 4);
   assert.ok(lynnHaven?.stationDirectory?.stations.every(row => !row.contact));
 });
+
+test('public billing uses exact department identity and keeps pilot denials separate from payer mix', () => {
+  const naperville = findProviderEvidence('NERIS:FD17043548', 'Naperville Fire Department');
+  const alameda = findProviderEvidence('FDID:CA:01005', 'City of Alameda Fire Department');
+  assert.equal(naperville?.billingDenials?.find(row => row.label === 'Claims with initial denial')?.value, 47);
+  assert.equal(naperville?.billingDenials?.find(row => row.label === 'Claims administered')?.value, 316);
+  assert.equal(naperville?.payerMix, undefined);
+  assert.equal(alameda?.payerMix?.find(row => row.label === 'Medicare')?.value, 55);
+  assert.equal(alameda?.billingDenials, undefined);
+  assert.equal(findProviderEvidence('NERIS:FD17043548', 'Other Fire Department'), undefined);
+});

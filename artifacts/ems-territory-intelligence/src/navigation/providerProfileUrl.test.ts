@@ -42,3 +42,30 @@ test('enrichment belongs to exact registry identities and preserves purchase sta
   assert.equal(evidence?.funding?.[0].status, 'Requested');
   assert.equal(evidence?.equipment?.find((entry) => entry.status === 'In service reported')?.quantity, undefined);
 });
+
+test('profile evidence requires the source identifier and exact agency name', () => {
+  const name = 'Flagler County Fire Rescue';
+  const evidence = findProviderEvidence('FDID:FL:61091', name);
+  assert.ok(evidence);
+  assert.equal(findProviderEvidence('STATE-EMS:FL:license:1801', name), evidence);
+  assert.equal(findProviderEvidence('STATE-EMS:FL:license:1801', 'Flagler Beach Fire Department'), undefined);
+  assert.equal(findProviderEvidence('STATE-EMS:FL:license:1802', name), undefined);
+  assert.equal(findProviderEvidence(undefined, name), undefined);
+});
+
+test('reported AED deployment, requested quantity and historical monitors are distinct', () => {
+  const evidence = findProviderEvidence('FDID:FL:61091', 'Flagler County Fire Rescue');
+  assert.ok(evidence);
+  assert.ok(evidence.equipment.some(row => row.category === 'aed' && row.status === 'In service reported' && !('quantity' in row)));
+  assert.ok(evidence.equipment.some(row => row.category === 'aed' && row.status === 'Proposed purchase' && row.quantity === 22));
+  assert.ok(evidence.equipment.some(row => row.category === 'monitor' && row.status === 'Documented historically' && row.quantity === 15));
+});
+
+test('ROSC is a department outcome tied to its reporting period and case cohort', () => {
+  const evidence = findProviderEvidence('FDID:FL:10151', 'Coral Springs-Parkland Fire Department');
+  assert.ok(evidence);
+  const rosc = evidence.quality.find(row => row.label.includes('(ROSC)'));
+  assert.equal(rosc?.value, 30);
+  assert.equal(rosc?.source.date, 'FY2025');
+  assert.match(rosc?.context ?? '', /100 cardiac arrests/);
+});

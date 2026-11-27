@@ -1,3 +1,4 @@
+import { useAuth } from '@workspace/replit-auth-web';
 import { agencyIdentifierLabel, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from '../utils/providerRecordTrust';
 import { hasAgencyContractEvidence } from '../data/agencyFactEvidence';
 import { ProfileContactDisclosure } from './profile/ProfileContactDisclosure';
@@ -106,6 +107,8 @@ import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
 import { AgencyAuthorityEvidence } from './profile/AgencyAuthorityEvidence';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
 import { StationEquipmentSummary } from './profile/StationEquipmentSummary';
+import { ProviderPublishedBilling } from './profile/ProviderPublishedBilling';
+import { MedicareDenialImportPanel } from './MedicareDenialImportPanel';
 import { ProviderPurchasing } from './profile/ProviderPurchasing';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
@@ -2028,6 +2031,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         </ProfileDetail>)}
 
                 {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency.npiNumber || !linkedBillingNpi ? rawAgency : { ...rawAgency, npiNumber: linkedBillingNpi }} autoLoad/>}
+                {activeSection === 'medicare' && <>
+                  <ProviderPublishedBilling evidence={publicEvidence} />
+                  <ProviderBillingImport agency={agency} />
+                </>}
                 {activeSection === 'medicare' && (
           <FinancialIntelligence
             agency={agency}
@@ -3523,3 +3530,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     </div>
   );
 };
+
+function ProviderBillingImport({ agency }: { agency: Agency }) {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <details className="pr-panel">
+    <summary className="font-semibold">Import authorized aggregate Medicare denial records</summary>
+    <MedicareDenialImportPanel agencies={[agency]} />
+  </details>;
+}

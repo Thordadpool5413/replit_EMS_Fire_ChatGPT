@@ -56,3 +56,19 @@ test('Orange County source identities agree through the published billing organi
   assert.equal(findProviderEvidenceByConfirmedKeys(['FDID:FL:07252', 'FDID:FL:07212']), undefined);
   assert.equal(findProviderEvidenceByConfirmedKeys(['FDID:FL:07252', 'NPI:1033215348']), county);
 });
+
+test('paid purchases, dated allocations and station phone numbers retain their source scope', () => {
+  const cache = findProviderEvidence('FDID:UT:05002', 'Cache County Fire District');
+  const carver = findProviderEvidence('NERIS:FD25023950', 'Carver Fire Department');
+  const california = findProviderEvidence('FDID:CA:15065', 'California City Fire Department');
+  const beach = findProviderEvidence('NERIS:FD12086690', 'Miami Beach Fire Department');
+  const lynnHaven = findProviderEvidence('FDID:FL:23022', 'Lynn Haven Fire & Emergency Services');
+  assert.equal(cache?.equipment?.[0].lastPurchasedOn, '2022');
+  assert.equal(california?.equipment?.[0].paidOn, '2024-11-07');
+  assert.equal(california?.equipment?.[0].lastPurchasedOn, undefined);
+  assert.equal(carver?.equipment?.[0].quantity, 4);
+  assert.equal(carver?.equipment?.[0].acquiredOn, '2024-01-24');
+  assert.equal(carver?.equipment?.[0].lastPurchasedOn, undefined);
+  assert.equal(new Set(beach?.stationDirectory?.stations.map(row => row.contact?.phone)).size, 4);
+  assert.ok(lynnHaven?.stationDirectory?.stations.every(row => !row.contact));
+});

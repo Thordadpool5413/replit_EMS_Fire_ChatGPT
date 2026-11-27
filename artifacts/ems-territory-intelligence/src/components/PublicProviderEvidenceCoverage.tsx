@@ -70,12 +70,7 @@ export function PublicProviderEvidenceCoverage({ state, county }: { state?: stri
       </label>
       {selectedState && <EvidenceCounts counts={snapshot.byState[selectedState]} within={jurisdiction?.name ?? selectedState} />}
     </>}
-    {county === '53033' && <section className="pr-panel">
-      <h3 className="pr-icon-heading"><HeartPulse size={18} aria-hidden="true" /> King County cardiac arrest outcomes</h3>
-      <p><strong>44% survived to hospital discharge</strong> · 99 of 226 eligible cases in 2024.</p>
-      <p className="text-sm">Systemwide Utstein cohort: bystander-witnessed, non-traumatic arrests with an initial shockable rhythm. Across 2020–2024, 473 of 1,028 survived (46%).</p>
-      <a className="underline" href="https://cdn.kingcounty.gov/-/media/king-county/depts/dph/documents/health-safety/health-programs-services/emergency-medical-services/reports/2025-annual-report.pdf">King County EMS annual report, page 30</a>
-    </section>}
+    {county === '53033' && <KingCountyOutcome />}
     {(state || selectedState) === 'MN' && !county && <details><summary>Minnesota ambulance grant awards ({minnesotaGrants.length})</summary>
       <p className="text-sm">FY2026 award and intended use by operating location. The February report recorded $0 spent across these awards. <a className="underline" href={minnesotaGrantSource.url}>State progress report</a></p>
       <ul>{minnesotaGrants.map(grant => <li key={grant.recipient}><strong>{grant.recipient}</strong> · {grant.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} · {grant.purpose}</li>)}</ul>
@@ -117,4 +112,13 @@ export function ProviderEvidenceStatus({ evidence }: { evidence?: ProviderEviden
       </li>)}
     </ul>
   </section>;
+}
+
+export function KingCountyOutcome() {
+  return <section className="pr-panel">
+      <h3 className="pr-icon-heading"><HeartPulse size={18} aria-hidden="true" /> King County cardiac arrest outcomes</h3>
+      <p><strong>44% survived to hospital discharge</strong> · 99 of 226 eligible cases in 2024.</p>
+      <p className="text-sm">Systemwide Utstein cohort: bystander-witnessed, non-traumatic arrests with an initial shockable rhythm. Across 2020–2024, 473 of 1,028 survived (46%).</p>
+      <a className="underline" href="https://cdn.kingcounty.gov/-/media/king-county/depts/dph/documents/health-safety/health-programs-services/emergency-medical-services/reports/2025-annual-report.pdf">King County EMS annual report, page 30</a>
+    </section>;
 }

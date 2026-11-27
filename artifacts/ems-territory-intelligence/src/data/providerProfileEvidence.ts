@@ -489,6 +489,8 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD17089896', { name: 'Elgin Fire Department', fdid: 'FDID:IL:KA191' }],
+  ['NERIS:FD44005667', { name: 'Middletown Fire Department', fdid: 'FDID:RI:01900' }],
   ['NERIS:FD17097770', { name: 'Waukegan Fire Department', fdid: 'FDID:IL:LA401' }],
   ['NERIS:FD12086690', { name: 'Miami Beach Fire Department', fdid: 'FDID:FL:01012' }],
   ['NERIS:FD12005957', { name: 'Lynn Haven Fire Rescue', fdid: 'FDID:FL:23022' }],

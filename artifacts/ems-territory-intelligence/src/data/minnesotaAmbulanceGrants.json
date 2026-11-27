@@ -1,0 +1,562 @@
+[
+  {
+    "recipient": "Hoyt Lakes Ambulance",
+    "amount": 19010.11,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "St. Croix Valley EMS",
+    "amount": 148190.95,
+    "purpose": "Ambulance Remount",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Cloquet Area Fire District",
+    "amount": 65112.67,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0,
+    "registryKey": "FDID:MN:09305",
+    "registryName": "Cloquet Area Fire District"
+  },
+  {
+    "recipient": "County EMS",
+    "amount": 20389.56,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Sanford \u2013 Canby",
+    "amount": 5293.58,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Sanford \u2013 Bagley",
+    "amount": 136959.5,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Sanford \u2013 Thief River Falls",
+    "amount": 126919.62,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Springfield Ambulance",
+    "amount": 39247.53,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Adrian",
+    "amount": 18889.3,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0,
+    "registryKey": "NPI:1023178845",
+    "registryName": "CITY OF ADRIAN"
+  },
+  {
+    "recipient": "Rock County Ambulance",
+    "amount": 8779.92,
+    "purpose": "Vehicle Maintenance and Repair",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mabel Ambulance",
+    "amount": 43044.37,
+    "purpose": "Ambulance Personnel, Education, Supplies, Vehicle Operations, Communications Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Jackson",
+    "amount": 98887.01,
+    "purpose": "Ambulance Personnel, Supplies, Technology Enhancements",
+    "spent": 0.0,
+    "registryKey": "NPI:1750133013",
+    "registryName": "CITY OF JACKSON"
+  },
+  {
+    "recipient": "City of Fulda",
+    "amount": 4880.37,
+    "purpose": "Supplies",
+    "spent": 0.0,
+    "registryKey": "NPI:1629169982",
+    "registryName": "CITY OF FULDA"
+  },
+  {
+    "recipient": "Ringdahl Ambulance",
+    "amount": 113255.0,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Grand Portage Ambulance",
+    "amount": 35290.61,
+    "purpose": "Equipment, Supplies, Training, Vehicle Fuel/Maintenance",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Ortonville Ambulance Service",
+    "amount": 8708.61,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Cromwell Wright Area Fire District",
+    "amount": 11881.21,
+    "purpose": "Supplies, Training",
+    "spent": 0.0,
+    "registryKey": "NPI:1154414910",
+    "registryName": "CROMWELL WRIGHT AREA FIRE DISTRICT"
+  },
+  {
+    "recipient": "City of Montgomery",
+    "amount": 39555.24,
+    "purpose": "Training, Vehicle Purchase",
+    "spent": 0.0,
+    "registryKey": "NPI:1326108150",
+    "registryName": "CITY OF MONTGOMERY"
+  },
+  {
+    "recipient": "City of New London",
+    "amount": 10464.02,
+    "purpose": "Maintenance Contracts, Training, Supplies",
+    "spent": 0.0,
+    "registryKey": "NPI:1144380973",
+    "registryName": "CITY OF NEW LONDON"
+  },
+  {
+    "recipient": "City of International Falls",
+    "amount": 235512.6,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0,
+    "registryKey": "NPI:1386704674",
+    "registryName": "CITY OF INTERNATIONAL FALLS"
+  },
+  {
+    "recipient": "Crookston",
+    "amount": 45192.42,
+    "purpose": "Ambulance Personnel, Training & Education",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Kiester",
+    "amount": 695.72,
+    "purpose": "Medical Supplies",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mahnomen Health Center Ambulance",
+    "amount": 47050.55,
+    "purpose": "Capital Equipment Purchases",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Caledonia Ambulance",
+    "amount": 14189.33,
+    "purpose": "Supplies/Communications Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Truman Ambulance",
+    "amount": 35845.28,
+    "purpose": "Ambulance Personnel, Radios, Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Winthrop Ambulance",
+    "amount": 13806.45,
+    "purpose": "General Operating Expenses",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Hayfield Ambulance",
+    "amount": 12307.04,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Blackduck Ambulance Association",
+    "amount": 44400.1,
+    "purpose": "Ambulance Personnel, Vehicle Maintenance, Building Maintenance, Medical Supplies",
+    "spent": 0.0,
+    "registryKey": "NPI:1932212693",
+    "registryName": "BLACKDUCK AMBULANCE ASSOCIATION"
+  },
+  {
+    "recipient": "Tower Ambulance",
+    "amount": 44653.46,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Buhl",
+    "amount": 121332.08,
+    "purpose": "Ambulance Personnel, Equipment, Cardiac Monitor, Ventilator",
+    "spent": 0.0,
+    "registryKey": "NPI:1457366239",
+    "registryName": "CITY OF BUHL"
+  },
+  {
+    "recipient": "Hendricks Community Hospitals",
+    "amount": 45119.33,
+    "purpose": "Ambulance Personnel, Supplies, and Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Perham Area EMS",
+    "amount": 57684.77,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Lake City",
+    "amount": 143905.73,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Chisholm Ambulance",
+    "amount": 21796.67,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Houston Ambulance",
+    "amount": 783.42,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Walnut Grove",
+    "amount": 9797.38,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Sleepy Eye",
+    "amount": 21313.54,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Freeborn Ambulance",
+    "amount": 3883.88,
+    "purpose": "Medical Direction, Ambulance Personnel, and Training",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Hibbing Fire",
+    "amount": 357107.86,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0,
+    "registryKey": "FDID:MN:69230",
+    "registryName": "Hibbing Fire Department"
+  },
+  {
+    "recipient": "Melrose Ambulance",
+    "amount": 95114.12,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Henning Ambulance",
+    "amount": 3511.99,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Avera Tyler Ambulance",
+    "amount": 12491.52,
+    "purpose": "Medications, Capital Equipment, Fuel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Lakefield Ambulance",
+    "amount": 19628.2,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Murray County Ambulance",
+    "amount": 11981.07,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Rushford Ambulance",
+    "amount": 41060.31,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Albert Lea",
+    "amount": 197741.25,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Plainview",
+    "amount": 175657.84,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Owatonna",
+    "amount": 296754.26,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Little Falls",
+    "amount": 36293.65,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Litchfield",
+    "amount": 123941.34,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Mayo \u2013 Fairmont",
+    "amount": 364496.01,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Red Wing Fire Dept",
+    "amount": 195783.29,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0,
+    "registryKey": "FDID:MN:25306",
+    "registryName": "Red Wing Fire Department"
+  },
+  {
+    "recipient": "Eveleth Ambulance",
+    "amount": 73858.64,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Essentia Health \u2013 Fosston",
+    "amount": 121378.66,
+    "purpose": "Ambulance Personnel, Equipment Upgrades, Capital Equipment Replacement (Ventilators, CPR Device, and Radios)",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Essentia Health \u2013 Deer River",
+    "amount": 89934.24,
+    "purpose": "Ambulance Personnel, Equipment Upgrades, Capital Equipment Replacement (Cardiac Monitor, CPR Device)",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Essentia Health \u2013 Ada",
+    "amount": 109173.0,
+    "purpose": "Equipment Upgrades, Capital Equipment (Ventilator, CPR Device, QRV and Equipment)",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Astera Health",
+    "amount": 284467.81,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Lake of the Woods",
+    "amount": 72988.87,
+    "purpose": "Supplies, Capital Building Improvement, Power Stretcher",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Madison Ambulance",
+    "amount": 7140.87,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0
+  },
+  {
+    "recipient": "LifeCare EMS",
+    "amount": 168088.66,
+    "purpose": "Ambulance Purchase",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Welia Health",
+    "amount": 170055.7,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "CHI St. Francis",
+    "amount": 79269.89,
+    "purpose": "Capital Building Expense, Power Stretcher Load System",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Olivia Ambulance",
+    "amount": 119157.95,
+    "purpose": "Capital Building Expense",
+    "spent": 0.0
+  },
+  {
+    "recipient": "CCM Health",
+    "amount": 94835.18,
+    "purpose": "Ambulance Personnel, CPR Devices",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Lakewood Health System",
+    "amount": 104264.68,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Walker",
+    "amount": 67548.39,
+    "purpose": "Equipment Upgrades, CPR Device, Cardiac Monitor",
+    "spent": 0.0
+  },
+  {
+    "recipient": "City of Marshall",
+    "amount": 80304.38,
+    "purpose": "Equipment Upgrades, Power Stair Chair, Cardiac Monitor",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Longville",
+    "amount": 22055.41,
+    "purpose": "CPR Device, Other Clinical Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Floodwood Ambulance",
+    "amount": 48243.26,
+    "purpose": "Ambulance Personnel, Other Operational Expense, Equipment and Supplies",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Stevens County EMS",
+    "amount": 52058.86,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Chatfield Ambulance",
+    "amount": 64311.74,
+    "purpose": "Ambulance Personnel, Stair Chairs",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Douglas County",
+    "amount": 21221.07,
+    "purpose": "CPR Device, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Browns Valley",
+    "amount": 10853.66,
+    "purpose": "IT and Data Systems Improvement",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Hutchinson Health",
+    "amount": 119893.58,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Glencoe Health",
+    "amount": 84893.81,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Allina New Ulm",
+    "amount": 133354.04,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Lake Crystal",
+    "amount": 10168.63,
+    "purpose": "Operating Supplies, Equipment Repair",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Wabasha Ambulance",
+    "amount": 37075.6,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Bois Forte",
+    "amount": 20188.67,
+    "purpose": "Communications Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "North Valley EMS",
+    "amount": 21816.67,
+    "purpose": "Ambulance Personnel",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Princeton",
+    "amount": 60974.61,
+    "purpose": "CPR Device, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Grand Rapids",
+    "amount": 122163.74,
+    "purpose": "Cardiac Monitor, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Waseca",
+    "amount": 135206.02,
+    "purpose": "CPR Device, Airway Equipment, Medication Pump",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Faribault",
+    "amount": 181941.36,
+    "purpose": "CPR Device, Cardiac Monitor, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Brainerd",
+    "amount": 179848.03,
+    "purpose": "CPR Devices, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Park Rapids",
+    "amount": 61715.11,
+    "purpose": "CPR Devices, Airway Equipment",
+    "spent": 0.0
+  },
+  {
+    "recipient": "NORTH Memorial \u2013 Aitkin",
+    "amount": 66027.82,
+    "purpose": "CPR Device, Airway Equipment, Medication Pump",
+    "spent": 0.0
+  },
+  {
+    "recipient": "Ashby Fire Department",
+    "amount": 6450.43,
+    "purpose": "Medical Supplies",
+    "spent": 0.0,
+    "registryKey": "FDID:MN:26101",
+    "registryName": "Ashby Fire Department"
+  },
+  {
+    "recipient": "Cosmos Ambulance",
+    "amount": 301.89,
+    "purpose": "Medical Supplies",
+    "spent": 0.0
+  }
+]

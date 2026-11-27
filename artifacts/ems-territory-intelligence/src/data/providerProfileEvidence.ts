@@ -504,6 +504,12 @@ export const providerProfileEvidence = [
 
 // Identity bridges grounded in the state roster and matching published headquarters.
 const registryEvidenceMatches = new Map([
+  ['NERIS:FD25015329', { name: 'Easthampton Fire Department', fdid: 'FDID:MA:15087' }],
+  ['NERIS:FD27017449', { name: 'Cloquet Area Fire District', fdid: 'FDID:MN:09305' }],
+  ['NPI:1871748681', { name: 'CLOQUET AREA FIRE DISTRICT', fdid: 'FDID:MN:09305' }],
+  ['NERIS:FD27049785', { name: 'Red Wing Fire Department', fdid: 'FDID:MN:25306' }],
+  ['NERIS:FD27051083', { name: 'Ashby Fire Department', fdid: 'FDID:MN:26101' }],
+  ['NERIS:FD27137766', { name: 'Hibbing Fire Department', fdid: 'FDID:MN:69230' }],
   ['STATE-EMS:FL:license:1801', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
   ['STATE-EMS:FL:license:4807', { name: 'Orange County Fire Rescue Department', fdid: 'FDID:FL:07252' }],
   ['STATE-EMS:FL:license:633', { name: 'Coral Springs Fire Department, City Of', fdid: 'FDID:FL:10151' }],

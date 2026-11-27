@@ -1,3 +1,4 @@
+import minnesotaGrants from './minnesotaAmbulanceGrants.json';
 import type { DepartmentMetric, ProviderEvidence } from './providerProfileEvidence';
 
 const ankenySource = {
@@ -23,7 +24,23 @@ const ankenyPayers = [
   ['Medicare', 32, 33, 30], ['Private insurance', 52, 50, 55], ['Self-pay', 2, 1, 1],
 ] as const;
 
+export const minnesotaGrantSource = {
+  label: 'Minnesota Office of EMS operating deficit grant progress report, Table 1', date: '2026-02-15',
+  url: 'https://mn.gov/oems/assets/Ambulance%20Operating%20Deficit%20Grant%20Program%202025%20Progress%20Report_tcm1221-725125.pdf',
+};
+
 export const interstateProviderEvidence: ProviderEvidence[] = [
+  ...minnesotaGrants.flatMap((grant): ProviderEvidence[] => grant.registryKey && grant.registryName ? [{
+    registryKey: grant.registryKey, registryName: grant.registryName,
+    funding: [{ title: 'Ambulance Operating Deficit Grant', status: 'Awarded', fiscalYear: 2026,
+      amount: grant.amount, basis: grant.purpose + '. The state reported $0 spent as of its February progress report.', source: minnesotaGrantSource }],
+  }] : []),
+  {
+    registryKey: 'FDID:MA:15087', registryName: 'Easthampton Fire Department',
+    funding: [{ title: 'FEMA grant for EMS cardiac monitors', status: 'Awarded', amount: 200000,
+      basis: 'The department announced federal funding to purchase cardiac monitors.',
+      source: { label: 'City of Easthampton grant announcement', date: '2026-09-29', url: 'https://www.easthamptonma.gov/m/newsflash/home/detail/718' } }],
+  },
   {
     registryKey: 'FDID:IA:77003', registryName: 'Ankeny Fire Department', combinedServices: true,
     billing: [3990873, 4176358, 4479471].map((value, index): DepartmentMetric => ({

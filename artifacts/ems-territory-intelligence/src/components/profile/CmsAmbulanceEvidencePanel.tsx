@@ -1,3 +1,4 @@
+import { MedicaidAmbulanceTotals } from '../MedicaidAmbulanceTotals';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import { Banknote, CalendarDays, ClipboardList, Receipt, Truck, Users, type LucideIcon } from 'lucide-react';
 import type {Agency} from '../../types';
@@ -25,7 +26,7 @@ export function CmsAmbulanceEvidencePanel({agency, autoLoad = false}:{agency:Age
  }, [npi,year]);
  useEffect(()=>{if(autoLoad)void refresh()},[agency.id,autoLoad,refresh]);
  const current=result?.npi===npi&&result?.reportingYear===year?result:null;
- return <section className="pi-surface p-3 space-y-3 min-w-0" data-testid="cms-federal-ambulance-evidence">
+ return <><MedicaidAmbulanceTotals npi={npi || undefined} /><section className="pi-surface p-3 space-y-3 min-w-0" data-testid="cms-federal-ambulance-evidence">
  <h3 className="font-semibold text-sm">Federal Medicare ambulance service evidence</h3>
  <p className="text-xs">CMS Original Medicare Part B public-use data, calendar year {year}. Available nationwide by NPI without a state license lookup. This is source-reported evidence, not verified operating agency claims or station activity.</p>
  <p className="text-xs">{lookup.reason}{npi?' NPI '+npi+'.':''}</p>
@@ -49,7 +50,7 @@ export function CmsAmbulanceEvidencePanel({agency, autoLoad = false}:{agency:Age
  </dl>
  </li>)}</ul></>}
  <p className="text-xs">Service units can include mileage. Beneficiaries may overlap rows; do not add them as unique people. Small cells are suppressed. No denial counts, denial rates, total claims, Medicare Advantage, all-payer revenue, current operating relationship or station assignment is established. End-user validation required.</p></>}
- </section>;
+ </section></>;
 }
 
 function CmsServiceMix({ rows }: { rows: CmsServiceEvidence['rows'] }) {

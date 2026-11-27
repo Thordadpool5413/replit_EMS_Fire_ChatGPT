@@ -38,8 +38,10 @@ export function StationEquipmentSummary({ agency, directory }: { agency: Agency;
     {evidence.isError && <p>Station equipment is unavailable. <button className="pr-source-link" onClick={() => void evidence.refetch()}>Retry</button></p>}
     {sample && observations.length === 0 && <p>No independently reviewed observations were returned for this department.</p>}
     {observations.length > 0 && <><p>{observations.length} observations across {new Set(observations.map(row => row.stationId)).size} stations.</p>
-      <ul className="pr-source-grid">{observations.slice(0, 6).map(row => <li className="pr-source-tile" key={row.submissionId}>
-        <span className="pr-evidence-status"><Truck size={14} aria-hidden="true" />{stationNames.get(row.stationId)}</span>
+      <ul className="pr-source-grid">{Array.from(new Set(observations.map(row => row.stationId))).map(stationId => <li className="pr-source-tile" key={stationId}>
+        <h3>{stationNames.get(stationId) ?? stationId}</h3>
+        {observations.filter(row => row.stationId === stationId).map(row => <article key={row.submissionId}>
+        <span className="pr-evidence-status"><Truck size={14} aria-hidden="true" />{row.apparatus ?? "Station equipment"}</span>
         <h3>{row.maker === 'unknown' ? 'Manufacturer unlisted' : row.maker.toUpperCase()}{row.model && ' · ' + row.model}</h3>
         <p>{row.family}{row.apparatus && ' · ' + row.apparatus}</p>
         <p className="pr-icon-heading"><CalendarClock size={14} aria-hidden="true" />Observed {row.observedOn}</p>
@@ -47,8 +49,8 @@ export function StationEquipmentSummary({ agency, directory }: { agency: Agency;
         {row.warrantyEnd && <p>Warranty end · {row.warrantyEnd}</p>}
         {row.serviceEnd && <p>Service end · {row.serviceEnd}</p>}
         {row.sourceUrl && <a className="pr-source-link" href={row.sourceUrl} target="_blank" rel="noreferrer">Equipment source</a>}
-      </li>)}</ul>
-      {observations.length > 6 && <p className="pr-muted">Six most recent observations shown. Open the reviewed lifecycle timeline for more detail.</p>}
+      </article>)}</li>)}</ul>
+
     </>}
   </section>;
 }

@@ -1,3 +1,4 @@
+import { ProviderStory } from './profile/ProviderStory';
 import { InlineAgencyRecords } from './profile/InlineAgencyRecords';
 import { ProviderEvidenceStatus } from './PublicProviderEvidenceCoverage';
 import { ProviderSourceWorkspace } from './profile/ProviderSourceWorkspace';
@@ -97,7 +98,7 @@ import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections,providerAddressReview } from '../services/providerLocation';
-import { findProviderEvidence, findProviderEvidenceByConfirmedKeys, providerEvidenceFloridaLicense, linkedBillingOrganization } from '../data/providerProfileEvidence';
+import { providerEvidenceNerisId, findProviderEvidence, findProviderEvidenceByConfirmedKeys, providerEvidenceFloridaLicense, linkedBillingOrganization } from '../data/providerProfileEvidence';
 import { registryIdentityKey, registryClaims } from '../services/registryAccountLink';
 import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import { ProviderGrants, ProviderPeople, ProviderStations, FloridaProviderContacts } from './profile/ProviderPublicSources';
@@ -1666,6 +1667,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
+          {activeSection === 'overview' && <ProviderStory key={rawAgency.id} evidence={publicEvidence} nerisId={publicIdentity?.sourceName === 'NERIS' ? publicIdentity.identifier : providerEvidenceNerisId(publicEvidence)} stationDevices={<StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />} />}
           {activeSection === 'overview' && <InlineAgencyRecords state={agency.stateCode} registryKey={publicIdentity ? registryIdentityKey(publicIdentity) : undefined} evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderEvidenceStatus evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderCardIntelligence agency={agency} />}

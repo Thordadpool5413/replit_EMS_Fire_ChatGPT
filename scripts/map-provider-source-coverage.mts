@@ -60,7 +60,7 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
   const evidence = findProviderEvidence(key, name);
   const equipment = evidence?.equipment ?? [];
   const aeds = equipment.filter(row => row.category === 'aed');
-  const datedOwned = equipment.filter(row => row.status === 'In service reported' && row.owner && row.quantity !== undefined);
+  const datedOwned = equipment.filter(row => ['In service reported', 'Service agreement'].includes(row.status) && row.owner && row.quantity !== undefined);
   const acquisitionHistory = [...new Set(equipment.flatMap(row => [row.lastPurchasedOn ? 'Purchase dated ' + row.lastPurchasedOn : '',
     row.paidOn ? 'Paid ' + row.paidOn : '', row.acquiredOn ? 'Acquired ' + row.acquiredOn : ''].filter(Boolean)))];
   const payerDenials = [...new Set(evidence?.billingDenials?.flatMap(row => row.denialPayer ? [row.denialPayer] : []) ?? [])];

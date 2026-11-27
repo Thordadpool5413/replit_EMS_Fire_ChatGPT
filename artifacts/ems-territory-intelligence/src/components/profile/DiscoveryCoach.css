@@ -1,0 +1,24 @@
+.discovery-room{min-width:0}
+.discovery-room :is(select,input,textarea){max-width:100%;min-width:0}
+.discovery-banner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,38%);overflow:hidden;isolation:isolate;background:#173950;color:#fff;border-radius:.8rem;min-height:7.5rem}
+.discovery-banner>div{padding:1rem 1.25rem;align-self:center}
+.discovery-banner h2{color:white;margin:.25rem 0;font-size:clamp(1.3rem,3vw,2rem)}
+.discovery-banner p{color:#e5eef5;overflow-wrap:anywhere}
+.discovery-banner img{height:100%;width:100%;max-height:11rem;object-fit:cover;mask-image:linear-gradient(to right,transparent,#000 28%)}
+.discovery-heading,.discovery-chart-title,.discovery-chart-title h4,.discovery-question{display:flex;align-items:center;gap:.6rem}
+.discovery-room svg{flex-shrink:0}
+.discovery-room :is(label,summary,button)>svg{display:inline;vertical-align:middle}
+.discovery-chart-title{justify-content:space-between;margin-bottom:.55rem}
+.discovery-chart-title button{text-decoration:underline}
+.discovery-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.45rem}
+.discovery-bars button{display:grid;grid-template-columns:auto 1fr auto;align-items:center;text-align:left;gap:.35rem .5rem;padding:.6rem .75rem;border:1px solid #8aa2b4;border-radius:.6rem;font-size:.87rem}
+.discovery-bars button[aria-pressed=true]{background:#19455d;color:white}
+.discovery-bars i{grid-column:1/-1;background:#b8c6cf;height:.28rem;border-radius:1rem;overflow:hidden}
+.discovery-bars b{display:block;height:100%;min-width:2px;background:#2376a2}
+.discovery-bars [aria-pressed=true] b{background:#9ee4ff}
+.discovery-question{align-items:flex-start;border-inline-start:.25rem solid #357d96;padding:.7rem .9rem;background:rgba(68,140,170,.1);border-radius:.3rem}
+.discovery-fold{padding:.65rem .8rem;border:1px solid #8aa2b4;border-radius:.6rem}
+.discovery-fold summary{cursor:pointer;font-weight:650}
+.discovery-fold summary svg{width:1.1rem;margin-inline:.25rem .45rem}
+.discovery-transcript p{padding:.5rem .75rem;border-inline-start:3px solid #488caa;white-space:pre-line;overflow-wrap:anywhere}
+.discovery-transcript p[data-speaker=user]{border-color:#aa8747}

@@ -963,14 +963,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <rect width="7" height="7" fill="#F4E8D8" />
                     <path d="M 0 0 L 0 7" stroke="#AF8B6C" strokeWidth="2" />
                   </pattern>
-                    <linearGradient id="home-map-ocean" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stopColor="#eaf3f4" />
-                      <stop offset=".56" stopColor="#dce9ed" />
-                      <stop offset="1" stopColor="#e5eef0" />
-                    </linearGradient>
-                    <filter id="home-map-state-relief" x="-8%" y="-8%" width="116%" height="116%">
-                      <feDropShadow dx="0" dy="1.5" stdDeviation="1.4" floodColor="#18394c" floodOpacity=".24" />
-                    </filter>
                 </defs>
                 <rect
                   className="home-map-ocean"
@@ -979,17 +971,17 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   width={HOME_MAP_VIEWBOX.width}
                   height={HOME_MAP_VIEWBOX.height}
                   rx="14"
-                  fill="url(#home-map-ocean)"
+                  fill="#f4f7f7"
                 />
                 <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#F8FBFB" fillOpacity="0.98" stroke={isPhone ? '#b8cbd1' : '#b68a60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="24" y="373" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">ALASKA (AK)</text>
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#ffffff" fillOpacity="0.96" stroke="#cbd7db" strokeWidth="1.2" />
+                  <text x="24" y="373" fill="#536771" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#F8FBFB" fillOpacity="0.98" stroke={isPhone ? '#b8cbd1' : '#b68a60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="206" y="413" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">HAWAII (HI)</text>
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#ffffff" fillOpacity="0.96" stroke="#cbd7db" strokeWidth="1.2" />
+                  <text x="206" y="413" fill="#536771" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">HAWAII (HI)</text>
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
@@ -1024,8 +1016,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          filter="url(#home-map-state-relief)"
-                          stroke={isSelected ? '#A52F4C' : isHovered ? '#E96A3D' : '#F8FBFC'}
+                          stroke={isSelected ? '#173f52' : isHovered ? '#2f7480' : '#F8FBFC'}
                           strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
@@ -1049,8 +1040,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         </path>
                         {(isSelected || isHovered) && (
                           <g pointerEvents="none" className="home-map-state-ring">
-                            <path d={boundary.d} fill="none" stroke="#06101B" strokeWidth={isSelected ? 5 : 3.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" strokeOpacity="0.85" />
-                            <path d={boundary.d} fill="none" stroke={isSelected ? '#F4C86A' : '#FF4B36'} strokeWidth={isSelected ? 2.4 : 1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                            <path d={boundary.d} fill="none" stroke="#ffffff" strokeWidth={isSelected ? 4.8 : 3.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                            <path d={boundary.d} fill="none" stroke={isSelected ? '#173f52' : '#4d6874'} strokeWidth={isSelected ? 2.1 : 1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                           </g>
                         )}
                       </g>
@@ -1071,10 +1062,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cIn = regionFilter === 'All' || st.region === regionFilter;
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
-                      const cDatum = stateMapMetricsByCode[st.code][mapMetric];
-                      const cFill = hasReportedValue(cDatum.value)
-                        ? getStateMapFill(st.code)
-                        : '#F4E8D8';
                       return (
                         <g
                           key={`home-lbl-${st.code}`}
@@ -1088,34 +1075,31 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <polyline
                             points={`${anchor.x},${anchor.y} ${calloutX - (isPhone ? 32 : 22)},${calloutY} ${calloutX - (isPhone ? 26 : 14)},${calloutY}`}
                             fill="none"
-                            stroke={cSel ? (isPhone ? '#D7A83F' : '#F4C86A') : cHov ? (isPhone ? '#245BB7' : '#FF4B36') : isPhone ? '#94A3B8' : '#BA906A'}
-                            strokeWidth={cSel || cHov ? 1.3 : 0.8}
+                            stroke={cSel ? '#173f52' : cHov ? '#2f7480' : '#71848b'}
+                            strokeWidth={cSel || cHov ? 1.2 : 0.75}
                             pointerEvents="none"
                           />
-                          <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? (isPhone ? '#D7A83F' : '#F4C86A') : isPhone ? '#64748B' : '#BA906A'} pointerEvents="none" />
-                          {!isPhone && <rect x={calloutX - 14} y={calloutY - 9} width="28" height="18" rx="5" fill="#F8FBFC" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#8DA2AE'} strokeWidth={cSel ? 2 : 1.1} />}
-                          {isPhone && <rect
-                            className="home-map-callout-label"
-                            x={calloutX - 25}
-                            y={calloutY - 14}
-                            width="50"
-                            height="28"
-                            rx="8"
-                            fill={cSel ? '#FFF6D8' : cHov ? '#EEF4FF' : '#FFFFFF'}
-                            stroke={cSel ? '#B68A37' : cHov ? '#245BB7' : '#94A9B3'}
-                            strokeWidth={cSel ? 1.5 : 0.9}
-                            data-testid="home-map-callout-label"
-                          />}
-                          <rect x={calloutX - (isPhone ? 23 : 12)} y={calloutY - (isPhone ? 11 : 7)} width="3" height={isPhone ? 22 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 2} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 20 : 10.5} fontWeight="750" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".45">{st.code}</text>
+                          <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? '#173f52' : '#71848b'} pointerEvents="none" />
+                          <text
+                            x={calloutX}
+                            y={calloutY + (isPhone ? 0 : 3.5)}
+                            dominantBaseline={isPhone ? 'central' : undefined}
+                            textAnchor="middle"
+                            fill="#253c47"
+                            stroke="#ffffff"
+                            strokeWidth={isPhone ? 3 : 2}
+                            paintOrder="stroke"
+                            fontSize={isPhone ? 16 : 10}
+                            fontWeight={cSel ? '800' : '700'}
+                            fontFamily="Inter, system-ui, sans-serif"
+                            letterSpacing=".2"
+                          >{st.code}</text>
                         </g>
                       );
                     }
 
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
-                    const isHovered = hoveredStateCode === st.code;
-                    const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const phoneOffset = isPhone ? ({
                       IL: [-8, -6], IN: [-4, 4], OH: [9, -4], TN: [-8, 7],
                     } as Record<string, number[]>)[st.code] : undefined;
@@ -1134,41 +1118,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
-                        {isPhone && st.code !== 'HI' && <rect
-                          x="-22"
-                          y="-13"
-                          width="40"
-                          height="26"
-                          rx="8"
-                          fill={isSelected ? '#1E56A8' : isHovered ? '#EEF4FF' : '#FFFFFF'}
-                          fillOpacity="0.97"
-                          stroke={isSelected ? '#17458A' : isHovered ? '#245BB7' : '#94A9B3'}
-                          strokeWidth={isSelected ? 1.6 : 0.9}
-                          data-testid="home-map-state-label-chip"
-                          data-state-code={st.code}
-                        />}
-                        {!isPhone && <rect
-                          x="-14"
-                          y="-10"
-                          width="28"
-                          height="20"
-                          rx="6"
-                          fill={isSelected ? '#FFD12E' : '#FFFFFF'}
-                          fillOpacity="0.98"
-                          stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#94A9B3'}
-                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1}
-                        />}
                         <text
                           x="0"
                           y={isPhone ? 0 : undefined}
                           textAnchor="middle"
                           dy={isPhone ? undefined : 3.5}
                           dominantBaseline={isPhone ? 'central' : undefined}
-                          fill={isPhone && isSelected ? '#FFFFFF' : isPhone ? '#172B4D' : '#202124'}
-                          fontSize={isPhone ? 22 : 10.5}
-                          fontWeight="750"
+                          fill="#243d49"
+                          stroke="#ffffff"
+                          strokeWidth={isPhone ? 3.1 : 2.1}
+                          paintOrder="stroke"
+                          fontSize={isPhone ? 16 : 10}
+                          fontWeight={isSelected ? '800' : '700'}
                           fontFamily="Inter, system-ui, sans-serif"
-                          letterSpacing=".45"
+                          letterSpacing=".12"
                         >
                           {st.code}
                         </text>

@@ -20,7 +20,6 @@ import {
   APIProvider, 
   Map, 
   AdvancedMarker, 
-  Pin, 
   InfoWindow,
   useMap,
   MapControl,
@@ -1309,15 +1308,16 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                       >
                         <div className={`territory-agency-map-marker${isSelected?' is-selected':''}${colorByEquipment?' is-equipment-layer':''}`}>
                           <PulseIqMarkerEstimate agencyId={agency.id} score={pulseIqScore} />
-                          <span className="territory-agency-map-marker__pin-wrap">
-                            <span className="territory-agency-map-marker__halo" aria-hidden="true" />
-                            <Pin
-                              background={colorByEquipment?vendorStyle.background:tierStyle.bg}
-                              borderColor={colorByEquipment?'#ffffff':tierStyle.border}
-                              glyphColor={colorByEquipment?vendorStyle.glyphColor:tierStyle.glyph}
-                              glyph={colorByEquipment?vendorStyle.glyph:undefined}
-                              scale={isSelected ? 1.3 : 1.0}
-                            />
+                          <span
+                            className="territory-agency-map-dot"
+                            style={{
+                              backgroundColor: colorByEquipment ? vendorStyle.background : tierStyle.bg,
+                              borderColor: colorByEquipment ? '#ffffff' : tierStyle.border,
+                              color: colorByEquipment ? vendorStyle.glyphColor : tierStyle.glyph,
+                            }}
+                            aria-hidden="true"
+                          >
+                            {colorByEquipment ? vendorStyle.glyph : ''}
                           </span>
                         </div>
                       </AdvancedMarker>

@@ -9,7 +9,7 @@ import {ALL_50_STATES_SUMMARIES} from '../data/nationalGeographicData';
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { APIProvider, AdvancedMarker, InfoWindow, Map as GoogleMap, Polygon, Pin, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, AdvancedMarker, InfoWindow, Map as GoogleMap, Polygon, useMap } from '@vis.gl/react-google-maps';
 import { Agency } from '../types';
 import {
   countyBoundaryHierarchy,
@@ -30,7 +30,8 @@ import './countyGeoTokens.css';
 import './CountyFigures.css';
 import './CountyInspector.css';
 
-type GoogleCountyPolygon = google.maps.LatLngLiteral[][];
+type GoogleCountyCoordinate = { lat: number; lng: number };
+type GoogleCountyPolygon = GoogleCountyCoordinate[][];
 
 function toGoogleCountyPolygons(geometry: GeoJsonGeometry | null): GoogleCountyPolygon[] {
   if (!geometry) return [];
@@ -750,11 +751,10 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
                             zIndex={isSelected ? 1000 : pin.isCountySeat ? 700 : 500}
                           >
-                            <Pin
-                              background={pinColor}
-                              borderColor="#ffffff"
-                              glyphColor="#ffffff"
-                              scale={isSelected ? 1.05 : 0.86}
+                            <span
+                              className={`county-satellite-place-marker${isSelected ? ' is-selected' : ''}${pin.isCountySeat ? ' is-seat' : ''}`}
+                              style={{ backgroundColor: pinColor }}
+                              aria-hidden="true"
                             />
                           </AdvancedMarker>
                         );

@@ -1,8 +1,6 @@
 /* County geography surfaces (tokens: countyGeoTokens.css, figures: CountyFigures.css).
-   Mode A: dark state FEMA map + light county preview (.ci).
-   Mode B: dark county map + places panel + reference panel.
-   Light panels name the county in blue type above a hairline — no blue slabs. The dark map
-   panels keep their own ink header. */
+   State overview retains the metric choropleth; selected-county maps use satellite
+   imagery with source-backed boundary and place overlays. */
 
 /* ---------- Shared panel anatomy ---------- */
 .county-geo, .cv-panel.county-inspector-panel.ci {
@@ -82,6 +80,23 @@
 .county-satellite-place-info { display: grid; gap: .2rem; min-width: 10rem; color: #263a48; font-family: var(--geo-font, system-ui); }
 .county-satellite-place-info strong { font-size: .9rem; }
 .county-satellite-place-info span { color: #657682; font-size: .75rem; }
+.county-satellite-place-marker {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(10, 27, 38, .45);
+  cursor: pointer;
+}
+.county-satellite-place-marker.is-seat { width: 13px; height: 13px; }
+.county-satellite-place-marker.is-selected {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  outline: 1.5px solid #173f52;
+  outline-offset: 1px;
+}
 .county-satellite-fallback { width: 100%; }
 .county-satellite-fallback > p { margin: 0; padding: .35rem .5rem; color: #5b6d77; font-size: .72rem; }
 .county-satellite-fallback .county-single-map-svg { display: block; width: 100%; height: clamp(12rem, 40vh, 20rem); max-height: 20rem; }

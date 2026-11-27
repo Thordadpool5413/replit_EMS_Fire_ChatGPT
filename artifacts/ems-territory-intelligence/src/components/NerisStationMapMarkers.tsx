@@ -1,6 +1,5 @@
 import React,{useState} from 'react';
 import {AdvancedMarker,InfoWindow} from '@vis.gl/react-google-maps';
-import {Building2,MapPin} from 'lucide-react';
 import type {Agency} from '../types';
 import {nerisObjectUrl} from '../services/nerisStationCatalog';
 import {linkedNerisAccount,type NerisMapGroup,type NerisMapRow} from '../services/nerisStationMap';
@@ -24,12 +23,10 @@ export function NerisStationMapMarkers({groups,countyNames,agencies,onOpen}:{gro
  const group=groups.find(g=>g.key===selected);
  return <>
   {groups.map(g=><AdvancedMarker key={g.key} position={{lat:g.lat,lng:g.lng}} title={g.rows.length===1?(g.rows[0].name||g.rows[0].parentName)+' · NERIS station source record':g.rows.length+' NERIS station records at one source point'} onClick={()=>setSelected(g.key)} zIndex={selected===g.key?1200:500}>
-   <span className={`neris-map-marker${selected===g.key?' is-selected':''}`} aria-label={g.rows.length>1?`${g.rows.length} NERIS station records at this point`:'NERIS station source point'}>
-    <MapPin className="neris-map-marker__pin" size={38} strokeWidth={1.8} aria-hidden="true"/>
-    <Building2 className="neris-map-marker__building" size={14} strokeWidth={2.2} aria-hidden="true"/>
-    {g.rows.length>1&&<span className="neris-map-marker__count">{g.rows.length}</span>}
-   </span>
- </AdvancedMarker>)}
+    <span className={`neris-map-dot${selected===g.key?' is-selected':''}`} aria-hidden="true">
+     {g.rows.length>1?g.rows.length:''}
+    </span>
+  </AdvancedMarker>)}
  {group&&<InfoWindow position={{lat:group.lat,lng:group.lng}} onCloseClick={()=>setSelected(undefined)}><div style={{maxWidth:280,maxHeight:350,overflowY:'auto',color:'#14283f',overflowWrap:'anywhere'}}><strong>Federal NERIS station locations</strong><p className="text-xs">Source-reported points; not confirmed current operating stations. End-user validation required.</p><ul className="divide-y">{group.rows.map(s=><li key={s.id}><NerisMapStationDetails station={s} countyNames={countyNames} agencies={agencies} onOpen={onOpen}/></li>)}</ul></div></InfoWindow>}
  </>;
 }

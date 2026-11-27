@@ -32,3 +32,4 @@
 - [Profile verification boundaries](profile-verification-boundaries.md) — retain unconfirmed research; separate sources, individual fact reviews, corrections and original history.
 - [Mobile nearby provider discovery](mobile-nearby-provider-discovery.md) — make location-assisted EMS/fire lookup immediate on phones, with a manual fallback and clear mapped-location limits.
 - [Git safety guard](git-safety-guard.md) — back up local history and changes first; Git metadata updates in this Replit shell may require explicit authorization.
+- [Google Maps marker compatibility](google-maps-marker-metadata.md) — Replit metadata can break Maps `PinElement`; use plain DOM children inside `AdvancedMarker`.

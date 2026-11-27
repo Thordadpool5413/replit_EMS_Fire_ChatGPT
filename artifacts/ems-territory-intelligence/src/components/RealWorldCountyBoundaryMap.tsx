@@ -9,10 +9,12 @@ import {ALL_50_STATES_SUMMARIES} from '../data/nationalGeographicData';
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { APIProvider, AdvancedMarker, InfoWindow, Map as GoogleMap, Polygon, useMap } from '@vis.gl/react-google-maps';
 import { Agency } from '../types';
 import {
   countyBoundaryHierarchy,
   CountyBoundaryNode,
+  GeoJsonGeometry,
   StateHierarchyNode,
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
@@ -27,6 +29,32 @@ import { formatCoordinates } from '../utils/countyPresentation';
 import './countyGeoTokens.css';
 import './CountyFigures.css';
 import './CountyInspector.css';
+
+type GoogleCountyCoordinate = { lat: number; lng: number };
+type GoogleCountyPolygon = GoogleCountyCoordinate[][];
+
+function toGoogleCountyPolygons(geometry: GeoJsonGeometry | null): GoogleCountyPolygon[] {
+  if (!geometry) return [];
+  const polygons: number[][][][] = geometry.type === 'Polygon'
+    ? [geometry.coordinates as number[][][]]
+    : geometry.coordinates as number[][][][];
+  return polygons
+    .map((polygon) => polygon.map((ring) => ring
+      .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)
+      .map(([lng, lat]) => ({ lat, lng }))))
+    .filter((polygon) => polygon[0]?.length >= 3);
+}
+
+function FitCountyMapBounds({ bbox, countyFips }: { bbox: [number, number, number, number]; countyFips: string }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const [west, south, east, north] = bbox;
+    if (![west, south, east, north].every(Number.isFinite) || south >= north || west >= east) return;
+    map.fitBounds({ west, south, east, north }, 34);
+  }, [map, bbox, countyFips]);
+  return null;
+}
 
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
@@ -64,6 +92,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     { includeAgencyRecords: selectedCountyName !== 'all' },
   ),[equipmentAgencies,equipmentFilter,selectedCountyName]);
   const [isLoadingBoundaries, setIsLoadingBoundaries] = useState<boolean>(false);
+  const [googleMapsApiKey] = useState(() => {
+    const envKey = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY || '';
+    try {
+      return envKey || localStorage.getItem('gmp_api_key') || '';
+    } catch {
+      return envKey;
+    }
+  });
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
@@ -73,7 +109,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const singleCountyRef = useRef<SVGGElement>(null);
   const singleSvgRef = useRef<SVGSVGElement>(null);
   const [singleMapScale, setSingleMapScale] = useState(1);
-  const [compactCountyMap, setCompactCountyMap] = useState(false);
   const [singleViewBox, setSingleViewBox] = useState('0 0 520 340');
   const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
   const [countyZoom, setCountyZoom] = useState(1);
@@ -248,6 +283,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     if (!activeCountyNode) return null;
     return countyBoundaryHierarchy.projectSingleCountyBoundaryToSvg(activeCountyNode, agencies, 520, 340, 32);
   }, [activeCountyNode, agencies, boundaryVersion]);
+  const googleCountyPolygons = useMemo(
+    () => toGoogleCountyPolygons(activeCountyNode?.geometry ?? null),
+    [activeCountyNode?.geometry],
+  );
+  const selectedPlace = useMemo(
+    () => projectedSingleCounty?.cityPins.find((pin) => pin.cityName.toLowerCase() === selectedCityName.toLowerCase()) ?? null,
+    [projectedSingleCounty, selectedCityName],
+  );
 
   useLayoutEffect(() => {
     const group = singleCountyRef.current;
@@ -268,7 +311,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     const resize = () => {
       const scale = svg.getScreenCTM()?.a;
       if (scale && scale > 0) setSingleMapScale(scale);
-      setCompactCountyMap(svg.getBoundingClientRect().width < 420);
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -659,89 +701,144 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
           <div className="cv-state-grid county-selected-grid">
             <div className="cv-map-panel county-geo county-single-map-panel county-municipality-map-panel">
               <div className="cv-map-head">
-                <strong className="cv-head-ico"><MapIcon aria-hidden="true" />{activeCountyNode.countyName} boundary and mapped places</strong>
+                <strong className="cv-head-ico"><MapIcon aria-hidden="true" />{activeCountyNode.countyName} satellite view</strong>
                 <span className="tabular-nums">{activeCountyNode.landAreaSqMiles.toLocaleString()} sq mi · FIPS {activeCountyNode.countyFips}</span>
               </div>
               <div className="cv-map-stage cv-map-stage--county">
-                <svg
-                  ref={singleSvgRef}
-                  viewBox={singleViewBox}
-                  preserveAspectRatio="xMidYMid meet"
-                  className="county-single-map-svg select-none"
-                  role="group"
-                  aria-label={`${activeCountyNode.countyName} boundary with ${projectedSingleCounty.cityPins.length} mapped places`}
-                >
-                  <g ref={singleCountyRef}>
-                    {projectedSingleCounty.svgPath && (
-                      <path d={projectedSingleCounty.svgPath} fill={isEquipmentMapActive?'#FFF4E3':'#1A3456'} stroke={isEquipmentMapActive?'#B78B63':'#7FA7F5'} strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                    )}
-                    {projectedSingleCounty.cityPins.map((pin) => {
-                      const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                      const isHovered = hoveredCityName === pin.cityName;
-                      const showLabel = isSelected || isHovered || pin.isCountySeat || (!compactCountyMap && projectedSingleCounty.cityPins.length <= 10);
-                      const label = pin.cityName.length > 22 && !isHovered && !isSelected ? `${pin.cityName.slice(0, 20)}…` : pin.cityName;
-                      const [viewX, , viewWidth] = singleViewBox.split(' ').map(Number);
-                      const labelOnLeft = pin.svgX > viewX + viewWidth * 0.65;
-                      return (
-                        <g
-                          key={pin.cityName}
-                          className="cv-pin"
-                          tabIndex={0}
-                          role="button"
-                          aria-pressed={isSelected}
-                          data-selected={isSelected}
-                          aria-label={`${pin.cityName}${pin.isCountySeat ? ', county seat' : ''}. Show providers for this place`}
-                          onMouseEnter={() => setHoveredCityName(pin.cityName)}
-                          onMouseLeave={() => setHoveredCityName(null)}
-                          onFocus={() => setHoveredCityName(pin.cityName)}
-                          onBlur={() => setHoveredCityName(null)}
-                          onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode);
-                            }
-                          }}
+                {googleMapsApiKey ? (
+                  <APIProvider apiKey={googleMapsApiKey} libraries={['marker']}>
+                    <GoogleMap
+                      mapId="DEMO_MAP_ID"
+                      className="county-satellite-map-canvas"
+                      style={{ width: '100%', height: '100%' }}
+                      defaultCenter={activeCountyNode.centroid}
+                      defaultZoom={8}
+                      mapTypeId="satellite"
+                      gestureHandling="cooperative"
+                      disableDefaultUI
+                      zoomControl
+                      clickableIcons={false}
+                      aria-label={`${activeCountyNode.countyName} satellite map with county boundary and ${projectedSingleCounty.cityPins.length} place markers`}
+                    >
+                      <FitCountyMapBounds bbox={activeCountyNode.bbox} countyFips={activeCountyNode.countyFips} />
+                      {googleCountyPolygons.map((paths, index) => (
+                        <Polygon
+                          key={`${activeCountyNode.countyFips}-${index}`}
+                          paths={paths}
+                          clickable={false}
+                          fillColor={isEquipmentMapActive ? '#f3b34c' : '#32a4c8'}
+                          fillOpacity={isEquipmentMapActive ? 0.16 : 0.11}
+                          strokeColor="#ffffff"
+                          strokeOpacity={0.95}
+                          strokeWeight={2.5}
+                          zIndex={20}
+                        />
+                      ))}
+                      {projectedSingleCounty.cityPins.map((pin) => {
+                        const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
+                        return (
+                          <AdvancedMarker
+                            key={pin.cityName}
+                            position={{ lat: pin.latitude, lng: pin.longitude }}
+                            title={`${pin.cityName}${pin.isCountySeat ? ' · County seat' : ''} · ${pin.providersCount} provider records`}
+                            onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
+                            zIndex={isSelected ? 1000 : pin.isCountySeat ? 700 : 500}
+                          >
+                            <img
+                              className={`county-map-native-pin${isSelected ? ' is-selected' : ''}`}
+                              src={isSelected
+                                ? 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png'
+                                : pin.isCountySeat
+                                  ? 'https://maps.google.com/mapfiles/ms/icons/yellow-pushpin.png'
+                                  : 'https://maps.google.com/mapfiles/ms/icons/blue-pushpin.png'}
+                              alt=""
+                              aria-hidden="true"
+                              draggable={false}
+                            />
+                          </AdvancedMarker>
+                        );
+                      })}
+                      {selectedPlace && (
+                        <InfoWindow
+                          position={{ lat: selectedPlace.latitude, lng: selectedPlace.longitude }}
+                          onCloseClick={() => onShowAllPlaces?.()}
                         >
-                          <circle className="cv-pin-ring" cx={pin.svgX} cy={pin.svgY} r={12 / singleMapScale} />
-                          <circle
-                            cx={pin.svgX}
-                            cy={pin.svgY}
-                            r={(isSelected || isHovered ? 6 : pin.isCountySeat ? 6 : 4) / singleMapScale}
-                            fill={isSelected ? '#FFFFFF' : pin.isCountySeat ? '#F5B94A' : '#9DBBF7'}
-                            stroke={isSelected ? '#2456C8' : '#0C1829'}
-                            strokeWidth={isSelected ? 3 : 2}
-                            vectorEffect="non-scaling-stroke"
-                          />
-                          {showLabel && (
-                            <text
-                              className="cv-pin-label"
-                              x={pin.svgX + (labelOnLeft ? -10 : 10) / singleMapScale}
-                              y={pin.svgY + 4 / singleMapScale}
-                              textAnchor={labelOnLeft ? 'end' : 'start'}
-                              fontSize={12 / singleMapScale}
-                              fontWeight={isSelected ? 700 : 600}
-                              fill={isEquipmentMapActive?'#49372C':'#F3F7FC'}
-                              stroke="#0C1829"
-                              strokeWidth={3 / singleMapScale}
-                              paintOrder="stroke"
+                          <div className="county-satellite-place-info">
+                            <strong>{selectedPlace.cityName}</strong>
+                            <span>{selectedPlace.isCountySeat ? 'County seat · ' : ''}{selectedPlace.providersCount} provider records</span>
+                          </div>
+                        </InfoWindow>
+                      )}
+                    </GoogleMap>
+                  </APIProvider>
+                ) : (
+                  <div className="county-satellite-fallback" role="status">
+                    <p>Satellite imagery is unavailable here. Showing the county boundary and place pins instead.</p>
+                    <svg
+                      ref={singleSvgRef}
+                      viewBox={singleViewBox}
+                      preserveAspectRatio="xMidYMid meet"
+                      className="county-single-map-svg select-none"
+                      role="group"
+                      aria-label={`${activeCountyNode.countyName} boundary with ${projectedSingleCounty.cityPins.length} mapped places`}
+                    >
+                      <g ref={singleCountyRef}>
+                        {projectedSingleCounty.svgPath && (
+                          <path d={projectedSingleCounty.svgPath} fill="#e5ece9" stroke="#607d74" strokeWidth={2.2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                        )}
+                        {projectedSingleCounty.cityPins.map((pin) => {
+                          const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
+                          const isHovered = hoveredCityName === pin.cityName;
+                          const showLabel = isSelected || isHovered;
+                          const pinColor = isSelected ? '#2563eb' : pin.isCountySeat ? '#b7791f' : '#286987';
+                          return (
+                            <g
+                              key={pin.cityName}
+                              className="cv-pin"
+                              tabIndex={0}
+                              role="button"
+                              aria-pressed={isSelected}
+                              aria-label={`${pin.cityName}${pin.isCountySeat ? ', county seat' : ''}. Show providers for this place`}
+                              onMouseEnter={() => setHoveredCityName(pin.cityName)}
+                              onMouseLeave={() => setHoveredCityName(null)}
+                              onFocus={() => setHoveredCityName(pin.cityName)}
+                              onBlur={() => setHoveredCityName(null)}
+                              onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode);
+                                }
+                              }}
                             >
-                              {label}
-                            </text>
-                          )}
-                          <title>
-                            {`${pin.cityName} · ZIP ${pin.zipCodes.join(', ') || 'not listed'} · ${formatCoordinates(pin.latitude, pin.longitude, 4)} · ${pin.providersCount} provider records`}
-                          </title>
-                        </g>
-                      );
-                    })}
-                  </g>
-                </svg>
+                              <g transform={`translate(${pin.svgX},${pin.svgY}) scale(${1 / singleMapScale})`}>
+                                <circle className="cv-pin-hit-area" cx="0" cy="0" r="18" />
+                                <circle className="cv-map-place-dot" cx="0" cy="0" r={isSelected ? 7 : 5.5} fill={pinColor} />
+                                <circle className="cv-map-place-dot-center" cx="0" cy="0" r="2" />
+                              </g>
+                              {showLabel && (
+                                <text
+                                  className="cv-pin-label"
+                                  x={pin.svgX + 10 / singleMapScale}
+                                  y={pin.svgY - 7 / singleMapScale}
+                                  fontSize={12 / singleMapScale}
+                                >
+                                  {pin.cityName}
+                                </text>
+                              )}
+                            </g>
+                          );
+                        })}
+                      </g>
+                    </svg>
+                  </div>
+                )}
               </div>
               <div className="cv-legend">
-                <span><span className="cv-dot" style={{ backgroundColor: '#F5B94A' }} />County seat · {activeCountyNode.countySeat}</span>
-                <span><span className="cv-dot" style={{ backgroundColor: '#9DBBF7' }} />Place</span>
-                <span><span className="cv-dot" style={{ backgroundColor: '#FFFFFF', boxShadow: '0 0 0 2px #2456C8' }} />Selected</span>
+                <span><span className="cv-dot" style={{ backgroundColor: '#d4a72c' }} />County seat · {activeCountyNode.countySeat}</span>
+                <span><span className="cv-dot" style={{ backgroundColor: '#2872b9' }} />Place</span>
+                {selectedCityName !== 'all' && <span><span className="cv-dot" style={{ backgroundColor: '#d94b3d' }} />Selected place</span>}
+                <span>Imagery: Google Maps satellite</span>
               </div>
             </div>
 

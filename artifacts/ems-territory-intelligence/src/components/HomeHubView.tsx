@@ -964,15 +964,24 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <path d="M 0 0 L 0 7" stroke="#AF8B6C" strokeWidth="2" />
                   </pattern>
                 </defs>
+                <rect
+                  className="home-map-ocean"
+                  x={HOME_MAP_VIEWBOX.x}
+                  y={HOME_MAP_VIEWBOX.y}
+                  width={HOME_MAP_VIEWBOX.width}
+                  height={HOME_MAP_VIEWBOX.height}
+                  rx="14"
+                  fill="#f4f7f7"
+                />
                 <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke={isPhone ? '#C7D2DE' : '#B68A60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="24" y="373" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? 'Instrument Sans, system-ui, sans-serif' : 'monospace'}>ALASKA (AK)</text>
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#ffffff" fillOpacity="0.96" stroke="#cbd7db" strokeWidth="1.2" />
+                  <text x="24" y="373" fill="#536771" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke={isPhone ? '#C7D2DE' : '#B68A60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="206" y="413" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? 'Instrument Sans, system-ui, sans-serif' : 'monospace'}>HAWAII (HI)</text>
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#ffffff" fillOpacity="0.96" stroke="#cbd7db" strokeWidth="1.2" />
+                  <text x="206" y="413" fill="#536771" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">HAWAII (HI)</text>
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
@@ -1007,7 +1016,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          stroke={isSelected ? '#A52F4C' : isHovered ? '#E96A3D' : isPhone ? '#FFFFFF' : '#9A7658'}
+                          stroke={isSelected ? '#173f52' : isHovered ? '#2f7480' : '#F8FBFC'}
                           strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
@@ -1031,8 +1040,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         </path>
                         {(isSelected || isHovered) && (
                           <g pointerEvents="none" className="home-map-state-ring">
-                            <path d={boundary.d} fill="none" stroke="#06101B" strokeWidth={isSelected ? 5 : 3.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" strokeOpacity="0.85" />
-                            <path d={boundary.d} fill="none" stroke={isSelected ? '#F4C86A' : '#FF4B36'} strokeWidth={isSelected ? 2.4 : 1.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                            <path d={boundary.d} fill="none" stroke="#ffffff" strokeWidth={isSelected ? 4.8 : 3.6} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                            <path d={boundary.d} fill="none" stroke={isSelected ? '#173f52' : '#4d6874'} strokeWidth={isSelected ? 2.1 : 1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                           </g>
                         )}
                       </g>
@@ -1053,10 +1062,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       const cIn = regionFilter === 'All' || st.region === regionFilter;
                       const cSel = selectedStateCode === st.code;
                       const cHov = hoveredStateCode === st.code;
-                      const cDatum = stateMapMetricsByCode[st.code][mapMetric];
-                      const cFill = hasReportedValue(cDatum.value)
-                        ? getStateMapFill(st.code)
-                        : '#F4E8D8';
                       return (
                         <g
                           key={`home-lbl-${st.code}`}
@@ -1070,34 +1075,31 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           <polyline
                             points={`${anchor.x},${anchor.y} ${calloutX - (isPhone ? 32 : 22)},${calloutY} ${calloutX - (isPhone ? 26 : 14)},${calloutY}`}
                             fill="none"
-                            stroke={cSel ? (isPhone ? '#D7A83F' : '#F4C86A') : cHov ? (isPhone ? '#245BB7' : '#FF4B36') : isPhone ? '#94A3B8' : '#BA906A'}
-                            strokeWidth={cSel || cHov ? 1.3 : 0.8}
+                            stroke={cSel ? '#173f52' : cHov ? '#2f7480' : '#71848b'}
+                            strokeWidth={cSel || cHov ? 1.2 : 0.75}
                             pointerEvents="none"
                           />
-                          <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? (isPhone ? '#D7A83F' : '#F4C86A') : isPhone ? '#64748B' : '#BA906A'} pointerEvents="none" />
-                          {!isPhone && <rect x={calloutX - (isPhone ? 27 : 14)} y={calloutY - (isPhone ? 18 : 9)} width={isPhone ? 54 : 28} height={isPhone ? 36 : 18} rx="4" fill="#FFFFFF" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />}
-                          {isPhone && <rect
-                            className="home-map-callout-label"
-                            x={calloutX - 27}
-                            y={calloutY - 15}
-                            width="54"
-                            height="30"
-                            rx="7"
-                            fill={cSel ? '#FFF6D8' : cHov ? '#EEF4FF' : '#FFFFFF'}
-                            stroke={cSel ? '#B68A37' : cHov ? '#245BB7' : '#A7B4C2'}
-                            strokeWidth={cSel ? 1.5 : 0.9}
-                            data-testid="home-map-callout-label"
-                          />}
-                          <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 26 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.15 : undefined}>{st.code}</text>
+                          <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? '#173f52' : '#71848b'} pointerEvents="none" />
+                          <text
+                            x={calloutX}
+                            y={calloutY + (isPhone ? 0 : 3.5)}
+                            dominantBaseline={isPhone ? 'central' : undefined}
+                            textAnchor="middle"
+                            fill="#253c47"
+                            stroke="#ffffff"
+                            strokeWidth={isPhone ? 3 : 2}
+                            paintOrder="stroke"
+                            fontSize={isPhone ? 19 : 11.5}
+                            fontWeight={cSel ? '800' : '750'}
+                            fontFamily="Arial, Helvetica, system-ui, sans-serif"
+                            letterSpacing=".2"
+                          >{st.code}</text>
                         </g>
                       );
                     }
 
                     const isInRegion = regionFilter === 'All' || st.region === regionFilter;
                     const isSelected = selectedStateCode === st.code;
-                    const isHovered = hoveredStateCode === st.code;
-                    const datum = stateMapMetricsByCode[st.code][mapMetric];
                     const phoneOffset = isPhone ? ({
                       IL: [-8, -6], IN: [-4, 4], OH: [9, -4], TN: [-8, 7],
                     } as Record<string, number[]>)[st.code] : undefined;
@@ -1116,41 +1118,20 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         pointerEvents="none"
                         opacity={isInRegion ? 1 : 0.4}
                       >
-                        {isPhone && st.code !== 'HI' && <rect
-                          x="-22"
-                          y="-15"
-                          width="44"
-                          height="30"
-                          rx="5"
-                          fill={isSelected ? '#1E56A8' : isHovered ? '#EEF4FF' : '#FFFFFF'}
-                          fillOpacity="0.97"
-                          stroke={isSelected ? '#17458A' : isHovered ? '#245BB7' : '#B8C5D3'}
-                          strokeWidth={isSelected ? 1.4 : 0.9}
-                          data-testid="home-map-state-label-chip"
-                          data-state-code={st.code}
-                        />}
-                        {!isPhone && <rect
-                          x="-13"
-                          y="-9"
-                          width="26"
-                          height="18"
-                          rx="5"
-                          fill={isSelected ? '#FFD12E' : '#FFFFFF'}
-                          fillOpacity="0.98"
-                          stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#BA906A'}
-                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
-                        />}
                         <text
                           x="0"
                           y={isPhone ? 0 : undefined}
                           textAnchor="middle"
                           dy={isPhone ? undefined : 3.5}
                           dominantBaseline={isPhone ? 'central' : undefined}
-                          fill={isPhone && isSelected ? '#FFFFFF' : isPhone ? '#172B4D' : '#202124'}
-                          fontSize={isPhone ? 26 : 10}
-                          fontWeight={isPhone ? 700 : 800}
-                          fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
-                          letterSpacing={isPhone ? 0.15 : undefined}
+                          fill="#243d49"
+                          stroke="#ffffff"
+                          strokeWidth={isPhone ? 2.8 : 1.9}
+                          paintOrder="stroke"
+                          fontSize={isPhone ? 19 : 11.5}
+                          fontWeight={isSelected ? '800' : '750'}
+                          fontFamily="Arial, Helvetica, system-ui, sans-serif"
+                          letterSpacing=".12"
                         >
                           {st.code}
                         </text>

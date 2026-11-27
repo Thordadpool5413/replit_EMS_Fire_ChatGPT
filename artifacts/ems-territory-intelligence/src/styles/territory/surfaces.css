@@ -305,6 +305,30 @@
 .gmap-ctl:focus-visible { outline: 2px solid #285ee8; outline-offset: 2px; }
 .gmap-ctl svg { color: #285ee8; }
 
+.neris-map-native-pin { display: block; width: 16px; height: 16px; object-fit: contain; user-select: none; }
+.neris-map-native-pin.is-selected { width: 20px; height: 20px; }
+
+.territory-agency-map-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  transition: transform 140ms ease;
+}
+.territory-agency-map-marker.is-selected { transform: translateY(-2px); }
+.territory-agency-map-dot {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border: 2px solid var(--marker-border, #fff);
+  border-radius: 50%;
+  background: var(--marker-color, #245f7a);
+  color: var(--marker-glyph, #fff);
+  font: 700 7px/1 system-ui, sans-serif;
+}
+.territory-agency-map-marker.is-selected .territory-agency-map-dot { transform: scale(1.12); }
+
 /* Phone and short landscape: reachable live-map and fleet-map controls, adequate canvas. */
 @media (max-width: 767px) {
   .gmap-ctl { height: 2.75rem; padding: 0 .8rem; font-size: .8rem; }

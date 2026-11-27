@@ -1343,15 +1343,15 @@
 }
 
 /* State hover/focus preview — concise, never resizes the map viewport. */
-.home-map-state-preview { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-top: .6rem; padding: .5rem .75rem; border: 1px solid #294158; border-radius: .6rem; background: #0D1C2B; color: #E4EEF8; font-size: 12px; }
-.home-map-state-preview-swatch { width: .9rem; height: 1.6rem; border-radius: 3px; border: 1px solid #7790A7; flex: none; }
-.home-map-state-preview-swatch.is-missing { background: repeating-linear-gradient(135deg,#172A3D 0 3px,#7890A8 3px 4px); }
+.home-map-state-preview { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-top: .6rem; padding: .5rem .75rem; border: 1px solid #d5dfe3; border-radius: .6rem; background: #fff; color: #263a48; font-size: 12px; }
+.home-map-state-preview-swatch { width: .9rem; height: 1.6rem; border-radius: 3px; border: 1px solid #bdcbd0; flex: none; }
+.home-map-state-preview-swatch.is-missing { background: repeating-linear-gradient(135deg,#f4e8d8 0 3px,#af8b6c 3px 4px); }
 .home-map-state-preview-id { display: grid; min-width: 7rem; }
-.home-map-state-preview-kicker { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8EA6BD; }
+.home-map-state-preview-kicker { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #687c87; }
 .home-map-state-preview-id strong { font-size: 14px; font-weight: 750; }
-.home-map-state-preview-id strong span { font-family: ui-monospace, monospace; font-size: 11px; color: #9CB1C7; margin-left: .25rem; }
+.home-map-state-preview-id strong span { font-family: ui-monospace, monospace; font-size: 11px; color: #687c87; margin-left: .25rem; }
 .home-map-state-preview-facts { display: flex; flex-wrap: wrap; gap: .25rem 1.1rem; margin: 0; flex: 1 1 14rem; }
-.home-map-state-preview-facts dt { font-size: 10.5px; color: #9CB1C7; }
+.home-map-state-preview-facts dt { font-size: 10.5px; color: #687c87; }
 .home-map-state-preview-facts dd { margin: 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .home-map-state-preview-action { min-height: 2.5rem; padding: 0 .9rem; border-radius: .5rem; background: var(--pi-action); color: #fff; font-weight: 750; font-size: 12.5px; transition: background-color 140ms ease; }
 .home-map-state-preview-action:hover { background: var(--pi-action-hover); }
@@ -1360,6 +1360,21 @@
 .home-map-leader text { paint-order: stroke; }
 @media (max-width: 767px) { .home-map-state-preview-action { min-height: 44px; width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .home-map-state-preview-action, .home-map-state-path { transition: none !important; } }
+
+/* Keep the choropleth easy to read without decorative shadows or gradients. */
+.home-territory-map-screen-v2 .home-map-viewport {
+  border-color: #d5dfe3 !important;
+  background: #f4f7f7 !important;
+  box-shadow: inset 0 0 0 1px rgba(20, 40, 63, .025) !important;
+}
+.home-territory-map-screen-v2 .home-map-state-path {
+  stroke-linejoin: round;
+}
+.home-territory-map-screen-v2 .home-map-leader text {
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif !important;
+  font-weight: 700;
+  letter-spacing: .015em;
+}
 
 /* Home data states stay distinct from map loading and map-geometry failures. */
 .home-map-data-status,

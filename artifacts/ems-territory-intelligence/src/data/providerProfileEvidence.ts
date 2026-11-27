@@ -40,8 +40,16 @@ export type ProviderFundingEvidence = {
 export type DepartmentMetric = {
   label: string;
   value: number;
-  format?: 'percent' | 'currency';
+  format?: 'percent' | 'currency' | 'duration';
+  context?: string;
   comparison?: 'apparatus';
+  source: ProviderEvidenceSource;
+};
+
+export type ProviderAccountContext = {
+  area: 'Purchasing' | 'Clinical workflow' | 'Capital planning';
+  title: string;
+  detail: string;
   source: ProviderEvidenceSource;
 };
 
@@ -52,6 +60,8 @@ export type ProviderEvidence = {
   equipment?: ProviderEquipmentEvidence[];
   funding?: ProviderFundingEvidence[];
   operations?: DepartmentMetric[];
+  quality?: DepartmentMetric[];
+  accountContext?: ProviderAccountContext[];
 };
 
 const flaglerBudget = {
@@ -62,9 +72,21 @@ const flaglerDeployment = {
   label: 'Flagler County AED replacement announcement', date: '2026-08-27',
   url: 'https://www.flaglercounty.gov/News-articles/2026-08-27-AEDs-replaced',
 };
+const flaglerAnnual = {
+  label: 'Flagler County annual report, Fire Rescue', date: '2023',
+  url: 'https://www.flaglercounty.gov/files/assets/county/v/1/admin/documents/transparency-dashboard/annual-report-2023.pdf#page=40',
+};
+const flaglerStudy = {
+  label: 'Flagler County Fire Rescue station study', date: '2025-04-21',
+  url: 'https://www.flaglercounty.gov/files/assets/county/v/1/admin/documents/bocc-agenda-documents/2025-bocc-documents/2025-04-21-bocc-workshop-agenda-and-backup-updated.pdf',
+};
+const flaglerLogistics = {
+  label: 'Flagler County Fire Rescue Logistics Division', date: 'Undated department page',
+  url: 'https://www.flaglercounty.gov/County-Services/Public-Safety/Flagler-County-Fire-Rescue/Logistics-Division',
+};
 const orangeReport = {
   label: 'Orange County Fire Rescue department summary', date: 'FY2023',
-  url: 'https://www.ocfl.net/Portals/0/Library/Emergency-Safety/docs/OCFRD_Summary_FY2023.pdf',
+  url: 'https://ocfl.net/Portals/0/Library/Emergency-Safety/docs/OCFRD_Summary_FY2023-CMcert.pdf',
 };
 const coralReport = {
   label: 'Coral Springs–Parkland Fire Department annual report', date: 'FY2025',
@@ -97,6 +119,12 @@ export const providerProfileEvidence = [
         source: flaglerBudget,
       },
       {
+        category: 'monitor', quantity: 15, status: 'Documented historically',
+        deployment: 'Department cardiac monitor replacement',
+        details: 'The 2023 county annual report records replacement of all 15 monitors. The current fleet, manufacturer, model and warranty remain unconfirmed.',
+        source: flaglerAnnual,
+      },
+      {
         category: 'supplies', quantity: 4, status: 'Proposed purchase',
         deployment: 'County public-access AED program',
         details: 'Locked cabinets requested with the AED replacements.',
@@ -110,6 +138,24 @@ export const providerProfileEvidence = [
         source: flaglerBudget,
       },
     ],
+    operations: [
+      { label: 'Rescue and EMS incidents', value: 14138, source: flaglerAnnual },
+      { label: 'Total incidents', value: 18946, source: flaglerAnnual },
+      { label: 'Fire incidents', value: 220, source: flaglerAnnual },
+      { label: 'Firefighters', value: 105, source: flaglerStudy },
+      { label: 'Administrative personnel', value: 9, source: flaglerStudy },
+      { label: 'ALS rescue units', value: 9, source: flaglerStudy },
+      { label: 'Facilities used for service', value: 13, context: 'Includes five facilities operated by municipalities.', source: flaglerStudy },
+    ],
+    quality: [
+      { label: '90th percentile first-unit emergency response', value: 635, format: 'duration', context: '2023 incident data. Time includes dispatch handling, turnout and travel as reported in Table 3.', source: flaglerStudy },
+      { label: '90th percentile first-unit turnout', value: 127, format: 'duration', context: '2023 incident data. All incidents, Table 3.', source: flaglerStudy },
+    ],
+    accountContext: [
+      { area: 'Purchasing', title: 'Logistics Division', detail: 'Handles equipment and supply purchasing, contract negotiation and budget management with department leadership.', source: flaglerLogistics },
+      { area: 'Clinical workflow', title: 'AED-to-monitor compatibility', detail: 'The county says its replacement public-access AEDs are compatible with monitors carried on ambulances and engines. Ask which devices and accessories were selected.', source: flaglerDeployment },
+      { area: 'Clinical workflow', title: 'ESO incident and EMS records', detail: 'The station study identifies ESO as the department’s records system. Confirm the current documentation and event-review workflow before discussing integration.', source: flaglerStudy },
+    ],
   },
   {
     registryKey: 'FDID:FL:07252', registryName: 'Orange County Fire Rescue Department', combinedServices: true,
@@ -119,9 +165,15 @@ export const providerProfileEvidence = [
       { label: 'EMS transports', value: 78756, source: orangeReport },
       { label: 'ALS rescue units', comparison: 'apparatus', value: 45, source: orangeReport },
       { label: 'ALS engines and quints', comparison: 'apparatus', value: 43, source: orangeReport },
+      { label: 'ALS medic units', comparison: 'apparatus', value: 8, source: orangeReport },
       { label: 'Sworn personnel', value: 1298, source: orangeReport },
       { label: 'Total personnel', value: 1554, source: orangeReport },
       { label: 'Unit responses', value: 287995, source: orangeReport },
+    ],
+    quality: [
+      { label: 'Mean first-unit response', value: 458, format: 'duration', context: 'Countywide as reported by the department.', source: orangeReport },
+      { label: 'Urban first-unit response', value: 454, format: 'duration', context: 'Average in the urban service area.', source: orangeReport },
+      { label: 'Rural first-unit response', value: 536, format: 'duration', context: 'Average in the rural service area.', source: orangeReport },
     ],
     funding: [
       {
@@ -132,13 +184,24 @@ export const providerProfileEvidence = [
     ],
   },
   {
-    registryKey: 'FDID:FL:10151', registryName: 'Coral Springs-Parkland Fire Department',
+    registryKey: 'FDID:FL:10151', registryName: 'Coral Springs-Parkland Fire Department', combinedServices: true,
     operations: [
+      { label: 'Total incidents', value: 17077, source: coralReport },
+      { label: 'EMS calls', value: 11656, source: coralReport },
+      { label: 'EMS transports', value: 9284, source: coralReport },
+    ],
+    quality: [
       { label: 'Cardiac arrests', value: 100, source: coralReport },
-      { label: 'Return of spontaneous circulation', value: 30, format: 'percent', source: coralReport },
+      { label: 'Return of spontaneous circulation (ROSC)', value: 30, format: 'percent', context: 'Reported alongside 100 cardiac arrests. ROSC and survival to hospital discharge are different measures.', source: coralReport },
+      { label: 'Mean EMS response time', value: 311, format: 'duration', source: coralReport },
+      { label: 'Emergency EMS responses within 8 minutes', value: 96.7, format: 'percent', source: coralReport },
+      { label: 'Continuous quality improvement reviews', value: 910, source: coralReport },
       { label: 'Stroke alerts', value: 243, source: coralReport },
       { label: 'STEMI alerts', value: 39, source: coralReport },
       { label: 'Trauma alerts', value: 420, source: coralReport },
+    ],
+    accountContext: [
+      { area: 'Clinical workflow', title: 'CARES and case review', detail: 'The EMS Division reports CARES participation with hospital partners. The EMS battalion chief oversees QA/QI, protocols and EMS equipment.', source: coralReport },
     ],
   },
   {
@@ -182,6 +245,14 @@ export const providerProfileEvidence = [
   },
 ] satisfies ProviderEvidence[];
 
+// Published Florida EMS licenses for these same departments. Both source ID and name must match.
+const floridaEmsMatches = new Map([
+  ['STATE-EMS:FL:license:1801', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
+  ['STATE-EMS:FL:license:4807', { name: 'Orange County Fire Rescue Department', fdid: 'FDID:FL:07252' }],
+]);
+
 export function findProviderEvidence(registryKey: string | undefined, registryName: string): ProviderEvidence | undefined {
-  return providerProfileEvidence.find((entry) => entry.registryKey === registryKey && entry.registryName === registryName);
+  const exactIdentity = floridaEmsMatches.get(registryKey ?? '');
+  const key = exactIdentity?.name === registryName ? exactIdentity.fdid : registryKey;
+  return providerProfileEvidence.find(entry => entry.registryKey === key && entry.registryName === registryName);
 }

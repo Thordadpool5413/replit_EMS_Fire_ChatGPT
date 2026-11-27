@@ -305,6 +305,94 @@
 .gmap-ctl:focus-visible { outline: 2px solid #285ee8; outline-offset: 2px; }
 .gmap-ctl svg { color: #285ee8; }
 
+.neris-map-marker {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 43px;
+  color: #9a4b12;
+  filter: drop-shadow(0 2px 3px rgba(8, 24, 37, .42));
+  transform: translateY(-2px);
+  transition: filter 140ms ease, transform 140ms ease;
+}
+.neris-map-marker__pin {
+  position: absolute;
+  inset: 0;
+  fill: #b85f1c;
+  stroke: #fff8ed;
+}
+.neris-map-marker__building {
+  position: absolute;
+  top: 7px;
+  left: 13px;
+  color: #fff;
+}
+.neris-map-marker__count {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  padding-inline: 4px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #173b53;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 3px rgba(8, 24, 37, .3);
+}
+.neris-map-marker.is-selected {
+  filter: drop-shadow(0 0 4px rgba(255, 214, 115, .95)) drop-shadow(0 3px 4px rgba(8, 24, 37, .45));
+  transform: translateY(-4px) scale(1.08);
+}
+.territory-agency-map-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.territory-agency-map-marker__pin-wrap {
+  position: relative;
+  display: grid;
+  min-width: 40px;
+  min-height: 42px;
+  place-items: center;
+  isolation: isolate;
+}
+.territory-agency-map-marker__halo {
+  position: absolute;
+  z-index: -1;
+  top: 52%;
+  left: 50%;
+  width: 29px;
+  height: 29px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 50%;
+  background: rgba(30, 84, 130, .22);
+  opacity: .65;
+  transform: translate(-50%, -50%);
+  transition: width 150ms ease, height 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
+}
+.territory-agency-map-marker__pin-wrap > svg:not(.territory-agency-map-marker__halo) {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 2px rgba(8, 24, 37, .28));
+}
+.territory-agency-map-marker.is-selected .territory-agency-map-marker__halo {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, .96);
+  background: rgba(53, 134, 188, .2);
+  box-shadow: 0 0 0 3px rgba(255, 195, 77, .62), 0 0 15px rgba(255, 205, 96, .7);
+  opacity: 1;
+}
+.territory-agency-map-marker.is-equipment-layer .territory-agency-map-marker__halo { background: rgba(18, 117, 114, .2); }
+
 /* Phone and short landscape: reachable live-map and fleet-map controls, adequate canvas. */
 @media (max-width: 767px) {
   .gmap-ctl { height: 2.75rem; padding: 0 .8rem; font-size: .8rem; }

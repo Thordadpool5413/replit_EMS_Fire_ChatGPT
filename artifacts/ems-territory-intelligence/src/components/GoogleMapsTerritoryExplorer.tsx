@@ -1307,15 +1307,18 @@ export const GoogleMapsTerritoryExplorer: React.FC<GoogleMapsTerritoryExplorerPr
                         }}
                         zIndex={isSelected ? 999 : tier === 'Critical Opportunity' ? 500 : 100}
                       >
-                        <div className="flex flex-col items-center">
+                        <div className={`territory-agency-map-marker${isSelected?' is-selected':''}${colorByEquipment?' is-equipment-layer':''}`}>
                           <PulseIqMarkerEstimate agencyId={agency.id} score={pulseIqScore} />
-                          <Pin
-                            background={colorByEquipment?vendorStyle.background:tierStyle.bg}
-                            borderColor={colorByEquipment?'#ffffff':tierStyle.border}
-                            glyphColor={colorByEquipment?vendorStyle.glyphColor:tierStyle.glyph}
-                            glyph={colorByEquipment?vendorStyle.glyph:undefined}
-                            scale={isSelected ? 1.3 : 1.0}
-                          />
+                          <span className="territory-agency-map-marker__pin-wrap">
+                            <span className="territory-agency-map-marker__halo" aria-hidden="true" />
+                            <Pin
+                              background={colorByEquipment?vendorStyle.background:tierStyle.bg}
+                              borderColor={colorByEquipment?'#ffffff':tierStyle.border}
+                              glyphColor={colorByEquipment?vendorStyle.glyphColor:tierStyle.glyph}
+                              glyph={colorByEquipment?vendorStyle.glyph:undefined}
+                              scale={isSelected ? 1.3 : 1.0}
+                            />
+                          </span>
                         </div>
                       </AdvancedMarker>
                     );

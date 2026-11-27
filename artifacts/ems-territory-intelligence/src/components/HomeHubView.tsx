@@ -963,16 +963,33 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     <rect width="7" height="7" fill="#F4E8D8" />
                     <path d="M 0 0 L 0 7" stroke="#AF8B6C" strokeWidth="2" />
                   </pattern>
+                    <linearGradient id="home-map-ocean" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stopColor="#eaf3f4" />
+                      <stop offset=".56" stopColor="#dce9ed" />
+                      <stop offset="1" stopColor="#e5eef0" />
+                    </linearGradient>
+                    <filter id="home-map-state-relief" x="-8%" y="-8%" width="116%" height="116%">
+                      <feDropShadow dx="0" dy="1.5" stdDeviation="1.4" floodColor="#18394c" floodOpacity=".24" />
+                    </filter>
                 </defs>
+                <rect
+                  className="home-map-ocean"
+                  x={HOME_MAP_VIEWBOX.x}
+                  y={HOME_MAP_VIEWBOX.y}
+                  width={HOME_MAP_VIEWBOX.width}
+                  height={HOME_MAP_VIEWBOX.height}
+                  rx="14"
+                  fill="url(#home-map-ocean)"
+                />
                 <g transform={`translate(${HOME_MAP_TRANSLATE_X} 0)`}>
 
                 {/* Alaska & Hawaii Cartographic Inset Frames */}
                 <g>
-                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke={isPhone ? '#C7D2DE' : '#B68A60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="24" y="373" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? 'Instrument Sans, system-ui, sans-serif' : 'monospace'}>ALASKA (AK)</text>
+                  <rect x="14" y="356" width="174" height="134" rx="10" fill="#F8FBFB" fillOpacity="0.98" stroke={isPhone ? '#b8cbd1' : '#b68a60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
+                  <text x="24" y="373" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">ALASKA (AK)</text>
 
-                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#FFFFFF" fillOpacity="0.98" stroke={isPhone ? '#C7D2DE' : '#B68A60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
-                  <text x="206" y="413" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? 'Instrument Sans, system-ui, sans-serif' : 'monospace'}>HAWAII (HI)</text>
+                  <rect x="196" y="396" width="124" height="94" rx="10" fill="#F8FBFB" fillOpacity="0.98" stroke={isPhone ? '#b8cbd1' : '#b68a60'} strokeWidth="1.5" strokeDasharray={isPhone ? undefined : '4 4'} />
+                  <text x="206" y="413" fill={isPhone ? '#42566A' : '#674C38'} fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".7">HAWAII (HI)</text>
                 </g>
 
                 {/* Layer 1: Authoritative U.S. State Boundary Polygons */}
@@ -1007,7 +1024,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                         <path
                           d={boundary.d}
                           fill={fillColor}
-                          stroke={isSelected ? '#A52F4C' : isHovered ? '#E96A3D' : isPhone ? '#FFFFFF' : '#9A7658'}
+                          filter="url(#home-map-state-relief)"
+                          stroke={isSelected ? '#A52F4C' : isHovered ? '#E96A3D' : '#F8FBFC'}
                           strokeWidth={isSelected ? 2.6 : isHovered ? 1.8 : 1.15}
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
@@ -1075,21 +1093,21 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             pointerEvents="none"
                           />
                           <circle cx={anchor.x} cy={anchor.y} r="1.8" fill={cSel ? (isPhone ? '#D7A83F' : '#F4C86A') : isPhone ? '#64748B' : '#BA906A'} pointerEvents="none" />
-                          {!isPhone && <rect x={calloutX - (isPhone ? 27 : 14)} y={calloutY - (isPhone ? 18 : 9)} width={isPhone ? 54 : 28} height={isPhone ? 36 : 18} rx="4" fill="#FFFFFF" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#BA906A'} strokeWidth={cSel ? 2 : 1.1} />}
+                          {!isPhone && <rect x={calloutX - 14} y={calloutY - 9} width="28" height="18" rx="5" fill="#F8FBFC" stroke={cSel ? '#F4C86A' : cHov ? '#67D6CE' : '#8DA2AE'} strokeWidth={cSel ? 2 : 1.1} />}
                           {isPhone && <rect
                             className="home-map-callout-label"
-                            x={calloutX - 27}
-                            y={calloutY - 15}
-                            width="54"
-                            height="30"
-                            rx="7"
+                            x={calloutX - 25}
+                            y={calloutY - 14}
+                            width="50"
+                            height="28"
+                            rx="8"
                             fill={cSel ? '#FFF6D8' : cHov ? '#EEF4FF' : '#FFFFFF'}
-                            stroke={cSel ? '#B68A37' : cHov ? '#245BB7' : '#A7B4C2'}
+                            stroke={cSel ? '#B68A37' : cHov ? '#245BB7' : '#94A9B3'}
                             strokeWidth={cSel ? 1.5 : 0.9}
                             data-testid="home-map-callout-label"
                           />}
-                          <rect x={calloutX - (isPhone ? 25 : 12)} y={calloutY - (isPhone ? 13 : 7)} width="4" height={isPhone ? 26 : 14} rx="1.5" fill={cFill} />
-                          <text x={calloutX + 3} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 26 : 10} fontWeight={isPhone ? 700 : 800} fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"} letterSpacing={isPhone ? 0.15 : undefined}>{st.code}</text>
+                          <rect x={calloutX - (isPhone ? 23 : 12)} y={calloutY - (isPhone ? 11 : 7)} width="3" height={isPhone ? 22 : 14} rx="1.5" fill={cFill} />
+                          <text x={calloutX + 2} y={calloutY + (isPhone ? 0 : 3.5)} dominantBaseline={isPhone ? 'central' : undefined} textAnchor="middle" fill={isPhone ? '#172B4D' : '#202124'} fontSize={isPhone ? 20 : 10.5} fontWeight="750" fontFamily="Inter, system-ui, sans-serif" letterSpacing=".45">{st.code}</text>
                         </g>
                       );
                     }
@@ -1118,27 +1136,27 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                       >
                         {isPhone && st.code !== 'HI' && <rect
                           x="-22"
-                          y="-15"
-                          width="44"
-                          height="30"
-                          rx="5"
+                          y="-13"
+                          width="40"
+                          height="26"
+                          rx="8"
                           fill={isSelected ? '#1E56A8' : isHovered ? '#EEF4FF' : '#FFFFFF'}
                           fillOpacity="0.97"
-                          stroke={isSelected ? '#17458A' : isHovered ? '#245BB7' : '#B8C5D3'}
-                          strokeWidth={isSelected ? 1.4 : 0.9}
+                          stroke={isSelected ? '#17458A' : isHovered ? '#245BB7' : '#94A9B3'}
+                          strokeWidth={isSelected ? 1.6 : 0.9}
                           data-testid="home-map-state-label-chip"
                           data-state-code={st.code}
                         />}
                         {!isPhone && <rect
-                          x="-13"
-                          y="-9"
-                          width="26"
-                          height="18"
-                          rx="5"
+                          x="-14"
+                          y="-10"
+                          width="28"
+                          height="20"
+                          rx="6"
                           fill={isSelected ? '#FFD12E' : '#FFFFFF'}
                           fillOpacity="0.98"
-                          stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#BA906A'}
-                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1.1}
+                          stroke={isSelected ? '#FFF0C4' : isHovered ? '#67D6CE' : '#94A9B3'}
+                          strokeWidth={isSelected ? 2 : isHovered ? 1.6 : 1}
                         />}
                         <text
                           x="0"
@@ -1147,10 +1165,10 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           dy={isPhone ? undefined : 3.5}
                           dominantBaseline={isPhone ? 'central' : undefined}
                           fill={isPhone && isSelected ? '#FFFFFF' : isPhone ? '#172B4D' : '#202124'}
-                          fontSize={isPhone ? 26 : 10}
-                          fontWeight={isPhone ? 700 : 800}
-                          fontFamily={isPhone ? "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" : "ui-monospace, SFMono-Regular, Menlo, monospace"}
-                          letterSpacing={isPhone ? 0.15 : undefined}
+                          fontSize={isPhone ? 22 : 10.5}
+                          fontWeight="750"
+                          fontFamily="Inter, system-ui, sans-serif"
+                          letterSpacing=".45"
                         >
                           {st.code}
                         </text>

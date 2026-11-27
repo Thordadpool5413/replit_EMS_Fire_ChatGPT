@@ -73,7 +73,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const singleCountyRef = useRef<SVGGElement>(null);
   const singleSvgRef = useRef<SVGSVGElement>(null);
   const [singleMapScale, setSingleMapScale] = useState(1);
-  const [compactCountyMap, setCompactCountyMap] = useState(false);
   const [singleViewBox, setSingleViewBox] = useState('0 0 520 340');
   const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
   const [countyZoom, setCountyZoom] = useState(1);
@@ -268,7 +267,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     const resize = () => {
       const scale = svg.getScreenCTM()?.a;
       if (scale && scale > 0) setSingleMapScale(scale);
-      setCompactCountyMap(svg.getBoundingClientRect().width < 420);
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -678,10 +676,40 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                     {projectedSingleCounty.cityPins.map((pin) => {
                       const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
                       const isHovered = hoveredCityName === pin.cityName;
-                      const showLabel = isSelected || isHovered || pin.isCountySeat || (!compactCountyMap && projectedSingleCounty.cityPins.length <= 10);
+                      const showLabel = isSelected || isHovered;
                       const label = pin.cityName.length > 22 && !isHovered && !isSelected ? `${pin.cityName.slice(0, 20)}…` : pin.cityName;
+                      const labelWidth = Math.max(38, Math.min(150, label.length * 6.2 + 16));
                       const [viewX, , viewWidth] = singleViewBox.split(' ').map(Number);
-                      const labelOnLeft = pin.svgX > viewX + viewWidth * 0.65;
+                      const screenX = (pin.svgX - viewX) * singleMapScale;
+                      const screenWidth = viewWidth * singleMapScale;
+                      const leftRoom = screenX;
+                      const rightRoom = screenWidth - screenX;
+                      const labelCrowding = (side: 'left' | 'right') => projectedSingleCounty.cityPins.reduce((count, otherPin) => {
+                        if (otherPin.cityName === pin.cityName) return count;
+                        const dx = (otherPin.svgX - pin.svgX) * singleMapScale;
+                        const dy = (otherPin.svgY - pin.svgY) * singleMapScale;
+                        const overlapsX = side === 'left'
+                          ? dx < -10 && dx > -labelWidth - 24
+                          : dx > 10 && dx < labelWidth + 24;
+                        return count + (overlapsX && dy > -27 && dy < 18 ? 1 : 0);
+                      }, 0);
+                      const labelOnLeft = leftRoom < labelWidth + 24
+                        ? false
+                        : rightRoom < labelWidth + 24
+                          ? true
+                          : labelCrowding('left') < labelCrowding('right')
+                            ? true
+                            : labelCrowding('right') < labelCrowding('left')
+                              ? false
+                              : pin.svgX > viewX + viewWidth * 0.65;
+                      const labelX = labelOnLeft ? -16 - labelWidth : 16;
+                      const pinColor = isSelected
+                        ? '#1558a6'
+                        : isEquipmentMapActive
+                          ? '#0f766e'
+                          : pin.isCountySeat
+                            ? '#a96d16'
+                            : '#286987';
                       return (
                         <g
                           key={pin.cityName}
@@ -703,31 +731,38 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                             }
                           }}
                         >
-                          <circle className="cv-pin-ring" cx={pin.svgX} cy={pin.svgY} r={12 / singleMapScale} />
-                          <circle
-                            cx={pin.svgX}
-                            cy={pin.svgY}
-                            r={(isSelected || isHovered ? 6 : pin.isCountySeat ? 6 : 4) / singleMapScale}
-                            fill={isSelected ? '#FFFFFF' : pin.isCountySeat ? '#F5B94A' : '#9DBBF7'}
-                            stroke={isSelected ? '#2456C8' : '#0C1829'}
-                            strokeWidth={isSelected ? 3 : 2}
-                            vectorEffect="non-scaling-stroke"
-                          />
+                          <g
+                            transform={`translate(${pin.svgX},${pin.svgY}) scale(${1 / singleMapScale})`}
+                            className={`cv-map-place-marker${isSelected ? ' is-selected' : ''}${pin.isCountySeat ? ' is-seat' : ''}`}
+                            style={{ color: pinColor }}
+                          >
+                            <circle className="cv-pin-hit-area" cx="0" cy="0" r="18" />
+                            <circle className="cv-pin-ring" cx="0" cy="0" r="16" />
+                            <path
+                              className="cv-pin-shape"
+                              d="M0 12 C-2.4 8.4 -9.2 1.4 -9.2 -5.2 A9.2 9.2 0 1 1 9.2 -5.2 C9.2 1.4 2.4 8.4 0 12Z"
+                              fill={pinColor}
+                            />
+                            <circle className="cv-pin-center" cx="0" cy="-5.2" r={pin.isCountySeat ? 3.1 : 2.7} />
+                          </g>
                           {showLabel && (
-                            <text
-                              className="cv-pin-label"
-                              x={pin.svgX + (labelOnLeft ? -10 : 10) / singleMapScale}
-                              y={pin.svgY + 4 / singleMapScale}
-                              textAnchor={labelOnLeft ? 'end' : 'start'}
-                              fontSize={12 / singleMapScale}
-                              fontWeight={isSelected ? 700 : 600}
-                              fill={isEquipmentMapActive?'#49372C':'#F3F7FC'}
-                              stroke="#0C1829"
-                              strokeWidth={3 / singleMapScale}
-                              paintOrder="stroke"
+                            <g
+                              className={`cv-pin-label-group${isSelected ? ' is-selected' : ''}`}
+                              transform={`translate(${pin.svgX},${pin.svgY}) scale(${1 / singleMapScale})`}
                             >
-                              {label}
-                            </text>
+                              <rect className="cv-pin-label-bg" x={labelX} y="-15" width={labelWidth} height="22" rx="7" />
+                              <text
+                                className="cv-pin-label"
+                                x={labelOnLeft ? labelX + labelWidth - 8 : labelX + 8}
+                                y="-4"
+                                textAnchor={labelOnLeft ? 'end' : 'start'}
+                                dominantBaseline="middle"
+                                fontSize="11.5"
+                                fontWeight={isSelected ? 750 : 650}
+                              >
+                                {label}
+                              </text>
+                            </g>
                           )}
                           <title>
                             {`${pin.cityName} · ZIP ${pin.zipCodes.join(', ') || 'not listed'} · ${formatCoordinates(pin.latitude, pin.longitude, 4)} · ${pin.providersCount} provider records`}

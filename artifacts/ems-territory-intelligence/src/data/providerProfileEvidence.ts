@@ -1,3 +1,4 @@
+import { expandedProviderRecords } from './providerSourceExpansion';
 import { publicDepartmentLeadership } from './providerLeadership';
 
 export type ProviderEvidenceSource = {
@@ -7,7 +8,7 @@ export type ProviderEvidenceSource = {
 };
 
 export type EquipmentCategory = 'aed' | 'monitor' | 'cpr' | 'ventilator' | 'supplies';
-export type EquipmentStatus = 'In service reported' | 'Documented historically' | 'Proposed purchase' | 'Purchase approved' | 'Service agreement';
+export type EquipmentStatus = 'In service reported' | 'Documented historically' | 'Proposed purchase' | 'Purchase approved' | 'Purchase documented' | 'Service agreement';
 
 export type ProviderEquipmentEvidence = {
   category: EquipmentCategory;
@@ -16,6 +17,7 @@ export type ProviderEquipmentEvidence = {
   supplier?: string;
   approvedOn?: string;
   lastPurchasedOn?: string;
+  paidOn?: string;
   owner?: string;
   maintainedBy?: string;
   acquiredOn?: string;
@@ -74,6 +76,7 @@ export type ProviderStation = {
   category: 'Department' | 'County' | 'Shared' | 'Volunteer';
   apparatus?: string;
   contact?: ProviderContact;
+  activity?: { period: string; emsCalls: number; primaryCalls: number; responses: number };
 };
 
 export type ProviderEvidence = {
@@ -84,6 +87,7 @@ export type ProviderEvidence = {
   funding?: ProviderFundingEvidence[];
   operations?: DepartmentMetric[];
   quality?: DepartmentMetric[];
+  billing?: DepartmentMetric[];
   accountContext?: ProviderAccountContext[];
   contacts?: ProviderContact[];
   stationDirectory?: { source: ProviderEvidenceSource; visitContact?: ProviderContact; stations: ProviderStation[] };
@@ -167,6 +171,10 @@ const coralPriorReport = {
 const jolietPurchase = {
   label: 'Joliet Public Safety Committee purchase recommendation', date: '2026-01-06',
   url: 'https://joliet.legistar.com/View.ashx?GUID=2D68D3C8-4C88-4515-B9A3-911162D21705&ID=1371128&M=PA',
+};
+const coralStationOffice = {
+  label: 'Coral Springs Fire Administration', date: 'Accessed Nov 27, 2026',
+  url: 'https://www.coralsprings.gov/Government/Departments/Fire-Department',
 };
 const coralPublicAeds = {
   label: 'City of Coral Springs public AED directory', date: 'Accessed Nov 27, 2026',
@@ -306,6 +314,28 @@ export const providerProfileEvidence = [
   },
   {
     registryKey: 'FDID:FL:10151', registryName: 'Coral Springs-Parkland Fire Department', combinedServices: true,
+    stationDirectory: {
+      source: coralReport,
+      visitContact: { role: 'Fire Administration office', phone: '954-344-5934', email: 'CSFD@coralsprings.gov', source: coralStationOffice },
+      stations: [
+        { number: '43', name: 'Coral Springs', address: '4550 Rock Island Road, Coral Springs, FL 33065', category: 'Department', apparatus: 'R43, E43, DST43 and BC43 listed in the annual report.',
+          activity: { period: 'FY2025', emsCalls: 2026, primaryCalls: 2994, responses: 4583 } },
+        { number: '64', name: 'Coral Springs', address: '600 Ramblewood Drive, Coral Springs, FL 33071', category: 'Department',
+          activity: { period: 'FY2025', emsCalls: 1657, primaryCalls: 2420, responses: 3572 } },
+        { number: '71', name: 'Coral Springs', address: '11800 NW 41st Street, Coral Springs, FL 33065', category: 'Department',
+          activity: { period: 'FY2025', emsCalls: 1834, primaryCalls: 2580, responses: 4024 } },
+        { number: '80', name: 'Coral Springs', address: '2825 Coral Springs Drive, Coral Springs, FL 33065', category: 'Department', apparatus: 'Primary rescue, aerial units, dive boat and command support reported.',
+          activity: { period: 'FY2025', emsCalls: 2331, primaryCalls: 3523, responses: 5387 } },
+        { number: '95', name: 'Coral Springs', address: '300 Coral Ridge Drive, Coral Springs, FL 33071', category: 'Department',
+          activity: { period: 'FY2025', emsCalls: 1129, primaryCalls: 1671, responses: 2652 } },
+        { number: '42', name: 'Parkland', address: '6500 Parkside Drive, Parkland, FL 33067', category: 'Department', apparatus: 'Engine and rescue.',
+          activity: { period: 'FY2025', emsCalls: 906, primaryCalls: 1382, responses: 2151 } },
+        { number: '97', name: 'Parkland', address: '6650 N. University Drive, Parkland, FL 33067', category: 'Department', apparatus: 'ALS transport rescue and 3,000-gallon tender.',
+          activity: { period: 'FY2025', emsCalls: 1129, primaryCalls: 1253, responses: 1469 } },
+        { number: '109', name: 'Parkland', address: '11601 Hillsboro Boulevard, Parkland, FL 33076', category: 'Department', apparatus: 'ALS suppression and ALS transport rescue.',
+          activity: { period: 'FY2025', emsCalls: 641, primaryCalls: 1087, responses: 1702 } },
+      ],
+    },
     publicAwardRecipients: ['City of Coral Springs', 'Coral Springs, City of'],
     equipment: [{
       category: 'aed', status: 'In service reported', deployment: 'City public-access program',
@@ -443,6 +473,7 @@ export const providerProfileEvidence = [
       basis: 'Combined proposal amount for one monitor and three AEDs.', purchasingVehicle: 'TMP-9340', source: jolietPurchase,
     }],
   },
+  ...expandedProviderRecords,
 ] satisfies ProviderEvidence[];
 
 // Identity bridges grounded in the state roster and matching published headquarters.
@@ -458,6 +489,13 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD17097770', { name: 'Waukegan Fire Department', fdid: 'FDID:IL:LA401' }],
+  ['NERIS:FD12086690', { name: 'Miami Beach Fire Department', fdid: 'FDID:FL:01012' }],
+  ['NERIS:FD12005957', { name: 'Lynn Haven Fire Rescue', fdid: 'FDID:FL:23022' }],
+  ['NERIS:FD25023950', { name: 'Carver Fire Department', fdid: 'FDID:MA:23052' }],
+  ['NERIS:FD06029084', { name: 'California City Fire Department', fdid: 'FDID:CA:15065' }],
+  ['NERIS:FD51600329', { name: 'Fairfax County Fire and Rescue Department', fdid: 'FDID:VA:05900' }],
+  ['NERIS:FD08013133', { name: 'Lafayette Fire Department', fdid: 'FDID:CO:01354' }],
   ['NERIS:FD12011524', { name: 'Pembroke Pines Fire Rescue', fdid: 'FDID:FL:10082' }],
 ]);
 

@@ -51,7 +51,7 @@ export function buildProviderCardFacts(evidence?: ProviderEvidence, agency?: Age
         value: [quantity, model].filter(Boolean).join(' · ') || entry.deployment || providerEquipmentLabels[entry.category],
         status: entry.status,
         detail: [entry.details, details([
-          ['Supplier', entry.supplier], ['Approved', entry.approvedOn], ['Purchased', entry.lastPurchasedOn],
+          ['Supplier', entry.supplier], ['Approved', entry.approvedOn], ['Purchased', entry.lastPurchasedOn], ['Paid', entry.paidOn],
           ['Owner', entry.owner], ['Maintainer', entry.maintainedBy], ['Acquired', entry.acquiredOn],
           ['Warranty ends', entry.warrantyEnds], ['Service ends', entry.serviceEnds],
           ['Pads expire', entry.padsExpireOn], ['Batteries expire', entry.batteriesExpireOn],

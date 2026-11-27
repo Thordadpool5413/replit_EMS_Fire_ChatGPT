@@ -59,6 +59,7 @@ export function ProviderStations({ profile, evidence }: { profile: Pick<PublicPr
       <ProviderSourceLink source={directory.source} />
       {directory.visitContact && <div className="pr-station-call">
         <h3>{directory.visitContact.role}</h3><ContactLinks contact={directory.visitContact} />
+        <ProviderSourceLink source={directory.visitContact.source} />
         <p className="pr-muted">Call ahead for a station visit. This number reaches the published office.</p>
       </div>}
       <ul className="pr-source-grid pr-stations">
@@ -67,7 +68,12 @@ export function ProviderStations({ profile, evidence }: { profile: Pick<PublicPr
           <h3>{station.name}</h3>
           <p className="pr-icon-heading"><MapPin size={15} aria-hidden="true" />{station.address}</p>
           {station.apparatus && <p className="pr-icon-heading"><CarFront size={15} aria-hidden="true" />{station.apparatus}</p>}
-          {station.contact && <ContactLinks contact={station.contact} />}
+          {station.activity && <dl className="pr-source-grid" aria-label={station.activity.period + ' station activity'}>
+            <div><dt>EMS calls</dt><dd>{station.activity.emsCalls.toLocaleString('en-US')}</dd></div>
+            <div><dt>Primary calls</dt><dd>{station.activity.primaryCalls.toLocaleString('en-US')}</dd></div>
+            <div><dt>Responses with valid enroute time</dt><dd>{station.activity.responses.toLocaleString('en-US')}</dd></div>
+          </dl>}
+          {station.contact && <><p className="pr-muted">{station.contact.role}</p><ContactLinks contact={station.contact} /></>}
         </li>)}
       </ul>
     </>}

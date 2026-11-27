@@ -18,6 +18,7 @@ import { ProviderEquipmentFunding, ProviderSourceLink } from './ProviderEquipmen
 import { ProviderFootprint } from './ProviderFootprint';
 import { ProviderCallBrief } from './ProviderCallBrief';
 import { ProviderPurchasing } from './ProviderPurchasing';
+import { ProviderPublishedBilling } from './ProviderPublishedBilling';
 import { ProviderMetrics } from './ProviderMetrics';
 import { ProviderGrants, ProviderPeople, ProviderStations, FloridaProviderContacts } from './ProviderPublicSources';
 import { formatProviderMetric, providerCurrency } from '../../services/providerCardIntelligence';
@@ -144,7 +145,7 @@ function Quality({ evidence }: { evidence?: ProviderEvidence }) {
 }
 
 function Sources({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
-  const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
+  const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.billing ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
   rows.push(...(evidence?.identitySources ?? []).map(source => ({ source })));
   if (evidence?.stationDirectory) rows.push(evidence.stationDirectory);
   const sources = [...new Map(rows.map(({ source }) => [source.url, source])).values()];
@@ -195,6 +196,7 @@ function Claims({ profile, evidence }: { profile: PublicProviderProfile; evidenc
       ? { ...createSourceNativeAgency(identity, []), npiNumber: linkedNpi } : undefined;
   return <section className="pr-panel">
     <h2 className="pr-icon-heading"><Receipt size={22} aria-hidden="true" /> Claims &amp; reimbursement</h2>
+    <ProviderPublishedBilling evidence={evidence} />
     {agency ? <CmsAmbulanceEvidencePanel agency={agency} autoLoad /> : <p className="pr-muted">No organization NPI linked to this public profile. Use the NPPES organization listing or the linked workspace account to look up reported Medicare service units and payments.</p>}
   </section>;
 }

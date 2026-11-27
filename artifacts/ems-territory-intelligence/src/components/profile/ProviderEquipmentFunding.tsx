@@ -15,6 +15,7 @@ const equipmentCategories = [
 const statusStyle = {
   'In service reported': { tone: 'service', icon: BadgeCheck },
   'Documented historically': { tone: 'muted', icon: Clock3 },
+  'Purchase documented': { tone: 'service', icon: Receipt },
   'Purchase approved': { tone: 'planned', icon: ClipboardList },
   'Proposed purchase': { tone: 'planned', icon: ClipboardList },
   'Service agreement': { tone: 'contract', icon: ShieldCheck },
@@ -47,7 +48,7 @@ function EquipmentEvidence({ entry }: { entry: ProviderEquipmentEvidence }) {
     <EvidenceFields values={[
       ['Manufacturer', entry.manufacturer ?? (entry.category === 'aed' ? 'Not published' : undefined)],
       ['Supplier', entry.supplier], ['Approval date', entry.approvedOn], ['Documented purchase date', entry.lastPurchasedOn ?? 'Not published'],
-      ['Owner', entry.owner], ['Maintained by', entry.maintainedBy], ['Acquired', entry.acquiredOn],
+      ['Paid on', entry.paidOn], ['Owner', entry.owner], ['Maintained by', entry.maintainedBy], ['Acquired', entry.acquiredOn],
       ['Warranty ends', entry.warrantyEnds], ['Service ends', entry.serviceEnds],
       ['Pads expire', entry.padsExpireOn], ['Batteries expire', entry.batteriesExpireOn],
     ]} />

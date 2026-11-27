@@ -2,6 +2,7 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import {providerCatalog} from './build/providerCatalog';
 import {pwaRevision} from './build/pwaRevision';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
@@ -35,6 +36,7 @@ export default defineConfig({
     tailwindcss(),
     runtimeErrorOverlay(),
     pwaRevision(),
+    providerCatalog(path.resolve(import.meta.dirname)),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [

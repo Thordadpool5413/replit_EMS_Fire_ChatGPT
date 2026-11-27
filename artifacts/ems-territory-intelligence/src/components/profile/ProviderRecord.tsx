@@ -1,4 +1,10 @@
-import { ServiceBrief } from './ServiceBrief';
+import { StationContactHistory } from './StationContactHistory';
+import {loadSourceDirectoryManifest} from '../../services/nationalSourceDirectory';
+import { DepartmentContacts } from './DepartmentContacts';
+import { WorkspaceDepartmentFacts } from './WorkspaceDepartmentFacts';
+import { loadProviderCatalog } from '../../services/providerCatalog';
+import { profileSourceKey } from '../../services/departmentIdentity';
+import { ServiceBrief, DepartmentSourceFields } from './ServiceBrief';
 import { departmentAliases, isCombinedDepartment } from '../../services/departmentIdentity';
 import { ProviderChanges } from './ProviderChanges';
 import { DiscoveryCoach } from './DiscoveryCoach';
@@ -7,10 +13,10 @@ import { InlineAgencyRecords } from './InlineAgencyRecords';
 import { KingCountyOutcome } from '../PublicProviderEvidenceCoverage';
 import { ProviderEvidenceStatus } from '../PublicProviderEvidenceCoverage';
 import { RegionalAedSources } from '../RegionalAedSources';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
-import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, linkedBillingOrganization, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
+import { findProviderEvidenceByConfirmedKeys, findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, linkedBillingOrganization, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
 import { parseProviderProfileRef } from '../../navigation/providerProfileUrl';
 import { loadPublicProviderProfile, type PublicProviderProfile } from '../../services/publicProviderProfile';
 import { canCreateRegistryAccount } from '../../services/registryAccountLink';
@@ -199,13 +205,17 @@ function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
 
 function Claims({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const identity = profile.identity;
-  const linkedNpi = linkedBillingOrganization(profile.registryKey, evidence);
+  const linkedNpis = new Set(departmentAliases(profile.stateCode,profile.registryKey).filter(k=>k.startsWith('NPI:')).map(k=>k.slice(4)));
+  const preferred = linkedBillingOrganization(profile.registryKey,evidence);
+  if (preferred) linkedNpis.add(preferred);
+  const linkedNpi = preferred ?? [...linkedNpis][0];
   const agency = identity?.sourceName === 'NPPES' && canCreateRegistryAccount(identity)
     ? createSourceNativeAgency(identity, []) : linkedNpi && identity
       ? { ...createSourceNativeAgency(identity, []), npiNumber: linkedNpi } : undefined;
   return <section className="pr-panel">
     <h2 className="pr-icon-heading"><Receipt size={22} aria-hidden="true" /> Claims &amp; reimbursement</h2>
     <ProviderPublishedBilling evidence={evidence} />
+    {agency && [...linkedNpis].filter(npi=>npi!==agency.npiNumber).map(npi=><CmsAmbulanceEvidencePanel key={npi} agency={{...agency,npiNumber:npi}} autoLoad/>)}
     {agency ? <CmsAmbulanceEvidencePanel agency={agency} autoLoad /> : <p className="pr-muted">No organization NPI linked to this public profile. Use the NPPES organization listing or the linked workspace account to look up reported Medicare service units and payments.</p>}
   </section>;
 }
@@ -223,16 +233,31 @@ export default function ProviderRecord({ reference }: { reference: string }) {
     queryFn: () => ref ? loadPublicProviderProfile(ref).then(profile => profile ?? null) : null,
     retry: false,
   });
-  const profile = query.data;
-  const evidence = profile ? findProviderEvidence(profile.registryKey, profile.name) : undefined;
-  const floridaLicense = profile?.identity?.sourceName === 'State EMS' && profile.stateCode === 'FL'
-    ? profile.identity.identifier : providerEvidenceFloridaLicense(evidence) ?? departmentAliases(profile?.stateCode ?? '',profile?.registryKey).find(k=>k.startsWith('STATE-EMS:FL:license:'))?.split(':').pop();
+  const catalog = useQuery({queryKey:['profile-directory-state',ref?.state],enabled:!!ref,queryFn:()=>loadProviderCatalog(ref!.state),staleTime:Infinity});
+  const row = ref && catalog.data?.find(p=>p.ref.id===ref.id && p.ref.source===ref.source);
+  const geography=useQuery({queryKey:['department-county-labels'],queryFn:loadSourceDirectoryManifest,enabled:!!row?.county && !query.data?.county,staleTime:Infinity});
+  const profile=useMemo(()=>{
+    const p=query.data;
+    if(!p || !row || p.withholdGeography) return p;
+    return {...p,countyFips:p.countyFips || row.county || undefined,county:p.county || geography.data?.countyNames[row.county],
+      ...(!p.coordinates && row.point ? {coordinates:{latitude:row.point[0],longitude:row.point[1]},locationLabel:row.pointBasis,mappedAddress:row.pointAddress} : {})};
+  },[query.data,row,geography.data]);
+  const evidence = profile ? (findProviderEvidence(profile.registryKey, profile.name) ?? (ref && findProviderEvidenceByConfirmedKeys([profileSourceKey(ref)]))) : undefined;
+  const floridaLicenses = new Set<string>();
+  if (profile?.stateCode === 'FL') {
+    if (profile.identity?.sourceName === 'State EMS') floridaLicenses.add(profile.identity.identifier);
+    const reviewed = providerEvidenceFloridaLicense(evidence);
+    if (reviewed) floridaLicenses.add(reviewed);
+    for (const key of departmentAliases('FL', profile.registryKey)) {
+      if (key.startsWith('STATE-EMS:FL:license:')) floridaLicenses.add(key.slice('STATE-EMS:FL:license:'.length));
+    }
+  }
 
   const stationId = profile?.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence) ?? departmentAliases(profile?.stateCode ?? '', profile?.registryKey).find(k=>k.startsWith('NERIS:'))?.slice(6);
-  const combined = evidence?.combinedServices || isCombinedDepartment(profile?.registryKey);
-  const artKind = combined ? 'combined' : profile?.kind === 'Fire department' ? 'fire' : 'ems';
+  const combined = row?.kind === 'combined' || evidence?.combinedServices || isCombinedDepartment(profile?.registryKey);
+  const artKind = combined ? 'combined' : row?.kind === 'fire' || profile?.kind === 'Fire department' ? 'fire' : 'ems';
   const art = { combined: combinedArt, fire: fireArt, ems: emsArt }[artKind];
-  const agencyLabel = combined ? 'Fire & EMS department' : profile?.kind;
+  const agencyLabel = combined ? 'Fire & EMS department' : artKind==='fire' ? 'Fire department' : profile?.kind;
 
   useEffect(() => {
     if (profile && ref) {
@@ -278,9 +303,11 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
-      {section === 'overview' && ref && <ServiceBrief record={ref} name={profile.name} location={profile.address ?? profile.city} serviceLevel={profile.identity?.serviceLevel} reportedStations={profile.reportedStationCount} reportDate={profile.source.date} overview/>}
-      {section === 'overview' && <><ProviderChanges evidence={evidence} />{(evidence?.equipment?.length || evidence?.funding?.length || stationId) ? <ProviderStory key={reference} evidence={evidence} nerisId={stationId} /> : null}</>}
+      {section === 'overview' && ref && <ServiceBrief record={ref} name={profile.name} location={profile.address ?? profile.city} category={row?.kind} serviceLevel={profile.identity?.serviceLevel} reportedStations={profile.reportedStationCount} reportDate={profile.source.date} overview/>}
+      {section === 'overview' && <ProviderChanges evidence={evidence}/>}
+      {ref && <WorkspaceDepartmentFacts record={ref} section={section}/>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
+        {(evidence?.equipment?.length || evidence?.funding?.length) ? <ProviderStory key={reference} evidence={evidence} nerisId={stationId}/> : null}
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
           <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={stationId} profile />
@@ -292,17 +319,18 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {section === 'discovery' && <><ProfileGlance evidence={evidence}/><DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} /></>}
           {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} /></>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
-          {section === 'people' && <><ProviderPeople evidence={evidence} /><FloridaProviderContacts license={floridaLicense} /></>}
-          {section === 'stations' && <><ProviderStations profile={profile} evidence={evidence} />
+          {section === 'people' && <>{ref && <DepartmentContacts record={ref}/>}<ProviderPeople evidence={evidence} />{[...floridaLicenses].map(license=><FloridaProviderContacts key={license} license={license} />)}{ref && <StationContactHistory record={ref}/>}</>}
+          {section === 'stations' && <>{ref && <StationContactHistory record={ref}/>}<ProviderStations profile={profile} evidence={evidence} />
             {profile.identity?.sourceName === 'NPPES' && canCreateRegistryAccount(profile.identity) &&
               <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} />}</>}
           {section === 'claims' && <Claims profile={profile} evidence={evidence} />}
           {section === 'quality' && <><Quality evidence={evidence} />{profile.countyFips === '53033' && <KingCountyOutcome />}</>}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
-          {section === 'sources' && <><Sources profile={profile} evidence={evidence}/><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence}/><ProviderEvidenceStatus evidence={evidence}/></>}
+          {section === 'sources' && <>{ref && <DepartmentSourceFields record={ref}/>}<Sources profile={profile} evidence={evidence}/><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence}/><ProviderEvidenceStatus evidence={evidence}/></>}
         </div>
         <div className="pr-section-rail">
           {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} linkedNerisId={stationId} />}
+          {section === 'overview' && ref && <DepartmentContacts record={ref} summary/>}
           <SourceSummary profile={profile} />
         </div>
       </div>}

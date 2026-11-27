@@ -55,7 +55,7 @@ export function ProviderFootprint({ profile, linkedNerisId }: { profile: PublicP
     sourceUrl: nerisObjectUrl(0, department.oid),
   });
   if (profile.coordinates) points.push({
-    id: 'recorded', label: profile.name, kind: 'recorded', ...profile.coordinates, address: profile.address,
+    id: 'recorded', label: profile.name, kind: 'recorded', ...profile.coordinates, address: profile.mappedAddress || profile.address,
     sourceUrl: profile.addressSource?.url,
   });
   for (const station of department?.stations ?? []) {

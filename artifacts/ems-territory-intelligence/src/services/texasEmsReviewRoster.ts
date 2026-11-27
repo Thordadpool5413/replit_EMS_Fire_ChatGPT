@@ -9,6 +9,15 @@ export interface TexasReviewRecord {
  stationCountAsReported:number; endUserValidationRequired:true;
  nationalReviewCandidates:{sourceKey:string;name:string;source:'USFA'|'NPPES';city:string;postalCode:string;basis:string[]}[];
 }
+export function texasServiceName(row:TexasReviewRecord) {
+ // The hospital operates Cuero EMS. Its EMS department names the service in its published EMT role.
+ // https://www.cueroregionalhospital.org/jobs/job-categories/ems/emt-ft/
+ if(row.sourceKey==='TX-DSHS:license:062007' && row.city==='CUERO' && row.dbaName==='CUERO REGIONAL HOSPITAL') return 'Cuero EMS';
+ if(hasProviderServiceName(row.dbaName ?? '')) return row.dbaName!;
+ if(hasProviderServiceName(row.name)) return row.name;
+ if(row.rosterKind==='provider' && !unrelatedProviderName(row.name) && !unrelatedProviderName(row.dbaName ?? '')) return row.dbaName || row.name;
+ return undefined;
+}
 export interface TexasReviewCatalog {
  schemaVersion:1; publication:'review-only'; jurisdiction:'TX'; retrievedAt:string; referenceUrl:string;
  sources:Record<TexasRosterKind,{sourceUrl:string;artifactId:number;artifactSha256:string;sourceSha256:string;identifierKind:string;count:number;conflicts:number}>;
@@ -43,7 +52,7 @@ export function loadTexasReviewRoster():Promise<TexasReviewCatalog>{
   const data=await fetch(base+idx.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Texas source roster unavailable');return r.text()});
   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)))].map(b=>b.toString(16).padStart(2,'0')).join('');
   if(hash!==idx.sha256)throw Error('Texas source roster integrity check failed');
-  const roster = validateTexasReviewCatalog(JSON.parse(data)); return {...roster, records: roster.records.filter(row => hasProviderServiceName(row.dbaName ?? '') || hasProviderServiceName(row.name) || (row.rosterKind === 'provider' && !unrelatedProviderName(row.name)))};
+  const roster = validateTexasReviewCatalog(JSON.parse(data)); return {...roster, records: roster.records.filter(row => !!texasServiceName(row))};
  })().catch(e=>{pending=undefined;throw e});
  return pending;
 }

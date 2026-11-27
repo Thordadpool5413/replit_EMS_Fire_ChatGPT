@@ -1,0 +1,595 @@
+.department-directory {
+  margin-block: 0.8rem;
+  padding: clamp(0.85rem, 1.7vw, 1.45rem);
+  min-width: 0;
+  border: 1px solid var(--pi-border, #d3dee7);
+  border-radius: 14px;
+  background: var(--pi-surface-bg, #fff);
+  color: var(--pi-text-primary, #132e46);
+}
+.dd-head,
+.db-section-head,
+.dd-count,
+.dd-tabs,
+.dd-pages,
+.dd-search,
+.dd-pages button {
+  display: flex;
+  align-items: center;
+}
+.dd-head {
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.dd-head p,
+.db-kind {
+  font-size: 0.74rem;
+  font-weight: 740;
+  letter-spacing: 0.045em;
+  color: var(--pi-text-secondary, #476677);
+}
+.dd-head h2,
+.db-section-head h2 {
+  margin: 0;
+  line-height: 1.14;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  font-weight: 770;
+  letter-spacing: -0.035em;
+}
+.dd-search {
+  gap: 0.5rem;
+  border: 1px solid var(--pi-border);
+  border-radius: 8px;
+  padding: 0 0.65rem;
+  background: var(--pi-surface-muted, #f3f7f9);
+  min-width: 0;
+}
+.dd-search input {
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  min-height: 42px;
+  color: inherit;
+}
+.dd-tabs {
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-block: 1rem 0.65rem;
+}
+.dd-tabs button,
+.dd-pages button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--pi-border);
+  color: var(--pi-text-primary);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.dd-tabs button[aria-pressed='true'] {
+  background: #164956;
+  color: white;
+  border-color: #164956;
+}
+.dd-count {
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.8rem;
+  color: var(--pi-text-secondary);
+  font-size: 0.84rem;
+}
+.dd-cards {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 0.9rem;
+  padding: 0;
+  margin: 0;
+  align-items: start;
+}
+.dd-cards > li {
+  border: 1px solid var(--pi-border);
+  border-radius: 12px;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--pi-surface-bg);
+  box-shadow: 0 2px 6px #102c4010;
+}
+.dd-cards > li:focus-within,
+.dd-cards > li:hover {
+  border-color: #789da9;
+  box-shadow: 0 4px 12px #102c4016;
+}
+.dd-source-toggle,
+.dd-archive summary {
+  color: var(--pi-text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.dd-source-toggle {
+  display: block;
+  padding: 0.25rem 0.95rem 0.45rem;
+  min-height: 36px;
+}
+.dd-source {
+  padding: 0.6rem 0.95rem;
+  border-top: 1px solid var(--pi-border);
+  font-size: 0.85rem;
+}
+.dd-archive {
+  margin: 0.4rem 0 1rem;
+}
+.dd-archive summary {
+  padding: 0.55rem;
+}
+.dd-pages {
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.dd-pages span {
+  font-size: 0.82rem;
+}
+.dd-pages button:disabled {
+  opacity: 0.47;
+}
+.department-brief {
+  --db-ink: #134f57;
+  --db-surface: #eaf3f1;
+  color: var(--pi-text-primary, #152d42);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.department-brief[data-kind='fire'] {
+  --db-ink: #87432c;
+  --db-surface: #fbefe6;
+}
+.department-brief[data-kind='ems'] {
+  --db-ink: #255e95;
+  --db-surface: #eaf2fb;
+}
+.db-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.8rem;
+  padding: 1rem 0.95rem 0.8rem;
+  color: inherit;
+  text-decoration: none;
+}
+.db-emblem {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 48px;
+  border-radius: 12px 12px 15px 15px;
+  border: 1px solid color-mix(in srgb, var(--db-ink) 22%, transparent);
+  color: var(--db-ink);
+  background: linear-gradient(145deg, white, var(--db-surface) 50%);
+}
+.db-kind {
+  color: var(--db-ink);
+  font-size: 0.72rem;
+}
+.db-identity h3 {
+  margin: 0.15rem 0 0.3rem;
+  font-size: clamp(1.08rem, 1.3vw, 1.35rem);
+  font-weight: 760;
+  line-height: 1.17;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.db-identity small,
+.db-fact > span,
+.db-chart figcaption,
+.db-open,
+.db-source-fields h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.db-identity small,
+.db-fact small,
+.db-chart > small {
+  color: var(--pi-text-secondary, #506a79);
+  font-size: 0.75rem;
+}
+.db-band {
+  display: grid;
+  gap: 0.63rem;
+}
+.db-card .db-band {
+  padding: 0 0.9rem;
+}
+.db-lead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: start;
+  background: var(--db-surface);
+  color: #123744;
+  border-radius: 9px;
+  padding: 0.75rem 0.65rem;
+  text-decoration: none;
+}
+.db-lead-glyph {
+  color: var(--db-ink);
+  padding-top: 0.15rem;
+}
+.db-lead strong,
+.db-fact strong {
+  display: block;
+  color: inherit;
+  font-size: 1.16rem;
+  line-height: 1.15;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+.db-lead span:not(.db-lead-glyph) {
+  display: block;
+  color: var(--db-ink);
+  font-weight: 690;
+  font-size: 0.76rem;
+}
+.db-lead p {
+  font-size: 0.81rem;
+  line-height: 1.35;
+  margin: 0.22rem 0;
+}
+.db-lead small {
+  display: block;
+  color: #47606e;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  margin-top: 0.23rem;
+}
+.db-signal-arrow {
+  color: var(--db-ink);
+}
+.db-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.db-fact {
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.db-fact > span {
+  color: var(--pi-text-secondary);
+  font-weight: 650;
+  font-size: 0.72rem;
+}
+.db-fact svg {
+  flex: none;
+}
+.db-fact strong {
+  margin: 0.18rem 0;
+  font-size: 1rem;
+}
+.db-fact small {
+  display: block;
+  line-height: 1.3;
+  font-size: 0.7rem;
+}
+.db-open {
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.65rem 0.95rem 0;
+  border-top: 1px solid var(--pi-border);
+  padding: 0.5rem 0 0.15rem;
+  font-size: 0.8rem;
+  color: var(--pi-text-secondary);
+  text-decoration: none;
+}
+.db-open-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--db-surface);
+  color: var(--db-ink);
+  flex-shrink: 0;
+}
+.db-identity:hover h3,
+.db-lead:hover strong,
+.db-fact:hover strong,
+.db-open:hover > span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.db-loading {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  color: var(--pi-text-secondary);
+}
+.db-loading button {
+  text-decoration: underline;
+}
+.pr-shell > .db-overview {
+  margin: 1rem var(--pr-edge);
+  border: 1px solid var(--pi-border);
+  border-radius: 14px;
+  padding: clamp(1rem, 2vw, 1.6rem);
+  background: var(--pi-surface-bg, #fff);
+}
+.db-section-head {
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+.db-section-head svg {
+  color: var(--db-ink);
+}
+.db-overview .db-band {
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 1.7fr);
+  align-items: stretch;
+}
+.db-overview .db-band:has(.db-lead:only-child) {
+  grid-template-columns: 1fr;
+}
+.db-overview .db-lead {
+  padding: clamp(0.8rem, 1.5vw, 1.3rem);
+  background: linear-gradient(125deg, #103443, #145660);
+  color: #fff;
+}
+.db-overview .db-lead span:not(.db-lead-glyph),
+.db-overview .db-lead-glyph,
+.db-overview .db-lead small,
+.db-overview .db-signal-arrow {
+  color: #cae8e9;
+}
+.db-overview .db-lead strong {
+  font-size: clamp(1.4rem, 2.6vw, 2.25rem);
+  margin: 0.25rem 0;
+}
+.db-overview .db-lead p {
+  max-width: 58ch;
+  color: #f4fcfa;
+}
+.db-overview .db-facts {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  padding: 0.2rem 0.35rem;
+}
+.db-overview .db-fact {
+  padding: 0.45rem 0.65rem;
+  border-left: 2px solid var(--pi-border);
+}
+.db-overview .db-fact strong {
+  font-size: clamp(1.06rem, 1.4vw, 1.45rem);
+}
+.db-visuals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+}
+.db-chart {
+  margin: 0.95rem 0 0;
+  border-top: 1px solid var(--pi-border);
+  padding-top: 0.8rem;
+  min-width: 0;
+}
+.db-chart figcaption {
+  font-weight: 720;
+  font-size: 0.97rem;
+}
+.db-staff-bar {
+  display: flex;
+  width: 100%;
+  height: 11px;
+  border-radius: 5px;
+  margin: 0.65rem 0;
+  overflow: hidden;
+  background: var(--pi-border);
+}
+.staff-career {
+  background: #236c86;
+}
+.staff-volunteer {
+  background: #b57232;
+}
+.staff-paid-per-call {
+  background: #7b79aa;
+}
+.db-chart dl {
+  display: flex;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+}
+.db-chart dl > div,
+.db-chart dt {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+.db-chart dt,
+.db-chart dd {
+  font-size: 0.81rem;
+}
+.db-chart dd {
+  font-weight: 750;
+}
+.db-chart dt i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.db-annual {
+  display: flex;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.55rem 0;
+}
+.db-annual li {
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+}
+.db-annual li > div {
+  height: 45px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-bottom: 1px solid var(--pi-border);
+}
+.db-annual i {
+  width: 64%;
+  max-width: 32px;
+  background: #27788a;
+  border-radius: 4px 4px 0 0;
+}
+.db-annual li span,
+.db-annual small {
+  font-size: 0.67rem;
+}
+.db-source-fields article {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--pi-border);
+}
+.db-source-fields h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.db-source-fields small {
+  color: var(--pi-text-secondary);
+}
+.db-source-fields dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.db-source-fields dt {
+  color: var(--pi-text-secondary);
+  font-size: 0.78rem;
+}
+.db-source-fields dd {
+  font-weight: 620;
+}
+.dark .department-brief {
+  --db-surface: #163e48;
+  --db-ink: #b4e4ea;
+}
+.dark .department-brief[data-kind='fire'] {
+  --db-surface: #493127;
+  --db-ink: #f2c4a8;
+}
+.dark .department-brief[data-kind='ems'] {
+  --db-surface: #223b56;
+  --db-ink: #bfdcfa;
+}
+.dark .db-emblem {
+  background: var(--db-surface);
+}
+.dark .db-lead,
+.dark .db-lead small {
+  color: #e1edf1;
+}
+@media (max-width: 700px) {
+  .db-overview .db-band {
+    grid-template-columns: 1fr;
+  }
+  .dd-tabs button,
+  .dd-pages button,
+  .dd-source-toggle {
+    min-height: 44px;
+  }
+  .dd-head {
+    align-items: stretch;
+  }
+  .dd-search {
+    flex: 1 1 12rem;
+  }
+  .dd-cards {
+    grid-template-columns: 1fr;
+  }
+  .db-open {
+    min-height: 44px;
+  }
+  .db-overview .db-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.db-contact,
+.db-contacts {
+  display: grid;
+  gap: 0.5rem;
+}
+.db-contact h2,
+.db-contacts h2,
+.db-contacts h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.db-contact > a:first-of-type {
+  font-size: 1.3rem;
+  font-weight: 740;
+}
+.db-contact small,
+.db-contacts small {
+  color: var(--pi-text-secondary);
+  font-size: 0.78rem;
+}
+.db-contacts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.db-card .db-identity {
+  display: block;
+  padding: 0;
+}
+.db-art-band {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 0.95rem;
+  min-height: 59px;
+  background-image:
+    linear-gradient(90deg, #123c47 4%, #143e48fa 32%, #143e4860 65%, #123c470f),
+    url('../../assets/provider-station-art.webp');
+  background-size: cover;
+  background-position:
+    center,
+    60% 55%;
+}
+.db-card[data-kind='fire'] .db-art-band {
+  background-image:
+    linear-gradient(90deg, #452c24 4%, #452c24ef 32%, #452c2450 65%, #452c2410),
+    url('../../assets/provider-fire-art.webp');
+}
+.db-card[data-kind='ems'] .db-art-band {
+  background-image:
+    linear-gradient(90deg, #183854 4%, #183854f0 32%, #18385460 65%, #18385415),
+    url('../../assets/provider-ems-art.webp');
+}
+.db-art-band .db-emblem {
+  width: 32px;
+  height: 34px;
+  border-radius: 7px 7px 11px 11px;
+  color: #fff;
+  border: 1px solid #ffffff85;
+  background: #ffffff18;
+}
+.db-art-band .db-kind {
+  color: #fff;
+  font-weight: 740;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 4px #0a202c;
+}
+.db-nameplate {
+  padding: 0.8rem 0.95rem 0.7rem;
+}
+.db-nameplate h3 {
+  margin-top: 0;
+}

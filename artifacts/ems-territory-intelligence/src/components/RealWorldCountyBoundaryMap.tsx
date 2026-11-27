@@ -9,7 +9,9 @@ import {ALL_50_STATES_SUMMARIES} from '../data/nationalGeographicData';
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { APIProvider, AdvancedMarker, InfoWindow, Map as GoogleMap, Polygon, useMap } from '@vis.gl/react-google-maps';
+import { countyReferenceFigures } from '../services/countyReferenceFigures';
+import { ACS_COUNTY_SOURCE } from '../data/acsCountyData';
+import { CountySiteMap } from './CountySiteMap';
 import { Agency } from '../types';
 import {
   countyBoundaryHierarchy,
@@ -31,32 +33,6 @@ import { formatCoordinates } from '../utils/countyPresentation';
 import './countyGeoTokens.css';
 import './CountyFigures.css';
 import './CountyInspector.css';
-
-type GoogleCountyCoordinate = { lat: number; lng: number };
-type GoogleCountyPolygon = GoogleCountyCoordinate[][];
-
-function toGoogleCountyPolygons(geometry: GeoJsonGeometry | null): GoogleCountyPolygon[] {
-  if (!geometry) return [];
-  const polygons: number[][][][] = geometry.type === 'Polygon'
-    ? [geometry.coordinates as number[][][]]
-    : geometry.coordinates as number[][][][];
-  return polygons
-    .map((polygon) => polygon.map((ring) => ring
-      .filter(([lng, lat]) => Number.isFinite(lng) && Number.isFinite(lat) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)
-      .map(([lng, lat]) => ({ lat, lng }))))
-    .filter((polygon) => polygon[0]?.length >= 3);
-}
-
-function FitCountyMapBounds({ bbox, countyFips }: { bbox: [number, number, number, number]; countyFips: string }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!map) return;
-    const [west, south, east, north] = bbox;
-    if (![west, south, east, north].every(Number.isFinite) || south >= north || west >= east) return;
-    map.fitBounds({ west, south, east, north }, 34);
-  }, [map, bbox, countyFips]);
-  return null;
-}
 
 interface RealWorldCountyBoundaryMapProps {
   stateCode: string;
@@ -105,13 +81,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const [boundaryVersion, setBoundaryVersion] = useState<number>(0);
   const [previewCountyFips, setPreviewCountyFips] = useState<string | null>(null);
   const [hoveredCountyFips, setHoveredCountyFips] = useState<string | null>(null);
-  const [hoveredCityName, setHoveredCityName] = useState<string | null>(null);
   const [countyMapViewBox, setCountyMapViewBox] = useState('0 0 720 400');
   const countyMapPathsRef = useRef<SVGGElement>(null);
-  const singleCountyRef = useRef<SVGGElement>(null);
-  const singleSvgRef = useRef<SVGSVGElement>(null);
-  const [singleMapScale, setSingleMapScale] = useState(1);
-  const [singleViewBox, setSingleViewBox] = useState('0 0 520 340');
   const [countyMapLayer] = useState<'nri-risk'>('nri-risk');
   const [countyZoom, setCountyZoom] = useState(1);
   const [countyPan, setCountyPan] = useState({ x: 0, y: 0 });
@@ -281,45 +252,6 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
     return stateNode.countiesByName[clean] || stateNode.countiesByName[raw] || null;
   }, [stateNode, selectedCountyName, boundaryVersion]);
 
-  const projectedSingleCounty = useMemo(() => {
-    if (!activeCountyNode) return null;
-    return countyBoundaryHierarchy.projectSingleCountyBoundaryToSvg(activeCountyNode, agencies, 520, 340, 32);
-  }, [activeCountyNode, agencies, boundaryVersion]);
-  const googleCountyPolygons = useMemo(
-    () => toGoogleCountyPolygons(activeCountyNode?.geometry ?? null),
-    [activeCountyNode?.geometry],
-  );
-  const selectedPlace = useMemo(
-    () => projectedSingleCounty?.cityPins.find((pin) => pin.cityName.toLowerCase() === selectedCityName.toLowerCase()) ?? null,
-    [projectedSingleCounty, selectedCityName],
-  );
-
-  useLayoutEffect(() => {
-    const group = singleCountyRef.current;
-    if (!group || !projectedSingleCounty) return;
-    try {
-      const b = group.getBBox();
-      if (b.width <= 0 || b.height <= 0) return;
-      const pad = Math.max(14, Math.max(b.width, b.height) * 0.05);
-      setSingleViewBox([b.x - pad, b.y - pad, b.width + pad * 2, b.height + pad * 2].map((v) => Number(v.toFixed(1))).join(' '));
-    } catch {
-      setSingleViewBox('0 0 520 340');
-    }
-  }, [projectedSingleCounty]);
-
-  useLayoutEffect(() => {
-    const svg = singleSvgRef.current;
-    if (!svg) return;
-    const resize = () => {
-      const scale = svg.getScreenCTM()?.a;
-      if (scale && scale > 0) setSingleMapScale(scale);
-    };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(svg);
-    return () => observer.disconnect();
-  }, [singleViewBox, activeCountyNode?.countyFips]);
-
   const inspectedCounty: SvgProjectedCounty | null = useMemo(() => {
     if (previewCountyFips) {
       const found = projectedState.projectedCounties.find((c) => c.countyFips === previewCountyFips);
@@ -334,6 +266,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
   const inspectedNri = inspectedCounty
     ? nriByCountyFips.get(inspectedCounty.countyFips) ?? null
     : null;
+  const countyFigures = activeCountyNode ? countyReferenceFigures(activeCountyNode.countyRecord, ACS_COUNTY_SOURCE) : undefined;
   const activeCountyNri = activeCountyNode
     ? nriByCountyFips.get(activeCountyNode.countyFips) ?? null
     : null;
@@ -702,143 +635,11 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
       )}
 
       {/* Mode B: single county boundary + places */}
-      {activeCountyNode && projectedSingleCounty && (
+      {activeCountyNode && (
         <>
           <div className="cv-state-grid county-selected-grid">
-            <div className="cv-map-panel county-geo county-single-map-panel county-municipality-map-panel">
-              <div className="cv-map-head">
-                <strong className="cv-head-ico"><MapIcon aria-hidden="true" />{activeCountyNode.countyName} satellite view</strong>
-                <span className="tabular-nums">{activeCountyNode.landAreaSqMiles.toLocaleString()} sq mi · FIPS {activeCountyNode.countyFips}</span>
-              </div>
-              <div className="cv-map-stage cv-map-stage--county">
-                {googleMapsApiKey ? (
-                  <APIProvider apiKey={googleMapsApiKey} libraries={['marker']}>
-                    <GoogleMap
-                      mapId="DEMO_MAP_ID"
-                      className="county-satellite-map-canvas"
-                      style={{ width: '100%', height: '100%' }}
-                      defaultCenter={activeCountyNode.centroid}
-                      defaultZoom={8}
-                      mapTypeId="satellite"
-                      gestureHandling="cooperative"
-                      disableDefaultUI
-                      zoomControl
-                      clickableIcons={false}
-                      aria-label={`${activeCountyNode.countyName} satellite map with county boundary and ${projectedSingleCounty.cityPins.length} place markers`}
-                    >
-                      <FitCountyMapBounds bbox={activeCountyNode.bbox} countyFips={activeCountyNode.countyFips} />
-                      {googleCountyPolygons.map((paths, index) => (
-                        <Polygon
-                          key={`${activeCountyNode.countyFips}-${index}`}
-                          paths={paths}
-                          clickable={false}
-                          fillColor={isEquipmentMapActive ? '#f3b34c' : '#32a4c8'}
-                          fillOpacity={isEquipmentMapActive ? 0.16 : 0.11}
-                          strokeColor="#c6fff7"
-                          strokeOpacity={0.95}
-                          strokeWeight={3}
-                          zIndex={20}
-                        />
-                      ))}
-                      {projectedSingleCounty.cityPins.map((pin) => {
-                        const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                        return (
-                          <AdvancedMarker
-                            key={pin.cityName}
-                            position={{ lat: pin.latitude, lng: pin.longitude }}
-                            title={`${pin.cityName}${pin.isCountySeat ? ' · County seat' : ''} · ${pin.providersCount} provider records`}
-                            onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                            zIndex={isSelected ? 1000 : pin.isCountySeat ? 700 : 500}
-                          >
-                            <span aria-hidden="true" className={'county-service-pin' + (pin.isCountySeat ? ' seat' : '') + (isSelected ? ' selected' : '')}>
-                              {isSelected ? '✓' : pin.isCountySeat ? '★' : '•'}
-                            </span>
-                          </AdvancedMarker>
-                        );
-                      })}
-                      {selectedPlace && (
-                        <InfoWindow
-                          position={{ lat: selectedPlace.latitude, lng: selectedPlace.longitude }}
-                          onCloseClick={() => onShowAllPlaces?.()}
-                        >
-                          <div className="county-satellite-place-info">
-                            <strong>{selectedPlace.cityName}</strong>
-                            <span>{selectedPlace.isCountySeat ? 'County seat · ' : ''}{selectedPlace.providersCount} provider records</span>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </GoogleMap>
-                  </APIProvider>
-                ) : (
-                  <div className="county-satellite-fallback" role="status">
-                    <p>Satellite imagery is unavailable here. Showing the county boundary and place pins instead.</p>
-                    <svg
-                      ref={singleSvgRef}
-                      viewBox={singleViewBox}
-                      preserveAspectRatio="xMidYMid meet"
-                      className="county-single-map-svg select-none"
-                      role="group"
-                      aria-label={`${activeCountyNode.countyName} boundary with ${projectedSingleCounty.cityPins.length} mapped places`}
-                    >
-                      <g ref={singleCountyRef}>
-                        {projectedSingleCounty.svgPath && (
-                          <path d={projectedSingleCounty.svgPath} fill="#e5ece9" stroke="#607d74" strokeWidth={2.2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                        )}
-                        {projectedSingleCounty.cityPins.map((pin) => {
-                          const isSelected = selectedCityName.toLowerCase() === pin.cityName.toLowerCase();
-                          const isHovered = hoveredCityName === pin.cityName;
-                          const showLabel = isSelected || isHovered;
-                          const pinColor = isSelected ? '#2563eb' : pin.isCountySeat ? '#b7791f' : '#286987';
-                          return (
-                            <g
-                              key={pin.cityName}
-                              className="cv-pin"
-                              tabIndex={0}
-                              role="button"
-                              aria-pressed={isSelected}
-                              aria-label={`${pin.cityName}${pin.isCountySeat ? ', county seat' : ''}. Show providers for this place`}
-                              onMouseEnter={() => setHoveredCityName(pin.cityName)}
-                              onMouseLeave={() => setHoveredCityName(null)}
-                              onFocus={() => setHoveredCityName(pin.cityName)}
-                              onBlur={() => setHoveredCityName(null)}
-                              onClick={() => onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  onSelectCity(pin.cityName, activeCountyNode.countyName, stateNode.stateCode);
-                                }
-                              }}
-                            >
-                              <g transform={`translate(${pin.svgX},${pin.svgY}) scale(${1 / singleMapScale})`}>
-                                <circle className="cv-pin-hit-area" cx="0" cy="0" r="18" />
-                                <circle className="cv-map-place-dot" cx="0" cy="0" r={isSelected ? 7 : 5.5} fill={pinColor} />
-                                <circle className="cv-map-place-dot-center" cx="0" cy="0" r="2" />
-                              </g>
-                              {showLabel && (
-                                <text
-                                  className="cv-pin-label"
-                                  x={pin.svgX + 10 / singleMapScale}
-                                  y={pin.svgY - 7 / singleMapScale}
-                                  fontSize={12 / singleMapScale}
-                                >
-                                  {pin.cityName}
-                                </text>
-                              )}
-                            </g>
-                          );
-                        })}
-                      </g>
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="cv-legend">
-                <span><span className="cv-dot" style={{ backgroundColor: '#d4a72c' }} />County seat · {activeCountyNode.countySeat}</span>
-                <span><span className="cv-dot" style={{ backgroundColor: '#2872b9' }} />Place</span>
-                {selectedCityName !== 'all' && <span><span className="cv-dot" style={{ backgroundColor: '#d94b3d' }} />Selected place</span>}
-                <span>Imagery: Google Maps satellite</span>
-              </div>
-            </div>
+            <CountySiteMap key={activeCountyNode.countyFips} county={activeCountyNode} apiKey={googleMapsApiKey} scope={providerScope} selectedCity={selectedCityName}
+              onCity={name=>onSelectCity(name,activeCountyNode.countyName,stateNode.stateCode)}/>
 
             <section className="cv-panel county-geo county-reference-panel county-city-directory-panel" aria-label={`${activeCountyNode.countyName} county reference`} data-testid="county-reference-panel">
               <div className="cv-geo-head">
@@ -847,7 +648,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   <h4 className="cv-geo-title">{activeCountyNode.countyName}</h4>
                   <p className="county-reference-meta">{stateNode.stateName} · County FIPS {activeCountyNode.countyFips}</p>
                 </div>
-                <p className="cv-geo-note">County-level context for confirmation; not agency-level values.</p>
+                <p className="cv-geo-note">County-wide figures · population and income from the Census ACS.</p>
                 {selectedCityName !== 'all' && onShowAllPlaces && (
                   <button type="button" onClick={onShowAllPlaces} className="cv-btn cv-btn--ghost shrink-0" data-testid="button-show-all-places">
                     <ArrowLeft aria-hidden="true" /> Show all places
@@ -859,8 +660,8 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                 <h5 className="county-ref-section-title" id="county-reference-figures-title"><Users aria-hidden="true" />County figures</h5>
                 <CountyFigureSourceDetails
                   countyFips={activeCountyNode.countyFips}
-                  sources={activeCountyNode.countyRecord.figureSources}
-                  record={activeCountyNode.countyRecord}
+                  sources={countyFigures?.sources}
+                  record={countyFigures?.values}
                   variant="brief"
                   showGeneralNotes={false}
                   showCitations={false}
@@ -892,14 +693,14 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
 
               <section className="county-reference-section county-reference-sources" aria-labelledby="county-reference-sources-title">
                 <h5 className="county-ref-section-title" id="county-reference-sources-title"><FileText aria-hidden="true" />Sources &amp; coverage</h5>
-                <CountyFigureSourceDetails
+                <details><summary>County data sources and reporting periods</summary><CountyFigureSourceDetails
                   countyFips={activeCountyNode.countyFips}
-                  sources={activeCountyNode.countyRecord.figureSources}
+                  sources={countyFigures?.sources}
                   showValues={false}
                   showGeneralNotes
                   variant="brief"
                   className="cv-ref-figures"
-                />
+                /></details>
                 <PublicProviderEvidenceCoverage state={stateNode.stateCode} county={activeCountyNode.countyFips} />
                 <RegionalAedSources state={stateNode.stateCode} county={activeCountyNode.countyFips} />
                 {sourceStrip}

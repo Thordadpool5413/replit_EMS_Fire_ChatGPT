@@ -197,7 +197,16 @@ const coralGrants = {
 /** Attach only to the exact public identity. Name-only or city-only records are ineligible. */
 const cocoaDirectory = {label:'City of Cocoa fire department directory', date:'Accessed 2026-11-27', url:'https://www.cocoafl.gov/m/directory/department?did=6'};
 const cocoaActivity = {label:'City of Cocoa annual statistics', date:'2021', url:'https://www.cocoafl.gov/1716/Annual-Statistics'};
+const canaveralContacts = {label:'Canaveral Fire Rescue staff directory',date:'Accessed 2026-11-27',url:'https://www.ccvfd.org/contact.html'};
+const canaveralBudget = {label:'City of Cape Canaveral adopted budget',date:'FY2024–25',url:'https://cms3.revize.com/revize/capecanaveralfl/document_center/Documents/Administration%20Financial%20Services/FY2024-2025%20FINAL%20ADOPTED%20BUDGET.pdf'};
 export const providerProfileEvidence = [
+  {registryKey:'FDID:FL:19011',registryName:'Canaveral Fire/Rescue',combinedServices:true,
+    identitySources:[canaveralBudget],operations:[{label:'Stations in the city budget',value:3,reportingPeriod:'FY2024–25',context:'One city station and two port stations.',source:canaveralBudget}],
+    contacts:[{role:'Fire Chief',name:'Chris Quinn',phone:'321-783-4424 ext. 202',source:canaveralContacts},
+      {role:'Deputy Chief',name:'Jeff Crawley',phone:'321-783-4424 ext. 203',source:canaveralContacts},
+      {role:'Assistant Fire Chief / Fire Marshal',name:'Derek Yossifon',phone:'321-783-4777 ext. 303',source:canaveralContacts},
+      {role:'Chief of Training',name:'Chris Connell',phone:'321-783-4424 ext. 205',source:canaveralContacts}]},
+
   {
     registryKey:'FDID:FL:19052', registryName:'Cocoa Fire Department', combinedServices:true,
     operations:[

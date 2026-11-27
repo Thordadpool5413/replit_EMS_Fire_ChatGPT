@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
+import { loadProviderCatalog } from '../services/providerCatalog';
+import { departmentProfile } from '../services/departmentIdentity';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Agency } from '../types';
 import { filterNerisCountyStations, linkedNerisAccount, loadNerisMapState } from '../services/nerisStationMap';
@@ -13,6 +16,8 @@ export function CountyNerisStationDirectory({
   countyFips,
   countyName,
   city = '',
+  externalQuery,
+  scope='all',
   agencies = [],
   onOpenSavedAgency,
   onDecideSourceRecord,
@@ -21,6 +26,8 @@ export function CountyNerisStationDirectory({
   countyFips: string;
   countyName: string;
   city?: string;
+  externalQuery?: string;
+  scope?: 'all'|'fire'|'ems';
   agencies?: Agency[];
   onOpenSavedAgency?: (agency: Agency) => void;
   onDecideSourceRecord?: (id: string, association: AgencySourceRecordAssociation) => void;
@@ -29,7 +36,8 @@ export function CountyNerisStationDirectory({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [query, setQuery] = useState('');
+  const [localQuery, setQuery] = useState('');
+  const query = externalQuery ?? localQuery;
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -55,11 +63,17 @@ export function CountyNerisStationDirectory({
 
   useEffect(() => {
     setPage(1);
-  }, [countyFips, city]);
+  }, [countyFips, city, query,scope]);
 
+  const catalog=useQuery({queryKey:['county-map-catalog',stateCode],enabled:scope==='ems',queryFn:()=>loadProviderCatalog(stateCode),staleTime:Infinity});
+  const ems=useMemo(()=>new Set(catalog.data?.filter(r=>r.kind!=='fire').map(r=>r.ref.source+'/'+r.ref.id)),[catalog.data]);
   const stations = useMemo(
-    () => data ? filterNerisCountyStations(data, countyFips, city, query) : [],
-    [data, countyFips, city, query],
+    () => data ? filterNerisCountyStations(data, countyFips, city, query).filter(s=>{
+      if(scope!=='ems')return true;
+      const ref=departmentProfile({source:'neris',state:stateCode,id:s.parentId});
+      return !s.parentNameConflict && ems.has(ref.source+'/'+ref.id);
+    }) : [],
+    [data, countyFips, city, query,scope,stateCode,ems],
   );
   const parentCount = useMemo(() => new Set(stations.map((station) => station.parentId)).size, [stations]);
   const parents = useMemo(() => {
@@ -114,7 +128,7 @@ export function CountyNerisStationDirectory({
         {data && <> Source snapshot: {data.retrievedAt.slice(0, 10)}.</>}
       </p>
 
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+      {externalQuery === undefined && <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
         Search station or parent department
         <input
           className="mt-1 block min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
@@ -126,7 +140,7 @@ export function CountyNerisStationDirectory({
           placeholder="Station name, ID, or department"
           aria-label="Search station records in county"
         />
-      </label>
+      </label>}
 
       {loading && <p role="status" className="text-sm">Loading station source records for {stateCode}…</p>}
       {error && (

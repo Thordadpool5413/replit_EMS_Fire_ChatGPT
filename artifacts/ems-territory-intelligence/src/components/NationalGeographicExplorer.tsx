@@ -2148,7 +2148,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             onDecideSourceRecord={onDecideSourceRecord}
             onCreateAgency={onAddAgency}
           />
-          {(selectedCountyName === 'all' || agencies.length > 0) && <>
+          {agencies.length > 0 && <>
           {/* Streamlined Single-Row Filter Bar + Hybrid View Mode Toggle */}
           <div className="county-providers-head min-w-0">
             <div className="cv-geo-head" data-testid="provider-mobile-summary">
@@ -2404,7 +2404,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
           )}
 
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
-          {(selectedCountyName === 'all' || matchingAgencies.length > 0) && <>
+          {matchingAgencies.length > 0 && <>
           <div id="territory-results-summary" className="territory-results-summary scroll-mt-24" data-testid="territory-results-summary" aria-live="polite">
             <div>
               <strong>{matchingAgencies.length.toLocaleString()} saved provider {matchingAgencies.length === 1 ? 'record' : 'records'}</strong><p className="text-xs">{matchingAgencies.filter(isGeographicProspect).length.toLocaleString()} geography-generated prospects; not a count of registered or operating providers.</p>
@@ -2432,7 +2432,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </p>
           )}
 
-          {paginatedAgencies.length === 0 && selectedCountyName !== 'all' && !agencies.length ? null : paginatedAgencies.length === 0 ? (
+          {!agencies.length ? null : paginatedAgencies.length === 0 ? (
             <div className="territory-empty-state" role={effectiveDirectoryStatus === 'loading' ? 'status' : 'region'}>
               {effectiveDirectoryStatus === 'loading' && selectedStateCode !== 'all' ? (
                 <>
@@ -2443,11 +2443,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 <>
                   <strong>Agency data could not be refreshed.</strong>
                   <span>No matching saved records are available for this selection.</span>
-                </>
-              ) : agencies.length === 0 ? (
-                <>
-                  <strong>No saved agency profiles are in this directory yet.</strong>
-                  <span>Public USFA and NPPES registry listings are browsable separately above. Review a source listing before creating a saved profile; registry presence does not confirm current operations.</span>
                 </>
               ) : debouncedZipQuery.trim() ? (
                 <>
@@ -2466,15 +2461,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                 </>
               )}
               <div className="territory-empty-actions">
-                {agencies.length === 0 && (
-                  <button
-                    type="button"
-                    className="workspace-button"
-                    onClick={() => document.getElementById('territory-public-source-directory')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  >
-                    Browse public registry listings
-                  </button>
-                )}
                 {debouncedZipQuery.trim() && (
                   <button type="button" className="workspace-button" onClick={() => { setZipSearchQuery(''); setAgencyPage(1); }}>Clear search</button>
                 )}

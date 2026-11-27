@@ -47,6 +47,24 @@ try {
   assert.ok((await ev('document.querySelector("[data-testid=public-provider-profile]").textContent')).includes('End-user validation required'));
   assert.equal(await ev('document.querySelectorAll(".agency-lead-cards-grid > div").length'),0,'Browsing source listings never creates saved accounts');
   console.log('PASS: public provider directory and source profile work with legacy cloud requests blocked');
+  // Exercise the same county cards, pins, and canonical profile that reps open.
+  await cdp.send('Page.navigate',{url:new URL('?state=FL&county=Brevard%20County',base).href});
+  await waitFor(cdp,'Boolean(document.querySelector(".dd-cards .db-lead strong"))','county department facts',60000);
+  assert.ok(await ev('document.querySelector(".cm-field").getBoundingClientRect().top < document.querySelector(".dd-cards").getBoundingClientRect().top'),'County geography appears before the cards');
+  assert.ok(!(await ev('document.body.innerText.includes("No saved agency profiles are in this directory yet.")')));
+  await waitFor(cdp,'Array.from(document.querySelectorAll(".cm-field svg path")).some(p=>(p.getAttribute("d")||"").length>150)','county boundary after geometry loads',60000);
+  await ev('Array.from(document.querySelectorAll(".cm-layers button")).find(b=>b.textContent.startsWith("Stations")).click()');
+  await waitFor(cdp,'document.querySelector(".cm-inspect select")?.options.length > 1','reported station pins',60000);
+  const cocoa = new URL('?profile=FL/state-ems/518',base);
+  await cdp.send('Page.navigate',{url:cocoa.href});
+  await waitFor(cdp,'document.querySelector(".db-overview")?.textContent.includes("5,920")','City of Cocoa operational record',60000);
+  assert.equal(await ev('document.querySelector(".pr-hero h1").textContent'),'Cocoa Fire Department');
+  assert.equal(await ev('new URL(location.href).searchParams.get("profile")'),'FL/registry/usfa:FL:19052');
+  await ev('location.hash="people"');
+  await waitFor(cdp,'document.querySelector(".pr-detail")?.textContent.includes("Jonathan Lamm")','Cocoa named chief',60000);
+  await ev('location.hash="operations"');
+  await waitFor(cdp,'document.querySelector(".pr-detail")?.textContent.includes("3,966")','Cocoa medical incidents',60000);
+  console.log('PASS: county map, combined department identity, operations and contacts');
   await ev('sessionStorage.clear()');
   const fixtures=JSON.parse(await readFile(new URL('./fixtures/profile-test-accounts.json',import.meta.url),'utf8'));
   const entries=fixtures.map(record=>[record.id,{record}]);

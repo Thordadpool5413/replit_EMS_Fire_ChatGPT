@@ -1,3 +1,4 @@
+import { loadNpiDetails } from './providerRegistryDetails';
 import { departmentKey, isCombinedDepartment } from './departmentIdentity';
 import { hasProviderServiceName } from './providerServiceName';
 /** Read-only source listings. Never coerce registry organizations into Agency metrics. */
@@ -38,7 +39,9 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
   if(!Array.isArray(records)||records.length!==chunk.count||records.some(r=>!Array.isArray(r)||r.length!==12||r.some(v=>typeof v!=='string')||r[3]!==state||!['USFA','NPPES'].includes(r[1])||!r[0].startsWith(r[1].toLowerCase()+':')||!r[2]))throw Error('Invalid registry records.');
   for(const record of records)ids.add(record[0]);
   if(ids.size!==records.length)throw Error('Duplicate registry identities.');
-  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]) || !!departmentKey(state, 'NPI:' + row[0].slice(6)));
+  const needsOperatingNames = records.some(row=>row[1]==='NPPES' && !hasProviderServiceName(row[2]) && !departmentKey(state,'NPI:'+row[0].slice(6)));
+  const billingNames = needsOperatingNames ? await loadNpiDetails(state) : undefined;
+  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]) || hasProviderServiceName(billingNames?.get(row[0].slice(6))?.alternateName ?? '') || !!departmentKey(state, 'NPI:' + row[0].slice(6)));
  })().catch(error=>{statePromises.delete(state);throw error;});
  statePromises.set(state,pending);return pending;
 }

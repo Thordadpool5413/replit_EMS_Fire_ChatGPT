@@ -4,6 +4,7 @@
 @import "@fontsource-variable/manrope";
 @import "tailwindcss";
 @import "./components/profile/service-brief.css";
+@import "./components/profile/DepartmentBrief.css";
 
 @import "./styles/shared/foundation.css";
 @import "./styles/shell/foundation.css";

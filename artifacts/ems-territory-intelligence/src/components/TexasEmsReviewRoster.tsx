@@ -1,6 +1,6 @@
 import { ServiceBrief } from './profile/ServiceBrief';
 import React,{useEffect,useMemo,useState} from 'react';
-import {loadTexasReviewRoster,type TexasReviewCatalog,type TexasRosterKind} from '../services/texasEmsReviewRoster';
+import {texasServiceName,loadTexasReviewRoster,type TexasReviewCatalog,type TexasRosterKind} from '../services/texasEmsReviewRoster';
 import {loadTexasLocationCatalog,type TexasLocationCatalog} from '../services/texasLocationReview';
 import {TexasRosterLocationEvidence} from './profile/TexasHistoricalLocationEvidence';
 export function TexasEmsReviewRoster({countySelected=false}:{countySelected?:boolean}){
@@ -21,7 +21,7 @@ export function TexasEmsReviewRoster({countySelected=false}:{countySelected?:boo
  <label className="block text-sm">Roster<select className="block w-full min-w-0 border rounded p-2 bg-transparent" value={kind} onChange={e=>{setKind(e.target.value as typeof kind);setPage(1)}}><option value="all">Both rosters</option><option value="provider">EMS providers</option><option value="first-responder">First-responder organizations</option></select></label>
  </div><p role="status" className="text-sm">{matches.length.toLocaleString()} matching source records · not unique saved agencies</p>
  {!matches.length&&<p>No matching source listing. This does not establish absence of service.</p>}
- <ul className="grid items-start gap-3 md:grid-cols-2">{matches.slice((current-1)*8,current*8).map(r=><li key={r.sourceKey} className="py-3 border-b text-sm break-words"><ServiceBrief record={{state:'TX',source:'regional-ems',id:r.sourceKey}} name={r.dbaName || r.name} location={r.city ?? undefined} reportedStations={r.stationCountAsReported} reportDate="Texas DSHS"/>{r.dbaName&&r.name!==r.dbaName&&<p>License holder: {r.name}</p>}
+ <ul className="grid items-start gap-3 md:grid-cols-2">{matches.slice((current-1)*8,current*8).map(r=><li key={r.sourceKey} className="py-3 border-b text-sm break-words"><ServiceBrief record={{state:'TX',source:'regional-ems',id:r.sourceKey}} name={texasServiceName(r) || r.name} location={r.city ?? undefined} reportedStations={r.stationCountAsReported} reportDate="Texas DSHS"/>{r.dbaName&&r.name!==r.dbaName&&<p>License holder: {r.name}</p>}
  <p>{r.rosterKind==='provider'?'EMS provider license':'First-responder registration'} {r.identifier} · {r.status} (source-reported){r.secondaryStatus?' · '+r.secondaryStatus:''}</p>
  <p>First licensure: {r.issuedOn??'Not reported'} · expiration: {r.expiresOn??'Not reported'}</p>{r.licenseDateConflict&&<p className="font-semibold">Source date contradiction — validate with DSHS.</p>}
  <p>Mailing address: {[r.addressAsReported,r.mailingAddress2,r.city,r.state,r.zip].filter(Boolean).join(', ')||'Not reported'}</p><p>Mailing county: {r.mailingCounty??'Not reported'}{r.state!=='TX'?' · Out-of-state mailing location':''}</p>

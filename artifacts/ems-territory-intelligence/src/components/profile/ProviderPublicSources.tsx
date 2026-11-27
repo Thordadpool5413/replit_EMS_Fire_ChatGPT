@@ -31,7 +31,7 @@ export function ProviderPeople({ evidence }: { evidence?: ProviderEvidence }) {
         <ContactLinks contact={contact} />
         <ProviderSourceLink source={contact.source} />
       </li>)}
-    </ul> : <p className="pr-muted">No department leadership contacts linked to this profile.</p>}
+    </ul> : <p className="pr-muted">No named leadership contact in the department reports on file.</p>}
     {context.length > 0 && <div className="pr-call-context">
       <h3>Buying roles &amp; workflow</h3>
       {context.map(item => <div key={item.title}>

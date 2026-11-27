@@ -1,9 +1,27 @@
+import { registryProfileHref } from '../navigation/providerProfileUrl';
 import { createSourceNativeAgency } from '../services/sourceNativeAgency';
 import { canCreateRegistryAccount, findRegistryAccountCandidates } from '../services/registryAccountLink';
 import React,{useState,useMemo} from 'react';
 import type {Agency,AgencySourceRecordAssociation} from '../types';
 import {createReviewedRegistryAssociation,findRegistryIdentityAccounts,type RegistryIdentity} from '../services/registryAccountLink';
-export function RegistryAccountReview({identity,agencies,onOpen,onDecide,onCreate}:{identity:RegistryIdentity;agencies:Agency[];onOpen?:(a:Agency)=>void;onDecide?:(id:string,association:AgencySourceRecordAssociation)=>void;onCreate?:(a:Agency)=>void|Promise<void>}){
+type RegistryAccountReviewProps = {
+ identity: RegistryIdentity;
+ showPublicProfile?: boolean;
+ agencies: Agency[];
+ onOpen?: (agency: Agency) => void;
+ onDecide?: (id: string, association: AgencySourceRecordAssociation) => void;
+ onCreate?: (agency: Agency) => void | Promise<void>;
+};
+
+export function RegistryAccountReview({ showPublicProfile = true, ...props }: RegistryAccountReviewProps) {
+ const href = showPublicProfile ? registryProfileHref(props.identity) : undefined;
+ return <>
+   {href && <a className="my-1 inline-flex min-h-11 items-center font-semibold underline" href={href}>Open provider profile</a>}
+   <RegistryAccountActions {...props} />
+ </>;
+}
+
+function RegistryAccountActions({ identity, agencies, onOpen, onDecide, onCreate }: RegistryAccountReviewProps){
  const [query,setQuery]=useState(''),[accountId,setAccountId]=useState(''),[basis,setBasis]=useState(''),[error,setError]=useState('');
  const [creating,setCreating]=useState(false),[confirmCreate,setConfirmCreate]=useState(false),[created,setCreated]=useState(false);
  const candidates=useMemo(()=>findRegistryAccountCandidates(identity,agencies),[identity,agencies]);

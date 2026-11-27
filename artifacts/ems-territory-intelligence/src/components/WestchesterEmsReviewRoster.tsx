@@ -1,3 +1,4 @@
+import { providerProfileHref } from '../navigation/providerProfileUrl';
 import React,{useEffect,useMemo,useState} from 'react';
 import {loadWestchesterCatalog,type WestchesterReviewCatalog} from '../services/westchesterEmsReview';
 export function WestchesterEmsReviewRoster({countySelected=false}:{countySelected?:boolean}){
@@ -12,7 +13,7 @@ export function WestchesterEmsReviewRoster({countySelected=false}:{countySelecte
  <p className="text-xs">Retrieved {data.retrievedAt.slice(0,10)} UTC · source edition date not stated · 88 listings · 20 possible national registry matches. <a className="underline" href={data.sourceUrl} target="_blank" rel="noreferrer">Original council directory</a></p>
  <label className="block text-sm">Search regional listings<input className="block w-full border rounded p-2 bg-transparent" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Name, code, address or city"/></label>
  <p role="status" className="text-sm">{matches.length} source rows · not unique verified organizations</p>
- <ul className="divide-y">{matches.slice((current-1)*8,current*8).map(r=><li key={r.reviewKey} className="py-3 break-words text-sm"><strong>{r.name}</strong><p>Agency code as reported: {r.agencyCodeAsReported??'Not reported'} · {r.agencyCodeStatus.replaceAll('-',' ')}</p>
+ <ul className="divide-y">{matches.slice((current-1)*8,current*8).map(r=><li key={r.reviewKey} className="py-3 break-words text-sm"><a className="font-semibold underline underline-offset-2" href={providerProfileHref({state:'NY',source:'regional-ems',id:r.reviewKey})}>{r.name}</a><p>Agency code as reported: {r.agencyCodeAsReported??'Not reported'} · {r.agencyCodeStatus.replaceAll('-',' ')}</p>
  <p>Reported headquarters: {[r.headquartersStreetAsReported,r.cityAsReported,r.stateAsReported,r.postalCodeAsReported].filter(Boolean).join(', ')||'Not reported'}</p>
  {r.nationalReviewCandidates.length?<p>Possible national match: {r.nationalReviewCandidates[0].name} · {r.nationalReviewCandidates[0].sourceKey}. End-user identity review required.</p>:<p>No exact national comparison candidate in the snapshot.</p>}
  </li>)}</ul>{!matches.length&&<p>No matching source listing.</p>}

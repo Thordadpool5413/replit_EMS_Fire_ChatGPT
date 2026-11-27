@@ -2,11 +2,11 @@ import React,{useEffect,useState} from 'react';
 import type {Agency} from '../../types';
 import {UsfaNerisParentComparisons} from './UsfaLegacyStations';
 import {loadNerisDepartment,nerisAddressText,nerisCatalogDate,nerisObjectUrl,profileNerisId,type NerisCatalogDepartment} from '../../services/nerisStationCatalog';
-export function NerisDepartmentStations({id}:{id:string}){
- const [opened,setOpened]=useState(false),[data,setData]=useState<NerisCatalogDepartment|null>(null),[status,setStatus]=useState<'idle'|'loading'|'ready'|'error'>('idle'),[attempt,setAttempt]=useState(0),[page,setPage]=useState(0);
+export function NerisDepartmentStations({id, autoLoad = false}:{id:string; autoLoad?: boolean}){
+ const [opened,setOpened]=useState(autoLoad),[data,setData]=useState<NerisCatalogDepartment|null>(null),[status,setStatus]=useState<'idle'|'loading'|'ready'|'error'>('idle'),[attempt,setAttempt]=useState(0),[page,setPage]=useState(0);
  useEffect(()=>{if(!opened)return;let active=true;setStatus('loading');setPage(0);setData(null);loadNerisDepartment(id).then(d=>{if(active){setData(d);setStatus('ready')}}).catch(()=>{if(active)setStatus('error')});return()=>{active=false}},[id,opened,attempt]);
  const d=data?.id===id?data:null;
- return <details className="min-w-0 border rounded p-3 text-sm" onToggle={e=>setOpened(e.currentTarget.open)} data-testid="neris-station-catalog"><summary className="cursor-pointer font-semibold">Federal NERIS station directory</summary>
+ return <details open={opened} className="min-w-0 border rounded p-3 text-sm" onToggle={e=>setOpened(e.currentTarget.open)} data-testid="neris-station-catalog"><summary className="cursor-pointer font-semibold">Federal NERIS station directory</summary>
  <p className="my-2 text-xs">Retained national API snapshot, {nerisCatalogDate.slice(0,10)} UTC. Native department and station IDs; source-reported locations. End-user validation required.</p>
  {status==='loading'&&<p role="status">Loading individual stations…</p>}
  {status==='error'&&<p role="alert">Retained source unavailable. <button type="button" className="underline" onClick={()=>setAttempt(n=>n+1)}>Retry</button></p>}

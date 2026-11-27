@@ -15,6 +15,7 @@ const equipmentCategories = [
 const statusStyle = {
   'In service reported': { tone: 'service', icon: BadgeCheck },
   'Documented historically': { tone: 'muted', icon: Clock3 },
+  'Purchase approved': { tone: 'planned', icon: ClipboardList },
   'Proposed purchase': { tone: 'planned', icon: ClipboardList },
   'Service agreement': { tone: 'contract', icon: ShieldCheck },
   Requested: { tone: 'planned', icon: CalendarClock },
@@ -44,6 +45,8 @@ function EquipmentEvidence({ entry }: { entry: ProviderEquipmentEvidence }) {
     {entry.deployment && <p className="pr-equipment-deployment">{entry.deployment}</p>}
     <p>{entry.details}</p>
     <EvidenceFields values={[
+      ['Manufacturer', entry.manufacturer ?? (entry.category === 'aed' ? 'Not published' : undefined)],
+      ['Supplier', entry.supplier], ['Approval date', entry.approvedOn], ['Documented purchase date', entry.lastPurchasedOn ?? 'Not published'],
       ['Owner', entry.owner], ['Maintained by', entry.maintainedBy], ['Acquired', entry.acquiredOn],
       ['Warranty ends', entry.warrantyEnds], ['Service ends', entry.serviceEnds],
       ['Pads expire', entry.padsExpireOn], ['Batteries expire', entry.batteriesExpireOn],
@@ -68,7 +71,7 @@ function FundingEntry({ entry }: { entry: ProviderFundingEvidence }) {
   </li>;
 }
 
-export function ProviderEquipmentFunding({ evidence, children }: { evidence?: ProviderEvidence; children?: ReactNode }) {
+export function ProviderEquipmentFunding({ evidence, children, showProfileSources = true }: { evidence?: ProviderEvidence; children?: ReactNode; showProfileSources?: boolean }) {
   const funding = useRef<HTMLElement>(null);
   const fundedRecords = [...(evidence?.funding ?? [])].sort((a, b) =>
     b.source.date.replace(/^FY/, '').localeCompare(a.source.date.replace(/^FY/, '')));
@@ -105,7 +108,7 @@ export function ProviderEquipmentFunding({ evidence, children }: { evidence?: Pr
         {fundedRecords.length > 0 ? <ol className="pr-timeline">
           {fundedRecords.map(entry => <FundingEntry key={entry.title + entry.source.url} entry={entry} />)}
         </ol> : <p className="pr-muted">No equipment funding record on file</p>}
-        {fundedRecords.length > 0 && <a className="pr-source-link pr-funding-sources" href="#sources">View profile sources <ArrowUpRight size={14} aria-hidden="true" /></a>}
+        {showProfileSources && fundedRecords.length > 0 && <a className="pr-source-link pr-funding-sources" href="#sources">View profile sources <ArrowUpRight size={14} aria-hidden="true" /></a>}
       </section>
       {children}
     </div>

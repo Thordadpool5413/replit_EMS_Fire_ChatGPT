@@ -47,7 +47,7 @@ function ArchivedProviderCard({ agency, identity, registryKey }: {
 
 function featuredFact(id: keyof CardFacts, facts: CardFacts[keyof CardFacts]) {
   if (id === 'quality') return facts.find(fact => /\bROSC\b|survival to hospital discharge/i.test(fact.label)) ?? facts[0];
-  if (id === 'workflow') return facts.find(fact => fact.label === 'Purchasing') ?? facts[0];
+  if (id === 'workflow') return facts.find(fact => /^(fire rescue chief|fire chief|ems chief|chief)$/i.test(fact.label)) ?? facts.find(fact => fact.label === 'Purchasing') ?? facts[0];
   if (id === 'operations') return facts.find(fact => /EMS (calls|incidents)|Annual calls/i.test(fact.label)) ?? facts[0];
   if (id === 'equipment') return facts.find(fact => fact.status === 'In service reported') ?? facts[0];
   return facts[0];

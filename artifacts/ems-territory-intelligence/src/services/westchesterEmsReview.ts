@@ -1,3 +1,4 @@
+import { hasProviderServiceName } from './providerServiceName';
 /** Regional source-reported organization evidence; never creates or updates an Agency. */
 const source='https://wremsco.org/WREMSCOAgencies/';
 const digest=/^[a-f0-9]{64}$/;
@@ -36,7 +37,7 @@ export function loadWestchesterCatalog():Promise<WestchesterReviewCatalog>{
   const raw=await fetch(base+idx.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Westchester source catalog unavailable');return r.text()});
   const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw)))].map(b=>b.toString(16).padStart(2,'0')).join('');
   if(h!==idx.sha256)throw Error('Westchester evidence checksum mismatch');
-  return validateWestchesterCatalog(JSON.parse(raw));
+  const roster = validateWestchesterCatalog(JSON.parse(raw)); return {...roster, records: roster.records.filter(row => hasProviderServiceName(row.name))};
  })().catch(e=>{pending=undefined;throw e});
  return pending;
 }

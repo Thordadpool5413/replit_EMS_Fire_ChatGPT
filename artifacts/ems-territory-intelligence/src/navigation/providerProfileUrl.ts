@@ -1,3 +1,4 @@
+import { departmentProfile } from '../services/departmentIdentity';
 import type { RegistryIdentity } from '../services/registryAccountLink';
 
 export type ProviderProfileRef = {
@@ -16,10 +17,11 @@ export function parseProviderProfileRef(value: string): ProviderProfileRef | und
   if (source === 'regional-ems' && !(state === 'TX'
     ? /^TX-DSHS:(license|registration):\d{6,7}$/.test(id)
     : state === 'NY' && /^NY-WREMSCO:row:\d{1,3}:[a-f0-9]{16}$/.test(id))) return;
-  return { state, source: source as ProviderProfileRef['source'], id };
+  return departmentProfile({ state, source: source as ProviderProfileRef['source'], id });
 }
 
 export function providerProfileHref(ref: ProviderProfileRef): string {
+  ref = departmentProfile(ref);
   return '?' + new URLSearchParams({ profile: [ref.state, ref.source, ref.id].join('/') });
 }
 

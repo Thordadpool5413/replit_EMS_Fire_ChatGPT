@@ -73,7 +73,7 @@ export async function loadPublicProviderProfile(ref: ProviderProfileRef): Promis
       const row = roster.records.find((record) => record.sourceKey === ref.id);
       if (!row) return;
       return {
-        name: row.name, kind: 'EMS organization', state: jurisdiction.name, stateCode: ref.state,
+        name: row.dbaName || row.name, kind: 'EMS organization', state: jurisdiction.name, stateCode: ref.state,
         address: [row.addressAsReported, row.mailingAddress2, row.city, row.state, row.zip].filter(Boolean).join(', '),
         locationLabel: 'Mailing location reported by Texas DSHS. Physical operating county is unresolved.',
         identifier: (row.rosterKind === 'provider' ? 'State EMS license ' : 'First responder registration ') + row.identifier,

@@ -1,3 +1,4 @@
+import { savedDepartmentKey } from './utils/providerRecordTrust';
 import {WorkspaceIcon} from './components/design/WorkspaceIcon';
 import {PwaControls, PwaStatusBanner} from './pwa/PwaControls';
 import { recordImportRun } from './services/importRunStore';
@@ -845,7 +846,7 @@ export default function App() {
   const dayRouteCount = agencies.filter(a => a.inDayRoute).length;
   const bookmarkedCount = agencies.filter(a => a.isBookmarked).length;
   const storedActive = activeAccount || selectedAgency;
-  const currentActive = storedActive ? agencies.find(a => a.id === storedActive.id) ?? storedActive : null;
+  const currentActive = storedActive ? agencies.find(a => a.id === storedActive.id) ?? agencies.find(a => !!savedDepartmentKey(storedActive) && savedDepartmentKey(a) === savedDepartmentKey(storedActive)) ?? null : null;
   const selectedProfileCity = globalCity.trim().toLowerCase() === 'all' ? '' : globalCity.trim();
   const selectedProfileCounty = globalCounty.trim().toLowerCase() === 'all' ? '' : globalCounty.trim();
   const profileBackLabel = activeTab === 'home'

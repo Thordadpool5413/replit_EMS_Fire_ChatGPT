@@ -1,3 +1,4 @@
+import { matchesAgencyScope } from '../utils/providerRecordTrust';
 // Legacy geography-derived and illustrative provider records are not loaded in production.
 import { hasCountyPlanningInputs } from '../utils/countyPlanningInputs';
 import { canonicalizeAgencyCounty, normalizeCountyName } from '../utils/countyIdentity';
@@ -280,9 +281,9 @@ class NationalProviderDatabaseService {
 
     if (category && category !== 'all') {
       if (category === 'ems') {
-        result = result.filter(p => !p.agencyType.toLowerCase().includes('fire'));
+        result = result.filter(p => matchesAgencyScope(p, 'ems'));
       } else if (category === 'fire') {
-        result = result.filter(p => p.agencyType.toLowerCase().includes('fire'));
+        result = result.filter(p => matchesAgencyScope(p, 'fire'));
       }
     }
 
@@ -324,16 +325,16 @@ class NationalProviderDatabaseService {
     if (cityName && cityName !== 'all') {
       const cityKey = `${sc}:${cityName.toLowerCase().trim()}`;
       const cityProviders = this.providersByCity.get(cityKey) || [];
-      const ems = cityProviders.find(p => !p.agencyType.toLowerCase().includes('fire')) || null;
-      const fire = cityProviders.find(p => p.agencyType.toLowerCase().includes('fire')) || null;
+      const ems = cityProviders.find(p => matchesAgencyScope(p, 'ems')) || null;
+      const fire = cityProviders.find(p => matchesAgencyScope(p, 'fire')) || null;
       if (ems || fire) return { emsProvider: ems, fireDepartment: fire };
     }
 
     const countyKey = `${sc}:${normalizeCountyName(countyName)}`;
     const countyProviders = this.providersByCounty.get(countyKey) || [];
 
-    const ems = countyProviders.find(p => !p.agencyType.toLowerCase().includes('fire')) || null;
-    const fire = countyProviders.find(p => p.agencyType.toLowerCase().includes('fire')) || null;
+    const ems = countyProviders.find(p => matchesAgencyScope(p, 'ems')) || null;
+    const fire = countyProviders.find(p => matchesAgencyScope(p, 'fire')) || null;
 
     return { emsProvider: ems, fireDepartment: fire };
   }
@@ -366,11 +367,8 @@ class NationalProviderDatabaseService {
       totalCardiac += p.annualCardiacArrestCalls;
       citySet.add(`${p.stateCode}:${p.city}`);
 
-      if (p.agencyType.toLowerCase().includes('fire')) {
-        fireCount++;
-      } else {
-        emsCount++;
-      }
+      if (matchesAgencyScope(p, 'fire')) fireCount++;
+      if (matchesAgencyScope(p, 'ems')) emsCount++;
     }
 
     return {

@@ -1,3 +1,4 @@
+import { hasProviderServiceName, unrelatedProviderName } from './providerServiceName';
 /** Review-only DSHS evidence. Never produces a saved Agency or map location. */
 export type TexasRosterKind='provider'|'first-responder';
 export interface TexasReviewRecord {
@@ -42,7 +43,7 @@ export function loadTexasReviewRoster():Promise<TexasReviewCatalog>{
   const data=await fetch(base+idx.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Texas source roster unavailable');return r.text()});
   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)))].map(b=>b.toString(16).padStart(2,'0')).join('');
   if(hash!==idx.sha256)throw Error('Texas source roster integrity check failed');
-  return validateTexasReviewCatalog(JSON.parse(data));
+  const roster = validateTexasReviewCatalog(JSON.parse(data)); return {...roster, records: roster.records.filter(row => hasProviderServiceName(row.dbaName ?? '') || hasProviderServiceName(row.name) || (row.rosterKind === 'provider' && !unrelatedProviderName(row.name)))};
  })().catch(e=>{pending=undefined;throw e});
  return pending;
 }

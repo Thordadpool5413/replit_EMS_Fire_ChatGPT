@@ -1,3 +1,4 @@
+import { isAgencyOperator } from '../../../../shared/providerServiceName.mjs';
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import {
@@ -55,7 +56,7 @@ router.get("/agencies/access", (req, res) => {
 function isQuarantined(record: Record<string, unknown>): boolean {
   const id = typeof record.id === "string" ? record.id : "";
   const source = typeof record.verificationSource === "string" ? record.verificationSource : "";
-  return /^(?:zoll-agency-|zoll-lead-|territory-[a-z]{2}-(?:ems|fire)-|(?:ems|fire)-[a-z]{2}-\d{5}(?:-|$))/i.test(id) ||
+  return !isAgencyOperator(record) || /^(?:zoll-agency-|zoll-lead-|territory-[a-z]{2}-(?:ems|fire)-|(?:ems|fire)-[a-z]{2}-\d{5}(?:-|$))/i.test(id) ||
     record.dataProvenanceTier === "generated_prospect" ||
     /geographic prospect generator|generated geography-based prospect|Imported public-facing directory candidate|Imported account candidate/i.test(source);
 }
@@ -84,7 +85,7 @@ router.get("/agencies", async (req, res) => {
     const page = rows.slice(0, requestedLimit);
     const canReadPrivateFields = canReadAgencyWorkspaceFields(req);
     return res.json({
-      records: page.map((row) => canReadPrivateFields
+      records: page.filter(row => isAgencyOperator(row.payload)).map((row) => canReadPrivateFields
         ? responseRecord(row.id, row.revision, row.payload)
         : publicProfileRecord(row.id, row.revision, row.payload)),
       nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
@@ -103,7 +104,7 @@ router.get("/agencies/:agencyId", async (req, res) => {
       .from(agencyRecordsTable)
       .where(eq(agencyRecordsTable.id, agencyId))
       .limit(1);
-    if (!row) return requestError(res, 404, "not_found", "Agency record not found.");
+    if (!row || !isAgencyOperator(row.payload)) return requestError(res, 404, "not_found", "Agency record not found.");
     return res.json(canReadAgencyWorkspaceFields(req)
       ? responseRecord(row.id, row.revision, row.payload)
       : publicProfileRecord(row.id, row.revision, row.payload));
@@ -120,7 +121,7 @@ router.put("/agencies/:agencyId", requireAgencyWorkspace, async (req, res) => {
     return requestError(res, 400, "invalid_record", "The agency update is invalid.");
   }
 
-  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
+  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Only EMS services and fire departments with a supported identity can be saved.");
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -171,7 +172,7 @@ router.post("/agencies/:agencyId/mutations", requireAgencyWorkspace, async (req,
   }
 
   if (!body.data.mutationId.trim()) return requestError(res, 400, "invalid_mutation", "A mutation ID is required.");
-  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
+  if (isQuarantined(body.data.agency)) return requestError(res, 422, "quarantined_provider", "Only EMS services and fire departments with a supported identity can be saved.");
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -244,7 +245,7 @@ router.post("/agencies/batch-create", requireAgencyWorkspace, async (req, res) =
     return requestError(res, 400, "invalid_batch", "Every agency in the batch needs an ID.");
   }
   const records = body.data.records.filter(hasAgencyId);
-  if (records.some(isQuarantined)) return requestError(res, 422, "quarantined_provider", "Legacy modeled records require source reconciliation before saving.");
+  if (records.some(isQuarantined)) return requestError(res, 422, "quarantined_provider", "Only EMS services and fire departments with a supported identity can be saved.");
   if (new Set(records.map((record) => record.id)).size !== records.length) {
     return requestError(res, 400, "duplicate_ids", "The agency batch contains duplicate IDs.");
   }

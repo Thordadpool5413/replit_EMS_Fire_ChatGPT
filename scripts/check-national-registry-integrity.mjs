@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
@@ -35,3 +36,5 @@ assert.equal(total,manifest.totalRecords);assert.equal(usfa,manifest.sources.USF
 assert.equal(Object.keys(manifest.byState).length,51);
 for(const state of Object.keys(manifest.byState))assert.ok(states.has(state),'Missing state '+state);
 console.log(JSON.stringify({total,usfa,nppes,missingFdid,unassigned,counties:counties.size,statesAndDc,sourceChunks:states.size},null,2));
+
+execFileSync('python3',['scripts/build-provider-aliases.py','--check'],{stdio:'inherit'});

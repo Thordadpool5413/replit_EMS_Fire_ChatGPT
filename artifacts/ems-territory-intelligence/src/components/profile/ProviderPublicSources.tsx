@@ -1,3 +1,4 @@
+import { departmentAliases } from '../../services/departmentIdentity';
 import { useState } from 'react';
 import { FLORIDA_EMS_ROSTER_URL, loadFloridaRoster } from '../../services/floridaEmsRoster';
 import { useQuery } from '@tanstack/react-query';
@@ -42,7 +43,7 @@ export function ProviderPeople({ evidence }: { evidence?: ProviderEvidence }) {
 
 export function ProviderStations({ profile, evidence }: { profile: Pick<PublicProviderProfile, 'registryKey' | 'identity'>; evidence?: ProviderEvidence }) {
   const fdid = evidence?.registryKey ?? (profile.identity?.sourceName === 'USFA NFDR' ? profile.registryKey : undefined);
-  const nerisId = profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence);
+  const nerisId = profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence) ?? departmentAliases(profile.identity?.stateCode ?? '',profile.registryKey).find(k=>k.startsWith('NERIS:'))?.slice(6);
   const legacy = useQuery({
     queryKey: ['usfa-profile-stations', fdid],
     queryFn: () => fdid ? loadLegacyStationParent(fdid) : null,

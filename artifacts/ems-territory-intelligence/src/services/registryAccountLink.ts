@@ -1,3 +1,5 @@
+import { unrelatedProviderName } from './providerServiceName';
+import { departmentKey } from './departmentIdentity';
 import type { Agency, AgencySourceRecordAssociation } from '../types';
 import type { SourceDirectoryRecord } from './nationalSourceDirectory';
 
@@ -55,7 +57,8 @@ export function registryClaims(a:Agency){
 }
 export function findRegistryIdentityAccounts(identity:RegistryIdentity,agencies:Agency[]):Agency[]{
  const key=registryIdentityKey(identity);if(!key)return [];
- return agencies.filter(a=>registryClaims(a).keys.includes(key));
+ const canonical = departmentKey(identity.stateCode,key) ?? key;
+ return agencies.filter(a=>a.stateCode===identity.stateCode && registryClaims(a).keys.some(k=>(departmentKey(a.stateCode,k) ?? k)===canonical));
 }
 /** Conservative collision check: malformed links are review candidates, never confirmed matches. */
 export function possibleRegistryClaim(identity:RegistryIdentity,a:Agency):boolean{
@@ -103,7 +106,7 @@ export function registryIdentityKey(identity:RegistryIdentity):string|undefined{
 }
 export function registryAccountId(identity:RegistryIdentity):string{
  const key=registryIdentityKey(identity);if(!key)throw Error('Invalid native registry identifier.');
- return 'registry-'+key.replaceAll(':','-');
+ return 'registry-'+(departmentKey(identity.stateCode,key) ?? key).replaceAll(':','-');
 }
 export function registryIdentityLabel(identity:RegistryIdentity):string{
  return (identity.sourceName==='NPPES'?'NPI':identity.sourceName==='NERIS'?'NERIS ID':identity.sourceName==='USFA NFDR'?'FDID':identity.identifierKind==='license'?'State EMS license':'State agency code')+' '+identity.identifier;
@@ -114,6 +117,7 @@ function validNpiChecksum(value:string):boolean {
 }
 export function canCreateRegistryAccount(identity:RegistryIdentity):boolean{
  if(!registryIdentityKey(identity)||!identity.name?.trim()||identity.deactivatedAt)return false;
+ if(identity.sourceName!=='NERIS' && identity.sourceName!=='USFA NFDR' && unrelatedProviderName(identity.name) && !departmentKey(identity.stateCode,registryIdentityKey(identity)))return false;
  if(identity.sourceName==='State EMS'&&identity.stateCode==='OH'&&!['Paramedic','AEMT','EMT','EMR'].includes(identity.serviceLevel??''))return false;
  try {
   const u=new URL(identity.sourceUrl);if(u.protocol!=='https:'||u.username||u.password)return false;

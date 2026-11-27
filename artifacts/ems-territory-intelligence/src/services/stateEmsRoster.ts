@@ -1,3 +1,4 @@
+import { hasProviderServiceName, unrelatedProviderName } from './providerServiceName';
 import type {RegistryIdentity} from './registryAccountLink';
 export interface StateEmsRoster {
  schemaVersion:1;stateCode:'OH';sourceName:string;sourceUrl:string;sourceDate:string|null;retrievedAt:string;identifierKind:'agency-code';scope:string;
@@ -16,7 +17,7 @@ export function validateOhioRoster(value:unknown):StateEmsRoster{
 }
 let pending:Promise<StateEmsRoster>|undefined;
 export function loadOhioRoster():Promise<StateEmsRoster>{
- if(!pending)pending=fetch((import.meta.env?.BASE_URL??'/')+'registry/state-ems/OH.json',{signal:AbortSignal.timeout(30000)}).then(async r=>{if(!r.ok)throw Error('Ohio agency roster could not be loaded.');return validateOhioRoster(await r.json());}).catch(e=>{pending=undefined;throw e});
+ if(!pending)pending=fetch((import.meta.env?.BASE_URL??'/')+'registry/state-ems/OH.json',{signal:AbortSignal.timeout(30000)}).then(async r=>{if(!r.ok)throw Error('Ohio agency roster could not be loaded.');const roster = validateOhioRoster(await r.json()); return {...roster, records: roster.records.filter(row => hasProviderServiceName(row.name) || (!unrelatedProviderName(row.name) && ['Paramedic','EMT','AEMT','EMR'].includes(row.serviceLevel ?? '')))};}).catch(e=>{pending=undefined;throw e});
  return pending;
 }
 export function ohioRegistryIdentity(roster:StateEmsRoster,record:StateEmsRoster['records'][number]):RegistryIdentity{

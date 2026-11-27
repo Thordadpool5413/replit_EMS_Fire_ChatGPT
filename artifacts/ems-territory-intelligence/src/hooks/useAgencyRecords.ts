@@ -512,7 +512,8 @@ export function useAgencyRecords({
       const updated = (typeof next === "function" ? next(activeProviderRecords(previous)) : next)
         .map(stripAgencyReviewOverlay);
       const byId = new Map(updated.map((agency) => [agency.id, agency]));
-      for (const agency of previous.filter(isLegacyProviderRecord)) {
+      const visibleIds = new Set(activeProviderRecords(previous).map(a=>a.id));
+      for (const agency of previous.filter(a=>!visibleIds.has(a.id))) {
         if (!byId.has(agency.id)) byId.set(agency.id, agency);
       }
       return [...byId.values()];

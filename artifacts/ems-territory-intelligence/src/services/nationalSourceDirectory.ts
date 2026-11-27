@@ -1,3 +1,4 @@
+import { departmentKey, isCombinedDepartment } from './departmentIdentity';
 import { hasProviderServiceName } from './providerServiceName';
 /** Read-only source listings. Never coerce registry organizations into Agency metrics. */
 export interface SourceDirectoryCounts {usfa:number;nppes:number;assigned:number;unassigned:number;countiesWithRecords:number;countyCount:number}
@@ -37,14 +38,26 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
   if(!Array.isArray(records)||records.length!==chunk.count||records.some(r=>!Array.isArray(r)||r.length!==12||r.some(v=>typeof v!=='string')||r[3]!==state||!['USFA','NPPES'].includes(r[1])||!r[0].startsWith(r[1].toLowerCase()+':')||!r[2]))throw Error('Invalid registry records.');
   for(const record of records)ids.add(record[0]);
   if(ids.size!==records.length)throw Error('Duplicate registry identities.');
-  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]));
+  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]) || !!departmentKey(state, 'NPI:' + row[0].slice(6)));
  })().catch(error=>{statePromises.delete(state);throw error;});
  statePromises.set(state,pending);return pending;
+}
+export function directoryProviders(records: SourceDirectoryRecord[]) {
+ const ids = new Set(records.map(row => row[0]));
+ return records.filter(row => {
+  if (row[1] === 'USFA') return true;
+  const key = departmentKey(row[3], 'NPI:' + row[0].slice(6));
+  return !key || !ids.has('usfa:' + key.slice(5));
+ });
+}
+export function directorySourceMatches(row: SourceDirectoryRecord, source?: 'all'|'USFA'|'NPPES') {
+ return !source || source === 'all' || row[1] === source ||
+   (source === 'NPPES' && isCombinedDepartment(row[0].replace(/^usfa:/,'FDID:')));
 }
 export function filterSourceDirectory(records:SourceDirectoryRecord[],scope:{source?:'all'|'USFA'|'NPPES';countyFips?:string;query?:string;unassignedOnly?:boolean;countyOf?:(row:SourceDirectoryRecord)=>string}):SourceDirectoryRecord[]{
  const words=(scope.query??'').toLocaleLowerCase().split(/\s+/).filter(Boolean);
  const countyOf=scope.countyOf??((row:SourceDirectoryRecord)=>row[6]);
- return records.filter(r=>(!scope.source||scope.source==='all'||r[1]===scope.source)&&(!scope.countyFips||countyOf(r)===scope.countyFips)&&(!scope.unassignedOnly||!countyOf(r))&&words.every(w=>[r[0],r[2],r[4],r[5],r[7],r[10]].join(' ').toLocaleLowerCase().includes(w)));
+ return directoryProviders(records).filter(r=>directorySourceMatches(r,scope.source)&&(!scope.countyFips||countyOf(r)===scope.countyFips)&&(!scope.unassignedOnly||!countyOf(r))&&words.every(w=>[r[0],r[2],r[4],r[5],r[7],r[10]].join(' ').toLocaleLowerCase().includes(w)));
 }
 /** Count source rows only when their county FIPS belongs to the loaded county-equivalent directory.
  * Rows from USFA and NPPES remain separate registry listings; this is not a unique-agency count.
@@ -54,7 +67,7 @@ export function countSourceListingsByCounty(
  validCountyFips:ReadonlySet<string>,
 ):Map<string,CountySourceListingCounts>{
  const result=new Map<string,CountySourceListingCounts>();
- for(const row of records){
+ for(const row of directoryProviders(records)){
   const fips=row[6];
   if(!/^\d{5}$/.test(fips)||!validCountyFips.has(fips))continue;
   const counts=result.get(fips)??{total:0,usfa:0,nppes:0};

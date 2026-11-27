@@ -1,3 +1,4 @@
+import { matchesAgencyScope } from '../utils/providerRecordTrust';
 import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import type { AgencySourceRecordAssociation } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect } from '../utils/providerRecordTrust';
@@ -796,17 +797,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     return list;
   }, [agencies, selectedStateCode, selectedCountyName, selectedCityName, debouncedZipQuery, availableCounties, availableCities]);
 
-  const emsJurisdictionCount = useMemo(() => {
-    let count = 0;
-    for (let i = 0; i < jurisdictionBaseAgencies.length; i++) {
-      if (!jurisdictionBaseAgencies[i].agencyType.toLowerCase().includes('fire')) count++;
-    }
-    return count;
-  }, [jurisdictionBaseAgencies]);
-
-  const fireJurisdictionCount = useMemo(() => {
-    return jurisdictionBaseAgencies.length - emsJurisdictionCount;
-  }, [jurisdictionBaseAgencies.length, emsJurisdictionCount]);
+  const emsJurisdictionCount = useMemo(() => jurisdictionBaseAgencies.filter(a=>matchesAgencyScope(a,'ems')).length, [jurisdictionBaseAgencies]);
+  const fireJurisdictionCount = useMemo(() => jurisdictionBaseAgencies.filter(a=>matchesAgencyScope(a,'fire')).length, [jurisdictionBaseAgencies]);
 
   // Matching agencies after EMS/Fire category filter & sorting
   const matchingAgencies = useMemo(() => {

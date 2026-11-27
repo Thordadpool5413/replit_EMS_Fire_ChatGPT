@@ -1,3 +1,10 @@
+import { departmentKey, isCombinedDepartment } from '../services/departmentIdentity';
+import { isAgencyOperator } from '../services/providerServiceName';
+import { registryClaims } from '../services/registryAccountLink';
+export function savedDepartmentKey(agency: Agency) {
+ const keys = new Set(registryClaims(agency).keys.map(k=>departmentKey(agency.stateCode,k)).filter(Boolean));
+ return keys.size === 1 ? [...keys][0] : undefined;
+}
 import { registryIdentityKey,registryIdentityLabel,registryAccountId,canCreateRegistryAccount } from '../services/registryAccountLink';
 import type { Agency } from '../types';
 
@@ -76,6 +83,24 @@ export function isLegacyProviderId(id:unknown):boolean{
 export function isLegacyProviderRecord(a:Pick<Agency,'id'|'verificationSource'|'dataProvenanceTier'>):boolean{
  return isLegacyProviderId(a.id)||isGeographicProspect(a)||/Imported public-facing directory candidate|Imported account candidate/i.test(a.verificationSource??'');
 }
+export function matchesAgencyScope(agency: Agency, category: 'ems'|'fire') {
+ if (isCombinedDepartment(savedDepartmentKey(agency))) return true;
+ const name = [agency.name,agency.agencyType].join(' ');
+ if (/\bfire\b/i.test(name) && /\b(?:ems|emergency medical services?|ambulance)\b/i.test(name)) return true;
+ const fire = agency.providerCategory ? agency.providerCategory.toLowerCase() === 'fire' : /fire/i.test(agency.agencyType ?? '');
+ return category === 'fire' ? fire : !fire;
+}
 export function activeProviderRecords(agencies:Agency[]):Agency[]{
- return agencies.filter(a=>!isLegacyProviderRecord(a));
+ const groups = new Map<string, Agency>();
+ for (const agency of agencies) {
+   if (isLegacyProviderRecord(agency)) continue;
+   const native = agency.registryIdentity;
+   const key = savedDepartmentKey(agency);
+   const fire = native?.sourceName === 'USFA NFDR' || native?.sourceName === 'NERIS';
+   if (!key && !isAgencyOperator(agency)) continue;
+   const id = key ?? agency.id;
+   const previous = groups.get(id);
+   if (!previous || (fire && previous.registryIdentity?.sourceName !== 'USFA NFDR')) groups.set(id,agency);
+ }
+ return [...groups.values()];
 }

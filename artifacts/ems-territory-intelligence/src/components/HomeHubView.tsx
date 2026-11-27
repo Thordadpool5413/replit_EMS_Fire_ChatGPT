@@ -1,3 +1,4 @@
+import { matchesAgencyScope } from '../utils/providerRecordTrust';
 import {useNationalSourceDirectory} from '../hooks/useNationalSourceDirectory';
 import {NationalSourceDirectory} from './NationalSourceDirectory';
 import type { DirectoryLoadStatus } from '../services/agencyDirectoryLoader';
@@ -276,10 +277,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   // Equipment-vendor filters remain available in the county map, not the U.S. map.
   const scopedAgencies = useMemo(() => {
     if (globalCategory === 'all') return agencies;
-    return agencies.filter((a) => {
-      const isFire = a.providerCategory === 'FIRE' || a.agencyType.toLowerCase().includes('fire');
-      return globalCategory === 'fire' ? isFire : !isFire;
-    });
+    return agencies.filter(a => matchesAgencyScope(a, globalCategory));
   }, [agencies, globalCategory]);
   const providerScopeLabel = globalCategory === 'all'
     ? 'all-provider'

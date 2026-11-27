@@ -38,7 +38,7 @@ test("agency profiles are publicly readable while private notes and writes stay 
     const id = `ci-agency-${randomUUID()}`;
     const agency = {
       id,
-      name: "CI fixture only",
+      name: "CI fixture only", agencyType: "Municipal EMS",
       stateCode: "FL",
       keyContacts: [{ id: "ci-contact", name: "CI Contact", notes: "private contact note" }],
       fieldNotes: [{ id: "ci-note", notes: "private field note" }],
@@ -96,8 +96,8 @@ test("agency profiles are publicly readable while private notes and writes stay 
     assert.equal((await request(root + "/" + id, "agency-viewer")).body.revision, 4);
 
     // One atomic batch, with existing records preserved and caller ordering retained.
-    const z = { id: "ci-batch-z", stateCode: "FL", name: "CI z" };
-    const a = { id: "ci-batch-a", stateCode: "FL", name: "CI a" };
+    const z = { id: "ci-batch-z", stateCode: "FL", name: "CI z", agencyType: "Municipal EMS" };
+    const a = { id: "ci-batch-a", stateCode: "FL", name: "CI a", agencyType: "Fire Department" };
     const result = await request(root + "/batch-create", "agency-editor", "POST", { records: [z, newer, a] });
     assert.equal(result.status, 200);
     assert.deepEqual(result.body.createdIds, [z.id, a.id]);

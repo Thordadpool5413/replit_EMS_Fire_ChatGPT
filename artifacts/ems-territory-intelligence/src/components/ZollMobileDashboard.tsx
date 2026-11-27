@@ -1,3 +1,4 @@
+import { matchesAgencyScope } from '../utils/providerRecordTrust';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -146,10 +147,10 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
           return !!agency.inDayRoute;
         }
         if (filterMode === 'ems') {
-          return agency.providerCategory === 'EMS' || !(agency.agencyType || '').toLowerCase().includes('fire');
+          return matchesAgencyScope(agency, 'ems');
         }
         if (filterMode === 'fire') {
-          return agency.providerCategory === 'FIRE' || (agency.agencyType || '').toLowerCase().includes('fire');
+          return matchesAgencyScope(agency, 'fire');
         }
         return true;
       })
@@ -520,8 +521,8 @@ export const ZollMobileDashboard: React.FC<ZollMobileDashboardProps> = ({
             { id: 'critical', label: 'Critical (90d expiry)', count: territoryStats.criticalCount },
             { id: 'high_priority', label: '⭐ PulseIQ estimate 80+', count: territoryStats.highPriorityCount },
             { id: 'day_route', label: `Today's route (${territoryStats.dayRouteCount})`, count: territoryStats.dayRouteCount },
-            { id: 'ems', label: 'EMS Providers', count: agencies.filter(a => a.providerCategory === 'EMS' || !a.agencyType.toLowerCase().includes('fire')).length },
-            { id: 'fire', label: 'Fire Departments', count: agencies.filter(a => a.providerCategory === 'FIRE' || a.agencyType.toLowerCase().includes('fire')).length }
+            { id: 'ems', label: 'EMS Providers', count: agencies.filter(a => matchesAgencyScope(a, 'ems')).length },
+            { id: 'fire', label: 'Fire Departments', count: agencies.filter(a => matchesAgencyScope(a, 'fire')).length }
           ].map((pill) => {
             const isActive = filterMode === pill.id;
             return (

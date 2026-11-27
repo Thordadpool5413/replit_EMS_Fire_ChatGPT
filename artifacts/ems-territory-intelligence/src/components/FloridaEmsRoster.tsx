@@ -1,15 +1,16 @@
+import { departmentKey } from '../services/departmentIdentity';
 import { Ambulance } from 'lucide-react';
 import { providerProfileHref } from '../navigation/providerProfileUrl';
 import React,{useEffect,useMemo,useState} from 'react';
 import type {Agency,AgencySourceRecordAssociation} from '../types';
 import {loadFloridaRoster,floridaServiceName,floridaCounty,floridaRegistryIdentity,type FloridaEmsRoster as Roster} from '../services/floridaEmsRoster';
 import {RegistryAccountReview} from './RegistryAccountReview';
-export function FloridaEmsRoster({agencies,onOpen,onDecide,onCreate,city='',countyFips='',countyNames,search}:{search?:string;agencies:Agency[];onOpen?:(a:Agency)=>void;onDecide?:(id:string,a:AgencySourceRecordAssociation)=>void;onCreate?:(a:Agency)=>void|Promise<void>;city?:string;countyFips?:string;countyNames:ReadonlyMap<string,string>}){
+export function FloridaEmsRoster({agencies,onOpen,onDecide,onCreate,city='',countyFips='',countyNames,search,listedDepartments}:{listedDepartments?:ReadonlySet<string>;search?:string;agencies:Agency[];onOpen?:(a:Agency)=>void;onDecide?:(id:string,a:AgencySourceRecordAssociation)=>void;onCreate?:(a:Agency)=>void|Promise<void>;city?:string;countyFips?:string;countyNames:ReadonlyMap<string,string>}){
  const [data,setData]=useState<Roster|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0),[localQuery,setQuery]=useState(''),[page,setPage]=useState(1),[hq,setHq]=useState<'all'|'FL'|'other'>(countyFips?'FL':'all');
  useEffect(()=>{let active=true;setError('');loadFloridaRoster().then(r=>{if(active)setData(r)}).catch(e=>{if(active)setError(String(e.message??e))});return()=>{active=false}},[attempt]);
  const query=search ?? localQuery;
  useEffect(()=>setPage(1),[query]);
- const matches=useMemo(()=>(data?.records??[]).filter(r=>floridaServiceName(r)&&(hq==='all'||(hq==='FL'?r.headquartersState==='FL':r.headquartersState!=='FL'))&&(!countyFips||floridaCounty(r,countyNames)?.countyFips===countyFips)&&(!city||r.city.toLowerCase()===city.toLowerCase())&&[r.identifier,r.name,r.city,r.county,r.serviceLevel].join(' ').toLowerCase().includes(query.toLowerCase().trim())),[data,query,city,countyFips,countyNames,hq]);
+ const matches=useMemo(()=>(data?.records??[]).filter(r=>!listedDepartments?.has(departmentKey('FL','STATE-EMS:FL:license:'+r.identifier) ?? '') && floridaServiceName(r)&&(hq==='all'||(hq==='FL'?r.headquartersState==='FL':r.headquartersState!=='FL'))&&(!countyFips||floridaCounty(r,countyNames)?.countyFips===countyFips)&&(!city||r.city.toLowerCase()===city.toLowerCase())&&[r.identifier,r.name,r.city,r.county,r.serviceLevel].join(' ').toLowerCase().includes(query.toLowerCase().trim())),[data,query,city,countyFips,countyNames,hq,listedDepartments]);
  const current=Math.min(page,Math.max(1,Math.ceil(matches.length/8)));
  const today=new Date().toISOString().slice(0,10);
  return <section className="space-y-3 min-w-0" aria-label="Florida EMS license roster" data-testid="florida-ems-license-roster">

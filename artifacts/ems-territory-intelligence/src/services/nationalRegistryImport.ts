@@ -1,3 +1,5 @@
+import { directoryProviders } from './nationalSourceDirectory';
+import { departmentKey } from './departmentIdentity';
 import type { Agency } from '../types';
 import { canBulkHydrateAgency } from '../utils/providerRecordTrust';
 import {
@@ -263,7 +265,7 @@ function buildAgencyIndexes(agencies: Agency[]) {
     index.set(key, [...(index.get(key) ?? []), agency]);
   for (const agency of agencies) {
     for (const key of existingIdentityKeys(agency)) {
-      add(byIdentity, key, agency);
+      add(byIdentity, departmentKey(agency.stateCode,key) ?? key, agency);
     }
     if (agency.npiNumber && /^\d{10}$/.test(agency.npiNumber)) {
       add(bySourceIdentifier, `NPI:${agency.npiNumber}`, agency);
@@ -281,7 +283,7 @@ function buildAgencyIndexes(agencies: Agency[]) {
   return {
     exact(identity: RegistryIdentity) {
       const key = registryIdentityKey(identity);
-      return key ? byIdentity.get(key) ?? [] : [];
+      return key ? byIdentity.get(departmentKey(identity.stateCode,key) ?? key) ?? [] : [];
     },
     possible(identity: RegistryIdentity) {
       const registryKey = registryIdentityKey(identity);
@@ -304,6 +306,7 @@ export function buildRegistryStatePreview(input: {
   locationSnapshotUnavailable?: boolean;
   includeCandidates?: boolean;
 }): RegistryImportStatePreview {
+  input = { ...input, records: directoryProviders(input.records) };
   const indexes = buildAgencyIndexes(input.agencies);
   const eligibleIdentities: Array<{ row: SourceDirectoryRecord; identity: RegistryIdentity }> = [];
   const groupCounts = new Map<string, number>();

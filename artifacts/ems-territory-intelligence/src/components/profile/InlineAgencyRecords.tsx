@@ -1,3 +1,4 @@
+import { departmentAliases } from '../../services/departmentIdentity';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Building2 } from 'lucide-react';
@@ -44,9 +45,17 @@ export function InlineAgencyRecords({ state, registryKey, evidence }: { state: s
   const fire = linkedFireDepartment(registryKey, evidence);
   const npi = linkedBillingOrganization(registryKey, evidence);
   const neris = providerEvidenceNerisId(evidence);
-  return <>
-    {fire && fire !== registryKey && <MatchedRecord title="Matched fire department" record={{ state, source: 'registry', id: 'usfa:' + fire.slice(5) }} />}
-    {npi && 'NPI:' + npi !== registryKey && <MatchedRecord title="Matched billing organization" record={{ state, source: 'registry', id: 'nppes:' + npi }} />}
-    {neris && 'NERIS:' + neris !== registryKey && <MatchedRecord title="Matched station registry" record={{ state, source: 'neris', id: neris }} />}
-  </>;
+  const records = new Map<string,{record:ProviderProfileRef;title:string}>();
+  const add = (source:ProviderProfileRef['source'], id:string, title:string) =>
+    records.set(source+'/'+id,{record:{state,source,id},title});
+  if (fire && fire !== registryKey) add('registry','usfa:'+fire.slice(5),'Matched fire department');
+  if (npi && 'NPI:'+npi !== registryKey) add('registry','nppes:'+npi,'Matched billing organization');
+  if (neris && 'NERIS:'+neris !== registryKey) add('neris',neris,'Matched station registry');
+  for (const alias of departmentAliases(state,registryKey)) {
+    if (alias.startsWith('NERIS:')) add('neris',alias.slice(6),'Matched station registry');
+    else if (alias.startsWith('NPI:')) add('registry','nppes:'+alias.slice(4),'Matched billing organization');
+    else if (alias.startsWith('STATE-EMS:')) add('state-ems',alias.split(':')[3],'EMS license or agency record');
+    else add('regional-ems',alias,'Regional EMS record');
+  }
+  return <>{[...records].map(([key,props])=><MatchedRecord key={key} {...props}/>)}</>;
 }

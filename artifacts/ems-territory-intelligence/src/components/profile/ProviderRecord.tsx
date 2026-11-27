@@ -1,3 +1,4 @@
+import { departmentAliases, isCombinedDepartment } from '../../services/departmentIdentity';
 import { ProviderChanges } from './ProviderChanges';
 import { DiscoveryCoach } from './DiscoveryCoach';
 import { ProviderStory } from './ProviderStory';
@@ -224,13 +225,23 @@ export default function ProviderRecord({ reference }: { reference: string }) {
   const profile = query.data;
   const evidence = profile ? findProviderEvidence(profile.registryKey, profile.name) : undefined;
   const floridaLicense = profile?.identity?.sourceName === 'State EMS' && profile.stateCode === 'FL'
-    ? profile.identity.identifier : providerEvidenceFloridaLicense(evidence);
+    ? profile.identity.identifier : providerEvidenceFloridaLicense(evidence) ?? departmentAliases(profile?.stateCode ?? '',profile?.registryKey).find(k=>k.startsWith('STATE-EMS:FL:license:'))?.split(':').pop();
 
-  const artKind = evidence?.combinedServices ? 'combined' : profile?.kind === 'Fire department' ? 'fire' : 'ems';
+  const stationId = profile?.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence) ?? departmentAliases(profile?.stateCode ?? '', profile?.registryKey).find(k=>k.startsWith('NERIS:'))?.slice(6);
+  const combined = evidence?.combinedServices || isCombinedDepartment(profile?.registryKey);
+  const artKind = combined ? 'combined' : profile?.kind === 'Fire department' ? 'fire' : 'ems';
   const art = { combined: combinedArt, fire: fireArt, ems: emsArt }[artKind];
-  const agencyLabel = evidence?.combinedServices ? 'Fire & EMS department' : profile?.kind;
+  const agencyLabel = combined ? 'Fire & EMS department' : profile?.kind;
 
   useEffect(() => {
+    if (profile && ref) {
+      const url = new URL(window.location.href);
+      const target = [ref.state, ref.source, ref.id].join('/');
+      if (url.searchParams.get('profile') !== target) {
+        url.searchParams.set('profile', target);
+        window.history.replaceState(window.history.state, '', url);
+      }
+    }
     if (profile) document.title = profile.name + ' | Nick’s EMS & Fire Territory Intelligence';
   }, [profile]);
 
@@ -266,13 +277,13 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
-      {section === 'overview' && <><ProviderChanges evidence={evidence} /><ProfileGlance evidence={evidence} /><ProviderStory key={reference} evidence={evidence} nerisId={profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : providerEvidenceNerisId(evidence)} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
+      {section === 'overview' && <><ProviderChanges evidence={evidence} /><ProfileGlance evidence={evidence} /><ProviderStory key={reference} evidence={evidence} nerisId={stationId} /><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence} /></>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
-          <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : undefined} profile />
+          <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={stationId} profile />
           <a className="pr-panel pr-icon-heading pr-source-link" href="#grants"><Landmark size={19} aria-hidden="true" /> Look up OpenFEMA grant records</a>
-          <ProviderFootprint key={reference} profile={profile} linkedNerisId={providerEvidenceNerisId(evidence)} />
+          <ProviderFootprint key={reference} profile={profile} linkedNerisId={stationId} />
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
@@ -289,7 +300,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {section === 'sources' && <Sources profile={profile} evidence={evidence} />}
         </div>
         <div className="pr-section-rail">
-          {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} linkedNerisId={providerEvidenceNerisId(evidence)} />}
+          {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} linkedNerisId={stationId} />}
           <SourceSummary profile={profile} />
         </div>
       </div>}

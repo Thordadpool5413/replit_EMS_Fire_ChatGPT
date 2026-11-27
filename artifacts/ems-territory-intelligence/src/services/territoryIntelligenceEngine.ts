@@ -1,4 +1,4 @@
-import { activeProviderRecords } from '../utils/providerRecordTrust';
+import { matchesAgencyScope, activeProviderRecords } from '../utils/providerRecordTrust';
 import { normalizeCountyName } from '../utils/countyIdentity';
 import { filterSavedAgencyRecordsForJurisdiction } from '../utils/countyAgencySelection';
 /**
@@ -279,13 +279,7 @@ class TerritoryIntelligenceService {
   public filterByCategory(list: Agency[], categoryFilter: 'all' | 'ems' | 'fire'): Agency[] {
     list = activeProviderRecords(list);
     if (categoryFilter === 'all') return list;
-    if (categoryFilter === 'ems') {
-      return list.filter(a => (a.providerCategory ? a.providerCategory.toLowerCase() === 'ems' : !a.agencyType.toLowerCase().includes('fire')));
-    }
-    if (categoryFilter === 'fire') {
-      return list.filter(a => (a.providerCategory ? a.providerCategory.toLowerCase() === 'fire' : a.agencyType.toLowerCase().includes('fire')));
-    }
-    return list;
+    return list.filter(a => matchesAgencyScope(a, categoryFilter));
   }
 
   /**

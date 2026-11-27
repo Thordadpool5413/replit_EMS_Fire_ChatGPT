@@ -1,3 +1,4 @@
+import { departmentProfile } from '../services/departmentIdentity';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -16,7 +17,7 @@ test('every national state registry row can be addressed by its original ID', ()
     for (const [id, , , state] of records) {
       const ref = { state, id, source: 'registry' as const };
       const target = new URL(providerProfileHref(ref), 'https://atlas.example');
-      assert.deepEqual(parseProviderProfileRef(target.searchParams.get('profile')!), ref);
+      assert.deepEqual(parseProviderProfileRef(target.searchParams.get('profile')!), departmentProfile(ref));
     }
   }
 });

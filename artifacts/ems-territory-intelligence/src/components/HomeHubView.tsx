@@ -43,6 +43,8 @@ const HOME_MAP_GEOMETRY_TRANSFORM =
   `scale(${HOME_MAP_GEOMETRY_SCALE}) ` +
   `translate(${-HOME_MAP_SCALE_ORIGIN_X} ${-HOME_MAP_SCALE_ORIGIN_Y})`;
 const isHomeMapInsetState = (stateCode: string) => stateCode === 'AK' || stateCode === 'HI';
+// Keep abbreviations legible when the 872-unit map fits a 320px viewport.
+const PHONE_STATE_LABEL_SIZE = 26;
 const PHONE_STATE_LABEL_ANCHORS: Record<string, { x: number; y: number }> = {
   CA: { x: 96, y: 250 },
   FL: { x: 590, y: 394 },
@@ -1089,7 +1091,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                             stroke="#ffffff"
                             strokeWidth={isPhone ? 3 : 2}
                             paintOrder="stroke"
-                            fontSize={isPhone ? 19 : 11.5}
+                            fontSize={isPhone ? PHONE_STATE_LABEL_SIZE : 11.5}
                             fontWeight={cSel ? '800' : '750'}
                             fontFamily="Arial, Helvetica, system-ui, sans-serif"
                             letterSpacing=".2"
@@ -1128,7 +1130,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                           stroke="#ffffff"
                           strokeWidth={isPhone ? 2.8 : 1.9}
                           paintOrder="stroke"
-                          fontSize={isPhone ? 19 : 11.5}
+                          fontSize={isPhone ? PHONE_STATE_LABEL_SIZE : 11.5}
                           fontWeight={isSelected ? '800' : '750'}
                           fontFamily="Arial, Helvetica, system-ui, sans-serif"
                           letterSpacing=".12"

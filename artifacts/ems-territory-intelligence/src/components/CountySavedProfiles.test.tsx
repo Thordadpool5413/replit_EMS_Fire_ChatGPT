@@ -49,3 +49,23 @@ test('unavailable county profile state does not claim a confirmed absence', () =
   assert.match(markup, /could not be refreshed/);
   assert.match(markup, /not evidence that none exist/);
 });
+
+test('county profile cards display agency facts and source details without opening the profile', () => {
+  const markup = renderToStaticMarkup(
+    <CountySavedProfiles countyName="Flagler County" profiles={[
+      profile({
+        name: 'Flagler County Fire Rescue',
+        registryIdentity: {
+          sourceName: 'State EMS', identifierKind: 'license', identifier: '1801',
+          stateCode: 'FL', name: 'Flagler County Fire Rescue',
+          sourceUrl: 'https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf', retrievedAt: '2026-11-24',
+        },
+      }),
+    ]} status="ready" />,
+  );
+  assert.match(markup, /\$46,268/);
+  assert.match(markup, /Requested/);
+  assert.match(markup, /14,138/);
+  assert.match(markup, /Which pads and connectors/);
+  assert.match(markup, /View card data and sources/);
+});

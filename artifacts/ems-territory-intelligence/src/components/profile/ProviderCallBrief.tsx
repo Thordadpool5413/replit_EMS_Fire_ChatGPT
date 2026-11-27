@@ -1,18 +1,18 @@
 import { ArrowUpRight, ClipboardList, HeartPulse, MessageSquare, ShieldCheck } from 'lucide-react';
 import type { ProviderEvidence } from '../../data/providerProfileEvidence';
-import { ProviderSourceLink, providerCurrency } from './ProviderEquipmentFunding';
+import { providerCallQuestions, providerCurrency } from '../../services/providerCardIntelligence';
+import { ProviderSourceLink } from './ProviderEquipmentFunding';
 
 export function ProviderCallBrief({ evidence }: { evidence?: ProviderEvidence }) {
   const equipment = evidence?.equipment ?? [];
   const funding = evidence?.funding ?? [];
-  const quality = evidence?.quality ?? [];
   const context = evidence?.accountContext ?? [];
   const inService = equipment.find(entry => entry.status === 'In service reported');
   const prior = equipment.find(entry => entry.status === 'Documented historically');
   const service = equipment.find(entry => entry.status === 'Service agreement');
   const proposal = equipment.find(entry => entry.status === 'Proposed purchase');
   const purchase = funding.find(entry => entry.status !== 'Reported expenditure');
-  const cardiac = quality.some(metric => /cardiac arrest|ROSC/i.test(metric.label));
+  const questions = providerCallQuestions(evidence);
 
   return <section className="pr-panel pr-call-brief">
     <h2><ClipboardList aria-hidden="true" size={23} /> Pre-call briefing</h2>
@@ -46,12 +46,7 @@ export function ProviderCallBrief({ evidence }: { evidence?: ProviderEvidence })
       <div className="pr-call-card">
         <h3><MessageSquare aria-hidden="true" size={19} /> Questions for the visit</h3>
         <ul>
-          <li>{inService || prior ? 'Which makes and models are in service today, and what are the service and replacement dates?' : 'What devices are in use on front-line units, reserves, and public-access sites?'}</li>
-          {service && <li>When do the service contract and its renewal options expire? Who manages the agreement?</li>}
-          {(purchase || proposal) && <li>Has this purchase been awarded and deployed? What remains to be purchased, and who owns that decision?</li>}
-          {context.some(entry => entry.title === 'AED-to-monitor compatibility') && <li>Which pads and connectors must carry over from a public-access AED to a crew’s monitor?</li>}
-          {cardiac && <li>How does the EMS quality team review CPR events today, and what information is hard to capture?</li>}
-          {!purchase && !proposal && <li>Who owns equipment evaluation and budget approval, and when is the next capital or grant decision?</li>}
+          {questions.map(question => <li key={question}>{question}</li>)}
         </ul>
       </div>
     </div>

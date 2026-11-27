@@ -1,3 +1,4 @@
+import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import React from 'react';
 import type { Agency } from '../types';
 import { isGeographicProspect } from '../utils/providerRecordTrust';
@@ -41,7 +42,7 @@ export function CountySavedProfiles({
             {orderedProfiles.slice(0, 4).map((agency) => (
               <li
                 key={agency.id}
-                className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900"
+                className="grid min-w-0 content-start gap-2 rounded-lg border border-border bg-card p-2.5"
               >
                 <div className="min-w-0">
                   <p className="break-words text-sm font-semibold text-slate-950 dark:text-white">{agency.name}</p>
@@ -50,10 +51,11 @@ export function CountySavedProfiles({
                     {isGeographicProspect(agency) ? ' · Geography-generated prospect' : ' · Saved profile'}
                   </p>
                 </div>
+                <ProviderCardIntelligence agency={agency} />
                 {onOpen && (
                   <button
                     type="button"
-                    className="workspace-button min-h-11 shrink-0 px-3"
+                    className="workspace-button min-h-11 justify-self-start px-3"
                     onClick={() => onOpen(agency)}
                   >
                     Open profile

@@ -1,3 +1,4 @@
+import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import type { AgencySourceRecordAssociation } from '../types';
 import { agencyIdentifierLabel, isGeographicProspect } from '../utils/providerRecordTrust';
 import { NationalSourceDirectory } from './NationalSourceDirectory';
@@ -2613,74 +2614,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                         </div>
                       </div>
 
-                      {/* 2 × 2 metric tiles retain each value without forcing narrow columns. */}
-                      <div className="agency-metric-grid grid grid-cols-2 gap-2.5 text-sm tabular-nums" aria-label="Agency record and planning summary">
-                        <div className="provider-metric provider-metric--planning provider-metric provider-metric--equipment provider-metric provider-metric--operations provider-metric provider-metric--calls min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="score">Planning value · estimate</DataLabel></span>
-                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
-                            {Number.isFinite(agency.zollOpportunity.projectedPipelineValue)
-                              ? formatCompactDollars(agency.zollOpportunity.projectedPipelineValue)
-                              : <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{MISSING_INPUT_COPY.planningValue}</span>}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">PulseIQ planning model · not agency performance</span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {hasAgencyFactEvidence(agency, 'maintenanceContracts') && agency.competitorContract.contractEndDate
-                              ? `Contract end · ${agency.competitorContract.contractEndDate}`
-                              : 'Contract end · Not reported'}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="monitor">{isFire ? 'Fire & EMS fleet' : 'EMS monitor fleet'}</DataLabel></span>
-                          <span className="agency-card-metric-value mt-1 block break-words text-sm font-bold leading-snug text-slate-950 dark:text-white" title={agency.installedFleet.defibBrand}>
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') && agency.installedFleet.defibBrand && agency.installedFleet.defibBrand !== 'Not reported'
-                              ? `${Number.isFinite(agency.installedFleet.defibUnitsCount) ? agency.installedFleet.defibUnitsCount.toLocaleString() : 'Not reported'}× ${agency.installedFleet.defibBrand}`
-                              : hasAgencyFactEvidence(agency, 'monitorModelTransition')
-                                ? 'LIFEPAK-15; LIFEPAK-35 replacement reported'
-                                : 'Not reported'}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') && Number.isFinite(agency.installedFleet.defibAgeYears) ? `${agency.installedFleet.defibAgeYears} years old` : 'Fleet age · Not reported'}
-                            {' · '}
-                            {hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                              ? `${agency.totalAmbulances.toLocaleString()} ambulances · ${agency.totalFireEngines.toLocaleString()} engines`
-                              : 'Ambulance / engine counts · Not reported'}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="stations">Stations · public record</DataLabel></span>
-                          <span className="mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
-                            {hasAgencyFactEvidence(agency, 'stationCount') || hasAgencyFactEvidence(agency, 'frontlineApparatusStations')
-                              ? agency.stationsCount.toLocaleString()
-                              : 'Not reported'}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {agency.factEvidence?.stationCount?.reportingPeriod || agency.factEvidence?.frontlineApparatusStations?.reportingPeriod || 'Reporting period · Not reported'}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                          <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400"><DataLabel kind="calls">{isFire ? 'Annual response volume' : 'Annual EMS volume'}</DataLabel></span>
-                          <span className="agency-card-metric-value mt-1 block break-words text-lg font-bold tracking-tight text-slate-950 dark:text-white">
-                            {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                              ? `${Number.isFinite(agency.annualCallVolume) ? agency.annualCallVolume.toLocaleString() : 'Not reported'} calls`
-                              : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                                ? `${Number.isFinite(agency.annual911Transports) ? agency.annual911Transports.toLocaleString() : 'Not reported'} transports`
-                                : 'Not reported'}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                              ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reported period not stated'
-                              : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                                ? 'Annual 911 transports'
-                                : 'Clinical period · Not reported'}
-                            {' · '}
-                            {hasAgencyFactEvidence(agency, 'clinicalOutcomes') && Number.isFinite(agency.utsteinSurvivalRate)
-                              ? `${agency.utsteinSurvivalRate}% ROSC`
-                              : 'ROSC · Not reported'}
-                          </span>
-                        </div>
+                      <div onClick={event => event.stopPropagation()}>
+                        <ProviderCardIntelligence agency={agency} />
                       </div>
                     </div>
 
@@ -2767,6 +2702,9 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                           <PulseIqEstimateLabel className="mt-1 block text-xs leading-tight text-slate-500 dark:text-slate-400" />
                         </div>
 
+                        <div className="col-span-2">
+                          <ProviderCardIntelligence agency={agency} />
+                        </div>
                         <div className="col-span-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
                           {onToggleAgencyComparison && (
                             <AgencyCompareButton

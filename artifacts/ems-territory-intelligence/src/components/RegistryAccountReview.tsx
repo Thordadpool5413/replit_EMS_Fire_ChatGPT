@@ -1,3 +1,4 @@
+import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import { registryProfileHref } from '../navigation/providerProfileUrl';
 import { createSourceNativeAgency } from '../services/sourceNativeAgency';
 import { canCreateRegistryAccount, findRegistryAccountCandidates } from '../services/registryAccountLink';
@@ -16,6 +17,7 @@ type RegistryAccountReviewProps = {
 export function RegistryAccountReview({ showPublicProfile = true, ...props }: RegistryAccountReviewProps) {
  const href = showPublicProfile ? registryProfileHref(props.identity) : undefined;
  return <>
+   <div className="my-2"><ProviderCardIntelligence identity={props.identity} /></div>
    {href && <a className="my-1 inline-flex min-h-11 items-center font-semibold underline" href={href}>Open provider profile</a>}
    <RegistryAccountActions {...props} />
  </>;

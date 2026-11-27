@@ -42,6 +42,7 @@ export type DepartmentMetric = {
   value: number;
   format?: 'percent' | 'currency' | 'duration';
   context?: string;
+  reportingPeriod?: string;
   comparison?: 'apparatus';
   source: ProviderEvidenceSource;
 };
@@ -148,8 +149,8 @@ export const providerProfileEvidence = [
       { label: 'Facilities used for service', value: 13, context: 'Includes five facilities operated by municipalities.', source: flaglerStudy },
     ],
     quality: [
-      { label: '90th percentile first-unit emergency response', value: 635, format: 'duration', context: '2023 incident data. Time includes dispatch handling, turnout and travel as reported in Table 3.', source: flaglerStudy },
-      { label: '90th percentile first-unit turnout', value: 127, format: 'duration', context: '2023 incident data. All incidents, Table 3.', source: flaglerStudy },
+      { label: '90th percentile first-unit emergency response', value: 635, format: 'duration', reportingPeriod: '2023', context: '2023 incident data. Time includes dispatch handling, turnout and travel as reported in Table 3.', source: flaglerStudy },
+      { label: '90th percentile first-unit turnout', value: 127, format: 'duration', reportingPeriod: '2023', context: '2023 incident data. All incidents, Table 3.', source: flaglerStudy },
     ],
     accountContext: [
       { area: 'Purchasing', title: 'Logistics Division', detail: 'Handles equipment and supply purchasing, contract negotiation and budget management with department leadership.', source: flaglerLogistics },

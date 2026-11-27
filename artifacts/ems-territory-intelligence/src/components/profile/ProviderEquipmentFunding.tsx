@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { Activity, ArrowDown, ArrowUpRight, BadgeCheck, BriefcaseMedical, CalendarClock, CircleDollarSign, ClipboardList, Clock3, HeartPulse, Monitor, Package, Receipt, ShieldCheck, Wind } from 'lucide-react';
 import type { EquipmentCategory, EquipmentStatus, ProviderEquipmentEvidence, ProviderEvidence, ProviderEvidenceSource, ProviderFundingEvidence } from '../../data/providerProfileEvidence';
+import { providerCurrency } from '../../services/providerCardIntelligence';
 import './ProviderRecord.css';
 
 const equipmentCategories = [
@@ -28,8 +29,6 @@ export function ProviderSourceLink({ source }: { source: ProviderEvidenceSource 
   </a>;
 }
 
-export const providerCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
-const timelineCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 function EvidenceStatus({ status }: { status: keyof typeof statusStyle }) {
   const { tone, icon: Icon } = statusStyle[status];
@@ -59,7 +58,7 @@ function FundingEntry({ entry }: { entry: ProviderFundingEvidence }) {
     <div className="pr-timeline-date">{entry.source.date}</div>
     <EvidenceStatus status={entry.status} />
     <h3>{entry.title}</h3>
-    {entry.amount !== undefined && <p className="pr-funding-amount">{timelineCurrency.format(entry.amount)}</p>}
+    {entry.amount !== undefined && <p className="pr-funding-amount">{providerCurrency.format(entry.amount)}</p>}
     <p>{entry.basis}</p>
     <EvidenceFields values={[
       ['Fiscal year', entry.fiscalYear], ['Local match', entry.localMatch === undefined ? undefined : providerCurrency.format(entry.localMatch)],

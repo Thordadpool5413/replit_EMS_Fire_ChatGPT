@@ -103,7 +103,7 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
   const categories = kind === 'billing' ? payerCategories : equipmentCategories;
   const providesDenials = kind === 'billing' && draft?.rows.some(row => row.initial !== null || row.final !== null);
   return <details className="pr-panel" onToggle={event => {
-    if (event.currentTarget.open && !busy) void load();
+    if (event.target === event.currentTarget && event.currentTarget.open && !busy) void load();
   }}>
     <summary className="font-semibold"><Icon size={17} aria-hidden="true" /> {title}</summary>
     <p>{help}</p>

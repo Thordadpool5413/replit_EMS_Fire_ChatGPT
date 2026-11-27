@@ -1,3 +1,4 @@
+import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import { useLocalDraft } from '../hooks/useLocalDraft';
 /**
  * @license
@@ -21,7 +22,6 @@ import {
   FileText,
   Send
 } from 'lucide-react';
-import { formatCurrency, formatEquipmentDisplay, formatInteger, formatPercent } from '../utils/formatters';
 import {
   AGENCY_FACT_EVIDENCE_FIELDS,
   hasAgencyFactEvidence,
@@ -102,14 +102,6 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
   const mapsUrl =
     agency.googleMapsUri ||
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agency.name}, ${agency.address}`)}`;
-
-  const hasDecisionGradeInputs =
-    hasAgencyFactEvidence(agency, 'frontlineApparatusStations') &&
-    hasAgencyFactEvidence(agency, 'annualEmergencyVolume') &&
-    hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-    hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet') &&
-    hasAgencyFactEvidence(agency, 'maintenanceContracts') &&
-    hasAgencyFactEvidence(agency, 'federalGrant');
 
   const mappedEvidenceSources = AGENCY_FACT_EVIDENCE_FIELDS
     .filter(({ key }) => hasMappedAgencyFactEvidence(agency, key))
@@ -245,67 +237,8 @@ export const AgencyQuickPreviewDrawer: React.FC<AgencyQuickPreviewDrawerProps> =
 
         {/* Scrollable Drawer Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* 2x2 High-Contrast Financial & Fleet Snapshot (1px Hairline Grid) */}
-          <div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              <DataLabel kind="agency">Executive summary</DataLabel>
-            </div>
-            <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden tabular-nums">
-              <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="monitor">Cardiac monitor models</DataLabel></span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'defibrillatorBiomedicalFleet')
-                    ? `${agency.installedFleet.defibUnitsCount} ${agency.installedFleet.defibBrand} devices`
-                    : hasAgencyFactEvidence(agency, 'monitorModelTransition')
-                      ? agency.installedFleet.defibBrand
-                      : 'Not listed'}
-                </span>
-                {hasAgencyFactEvidence(agency, 'monitorModelTransition') && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                    County memo reports LIFEPAK-35 replacement underway; count and completion are not reported.
-                  </span>
-                )}
-              </div>
-
-              <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="score">Opportunity estimate</DataLabel></span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {hasDecisionGradeInputs ? formatCurrency(agency.zollOpportunity.projectedPipelineValue) : 'Not calculated'}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block truncate">
-                  {hasDecisionGradeInputs ? `Target: ${agency.zollOpportunity.primaryTargetProduct}` : 'More model inputs are not listed'}
-                </span>
-              </div>
-
-              <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="claims">Claim summary records</DataLabel></span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'cmsClaims')
-                    ? 'Claim summary records available'
-                    : 'No claim summary record attached'}
-                </span>
-                {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
-              </div>
-
-              <div className="p-3.5 bg-white dark:bg-slate-900">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block"><DataLabel kind="calls">Fire Rescue calls &amp; outcomes</DataLabel></span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                    ? `${formatInteger(agency.annualCallVolume)} calls received`
-                    : hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
-                      ? `${formatInteger(agency.annual911Transports)} transports / yr`
-                      : 'Not listed'}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block tabular-nums">
-                  {hasAgencyFactEvidence(agency, 'annualCallsReceived')
-                    ? agency.factEvidence?.annualCallsReceived?.reportingPeriod || 'Reporting period not listed'
-                    : hasAgencyFactEvidence(agency, 'clinicalOutcomes')
-                      ? `${formatPercent(agency.utsteinSurvivalRate)} Utstein survival`
-                    : 'Clinical outcomes not reported'}
-                </span>
-              </div>
-            </div>
-          </div>
+          <ProviderCardIntelligence agency={agency} />
+          {denialMetric && <ProviderDenialDetails metric={denialMetric} />}
 
           <PulseIqEvidencePanel agency={agency} compact weights={weights} />
 

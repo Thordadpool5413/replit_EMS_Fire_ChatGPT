@@ -1,6 +1,7 @@
 import { Activity, Building2, ClipboardCheck, HeartPulse, Timer, Truck, Users } from 'lucide-react';
 import type { DepartmentMetric } from '../../data/providerProfileEvidence';
-import { ProviderSourceLink, providerCurrency } from './ProviderEquipmentFunding';
+import { formatProviderMetric } from '../../services/providerCardIntelligence';
+import { ProviderSourceLink } from './ProviderEquipmentFunding';
 
 function iconFor(label: string) {
   if (/personnel|firefighters/i.test(label)) return Users;
@@ -10,12 +11,6 @@ function iconFor(label: string) {
   if (/cardiac|ROSC|STEMI/i.test(label)) return HeartPulse;
   if (/quality improvement|reviews/i.test(label)) return ClipboardCheck;
   return Activity;
-}
-
-function metricValue(metric: DepartmentMetric) {
-  if (metric.format === 'currency') return providerCurrency.format(metric.value);
-  if (metric.format === 'duration') return Math.floor(metric.value / 60) + 'm ' + metric.value % 60 + 's';
-  return metric.value.toLocaleString('en-US') + (metric.format === 'percent' ? '%' : '');
 }
 
 export function ProviderMetrics({ metrics }: { metrics: DepartmentMetric[] }) {
@@ -32,7 +27,7 @@ export function ProviderMetrics({ metrics }: { metrics: DepartmentMetric[] }) {
         const Icon = iconFor(metric.label);
         return <div key={metric.label} className="pr-metric-card">
           <dt><Icon size={17} aria-hidden="true" />{metric.label}</dt>
-          <dd>{metricValue(metric)}{metric.context && <small>{metric.context}</small>}<ProviderSourceLink source={metric.source} /></dd>
+          <dd>{formatProviderMetric(metric)}{metric.context && <small>{metric.context}</small>}<ProviderSourceLink source={metric.source} /></dd>
         </div>;
       })}
     </dl>

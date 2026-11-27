@@ -1,3 +1,4 @@
+import { PublicProviderEvidenceCoverage } from './PublicProviderEvidenceCoverage';
 import {LegacyProviderArchive} from './LegacyProviderArchive';
 import {TerritoryAlerts} from './TerritoryAlerts';
 import type {TerritoryAlertState} from '../hooks/useTerritoryAlerts';
@@ -48,6 +49,7 @@ export const WorkspaceHub: React.FC<{kind:'reports'|'settings';quarantinedProvid
     <div className="workspace-hub-summary" role="status"><span>{online?'Online':'Offline · saved work stays on this device'}</span><span>{pending?`${pending} changes waiting for cloud acknowledgment`:'No queued changes'}</span><span>{work.length.toLocaleString()} accounts with saved work</span></div>
     {kind==='reports'&&territoryAlerts&&<TerritoryAlerts data={territoryAlerts} onOpen={onOpenAgency} onFollowUps={()=>navigate('field')}/>}
     {kind==='reports'&&<section className="workspace-export-panel" aria-labelledby="export-work-title"><div><h2 id="export-work-title">Your account activity</h2><p>{work.length?'Export saved accounts, route stops, and accounts with notes or corrections.':'Save an agency or log your first visit to create an account activity report.'}</p><small>Includes record origin, user-corrected values, latest interaction, and next action. All agency information requires user validation. Generated equipment values are excluded from reported equipment columns.</small><label className="text-sm block mt-2"><input type="checkbox" checked={includeEstimates} onChange={e=>setIncludeEstimates(e.target.checked)}/> Include a separate planning-estimates column</label></div><button className="workspace-button" disabled={!work.length} onClick={exportWork}><Download size={16} aria-hidden="true"/>Export CSV</button></section>}
+    {kind==='reports'&&<PublicProviderEvidenceCoverage/>}
     {kind==='reports'&&<SharedEvidenceWorkspace agencies={agencies}/>}
     {kind==='reports'&&<OpportunityRadar agencies={agencies} onOpen={onOpenAgency}/>}
     {kind==='reports'&&<NationalCompetitiveResearch agencies={agencies} onOpen={onOpenAgency}/>}

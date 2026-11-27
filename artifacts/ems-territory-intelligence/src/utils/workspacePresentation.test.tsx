@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {MobileBottomNav} from '../components/MobileBottomNav';
@@ -24,6 +25,7 @@ test('five mobile destinations have readable labels and the correct selected gro
 });
 test('empty report explains the next step and disables exporting empty work',()=>{
  const html=renderToStaticMarkup(<WorkspaceHub kind="reports" agencies={[]} navigate={()=>{}} pending={0} online={false}/>);
+ assert.ok(html.includes('Nationwide public provider evidence'));
  assert.ok(html.includes('Save an agency or log your first visit'));
  assert.match(html,/disabled=""/);assert.ok(html.includes('Offline'));
 });
@@ -38,4 +40,16 @@ test('generated equipment is excluded by default and isolated in opt-in planning
  assert.ok(!buildWorkspaceCsv([unreviewed]).includes('Synthetic model'));
  assert.ok(buildWorkspaceCsv([unreviewed],undefined,true).includes('Synthetic model'));
  assert.ok(buildWorkspaceCsv([unreviewed],undefined,true).includes('not observed agency facts'));
+});
+
+test('public evidence coverage includes every state and district and reconciles to national totals', () => {
+ const data = JSON.parse(readFileSync(new URL('../../public/data/public-provider-evidence-coverage.json', import.meta.url), 'utf8'));
+ assert.equal(data.schemaVersion, 1);
+ assert.equal(Object.keys(data.byState).length, 51);
+ assert.equal(Object.keys(data.byCounty).length, 3144);
+ for (const [key, count] of Object.entries(data.national)) {
+  assert.equal(Object.values(data.byState).reduce<number>((total, state) => total + (state as Record<string, number>)[key], 0), count);
+ }
+ assert.ok(data.byState.IA.payerMix > 0);
+ assert.ok(data.byCounty['19153'].payerMix > 0);
 });

@@ -91,7 +91,7 @@ function stateCodeForCountyFips(countyFips: string): string | null {
   return STATE_FIPS_TO_CODE.get(countyFips.slice(0, 2)) ?? null;
 }
 
-function parseCsvRecords(text: string): string[][] {
+export function parseCsvRecords(text: string): string[][] {
   const records: string[][] = [];
   let row: string[] = [];
   let value = '';

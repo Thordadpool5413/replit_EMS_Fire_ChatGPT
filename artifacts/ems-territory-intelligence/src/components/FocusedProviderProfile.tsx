@@ -1,3 +1,5 @@
+import { ProviderPayerImport } from './profile/ProviderPayerImport';
+import { RegionalAedSources } from './RegionalAedSources';
 import { useAuth } from '@workspace/replit-auth-web';
 import { agencyIdentifierLabel, withoutGeneratedFdid, withoutUnsubstantiatedProspectContract } from '../utils/providerRecordTrust';
 import { hasAgencyContractEvidence } from '../data/agencyFactEvidence';
@@ -1685,7 +1687,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {activeSection === 'equipment' && (publicEvidence?.equipment?.length || publicEvidence?.funding?.length) ?
             <div className="pr-embedded-evidence"><ProviderEquipmentFunding evidence={publicEvidence} showProfileSources={false} /></div> : null}
-          {activeSection === 'equipment' && <><StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />
+          {activeSection === 'equipment' && <><RegionalAedSources state={agency.stateCode} county={publicIdentity?.countyFips ?? geographicLinks.find(link => link.relationship === 'located-at' && link.level === 'county' && link.matchBasis === 'source-id')?.sourceGeographyId} nerisId={publicIdentity?.sourceName === 'NERIS' ? publicIdentity.identifier : undefined} profile /><StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />
             <ReviewedLifecycleTimeline agency={rawAgency} directory={directoryAgencies} /></>}
           {activeSection === 'equipment' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="equipment" onOpenSources={openProfileSources}/>}
           {activeSection === 'equipment' && (
@@ -2033,7 +2035,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
                 {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency.npiNumber || !linkedBillingNpi ? rawAgency : { ...rawAgency, npiNumber: linkedBillingNpi }} autoLoad/>}
                 {activeSection === 'medicare' && <>
                   <ProviderPublishedBilling evidence={publicEvidence} />
-                  <ProviderBillingImport agency={agency} />
+                  <ProviderBillingImport agency={rawAgency} />
                 </>}
                 {activeSection === 'medicare' && (
           <FinancialIntelligence
@@ -3534,8 +3536,13 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 function ProviderBillingImport({ agency }: { agency: Agency }) {
   const { user } = useAuth();
   if (!user) return null;
-  return <details className="pr-panel">
-    <summary className="font-semibold">Import authorized aggregate Medicare denial records</summary>
-    <MedicareDenialImportPanel agencies={[agency]} />
-  </details>;
+  const claims = registryClaims(agency);
+  return <>
+    <details className="pr-panel">
+      <summary className="font-semibold">Import authorized aggregate Medicare denial records</summary>
+      <MedicareDenialImportPanel agencies={[agency]} />
+    </details>
+    {claims.invalid.length === 0 && claims.conflicts.length === 0 &&
+      <ProviderPayerImport key={agency.id} registryKeys={claims.keys} />}
+  </>;
 }

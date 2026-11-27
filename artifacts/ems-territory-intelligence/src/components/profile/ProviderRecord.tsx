@@ -1,3 +1,4 @@
+import { RegionalAedSources } from '../RegionalAedSources';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
@@ -263,6 +264,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
+          <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : undefined} profile />
           <a className="pr-panel pr-icon-heading pr-source-link" href="#grants"><Landmark size={19} aria-hidden="true" /> Look up OpenFEMA grant records</a>
           <ProviderFootprint key={reference} profile={profile} linkedNerisId={providerEvidenceNerisId(evidence)} />
         </ProviderEquipmentFunding>

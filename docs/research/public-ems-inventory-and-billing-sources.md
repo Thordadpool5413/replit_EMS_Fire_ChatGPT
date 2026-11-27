@@ -20,3 +20,29 @@ Read-only checks performed November 27, 2026. The public requests below used no 
 - Saint Charles’s [billing RFP addendum](https://stcharlescitymo.gov/DocumentCenter/View/13250/4747-Addendum-1?bidId=) gives the percentage of billed charges for four payer groups in 2022 and 2023. The reported percentages are preserved without redistributing the unreported balance.
 
 Claim counts, trips, billed charges and collections keep their source denominators. For additional municipalities, billing RFPs, council reports, city audits and department standards-of-cover studies are sources of actual named-agency figures. For payer-specific denials and current figures where public evidence is absent, use authorized aggregate billing exports.
+
+## Nationwide publication
+
+The app now loads three public-source snapshots from its state, county and provider equipment views. Provider views use a source-backed county where present, a NERIS headquarters county when its boundary or registry crosswalk supports one, and otherwise the state. This research panel is separate from agency-owned equipment and departmental purchasing records.
+
+| Feed | Nationwide coverage | Geographic basis |
+| --- | --- | --- |
+| OpenStreetMap AED objects | 2,895 distinct mapped objects on November 27, 2026. 2,855 mapped to 366 counties or equivalents. 40 remained unresolved. The query excludes locations explicitly tagged private or no access; some other access conditions remain. | OpenStreetMap objects tagged `emergency=defibrillator`. County from the mapped point or geometric center inside one generalized county boundary. Includes a count for every county in the app’s 50-state and D.C. reference geography. |
+| USAspending defibrillator award search | All 50 states and D.C. queried. 377 candidates in 65 recipient counties. The published snapshot captures the first 25 awards per state, sorted by award amount, from 2024 through November 27, 2026. | The recipient’s address controls the geographic assignment. The county is not a delivery location or buyer identifier. Keyword results remain research leads. |
+| GovSentry portal directory | 138 state and local portal links across all 50 states and D.C. | State directory only. Each portal is a place to look for the underlying purchase. Directory by [GovSentry](https://govsentry.ai/developers), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adapted to select unique HTTPS links. |
+
+The GitHub workflow **National AED and procurement source refresh** fetches the three feeds and packages new snapshots as reviewable build inputs. Publishing fresh snapshots requires updating the bundled files and importing the resulting Git revision into Replit. To update the coverage CSVs and regenerate the NERIS headquarters county lookup from the repository root:
+
+```sh
+./scripts/node_modules/.bin/tsx scripts/map-provider-source-coverage.mts /absolute/output artifacts/ems-territory-intelligence/public/data/neris-headquarters-counties.json
+```
+
+## Additional department records
+
+- **Bothell, WA**: Fire's council packet records 11 Philips HeartStart FR3 AEDs purchased in 2014 and an 11-unit Stryker LIFEPAK 15 order signed in September 2025. The newer entries are shown in monitor/defibrillators.
+- **Odessa, TX**, and **Mesa, AZ**: Council-approved AED replacement or sourcing. Odessa names 13 AEDs and 11 ZOLL monitors. Mesa names ZOLL as the contract supplier and identifies a city-building AED program.
+- **Kingston, TN**: $11,412 awarded grant for a planned six ZOLL AEDs and accessories.
+- **Columbus, GA**, **Jasper County, SC**, **Wilbraham, MA**, and **CenCal Fire and EMS Authority, CA**: Published payer figures with original periods and denominators. Wilbraham's remit mix totals 100%; its separate published billed percentages total 137%, so only the remit shares are mapped.
+- **Chesapeake, VA**: A city EMS billing audit cites 7,022 denied claims and $889,717 in outstanding denied charges as of May 6, 2022. The aggregate snapshot lacks a matching adjudicated denominator. The profile shows the count and amount without computing a rate.
+
+An authorized user can load aggregate all-payer records from a saved provider's Claims workspace. The CSV requires an exact native or confirmed registry key, reporting periods and standard payer categories. It accepts aggregate claim counts, adjudicated counts, initial and final denied counts, charges and payments. Percentages use only the relevant denominators. The privately displayed preview is scoped to the current open profile, and records are cleared when the panel is closed by leaving that section. CMS public utilization and its ground-ambulance survey do not provide a nationwide agency-denial or all-payer export.

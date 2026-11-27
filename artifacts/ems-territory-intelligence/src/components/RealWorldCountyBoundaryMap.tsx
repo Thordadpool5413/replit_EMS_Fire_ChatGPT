@@ -18,6 +18,7 @@ import {
   StateHierarchyNode,
   SvgProjectedCounty,
 } from '../services/countyBoundaryHierarchyService';
+import { RegionalAedSources } from './RegionalAedSources';
 import { CountyFigureSourceDetails } from './CountyFigureSourceDetails';
 import { FEMA_NRI_RATING_COLORS } from '../utils/femaNriRisk';
 import {
@@ -690,6 +691,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
               )}
             </div>
           </div>
+          <RegionalAedSources state={stateNode.stateCode} />
           {sourceStrip}
           {unmatchedSection}
         </>
@@ -902,6 +904,7 @@ export const RealWorldCountyBoundaryMap: React.FC<RealWorldCountyBoundaryMapProp
                   variant="brief"
                   className="cv-ref-figures"
                 />
+                <RegionalAedSources state={stateNode.stateCode} county={activeCountyNode.countyFips} />
                 {sourceStrip}
               </section>
 

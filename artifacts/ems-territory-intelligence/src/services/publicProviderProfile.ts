@@ -1,7 +1,7 @@
 import type { ProviderProfileRef } from '../navigation/providerProfileUrl';
 import { getEmsJurisdictionSourceCoverage } from '../data/stateEmsSourceCoverage';
 import { addressText, addressMatchLabel } from './providerLocationContract';
-import { floridaRegistryIdentity, loadFloridaRoster } from './floridaEmsRoster';
+import { floridaServiceName, floridaRegistryIdentity, loadFloridaRoster } from './floridaEmsRoster';
 import { enrichRegistryRow, listingLocation, LISTING_LOCATION_LABELS, loadNationalLocationState, primaryAssociationLabel, providerProfileCountyFips } from './nationalLocationSnapshot';
 import { loadSourceDirectoryManifest, loadSourceDirectoryState } from './nationalSourceDirectory';
 import { loadNerisStateCatalog, nerisAddressText, nerisObjectUrl } from './nerisStationCatalog';
@@ -101,7 +101,7 @@ export async function loadPublicProviderProfile(ref: ProviderProfileRef): Promis
     }
     const [roster, manifest] = await Promise.all([loadFloridaRoster(), loadSourceDirectoryManifest()]);
     const row = roster.records.find((entry) => entry.identifier === ref.id);
-    if (!row) return;
+    if (!row || !floridaServiceName(row)) return;
     const identity = floridaRegistryIdentity(roster, row, new Map(Object.entries(manifest.countyNames)));
     return identity ? fromIdentity(identity) : undefined;
   }

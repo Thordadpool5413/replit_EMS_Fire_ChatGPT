@@ -1,3 +1,4 @@
+import { hasProviderServiceName } from './providerServiceName';
 import type {RegistryIdentity} from './registryAccountLink';
 
 export const FLORIDA_EMS_ROSTER_URL='https://www.floridahealth.gov/wp-content/uploads/2025/08/ems-providers.pdf';
@@ -36,8 +37,19 @@ export function floridaCounty(row:FloridaEmsLicense,countyNames:ReadonlyMap<stri
  const matches=[...countyNames].filter(([id,name])=>/^12\d{3}$/.test(id)&&countyKey(name)===countyKey(row.county));
  return matches.length===1?{countyFips:matches[0][0],countyName:matches[0][1]}:undefined;
 }
+/** A license may name both the parent and its operating service. */
+export function floridaServiceName(row: FloridaEmsLicense): string | undefined {
+ const tradeName = row.name.split(/\s+d\.?b\.?a\.?\s+/i)[1]?.trim();
+ if (tradeName && !/\b(?:hospitals?|clinics?|holdings|medical center)\b/i.test(tradeName)) return tradeName;
+ if (hasProviderServiceName(row.name)) return row.name;
+ if (row.serviceLevel.startsWith('AIR/')) {
+  const program = row.name.split(',')[0].trim();
+  if (/\b(?:shandscair|life flight|air care|bayflite|aeromed)\b/i.test(program)) return program;
+ }
+ return undefined;
+}
 export function floridaRegistryIdentity(roster:FloridaEmsRoster,row:FloridaEmsLicense,countyNames:ReadonlyMap<string,string>):RegistryIdentity|undefined{
  // Out-of-state Florida licensees are browse-only until licensing jurisdiction and location are separate.
  if(row.headquartersState!=='FL')return undefined;
- return {sourceName:'State EMS',sourceAuthority:roster.sourceName,identifierKind:'license',identifier:row.identifier,stateCode:'FL',name:row.name,city:row.city,headquartersState:row.headquartersState,postalCode:row.postalCode,address:row.address,...floridaCounty(row,countyNames),sourceUrl:roster.sourceUrl,sourceDate:roster.sourceDate,retrievedAt:roster.retrievedAt,serviceLevel:row.serviceLevel,licenseIssuedAt:row.issuedAt,licenseExpiresAt:row.expiresAt};
+ return {sourceName:'State EMS',sourceAuthority:roster.sourceName,identifierKind:'license',identifier:row.identifier,stateCode:'FL',name:floridaServiceName(row) ?? row.name,city:row.city,headquartersState:row.headquartersState,postalCode:row.postalCode,address:row.address,...floridaCounty(row,countyNames),sourceUrl:roster.sourceUrl,sourceDate:roster.sourceDate,retrievedAt:roster.retrievedAt,serviceLevel:row.serviceLevel,licenseIssuedAt:row.issuedAt,licenseExpiresAt:row.expiresAt};
 }

@@ -1,3 +1,4 @@
+import { hasProviderServiceName } from './providerServiceName';
 /** Read-only source listings. Never coerce registry organizations into Agency metrics. */
 export interface SourceDirectoryCounts {usfa:number;nppes:number;assigned:number;unassigned:number;countiesWithRecords:number;countyCount:number}
 export interface CountySourceListingCounts { total: number; usfa: number; nppes: number }
@@ -36,7 +37,7 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
   if(!Array.isArray(records)||records.length!==chunk.count||records.some(r=>!Array.isArray(r)||r.length!==12||r.some(v=>typeof v!=='string')||r[3]!==state||!['USFA','NPPES'].includes(r[1])||!r[0].startsWith(r[1].toLowerCase()+':')||!r[2]))throw Error('Invalid registry records.');
   for(const record of records)ids.add(record[0]);
   if(ids.size!==records.length)throw Error('Duplicate registry identities.');
-  return records;
+  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]));
  })().catch(error=>{statePromises.delete(state);throw error;});
  statePromises.set(state,pending);return pending;
 }

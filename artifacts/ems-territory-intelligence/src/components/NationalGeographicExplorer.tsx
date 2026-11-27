@@ -2116,6 +2116,19 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
       {activeFocusLevel === 'providers' && (
         <div className="county-geo county-providers-shell grid grid-cols-1 min-w-0">
           
+          {/* Source-native discovery, separate from saved or modeled records. */}
+          <NationalSourceDirectory
+            stateCode={selectedStateCode === 'all' ? '' : selectedStateCode}
+            countyFips={selectedStateCode !== 'all' && selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''}
+            providerScope={agencyCategoryFilter}
+            city={selectedCityName === 'all' ? '' : selectedCityName}
+            savedAgencies={agencies}
+            countyProfiles={selectedCountyName === 'all' ? [] : matchingAgencies}
+            countyProfilesStatus={effectiveDirectoryStatus}
+            onOpenSavedAgency={onSelectAgency}
+            onDecideSourceRecord={onDecideSourceRecord}
+            onCreateAgency={onAddAgency}
+          />
           {/* Streamlined Single-Row Filter Bar + Hybrid View Mode Toggle */}
           <div className="county-providers-head min-w-0">
             <div className="cv-geo-head" data-testid="provider-mobile-summary">
@@ -2396,19 +2409,6 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
             </div>
           )}
 
-          {/* Source-native discovery, separate from saved or modeled records. */}
-          <NationalSourceDirectory
-            stateCode={selectedStateCode === 'all' ? '' : selectedStateCode}
-            countyFips={selectedStateCode !== 'all' && selectedCountyName !== 'all' ? (activeCountyRecord?.countyFips || '') : ''}
-            providerScope={agencyCategoryFilter}
-            city={selectedCityName === 'all' ? '' : selectedCityName}
-            savedAgencies={agencies}
-            countyProfiles={selectedCountyName === 'all' ? [] : matchingAgencies}
-            countyProfilesStatus={effectiveDirectoryStatus}
-            onOpenSavedAgency={onSelectAgency}
-            onDecideSourceRecord={onDecideSourceRecord}
-            onCreateAgency={onAddAgency}
-          />
           {/* Hybrid Provider Display: Cards vs. Compact Table */}
           <div id="territory-results-summary" className="territory-results-summary scroll-mt-24" data-testid="territory-results-summary" aria-live="polite">
             <div>

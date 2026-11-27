@@ -31,3 +31,8 @@ test('directory loader retries failed reads, verifies bytes and shares successfu
   const [a,b]=await Promise.all([loadSourceDirectoryState('FL'),loadSourceDirectoryState('FL')]);assert.deepEqual(a,[fire,npi]);assert.equal(a,b);assert.equal(calls,3);
  }finally{globalThis.fetch=original;}
 });
+test('county screenshots distinguish operating services from billing parents', async()=>{
+ const {hasProviderServiceName}=await import('./providerServiceName');
+ for(const name of ['Shands Teaching Hospital and Clinics Inc','Rocky Mountain Holdings LLC','Coastal Health Systems of Brevard','Holmes Regional Medical Center','City of Titusville']) assert.equal(hasProviderServiceName(name),false,name);
+ for(const name of ['Titusville Fire and Emergency Services','East Coast Ambulance LLC','Gainesville Fire Rescue','Brevard County Fire Rescue']) assert.equal(hasProviderServiceName(name),true,name);
+});

@@ -18,3 +18,12 @@ test('withhold cross-NPI, schema errors and duplicates; empty is not zero claims
  const empty=await fetchCmsAmbulanceEvidence(npi,async()=>response([]));assert.equal(empty.status,'no-published-rows');assert.deepEqual(empty.rows,[]);
  await assert.rejects(fetchCmsAmbulanceEvidence(npi,async()=>new Response('',{status:503})));
 });
+
+test('prior CMS year uses the pinned 2023 dataset and preserves the requested year', async()=>{
+ const result = await fetchCmsAmbulanceEvidence(npi, async input => {
+   assert.equal(new URL(String(input)).pathname, '/data-api/v1/dataset/0e9f2f2b-7bf9-451a-912c-e02e654dd725/data');
+   return Response.json([]);
+ }, Date.now, 2023);
+ assert.equal(result.reportingYear, 2023);
+ assert.equal(result.status, 'no-published-rows');
+});

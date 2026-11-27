@@ -92,10 +92,10 @@ import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections,providerAddressReview } from '../services/providerLocation';
-import { findProviderEvidence } from '../data/providerProfileEvidence';
-import { registryIdentityKey } from '../services/registryAccountLink';
+import { findProviderEvidence, findProviderEvidenceByConfirmedKeys, providerEvidenceFloridaLicense, providerEvidenceNpi } from '../data/providerProfileEvidence';
+import { registryIdentityKey, registryClaims } from '../services/registryAccountLink';
 import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
-import { ProviderGrants, ProviderPeople, ProviderStations } from './profile/ProviderPublicSources';
+import { ProviderGrants, ProviderPeople, ProviderStations, FloridaProviderContacts } from './profile/ProviderPublicSources';
 import { ProviderEquipmentFunding } from './profile/ProviderEquipmentFunding';
 import { ProviderMetrics } from './profile/ProviderMetrics';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
@@ -105,6 +105,8 @@ import { ProfileDetail } from './profile/ProfileDetail';
 import { DecisionMakerDirectory } from './profile/DecisionMakerDirectory';
 import { AgencyAuthorityEvidence } from './profile/AgencyAuthorityEvidence';
 import { FieldNotesPanel } from './profile/FieldNotesPanel';
+import { StationEquipmentSummary } from './profile/StationEquipmentSummary';
+import { ProviderPurchasing } from './profile/ProviderPurchasing';
 import { ProcurementTimeline } from './profile/ProcurementTimeline';
 import { ReviewedLifecycleTimeline } from './profile/ReviewedLifecycleTimeline';
 import { FinancialIntelligence, matchBenchmarkModelId } from './profile/FinancialIntelligence';
@@ -453,7 +455,12 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
   // Default to Overview; every topic shares one accessible content region.
   const [requestedReviewField, setRequestedReviewField] = useState<string | undefined>();
   const publicIdentity = rawAgency.registryIdentity;
-  const publicEvidence = publicIdentity && findProviderEvidence(registryIdentityKey(publicIdentity), publicIdentity.name);
+  const identityClaims = registryClaims(rawAgency);
+  const publicEvidence = (publicIdentity && findProviderEvidence(registryIdentityKey(publicIdentity), publicIdentity.name))
+    ?? findProviderEvidenceByConfirmedKeys(identityClaims.keys.filter(key => key !== (publicIdentity && registryIdentityKey(publicIdentity))));
+  const floridaLicense = publicIdentity?.sourceName === 'State EMS' && publicIdentity.stateCode === 'FL'
+    ? publicIdentity.identifier : providerEvidenceFloridaLicense(publicEvidence);
+  const linkedBillingNpi = providerEvidenceNpi(publicEvidence);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.
@@ -1675,6 +1682,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {activeSection === 'equipment' && (publicEvidence?.equipment?.length || publicEvidence?.funding?.length) ?
             <div className="pr-embedded-evidence"><ProviderEquipmentFunding evidence={publicEvidence} showProfileSources={false} /></div> : null}
+          {activeSection === 'equipment' && <><StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />
+            <ReviewedLifecycleTimeline agency={rawAgency} directory={directoryAgencies} /></>}
           {activeSection === 'equipment' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="equipment" onOpenSources={openProfileSources}/>}
           {activeSection === 'equipment' && (
             <AgencyIntelligenceBrief view="equipment" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
@@ -1690,6 +1699,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>
           )}
+          {activeSection === 'purchasing' && <ProviderPurchasing registryKey={publicEvidence?.registryKey ?? (publicIdentity && registryIdentityKey(publicIdentity))} />}
           {activeSection === 'purchasing' && <ProviderGrants state={agency.stateCode} name={publicIdentity?.name ?? agency.name} evidence={publicEvidence} />}
           {activeSection === 'purchasing' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="purchasing" onOpenSources={openProfileSources}/>}
           {activeSection === 'purchasing' && (
@@ -1704,7 +1714,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
           {showSection('leadership') && publicEvidence?.contacts?.length ? <ProviderPeople evidence={publicEvidence} /> : null}
-          {showSection('leadership') && <><DecisionMakerDirectory agency={agency} /><AgencyAuthorityEvidence key={rawAgency.id} agencyId={rawAgency.id}/></>}
+          {showSection('leadership') && <><FloridaProviderContacts license={floridaLicense} /><DecisionMakerDirectory agency={agency} /><AgencyAuthorityEvidence key={rawAgency.id} agencyId={rawAgency.id} autoLoad/></>}
 
           {showSection('battlecard') && (<ProfileDetail testId="detail-battlecard" icon={Scale} tone="navy" kind="reference" title="Head-to-head comparison" summary={`Recorded incumbent ${agency.installedFleet.defibBrand} vs. benchmark alternative · manufacturer claims, not agency outcomes`}>
           {/* 2. Competitive Battlecard & Head-to-Head Spec Matrix Section */}
@@ -1819,8 +1829,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         {/* SECTION: CLINICAL EMERGENCY PERFORMANCE, QUALITY & PATIENT OUTCOMES */}
         {showSection('clinical') &&
           !(
-            hasAgencyFactEvidence(agency, 'clinicalOutcomes') &&
-            hasAgencyFactEvidence(agency, 'annualEmergencyVolume')
+            hasAgencyFactEvidence(agency, 'clinicalOutcomes')
           ) ? (
             <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
               Clinical charts are not available in this account record. Available call and outcome fields remain listed in the operational baseline above.
@@ -2018,7 +2027,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
-                {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency} autoLoad/>}
+                {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency.npiNumber || !linkedBillingNpi ? rawAgency : { ...rawAgency, npiNumber: linkedBillingNpi }} autoLoad/>}
                 {activeSection === 'medicare' && (
           <FinancialIntelligence
             agency={agency}

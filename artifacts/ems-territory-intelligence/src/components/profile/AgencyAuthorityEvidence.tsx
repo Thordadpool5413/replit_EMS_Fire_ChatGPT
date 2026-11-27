@@ -1,4 +1,4 @@
-import React,{useRef,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {useAuth} from '@workspace/replit-auth-web';
 const roles={leadership:'Leadership',clinical:'Clinical / medical direction',operations:'Operations / fleet',biomedical:'Biomedical / technical evaluation',procurement:'Procurement process',budget:'Budget responsibility','final-approval':'Documented final approval',other:'Other / unclassified'} as const;
 type Observation={name:string;title:string;organization:string;role:keyof typeof roles;scope:string;observedOn:string;basis:'official-document'|'agency-confirmation';sourceUrl:string;description:string};
@@ -6,11 +6,22 @@ type Row={submissionId:string;observation:Observation;decision:'accepted'|'rejec
 type Data={identity:string;rows:Row[];withheld:number;more:boolean;canWrite:boolean};
 const blank=():Observation=>({name:'',title:'',organization:'',role:'other',scope:'',observedOn:'',basis:'official-document',sourceUrl:'',description:''});
 const control='block w-full min-w-0 rounded border p-2 text-base bg-transparent';
-export function AgencyAuthorityEvidence({agencyId}:{agencyId:string}){
- const {user}=useAuth();return user?<PrivateAuthority key={user.id+':'+agencyId} agencyId={agencyId}/>:null;
+export function AgencyAuthorityEvidence({agencyId,autoLoad=false}:{agencyId:string;autoLoad?:boolean}){
+ const {user}=useAuth();return user?<PrivateAuthority key={user.id+':'+agencyId} agencyId={agencyId} autoLoad={autoLoad}/>:null;
 }
-function PrivateAuthority({agencyId}:{agencyId:string}){
+function PrivateAuthority({agencyId,autoLoad}:{agencyId:string;autoLoad:boolean}){
  const [open,setOpen]=useState(false),[data,setData]=useState<Data>(),[draft,setDraft]=useState(blank),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[filter,setFilter]=useState('all'),[reviewId,setReviewId]=useState(''),[rationale,setRationale]=useState(''),[attest,setAttest]=useState(false);
+ useEffect(()=>{
+  if(!autoLoad)return;
+  const controller=new AbortController();
+  setBusy(true);
+  fetch('/api/agencies/'+encodeURIComponent(agencyId)+'/authority',{credentials:'include',cache:'no-store',signal:controller.signal})
+   .then(async response=>{if(!response.ok)throw Error('Authority records unavailable.');return response.json() as Promise<Data>;})
+   .then(result=>{if(!controller.signal.aborted)setData(result);})
+   .catch(()=>{if(!controller.signal.aborted)setNotice('Authority records unavailable. Open the evidence panel to retry.');})
+   .finally(()=>{if(!controller.signal.aborted)setBusy(false);});
+  return ()=>controller.abort();
+ },[agencyId,autoLoad]);
  const pending=useRef<{identity:string;submissionId:string;observation:Observation}|undefined>(undefined);
  const url='/api/agencies/'+encodeURIComponent(agencyId)+'/authority';
  async function call(path:string,body?:unknown){const r=await fetch(path,{credentials:'include',cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});if(!r.ok){const e=await r.json().catch(()=>({}));throw Error(typeof e.error==='string'?e.error:'Private workspace access or validation failed.');}return r.json();}
@@ -23,9 +34,19 @@ function PrivateAuthority({agencyId}:{agencyId:string}){
  async function review(decision:'accepted'|'rejected'){if(!data?.canWrite||!reviewId||!rationale.trim()||!attest||busy)return;setBusy(true);setNotice('');
   try{await call(url+'/'+encodeURIComponent(reviewId)+'/review',{identity:data.identity,decision,note:rationale,attested:attest});setReviewId('');setRationale('');setAttest(false);const refreshed=await load();setNotice(refreshed?'Review recorded.':'Review recorded; refresh the list.');}catch(e){setNotice(e instanceof Error?e.message:'Review not confirmed.');}finally{setBusy(false);}
  }
+ const accepted = data?.rows.filter(row=>row.decision==='accepted').slice(0,6)??[];
  const rows=data?.rows.filter(r=>filter==='all'||(filter==='pending'?!r.decision:r.decision===filter))??[];
  return <section className="pi-surface p-3 space-y-2 min-w-0" aria-label="Documented decision authority">
-  <button type="button" className="workspace-button min-h-11" disabled={busy} aria-expanded={open} onClick={()=>{if(open){setData(undefined);setNotice('');}else void load();setOpen(!open);}}>{open?'Close authority evidence':'Open documented decision authority'}</button>
+  {autoLoad&&<><h3 className="font-semibold">Documented buying roles</h3>
+   {accepted.length>0&&<ul className="pr-source-grid">{accepted.map(row=><li key={row.submissionId} className="pr-source-tile">
+    <span className="pr-evidence-status">{roles[row.observation.role]}</span>
+    <h4>{row.observation.name}</h4><p>{row.observation.title}</p>
+    <p>{row.observation.scope}</p><small>Reviewed dated observation · {row.observation.observedOn}</small>
+   </li>)}</ul>}
+   {data&&accepted.length===0&&<p>No independently reviewed roles were returned for this account.</p>}
+   {!open&&notice&&<p role="status">{notice}</p>}
+  </>}
+  <button type="button" className="workspace-button min-h-11" disabled={busy} aria-expanded={open} onClick={()=>{if(open){if(!autoLoad)setData(undefined);setNotice('');}else void load();setOpen(!open);}}>{open?'Close authority evidence':'Open documented decision authority'}</button>
   {open&&<div className="space-y-3 text-sm">
    <p>Professional role and purchasing scope only. A job title is not purchasing authority. No personal contact details or patient information. Dated reviewed claims are not proof of current authority.</p>
    {notice&&<p role="status" className="break-words">{notice}</p>}

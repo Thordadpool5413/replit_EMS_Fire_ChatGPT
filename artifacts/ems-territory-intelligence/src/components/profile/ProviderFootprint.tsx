@@ -37,8 +37,8 @@ function plotPositions(points: FootprintPoint[]) {
   }));
 }
 
-export function ProviderFootprint({ profile }: { profile: PublicProviderProfile }) {
-  const nativeId = profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : undefined;
+export function ProviderFootprint({ profile, linkedNerisId }: { profile: PublicProviderProfile; linkedNerisId?: string }) {
+  const nativeId = profile.identity?.sourceName === 'NERIS' ? profile.identity.identifier : linkedNerisId;
   const [selectedId, setSelectedId] = useState<string>();
   const query = useQuery({
     queryKey: ['neris-provider-footprint', nativeId],

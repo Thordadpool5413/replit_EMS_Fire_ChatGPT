@@ -1,3 +1,4 @@
+import { centralFloridaEvidence } from './centralFloridaEvidence';
 import { providerDocumentRecords } from './providerDocumentRecords';
 import { municipalAedPurchases } from './providerAedPurchasingEvidence';
 import { municipalBillingRecords } from './providerBillingEvidence';
@@ -281,10 +282,16 @@ export const providerProfileEvidence = [
     identitySources: [orangeNpi],
     publicAwardRecipients: ['Orange County Board of County Commissioners', 'Orange County, Florida', 'County of Orange'],
     equipment: [{
-      category: 'monitor', manufacturer: 'Stryker', model: 'LIFEPAK 15', quantity: 137,
+      category: 'monitor', manufacturer: 'Stryker', model: 'LIFEPAK 15', quantity: 137, owner: 'Orange County Fire Rescue Department',
       supplier: 'Stryker Medical', status: 'Service agreement', approvedOn: '2024-07-30', serviceEnds: '2025-07-30',
-      details: 'The county reported 137 department-owned units when it approved extended warranty, repair and preventive maintenance for August 2024 through July 2025. The record documents a service purchase and a historical inventory snapshot.',
+      details: 'The county reported 137 department-owned units in its July 2024 staff memo and authorized extended warranty, repairs and preventive maintenance. The count belongs to that historical inventory snapshot.',
       source: orangeProCare,
+    }, {
+      category: 'monitor', manufacturer: 'Physio-Control', model: 'LIFEPAK (specific model not stated)', quantity: 58,
+      supplier: 'Physio-Control, Inc.', status: 'Purchase approved', approvedOn: '2011-09-20',
+      details: 'The board approved purchase order M54222 for 58 cardiac defibrillators and related equipment in a $1,618,621.50 package.',
+      source: { label: 'Orange County Fire Rescue procurement history, purchase order M54222', date: '2011-09-20',
+        url: 'https://www.occompt.com/DocumentCenter/View/25659/2013-03-12-Administrative-Services-Consent-Item-08' },
     }],
     contacts: [{
       role: 'Fire Rescue technical services contact on 2024 purchase order', name: 'John Westmoreland', phone: '407-836-9178', source: orangeProCare,
@@ -482,6 +489,7 @@ export const providerProfileEvidence = [
   ...expandedProviderRecords,
   ...municipalBillingRecords,
   ...providerDocumentRecords,
+  ...centralFloridaEvidence,
   ...municipalAedPurchases,
 ] satisfies ProviderEvidence[];
 
@@ -498,6 +506,10 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD12097921', { name: 'Osceola County Department Of Fire Rescue And Ems', fdid: 'FDID:FL:26032' }],
+  ['NERIS:FD12009171', { name: 'Brevard County Fire Rescue', fdid: 'FDID:FL:19182' }],
+  ['NERIS:FD12009679', { name: 'Malabar Fire Department', fdid: 'FDID:FL:19111' }],
+  ['NERIS:FD12009413', { name: 'Palm Bay Fire Rescue', fdid: 'FDID:FL:19042' }],
   ['NERIS:FD17113730', { name: 'Normal Fire Department', fdid: 'FDID:IL:MK332' }],
   ['NERIS:FD26121215', { name: 'City Of Muskegon Fire Department', fdid: 'FDID:MI:06110' }],
   ['NERIS:FD06073172', { name: 'Santee Fire Department', fdid: 'FDID:CA:37150' }],

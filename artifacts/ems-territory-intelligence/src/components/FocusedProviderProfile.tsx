@@ -96,7 +96,7 @@ import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections,providerAddressReview } from '../services/providerLocation';
-import { findProviderEvidence, findProviderEvidenceByConfirmedKeys, providerEvidenceFloridaLicense, providerEvidenceNpi } from '../data/providerProfileEvidence';
+import { findProviderEvidence, findProviderEvidenceByConfirmedKeys, providerEvidenceFloridaLicense, linkedBillingOrganization } from '../data/providerProfileEvidence';
 import { registryIdentityKey, registryClaims } from '../services/registryAccountLink';
 import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import { ProviderGrants, ProviderPeople, ProviderStations, FloridaProviderContacts } from './profile/ProviderPublicSources';
@@ -466,7 +466,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
     ?? findProviderEvidenceByConfirmedKeys(identityClaims.keys.filter(key => key !== (publicIdentity && registryIdentityKey(publicIdentity))));
   const floridaLicense = publicIdentity?.sourceName === 'State EMS' && publicIdentity.stateCode === 'FL'
     ? publicIdentity.identifier : providerEvidenceFloridaLicense(publicEvidence);
-  const linkedBillingNpi = providerEvidenceNpi(publicEvidence);
+  const linkedBillingNpi = linkedBillingOrganization(publicIdentity ? registryIdentityKey(publicIdentity) : undefined, publicEvidence);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.

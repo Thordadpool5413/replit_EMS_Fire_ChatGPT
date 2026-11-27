@@ -1,11 +1,10 @@
-import fireBillingIdentities from '../../data/fireBillingIdentityMatches.json';
 import { KingCountyOutcome } from '../PublicProviderEvidenceCoverage';
 import { ProviderEvidenceStatus } from '../PublicProviderEvidenceCoverage';
 import { RegionalAedSources } from '../RegionalAedSources';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
-import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, providerEvidenceNpi, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
+import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, linkedBillingOrganization, linkedFireDepartment, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
 import { parseProviderProfileRef, providerProfileHref } from '../../navigation/providerProfileUrl';
 import { loadPublicProviderProfile, type PublicProviderProfile } from '../../services/publicProviderProfile';
 import { canCreateRegistryAccount } from '../../services/registryAccountLink';
@@ -163,23 +162,19 @@ function Sources({ profile, evidence }: { profile: PublicProviderProfile; eviden
   </section>;
 }
 
-const fireBillingMatches: Record<string, string> = fireBillingIdentities;
-function profileBillingNpi(profile: PublicProviderProfile, evidence?: ProviderEvidence) {
-  return providerEvidenceNpi(evidence) ?? fireBillingMatches[evidence?.registryKey ?? profile.registryKey ?? ''];
-}
-
 function RelatedRecords({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
+  const fire = linkedFireDepartment(profile.registryKey, evidence);
   const links = <>
-      {evidence?.registryKey.startsWith('FDID:') && evidence.registryKey !== profile.registryKey && <li><a className="pr-source-link"
-        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'usfa:' + evidence.registryKey.slice(5) })}>Related fire registry profile</a></li>}
+      {fire && fire !== profile.registryKey && <li><a className="pr-source-link"
+        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'usfa:' + fire.slice(5) })}>Related fire registry profile</a></li>}
       {providerEvidenceNerisId(evidence) && profile.identity?.sourceName !== 'NERIS' && <li><a className="pr-source-link"
         href={providerProfileHref({ state: profile.stateCode, source: 'neris', id: providerEvidenceNerisId(evidence)! })}>Related NERIS station profile</a></li>}
-      {profileBillingNpi(profile, evidence) && profile.identity?.sourceName !== 'NPPES' && <li><a className="pr-source-link"
-        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'nppes:' + profileBillingNpi(profile, evidence) })}>Related billing organization profile</a></li>}
+      {linkedBillingOrganization(profile.registryKey, evidence) && profile.identity?.sourceName !== 'NPPES' && <li><a className="pr-source-link"
+        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'nppes:' + linkedBillingOrganization(profile.registryKey, evidence) })}>Related billing organization profile</a></li>}
   </>;
-  if (!(profileBillingNpi(profile, evidence) && profile.identity?.sourceName !== 'NPPES') &&
+  if (!(linkedBillingOrganization(profile.registryKey, evidence) && profile.identity?.sourceName !== 'NPPES') &&
       !(providerEvidenceNerisId(evidence) && profile.identity?.sourceName !== 'NERIS') &&
-      !(evidence?.registryKey.startsWith('FDID:') && evidence.registryKey !== profile.registryKey)) return null;
+      !(fire && fire !== profile.registryKey)) return null;
   return <section className="pr-panel"><h2>Linked agency records</h2><ul>{links}</ul></section>;
 }
 
@@ -188,15 +183,17 @@ function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
     const date = (item: typeof a) => item.lastPurchasedOn ?? item.acquiredOn ?? item.paidOn ?? item.approvedOn ?? item.source.date.match(/\d{4}(?:-\d{2}){0,2}/)?.[0] ?? '';
     return date(b).localeCompare(date(a));
   })[0];
-  const funding = evidence?.funding?.[0];
+  const fundingDate = (item: NonNullable<ProviderEvidence['funding']>[number]) =>
+    item.source.date.match(/\d{4}(?:-\d{2}){0,2}/)?.[0] ?? String(item.fiscalYear ?? '');
+  const funding = evidence?.funding?.slice().sort((a, b) => fundingDate(b).localeCompare(fundingDate(a)))[0];
   const person = evidence?.contacts?.find(row => row.name);
   const metric = evidence?.quality?.find(row => /ROSC/i.test(row.label)) ?? evidence?.operations?.[0] ?? evidence?.quality?.[0];
   const glance = [
     equipment && { anchor: 'equipment', label: 'Equipment', value: equipment.model ?? equipment.deployment ?? equipment.category,
-      note: [equipment.manufacturer, equipment.supplier, equipment.status, equipment.lastPurchasedOn ?? equipment.acquiredOn ?? equipment.paidOn ?? equipment.approvedOn ?? equipment.source.date].filter(Boolean).join(' · '), icon: ClipboardList },
+      note: [equipment.manufacturer, equipment.supplier, equipment.quantity != null && equipment.quantity + ' units', equipment.deployment, equipment.status, equipment.lastPurchasedOn ?? equipment.acquiredOn ?? equipment.paidOn ?? equipment.approvedOn ?? equipment.source.date].filter(Boolean).join(' · '), icon: ClipboardList },
     funding && { anchor: 'equipment', label: 'Funding & purchasing', value: funding.amount === undefined ? funding.title : providerCurrency.format(funding.amount),
-      note: funding.status + ' · ' + funding.source.date, icon: Landmark },
-    person && { anchor: 'people', label: 'Leadership', value: person.name, note: person.role + ' · ' + person.source.date, icon: Users },
+      note: [funding.title, funding.status, funding.source.date, funding.spendBy && 'Spend by ' + funding.spendBy].filter(Boolean).join(' · '), icon: Landmark },
+    person && { anchor: 'people', label: person.role, value: person.name, note: [person.phone ?? person.email, person.source.date].filter(Boolean).join(' · '), icon: Users },
     metric && { anchor: evidence?.quality?.includes(metric) ? 'quality' : 'operations', label: metric.label,
       value: formatProviderMetric(metric), note: metric.reportingPeriod ?? metric.source.date, icon: Activity },
   ];
@@ -211,7 +208,7 @@ function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
 
 function Claims({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const identity = profile.identity;
-  const linkedNpi = profileBillingNpi(profile, evidence);
+  const linkedNpi = linkedBillingOrganization(profile.registryKey, evidence);
   const agency = identity?.sourceName === 'NPPES' && canCreateRegistryAccount(identity)
     ? createSourceNativeAgency(identity, []) : linkedNpi && identity
       ? { ...createSourceNativeAgency(identity, []), npiNumber: linkedNpi } : undefined;

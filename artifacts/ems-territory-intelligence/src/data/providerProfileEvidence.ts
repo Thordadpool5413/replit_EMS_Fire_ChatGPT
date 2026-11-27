@@ -1,3 +1,4 @@
+import fireBillingIdentities from './fireBillingIdentityMatches.json';
 import { interstateProviderEvidence } from './interstateProviderEvidence';
 import { centralFloridaEvidence } from './centralFloridaEvidence';
 import { providerDocumentRecords } from './providerDocumentRecords';
@@ -582,3 +583,15 @@ function linkedSourceId(evidence: ProviderEvidence | undefined, prefix: string) 
 export const providerEvidenceNerisId = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'NERIS:');
 export const providerEvidenceNpi = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'NPI:');
 export const providerEvidenceFloridaLicense = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'STATE-EMS:FL:license:');
+
+const billingByFire: Readonly<Record<string, string>> = fireBillingIdentities;
+const fireByBilling = new Map(Object.entries(billingByFire).map(([fire, npi]) => [npi, fire]));
+
+export function linkedBillingOrganization(key?: string, evidence?: ProviderEvidence) {
+  return providerEvidenceNpi(evidence) ?? billingByFire[evidence?.registryKey ?? key ?? ''];
+}
+
+export function linkedFireDepartment(key?: string, evidence?: ProviderEvidence) {
+  if (evidence?.registryKey.startsWith('FDID:')) return evidence.registryKey;
+  return key?.startsWith('NPI:') ? fireByBilling.get(key.slice(4)) : undefined;
+}

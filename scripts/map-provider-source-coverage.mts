@@ -58,12 +58,17 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
   const profile = parseProviderProfileRef(ref);
   if (!profile) throw Error('Invalid profile route: ' + ref);
   const evidence = findProviderEvidence(key, name);
-  const aeds = evidence?.equipment?.filter(row => row.category === 'aed') ?? [];
+  const equipment = evidence?.equipment ?? [];
+  const aeds = equipment.filter(row => row.category === 'aed');
+  const datedOwned = equipment.filter(row => row.status === 'In service reported' && row.owner && row.quantity !== undefined);
+  const acquisitionHistory = [...new Set(equipment.flatMap(row => [row.lastPurchasedOn ? 'Purchase dated ' + row.lastPurchasedOn : '',
+    row.paidOn ? 'Paid ' + row.paidOn : '', row.acquiredOn ? 'Acquired ' + row.acquiredOn : ''].filter(Boolean)))];
+  const payerDenials = [...new Set(evidence?.billingDenials?.flatMap(row => row.denialPayer ? [row.denialPayer] : []) ?? [])];
   const inService = aeds.filter(row => row.status === 'In service reported');
   const scopedModelCount = inService.some(row => row.manufacturer && row.model && row.quantity !== undefined);
   const direct = evidence?.stationDirectory?.stations.filter(row => row.contact?.phone || row.contact?.email) ?? [];
   const sources = [...new Set([
-    ...aeds.map(row => row.source.url),
+    ...equipment.map(row => row.source.url),
     ...(evidence?.stationDirectory ? [evidence.stationDirectory.source.url] : []),
     ...(evidence?.billing?.map(row => row.source.url) ?? []),
     ...(evidence?.payerMix?.map(row => row.source.url) ?? []),
@@ -76,6 +81,13 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
     linked_evidence_key: evidence ? providerEvidenceKey(key, name) ?? '' : '',
     ...regionalCounts(profile.state, counties.has(county) ? county : undefined),
     profile_route: '/' + providerProfileHref(profile), source_status: sourceStatus,
+    dated_owned_equipment_as_reported: datedOwned.map(row => [row.owner, row.category, row.manufacturer, row.model,
+      row.quantity + ' units', row.deployment, row.source.date].filter(Boolean).join(' · ')).join(' | '),
+    documented_equipment_events: acquisitionHistory.join(' | '),
+    payer_names_in_published_denials: payerDenials.join(' | '),
+    inventory_source_to_request: 'Dated asset register with owner, make, model and unit count by department or named subset',
+    purchase_records_to_request: 'Purchase orders, receiving records and paid invoice or payment register with separate event dates',
+    billing_source_to_request: 'Payer aggregate of adjudicated, initial and final denied ground-ambulance claims by matching period and definition',
     aed_inventory: scopedModelCount ? 'In-service report with model and count' : inService.length ? 'In-service report, incomplete inventory' : aeds.length ? 'Dated AED evidence only' : 'No AED evidence in audited sources',
     aed_brand_model: [...new Set(aeds.map(row => [row.manufacturer, row.model].filter(Boolean).join(' ')).filter(Boolean))].join(' | '),
     aed_evidence_as_reported: aeds.map(row => [
@@ -174,6 +186,7 @@ for (const [state, file, field] of [['TX', 'TX-review.json', 'sourceKey'], ['NY'
 
 if (new Set(records.map(row => row.profile_route)).size !== records.length) throw Error('Duplicate profile route.');
 const counts = () => ({ listing_rows: 0, county_assigned: 0, in_service_model_count: 0, in_service_partial: 0, dated_aed_only: 0,
+  with_dated_owned_count: 0, with_dated_equipment_events: 0, with_payer_named_denials: 0,
   with_purchase_date: 0, with_payment_date: 0, with_direct_station_contact: 0, with_transport_billing: 0, with_payer_breakdown: 0, with_denials: 0, with_quality: 0 });
 type Counts = ReturnType<typeof counts>;
 function count(item: Counts, row: (typeof records)[number]) {
@@ -182,6 +195,9 @@ function count(item: Counts, row: (typeof records)[number]) {
   item.in_service_model_count += Number(row.aed_inventory === 'In-service report with model and count');
   item.in_service_partial += Number(row.aed_inventory === 'In-service report, incomplete inventory');
   item.dated_aed_only += Number(row.aed_inventory === 'Dated AED evidence only');
+  item.with_dated_owned_count += Number(Boolean(row.dated_owned_equipment_as_reported));
+  item.with_dated_equipment_events += Number(Boolean(row.documented_equipment_events));
+  item.with_payer_named_denials += Number(Boolean(row.payer_names_in_published_denials));
   item.with_purchase_date += Number(Boolean(row.documented_aed_purchase_dates));
   item.with_payment_date += Number(Boolean(row.documented_aed_payment_dates));
   item.with_direct_station_contact += Number(row.direct_station_contact_count > 0);

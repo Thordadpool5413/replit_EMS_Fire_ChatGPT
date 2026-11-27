@@ -286,6 +286,8 @@ jobs:
 
       - name: Verify shared working pipeline persistence and permissions
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/working-pipeline.integration.test.ts
+      - name: Verify private provider source snapshots and import permissions
+        run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/src/routes/provider-sources.integration.test.ts
 
       - name: Verify cookie-authenticated application and shared client integration
         run: pnpm --filter @workspace/scripts exec tsx --test ../artifacts/api-server/tests/shared-client.integration.test.ts

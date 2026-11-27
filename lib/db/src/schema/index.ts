@@ -199,3 +199,16 @@ export const workingPipelineHistoryTable=pgTable("working_pipeline_history",{
  actorUid:text("actor_uid").notNull(),
  createdAt:timestamp("created_at",{withTimezone:true}).notNull(),
 },t=>[primaryKey({columns:[t.agencyId,t.revision]})]);
+
+
+/** Immutable aggregate provider source imports. An account identity change withholds prior snapshots. */
+export const providerSourceSnapshotsTable = pgTable("provider_source_snapshots", {
+  agencyId: text("agency_id").notNull().references(() => agencyRecordsTable.id),
+  binding: text("binding").notNull(),
+  kind: text("kind").notNull(),
+  revision: integer("revision").notNull(),
+  digest: text("digest").notNull(),
+  report: jsonb("report").$type<JsonRecord>().notNull(),
+  authorUid: text("author_uid").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [primaryKey({ columns: [table.agencyId, table.binding, table.kind, table.revision] })]);

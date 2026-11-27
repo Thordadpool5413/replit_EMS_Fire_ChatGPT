@@ -18,20 +18,47 @@ export function ProviderMetrics({ metrics }: { metrics: DepartmentMetric[] }) {
   const source = comparable[0]?.source;
   const grouped = source && comparable.length > 1 && comparable.every(metric =>
     metric.source.url === source.url && metric.source.date === source.date && Number.isInteger(metric.value) && metric.value >= 0);
-  const featured = grouped ? metrics.filter(metric => !comparable.includes(metric)) : metrics;
+  const periods = new Map<string, DepartmentMetric[]>();
+  for (const metric of metrics) {
+    if (!metric.reportingPeriod) continue;
+    const rows = periods.get(metric.label) ?? [];
+    rows.push(metric);
+    periods.set(metric.label, rows);
+  }
+  const trends = [...periods].filter(([, rows]) =>
+    new Set(rows.map(row => row.reportingPeriod)).size === rows.length && rows.length > 1 &&
+    rows.every(row => row.format === rows[0].format && row.value >= 0 && (row.format !== 'percent' || row.value <= 100)));
+  const trendLabels = new Set(trends.map(([label]) => label));
+  const featured = metrics.filter(metric => !trendLabels.has(metric.label) && !(grouped && comparable.includes(metric)));
   const max = grouped ? Math.max(...comparable.map(metric => metric.value), 1) : 1;
 
   return <>
     <dl className="pr-metrics pr-metric-cards">
       {featured.map(metric => {
         const Icon = iconFor(metric.label);
-        return <div key={metric.label} className="pr-metric-card">
+        return <div key={metric.label + ':' + (metric.reportingPeriod ?? metric.source.date)} className="pr-metric-card">
           <dt><Icon size={17} aria-hidden="true" />{metric.label}</dt>
           <dd>{formatProviderMetric(metric)}{metric.format === 'percent' && metric.value >= 0 && metric.value <= 100 &&
             <span className="pr-metric-bar" aria-hidden="true"><span style={{ width: metric.value + '%' }} /></span>}{metric.context && <small>{metric.context}</small>}<ProviderSourceLink source={metric.source} /></dd>
         </div>;
       })}
     </dl>
+    {trends.length > 0 && <section className="pr-apparatus-comparison">
+      <h3><HeartPulse size={19} aria-hidden="true" /> Published year-over-year figures</h3>
+      {trends.map(([label, rows]) => {
+        const max = rows[0].format === 'percent' ? 100 : Math.max(1, ...rows.map(row => row.value));
+        return <section key={label}>
+          <h4>{label}</h4>
+          <dl>{rows.map(row => <div key={row.reportingPeriod}>
+            <dt>{row.reportingPeriod}</dt>
+            <dd>{formatProviderMetric(row)}
+              <span className="pr-metric-bar" aria-hidden="true"><span style={{ width: row.value / max * 100 + '%' }} /></span>
+              {row.context && <small>{row.context}</small>}<ProviderSourceLink source={row.source} />
+            </dd>
+          </div>)}</dl>
+        </section>;
+      })}
+    </section>}
     {grouped && <section className="pr-apparatus-comparison">
       <h3><Truck size={19} aria-hidden="true" /> Reported apparatus</h3>
       <dl>

@@ -40,3 +40,9 @@ export async function loadProviderFederalGrants(state: string, fromYear: number,
   }
   return { candidates: [...rows.values()], wasCapped, withheld };
 }
+
+/** Group only when both sources identify the same award and recipient. IDs and amounts stay source-local. */
+export function grantIdentity(award: { awardNumber: string; recipient: string }) {
+  const number = award.awardNumber.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return number ? number + ':' + recipientKey(award.recipient) : undefined;
+}

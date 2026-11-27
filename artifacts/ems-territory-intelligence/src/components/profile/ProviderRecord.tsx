@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
-import { findProviderEvidence, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
-import { parseProviderProfileRef } from '../../navigation/providerProfileUrl';
+import { findProviderEvidence, providerEvidenceFloridaLicense, providerEvidenceNerisId, providerEvidenceNpi, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
+import { parseProviderProfileRef, providerProfileHref } from '../../navigation/providerProfileUrl';
 import { loadPublicProviderProfile, type PublicProviderProfile } from '../../services/publicProviderProfile';
 import { canCreateRegistryAccount } from '../../services/registryAccountLink';
 import { createSourceNativeAgency } from '../../services/sourceNativeAgency';
@@ -17,8 +17,9 @@ import { NppesPracticeLocationsPanel } from './NppesPracticeLocationsPanel';
 import { ProviderEquipmentFunding, ProviderSourceLink } from './ProviderEquipmentFunding';
 import { ProviderFootprint } from './ProviderFootprint';
 import { ProviderCallBrief } from './ProviderCallBrief';
+import { ProviderPurchasing } from './ProviderPurchasing';
 import { ProviderMetrics } from './ProviderMetrics';
-import { ProviderGrants, ProviderPeople, ProviderStations } from './ProviderPublicSources';
+import { ProviderGrants, ProviderPeople, ProviderStations, FloridaProviderContacts } from './ProviderPublicSources';
 import { formatProviderMetric, providerCurrency } from '../../services/providerCardIntelligence';
 
 const sections = [
@@ -64,7 +65,7 @@ function SourceSummary({ profile }: { profile: PublicProviderProfile }) {
 function Operations({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const metrics = evidence?.operations ?? [];
   const identity = profile.identity;
-  const usfaKey = identity?.sourceName === 'USFA NFDR' ? profile.registryKey : undefined;
+  const usfaKey = evidence?.registryKey ?? (identity?.sourceName === 'USFA NFDR' ? profile.registryKey : undefined);
   const usfa = useQuery({
     queryKey: ['usfa-profile-operations', profile.stateCode, usfaKey],
     queryFn: () => usfaKey ? loadUsfaProfileOperations(profile.stateCode, usfaKey) : null,
@@ -115,6 +116,7 @@ function Overview({ profile, evidence }: { profile: PublicProviderProfile; evide
         <p>{profile.identifier}</p>
         {profile.countyFips && <p className="pr-muted">County FIPS {profile.countyFips}</p>}
         {profile.identity?.serviceLevel && <p>Reported service level · {profile.identity.serviceLevel}</p>}
+        {profile.identity?.licenseIssuedAt && <p>Reported license issued · {profile.identity.licenseIssuedAt}</p>}
         {profile.identity?.licenseExpiresAt && <p>Reported license expiration · {profile.identity.licenseExpiresAt}</p>}
       </div>
     </div>
@@ -143,11 +145,18 @@ function Quality({ evidence }: { evidence?: ProviderEvidence }) {
 
 function Sources({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
+  rows.push(...(evidence?.identitySources ?? []).map(source => ({ source })));
   if (evidence?.stationDirectory) rows.push(evidence.stationDirectory);
   const sources = [...new Map(rows.map(({ source }) => [source.url, source])).values()];
   return <section className="pr-panel pr-sources">
     <h2>Sources</h2>
     <ul>
+      {evidence && evidence.registryKey !== profile.registryKey && <li><a className="pr-source-link"
+        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'usfa:' + evidence.registryKey.slice(5) })}>Related fire registry profile</a></li>}
+      {providerEvidenceNerisId(evidence) && profile.identity?.sourceName !== 'NERIS' && <li><a className="pr-source-link"
+        href={providerProfileHref({ state: profile.stateCode, source: 'neris', id: providerEvidenceNerisId(evidence)! })}>Related NERIS station profile</a></li>}
+      {providerEvidenceNpi(evidence) && profile.identity?.sourceName !== 'NPPES' && <li><a className="pr-source-link"
+        href={providerProfileHref({ state: profile.stateCode, source: 'registry', id: 'nppes:' + providerEvidenceNpi(evidence) })}>Related billing organization profile</a></li>}
       {safeSourceUrl(profile.source.url) && <li><ProviderSourceLink source={{ label: profile.source.name, url: profile.source.url, date: profile.source.date || 'date not reported' }} /></li>}
       {sources.map((source) => <li key={source.url}><ProviderSourceLink source={source} /></li>)}
     </ul>
@@ -178,10 +187,12 @@ function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
   </section>;
 }
 
-function Claims({ profile }: { profile: PublicProviderProfile }) {
+function Claims({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const identity = profile.identity;
+  const linkedNpi = providerEvidenceNpi(evidence);
   const agency = identity?.sourceName === 'NPPES' && canCreateRegistryAccount(identity)
-    ? createSourceNativeAgency(identity, []) : undefined;
+    ? createSourceNativeAgency(identity, []) : linkedNpi && identity
+      ? { ...createSourceNativeAgency(identity, []), npiNumber: linkedNpi } : undefined;
   return <section className="pr-panel">
     <h2 className="pr-icon-heading"><Receipt size={22} aria-hidden="true" /> Claims &amp; reimbursement</h2>
     {agency ? <CmsAmbulanceEvidencePanel agency={agency} autoLoad /> : <p className="pr-muted">No organization NPI linked to this public profile. Use the NPPES organization listing or the linked workspace account to look up reported Medicare service units and payments.</p>}
@@ -203,6 +214,8 @@ export default function ProviderRecord({ reference }: { reference: string }) {
   });
   const profile = query.data;
   const evidence = profile ? findProviderEvidence(profile.registryKey, profile.name) : undefined;
+  const floridaLicense = profile?.identity?.sourceName === 'State EMS' && profile.stateCode === 'FL'
+    ? profile.identity.identifier : providerEvidenceFloridaLicense(evidence);
 
   const artKind = evidence?.combinedServices ? 'combined' : profile?.kind === 'Fire department' ? 'fire' : 'ems';
   const art = { combined: combinedArt, fire: fireArt, ems: emsArt }[artKind];
@@ -247,24 +260,25 @@ export default function ProviderRecord({ reference }: { reference: string }) {
       {section === 'overview' && <ProfileGlance evidence={evidence} />}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
+          <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
           <a className="pr-panel pr-icon-heading pr-source-link" href="#grants"><Landmark size={19} aria-hidden="true" /> Look up OpenFEMA grant records</a>
-          <ProviderFootprint key={reference} profile={profile} />
+          <ProviderFootprint key={reference} profile={profile} linkedNerisId={providerEvidenceNerisId(evidence)} />
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
           {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /></>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
-          {section === 'people' && <ProviderPeople evidence={evidence} />}
+          {section === 'people' && <><ProviderPeople evidence={evidence} /><FloridaProviderContacts license={floridaLicense} /></>}
           {section === 'stations' && <><ProviderStations profile={profile} evidence={evidence} />
             {profile.identity?.sourceName === 'NPPES' && canCreateRegistryAccount(profile.identity) &&
               <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} />}</>}
-          {section === 'claims' && <Claims profile={profile} />}
+          {section === 'claims' && <Claims profile={profile} evidence={evidence} />}
           {section === 'quality' && <Quality evidence={evidence} />}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
           {section === 'sources' && <Sources profile={profile} evidence={evidence} />}
         </div>
         <div className="pr-section-rail">
-          {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} />}
+          {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} linkedNerisId={providerEvidenceNerisId(evidence)} />}
           <SourceSummary profile={profile} />
         </div>
       </div>}

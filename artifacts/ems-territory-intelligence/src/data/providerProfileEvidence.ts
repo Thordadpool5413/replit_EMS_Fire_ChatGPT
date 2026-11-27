@@ -1,3 +1,5 @@
+import { publicDepartmentLeadership } from './providerLeadership';
+
 export type ProviderEvidenceSource = {
   label: string;
   date: string;
@@ -86,6 +88,7 @@ export type ProviderEvidence = {
   contacts?: ProviderContact[];
   stationDirectory?: { source: ProviderEvidenceSource; visitContact?: ProviderContact; stations: ProviderStation[] };
   publicAwardRecipients?: string[];
+  identitySources?: ProviderEvidenceSource[];
 };
 
 const flaglerBudget = {
@@ -147,6 +150,31 @@ const newportAgenda = {
 const fortWorthAction = {
   label: 'Fort Worth City Council action M&C 26-0328', date: '2026-04-28',
   url: 'https://fortworthgov.legistar.com/LegislationDetail.aspx?G=5D78EE16-987A-40AB-8FB5-726D3DBA5713&GUID=26E7D403-C48E-490B-B464-8F378DB74303&ID=7989480&Options=&Search=',
+};
+
+const orangeProCare = {
+  label: 'Orange County purchase order M115372', date: '2024-07-30',
+  url: 'https://occompt.legistar.com/LegislationDetail.aspx?ID=6778218&GUID=01710062-CFE1-4FFB-BF99-0810E4074104',
+};
+const orangeNpi = {
+  label: 'CMS NPPES billing organization and Fire Rescue trade name', date: 'Accessed Nov 27, 2026',
+  url: 'https://npiregistry.cms.hhs.gov/api/?version=2.1&number=1033215348',
+};
+const coralPriorReport = {
+  label: 'Coral Springs–Parkland annual report', date: 'FY2024',
+  url: 'https://www.coralsprings.gov/files/content/public/v/79/government/departments/fire-department/annual-report-2024-final__20250226.pdf',
+};
+const jolietPurchase = {
+  label: 'Joliet Public Safety Committee purchase recommendation', date: '2026-01-06',
+  url: 'https://joliet.legistar.com/View.ashx?GUID=2D68D3C8-4C88-4515-B9A3-911162D21705&ID=1371128&M=PA',
+};
+const coralPublicAeds = {
+  label: 'City of Coral Springs public AED directory', date: 'Accessed Nov 27, 2026',
+  url: 'https://www.coralsprings.gov/Government/Departments/Fire-Department/Public-Education/AEDs',
+};
+const coralGrants = {
+  label: 'City of Coral Springs grant annual report', date: 'FY2026',
+  url: 'https://www.coralsprings.gov/Government/Departments/Budget-Sustainability/Grant-Annual-Report',
 };
 
 /** Attach only to the exact public identity. Name-only or city-only records are ineligible. */
@@ -236,6 +264,17 @@ export const providerProfileEvidence = [
   },
   {
     registryKey: 'FDID:FL:07252', registryName: 'Orange County Fire Rescue Department', combinedServices: true,
+    identitySources: [orangeNpi],
+    publicAwardRecipients: ['Orange County Board of County Commissioners', 'Orange County, Florida', 'County of Orange'],
+    equipment: [{
+      category: 'monitor', manufacturer: 'Stryker', model: 'LIFEPAK 15', quantity: 137,
+      supplier: 'Stryker Medical', status: 'Service agreement', approvedOn: '2024-07-30', serviceEnds: '2025-07-30',
+      details: 'The county reported 137 department-owned units when it approved extended warranty, repair and preventive maintenance for August 2024 through July 2025. The record documents a service purchase and a historical inventory snapshot.',
+      source: orangeProCare,
+    }],
+    contacts: [{
+      role: 'Fire Rescue technical services contact on 2024 purchase order', name: 'John Westmoreland', phone: '407-836-9178', source: orangeProCare,
+    }],
     operations: [
       { label: 'Fire stations', value: 44, source: orangeReport },
       { label: 'EMS calls', value: 114775, source: orangeReport },
@@ -254,6 +293,11 @@ export const providerProfileEvidence = [
     ],
     funding: [
       {
+        title: 'LIFEPAK 15 warranty and maintenance purchase order', amount: 309775.42, status: 'Approved',
+        basis: 'Purchase order M115372, Stryker Medical. Historical service coverage August 2024 through July 2025.',
+        purchasingVehicle: 'M115372', source: orangeProCare,
+      },
+      {
         title: 'Department expenditures', amount: 266284891, status: 'Reported expenditure',
         basis: 'Total department expenditure for FY2023. Equipment allocation or available funds were not specified by this figure.',
         source: orangeReport,
@@ -263,7 +307,13 @@ export const providerProfileEvidence = [
   {
     registryKey: 'FDID:FL:10151', registryName: 'Coral Springs-Parkland Fire Department', combinedServices: true,
     publicAwardRecipients: ['City of Coral Springs', 'Coral Springs, City of'],
+    equipment: [{
+      category: 'aed', status: 'In service reported', deployment: 'City public-access program',
+      details: 'The city identifies ten parks and public facilities with AEDs, including City Hall, Cypress Park and Mullins Park. The source lists locations and an AED program contact.',
+      source: coralPublicAeds,
+    }],
     contacts: [
+      { role: 'Public AED program', email: 'dchavez@coralsprings.gov', source: coralPublicAeds },
       { role: 'Fire Chief', name: 'John Whalen', source: coralChief },
       { role: 'EMS Battalion Chief', name: 'Patrick Staab', source: coralReport },
       { role: 'Division Chief', name: 'John Barry', source: coralReport },
@@ -275,14 +325,20 @@ export const providerProfileEvidence = [
       { label: 'EMS transports', value: 9284, source: coralReport },
     ],
     quality: [
-      { label: 'Cardiac arrests', value: 100, source: coralReport },
-      { label: 'Return of spontaneous circulation (ROSC)', value: 30, format: 'percent', context: 'Reported alongside 100 cardiac arrests. ROSC and survival to hospital discharge are different measures.', source: coralReport },
+      { label: 'Cardiac arrests', value: 100, reportingPeriod: 'FY2025', source: coralReport },
+      { label: 'Cardiac arrests', value: 73, reportingPeriod: 'FY2024', source: coralPriorReport },
+      { label: 'Return of spontaneous circulation (ROSC)', value: 30, format: 'percent', reportingPeriod: 'FY2025', context: 'Reported alongside 100 cardiac arrests. ROSC and survival to hospital discharge are different measures.', source: coralReport },
+      { label: 'Return of spontaneous circulation (ROSC)', value: 34, format: 'percent', reportingPeriod: 'FY2024', context: 'Reported alongside 73 cardiac arrests.', source: coralPriorReport },
       { label: 'Mean EMS response time', value: 311, format: 'duration', source: coralReport },
       { label: 'Emergency EMS responses within 8 minutes', value: 96.7, format: 'percent', source: coralReport },
       { label: 'Continuous quality improvement reviews', value: 910, source: coralReport },
       { label: 'Stroke alerts', value: 243, source: coralReport },
       { label: 'STEMI alerts', value: 39, source: coralReport },
       { label: 'Trauma alerts', value: 420, source: coralReport },
+    ],
+    funding: [
+      { title: 'FEMA Assistance to Firefighters Grant', amount: 90909, status: 'Awarded', fiscalYear: 2026, basis: 'City FY2026 report lists health, wellness, and training for firefighters as the award purpose.', source: coralGrants },
+      { title: 'FEMA SAFER staffing grant', amount: 2670793, status: 'Awarded', fiscalYear: 2026, basis: 'City FY2026 report lists funding to hire 12 firefighters.', source: coralGrants },
     ],
     accountContext: [
       { area: 'Clinical workflow', title: 'CARES and case review', detail: 'The EMS Division reports CARES participation with hospital partners. The EMS battalion chief oversees QA/QI, protocols and EMS equipment.', source: coralReport },
@@ -365,26 +421,71 @@ export const providerProfileEvidence = [
       },
     ],
   },
+  {
+    registryKey: 'FDID:IL:CS931', registryName: 'Chicago Fire Department', combinedServices: true,
+    publicAwardRecipients: ['City of Chicago', 'Chicago, City of'],
+  },
+  {
+    registryKey: 'FDID:NY:31000', registryName: 'Fire Department City of New York (FDNY)', combinedServices: true,
+    publicAwardRecipients: ['City of New York', 'New York City'],
+  },
+  ...publicDepartmentLeadership,
+  {
+    registryKey: 'FDID:IL:WG221', registryName: 'Joliet Fire Department',
+    equipment: [
+      { category: 'aed', manufacturer: 'Stryker / Physio-Control', model: 'LIFEPAK 1000', supplier: 'Stryker Medical',
+        quantity: 3, status: 'Proposed purchase', details: 'The Public Safety Committee recommended the purchase under memo TMP-9340. Final purchase and deployment remain unreported in this source.', source: jolietPurchase },
+      { category: 'monitor', manufacturer: 'Stryker', model: 'LIFEPAK 35', supplier: 'Stryker Medical',
+        quantity: 1, status: 'Proposed purchase', details: 'Included in the same Public Safety Committee recommendation as the three AEDs.', source: jolietPurchase },
+    ],
+    funding: [{
+      title: 'LIFEPAK monitor and AED purchase recommendation', amount: 59847.12, status: 'Requested',
+      basis: 'Combined proposal amount for one monitor and three AEDs.', purchasingVehicle: 'TMP-9340', source: jolietPurchase,
+    }],
+  },
 ] satisfies ProviderEvidence[];
 
 // Identity bridges grounded in the state roster and matching published headquarters.
 const registryEvidenceMatches = new Map([
   ['STATE-EMS:FL:license:1801', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
   ['STATE-EMS:FL:license:4807', { name: 'Orange County Fire Rescue Department', fdid: 'FDID:FL:07252' }],
+  ['STATE-EMS:FL:license:633', { name: 'Coral Springs Fire Department, City Of', fdid: 'FDID:FL:10151' }],
+  ['NPI:1033215348', { name: 'ORANGE COUNTY BOARD OF COUNTY COMMISSIONERS', fdid: 'FDID:FL:07252' }],
   ['STATE-EMS:FL:license:621', { name: 'Pembroke Pines Fire Rescue', fdid: 'FDID:FL:10082' }],
   ['NERIS:FD12035253', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
+  ['NERIS:FD12011279', { name: 'Coral Springs-Parkland Fire Department', fdid: 'FDID:FL:10151' }],
+  ['NERIS:FD12095275', { name: 'Orange County Fire Rescue Department', fdid: 'FDID:FL:07252' }],
+  ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
+  ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
+  ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
   ['NERIS:FD12011524', { name: 'Pembroke Pines Fire Rescue', fdid: 'FDID:FL:10082' }],
 ]);
 
-export function findProviderEvidence(registryKey: string | undefined, registryName: string): ProviderEvidence | undefined {
-  const exactIdentity = registryEvidenceMatches.get(registryKey ?? '');
-  const key = exactIdentity?.name === registryName ? exactIdentity.fdid : registryKey;
-  return providerProfileEvidence.find(entry => entry.registryKey === key && entry.registryName === registryName);
+export function providerEvidenceKey(registryKey: string | undefined, registryName: string) {
+  const linked = registryEvidenceMatches.get(registryKey ?? '');
+  return linked && linked.name.toLowerCase() === registryName.toLowerCase() ? linked.fdid : registryKey;
 }
 
-export function providerEvidenceNerisId(evidence?: ProviderEvidence) {
+export function findProviderEvidence(registryKey: string | undefined, registryName: string): ProviderEvidence | undefined {
+  const key = providerEvidenceKey(registryKey, registryName);
+  return providerProfileEvidence.find(entry => entry.registryKey === key &&
+    (key !== registryKey || entry.registryName.toLowerCase() === registryName.toLowerCase()));
+}
+
+export function findProviderEvidenceByConfirmedKeys(keys: string[]): ProviderEvidence | undefined {
+  const identities = new Set(keys.map(key => registryEvidenceMatches.get(key)?.fdid ?? key));
+  const matches = providerProfileEvidence.filter(entry => identities.has(entry.registryKey));
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function linkedSourceId(evidence: ProviderEvidence | undefined, prefix: string) {
+  if (!evidence) return undefined;
   for (const [key, value] of registryEvidenceMatches) {
-    if (key.startsWith('NERIS:') && value.fdid === evidence?.registryKey && value.name === evidence.registryName) return key.slice(6);
+    if (key.startsWith(prefix) && value.fdid === evidence.registryKey) return key.slice(prefix.length);
   }
   return undefined;
 }
+
+export const providerEvidenceNerisId = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'NERIS:');
+export const providerEvidenceNpi = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'NPI:');
+export const providerEvidenceFloridaLicense = (evidence?: ProviderEvidence) => linkedSourceId(evidence, 'STATE-EMS:FL:license:');

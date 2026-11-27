@@ -12,7 +12,7 @@ import {createChicagoDiscoveryService} from '../lib/chicagoDiscovery';
 import {parseChicagoQuery} from '../lib/chicagoDiscoveryContract';
 import {fetchNppesLocation,fetchCensusLocation,boundedLocationService} from '../lib/providerLocation';
 import {validNpi,parseStreetAddress,isPhysicalStreet,addressKey} from '../lib/providerLocationContract';
-import {fetchCmsAmbulanceEvidence} from '../lib/cmsAmbulanceEvidence';
+import {fetchCmsAmbulanceEvidence, type CmsAmbulanceYear} from '../lib/cmsAmbulanceEvidence';
 import {fetchNppesPracticeEvidence} from '../lib/nppesPracticeEvidence';
 const router:IRouter=Router();
 const discover=createFemaDiscoveryService();
@@ -83,11 +83,19 @@ router.get('/discovery/address-location',async(req,res)=>{
  if(!a||!a.zip||Object.keys(req.query).some(k=>!['street','city','state','zip'].includes(k))||!isPhysicalStreet(a.street)){res.status(400).json({error:'A complete physical street address is required.'});return;}
  try{res.json(await streetLocation(a));}catch{req.log.warn('Street location lookup unavailable');res.status(502).json({error:'Street location service unavailable.'});}
 });
-const cmsAmbulance=boundedLocationService((npi:string)=>fetchCmsAmbulanceEvidence(npi),npi=>npi);
+const cmsAmbulance=boundedLocationService(
+ ({ npi, year }: { npi: string; year: CmsAmbulanceYear })=>fetchCmsAmbulanceEvidence(npi,fetch,Date.now,year),
+ ({npi,year})=>npi+':'+year,
+);
 router.get('/discovery/cms-ambulance-services',async(req,res)=>{
  res.set('Cache-Control','no-store');const npi=req.query.npi;
- if(!validNpi(npi)||Object.keys(req.query).length!==1){res.status(400).json({error:'Valid NPI required.'});return;}
- try{res.json(await cmsAmbulance(npi));}catch{req.log.warn('CMS public ambulance service lookup unavailable');res.status(502).json({error:'CMS service evidence unavailable; no records inferred.'});}
+ const rawYear = req.query.year;
+ const year = rawYear === '2023' ? 2023 : 2024;
+ if(!validNpi(npi)||Object.keys(req.query).some(key=>key!=='npi'&&key!=='year')||
+  (rawYear!==undefined&&rawYear!=='2023'&&rawYear!=='2024')){
+  res.status(400).json({error:'Valid NPI and supported reporting year required.'});return;
+ }
+ try{res.json(await cmsAmbulance({npi,year}));}catch{req.log.warn('CMS public ambulance service lookup unavailable');res.status(502).json({error:'CMS service evidence unavailable; no records inferred.'});}
 });
 const nppesPractice=boundedLocationService((npi:string)=>fetchNppesPracticeEvidence(npi),npi=>npi);
 router.get('/discovery/nppes-practice-locations',async(req,res)=>{

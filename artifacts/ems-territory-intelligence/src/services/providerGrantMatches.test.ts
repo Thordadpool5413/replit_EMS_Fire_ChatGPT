@@ -35,3 +35,24 @@ test('a public purchase approval is shown on the card without claiming a complet
   assert.match(approval.detail ?? '', /Supplier Stryker Sales, LLC.*Approved 2026-08-05/i);
   assert.doesNotMatch(approval.detail ?? '', /Purchased 2026/);
 });
+
+test('grant identifier merges presentation only for the same award number and recipient', async () => {
+  const { grantIdentity } = await import('./providerGrantMatches');
+  const award = { awardNumber: 'EMW-2024-FG-00001', recipient: 'County of Flagler' };
+  assert.equal(grantIdentity(award), grantIdentity({ awardNumber: 'emw2024fg00001', recipient: 'COUNTY OF FLAGLER' }));
+  assert.notEqual(grantIdentity(award), grantIdentity({ ...award, recipient: 'Flagler Beach Fire Department' }));
+  assert.equal(grantIdentity({ ...award, awardNumber: '-' }), undefined);
+});
+
+test('Orange County source identities agree through the published billing organization', async () => {
+  const { providerEvidenceNpi, providerEvidenceFloridaLicense, findProviderEvidenceByConfirmedKeys } = await import('../data/providerProfileEvidence');
+  const county = findProviderEvidence('FDID:FL:07252', 'Orange County Fire Rescue Department');
+  assert.ok(county);
+  assert.equal(providerEvidenceNpi(county), '1033215348');
+  assert.equal(providerEvidenceNerisId(county), 'FD12095275');
+  assert.equal(providerEvidenceFloridaLicense(county), '4807');
+  assert.equal(findProviderEvidence('NPI:1033215348', 'ORANGE COUNTY BOARD OF COUNTY COMMISSIONERS'), county);
+  assert.equal(findProviderEvidence('NPI:1033215348', 'Orlando Fire Department'), undefined);
+  assert.equal(findProviderEvidenceByConfirmedKeys(['FDID:FL:07252', 'FDID:FL:07212']), undefined);
+  assert.equal(findProviderEvidenceByConfirmedKeys(['FDID:FL:07252', 'NPI:1033215348']), county);
+});

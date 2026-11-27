@@ -4,7 +4,11 @@ import {validNpi} from './providerLocationContract';
 export const CMS_AMBULANCE_DATASET='335e5f35-eca6-482d-87b3-f99883e213e3';
 export const CMS_AMBULANCE_YEAR=2024;
 export const CMS_AMBULANCE_SOURCE='https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners/medicare-physician-other-practitioners-by-provider-and-service';
-const API='https://data.cms.gov/data-api/v1/dataset/'+CMS_AMBULANCE_DATASET+'/data';
+export const cmsAmbulanceDatasets = {
+  2024: CMS_AMBULANCE_DATASET,
+  2023: '0e9f2f2b-7bf9-451a-912c-e02e654dd725',
+} as const;
+export type CmsAmbulanceYear = keyof typeof cmsAmbulanceDatasets;
 const CODES=new Set(['A0422','A0424','A0425','A0426','A0427','A0428','A0429','A0430','A0431','A0432','A0433','A0434','A0435','A0436','A0888','A0998','A0999']);
 const FIELDS=['Rndrng_NPI','Rndrng_Prvdr_Last_Org_Name','Rndrng_Prvdr_Ent_Cd','Rndrng_Prvdr_City','Rndrng_Prvdr_State_Abrvtn','Rndrng_Prvdr_Type','HCPCS_Cd','HCPCS_Desc','Place_Of_Srvc','Tot_Benes','Tot_Srvcs','Tot_Bene_Day_Srvcs','Avg_Sbmtd_Chrg','Avg_Mdcr_Alowd_Amt','Avg_Mdcr_Pymt_Amt'];
 const PAGE=250,MAX_PAGES=4;
@@ -21,9 +25,11 @@ function amount(v:unknown):number|null{
  if(!Number.isFinite(n)||n<0||n>Number.MAX_SAFE_INTEGER)throw Error('Invalid CMS numeric field');
  return n;
 }
-export function cmsAmbulanceUrl(npi:string,offset=0){
+export function cmsAmbulanceUrl(npi:string,offset=0,year:CmsAmbulanceYear=CMS_AMBULANCE_YEAR){
  if(!validNpi(npi)||!Number.isInteger(offset)||offset<0||offset>=PAGE*MAX_PAGES||offset%PAGE)throw Error('Invalid CMS query');
- const u=new URL(API);u.searchParams.set('filter[Rndrng_NPI]',npi);
+ const dataset = cmsAmbulanceDatasets[year];
+ if (!dataset) throw Error('Unsupported CMS period');
+ const u=new URL('https://data.cms.gov/data-api/v1/dataset/'+dataset+'/data');u.searchParams.set('filter[Rndrng_NPI]',npi);
  u.searchParams.set('size',String(PAGE));u.searchParams.set('offset',String(offset));
  u.searchParams.set('sort','Rndrng_NPI,HCPCS_Cd,Place_Of_Srvc');
  u.searchParams.set('column',FIELDS.join(','));
@@ -33,11 +39,11 @@ export type CmsAmbulanceRow={
  rowKey:string;npi:string;organizationName:string;city:string|null;state:string|null;providerType:string|null;hcpcs:string;description:string|null;placeOfService:'F'|'O';beneficiaries:number|null;services:number|null;beneficiaryDayServices:number|null;averageSubmittedCharge:number|null;averageAllowedAmount:number|null;averageMedicarePayment:number|null;
 };
 export type CmsAmbulanceEvidence={schemaVersion:1;npi:string;datasetVersion:string;reportingYear:number;sourceUrl:string;queryUrl:string;retrievedAt:string;status:'published-rows'|'no-published-rows';rows:CmsAmbulanceRow[];endUserValidationRequired:true;operatingRelationshipEstablished:false;denialRateAvailable:false;totalClaimCountAvailable:false};
-export async function fetchCmsAmbulanceEvidence(npi:string,fetcher:typeof fetch=fetch,clock=Date.now):Promise<CmsAmbulanceEvidence>{
+export async function fetchCmsAmbulanceEvidence(npi:string,fetcher:typeof fetch=fetch,clock=Date.now,year:CmsAmbulanceYear=CMS_AMBULANCE_YEAR):Promise<CmsAmbulanceEvidence>{
  if(!validNpi(npi))throw Error('Invalid NPI');
  const rows:CmsAmbulanceRow[]=[],seen=new Set<string>();let complete=false;
  for(let page=0;page<MAX_PAGES;page++){
-  const response=await fetcher(cmsAmbulanceUrl(npi,page*PAGE),{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10_000)});
+  const response=await fetcher(cmsAmbulanceUrl(npi,page*PAGE,year),{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10_000)});
   const data=await boundedJson(response,'CMS Medicare Part B');
   if(!Array.isArray(data)||data.length>PAGE)throw Error('Unexpected CMS response shape');
   for(const raw of data){
@@ -59,5 +65,5 @@ export async function fetchCmsAmbulanceEvidence(npi:string,fetcher:typeof fetch=
   if(data.length<PAGE){complete=true;break;}
  }
  if(!complete)throw Error('CMS result exceeds bounded page budget; incomplete evidence withheld');
- return {schemaVersion:1,npi,datasetVersion:CMS_AMBULANCE_DATASET,reportingYear:CMS_AMBULANCE_YEAR,sourceUrl:CMS_AMBULANCE_SOURCE,queryUrl:cmsAmbulanceUrl(npi).href,retrievedAt:new Date(clock()).toISOString(),status:rows.length?'published-rows':'no-published-rows',rows,endUserValidationRequired:true,operatingRelationshipEstablished:false,denialRateAvailable:false,totalClaimCountAvailable:false};
+ return {schemaVersion:1,npi,datasetVersion:cmsAmbulanceDatasets[year],reportingYear:year,sourceUrl:CMS_AMBULANCE_SOURCE,queryUrl:cmsAmbulanceUrl(npi,0,year).href,retrievedAt:new Date(clock()).toISOString(),status:rows.length?'published-rows':'no-published-rows',rows,endUserValidationRequired:true,operatingRelationshipEstablished:false,denialRateAvailable:false,totalClaimCountAvailable:false};
 }

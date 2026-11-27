@@ -1,3 +1,4 @@
+import coachRouter from './discovery-coach';
 import { Router, type IRouter } from "express";
 import discoveryRouter from './public-intelligence-discovery';
 import healthRouter from "./health";
@@ -17,6 +18,7 @@ import authRouter from "./auth";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(coachRouter);
 router.use(discoveryRouter);
 router.use(fireRegistryRouter);
 router.use(emsRegistryRouter);

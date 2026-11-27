@@ -1,3 +1,4 @@
+import { DiscoveryCoach } from './profile/DiscoveryCoach';
 import { ProviderStory } from './profile/ProviderStory';
 import { InlineAgencyRecords } from './profile/InlineAgencyRecords';
 import { ProviderEvidenceStatus } from './PublicProviderEvidenceCoverage';
@@ -185,6 +186,7 @@ const hasReportedValue = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value);
 
 type ProfileSection =
+  | 'discovery_coach'
   | 'activity'
   | 'overview'
   | 'equipment'
@@ -196,8 +198,9 @@ type ProfileSection =
   | 'deal_story'
   | 'evidence';
 
-const PRIMARY_PROFILE_IDS = ['overview','deal_story','equipment','decision_makers','purchasing','activity','evidence'];
+const PRIMARY_PROFILE_IDS = ['overview','discovery_coach','deal_story','equipment','decision_makers','purchasing','activity','evidence'];
 const PROFILE_SECTIONS: Array<{ id: ProfileSection; label: string; short: string; purpose: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
+  { id: 'discovery_coach', label: 'Discovery', short: 'Discovery', purpose: 'Prepare questions and practice real conversations.', icon: Sparkles },
   { id: 'activity', label: 'Activity & follow-up', short: 'Activity', purpose: 'Visit history, next actions, and notes. Unfinished notes are saved on this device.', icon: FileText },
   { id: 'overview', label: 'Overview', short: 'Overview', purpose: 'Start with recorded equipment, operating scale, key contacts and your next action.', icon: Layers },
       { id: 'equipment', label: 'Equipment & Technology', short: 'Equipment', purpose: 'Recorded devices, software, lifecycle, buy-back research and head-to-head comparison.', icon: Cpu },
@@ -1657,6 +1660,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             aria-label={PROFILE_SECTIONS.find(tab=>tab.id===activeSection)?.label}
             tabIndex={0}
           >
+          {activeSection === 'discovery_coach' && <DiscoveryCoach key={rawAgency.id} agency={agency.name} />}
           {activeSection === 'overview' && (
             <div className="pi-surface p-3 text-sm" data-testid="provider-validation-notice"><strong>End-user validation required</strong><p>Registry and imported records are working source information, not confirmed operating facts. Verify individual addresses, equipment, contacts, dates and volumes with the agency. Missing values are not reported.</p><button type="button" className="workspace-button min-h-11" onClick={openProfileSources}>Review individual facts and sources</button></div>
           )}

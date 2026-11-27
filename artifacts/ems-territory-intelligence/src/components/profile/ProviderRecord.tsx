@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck } from 'lucide-react';
-import { findProviderEvidence, type ProviderEvidence } from '../../data/providerProfileEvidence';
+import { Activity, ArrowLeft, ArrowUpRight, Building2, CalendarDays, ClipboardList, FileText, HeartPulse, MapPin, Shield, Truck, Landmark, Users, Receipt } from 'lucide-react';
+import { findProviderEvidence, type ProviderEvidence, type ProviderEvidenceSource } from '../../data/providerProfileEvidence';
 import { parseProviderProfileRef } from '../../navigation/providerProfileUrl';
 import { loadPublicProviderProfile, type PublicProviderProfile } from '../../services/publicProviderProfile';
 import { canCreateRegistryAccount } from '../../services/registryAccountLink';
@@ -13,19 +13,23 @@ import combinedArt from '../../assets/provider-station-art.webp';
 import fireArt from '../../assets/provider-fire-art.webp';
 import emsArt from '../../assets/provider-ems-art.webp';
 import { CmsAmbulanceEvidencePanel } from './CmsAmbulanceEvidencePanel';
-import { NerisDepartmentStations } from './NerisDepartmentStations';
 import { NppesPracticeLocationsPanel } from './NppesPracticeLocationsPanel';
 import { ProviderEquipmentFunding, ProviderSourceLink } from './ProviderEquipmentFunding';
 import { ProviderFootprint } from './ProviderFootprint';
 import { ProviderCallBrief } from './ProviderCallBrief';
 import { ProviderMetrics } from './ProviderMetrics';
-import { UsfaLegacyStations } from './UsfaLegacyStations';
+import { ProviderGrants, ProviderPeople, ProviderStations } from './ProviderPublicSources';
+import { formatProviderMetric, providerCurrency } from '../../services/providerCardIntelligence';
 
 const sections = [
   { id: 'overview', label: 'Overview', icon: Building2 },
   { id: 'equipment', label: 'Equipment & funding', icon: ClipboardList },
+  { id: 'grants', label: 'Grants', icon: Landmark },
+  { id: 'people', label: 'People', icon: Users },
+  { id: 'stations', label: 'Stations', icon: Truck },
   { id: 'quality', label: 'Quality & outcomes', icon: HeartPulse },
   { id: 'operations', label: 'Operations', icon: Activity },
+  { id: 'claims', label: 'Claims', icon: Receipt },
   { id: 'sources', label: 'Sources', icon: FileText },
 ] as const;
 
@@ -67,9 +71,6 @@ function Operations({ profile, evidence }: { profile: PublicProviderProfile; evi
     enabled: Boolean(usfaKey),
     retry: false,
   });
-  const cmsAgency = identity?.sourceName === 'NPPES' && canCreateRegistryAccount(identity)
-    ? createSourceNativeAgency(identity, [])
-    : undefined;
   return <section className="pr-panel pr-operations">
     <h2>Operations</h2>
     {metrics.length ? (
@@ -87,9 +88,10 @@ function Operations({ profile, evidence }: { profile: PublicProviderProfile; evi
       <ProviderSourceLink source={{ label: 'USFA Fire Department Registry', date: usfa.data.retrievedAt, url: 'https://apps.usfa.fema.gov/registry/download' }} />
     </section>}
     {profile.reportedStationCount != null && <p>{profile.reportedStationCount.toLocaleString('en-US')} stations reported by {profile.stationCountSource}.</p>}
-    {identity?.sourceName === 'NERIS' && <NerisDepartmentStations id={identity.identifier} />}
-    {identity?.sourceName === 'USFA NFDR' && profile.registryKey && <UsfaLegacyStations parentKey={profile.registryKey} />}
-    {cmsAgency && <><NppesPracticeLocationsPanel agency={cmsAgency} /><CmsAmbulanceEvidencePanel agency={cmsAgency} /></>}
+    <div className="pr-contact-links">
+      <a href="#stations"><Truck size={16} aria-hidden="true" /> Stations &amp; apparatus</a>
+      <a href="#claims"><Receipt size={16} aria-hidden="true" /> Medicare claims and reimbursement</a>
+    </div>
   </section>;
 }
 
@@ -140,7 +142,8 @@ function Quality({ evidence }: { evidence?: ProviderEvidence }) {
 }
 
 function Sources({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
-  const rows = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.accountContext ?? [])];
+  const rows: { source: ProviderEvidenceSource }[] = [...(evidence?.equipment ?? []), ...(evidence?.funding ?? []), ...(evidence?.operations ?? []), ...(evidence?.quality ?? []), ...(evidence?.accountContext ?? []), ...(evidence?.contacts ?? [])];
+  if (evidence?.stationDirectory) rows.push(evidence.stationDirectory);
   const sources = [...new Map(rows.map(({ source }) => [source.url, source])).values()];
   return <section className="pr-panel pr-sources">
     <h2>Sources</h2>
@@ -149,6 +152,39 @@ function Sources({ profile, evidence }: { profile: PublicProviderProfile; eviden
       {sources.map((source) => <li key={source.url}><ProviderSourceLink source={source} /></li>)}
     </ul>
     <p className="pr-muted">Review the original record before relying on locations, equipment, funding or clinical data.</p>
+  </section>;
+}
+
+function ProfileGlance({ evidence }: { evidence?: ProviderEvidence }) {
+  const equipment = evidence?.equipment?.[0];
+  const funding = evidence?.funding?.[0];
+  const person = evidence?.contacts?.find(row => row.name);
+  const metric = evidence?.quality?.find(row => /ROSC/i.test(row.label)) ?? evidence?.operations?.[0] ?? evidence?.quality?.[0];
+  const glance = [
+    equipment && { anchor: 'equipment', label: 'Equipment', value: equipment.model ?? equipment.deployment ?? equipment.category,
+      note: [equipment.manufacturer, equipment.status, equipment.source.date].filter(Boolean).join(' · '), icon: ClipboardList },
+    funding && { anchor: 'equipment', label: 'Funding & purchasing', value: funding.amount === undefined ? funding.title : providerCurrency.format(funding.amount),
+      note: funding.status + ' · ' + funding.source.date, icon: Landmark },
+    person && { anchor: 'people', label: 'Leadership', value: person.name, note: person.role + ' · ' + person.source.date, icon: Users },
+    metric && { anchor: evidence?.quality?.includes(metric) ? 'quality' : 'operations', label: metric.label,
+      value: formatProviderMetric(metric), note: metric.reportingPeriod ?? metric.source.date, icon: Activity },
+  ];
+  if (!glance.some(Boolean)) return null;
+  return <section className="pr-glance" aria-label="Profile at a glance">
+    {glance.map(item => item && <a className="pr-panel" key={item.label} href={'#' + item.anchor}>
+      <span className="pr-icon-heading"><item.icon size={17} aria-hidden="true" />{item.label}</span>
+      <strong>{item.value}</strong><small className="pr-muted">{item.note}</small>
+    </a>)}
+  </section>;
+}
+
+function Claims({ profile }: { profile: PublicProviderProfile }) {
+  const identity = profile.identity;
+  const agency = identity?.sourceName === 'NPPES' && canCreateRegistryAccount(identity)
+    ? createSourceNativeAgency(identity, []) : undefined;
+  return <section className="pr-panel">
+    <h2 className="pr-icon-heading"><Receipt size={22} aria-hidden="true" /> Claims &amp; reimbursement</h2>
+    {agency ? <CmsAmbulanceEvidencePanel agency={agency} autoLoad /> : <p className="pr-muted">No organization NPI linked to this public profile. Use the NPPES organization listing or the linked workspace account to look up reported Medicare service units and payments.</p>}
   </section>;
 }
 
@@ -202,13 +238,27 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           <Icon size={17} aria-hidden="true" />{label}
         </a>)}
       </nav>
+      <div className="pr-mobile-tabs">
+        <label htmlFor="provider-section">Profile section</label>
+        <select id="provider-section" value={section} onChange={event => { window.location.hash = event.target.value; }}>
+          {sections.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+        </select>
+      </div>
+      {section === 'overview' && <ProfileGlance evidence={evidence} />}
       {section === 'equipment' ? <div className="pr-detail-wrap">
         <ProviderEquipmentFunding evidence={evidence}>
+          <a className="pr-panel pr-icon-heading pr-source-link" href="#grants"><Landmark size={19} aria-hidden="true" /> Look up OpenFEMA grant records</a>
           <ProviderFootprint key={reference} profile={profile} />
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
           {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /></>}
+          {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
+          {section === 'people' && <ProviderPeople evidence={evidence} />}
+          {section === 'stations' && <><ProviderStations profile={profile} evidence={evidence} />
+            {profile.identity?.sourceName === 'NPPES' && canCreateRegistryAccount(profile.identity) &&
+              <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} />}</>}
+          {section === 'claims' && <Claims profile={profile} />}
           {section === 'quality' && <Quality evidence={evidence} />}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
           {section === 'sources' && <Sources profile={profile} evidence={evidence} />}

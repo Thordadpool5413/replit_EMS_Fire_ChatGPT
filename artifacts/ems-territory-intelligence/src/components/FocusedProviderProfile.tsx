@@ -92,6 +92,12 @@ import { ProviderAddressLine } from './profile/ProviderAddressLine';
 import { DepartmentFacilities } from './profile/DepartmentFacilities';
 import { ProviderIntelligenceCoverage } from './profile/ProviderIntelligenceCoverage';
 import { displayedProviderLocation,useLocationRevision,locationDirections,providerAddressReview } from '../services/providerLocation';
+import { findProviderEvidence } from '../data/providerProfileEvidence';
+import { registryIdentityKey } from '../services/registryAccountLink';
+import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
+import { ProviderGrants, ProviderPeople, ProviderStations } from './profile/ProviderPublicSources';
+import { ProviderEquipmentFunding } from './profile/ProviderEquipmentFunding';
+import { ProviderMetrics } from './profile/ProviderMetrics';
 import { ProviderCompetitiveProfile } from './profile/ProviderCompetitiveProfile';
 import { ProfileCommandOverview } from './profile/ProfileCommandOverview';
 import { ProfileAttentionSummary } from './profile/ProfileAttentionSummary';
@@ -446,6 +452,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
   // Default to Overview; every topic shares one accessible content region.
   const [requestedReviewField, setRequestedReviewField] = useState<string | undefined>();
+  const publicIdentity = rawAgency.registryIdentity;
+  const publicEvidence = publicIdentity && findProviderEvidence(registryIdentityKey(publicIdentity), publicIdentity.name);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.
@@ -1644,6 +1652,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
+          {activeSection === 'overview' && <ProviderCardIntelligence agency={agency} />}
           {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}
 
           {activeSection !== 'overview' && (
@@ -1664,6 +1673,8 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </header>
           )}
 
+          {activeSection === 'equipment' && (publicEvidence?.equipment?.length || publicEvidence?.funding?.length) ?
+            <div className="pr-embedded-evidence"><ProviderEquipmentFunding evidence={publicEvidence} showProfileSources={false} /></div> : null}
           {activeSection === 'equipment' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="equipment" onOpenSources={openProfileSources}/>}
           {activeSection === 'equipment' && (
             <AgencyIntelligenceBrief view="equipment" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
@@ -1679,15 +1690,20 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
               <DealStoryBriefingView key={agency.id} agency={agency} variant="full" onOpenDossier={() => setShowDossierModal(true)} />
             </div>
           )}
+          {activeSection === 'purchasing' && <ProviderGrants state={agency.stateCode} name={publicIdentity?.name ?? agency.name} evidence={publicEvidence} />}
           {activeSection === 'purchasing' && <ProviderCompetitiveProfile agency={rawAgency} directory={directoryAgencies} view="purchasing" onOpenSources={openProfileSources}/>}
           {activeSection === 'purchasing' && (
             <AgencyIntelligenceBrief view="purchasing" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
           )}
+          {activeSection === 'operations' && publicIdentity && <ProviderStations
+            profile={{ identity: publicIdentity, registryKey: registryIdentityKey(publicIdentity) }} evidence={publicEvidence}
+          />}
           {activeSection === 'operations' && (
             <AgencyIntelligenceBrief view="operations" agency={agency} renderFactTag={(field) => <FactVerificationTag agency={agency} field={field} />} onOpenSources={openProfileSources} />
           )}
 
           {/* TOPIC 4: DECISION MAKERS & AUTHORIZED COMMAND ROSTER */}
+          {showSection('leadership') && publicEvidence?.contacts?.length ? <ProviderPeople evidence={publicEvidence} /> : null}
           {showSection('leadership') && <><DecisionMakerDirectory agency={agency} /><AgencyAuthorityEvidence key={rawAgency.id} agencyId={rawAgency.id}/></>}
 
           {showSection('battlecard') && (<ProfileDetail testId="detail-battlecard" icon={Scale} tone="navy" kind="reference" title="Head-to-head comparison" summary={`Recorded incumbent ${agency.installedFleet.defibBrand} vs. benchmark alternative · manufacturer claims, not agency outcomes`}>
@@ -1795,6 +1811,10 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
           </ProfileDetail>)}
 
+                {showSection('clinical') && publicEvidence?.quality?.length ? (
+                  <section className="pr-panel"><h3 className="pr-icon-heading"><HeartPulse size={19} aria-hidden="true" /> Published department quality &amp; outcomes</h3>
+                    <ProviderMetrics metrics={publicEvidence.quality} /></section>
+                ) : null}
                 {showSection('clinical') && (<ProfileDetail testId="detail-clinical" icon={HeartPulse} tone="red" kind="reported" title="Clinical performance & quality measures" summary="Survival funnel, quality measures and protocol alignment. Modeled uplift is labeled and never an achieved outcome.">
         {/* SECTION: CLINICAL EMERGENCY PERFORMANCE, QUALITY & PATIENT OUTCOMES */}
         {showSection('clinical') &&
@@ -1998,7 +2018,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
         )}
         </ProfileDetail>)}
 
-                {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency}/>}
+                {activeSection === 'medicare' && <CmsAmbulanceEvidencePanel key={rawAgency.id+':'+(rawAgency.npiNumber??'')+':'+(rawAgency.registryIdentity?.identifier??'')} agency={rawAgency} autoLoad/>}
                 {activeSection === 'medicare' && (
           <FinancialIntelligence
             agency={agency}

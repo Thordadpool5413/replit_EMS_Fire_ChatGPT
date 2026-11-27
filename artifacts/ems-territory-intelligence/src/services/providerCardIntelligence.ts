@@ -51,6 +51,7 @@ export function buildProviderCardFacts(evidence?: ProviderEvidence, agency?: Age
         value: [quantity, model].filter(Boolean).join(' · ') || entry.deployment || providerEquipmentLabels[entry.category],
         status: entry.status,
         detail: [entry.details, details([
+          ['Supplier', entry.supplier], ['Approved', entry.approvedOn], ['Purchased', entry.lastPurchasedOn],
           ['Owner', entry.owner], ['Maintainer', entry.maintainedBy], ['Acquired', entry.acquiredOn],
           ['Warranty ends', entry.warrantyEnds], ['Service ends', entry.serviceEnds],
           ['Pads expire', entry.padsExpireOn], ['Batteries expire', entry.batteriesExpireOn],
@@ -70,10 +71,26 @@ export function buildProviderCardFacts(evidence?: ProviderEvidence, agency?: Age
     })),
     quality: (evidence?.quality ?? []).map(metricFact),
     operations: (evidence?.operations ?? []).map(metricFact),
-    workflow: (evidence?.accountContext ?? []).map(entry => ({
-      label: entry.area, value: entry.title, detail: entry.detail, source: entry.source,
-    })),
+    workflow: [
+      ...(evidence?.contacts ?? []).map(entry => ({
+        label: entry.role, value: entry.name ?? entry.phone ?? entry.email ?? entry.role,
+        detail: [entry.name && entry.phone, entry.email].filter(Boolean).join(' · '), source: entry.source,
+      })),
+      ...(evidence?.accountContext ?? []).map(entry => ({
+        label: entry.area, value: entry.title, detail: entry.detail, source: entry.source,
+      })),
+    ],
   };
+
+  const stationDirectory = evidence?.stationDirectory;
+  if (stationDirectory) {
+    facts.operations.push({
+      label: 'Locations in department directory',
+      value: stationDirectory.stations.length.toLocaleString('en-US'),
+      detail: stationDirectory.visitContact?.phone ? 'Station visits: ' + stationDirectory.visitContact.phone : undefined,
+      source: stationDirectory.source,
+    });
+  }
 
   if (agency) {
     const add = (group: GroupKey, key: AgencyFactEvidenceKey, label: string, value?: string, detail?: string) => {
@@ -139,7 +156,7 @@ export function providerCallQuestions(evidence?: ProviderEvidence, savedContract
   const equipment = evidence?.equipment ?? [];
   const context = evidence?.accountContext ?? [];
   const purchase = evidence?.funding?.some(entry => entry.status !== 'Reported expenditure') ||
-    equipment.some(entry => entry.status === 'Proposed purchase');
+    equipment.some(entry => entry.status === 'Proposed purchase' || entry.status === 'Purchase approved');
   const reportedFleet = equipment.some(entry => entry.status === 'In service reported' || entry.status === 'Documented historically');
   const questions: string[] = [];
   if (context.some(entry => entry.title === 'AED-to-monitor compatibility')) {

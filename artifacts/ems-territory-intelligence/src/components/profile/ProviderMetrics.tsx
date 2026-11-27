@@ -27,7 +27,8 @@ export function ProviderMetrics({ metrics }: { metrics: DepartmentMetric[] }) {
         const Icon = iconFor(metric.label);
         return <div key={metric.label} className="pr-metric-card">
           <dt><Icon size={17} aria-hidden="true" />{metric.label}</dt>
-          <dd>{formatProviderMetric(metric)}{metric.context && <small>{metric.context}</small>}<ProviderSourceLink source={metric.source} /></dd>
+          <dd>{formatProviderMetric(metric)}{metric.format === 'percent' && metric.value >= 0 && metric.value <= 100 &&
+            <span className="pr-metric-bar" aria-hidden="true"><span style={{ width: metric.value + '%' }} /></span>}{metric.context && <small>{metric.context}</small>}<ProviderSourceLink source={metric.source} /></dd>
         </div>;
       })}
     </dl>

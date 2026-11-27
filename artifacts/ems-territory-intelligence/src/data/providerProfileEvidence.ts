@@ -5,12 +5,15 @@ export type ProviderEvidenceSource = {
 };
 
 export type EquipmentCategory = 'aed' | 'monitor' | 'cpr' | 'ventilator' | 'supplies';
-export type EquipmentStatus = 'In service reported' | 'Documented historically' | 'Proposed purchase' | 'Service agreement';
+export type EquipmentStatus = 'In service reported' | 'Documented historically' | 'Proposed purchase' | 'Purchase approved' | 'Service agreement';
 
 export type ProviderEquipmentEvidence = {
   category: EquipmentCategory;
   model?: string;
   manufacturer?: string;
+  supplier?: string;
+  approvedOn?: string;
+  lastPurchasedOn?: string;
   owner?: string;
   maintainedBy?: string;
   acquiredOn?: string;
@@ -54,6 +57,23 @@ export type ProviderAccountContext = {
   source: ProviderEvidenceSource;
 };
 
+export type ProviderContact = {
+  role: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  source: ProviderEvidenceSource;
+};
+
+export type ProviderStation = {
+  number: string;
+  name: string;
+  address: string;
+  category: 'Department' | 'County' | 'Shared' | 'Volunteer';
+  apparatus?: string;
+  contact?: ProviderContact;
+};
+
 export type ProviderEvidence = {
   registryKey: string;
   registryName: string;
@@ -63,6 +83,9 @@ export type ProviderEvidence = {
   operations?: DepartmentMetric[];
   quality?: DepartmentMetric[];
   accountContext?: ProviderAccountContext[];
+  contacts?: ProviderContact[];
+  stationDirectory?: { source: ProviderEvidenceSource; visitContact?: ProviderContact; stations: ProviderStation[] };
+  publicAwardRecipients?: string[];
 };
 
 const flaglerBudget = {
@@ -85,6 +108,30 @@ const flaglerLogistics = {
   label: 'Flagler County Fire Rescue Logistics Division', date: 'Undated department page',
   url: 'https://www.flaglercounty.gov/County-Services/Public-Safety/Flagler-County-Fire-Rescue/Logistics-Division',
 };
+const flaglerDirectory = {
+  label: 'Flagler County Fire Rescue station and contact directory', date: 'Accessed Nov 26, 2026',
+  url: 'https://www.flaglercounty.gov/County-Services/Public-Safety/Flagler-County-Fire-Rescue',
+};
+const flaglerChief = {
+  label: 'Flagler County Fire Rescue release', date: '2026-08-27',
+  url: 'https://www.flaglercounty.gov/News-articles/2026-08-27-AEDs-replaced',
+};
+const flaglerDeputy = {
+  label: 'Flagler County deputy chief appointment', date: '2026-01-13',
+  url: 'https://www.flaglercounty.gov/News-articles/2026-01-13-Deputy-Fire-Chief',
+};
+const coralChief = {
+  label: 'Coral Springs fire department directory', date: 'Accessed Nov 26, 2026',
+  url: 'https://www.coralsprings.gov/Government/Departments/Fire-Department',
+};
+const pembrokePurchase = {
+  label: 'Pembroke Pines City Commission action 26-2757', date: '2026-08-05',
+  url: 'https://ppines.legistar.com/LegislationDetail.aspx?FullText=1&GUID=AA3CD82E-5581-4F49-97B0-DC4FBCE8389C&ID=8156411',
+};
+const pembrokeStations = {
+  label: 'Pembroke Pines Stations & Apparatus directory', date: 'Accessed Nov 26, 2026',
+  url: 'https://www.ppines.com/241/Stations-Apparatus',
+};
 const orangeReport = {
   label: 'Orange County Fire Rescue department summary', date: 'FY2023',
   url: 'https://ocfl.net/Portals/0/Library/Emergency-Safety/docs/OCFRD_Summary_FY2023-CMcert.pdf',
@@ -106,6 +153,35 @@ const fortWorthAction = {
 export const providerProfileEvidence = [
   {
     registryKey: 'FDID:FL:61091', registryName: 'Flagler County Fire Rescue', combinedServices: true,
+    publicAwardRecipients: ['Flagler County', 'County of Flagler'],
+    contacts: [
+      { role: 'Fire Rescue Chief', name: 'Michael Tucker', source: flaglerChief },
+      { role: 'Deputy Chief', name: 'Daniel VanDeusen', source: flaglerDeputy },
+      { role: 'Reports and records', phone: '386-313-4444', email: 'firefeedback@flaglercounty.gov', source: flaglerDirectory },
+      { role: 'Fire Prevention', phone: '386-313-4258', email: 'firemarshal@flaglercounty.gov', source: flaglerDirectory },
+      { role: 'Community paramedic', phone: '386-313-4260', source: flaglerDirectory },
+      { role: 'Training Division', phone: '386-313-4262', source: flaglerDirectory },
+      { role: 'Ambulance billing', name: 'Digitech', phone: '855-437-7656', source: flaglerDirectory },
+    ],
+    stationDirectory: {
+      source: flaglerDirectory,
+      visitContact: { role: 'Main county line for station visits', phone: '386-313-4000', source: flaglerDirectory },
+      stations: [
+        { number: '40', name: 'Hammock', address: '5593 North Oceanshore Boulevard, Palm Coast, FL', category: 'County', apparatus: 'Engine and rescue' },
+        { number: '50', name: 'Bunnell', address: '160 Old Moody Boulevard, Bunnell, FL', category: 'County', apparatus: 'Tender, woods unit and rescue' },
+        { number: '51', name: 'Espanola', address: '3055 County Road 13, Bunnell, FL', category: 'County', apparatus: 'Tender and rescue' },
+        { number: '52', name: 'Flagler Executive Airport', address: '130 Airport Road, Palm Coast, FL', category: 'County', apparatus: 'Engine and rescue' },
+        { number: '57', name: 'St. Johns Park', address: '89 East County Road 2006, Bunnell, FL', category: 'County', apparatus: 'Engine and rescue' },
+        { number: '11', name: 'Flagler Beach', address: '320 South Flagler Avenue, Flagler Beach, FL', category: 'Shared', apparatus: 'County Rescue 45' },
+        { number: '16', name: 'Halifax Plantation', address: '3935 Old Dixie Highway, Ormond Beach, FL', category: 'Shared', apparatus: 'Shared with Volusia County' },
+        { number: '21', name: 'Palm Coast', address: '9 Corporate Drive, Palm Coast, FL', category: 'Shared', apparatus: 'County Rescue 41' },
+        { number: '22', name: 'Palm Coast', address: '307 Palm Coast Parkway NE, Palm Coast, FL', category: 'Shared', apparatus: 'County Rescue 42' },
+        { number: '24', name: 'Palm Coast', address: '1505 Palm Harbor Parkway, Palm Coast, FL', category: 'Shared', apparatus: 'County Rescue 44' },
+        { number: '25', name: 'Palm Coast', address: '1250 Belle Terre Parkway, Palm Coast, FL', category: 'Shared', apparatus: 'County Rescue 55' },
+        { number: '53', name: 'Korona', address: '5820 US Highway 1 South, Bunnell, FL', category: 'Volunteer' },
+        { number: '58', name: 'Rima Ridge', address: '500 Rodeo Road, Ormond Beach, FL', category: 'Volunteer' },
+      ],
+    },
     equipment: [
       {
         category: 'aed', status: 'In service reported',
@@ -186,6 +262,13 @@ export const providerProfileEvidence = [
   },
   {
     registryKey: 'FDID:FL:10151', registryName: 'Coral Springs-Parkland Fire Department', combinedServices: true,
+    publicAwardRecipients: ['City of Coral Springs', 'Coral Springs, City of'],
+    contacts: [
+      { role: 'Fire Chief', name: 'John Whalen', source: coralChief },
+      { role: 'EMS Battalion Chief', name: 'Patrick Staab', source: coralReport },
+      { role: 'Division Chief', name: 'John Barry', source: coralReport },
+      { role: 'Medical Director', name: 'Dr. Peter Antevy', source: coralReport },
+    ],
     operations: [
       { label: 'Total incidents', value: 17077, source: coralReport },
       { label: 'EMS calls', value: 11656, source: coralReport },
@@ -203,6 +286,44 @@ export const providerProfileEvidence = [
     ],
     accountContext: [
       { area: 'Clinical workflow', title: 'CARES and case review', detail: 'The EMS Division reports CARES participation with hospital partners. The EMS battalion chief oversees QA/QI, protocols and EMS equipment.', source: coralReport },
+    ],
+  },
+  {
+    registryKey: 'FDID:FL:10082', registryName: 'Pembroke Pines Fire Rescue', combinedServices: true,
+    publicAwardRecipients: ['City of Pembroke Pines', 'Pembroke Pines, City of'],
+    contacts: [{ role: 'Fire Rescue office', phone: '954-499-9600', source: pembrokeStations }],
+    stationDirectory: {
+      source: pembrokeStations,
+      visitContact: { role: 'Fire Rescue office for station visits', phone: '954-499-9600', source: pembrokeStations },
+      stations: [
+        { number: '33', name: 'Pembroke Pines', address: '600 SW 72nd Avenue, Pembroke Pines, FL 33023', category: 'Department', apparatus: 'Engine 33, Rescue 33, Crash/TSU 33' },
+        { number: '69', name: 'Pembroke Pines', address: '9500 Pines Boulevard Building B, Pembroke Pines, FL 33024', category: 'Department', apparatus: 'Battalion 69, Engine 69, Platform 69, Rescue 69, Rescue 269' },
+        { number: '89', name: 'Pembroke Pines', address: '13000 SW Pines Boulevard, Pembroke Pines, FL 33027', category: 'Department', apparatus: 'Engine 89, Rescue 89, Rescue 289' },
+        { number: '99', name: 'Pembroke Pines', address: '16999 Pines Boulevard, Pembroke Pines, FL 33028', category: 'Department', apparatus: 'Battalion 99, Engine 99, Platform 99, Rescue 99' },
+        { number: '79', name: 'Pembroke Pines', address: '19900 Pines Boulevard, Pembroke Pines, FL 33029', category: 'Department', apparatus: 'Engine 79, Rescue 79' },
+        { number: '101', name: 'Pembroke Pines', address: '6057 SW 198 Terrace, Pembroke Pines, FL 33332', category: 'Department', apparatus: 'Engine 101, Rescue 101' },
+      ],
+    },
+    equipment: [
+      {
+        category: 'monitor', manufacturer: 'Stryker', supplier: 'Stryker Sales, LLC', model: 'LIFEPAK 35',
+        quantity: 21, status: 'Purchase approved', approvedOn: '2026-08-05',
+        details: 'Commission authorized the purchase. The record does not state an executed purchase or delivery date.',
+        source: pembrokePurchase,
+      },
+      {
+        category: 'monitor', manufacturer: 'Stryker', model: 'LIFEPAK 15 V1',
+        quantity: 16, status: 'Documented historically',
+        details: 'The approved package included a $24,000 trade-in credit for 16 existing units. Completion was not reported.',
+        source: pembrokePurchase,
+      },
+    ],
+    funding: [
+      {
+        title: 'Monitor/defibrillator purchase and accessories', amount: 1072958.05, status: 'Approved',
+        basis: 'Not-to-exceed authorization including a $24,000 trade-in credit.',
+        purchasingVehicle: 'City Commission item 26-2757 · sole source', source: pembrokePurchase,
+      },
     ],
   },
   {
@@ -246,14 +367,24 @@ export const providerProfileEvidence = [
   },
 ] satisfies ProviderEvidence[];
 
-// Published Florida EMS licenses for these same departments. Both source ID and name must match.
-const floridaEmsMatches = new Map([
+// Identity bridges grounded in the state roster and matching published headquarters.
+const registryEvidenceMatches = new Map([
   ['STATE-EMS:FL:license:1801', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
   ['STATE-EMS:FL:license:4807', { name: 'Orange County Fire Rescue Department', fdid: 'FDID:FL:07252' }],
+  ['STATE-EMS:FL:license:621', { name: 'Pembroke Pines Fire Rescue', fdid: 'FDID:FL:10082' }],
+  ['NERIS:FD12035253', { name: 'Flagler County Fire Rescue', fdid: 'FDID:FL:61091' }],
+  ['NERIS:FD12011524', { name: 'Pembroke Pines Fire Rescue', fdid: 'FDID:FL:10082' }],
 ]);
 
 export function findProviderEvidence(registryKey: string | undefined, registryName: string): ProviderEvidence | undefined {
-  const exactIdentity = floridaEmsMatches.get(registryKey ?? '');
+  const exactIdentity = registryEvidenceMatches.get(registryKey ?? '');
   const key = exactIdentity?.name === registryName ? exactIdentity.fdid : registryKey;
   return providerProfileEvidence.find(entry => entry.registryKey === key && entry.registryName === registryName);
+}
+
+export function providerEvidenceNerisId(evidence?: ProviderEvidence) {
+  for (const [key, value] of registryEvidenceMatches) {
+    if (key.startsWith('NERIS:') && value.fdid === evidence?.registryKey && value.name === evidence.registryName) return key.slice(6);
+  }
+  return undefined;
 }

@@ -11,6 +11,11 @@ const fairfaxQuality = source('Fairfax County FY2025 Adopted Budget, fire and re
 const fairfaxBilling = source('Fairfax County FY2026 Adopted Budget, EMS transport billing performance', 'FY2026 budget', 'https://www.fairfaxcounty.gov/budget/sites/budget/files/Assets/documents/fy2026/adopted/pm/92_pm.pdf');
 const lafayette = source('Lafayette Fire Department annual report', 'CY2025', 'https://www.lafayetteco.gov/DocumentCenter/View/46439/2025-Annual-Report-v33?bidId=');
 
+const elginInventory = source('City of Elgin council inventory report', '2025-09-24', 'https://elginil.gov/Archive/ViewFile/Item/9437');
+const elginApproval = source('City of Elgin council minutes', '2025-09-24', 'https://elginil.gov/Archive.aspx?ADID=9488');
+const middletownDeployment = source('Town of Middletown AED deployment announcement', '2024-03-07',
+  'https://www.middletownri.gov/m/newsflash/Archive/Item/2513?arcId=4430');
+
 function directStations(name: string, jurisdiction: string, rows: [string, string, string][], citation: ProviderEvidenceSource): ProviderStation[] {
   return rows.map(([number, street, phone]) => ({
     number, name, address: street + ', ' + jurisdiction, category: 'Department',
@@ -19,6 +24,29 @@ function directStations(name: string, jurisdiction: string, rows: [string, strin
 }
 
 export const expandedProviderRecords: ProviderEvidence[] = [
+  {
+    registryKey: 'FDID:IL:KA191', registryName: 'Elgin Fire Department', combinedServices: true,
+    equipment: [
+      { category: 'aed', status: 'In service reported', quantity: 142, owner: 'City of Elgin',
+        maintainedBy: 'Elgin Fire Department', deployment: 'City buildings and vehicles',
+        details: 'The September 2025 report counts 142 deployed municipal AEDs. It identifies ZOLL AED 3 units in the program and does not give a complete model-by-model count.',
+        source: elginInventory },
+      { category: 'aed', status: 'Purchase approved', manufacturer: 'ZOLL', model: 'AED 3',
+        supplier: 'Second Chance Cardiac Solutions', quantity: 22, approvedOn: '2025-09-24',
+        deployment: 'Citywide AED replacement program', details: 'Council authorized the contract. The minutes do not include an invoice, payment or delivery date.',
+        source: elginApproval },
+    ],
+    funding: [{ title: 'Replacement AED contract', status: 'Approved', amount: 35151,
+      basis: 'Council authorized the replacement contract for 22 devices through the State of Illinois contract.',
+      source: elginApproval }],
+  },
+  {
+    registryKey: 'FDID:RI:01900', registryName: 'Middletown Fire Department',
+    equipment: [{ category: 'aed', status: 'In service reported', manufacturer: 'ZOLL', model: 'AED 3', quantity: 1,
+      deployment: 'Gaudet Athletic Complex public-access site',
+      details: 'The town reported that Middletown Fire provided this device at one public-access site. The announcement describes deployment in March 2024.',
+      source: middletownDeployment }],
+  },
   {
     registryKey: 'FDID:IL:LA401', registryName: 'Waukegan Fire Department', combinedServices: true,
     stationDirectory: {

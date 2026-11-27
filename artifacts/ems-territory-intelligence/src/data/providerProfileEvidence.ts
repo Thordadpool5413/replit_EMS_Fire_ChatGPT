@@ -1,3 +1,4 @@
+import { interstateProviderEvidence } from './interstateProviderEvidence';
 import { centralFloridaEvidence } from './centralFloridaEvidence';
 import { providerDocumentRecords } from './providerDocumentRecords';
 import { municipalAedPurchases } from './providerAedPurchasingEvidence';
@@ -466,6 +467,13 @@ export const providerProfileEvidence = [
   },
   {
     registryKey: 'FDID:IL:CS931', registryName: 'Chicago Fire Department', combinedServices: true,
+    funding: [{
+      title: 'ZOLL defibrillator and AED contract 243444', amount: 10000000, status: 'Awarded',
+      basis: 'Chicago’s contract register lists a ceiling through December 19, 2028. The ceiling does not identify quantities purchased or amounts paid.',
+      purchasingVehicle: '243444',
+      source: { label: 'Chicago vendor and contract register, contract 243444', date: '2023-12-21',
+        url: 'https://webapps1.chicago.gov/vcsearch/city/contracts/243444' },
+    }],
     publicAwardRecipients: ['City of Chicago', 'Chicago, City of'],
   },
   {
@@ -490,6 +498,7 @@ export const providerProfileEvidence = [
   ...municipalBillingRecords,
   ...providerDocumentRecords,
   ...centralFloridaEvidence,
+  ...interstateProviderEvidence,
   ...municipalAedPurchases,
 ] satisfies ProviderEvidence[];
 
@@ -506,6 +515,9 @@ const registryEvidenceMatches = new Map([
   ['NERIS:FD12095614', { name: 'Orlando Fire Department', fdid: 'FDID:FL:07212' }],
   ['NERIS:FD17031754', { name: 'Chicago Fire Department', fdid: 'FDID:IL:CS931' }],
   ['NERIS:FD36047901', { name: 'Fire Department City Of New York (FDNY)', fdid: 'FDID:NY:31000' }],
+  ['NERIS:FD19153927', { name: 'Ankeny Fire Department', fdid: 'FDID:IA:77003' }],
+  ['NERIS:FD13097928', { name: 'Douglas County Fire Department', fdid: 'FDID:GA:04801' }],
+  ['NERIS:FD44003188', { name: 'Warwick Fire Department', fdid: 'FDID:RI:03500' }],
   ['NERIS:FD12097921', { name: 'Osceola County Department Of Fire Rescue And Ems', fdid: 'FDID:FL:26032' }],
   ['NERIS:FD12009171', { name: 'Brevard County Fire Rescue', fdid: 'FDID:FL:19182' }],
   ['NERIS:FD12009679', { name: 'Malabar Fire Department', fdid: 'FDID:FL:19111' }],

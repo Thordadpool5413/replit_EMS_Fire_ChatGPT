@@ -1,3 +1,4 @@
+import { ProviderEvidenceStatus } from '../PublicProviderEvidenceCoverage';
 import { RegionalAedSources } from '../RegionalAedSources';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -270,7 +271,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         </ProviderEquipmentFunding>
       </div> : <div className="pr-layout">
         <div className="pr-detail">
-          {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /></>}
+          {section === 'overview' && <><ProviderCallBrief evidence={evidence} /><Overview profile={profile} evidence={evidence} /><ProviderEvidenceStatus evidence={evidence} /></>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <><ProviderPeople evidence={evidence} /><FloridaProviderContacts license={floridaLicense} /></>}
           {section === 'stations' && <><ProviderStations profile={profile} evidence={evidence} />

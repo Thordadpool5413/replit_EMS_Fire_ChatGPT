@@ -1,3 +1,4 @@
+import { publicProviderEvidenceCoverage, type EvidenceCoverageCounts, type EvidenceCoverageSnapshot } from '../artifacts/ems-territory-intelligence/src/services/publicProviderEvidenceCoverage';
 import { createSourceCoverageGeography } from './lib/sourceCoverageGeography.mts';
 import { createHash } from 'node:crypto';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -60,15 +61,13 @@ function audit(ref: string, name: string, key: string | undefined, county: strin
   const evidence = findProviderEvidence(key, name);
   const equipment = evidence?.equipment ?? [];
   const aeds = equipment.filter(row => row.category === 'aed');
-  const datedOwned = equipment.filter(row => ['In service reported', 'Service agreement'].includes(row.status) && row.owner && row.quantity !== undefined);
-  const acquisitionHistory = [...new Set(equipment.flatMap(row => [row.lastPurchasedOn ? 'Purchase dated ' + row.lastPurchasedOn : '',
-    row.paidOn ? 'Paid ' + row.paidOn : '', row.acquiredOn ? 'Acquired ' + row.acquiredOn : ''].filter(Boolean)))];
-  const payerDenials = [...new Set(evidence?.billingDenials?.flatMap(row => row.denialPayer ? [row.denialPayer] : []) ?? [])];
+  const { owned: datedOwned, acquisitions: acquisitionHistory, namedPayers: payerDenials } = publicProviderEvidenceCoverage(evidence);
   const inService = aeds.filter(row => row.status === 'In service reported');
   const scopedModelCount = inService.some(row => row.manufacturer && row.model && row.quantity !== undefined);
   const direct = evidence?.stationDirectory?.stations.filter(row => row.contact?.phone || row.contact?.email) ?? [];
   const sources = [...new Set([
     ...equipment.map(row => row.source.url),
+    ...(evidence?.funding?.map(row => row.source.url) ?? []),
     ...(evidence?.stationDirectory ? [evidence.stationDirectory.source.url] : []),
     ...(evidence?.billing?.map(row => row.source.url) ?? []),
     ...(evidence?.payerMix?.map(row => row.source.url) ?? []),
@@ -237,6 +236,16 @@ const contacts = providerProfileEvidence.flatMap(evidence =>
 if (contacts.length) writeCsv('published-station-contacts.csv', contacts);
 writeCsv('state-coverage.csv', [...byState].map(([state, value]) => ({ state, ...regionalCounts(state), ...value })));
 writeCsv('county-coverage.csv', [...byCounty].map(([county_fips, value]) => ({ state: prefixes.get(county_fips.slice(0, 2)), county_fips, county: counties.get(county_fips), ...regionalCounts(prefixes.get(county_fips.slice(0, 2))!, county_fips), neris_station_rows: stationCounties.get(county_fips) ?? 0, ...value })));
+function publishedCounts(row: Counts): EvidenceCoverageCounts {
+  return { listings: row.listing_rows, owned: row.with_dated_owned_count,
+    acquisitions: row.with_dated_equipment_events, payerMix: row.with_payer_breakdown, namedDenials: row.with_payer_named_denials };
+}
+const publishedCoverage: EvidenceCoverageSnapshot = {
+  schemaVersion: 1, source: 'Bundled source audit', national: publishedCounts(total),
+  byState: Object.fromEntries([...byState].map(([id, row]) => [id, publishedCounts(row)])),
+  byCounty: Object.fromEntries([...byCounty].map(([id, row]) => [id, publishedCounts(row)])),
+};
+writeFileSync(resolve(out, 'public-provider-evidence-coverage.json'), JSON.stringify(publishedCoverage) + '\n');
 writeFileSync(resolve(out, 'summary.json'), JSON.stringify({ ...total, states: byState.size, counties: byCounty.size, distinct_mapped_station_contacts: contacts.length, neris_station_rows: stations.length, neris_station_rows_with_county: [...stationCounties.values()].reduce((a, b) => a + b, 0), public_aed_source_date: aedContext.sourceDate, public_aed_locations: aedContext.sourceRows - aedContext.unassigned,
   public_aed_unassigned: aedContext.unassigned, counties_with_public_aed_locations: Object.values(aedContext.byCounty).filter(Boolean).length,
   federal_award_query_through: procurement.throughDate, federal_award_query_states: Object.keys(procurement.byState).length,

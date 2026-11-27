@@ -25,6 +25,7 @@ export type PublicProviderProfile = {
   recordedAddress?: string;
   addressSource?: { label: string; url: string };
   locationLabel?: string;
+  coordinates?: { latitude: number; longitude: number };
   directionsUrl?: string;
   source: { name: string; url: string; date?: string | null };
   identifier: string;
@@ -134,6 +135,7 @@ export async function loadPublicProviderProfile(ref: ProviderProfileRef): Promis
     locationLabel: location.match && location.status === 'mapped'
       ? addressMatchLabel(location.match)
       : deactivation ? 'NPI deactivation reported ' + deactivation : LISTING_LOCATION_LABELS[location.status],
+    coordinates: acceptedSite && location.match ? { latitude: location.match.latitude, longitude: location.match.longitude } : undefined,
     directionsUrl: acceptedSite ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(addressText(acceptedSite)) : undefined,
     source: { name: source === 'USFA' ? 'USFA Fire Department Registry' : 'CMS NPPES', url: identity?.sourceUrl ?? (source === 'USFA' ? 'https://apps.usfa.fema.gov/registry/search' : sourceUrl), date: sourceDate },
     identifier: identity ? registryIdentityLabel(identity) : 'FDID unavailable',

@@ -8,11 +8,15 @@ import { canCreateRegistryAccount } from '../../services/registryAccountLink';
 import { createSourceNativeAgency } from '../../services/sourceNativeAgency';
 import { loadUsfaProfileOperations } from '../../services/usfaProfileOperations';
 import { safeSourceUrl } from '../../services/factReviewStore';
-import stationArt from '../../assets/provider-station-art.webp';
+import combinedArt from '../../assets/provider-station-art.webp';
+import fireArt from '../../assets/provider-fire-art.webp';
+import emsArt from '../../assets/provider-ems-art.webp';
 import { CmsAmbulanceEvidencePanel } from './CmsAmbulanceEvidencePanel';
 import { NerisDepartmentStations } from './NerisDepartmentStations';
 import { NppesPracticeLocationsPanel } from './NppesPracticeLocationsPanel';
-import { ProviderEquipmentFunding, ProviderSourceLink, providerCurrency } from './ProviderEquipmentFunding';
+import { ProviderEquipmentFunding, ProviderSourceLink } from './ProviderEquipmentFunding';
+import { ProviderFootprint } from './ProviderFootprint';
+import { ProviderMetrics } from './ProviderMetrics';
 import { UsfaLegacyStations } from './UsfaLegacyStations';
 
 const sections = [
@@ -66,13 +70,7 @@ function Operations({ profile, evidence }: { profile: PublicProviderProfile; evi
   return <section className="pr-panel pr-operations">
     <h2>Operations</h2>
     {metrics.length ? (
-      <dl className="pr-metrics">
-        {metrics.map((metric) => <div key={metric.label}>
-          <dt>{metric.label}</dt>
-          <dd>{metric.format === 'currency' ? providerCurrency.format(metric.value) : metric.value.toLocaleString('en-US') + (metric.format === 'percent' ? '%' : '')}</dd>
-          <ProviderSourceLink source={metric.source} />
-        </div>)}
-      </dl>
+      <ProviderMetrics metrics={metrics} />
     ) : <p className="pr-muted">No local department report on file.</p>}
     {usfaKey && usfa.isPending && <p className="pr-muted" role="status">Loading registry staffing and station figures…</p>}
     {usfaKey && usfa.isError && <p className="pr-muted" role="status">Registry staffing and station figures are unavailable. <button type="button" className="pr-source-link" onClick={() => void usfa.refetch()}>Retry</button></p>}
@@ -151,43 +149,55 @@ export default function ProviderRecord({ reference }: { reference: string }) {
   const profile = query.data;
   const evidence = profile ? findProviderEvidence(profile.registryKey, profile.name) : undefined;
 
+  const artKind = evidence?.combinedServices ? 'combined' : profile?.kind === 'Fire department' ? 'fire' : 'ems';
+  const art = { combined: combinedArt, fire: fireArt, ems: emsArt }[artKind];
+  const agencyLabel = evidence?.combinedServices ? 'Fire & EMS department' : profile?.kind;
+
   useEffect(() => {
     if (profile) document.title = profile.name + ' | ATLAS';
   }, [profile]);
 
-  return <div className="provider-record">
+  return <div className="provider-record" data-agency={artKind}>
     <header className="pr-masthead">
-      <a href={directoryHref(profile ?? undefined, profile?.county)}><ArrowLeft size={19} aria-hidden="true" /> Provider directory</a>
-      <span>EMS &amp; Fire Territory Intelligence</span>
+      <div className="pr-brand"><strong>ATLAS</strong><span>EMS &amp; Fire Territory Intelligence</span></div>
+      <a href={directoryHref(profile ?? undefined, profile?.county)}><ArrowLeft size={17} aria-hidden="true" /> Provider directory</a>
     </header>
     {profile ? <main className="pr-shell">
-      <div className="pr-identity">
-        <nav className="pr-breadcrumb" aria-label="Provider location">
-          <MapPin size={17} aria-hidden="true" />
-          <a href={directoryHref(profile)}>{profile.state}</a>
-          {profile.county && <><span aria-hidden="true">/</span><a href={directoryHref(profile, profile.county)}>{profile.county}</a></>}
-        </nav>
-        <h1>{profile.name}</h1>
-        <p className="pr-profile-label">{profile.kind} <span aria-hidden="true">·</span> {profile.identifier}</p>
+      <div className="pr-hero">
+        <div className="pr-identity">
+          <nav className="pr-breadcrumb" aria-label="Provider location">
+            <MapPin size={17} aria-hidden="true" />
+            <a href={directoryHref(profile)}>{profile.state}</a>
+            {profile.county && <><span aria-hidden="true">/</span><a href={directoryHref(profile, profile.county)}>{profile.county}</a></>}
+          </nav>
+          <h1>{profile.name}</h1>
+          <p className="pr-profile-label">{agencyLabel} <span aria-hidden="true">·</span> {profile.identifier}</p>
+        </div>
+        <figure className="pr-art">
+          <img src={art} alt="" width={760} height={440} />
+          <figcaption>Illustrative {artKind === 'combined' ? 'fire & EMS' : artKind === 'fire' ? 'fire department' : 'EMS'} artwork</figcaption>
+        </figure>
       </div>
       <nav className="pr-tabs" aria-label="Profile sections">
         {sections.map(({ id, label, icon: Icon }) => <a key={id} href={'#' + id} aria-current={section === id ? 'page' : undefined}>
           <Icon size={17} aria-hidden="true" />{label}
         </a>)}
       </nav>
-      <div className="pr-layout">
+      {section === 'equipment' ? <div className="pr-detail-wrap">
+        <ProviderEquipmentFunding evidence={evidence}>
+          <ProviderFootprint key={reference} profile={profile} />
+        </ProviderEquipmentFunding>
+      </div> : <div className="pr-layout">
         <div className="pr-detail">
           {section === 'overview' && <Overview profile={profile} evidence={evidence} />}
-          {section === 'equipment' && <ProviderEquipmentFunding evidence={evidence} />}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
           {section === 'sources' && <Sources profile={profile} evidence={evidence} />}
         </div>
-        <SourceSummary profile={profile} />
-      </div>
-      <figure className="pr-art">
-        <img src={stationArt} alt="" />
-        <figcaption>Illustrative station imagery</figcaption>
-      </figure>
+        <div className="pr-section-rail">
+          {section !== 'sources' && <ProviderFootprint key={reference} profile={profile} />}
+          <SourceSummary profile={profile} />
+        </div>
+      </div>}
     </main> : <main className="pr-empty pr-panel">
       <h1>Provider profile</h1>
       {query.isPending

@@ -37,16 +37,18 @@ export type ProviderFundingEvidence = {
   source: ProviderEvidenceSource;
 };
 
-type DepartmentMetric = {
+export type DepartmentMetric = {
   label: string;
   value: number;
   format?: 'percent' | 'currency';
+  comparison?: 'apparatus';
   source: ProviderEvidenceSource;
 };
 
 export type ProviderEvidence = {
   registryKey: string;
   registryName: string;
+  combinedServices?: true;
   equipment?: ProviderEquipmentEvidence[];
   funding?: ProviderFundingEvidence[];
   operations?: DepartmentMetric[];
@@ -80,7 +82,7 @@ const fortWorthAction = {
 /** Attach only to the exact public identity. Name-only or city-only records are ineligible. */
 export const providerProfileEvidence = [
   {
-    registryKey: 'FDID:FL:61091', registryName: 'Flagler County Fire Rescue',
+    registryKey: 'FDID:FL:61091', registryName: 'Flagler County Fire Rescue', combinedServices: true,
     equipment: [
       {
         category: 'aed', status: 'In service reported',
@@ -110,13 +112,13 @@ export const providerProfileEvidence = [
     ],
   },
   {
-    registryKey: 'FDID:FL:07252', registryName: 'Orange County Fire Rescue Department',
+    registryKey: 'FDID:FL:07252', registryName: 'Orange County Fire Rescue Department', combinedServices: true,
     operations: [
       { label: 'Fire stations', value: 44, source: orangeReport },
       { label: 'EMS calls', value: 114775, source: orangeReport },
       { label: 'EMS transports', value: 78756, source: orangeReport },
-      { label: 'ALS rescue units', value: 45, source: orangeReport },
-      { label: 'ALS engines and quints', value: 43, source: orangeReport },
+      { label: 'ALS rescue units', comparison: 'apparatus', value: 45, source: orangeReport },
+      { label: 'ALS engines and quints', comparison: 'apparatus', value: 43, source: orangeReport },
       { label: 'Sworn personnel', value: 1298, source: orangeReport },
       { label: 'Total personnel', value: 1554, source: orangeReport },
       { label: 'Unit responses', value: 287995, source: orangeReport },
@@ -161,7 +163,7 @@ export const providerProfileEvidence = [
     ],
   },
   {
-    registryKey: 'FDID:TX:WB901', registryName: 'Fort Worth Fire Department',
+    registryKey: 'FDID:TX:WB901', registryName: 'Fort Worth Fire Department', combinedServices: true,
     equipment: [
       {
         category: 'monitor', manufacturer: 'ZOLL', status: 'Service agreement',

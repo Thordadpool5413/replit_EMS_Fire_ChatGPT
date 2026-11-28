@@ -289,7 +289,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           <nav className="pr-breadcrumb" aria-label="Provider location">
             <MapPin size={17} aria-hidden="true" />
             <a href={directoryHref(profile)}>{profile.state}</a>
-            {profile.county && <><span aria-hidden="true">/</span><a href={directoryHref(profile, profile.county)}>{profile.county}</a></>}
+            {profile.county && <><span aria-hidden="true">/</span><a href={directoryHref(profile, profile.county)}>{profile.county}</a>{row?.countyBasis && <small>{row.countyBasis}</small>}</>}
           </nav>
           <h1>{profile.name}</h1>
           <p className="pr-profile-label">{agencyLabel} <span aria-hidden="true">·</span> {profile.identifier}</p>
@@ -324,7 +324,12 @@ export default function ProviderRecord({ reference }: { reference: string }) {
       </div> : <div className="pr-layout">
         <div className="pr-detail">
           {section === 'discovery' && <><ProfileGlance evidence={evidence}/><DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} /></>}
-          {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} /></>}
+          {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} />
+            {evidence?.serviceAreas?.map((area) => <section className="pr-panel" key={area.countyFips}>
+              <h2 className="pr-icon-heading"><MapPin size={20} aria-hidden="true" /> Documented service area</h2>
+              <p>{area.city} fire and EMS service agreement</p>
+              <ProviderSourceLink source={area.source} />
+            </section>)}</>}
           {ref && (section==='grants' || section==='sources') && <DepartmentAwardLedger record={ref} coverage={section==='sources'}/>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <>{ref && <DepartmentContacts record={ref}/>}<ProviderPeople evidence={evidence} />{[...floridaLicenses].map(license=><FloridaProviderContacts key={license} license={license} />)}{ref && <StationContactHistory record={ref}/>}</>}

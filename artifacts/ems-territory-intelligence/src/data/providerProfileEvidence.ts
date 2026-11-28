@@ -103,6 +103,7 @@ export type ProviderEvidence = {
   accountContext?: ProviderAccountContext[];
   contacts?: ProviderContact[];
   stationDirectory?: { source: ProviderEvidenceSource; visitContact?: ProviderContact; stations: ProviderStation[] };
+  serviceAreas?: { countyFips: string; city: string; source: ProviderEvidenceSource }[];
   publicAwardRecipients?: string[];
   identitySources?: ProviderEvidenceSource[];
 };

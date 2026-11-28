@@ -35,6 +35,8 @@ test('enrichment belongs to exact registry identities and preserves purchase sta
   for (const state of Object.keys(manifest.byState)) {
     const rows = JSON.parse(readFileSync(new URL(state + '.json', shards), 'utf8')) as SourceDirectoryRecord[];
     for (const [id, , name] of rows) names.set(id, name);
+    const departments = JSON.parse(readFileSync(new URL('../neris-stations/' + state + '.json', shards), 'utf8')) as { id: string; name: string }[];
+    for (const department of departments) names.set('NERIS:' + department.id, department.name);
   }
   for (const record of providerProfileEvidence) {
     const sourceId = record.registryKey.replace(/^FDID:/, 'usfa:').replace(/^NPI:/, 'nppes:');

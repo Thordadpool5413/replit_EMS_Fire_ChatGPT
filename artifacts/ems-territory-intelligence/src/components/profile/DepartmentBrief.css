@@ -627,3 +627,10 @@
 .db-topic-panel details > dl {
   margin: 0 0 0.75rem;
 }
+
+.dd-unassigned {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}

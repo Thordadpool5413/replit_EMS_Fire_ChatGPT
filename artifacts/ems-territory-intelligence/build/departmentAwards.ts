@@ -135,7 +135,7 @@ export function departmentAwards(state: string, rows: DirectoryProvider[], count
     const byCountyAndName = new Map<string, Set<string>>();
     for (const row of rows) {
       const county = countyNames[row.county];
-      if (!county || row.kind === 'ems') continue;
+      if (!county || row.countyBasis || row.kind === 'ems') continue;
       for (const alias of [row.name, ...(row.aliases ?? [])]) {
         const name = texasRecipientKey(alias, county);
         const owners = byCountyAndName.get(name) ?? new Set<string>();

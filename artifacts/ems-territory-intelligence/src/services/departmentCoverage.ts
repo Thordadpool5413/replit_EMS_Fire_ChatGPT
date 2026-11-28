@@ -12,15 +12,14 @@ export const coverageLabels = {
   payerMix: 'Published payer mix',
   denials: 'Payer-specific denials',
   medicaid: 'Medicaid billing',
+  medicare: 'Original Medicare ambulance billing',
+  incidents: 'NFIRS incident reporting',
 };
-export type Coverage = Record<keyof typeof coverageLabels, number>;
-export function countDepartment(
-  totals: Coverage | undefined,
-  evidence: ProviderEvidence | undefined,
-  medicaid: boolean,
-): Coverage {
-  const count = totals ?? {
+export type Coverage = Record<keyof typeof coverageLabels, number> & { unassigned: number };
+export function emptyCoverage(): Coverage {
+  return {
     profiles: 0,
+    unassigned: 0,
     device: 0,
     aed: 0,
     supplier: 0,
@@ -31,7 +30,19 @@ export function countDepartment(
     payerMix: 0,
     denials: 0,
     medicaid: 0,
+    medicare: 0,
+    incidents: 0,
   };
+}
+
+export function countDepartment(
+  totals: Coverage | undefined,
+  evidence: ProviderEvidence | undefined,
+  medicaid: boolean,
+  medicare = false,
+  incidents = false,
+): Coverage {
+  const count = totals ?? emptyCoverage();
   count.profiles++;
   if (evidence?.equipment?.some((r) => r.model)) count.device++;
   if (evidence?.equipment?.some((r) => r.category === 'aed')) count.aed++;
@@ -48,6 +59,8 @@ export function countDepartment(
   if (evidence?.payerMix?.length) count.payerMix++;
   if (evidence?.billingDenials?.some((r) => r.denialPayer)) count.denials++;
   if (medicaid) count.medicaid++;
+  if (medicare) count.medicare++;
+  if (incidents) count.incidents++;
   return count;
 }
 

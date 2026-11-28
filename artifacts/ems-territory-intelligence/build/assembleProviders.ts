@@ -1,10 +1,11 @@
-import { countDepartment, type Coverage } from '../src/services/departmentCoverage';
+import { countDepartment, emptyCoverage, type Coverage } from '../src/services/departmentCoverage';
 import { departmentAwards } from './departmentAwards';
 import { loadNerisMapState } from '../src/services/nerisStationMap';
 import { loadDepartmentBrief } from '../src/services/departmentBrief';
 import { historicSites, matchHistoricStations } from './stationHistory';
 import { archivedContacts } from './archivedContacts';
 import assert from 'node:assert/strict';
+import { gunzipSync } from 'node:zlib';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +56,22 @@ globalThis.fetch = async (input) => {
   }
 };
 
+async function publishSnapshot(name: string, payload: string) {
+  generatedFiles.set('/data/providers/' + name, payload);
+  if (process.argv[2]) await writeFile(path.join(process.argv[2], name), payload);
+}
+const readArchive = async (filename: string) =>
+  gunzipSync(await readFile(new URL('./data/' + filename + '.json.gz', import.meta.url))).toString();
+const nfirs = JSON.parse(await readArchive('nfirs-2024')) as Record<string, Record<string, [number, number]>>;
+await Promise.all(Array.from({ length: 10 }, async (_, digit) => {
+  const name = 'medicare-2024-' + digit;
+  await publishSnapshot(name + '.json', await readArchive(name));
+}));
+const zctaCounty = JSON.parse(await readArchive('single-county-zcta')) as Record<string, string>;
+const censusCounties = JSON.parse(await readFile(new URL('../../../scripts/fixtures/census-2026-county-identities.json', import.meta.url), 'utf8')) as {
+  counties: { GEOID: string; USPS: string }[];
+};
+const censusCountyState = new Map(censusCounties.counties.map(({ GEOID, USPS }) => [GEOID, USPS]));
 const manifest = await loadSourceDirectoryManifest();
 const allContacts = await archivedContacts();
 const siteArchive = await historicSites();
@@ -64,6 +81,8 @@ const counts = {
   quality: 0,
   funding: 0,
   medicaid: 0,
+  medicare: 0,
+  nfirs: 0,
   historicStationRecords: 0,
   historicStationPhones: 0,
   withPublishedPhone: 0,
@@ -71,6 +90,8 @@ const counts = {
   sourceRoutes: 0,
   profiles: 0,
   countyAssigned: 0,
+  countyFromZcta: 0,
+  noCountyDirectory: 0,
   mappedLocations: 0,
   staffing: 0,
   agencyEvidence: 0,
@@ -168,9 +189,16 @@ for (const state of Object.keys(manifest.byState).sort()) {
     const associatedCounties = new Set(
       members.flatMap((m) => (m.profile.countyFips ? [m.profile.countyFips] : [])),
     );
-    const county =
+    const recordedCounty =
       p.countyFips ||
       (!p.withholdGeography && associatedCounties.size === 1 ? [...associatedCounties][0] : '');
+    const zip = p.zip?.trim().match(/^(\d{5})(?:[- ]?\d{4})?$/)?.[1];
+    const zipCounty = zip && !recordedCounty && !p.withholdGeography && !associatedCounties.size
+      ? zctaCounty[zip] : undefined;
+    const statisticalCounty = zipCounty && censusCountyState.get(zipCounty) === state && manifest.countyNames[zipCounty]
+      ? zipCounty : '';
+    const county = recordedCounty || statisticalCounty;
+    if (statisticalCounty) counts.countyFromZcta++;
     const site =
       !p.withholdGeography &&
       (p.coordinates
@@ -219,6 +247,13 @@ for (const state of Object.keys(manifest.byState).sort()) {
           basis: 'Registry address',
         });
       }
+    for (const area of evidence?.serviceAreas ?? []) {
+      assert.equal(censusCountyState.get(area.countyFips), state, 'Service area jurisdiction mismatch for ' + key);
+      places.set(area.countyFips + '/' + area.city.toLowerCase(), {
+        county: area.countyFips, city: area.city, basis: 'Documented fire and EMS service agreement',
+      });
+    }
+    if (!county && !places.size) counts.noCountyDirectory++;
     places.delete(county + '/' + (p.city ?? '').toLowerCase());
     for (const place of places.values()) counties.add(place.county);
     rows.push({
@@ -228,6 +263,7 @@ for (const state of Object.keys(manifest.byState).sort()) {
       city: p.city ?? '',
       zip: p.zip ?? '',
       county,
+      ...(statisticalCounty ? { countyBasis: 'Census 2020 ZIP area' } : {}),
       kind,
       ...(p.address ? { address: p.address } : {}),
       ...(site?.coordinates
@@ -266,7 +302,11 @@ for (const state of Object.keys(manifest.byState).sort()) {
   if(process.argv[2]) await writeFile(path.join(process.argv[2],awardFile),payload);
   console.log('Department award matches',state,JSON.stringify(awards.counters),Object.keys(awards.byProvider).length);
   generatedFiles.set('/data/providers/contacts-' + state + '.json', JSON.stringify(contacts));
-  const coverage:Record<string,Coverage>={};
+  await publishSnapshot('nfirs-' + state + '.json', JSON.stringify(nfirs[state] ?? {}));
+  const coverage: Record<string, Coverage> = Object.fromEntries(
+    [[state, state] as const, ...censusCountyState].flatMap(([area, jurisdiction]) =>
+      jurisdiction === state && (area === state || manifest.countyNames[area]) ? [[area, emptyCoverage()]] : []),
+  );
   for (const row of rows) {
     const brief = await loadDepartmentBrief(row.ref);
     assert.deepEqual(brief.unavailable, [], 'Incomplete brief on ' + row.ref.id);
@@ -274,6 +314,7 @@ for (const state of Object.keys(manifest.byState).sort()) {
       brief.records.length && brief.facts.some((r) => r.kind === 'identity'),
       'Empty profile ' + row.ref.id,
     );
+    assert.equal(brief.facts.filter((fact) => fact.label.startsWith('NFIRS ')).length, brief.publicActivity.length);
     assert.ok(
       brief.facts.every((f) => f.label && f.value && f.source),
       'Unsourced profile fact ' + row.ref.id,
@@ -286,8 +327,13 @@ for (const state of Object.keys(manifest.byState).sort()) {
     }
     const medicaid=brief.payments.some(p=>p.years && Object.keys(p.years).length>0);
     if (medicaid) counts.medicaid++;
+    const medicare = brief.medicare.some(Boolean);
+    const incidents = brief.publicActivity.length > 0;
+    if (medicare) counts.medicare++;
+    if (incidents) counts.nfirs++;
+    if (!row.county && !row.otherPlaces?.length) coverage[state].unassigned++;
     for(const area of new Set([state,row.county,...(row.otherPlaces??[]).map(p=>p.county)].filter(Boolean)))
-      coverage[area]=countDepartment(coverage[area],brief.evidence,medicaid);
+      coverage[area]=countDepartment(coverage[area],brief.evidence,medicaid,medicare,incidents);
     counts.renderableBriefs++;
   }
   if(process.argv[2]) await writeFile(path.join(process.argv[2],'coverage-'+state+'.json'),JSON.stringify(coverage));

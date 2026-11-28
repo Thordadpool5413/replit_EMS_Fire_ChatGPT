@@ -2,7 +2,7 @@ import { MedicaidAmbulanceTotals } from '../MedicaidAmbulanceTotals';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import { Banknote, CalendarDays, ClipboardList, Receipt, Truck, Users, type LucideIcon } from 'lucide-react';
 import type {Agency} from '../../types';
-import {profileCmsLookupNpi,loadCmsServiceEvidence,type CmsServiceEvidence,type CmsReportingYear} from '../../services/cmsAmbulanceEvidence';
+import {profileCmsLookupNpi,loadCmsServiceEvidence,loadMedicareSnapshot,isCmsTransportService,type CmsServiceEvidence,type CmsReportingYear} from '../../services/cmsAmbulanceEvidence';
 const count=(v:number|null)=>v===null?'Not reported':v.toLocaleString(undefined,{maximumFractionDigits:2});
 const money=(v:number|null)=>v===null?'Not reported':v.toLocaleString('en-US',{style:'currency',currency:'USD'});
 function CmsEvidenceMetric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
@@ -20,7 +20,13 @@ export function CmsAmbulanceEvidencePanel({agency, autoLoad = false}:{agency:Age
  const refresh = useCallback(async () => {
   if(!npi)return;active.current?.abort();
   const c=new AbortController();active.current=c;setBusy(true);setResult(null);setError('');
-  try{const data=await loadCmsServiceEvidence(npi,AbortSignal.any([c.signal,AbortSignal.timeout(45_000)]),year);if(active.current===c&&!c.signal.aborted)setResult(data);}
+  try {
+    const snapshot = year === 2024 ? await loadMedicareSnapshot(npi).catch(() => undefined) : undefined;
+    if (!c.signal.aborted) {
+      const data = snapshot ?? await loadCmsServiceEvidence(npi, AbortSignal.any([c.signal, AbortSignal.timeout(45000)]), year);
+      if (active.current === c && !c.signal.aborted) setResult(data);
+    }
+  }
   catch{if(active.current===c&&!c.signal.aborted)setError('Federal CMS lookup did not complete. Retry; no values were inferred.');}
   finally{if(active.current===c){setBusy(false);active.current=null;}}
  }, [npi,year]);
@@ -33,7 +39,7 @@ export function CmsAmbulanceEvidencePanel({agency, autoLoad = false}:{agency:Age
  {npi&&<label>Reporting year <select value={year} onChange={event=>setYear(event.target.value==='2023'?2023:2024)}>
   <option value="2024">2024</option><option value="2023">2023</option>
  </select></label>}
- {npi&&<button type="button" disabled={busy} className="workspace-button min-h-11" onClick={()=>void refresh()}>{busy?'Loading CMS evidence…':current?'Refresh CMS service data':'Pull CMS service data'}</button>}
+ {npi&&<button type="button" disabled={busy} className="workspace-button min-h-11" onClick={()=>void refresh()}>{busy?'Loading CMS evidence…':current?'Reload CMS service data':'Pull CMS service data'}</button>}
  {error&&<p role="alert" className="text-xs">{error}</p>}
  {current&&<><p className="text-xs"><a className="underline" href={current.sourceUrl} target="_blank" rel="noreferrer">CMS dataset</a> · <a className="underline" href={current.queryUrl} target="_blank" rel="noreferrer">Exact NPI API query</a> · retrieved {current.retrievedAt.slice(0,10)} UTC.</p>
  {current.status==='no-published-rows'?<p role="status">No published organization ambulance service rows for this NPI and year. This does not mean zero claims, zero services or no operations.</p>:<><p role="status" className="text-xs">{current.rows.length} published ambulance HCPCS / place-of-service rows. CMS organization names and geography are shown as reported, not assumed to be this operating department.</p>
@@ -54,7 +60,7 @@ export function CmsAmbulanceEvidencePanel({agency, autoLoad = false}:{agency:Age
 }
 
 function CmsServiceMix({ rows }: { rows: CmsServiceEvidence['rows'] }) {
- const transportRows = rows.filter(row => /^(A042[6-9]|A043[0-3])$/.test(row.hcpcs) && row.services !== null);
+ const transportRows = rows.filter(row => isCmsTransportService(row.hcpcs) && row.services !== null);
  if (transportRows.length === 0) return null;
  const max = Math.max(1, ...transportRows.map(row => row.services ?? 0));
  return <section className="pr-apparatus-comparison">

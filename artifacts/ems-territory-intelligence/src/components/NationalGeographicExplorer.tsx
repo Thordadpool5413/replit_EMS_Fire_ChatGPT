@@ -258,6 +258,8 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
   const [selectedCountyName, setSelectedCountyName] = useState<string>(globalCounty || 'all');
   const [selectedCityName, setSelectedCityName] = useState<string>(globalCity || 'all');
   const [agencyCategoryFilter, setAgencyCategoryFilter] = useState<'all' | 'ems' | 'fire'>(globalCategory || 'all');
+  const [stateDirectoryFor, setStateDirectoryFor] = useState('');
+  const showStateDirectory = stateDirectoryFor === selectedStateCode;
   const [middleTab, setMiddleTabState] = useState<'states' | 'counties' | 'cities' | 'pulseiq_chart'>(initialMode || 'states');
   const [zipSearchQuery, setZipSearchQuery] = useState<string>(savedDirectoryState.query);
   const [debouncedZipQuery, setDebouncedZipQuery] = useState<string>('');
@@ -2009,18 +2011,30 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               </div>
               <button
                 type="button"
-                onClick={() => setMiddleTab('cities')}
+                onClick={() => setStateDirectoryFor(showStateDirectory ? '' : selectedStateCode)}
                 className="county-selection-providers county-providers-action"
-                aria-label={`View all ${matchingAgencies.length} providers in ${activeStateSummary?.state || selectedStateCode}`}
+                aria-expanded={showStateDirectory}
+                aria-label={showStateDirectory ? 'Back to county directory' : `Browse departments in ${activeStateSummary?.state || selectedStateCode}`}
               >
                 <Building2 aria-hidden="true" />
-                All providers
-                <span className="county-selection-count">{matchingAgencies.length.toLocaleString()}</span>
+                {showStateDirectory ? 'County directory' : 'All providers'}
+                {!showStateDirectory && agencyCategoryFilter === 'all' && stateEvidence.data?.[selectedStateCode] &&
+                  <span className="county-selection-count">{stateEvidence.data[selectedStateCode].profiles.toLocaleString()}</span>}
                 <ChevronRight aria-hidden="true" />
               </button>
             </div>
           </div>
 
+          {showStateDirectory ? (
+            <NationalSourceDirectory
+              stateCode={selectedStateCode}
+              providerScope={agencyCategoryFilter}
+              savedAgencies={agencies}
+              onOpenSavedAgency={onSelectAgency}
+              onDecideSourceRecord={onDecideSourceRecord}
+              onCreateAgency={onAddAgency}
+            />
+          ) : <>
           {selectedStateCode !== 'all' && (
             <ErrorBoundary
               key={`state-map:${selectedStateCode}`}
@@ -2108,6 +2122,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
               {pagerControls('bottom')}
             </div>
           )}
+          </>}
         </div>
       )}
 

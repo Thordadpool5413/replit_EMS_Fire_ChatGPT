@@ -9,6 +9,7 @@ import {
 import { formatProviderMetric, providerEquipmentLabels } from './providerCardIntelligence';
 import { loadUsfaProfileOperations } from './usfaProfileOperations';
 import { loadPublicProviderProfile, type PublicProviderProfile } from './publicProviderProfile';
+import { isCmsTransportService, loadMedicareSnapshot } from './cmsAmbulanceEvidence';
 import { loadFloridaRoster } from './floridaEmsRoster';
 
 export type FactKind =
@@ -132,7 +133,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   const npis = new Set(keys.filter((k) => k.startsWith('NPI:')).map((k) => k.slice(4)));
   const billingId = linkedBillingOrganization(key, localEvidence);
   if (billingId) npis.add(billingId);
-  const [profiles, ops, contactEdition, payments, awardEdition, contactsByKey] = await Promise.all([
+  const [profiles, ops, contactEdition, payments, awardEdition, contactsByKey, medicare, incidentEdition] = await Promise.all([
     Promise.all(refs.map((r) => read(r.source, loadPublicProviderProfile(r)))),
     key.startsWith('FDID:') ? read('USFA staffing', loadUsfaProfileOperations(ref.state, key)) : undefined,
     keys.some((k) => k.startsWith('STATE-EMS:FL:license:'))
@@ -146,12 +147,34 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
       'Directory contacts',
       snapshot<Record<string, DepartmentContact>>('data/providers/contacts-' + ref.state + '.json'),
     ),
+    Promise.all([...npis].map((npi) => read('Original Medicare billing', loadMedicareSnapshot(npi)))),
+    key.startsWith('FDID:') ? read('NFIRS incident reports',
+      snapshot<Record<string, [number, number]>>('data/providers/nfirs-' + ref.state + '.json')) : undefined,
   ]);
   const contacts = keys.flatMap((k) => (contactsByKey?.[k] ? [{ key: k, ...contactsByKey[k] }] : []));
   const records = profiles.filter((p): p is PublicProviderProfile => !!p);
   const awards=awardEdition?.byProvider[key]??[];
-  const evidence=awards.length ? {...localEvidence,registryKey:key,registryName:records[0]?.name??key,
-    funding:[...awards,...(localEvidence?.funding??[])]} : localEvidence;
+  const activity = incidentEdition?.[key.slice(8)];
+  const incidentSource = {
+    label: 'USFA NFIRS Public Data Release Lite · ' + key.replace(/^FDID:/, 'FDID '),
+    date: '2024',
+    url: 'https://www.arcgis.com/home/item.html?id=ae24acbfd250480b9ae36377218229d8',
+  };
+  const publicActivity: DepartmentMetric[] = activity ? [
+    {
+      label: 'NFIRS primary incident reports', value: activity[0], reportingPeriod: '2024', source: incidentSource,
+      context: 'Submitted primary records from the USFA public release. Participation and reporting completeness vary by department.',
+    },
+    {
+      label: 'NFIRS rescue and EMS incident reports', value: activity[1], reportingPeriod: '2024', source: incidentSource,
+      context: 'Reported incident types in the NFIRS 300 series. Counts reflect reporting participation and cover rescue and EMS incidents.',
+    },
+  ] : [];
+  const evidence = awards.length || publicActivity.length
+    ? { ...localEvidence, registryKey: key, registryName: records[0]?.name ?? key,
+        funding: [...awards, ...(localEvidence?.funding ?? [])],
+        operations: [...(localEvidence?.operations ?? []), ...publicActivity] }
+    : localEvidence;
   const facts: BriefFact[] = [];
   const metric = (kind: FactKind, m: DepartmentMetric) =>
     facts.push({
@@ -278,6 +301,17 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
         source: 'USFA · ' + ops.retrievedAt,
       });
   }
+  for (const edition of medicare) {
+    if (!edition) continue;
+    const transports = edition.rows.filter((row) => isCmsTransportService(row.hcpcs) && row.services !== null);
+    if (transports.length) facts.push({
+      kind: 'claims',
+      label: 'Original Medicare ambulance transport service units',
+      value: transports.reduce((sum, row) => sum + row.services!, 0).toLocaleString(),
+      note: 'Published transport codes · Billing NPI ' + edition.npi,
+      source: 'CMS Part B · ' + edition.reportingYear,
+    });
+  }
   for (const pay of payments) {
     const annual = Object.entries(pay.years ?? {}).sort(([a], [b]) => b.localeCompare(a))[0];
     if (annual)
@@ -308,5 +342,5 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
       source: primary.source.name,
       note: primary.source.date ?? undefined,
     });
-  return { facts, records, contacts, ops, staffing, payments, evidence, awards, awardCoverage:awardEdition?.counters, unavailable: [...unavailable] };
+  return { facts, records, contacts, ops, staffing, payments, medicare, publicActivity, evidence, awards, awardCoverage:awardEdition?.counters, unavailable: [...unavailable] };
 }

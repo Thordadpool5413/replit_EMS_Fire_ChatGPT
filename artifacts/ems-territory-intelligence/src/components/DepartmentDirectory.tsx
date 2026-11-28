@@ -60,7 +60,7 @@ export function DepartmentResults({
   scope,
   states,
   ...actions
-}: { scope: PublicSearchScope; states: string[] } & Actions) {
+}: { scope: PublicSearchScope & { unassignedOnly?: boolean }; states: string[] } & Actions) {
   const stateKey = states.join(',');
   const query = useQuery({
     queryKey: ['department-results', stateKey],
@@ -94,7 +94,7 @@ export function DepartmentResults({
     [query.data, scope],
   );
   const [cursor, setCursor] = useState({ scope: '', page: 0 });
-  const signature = [stateKey, scope.category, scope.city, scope.countyFips, scope.query, scope.zip].join(
+  const signature = [stateKey, scope.category, scope.city, scope.countyFips, scope.query, scope.zip, scope.unassignedOnly].join(
     '|',
   );
   const pages = Math.ceil(matches.length / 8),
@@ -141,7 +141,7 @@ export function DepartmentResults({
                 record={row.ref}
                 name={row.name}
                 category={row.kind}
-                location={where}
+                location={row.countyBasis && !local ? where + ' · ' + row.countyBasis : where}
                 directoryRow={row}
               />
               <button
@@ -185,7 +185,7 @@ function CoverageDetails({state,county}:{state:string;county:string}){
   const counts=edition.data?.[county||state];
   return <details className="dd-archive" onToggle={e=>setOpen(e.currentTarget.open)}><summary>Department evidence coverage</summary>
     {open && (edition.isPending?<p>Loading coverage…</p>:edition.isError?<button onClick={()=>void edition.refetch()}>Retry coverage</button>:
-    <><p>All departments with a recorded location in this {county?'county':'state'}. Figures count profiles with a published record.</p><dl className="pr-metrics">{Object.entries(coverageLabels).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{(counts?.[key as keyof Coverage]??0).toLocaleString()}</dd></div>)}</dl></>)}</details>;
+    <><p>All departments with a recorded location or documented service agreement in this {county?'county':'state'}. Figures count profiles with a published record.</p><dl className="pr-metrics">{Object.entries(coverageLabels).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{(counts?.[key as keyof Coverage]??0).toLocaleString()}</dd></div>)}</dl></>)}</details>;
 }
 
 export function AreaDepartmentDirectory({
@@ -197,6 +197,7 @@ export function AreaDepartmentDirectory({
 }: { state: string; county: string; city?: string; category: PublicSearchScope['category'] } & Actions) {
   const { manifest } = useNationalSourceDirectory();
   const [query, setQuery] = useState('');
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [selected, setSelected] = useState<PublicSearchScope['category'] | 'stations'>(category);
   const tabs = [
     { id: 'all', label: 'All departments', Icon: Layers3 },
@@ -230,6 +231,10 @@ export function AreaDepartmentDirectory({
         </label>
       </header>
       <CoverageDetails state={state} county={county}/>
+      {!county && <label className="dd-unassigned">
+        <input type="checkbox" checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)} />
+        Show only departments awaiting a county
+      </label>}
       <div className="dd-tabs" role="group" aria-label="Directory views">
         {tabs
           .filter((t) => (t.id === 'stations' ? !!county : category === 'all' || t.id === category))
@@ -255,7 +260,7 @@ export function AreaDepartmentDirectory({
       ) : (
         <DepartmentResults
           states={[state]}
-          scope={{ state, countyFips: county, city, zip: '', category: selected, query }}
+          scope={{ state, countyFips: county, city, zip: '', category: selected, query, unassignedOnly }}
           {...actions}
         />
       )}

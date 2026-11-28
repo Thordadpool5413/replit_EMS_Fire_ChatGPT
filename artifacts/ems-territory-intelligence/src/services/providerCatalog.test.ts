@@ -87,3 +87,16 @@ test('saved accounts match the same department as the public license and keep ge
   assert.equal(savedDepartmentRef({ ...cocoa, stateCode: 'GA' }), undefined);
   assert.equal(savedDepartmentRef({ ...cocoa, dataProvenanceTier: 'generated_prospect' }), undefined);
 });
+
+test('statewide county review includes only profiles without either a recorded county or a documented service area', () => {
+  const row: DirectoryProvider = {
+    ref: { source: 'registry', state: 'VA', id: 'usfa:VA:01300' },
+    name: 'Arlington County Fire Department', city: 'Arlington', county: '', zip: '22201', kind: 'combined',
+  };
+  const withServiceArea = {
+    ...row,
+    otherPlaces: [{ county: '51610', city: 'Falls Church', basis: 'Documented fire and EMS service agreement' }],
+  };
+  assert.deepEqual(filterProviders([row, withServiceArea], { category: 'all', unassignedOnly: true }), [row]);
+  assert.deepEqual(filterProviders([row, withServiceArea], { category: 'ems', countyFips: '51610' }), [withServiceArea]);
+});

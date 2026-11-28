@@ -6,6 +6,7 @@ export type DirectoryProvider = {
   city: string;
   zip: string;
   county: string;
+  countyBasis?: 'Census 2020 ZIP area';
   kind: 'ems' | 'fire' | 'combined';
   address?: string;
   point?: [number, number];
@@ -48,11 +49,13 @@ export function filterProviders(
     city?: string;
     zip?: string;
     query?: string;
+    unassignedOnly?: boolean;
   },
 ) {
   const words = (scope.query ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
   const city = scope.city?.trim().toLowerCase();
   return rows.filter((row) => {
+    if (scope.unassignedOnly && (row.county || row.otherPlaces?.length)) return false;
     const places = [{ county: row.county, city: row.city }, ...(row.otherPlaces ?? [])];
     if (
       (scope.countyFips || city) &&

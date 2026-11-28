@@ -29,7 +29,30 @@ export const minnesotaGrantSource = {
   url: 'https://mn.gov/oems/assets/Ambulance%20Operating%20Deficit%20Grant%20Program%202025%20Progress%20Report_tcm1221-725125.pdf',
 };
 
+const fallsChurchServiceAgreement = {
+  label: 'City of Falls Church · Fire and Rescue Services budget, p. GF-97',
+  date: 'FY2027 proposed budget',
+  url: 'https://www.fallschurchva.gov/DocumentCenter/View/31974/City-of-Falls-Church-FY2027-Proposed-Budget',
+};
+
 export const interstateProviderEvidence: ProviderEvidence[] = [
+  {
+    registryKey: 'FDID:VA:01300',
+    registryName: 'Arlington County Fire Department',
+    combinedServices: true,
+    serviceAreas: [{ countyFips: '51610', city: 'Falls Church', source: fallsChurchServiceAgreement }],
+    operations: [{
+      label: 'Calls for service in the City of Falls Church', value: 1066, reportingPeriod: '2024',
+      context: 'City of Falls Church call volume for Arlington County Fire Department under the city’s service agreement.',
+      source: fallsChurchServiceAgreement,
+    }],
+  },
+  {
+    registryKey: 'NERIS:FD51013055',
+    registryName: 'Falls Church Volunteer Fire Department',
+    combinedServices: true,
+    serviceAreas: [{ countyFips: '51610', city: 'Falls Church', source: fallsChurchServiceAgreement }],
+  },
   ...minnesotaGrants.flatMap((grant): ProviderEvidence[] => grant.registryKey && grant.registryName ? [{
     registryKey: grant.registryKey, registryName: grant.registryName,
     identitySources: grant.identityUrl ? [{ label: grant.recipient + ' operating identity', date: 'Reviewed 2026-11-27', url: grant.identityUrl }] : undefined,
